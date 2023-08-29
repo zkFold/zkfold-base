@@ -1,0 +1,6 @@
+cradle:
+  cabal:
+    - path: "src"
+      component: "zkp-lib:lib:zkp-lib"
+    - path: "test"
+      component: "zkp-lib:test:zkp-lib-test"
