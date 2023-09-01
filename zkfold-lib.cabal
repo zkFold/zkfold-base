@@ -1,6 +1,6 @@
 cabal-version:      3.0
 
-name:               zkp-lib
+name:               zkfold-crypto
 version:            0.1.0.0
 
 license:            MIT
@@ -59,20 +59,22 @@ common options
 library
     import: options
     exposed-modules:
-      ZKLib.Commitment.Polynomial.KZG10
-      ZKLib.Commitment.Polynomial.Sona
-      ZKLib.Commitment.Polynomial.Sona.BabyHyrax
-      ZKLib.Commitment.Polynomial.Sona.Nova
-      ZKLib.IOP.Polynomial.HyperPlonk
-      ZKLib.IOP.Polynomial.Lasso
-      ZKLib.IOP.Polynomial.Plonk
-      ZKLib.ZkSNARK.HyperPlonk
-      ZKLib.ZkSNARK.Plonk
+      ZkFold.Crypto.EllipticCurve.Class
+      ZkFold.Crypto.FiniteField.Class
+      ZkFold.Crypto.Protocol.ARK.BabyHyrax
+      ZkFold.Crypto.Protocol.ARK.HyperPlonk
+      ZkFold.Crypto.Protocol.ARK.Lasso
+      ZkFold.Crypto.Protocol.ARK.Nova
+      ZkFold.Crypto.Protocol.ARK.Plonk
+      ZkFold.Crypto.Protocol.Commitment.KZG
+      ZkFold.Crypto.Protocol.Commitment.Sona
+      ZkFold.Crypto.Protocol.PIOP.Multivariate.Plonk
+      ZkFold.Crypto.Protocol.PIOP.Univariate.Plonk
     build-depends:
       base                          >= 4.9 && < 5,
     hs-source-dirs: src
 
-test-suite zkp-lib-test
+test-suite zkfold-crypto-test
     import: options
     type: exitcode-stdio-1.0
     main-is: Main.hs

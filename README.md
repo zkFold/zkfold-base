@@ -1,2 +1,2 @@
-# zkp-lib
-ZkFold's Zero-Knowledge Proof library
+# zkfold-crypto
+ZkFold's Crypto library
