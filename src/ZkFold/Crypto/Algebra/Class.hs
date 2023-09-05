@@ -1,4 +1,4 @@
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Crypto.Algebra.Class where
 
@@ -44,7 +44,7 @@ type Ring a = (AdditiveGroup a, MultiplicativeMonoid a)
 type Field a = (AdditiveGroup a, MultiplicativeGroup a)
 
 class (Field a) => FiniteField a where
-    order :: a -> Integer
+    order :: Integer
 
 class (MultiplicativeGroup a, FiniteField b) => Exponent a b where
     (^) :: a -> b -> a

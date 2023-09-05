@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Crypto.Arithmetization.R1CS (
         R1CS,
@@ -129,4 +130,4 @@ instance (FiniteField a, Eq a) => MultiplicativeGroup (R1CS a) where
         }
 
 instance (FiniteField a, Eq a) => FiniteField (R1CS a) where
-    order  _ = order (zero :: a)
+    order = order @a
