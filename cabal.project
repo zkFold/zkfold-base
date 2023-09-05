@@ -1,3 +1,14 @@
 index-state: 2023-08-23T19:58:30Z
 
 packages: .
+
+-- We never, ever, want this.
+write-ghc-environment-files: never
+
+-- Always build tests and benchmarks.
+tests: true
+benchmarks: true
+
+-- The only sensible test display option, since it allows us to have colourized
+-- 'tasty' output.
+test-show-details: direct

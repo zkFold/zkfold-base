@@ -16,51 +16,56 @@ common options
     ghc-options:
       -fwarn-redundant-constraints
       -Wall
+      -Wcompat
       -Widentities
-      -Wincomplete-uni-patterns
       -Wincomplete-record-updates
+      -Wincomplete-uni-patterns
       -Wnoncanonical-monad-instances
+      -Wpartial-fields
       -Wredundant-constraints
     default-extensions:
-      AllowAmbiguousTypes,
       BangPatterns,
-      BlockArguments,
+      BinaryLiterals,
       ConstraintKinds,
       DataKinds,
+      DefaultSignatures,
+      DeriveDataTypeable,
+      DeriveFoldable,
+      DeriveFunctor,
       DeriveGeneric,
-      DerivingStrategies,
-      DuplicateRecordFields,
+      DeriveTraversable,
+      ExistentialQuantification,
       FlexibleContexts,
       FlexibleInstances,
       FunctionalDependencies,
       GADTs,
       GeneralizedNewtypeDeriving,
+      InstanceSigs,
+      KindSignatures,
       LambdaCase,
       MultiParamTypeClasses,
+      MultiWayIf,
       NamedFieldPuns,
       NoImplicitPrelude,
       NumericUnderscores,
-      OverloadedLabels,
       OverloadedStrings,
       PolyKinds,
-      QuasiQuotes,
       RankNTypes,
       RecordWildCards,
-      RecursiveDo,
       ScopedTypeVariables,
-      TemplateHaskell,
+      StandaloneDeriving,
       TupleSections,
-      TypeApplications,
       TypeFamilies,
-      TypeOperators,
-      UndecidableInstances,
       ViewPatterns
 
 library
     import: options
     exposed-modules:
+      ZkFold.Crypto.Algebra.Class
+      ZkFold.Crypto.Arithmetization.Plonk
+      ZkFold.Crypto.Arithmetization.R1CS
+      ZkFold.Crypto.EllipticCurve.BLS12_381
       ZkFold.Crypto.EllipticCurve.Class
-      ZkFold.Crypto.FiniteField.Class
       ZkFold.Crypto.Protocol.ARK.BabyHyrax
       ZkFold.Crypto.Protocol.ARK.HyperPlonk
       ZkFold.Crypto.Protocol.ARK.Lasso
@@ -70,8 +75,10 @@ library
       ZkFold.Crypto.Protocol.Commitment.Sona
       ZkFold.Crypto.Protocol.PIOP.Multivariate.Plonk
       ZkFold.Crypto.Protocol.PIOP.Univariate.Plonk
+      ZkFold.Prelude
     build-depends:
       base                          >= 4.9 && < 5,
+      containers                                 ,
     hs-source-dirs: src
 
 test-suite zkfold-crypto-test
