@@ -62,6 +62,7 @@ library
     import: options
     exposed-modules:
       ZkFold.Crypto.Algebra.Class
+      ZkFold.Crypto.Algebra.Field
       ZkFold.Crypto.Arithmetization.Plonk
       ZkFold.Crypto.Arithmetization.R1CS
       ZkFold.Crypto.EllipticCurve.BLS12_381
@@ -79,6 +80,7 @@ library
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
+      pretty-simple                              ,
     hs-source-dirs: src
 
 test-suite zkfold-crypto-test
@@ -88,4 +90,5 @@ test-suite zkfold-crypto-test
     ghc-options: -rtsopts
     build-depends:
       base                          >= 4.9 && < 5,
+      zkfold-crypto                              ,
     hs-source-dirs: test

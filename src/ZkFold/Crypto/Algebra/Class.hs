@@ -2,7 +2,7 @@
 
 module ZkFold.Crypto.Algebra.Class where
 
-import           Prelude (Integer)
+import           Prelude hiding (Num(..), (^), (/), negate)
 import qualified Prelude as Haskell
 
 infixl 7 *
@@ -13,6 +13,9 @@ class AdditiveSemigroup a where
 
 class AdditiveSemigroup a => AdditiveMonoid a where
     zero :: a
+
+sum :: (Foldable t, AdditiveMonoid a) => t a -> a
+sum = foldl (+) zero
 
 class AdditiveMonoid a => AdditiveGroup a where
     {-# MINIMAL (negate | (-)) #-}
@@ -27,6 +30,9 @@ class MultiplicativeSemigroup a where
 
 class MultiplicativeSemigroup a => MultiplicativeMonoid a where
     one :: a
+
+product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
+product = foldl (*) one
 
 class MultiplicativeMonoid a => MultiplicativeGroup a where
     {-# MINIMAL (invert | (/)) #-}
@@ -43,11 +49,38 @@ type Ring a = (AdditiveGroup a, MultiplicativeMonoid a)
 -- Note: we expect division/inversion to be partial, i.e. throw an error on zero.
 type Field a = (AdditiveGroup a, MultiplicativeGroup a)
 
-class (Field a) => FiniteField a where
+class Finite a where
     order :: Integer
 
-class (MultiplicativeGroup a, FiniteField b) => Exponent a b where
+class Finite a => Prime a
+
+type FiniteAdditiveGroup a = (Finite a, AdditiveGroup a)
+
+type FiniteMultiplicativeGroup a = (Finite a, MultiplicativeGroup a)
+
+type FiniteField a = (Finite a, Field a)
+
+type PrimeField a = (Prime a, FiniteField a)
+
+--------------------------------------------------------------------------------
+
+-- Note: numbers should convert to Little-endian bit representation.
+class Semiring a => ToBits a where
+    toBits :: a -> [a]
+
+class MultiplicativeSemigroup a => Exponent a b where
     (^) :: a -> b -> a
+
+instance (MultiplicativeMonoid a, Semiring b, Eq b, ToBits b) => Exponent a b where
+    a ^ n = foldl (*) one $ zipWith f (toBits n) (iterate (\x -> x * x) a)
+      where
+        f x y
+            | x == zero = one
+            | x == one  = y
+            | otherwise = error "^: This should never happen."
+
+multiExp :: (MultiplicativeMonoid a, Exponent a b, Foldable t) => a -> t b -> a
+multiExp a = foldl (\x y -> x * (a ^ y)) one
 
 --------------------------------------------------------------------------------
 
@@ -65,3 +98,9 @@ instance MultiplicativeSemigroup Integer where
 
 instance MultiplicativeMonoid Integer where
     one = 1
+
+instance ToBits Integer where
+    toBits 0 = []
+    toBits x
+        | x > 0     = (x `mod` 2) : toBits (x `div` 2)
+        | otherwise = error "toBits: Not defined for negative integers!"
