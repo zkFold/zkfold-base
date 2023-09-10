@@ -28,41 +28,56 @@ class Arithmetizable a b where
 instance Arithmetizable a a where
     arithmetize = id
 
--- TODO: move this elsewhere.
+-- | A finite field with a large order.
+-- It is used in the R1CS compiler for generating new variable indices.
+--
+-- TODO: move this elsewhere
 data BigField
 instance Finite BigField where
     order = 52435875175126190479447740508185965837690552500527637822603658699938581184513
 instance Prime BigField
 
--- | A rank-1 constraint system.
+-- | A rank-1 constraint system (R1CS).
+-- This type represents the result of a compilation of a function into a R1CS.
+--
+-- TODO: support functions that output objects representable by multiple R1CS variables.
 data R1CS a = R1CS
     {
         r1csMatrices :: Map Integer (Map Integer a, Map Integer a, Map Integer a),
+        -- ^ The R1CS matrices
         r1csWitness  :: Map Integer a -> Map Integer a,
+        -- ^ The witness generation function
         r1csOutput   :: Integer
+        -- ^ The current variable index
     }
 
--- | The number of constraints in the system.
+-- | Calculates the number of constraints in the system.
 r1csSizeN :: R1CS a -> Integer
 r1csSizeN = length . r1csMatrices
 
--- | The number of variables in the system.
+-- | Calculates the number of variables in the system.
 r1csSizeM :: R1CS a -> Integer
 r1csSizeM r = length $ nub $ concatMap (keys . f) (elems $ r1csMatrices r)
     where f (a, b, c) = a `union` b `union` c
 
+-- | The input variable.
 r1csX :: FiniteField a => R1CS a
 r1csX = R1CS empty (insert 0 one) 1
 
+-- | Compiles a function into a R1CS.
 r1csCompile :: forall c . (FiniteField c, Eq c, ToBits c) =>
     (forall a . (FiniteField a) => a -> a) -> R1CS c
 r1csCompile f = f (r1csX :: R1CS c)
 
--- TODO: Implement this.
+-- | Optimizes the constraint system.
+--
+-- TODO: Implement this
 r1csOptimize :: R1CS a -> R1CS a
 r1csOptimize = undefined
 
--- TODO: Move this elsewhere.
+-- | Prints the constraint system, the witness, and the output on a given input.
+--
+-- TODO: Move this elsewhere
 r1csPrint :: (Show a) => R1CS a -> a -> IO ()
 r1csPrint r x = do
     let m = elems (r1csMatrices r)
@@ -76,6 +91,13 @@ r1csPrint r x = do
     pPrint o
     putStr"Value: "
     pPrint $ w ! o
+
+------------------------------------- Instances -------------------------------------
+
+{-| To compile a function @f :: C a => a -> a@, we must define an instance @C (R1CS a)@.
+    Keep in mind that the more type constraints we impose on the polymorphic argument @a@,
+    the broader the class of functions that can be compiled.
+|-}
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
     r1 + r2 =
