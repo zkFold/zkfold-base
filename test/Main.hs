@@ -7,6 +7,15 @@ import           Prelude                            hiding (Num(..), (^))
 import           ZkFold.Crypto.Algebra.Class
 import           ZkFold.Crypto.Algebra.Field
 import           ZkFold.Crypto.Arithmetization.R1CS
+import           ZkFold.Crypto.EllipticCurve.Class 
+
+-- Tests with Elliptic Curve
+instance EllipticCurve Integer where
+  on_curve _ = True
+  generator = Point 0
+
+  add (Point p1) (Point p2) = Point (p1 + p2)
+  mult (Point p1) (Point p2) = Point (p1 * p2)
 
 -- TODO: move this elsewhere.
 data SmallField
