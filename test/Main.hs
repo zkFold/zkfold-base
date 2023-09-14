@@ -12,10 +12,10 @@ import           ZkFold.Crypto.EllipticCurve.Class
 -- Tests with Elliptic Curve
 instance EllipticCurve Integer where
   on_curve _ = True
-  generator = Point 0
+  generator = BaseField 0
 
-  add (Point p1) (Point p2) = Point (p1 + p2)
-  mult (Point p1) (Point p2) = Point (p1 * p2)
+  add (BaseField p1) (BaseField p2) = BaseField (p1 + p2)
+  mul (ScalarField p1) (BaseField p2) = BaseField (p1 * p2)
 
 -- TODO: move this elsewhere.
 data SmallField

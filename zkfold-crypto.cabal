@@ -81,6 +81,7 @@ library
       base                          >= 4.9 && < 5,
       containers                                 ,
       pretty-simple                              ,
+      poly                                       ,
     hs-source-dirs: src
 
 test-suite zkfold-crypto-test
