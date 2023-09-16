@@ -1,17 +1,20 @@
 {-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Crypto.Algebra.Field (
+module ZkFold.Crypto.Algebra.Basic.Field (
     Zp,
     toZp,
     fromZp
     ) where
 
-import           Prelude                     hiding (Num(..), length)
+import           Prelude                           hiding (Num(..), length)
 
-import           ZkFold.Crypto.Algebra.Class
+import           ZkFold.Crypto.Algebra.Basic.Class
 
-newtype Zp p = Zp { fromZp :: Integer }
+newtype Zp p = Zp Integer
     deriving (Show)
+
+fromZp :: Zp p -> Integer
+fromZp (Zp a) = a
 
 toZp :: forall p . Prime p => Integer -> Zp p
 toZp a = Zp $ a `mod` order @p

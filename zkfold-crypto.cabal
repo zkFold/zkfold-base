@@ -61,12 +61,13 @@ common options
 library
     import: options
     exposed-modules:
-      ZkFold.Crypto.Algebra.Class
-      ZkFold.Crypto.Algebra.Field
+      ZkFold.Crypto.Algebra.Basic.Class
+      ZkFold.Crypto.Algebra.Basic.Field
+      ZkFold.Crypto.Algebra.EllipticCurve.BLS12_381
+      ZkFold.Crypto.Algebra.EllipticCurve.Class
+      ZkFold.Crypto.Algebra.Symbolic.Class
       ZkFold.Crypto.Arithmetization.Plonk
       ZkFold.Crypto.Arithmetization.R1CS
-      ZkFold.Crypto.EllipticCurve.BLS12_381
-      ZkFold.Crypto.EllipticCurve.Class
       ZkFold.Crypto.Protocol.ARK.BabyHyrax
       ZkFold.Crypto.Protocol.ARK.HyperPlonk
       ZkFold.Crypto.Protocol.ARK.Lasso

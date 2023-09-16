@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module ZkFold.Crypto.Algebra.Class where
+module ZkFold.Crypto.Algebra.Basic.Class where
 
 import           Prelude hiding (Num(..), (^), (/), negate)
 import qualified Prelude as Haskell

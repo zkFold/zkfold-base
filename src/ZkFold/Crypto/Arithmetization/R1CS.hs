@@ -1,7 +1,6 @@
 {-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Crypto.Arithmetization.R1CS (
-        Arithmetizable(..),
         BigField,
         R1CS,
         r1csSizeN,
@@ -12,21 +11,14 @@ module ZkFold.Crypto.Arithmetization.R1CS (
         r1csPrint
     ) where
 
-import           Data.List                   (nub)
-import           Data.Map                    hiding (map, foldr)
-import           Prelude                     hiding (Num(..), (+), (^), product, length)
-import           Text.Pretty.Simple          (pPrint)
+import           Data.List                         (nub)
+import           Data.Map                          hiding (map, foldr)
+import           Prelude                           hiding (Num(..), (+), (^), product, length)
+import           Text.Pretty.Simple                (pPrint)
 
-import           ZkFold.Crypto.Algebra.Class
-import           ZkFold.Crypto.Algebra.Field
-import           ZkFold.Prelude              (length)
-
--- TODO: Move this elsewhere.
-class Arithmetizable a b where
-    arithmetize :: b -> a
-
-instance Arithmetizable a a where
-    arithmetize = id
+import           ZkFold.Crypto.Algebra.Basic.Class
+import           ZkFold.Crypto.Algebra.Basic.Field
+import           ZkFold.Prelude                    (length)
 
 -- | A finite field with a large order.
 -- It is used in the R1CS compiler for generating new variable indices.
@@ -39,6 +31,10 @@ instance Prime BigField
 
 -- | A rank-1 constraint system (R1CS).
 -- This type represents the result of a compilation of a function into a R1CS.
+--
+-- To compile a function @/f :: C a => a -> a/@, we must define an instance @/C (R1CS a)/@.
+-- Keep in mind that the more type constraints we impose on the polymorphic argument @/a/@,
+-- the broader the class of functions that can be compiled.
 --
 -- TODO: support functions that output objects representable by multiple R1CS variables.
 data R1CS a = R1CS
@@ -71,13 +67,13 @@ r1csCompile f = f (r1csX :: R1CS c)
 
 -- | Optimizes the constraint system.
 --
--- TODO: Implement this
+-- TODO: Implement this.
 r1csOptimize :: R1CS a -> R1CS a
 r1csOptimize = undefined
 
 -- | Prints the constraint system, the witness, and the output on a given input.
 --
--- TODO: Move this elsewhere
+-- TODO: Move this elsewhere.
 r1csPrint :: (Show a) => R1CS a -> a -> IO ()
 r1csPrint r x = do
     let m = elems (r1csMatrices r)
@@ -94,10 +90,8 @@ r1csPrint r x = do
 
 ------------------------------------- Instances -------------------------------------
 
-{-| To compile a function @f :: C a => a -> a@, we must define an instance @C (R1CS a)@.
-    Keep in mind that the more type constraints we impose on the polymorphic argument @a@,
-    the broader the class of functions that can be compiled.
-|-}
+instance (FiniteField a) => Finite (R1CS a) where
+    order = order @a
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
     r1 + r2 =
@@ -169,9 +163,6 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
                     y1 = a ! x1
                 in insert (r1csOutput r') (invert y1) a
         }
-
-instance (FiniteField a) => Finite (R1CS a) where
-    order = order @a
 
 ------------------------------------- Internal -------------------------------------
 
