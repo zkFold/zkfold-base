@@ -3,23 +3,40 @@
 
 module ZkFold.Crypto.Algebra.Symbolic.Class where
 
-import           Prelude                   ((.), const)
+import           Prelude                   (Monoid (..), (.), const)
 
 -- | A class for symbolic computations.
--- The first argument is the type of the symbolic object.
--- The second argument is the type of the object for which we want to compute the symbolic object.
-class Symbolic a f where
-    -- | Computes the symbolic object.
-    -- The first argument is the object for which we want to compute the symbolic object.
-    -- The second argument is the symbolic computation context.
-    symbolic  :: f -> a -> a
+-- The first argument is the symbolic computation context. It contains symbolic variables and relations between them.
+-- The second argument is the type of object for which we want to compute a symbolic representation.
+class Monoid ctx =>  Symbolic ctx t where
+    {-# MINIMAL symbolic', newSymbol, substitute #-}
 
-    -- | Constructs an object from the symbolic computation context.
-    newSymbol :: a -> f
+    type SymbolOf ctx t
 
-instance (Symbolic a f, Symbolic a b) => Symbolic a (b -> f) where
-    symbolic f ctx =
-        let x = newSymbol ctx
-        in symbolic (f x) (symbolic @a @b x ctx)
+    type ValueOf t
+
+    -- | Computes the symbolic representation using the supplied symbolic computation context.
+    symbolic'  :: t -> ctx -> ctx
+
+    -- | Computes the symbolic representation using the empty symbolic computation context.
+    symbolic   :: t -> ctx
+    symbolic x = symbolic' x mempty
+
+    -- | Constructs a new object from the given symbolic computation context.
+    newSymbol  :: ctx -> t
+
+    -- | Substitutes the given symbolic variable with the given value in the given symbolic computation context.
+    substitute :: ctx -> SymbolOf ctx t -> ValueOf t -> ctx
+
+instance (Symbolic ctx f, Symbolic ctx a) => Symbolic ctx (a -> f) where
+    type SymbolOf ctx (a -> f) = SymbolOf ctx a
     
-    newSymbol = const . newSymbol @a @f
+    type ValueOf (a -> f) = ValueOf a
+
+    symbolic' f ctx =
+        let x = newSymbol ctx
+        in symbolic' (f x) (symbolic' @ctx @a x ctx)
+    
+    newSymbol = const . newSymbol @ctx @f
+
+    substitute ctx x v = substitute @ctx @a ctx x v
