@@ -54,6 +54,7 @@ common options
       RecordWildCards,
       ScopedTypeVariables,
       StandaloneDeriving,
+      StandaloneKindSignatures,
       TupleSections,
       TypeFamilies,
       ViewPatterns

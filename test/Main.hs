@@ -2,10 +2,11 @@
 
 module Main where
 
-import           Prelude                            hiding (Num(..), (^))
+import           Prelude                              hiding (Num(..), (^))
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
+import           ZkFold.Crypto.Algebra.Symbolic.Class (Symbolic(..))
 import           ZkFold.Crypto.Arithmetization.R1CS
 
 -- TODO: move this elsewhere.
@@ -23,9 +24,11 @@ f x = x ^ (2 :: Integer) + c 3 * x + c 5
 
 main :: IO ()
 main = do
-    let r = r1csCompile f :: R1CS (Zp SmallField)
-        x = toZp 3 :: Zp SmallField
-    r1csPrint r x
-    print (f x :: Zp SmallField)
+    let 
+        r = symbolic (f @(R1CS (Zp SmallField)))
+        x = toZp 3
+
+    r1csPrint $ eval @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField)) r x
+    print $ f x
 
     print @String "Success!"
