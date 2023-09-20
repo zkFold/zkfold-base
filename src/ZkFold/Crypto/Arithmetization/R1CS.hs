@@ -70,6 +70,10 @@ r1csPrint r = do
         i = r1csInput r
         w = r1csWitness r empty
         o = r1csOutput r
+    putStr "System size: "
+    pPrint $ r1csSizeN r
+    putStr "Variable size: "
+    pPrint $ r1csSizeM r
     putStr "Matrices: "
     pPrint m
     putStr "Input: "
@@ -201,6 +205,16 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
                 let a = r1csWitness r w
                     y1 = a ! x1
                 in insert (head $ r1csOutput r') (invert y1) a
+        }
+
+instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1CS a) where
+    fromConstant c =
+        let x = fromConstant c
+            con = \z -> (empty, empty, fromList [(0, x), (z, one)])
+            r' = r1csAddConstraint mempty con
+        in r'
+        {
+            r1csWitness = insert (head $ r1csOutput r') x . r1csWitness mempty
         }
 
 ------------------------------------- Internal -------------------------------------

@@ -15,12 +15,10 @@ instance Finite SmallField where
     order = 7
 instance Prime SmallField
 
-c :: forall a . (FiniteField a) => Integer -> a
-c x = foldl (+) zero $ map (const one) [1..x]
-
 -- f = x^2 + 3 x + 5
-f :: forall a . (FiniteField a) => a -> a
+f :: forall a . (FromConstant Integer a, FiniteField a) => a -> a
 f x = x ^ (2 :: Integer) + c 3 * x + c 5
+    where c = fromConstant @Integer @a
 
 main :: IO ()
 main = do

@@ -51,5 +51,8 @@ instance Prime p => MultiplicativeGroup (Zp p) where
             | otherwise = f (x', y') (x - q * x', y - q * y')
             where q = x `div` x'
 
+instance Prime p => FromConstant Integer (Zp p) where
+    fromConstant = toZp @p
+
 instance Prime p => ToBits (Zp p) where
     toBits (Zp a) = map Zp $ toBits a
