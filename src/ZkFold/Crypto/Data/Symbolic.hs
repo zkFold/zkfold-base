@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module ZkFold.Crypto.Algebra.Symbolic.Class where
+module ZkFold.Crypto.Data.Symbolic where
 
 import           Prelude                   (Monoid (..), undefined)
 

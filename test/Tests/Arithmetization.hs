@@ -3,14 +3,16 @@
 
 module Tests.Arithmetization (testArithmetization) where
 
-import           Data.List                            (find)
-import           Prelude                              hiding (Num(..), (^), (/))
+import           Data.List                                   (find)
+import           Prelude                                     hiding (not, Num(..), Eq(..), (^), (/))
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
-import           ZkFold.Crypto.Algebra.Symbolic.Bool  (SymbolicEq (..), SymbolicBool)
-import           ZkFold.Crypto.Algebra.Symbolic.Class (Symbolic(..))
-import           ZkFold.Crypto.Arithmetization.R1CS
+import           ZkFold.Crypto.Protocol.Arithmetization.R1CS
+import           ZkFold.Crypto.Data.Bool                     (GeneralizedBoolean(..), SymbolicBool (..))
+import           ZkFold.Crypto.Data.Conditional              (GeneralizedConditional(..))
+import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..))
+import           ZkFold.Crypto.Data.Symbolic                 (Symbolic(..))
 
 data SmallField
 instance Finite SmallField where
@@ -18,13 +20,13 @@ instance Finite SmallField where
 instance Prime SmallField
 
 -- f x = if (2 / x == 3) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)
-testFunc :: forall a b . (FromConstant Integer a, FiniteField a, SymbolicEq b a) => a -> a
+testFunc :: forall a b . (FromConstant Integer a, FiniteField a, GeneralizedEq b a, GeneralizedConditional b a) => a -> a
 testFunc x =
     let c  = fromConstant @Integer @a
         g1 = x ^ (2 :: Integer) + c 3 * x + c 5
         g2 = c 4 * x ^ (3 :: Integer)
         g3 = c 2 / x
-    in symIf (g3 $==$ c 3 :: b) g1 g2
+    in (g3 == c 3 :: b) ? g1 $ g2 
 
 testResult :: Zp SmallField -> Bool
 testResult x =

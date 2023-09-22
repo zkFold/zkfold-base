@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications    #-}
 
-module ZkFold.Crypto.Arithmetization.R1CS (
+module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
         BigField,
         R1CS,
         r1csSizeN,
@@ -17,7 +17,7 @@ import           Text.Pretty.Simple                   (pPrint)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
-import           ZkFold.Crypto.Algebra.Symbolic.Class (Symbolic (..))
+import           ZkFold.Crypto.Data.Symbolic          (Symbolic (..))
 import           ZkFold.Prelude                       (length)
 
 -- | A finite field with a large order.
@@ -92,8 +92,6 @@ r1csPrint r = do
     pPrint o
     putStr"Value: "
     pPrint v
-
-
 
 ------------------------------------- Instances -------------------------------------
 

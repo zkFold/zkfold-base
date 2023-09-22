@@ -46,7 +46,7 @@ type Semiring a = (AdditiveMonoid a, MultiplicativeMonoid a)
 
 type Ring a = (AdditiveGroup a, MultiplicativeMonoid a)
 
--- NOTE: by convention, division by zero should return zero.
+-- NOTE: by convention, division by zero returns zero.
 type Field a = (AdditiveGroup a, MultiplicativeGroup a)
 
 class Finite a where
