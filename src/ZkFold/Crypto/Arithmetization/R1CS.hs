@@ -116,7 +116,7 @@ instance (FiniteField a, Eq a) => Symbolic (R1CS a) (R1CS a) where
 
     symbolic' = (<>)
 
-    newSymbol r =
+    symInput r =
         let ins = r1csInput r
             s   = if null ins then 1 else maximum (r1csInput r) + 1
         in r
@@ -124,6 +124,8 @@ instance (FiniteField a, Eq a) => Symbolic (R1CS a) (R1CS a) where
             r1csInput  = ins ++ [s],
             r1csOutput = [s]
         }
+
+    symVar = id
 
     -- TODO: make this safe
     eval r x =
@@ -139,6 +141,7 @@ instance (FiniteField a) => Finite (R1CS a) where
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
     r1 + r2 =
+        -- TODO: this should be extended to lists
         let r   = r1 <> r2
             x1  = head $ r1csOutput r1
             x2  = head $ r1csOutput r2
@@ -164,6 +167,7 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a) where
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a) where
     negate r =
+        -- TODO: this should be extended to lists
         let x1 = head $ r1csOutput r
             con = \z -> (empty, empty, fromList [(x1, one), (z, one)])
             r' = r1csAddConstraint r con
@@ -177,6 +181,7 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a) where
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a) where
     r1 * r2 =
+        -- TODO: this should be extended to lists
         let r  = r1 <> r2
             x1 = head $ r1csOutput r1
             x2 = head $ r1csOutput r2
@@ -196,21 +201,27 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a) where
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
     invert r =
-        let x1 = head $ r1csOutput r
-            con = \z -> (singleton x1 one, singleton z one, singleton 0 one)
-            r' = r1csAddConstraint r con
-        in r'
+        -- TODO: this should be extended to lists
+        let x1   = head $ r1csOutput r
+            con  = \z -> (singleton x1 one, singleton z one, empty)
+            r'   = r1csAddConstraint r con
+            err  = head $ r1csOutput r'
+            con' = \z -> (singleton x1 one, singleton z one, fromList [(0, one), (err, negate one)])
+            r''   = r1csAddConstraint r' con'
+        in r''
         {
             r1csWitness = \w ->
                 let a = r1csWitness r w
+                    i  = head $ r1csOutput r''
                     y1 = a ! x1
-                in insert (head $ r1csOutput r') (invert y1) a
+                    z1 = if y1 == zero then one else zero
+                in fromList [(i, invert y1), (err, z1)] `union` a
         }
 
 instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1CS a) where
     fromConstant c =
         let x = fromConstant c
-            con = \z -> (empty, empty, fromList [(0, x), (z, one)])
+            con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
             r' = r1csAddConstraint mempty con
         in r'
         {

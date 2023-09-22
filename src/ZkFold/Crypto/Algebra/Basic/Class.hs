@@ -5,7 +5,7 @@ module ZkFold.Crypto.Algebra.Basic.Class where
 import           Prelude hiding (Num(..), (^), (/), negate)
 import qualified Prelude as Haskell
 
-infixl 7 *
+infixl 7 *, /
 infixl 6 +, -
 
 class AdditiveSemigroup a where
@@ -46,7 +46,7 @@ type Semiring a = (AdditiveMonoid a, MultiplicativeMonoid a)
 
 type Ring a = (AdditiveGroup a, MultiplicativeMonoid a)
 
--- Note: we expect division/inversion to be partial, i.e. throw an error on zero.
+-- NOTE: by convention, division by zero should return zero.
 type Field a = (AdditiveGroup a, MultiplicativeGroup a)
 
 class Finite a where
