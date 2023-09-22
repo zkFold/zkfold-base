@@ -6,6 +6,7 @@ module ZkFold.Crypto.Arithmetization.R1CS (
         r1csSizeN,
         r1csSizeM,
         r1csOptimize,
+        r1csValue,
         r1csPrint
     ) where
 
@@ -61,6 +62,12 @@ r1csSizeM r = length $ nub $ concatMap (keys . f) (elems $ r1csMatrices r)
 r1csOptimize :: R1CS a -> R1CS a
 r1csOptimize = undefined
 
+r1csValue :: R1CS a -> [a]
+r1csValue r =
+    let w = r1csWitness r empty
+        o = r1csOutput r
+    in map (w !) o
+
 -- | Prints the constraint system, the witness, and the output on a given input.
 --
 -- TODO: Move this elsewhere.
@@ -70,6 +77,7 @@ r1csPrint r = do
         i = r1csInput r
         w = r1csWitness r empty
         o = r1csOutput r
+        v = r1csValue r
     putStr "System size: "
     pPrint $ r1csSizeN r
     putStr "Variable size: "
@@ -83,7 +91,9 @@ r1csPrint r = do
     putStr "Output: "
     pPrint o
     putStr"Value: "
-    pPrint $ map (w !) o
+    pPrint v
+
+
 
 ------------------------------------- Instances -------------------------------------
 

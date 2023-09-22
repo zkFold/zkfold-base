@@ -89,8 +89,10 @@ library
 test-suite zkfold-crypto-test
     import: options
     type: exitcode-stdio-1.0
-    main-is: Main.hs
     ghc-options: -rtsopts
+    main-is: Main.hs
+    other-modules:
+      Tests.Arithmetization
     build-depends:
       base                          >= 4.9 && < 5,
       zkfold-crypto                              ,
