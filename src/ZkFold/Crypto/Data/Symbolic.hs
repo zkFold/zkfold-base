@@ -3,7 +3,7 @@
 
 module ZkFold.Crypto.Data.Symbolic where
 
-import           Prelude                   (Monoid (..), undefined)
+import           Prelude                   (Monoid (..), undefined, Integer)
 
 -- | A class for symbolic computations.
 -- The first argument is the symbolic computation context. It contains symbolic variables and relations between them.
@@ -13,8 +13,6 @@ class Monoid ctx => Symbolic ctx t where
 
     -- | The value of the object.
     type ValueOf t
-
-    type InputMap ctx t
 
     type WitnessMap ctx t
 
@@ -27,13 +25,13 @@ class Monoid ctx => Symbolic ctx t where
     compile    :: t -> ctx
     compile x = merge x mempty
 
-    assignment :: ctx -> WitnessMap ctx t -> ctx
+    assignment :: [Integer] -> [Integer] -> WitnessMap ctx t -> ctx -> ctx
 
     -- | Evaluates the symbolic representation using the supplied value.
     apply      :: ctx -> ValueOf t -> ctx
     -- apply ctx x = assignment ctx $ inputMap ctx x
 
-    constraint :: ctx -> Constraint ctx t -> ctx
+    constraint :: Constraint ctx t -> ctx -> ctx
 
     -- | Constructs a new symbolic input object from the given symbolic computation context.
     input      :: ctx -> t
@@ -45,8 +43,6 @@ class Monoid ctx => Symbolic ctx t where
 
 instance (Symbolic ctx f, Symbolic ctx a) => Symbolic ctx (a -> f) where
     type ValueOf (a -> f) = ValueOf a -> ValueOf f
-
-    type InputMap ctx (a -> f) = ()
 
     type WitnessMap ctx (a -> f) = ()
 

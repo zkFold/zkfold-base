@@ -19,6 +19,7 @@ import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
 import           ZkFold.Crypto.Data.Symbolic          (Symbolic (..))
 import           ZkFold.Prelude                       (length)
+import ZkFold.Crypto.Data.Conditional (bool)
 
 -- | A finite field with a large order.
 -- It is used in the R1CS compiler for generating new variable indices.
@@ -122,20 +123,22 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a) where
 instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
     type ValueOf (R1CS a) = a
 
-    type InputMap (R1CS a) (R1CS a) = Map Integer a
-
-    type WitnessMap (R1CS a) (R1CS a) = Map Integer a
+    type WitnessMap (R1CS a) (R1CS a) = [a] -> [a]
 
     type Constraint (R1CS a) (R1CS a) = Integer -> (Map Integer a, Map Integer a, Map Integer a)
 
     merge = (<>)
 
-    assignment r w = r
+    -- TODO: forbid reassignment of variables
+    assignment zs xs f r = r
         {
-            r1csWitness = (`union` w)
+            r1csWitness = \i -> 
+                let w  = r1csWitness r i
+                    ys = map (w !) xs
+                in fromList (zip zs (f ys)) `union` w
         }
 
-    constraint r con =
+    constraint con r =
         let x = r1csNewVariable (con $ -1)
         in r
         {
@@ -178,38 +181,22 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
             x1  = head $ r1csOutput r1
             x2  = head $ r1csOutput r2
             con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)]) 
-            r'  = constraint @(R1CS a) @(R1CS a) r con
-        in r'
-        {
-            r1csWitness = \w ->
-                let a = r1csWitness r w
-                    y1 = a ! x1
-                    y2 = a ! x2
-                in insert (head $ r1csOutput r') (y1 + y2) a
-        }
+            r'  = constraint @(R1CS a) @(R1CS a) con r
+        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [x1, x2] (\xs -> [Prelude.foldl (+) zero xs]) r'
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a) where
     zero =
         let con = \z -> (empty, empty, fromList [(z, one)])
-            r' = constraint @(R1CS a) @(R1CS a) mempty con
-        in r'
-        {
-            r1csWitness = insert (head $ r1csOutput r') zero . r1csWitness mempty
-        }
+            r' = constraint @(R1CS a) @(R1CS a) con mempty
+        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [] (const [zero]) r'
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a) where
     negate r =
         -- TODO: this should be extended to lists
         let x1 = head $ r1csOutput r
             con = \z -> (empty, empty, fromList [(x1, one), (z, one)])
-            r' = constraint @(R1CS a) @(R1CS a) r con
-        in r'
-        {
-            r1csWitness = \w ->
-                let a = r1csWitness r w
-                    y1 = a ! x1
-                in insert (head $ r1csOutput r') (negate y1) a
-        }
+            r' = constraint @(R1CS a) @(R1CS a) con r
+        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [x1] (\xs -> [negate $ head xs]) r'
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a) where
     r1 * r2 =
@@ -218,15 +205,8 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a) whe
             x1 = head $ r1csOutput r1
             x2 = head $ r1csOutput r2
             con = \z -> (singleton x1 one, singleton x2 one, singleton z one)
-            r' = constraint @(R1CS a) @(R1CS a) r con
-        in r'
-        {
-            r1csWitness = \w ->
-                let a = r1csWitness r w
-                    y1 = a ! x1
-                    y2 = a ! x2
-                in insert (head $ r1csOutput r') (y1 * y2) a
-        }
+            r' = constraint @(R1CS a) @(R1CS a) con r
+        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [x1, x2] (\xs -> [Prelude.foldl (*) one xs]) r'
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a) where
     one = mempty { r1csOutput = [0] }
@@ -236,29 +216,18 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
         -- TODO: this should be extended to lists
         let x1   = head $ r1csOutput r
             con  = \z -> (singleton x1 one, singleton z one, empty)
-            r'   = constraint @(R1CS a) @(R1CS a) r con
+            r'   = constraint @(R1CS a) @(R1CS a) con r
             err  = head $ r1csOutput r'
             con' = \z -> (singleton x1 one, singleton z one, fromList [(0, one), (err, negate one)])
-            r''   = constraint @(R1CS a) @(R1CS a) r' con'
-        in r''
-        {
-            r1csWitness = \w ->
-                let a = r1csWitness r w
-                    i  = head $ r1csOutput r''
-                    y1 = a ! x1
-                    z1 = if y1 == zero then one else zero
-                in fromList [(i, invert y1), (err, z1)] `union` a
-        }
+            r''   = constraint @(R1CS a) @(R1CS a) con' r'
+        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'', err] [x1] (\xs -> let y = head xs in [invert y, bool zero one (y == zero)]) r''
 
 instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1CS a) where
     fromConstant c =
         let x = fromConstant c
             con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
-            r' = constraint @(R1CS a) @(R1CS a) mempty con
-        in r'
-        {
-            r1csWitness = insert (head $ r1csOutput r') x . r1csWitness mempty
-        }
+            r' = constraint @(R1CS a) @(R1CS a) con mempty
+        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [] (const [x]) r'
 
 ------------------------------------- Internal -------------------------------------
 
@@ -269,12 +238,3 @@ r1csNewVariable (a, b, c) = g a + g b + g c
         z         = toZp 891752917250912079751095709127490 :: Zp BigField
         f (x, y)  = multiExp z (map (toZp :: Integer -> Zp BigField) x) + multiExp z y
         g m       = fromZp $ f $ unzip $ toList m
-
--- r1csAddConstraint :: (Eq a, ToBits a) => R1CS a -> (Integer -> (Map Integer a, Map Integer a, Map Integer a)) -> R1CS a
--- r1csAddConstraint r con =
---     let x = r1csNewVariable (con $ -1)
---     in r
---     {
---         r1csMatrices = insert (r1csSizeN r) (con x) (r1csMatrices r),
---         r1csOutput   = [x]
---     }
