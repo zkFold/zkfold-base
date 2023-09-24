@@ -119,12 +119,31 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a) where
             r1csOutput   = []
         }
 
-instance (FiniteField a, Eq a) => Symbolic (R1CS a) (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
     type ValueOf (R1CS a) = a
 
-    symbolic' = (<>)
+    type InputMap (R1CS a) (R1CS a) = Map Integer a
 
-    symInput r =
+    type WitnessMap (R1CS a) (R1CS a) = Map Integer a
+
+    type Constraint (R1CS a) (R1CS a) = Integer -> (Map Integer a, Map Integer a, Map Integer a)
+
+    merge = (<>)
+
+    assignment r w = r
+        {
+            r1csWitness = (`union` w)
+        }
+
+    constraint r con =
+        let x = r1csNewVariable (con $ -1)
+        in r
+        {
+            r1csMatrices = insert (r1csSizeN r) (con x) (r1csMatrices r),
+            r1csOutput   = [x]
+        }
+
+    input r =
         let ins = r1csInput r
             s   = if null ins then 1 else maximum (r1csInput r) + 1
         in r
@@ -133,16 +152,21 @@ instance (FiniteField a, Eq a) => Symbolic (R1CS a) (R1CS a) where
             r1csOutput = [s]
         }
 
-    symVar = id
+    extract = id
 
     -- TODO: make this safe
-    eval r x =
+    apply r x =
         let ins = r1csInput r
         in r
         {
             r1csInput = tail ins,
             r1csWitness = r1csWitness r . insert (head ins) x
         }
+
+    eval ctx =
+        let w = r1csWitness ctx empty
+            o = r1csOutput ctx
+        in w ! head o
 
 instance (FiniteField a) => Finite (R1CS a) where
     order = order @a
@@ -153,8 +177,8 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
         let r   = r1 <> r2
             x1  = head $ r1csOutput r1
             x2  = head $ r1csOutput r2
-            con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)])
-            r'  = r1csAddConstraint r con
+            con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)]) 
+            r'  = constraint @(R1CS a) @(R1CS a) r con
         in r'
         {
             r1csWitness = \w ->
@@ -167,7 +191,7 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
 instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a) where
     zero =
         let con = \z -> (empty, empty, fromList [(z, one)])
-            r' = r1csAddConstraint mempty con
+            r' = constraint @(R1CS a) @(R1CS a) mempty con
         in r'
         {
             r1csWitness = insert (head $ r1csOutput r') zero . r1csWitness mempty
@@ -178,7 +202,7 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a) where
         -- TODO: this should be extended to lists
         let x1 = head $ r1csOutput r
             con = \z -> (empty, empty, fromList [(x1, one), (z, one)])
-            r' = r1csAddConstraint r con
+            r' = constraint @(R1CS a) @(R1CS a) r con
         in r'
         {
             r1csWitness = \w ->
@@ -194,7 +218,7 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a) whe
             x1 = head $ r1csOutput r1
             x2 = head $ r1csOutput r2
             con = \z -> (singleton x1 one, singleton x2 one, singleton z one)
-            r' = r1csAddConstraint r con
+            r' = constraint @(R1CS a) @(R1CS a) r con
         in r'
         {
             r1csWitness = \w ->
@@ -212,10 +236,10 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
         -- TODO: this should be extended to lists
         let x1   = head $ r1csOutput r
             con  = \z -> (singleton x1 one, singleton z one, empty)
-            r'   = r1csAddConstraint r con
+            r'   = constraint @(R1CS a) @(R1CS a) r con
             err  = head $ r1csOutput r'
             con' = \z -> (singleton x1 one, singleton z one, fromList [(0, one), (err, negate one)])
-            r''   = r1csAddConstraint r' con'
+            r''   = constraint @(R1CS a) @(R1CS a) r' con'
         in r''
         {
             r1csWitness = \w ->
@@ -230,7 +254,7 @@ instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1
     fromConstant c =
         let x = fromConstant c
             con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
-            r' = r1csAddConstraint mempty con
+            r' = constraint @(R1CS a) @(R1CS a) mempty con
         in r'
         {
             r1csWitness = insert (head $ r1csOutput r') x . r1csWitness mempty
@@ -246,11 +270,11 @@ r1csNewVariable (a, b, c) = g a + g b + g c
         f (x, y)  = multiExp z (map (toZp :: Integer -> Zp BigField) x) + multiExp z y
         g m       = fromZp $ f $ unzip $ toList m
 
-r1csAddConstraint :: (Eq a, ToBits a) => R1CS a -> (Integer -> (Map Integer a, Map Integer a, Map Integer a)) -> R1CS a
-r1csAddConstraint r con =
-    let x = r1csNewVariable (con $ -1)
-    in r
-    {
-        r1csMatrices = insert (r1csSizeN r) (con x) (r1csMatrices r),
-        r1csOutput   = [x]
-    }
+-- r1csAddConstraint :: (Eq a, ToBits a) => R1CS a -> (Integer -> (Map Integer a, Map Integer a, Map Integer a)) -> R1CS a
+-- r1csAddConstraint r con =
+--     let x = r1csNewVariable (con $ -1)
+--     in r
+--     {
+--         r1csMatrices = insert (r1csSizeN r) (con x) (r1csMatrices r),
+--         r1csOutput   = [x]
+--     }

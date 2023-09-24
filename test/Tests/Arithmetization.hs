@@ -30,8 +30,8 @@ testFunc x =
 
 testResult :: Zp SmallField -> Bool
 testResult x =
-    let r = symbolic (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
-        v = r1csValue $ eval @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField)) r x
+    let r = compile (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
+        v = r1csValue $ apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField)) r x
     in head v == testFunc @(Zp SmallField) @Bool x
 
 testArithmetization :: IO ()
@@ -41,9 +41,9 @@ testArithmetization = do
     case find (not . snd) res of
         Nothing     -> print @String "Success!"
         Just (i, _) -> do
-            let r = symbolic (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
+            let r = compile (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
                 x = toZp i
             print @String $ "Failure at " ++ show i ++ "!"
 
-            r1csPrint $ eval @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField)) r x
+            r1csPrint $ apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField)) r x
             print $ testFunc @(Zp SmallField) @Bool x

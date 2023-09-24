@@ -22,6 +22,6 @@ instance GeneralizedConditional Bool a where
 
 instance (Symbolic ctx a, FiniteField ctx) => GeneralizedConditional (SymbolicBool ctx) a where
     bool t f (SymbolicBool b) =
-        let t' = symbolic' t b
-            f' = symbolic' f b
-        in symVar $ b * t' + (one - b) * f'
+        let t' = merge t b
+            f' = merge f b
+        in extract $ b * t' + (one - b) * f'

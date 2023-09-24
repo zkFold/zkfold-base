@@ -19,9 +19,9 @@ instance Eq a => GeneralizedEq Bool a where
 
 instance (Symbolic ctx a, FiniteField ctx) => GeneralizedEq (SymbolicBool ctx) a where
     x == y =
-        let z = symbolic x - symbolic y
+        let z = compile x - compile y
         in SymbolicBool $ one - z / z
 
     x /= y =
-        let z = symbolic x - symbolic y
+        let z = compile x - compile y
         in SymbolicBool $ z / z
