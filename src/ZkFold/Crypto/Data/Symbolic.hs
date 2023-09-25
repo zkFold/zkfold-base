@@ -2,8 +2,8 @@
 
 module ZkFold.Crypto.Data.Symbolic where
 
-import           Control.Monad.State       (State, execState, MonadState (..))
-import           Prelude                   (Monoid (..), undefined)
+import           Control.Monad.State       (State, execState, MonadState (..), mapM)
+import           Prelude                   (Monoid (..), undefined, concat, (<$>))
 
 -- | A class for symbolic computations.
 -- The first argument is the symbolic computation context. It contains symbolic variables and relations between them.
@@ -16,18 +16,16 @@ class Monoid ctx => Symbolic ctx t where
 
     type InputOf t
 
-    type WitnessMap ctx t
-
     type Constraint ctx t
 
     -- | Computes the symbolic representation using the supplied symbolic computation context.
-    merge      :: t -> State ctx ctx
+    merge      :: t -> State ctx [ctx]
 
     -- | Computes the symbolic representation using the empty symbolic computation context.
     compile    :: t -> ctx
     compile x = execState (merge x) mempty
 
-    assignment :: WitnessMap ctx t -> State ctx ()
+    assignment :: (InputOf t -> ValueOf t) -> State ctx ()
 
     -- | Evaluates the symbolic representation using the supplied value.
     apply      :: ctx -> ValueOf t -> ctx
@@ -43,12 +41,37 @@ class Monoid ctx => Symbolic ctx t where
 
     eval       :: ctx -> InputOf t -> ValueOf t
 
+instance Symbolic ctx a => Symbolic ctx [a] where
+    type ValueOf [a] = [ValueOf a]
+
+    type InputOf [a] = [InputOf a]
+
+    type Constraint ctx [a] = Constraint ctx a
+
+    merge as = concat <$> mapM merge as
+
+    -- TODO: complete this definition
+    assignment = undefined
+
+    -- TODO: complete this definition
+    apply = undefined
+
+    -- TODO: complete this definition
+    constraint = undefined
+
+    -- TODO: complete this definition
+    input = undefined
+
+    -- TODO: complete this definition
+    extract = undefined
+
+    -- TODO: complete this definition
+    eval = undefined
+
 instance (Symbolic ctx f, Symbolic ctx a) => Symbolic ctx (a -> f) where
     type ValueOf (a -> f) = ValueOf a -> ValueOf f
 
     type InputOf (a -> f) = InputOf f
-
-    type WitnessMap ctx (a -> f) = ()
 
     type Constraint ctx (a -> f) = ()
 

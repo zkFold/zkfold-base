@@ -22,7 +22,7 @@ instance GeneralizedConditional Bool a where
     bool f t b = if b then t else f
 
 instance (Symbolic ctx a, FiniteField ctx) => GeneralizedConditional (SymbolicBool ctx) a where
-    bool f t (SymbolicBool b) = extract $ flip execState b $ do
-        f' <- merge f
-        t' <- merge t
-        put $ b * t' + (one - b) * f'
+    bool brFalse brTrue (SymbolicBool b) = extract $ flip execState b $ do
+        f' <- merge brFalse
+        t' <- merge brTrue
+        put $ mconcat $ zipWith (\f t -> b * t + (one - b) * f) f' t'

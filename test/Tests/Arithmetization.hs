@@ -32,8 +32,8 @@ testFunc x y =
 testResult :: Zp SmallField -> Zp SmallField -> Bool
 testResult x y =
     let r = compile (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
-        v = r1csValue $ foldl (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) r [[x], [y]]
-    in head v == testFunc @(Zp SmallField) @Bool x y
+        v = r1csValue $ foldl (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) r [x, y]
+    in v == testFunc @(Zp SmallField) @Bool x y
 
 testArithmetization :: IO ()
 testArithmetization = do
@@ -45,5 +45,5 @@ testArithmetization = do
             let r = compile (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
             print @String $ "Failure at " ++ show p ++ "!"
 
-            r1csPrint $ foldl (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) r [[x], [y]]
+            r1csPrint $ foldl (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) r [x, y]
             print $ testFunc @(Zp SmallField) @Bool x y
