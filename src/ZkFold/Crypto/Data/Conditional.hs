@@ -2,6 +2,7 @@ module ZkFold.Crypto.Data.Conditional (
     GeneralizedConditional (..) 
 ) where
 
+import           Control.Monad.State                   (MonadState (..), execState)
 import           Prelude                               hiding (Num(..), (/))
 
 import           ZkFold.Crypto.Algebra.Basic.Class
@@ -21,7 +22,7 @@ instance GeneralizedConditional Bool a where
     bool f t b = if b then t else f
 
 instance (Symbolic ctx a, FiniteField ctx) => GeneralizedConditional (SymbolicBool ctx) a where
-    bool f t (SymbolicBool b) =
-        let f' = merge f b
-            t' = merge t b
-        in extract $ b * t' + (one - b) * f'
+    bool f t (SymbolicBool b) = extract $ flip execState b $ do
+        f' <- merge f
+        t' <- merge t
+        put $ b * t' + (one - b) * f'

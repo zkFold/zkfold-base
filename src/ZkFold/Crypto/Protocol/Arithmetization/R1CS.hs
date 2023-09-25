@@ -10,16 +10,17 @@ module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
         r1csPrint
     ) where
 
+import           Control.Monad.State                  (MonadState (..), modify, execState)
 import           Data.List                            (nub)
-import           Data.Map                             hiding (null, map, foldr)
+import           Data.Map                             hiding (foldl, null, map, foldr)
 import           Prelude                              hiding (Num(..), (+), (^), product, length)
 import           Text.Pretty.Simple                   (pPrint)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
+import           ZkFold.Crypto.Data.Conditional       (bool)
 import           ZkFold.Crypto.Data.Symbolic          (Symbolic (..))
 import           ZkFold.Prelude                       (length)
-import ZkFold.Crypto.Data.Conditional (bool)
 
 -- | A finite field with a large order.
 -- It is used in the R1CS compiler for generating new variable indices.
@@ -121,30 +122,36 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a) where
         }
 
 instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
-    type ValueOf (R1CS a) = a
+    type ValueOf (R1CS a) = [a]
+
+    type InputOf (R1CS a) = Map Integer a
 
     type WitnessMap (R1CS a) (R1CS a) = [a] -> [a]
 
     type Constraint (R1CS a) (R1CS a) = Integer -> (Map Integer a, Map Integer a, Map Integer a)
 
-    merge = (<>)
+    merge r = do
+        r' <- get
+        let r'' = r <> r'
+        put r''
+        return r''
 
     -- TODO: forbid reassignment of variables
-    assignment zs xs f r = r
+    assignment rOut rArgs f = modify $ \r -> r
         {
-            r1csWitness = \i -> 
+            r1csWitness = \i ->
                 let w  = r1csWitness r i
-                    ys = map (w !) xs
-                in fromList (zip zs (f ys)) `union` w
+                    ys = concatMap (flip (eval @(R1CS a) @(R1CS a)) i) rArgs
+                in fromList (zip (r1csOutput rOut) (f ys)) `union` w
         }
 
-    constraint con r =
+    constraint con = modify (\r ->
         let x = r1csNewVariable (con $ -1)
         in r
         {
             r1csMatrices = insert (r1csSizeN r) (con x) (r1csMatrices r),
             r1csOutput   = [x]
-        }
+        }) >> get
 
     input r =
         let ins = r1csInput r
@@ -158,76 +165,75 @@ instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
     extract = id
 
     -- TODO: make this safe
-    apply r x =
+    apply r0 x = foldl (\r v ->
         let ins = r1csInput r
         in r
         {
             r1csInput = tail ins,
-            r1csWitness = r1csWitness r . insert (head ins) x
-        }
+            r1csWitness = r1csWitness r . insert (head ins) v
+        }) r0 x
 
-    eval ctx =
-        let w = r1csWitness ctx empty
+    eval ctx = \i ->
+        let w = r1csWitness ctx i
             o = r1csOutput ctx
-        in w ! head o
+        in map (w !) o
 
 instance (FiniteField a) => Finite (R1CS a) where
     order = order @a
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
-    r1 + r2 =
+    r1 + r2 = flip execState (r1 <> r2) $ do
         -- TODO: this should be extended to lists
-        let r   = r1 <> r2
-            x1  = head $ r1csOutput r1
+        let x1  = head $ r1csOutput r1
             x2  = head $ r1csOutput r2
-            con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)]) 
-            r'  = constraint @(R1CS a) @(R1CS a) con r
-        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [x1, x2] (\xs -> [Prelude.foldl (+) zero xs]) r'
+            con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)])
+        r' <- constraint @(R1CS a) @(R1CS a) con
+        assignment @(R1CS a) @(R1CS a) r' [r1, r2] (\xs -> [Prelude.foldl (+) zero xs])
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a) where
-    zero =
+    zero = flip execState mempty $ do
         let con = \z -> (empty, empty, fromList [(z, one)])
-            r' = constraint @(R1CS a) @(R1CS a) con mempty
-        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [] (const [zero]) r'
+        r' <- constraint @(R1CS a) @(R1CS a) con
+        assignment @(R1CS a) @(R1CS a) r' [] (const [zero])
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a) where
-    negate r =
+    negate r = flip execState r $ do
         -- TODO: this should be extended to lists
         let x1 = head $ r1csOutput r
             con = \z -> (empty, empty, fromList [(x1, one), (z, one)])
-            r' = constraint @(R1CS a) @(R1CS a) con r
-        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [x1] (\xs -> [negate $ head xs]) r'
+        r' <- constraint @(R1CS a) @(R1CS a) con
+        assignment @(R1CS a) @(R1CS a) r' [r] (\xs -> [negate $ head xs])
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a) where
-    r1 * r2 =
+    r1 * r2 = flip execState (r1 <> r2) $ do
         -- TODO: this should be extended to lists
-        let r  = r1 <> r2
-            x1 = head $ r1csOutput r1
+        let x1 = head $ r1csOutput r1
             x2 = head $ r1csOutput r2
             con = \z -> (singleton x1 one, singleton x2 one, singleton z one)
-            r' = constraint @(R1CS a) @(R1CS a) con r
-        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [x1, x2] (\xs -> [Prelude.foldl (*) one xs]) r'
+        r' <- constraint @(R1CS a) @(R1CS a) con
+        assignment @(R1CS a) @(R1CS a) r' [r1, r2] (\xs -> [Prelude.foldl (*) one xs])
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a) where
     one = mempty { r1csOutput = [0] }
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
-    invert r =
+    invert r = flip execState r $ do
         -- TODO: this should be extended to lists
         let x1   = head $ r1csOutput r
             con  = \z -> (singleton x1 one, singleton z one, empty)
-            r'   = constraint @(R1CS a) @(R1CS a) con r
-            err  = head $ r1csOutput r'
-            con' = \z -> (singleton x1 one, singleton z one, fromList [(0, one), (err, negate one)])
-            r''   = constraint @(R1CS a) @(R1CS a) con' r'
-        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'', err] [x1] (\xs -> let y = head xs in [invert y, bool zero one (y == zero)]) r''
+        r' <- constraint @(R1CS a) @(R1CS a) con
+        let err  = head $ r1csOutput r'
+        assignment @(R1CS a) @(R1CS a) r' [r] (\xs -> let y = head xs in [bool zero one (y == zero)])
+        let con' = \z -> (singleton x1 one, singleton z one, fromList [(0, one), (err, negate one)])
+        r'' <- constraint @(R1CS a) @(R1CS a) con'
+        assignment @(R1CS a) @(R1CS a) r'' [r] (\xs -> let y = head xs in [invert y])
 
 instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1CS a) where
-    fromConstant c =
+    fromConstant c = flip execState mempty $ do
         let x = fromConstant c
             con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
-            r' = constraint @(R1CS a) @(R1CS a) con mempty
-        in assignment @(R1CS a) @(R1CS a) [head $ r1csOutput r'] [] (const [x]) r'
+        r' <- constraint @(R1CS a) @(R1CS a) con
+        assignment @(R1CS a) @(R1CS a) r' [] (const [x])
 
 ------------------------------------- Internal -------------------------------------
 

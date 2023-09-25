@@ -1,9 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Crypto.Data.Symbolic where
 
-import           Prelude                   (Monoid (..), undefined, Integer)
+import           Control.Monad.State       (State, execState, MonadState (..))
+import           Prelude                   (Monoid (..), undefined)
 
 -- | A class for symbolic computations.
 -- The first argument is the symbolic computation context. It contains symbolic variables and relations between them.
@@ -14,24 +14,26 @@ class Monoid ctx => Symbolic ctx t where
     -- | The value of the object.
     type ValueOf t
 
+    type InputOf t
+
     type WitnessMap ctx t
 
     type Constraint ctx t
 
     -- | Computes the symbolic representation using the supplied symbolic computation context.
-    merge      :: t -> ctx -> ctx
+    merge      :: t -> State ctx ctx
 
     -- | Computes the symbolic representation using the empty symbolic computation context.
     compile    :: t -> ctx
-    compile x = merge x mempty
+    compile x = execState (merge x) mempty
 
-    assignment :: [Integer] -> [Integer] -> WitnessMap ctx t -> ctx -> ctx
+    assignment :: ctx -> [ctx] -> WitnessMap ctx t -> State ctx ()
 
     -- | Evaluates the symbolic representation using the supplied value.
     apply      :: ctx -> ValueOf t -> ctx
     -- apply ctx x = assignment ctx $ inputMap ctx x
 
-    constraint :: Constraint ctx t -> ctx -> ctx
+    constraint :: Constraint ctx t -> State ctx ctx
 
     -- | Constructs a new symbolic input object from the given symbolic computation context.
     input      :: ctx -> t
@@ -39,19 +41,23 @@ class Monoid ctx => Symbolic ctx t where
     -- | Constructs a new symbolic variable from the given symbolic computation context.
     extract    :: ctx -> t
 
-    eval       :: ctx -> ValueOf t
+    eval       :: ctx -> InputOf t -> ValueOf t
 
 instance (Symbolic ctx f, Symbolic ctx a) => Symbolic ctx (a -> f) where
     type ValueOf (a -> f) = ValueOf a -> ValueOf f
+
+    type InputOf (a -> f) = InputOf f
 
     type WitnessMap ctx (a -> f) = ()
 
     type Constraint ctx (a -> f) = ()
 
-    merge f ctx =
+    merge f = do
+        ctx <- get
         let x = input ctx
-        in merge (f x) (merge @ctx @a x ctx)
-    
+        _ <- merge x
+        merge (f x)
+
     -- TODO: complete this definition
     assignment = undefined
 
