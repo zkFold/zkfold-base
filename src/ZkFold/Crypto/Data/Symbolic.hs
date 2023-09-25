@@ -27,13 +27,13 @@ class Monoid ctx => Symbolic ctx t where
     compile    :: t -> ctx
     compile x = execState (merge x) mempty
 
-    assignment :: ctx -> [ctx] -> WitnessMap ctx t -> State ctx ()
+    assignment :: [ctx] -> WitnessMap ctx t -> State ctx ()
 
     -- | Evaluates the symbolic representation using the supplied value.
     apply      :: ctx -> ValueOf t -> ctx
     -- apply ctx x = assignment ctx $ inputMap ctx x
 
-    constraint :: Constraint ctx t -> State ctx ctx
+    constraint :: Constraint ctx t -> State ctx ()
 
     -- | Constructs a new symbolic input object from the given symbolic computation context.
     input      :: ctx -> t
