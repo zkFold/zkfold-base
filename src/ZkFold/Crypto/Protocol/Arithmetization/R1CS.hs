@@ -134,12 +134,6 @@ instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
         put r''
         return [r'']
 
-    -- TODO: forbid reassignment of variables
-    assignment f = modify $ \r -> r
-        {
-            r1csWitness = \i -> insert (r1csOutput r) (f i) $ r1csWitness r i
-        }
-
     constraint con = modify (\r ->
         let x = r1csNewVariable (con $ -1)
         in r
@@ -147,6 +141,12 @@ instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
             r1csMatrices = insert (r1csSizeN r) (con x) (r1csMatrices r),
             r1csOutput   = x
         })
+
+    -- TODO: forbid reassignment of variables
+    assignment f = modify $ \r -> r
+        {
+            r1csWitness = \i -> insert (r1csOutput r) (f i) $ r1csWitness r i
+        }
 
     input r =
         let ins = r1csInput r
