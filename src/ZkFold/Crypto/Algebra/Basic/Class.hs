@@ -107,3 +107,43 @@ instance ToBits Integer where
     toBits x
         | x > 0     = (x `mod` 2) : toBits (x `div` 2)
         | otherwise = error "toBits: Not defined for negative integers!"
+
+--------------------------------------------------------------------------------
+
+instance AdditiveSemigroup a => AdditiveSemigroup [a] where
+    (+) = zipWith (+)
+
+instance AdditiveMonoid a => AdditiveMonoid [a] where
+    zero = repeat zero
+
+instance AdditiveGroup a => AdditiveGroup [a] where
+    negate = map negate
+
+instance MultiplicativeSemigroup a => MultiplicativeSemigroup [a] where
+    (*) = zipWith (*)
+
+instance MultiplicativeMonoid a => MultiplicativeMonoid [a] where
+    one = repeat one
+
+instance MultiplicativeGroup a => MultiplicativeGroup [a] where
+    invert = map invert
+
+--------------------------------------------------------------------------------
+
+instance AdditiveSemigroup a => AdditiveSemigroup (p -> a) where
+    p1 + p2 = \x -> p1 x + p2 x
+
+instance AdditiveMonoid a => AdditiveMonoid (p -> a) where
+    zero = const zero
+
+instance AdditiveGroup a => AdditiveGroup (p -> a) where
+    negate = fmap negate
+
+instance MultiplicativeSemigroup a => MultiplicativeSemigroup (p -> a) where
+    p1 * p2 = \x -> p1 x * p2 x
+
+instance MultiplicativeMonoid a => MultiplicativeMonoid (p -> a) where
+    one = const one
+
+instance MultiplicativeGroup a => MultiplicativeGroup (p -> a) where
+    invert = fmap invert

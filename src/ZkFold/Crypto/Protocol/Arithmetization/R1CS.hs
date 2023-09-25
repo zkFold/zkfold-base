@@ -126,7 +126,7 @@ instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
 
     type InputOf (R1CS a) = Map Integer a
 
-    type WitnessMap (R1CS a) (R1CS a) = [a] -> [a]
+    type WitnessMap (R1CS a) (R1CS a) = Map Integer a -> [a]
 
     type Constraint (R1CS a) (R1CS a) = Integer -> (Map Integer a, Map Integer a, Map Integer a)
 
@@ -137,12 +137,9 @@ instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
         return r''
 
     -- TODO: forbid reassignment of variables
-    assignment rArgs f = modify $ \r -> r
+    assignment f = modify $ \r -> r
         {
-            r1csWitness = \i ->
-                let w  = r1csWitness r i
-                    ys = concatMap (flip (eval @(R1CS a) @(R1CS a)) i) rArgs
-                in fromList (zip (r1csOutput r) (f ys)) `union` w
+            r1csWitness = \i -> fromList (zip (r1csOutput r) (f i)) `union` r1csWitness r i
         }
 
     constraint con = modify (\r ->
@@ -188,13 +185,13 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
             x2  = head $ r1csOutput r2
             con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)])
         constraint @(R1CS a) @(R1CS a) con
-        assignment @(R1CS a) @(R1CS a) [r1, r2] (\xs -> [Prelude.foldl (+) zero xs])
+        assignment @(R1CS a) @(R1CS a) (eval @(R1CS a) @(R1CS a) r1 + eval @(R1CS a) @(R1CS a) r2)
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a) where
     zero = flip execState mempty $ do
         let con = \z -> (empty, empty, fromList [(z, one)])
         constraint @(R1CS a) @(R1CS a) con
-        assignment @(R1CS a) @(R1CS a) [] (const [zero])
+        assignment @(R1CS a) @(R1CS a) zero
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a) where
     negate r = flip execState r $ do
@@ -202,7 +199,7 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a) where
         let x1 = head $ r1csOutput r
             con = \z -> (empty, empty, fromList [(x1, one), (z, one)])
         constraint @(R1CS a) @(R1CS a) con
-        assignment @(R1CS a) @(R1CS a) [r] (\xs -> [negate $ head xs])
+        assignment @(R1CS a) @(R1CS a) (negate . eval @(R1CS a) @(R1CS a) r) --[r] (\xs -> [negate $ head xs])
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a) where
     r1 * r2 = flip execState (r1 <> r2) $ do
@@ -211,7 +208,7 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a) whe
             x2 = head $ r1csOutput r2
             con = \z -> (singleton x1 one, singleton x2 one, singleton z one)
         constraint @(R1CS a) @(R1CS a) con
-        assignment @(R1CS a) @(R1CS a) [r1, r2] (\xs -> [Prelude.foldl (*) one xs])
+        assignment @(R1CS a) @(R1CS a) (eval @(R1CS a) @(R1CS a) r1 * eval @(R1CS a) @(R1CS a) r2)
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a) where
     one = mempty { r1csOutput = [0] }
@@ -222,18 +219,18 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
         let x1   = head $ r1csOutput r
             con  = \z -> (singleton x1 one, singleton z one, empty)
         constraint @(R1CS a) @(R1CS a) con
+        assignment @(R1CS a) @(R1CS a) (\i -> map (bool zero one) (zipWith (==) (eval @(R1CS a) @(R1CS a) r i) zero))
         err  <- gets (head . r1csOutput)
-        assignment @(R1CS a) @(R1CS a) [r] (\xs -> let y = head xs in [bool zero one (y == zero)])
         let con' = \z -> (singleton x1 one, singleton z one, fromList [(0, one), (err, negate one)])
         constraint @(R1CS a) @(R1CS a) con'
-        assignment @(R1CS a) @(R1CS a) [r] (\xs -> let y = head xs in [invert y])
+        assignment @(R1CS a) @(R1CS a) (invert . eval @(R1CS a) @(R1CS a) r)
 
 instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1CS a) where
     fromConstant c = flip execState mempty $ do
         let x = fromConstant c
             con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
         constraint @(R1CS a) @(R1CS a) con
-        assignment @(R1CS a) @(R1CS a) [] (const [x])
+        assignment @(R1CS a) @(R1CS a) (const $ repeat x)
 
 ------------------------------------- Internal -------------------------------------
 

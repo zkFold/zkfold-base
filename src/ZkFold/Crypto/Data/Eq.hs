@@ -2,7 +2,8 @@ module ZkFold.Crypto.Data.Eq (
     GeneralizedEq(..)
 ) where
 
-import           Prelude                              hiding (Num(..), (/))
+import           Prelude                              hiding (Num(..), (/=), (==), (/))
+import qualified Prelude                              as Haskell
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Data.Bool              (SymbolicBool (..), GeneralizedBoolean)
@@ -14,8 +15,8 @@ class GeneralizedBoolean b => GeneralizedEq b a where
     (/=) :: a -> a -> b
 
 instance Eq a => GeneralizedEq Bool a where
-    x == y = x Prelude.== y
-    x /= y = x Prelude./= y
+    x == y = x Haskell.== y
+    x /= y = x Haskell./= y
 
 instance (Symbolic ctx a, FiniteField ctx) => GeneralizedEq (SymbolicBool ctx) a where
     x == y =

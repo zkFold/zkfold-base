@@ -27,7 +27,7 @@ class Monoid ctx => Symbolic ctx t where
     compile    :: t -> ctx
     compile x = execState (merge x) mempty
 
-    assignment :: [ctx] -> WitnessMap ctx t -> State ctx ()
+    assignment :: WitnessMap ctx t -> State ctx ()
 
     -- | Evaluates the symbolic representation using the supplied value.
     apply      :: ctx -> ValueOf t -> ctx
