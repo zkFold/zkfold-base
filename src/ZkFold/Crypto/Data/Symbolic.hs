@@ -3,7 +3,21 @@
 module ZkFold.Crypto.Data.Symbolic where
 
 import           Control.Monad.State       (State, execState, mapM)
-import           Prelude                   (Monoid (..), (<$>), undefined, concat)
+import           Prelude                   (Monoid (..), Integer, (<$>), undefined, concat, head)
+
+class SymbolicVariable a t where
+    fromValue  :: t -> [a]
+
+    toValue    :: [a] -> t
+
+    symbolSize :: Integer
+
+instance SymbolicVariable a a where
+    fromValue  = (: [])
+
+    toValue    = head
+
+    symbolSize = 1
 
 -- | A class for symbolic computations.
 -- The first argument is the symbolic computation context. It contains symbolic variables and relations between them.

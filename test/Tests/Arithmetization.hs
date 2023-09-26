@@ -22,6 +22,8 @@ instance Finite SmallField where
     order = 97
 instance Prime SmallField
 
+type R = R1CS (Zp SmallField) (Zp SmallField)
+
 -- f x = if (2 / x == 3) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)
 testFunc :: forall a b . (FromConstant Integer a, FiniteField a, GeneralizedEq b a, GeneralizedConditional b a) => a -> a -> a
 testFunc x y =
@@ -33,8 +35,8 @@ testFunc x y =
 
 testResult :: Zp SmallField -> Zp SmallField -> Bool
 testResult x y =
-    let r = compile (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
-        v = r1csValue $ flip execState r $ mapM (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) [x, y]
+    let r = compile (testFunc @R @(SymbolicBool R))
+        v = r1csValue $ flip execState r $ mapM (apply @R @R) [x, y]
     in v == testFunc @(Zp SmallField) @Bool x y
 
 testArithmetization :: IO ()
@@ -44,8 +46,8 @@ testArithmetization = do
     case find (not . snd) res of
         Nothing     -> print @String "Success!"
         Just (p@(x, y), _) -> do
-            let r = compile (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
+            let r = compile (testFunc @R @(SymbolicBool R))
             print @String $ "Failure at " ++ show p ++ "!"
 
-            r1csPrint $ flip execState r $ mapM (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) [x, y]
+            r1csPrint $ flip execState r $ mapM (apply @R @R) [x, y]
             print $ testFunc @(Zp SmallField) @Bool x y
