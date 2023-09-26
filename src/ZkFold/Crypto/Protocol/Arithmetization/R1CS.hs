@@ -95,7 +95,6 @@ r1csPrint r = do
 ------------------------------------- Instances -------------------------------------
 
 instance Eq a => Semigroup (R1CS a t) where
-    -- The concatenation is left-biased.
     r1 <> r2 = R1CS
         {
             r1csMatrices =
@@ -106,7 +105,7 @@ instance Eq a => Semigroup (R1CS a t) where
             -- We need a way to ensure the correct order no matter how `(<>)` is used.
             r1csInput    = nub $ r1csInput r1 ++ r1csInput r2,
             r1csWitness  = \w -> r1csWitness r1 w `union` r1csWitness r2 w,
-            r1csOutput   = r1csOutput r1
+            r1csOutput   = r1csOutput r1 ++ r1csOutput r2
         }
 
 instance (FiniteField a, Eq a) => Monoid (R1CS a t) where
@@ -125,11 +124,14 @@ instance (FiniteField a, Eq a, ToBits a, SymbolicVariable a t) => Symbolic (R1CS
 
     type Constraint (R1CS a t) (R1CS a t) = [Integer -> (Map Integer a, Map Integer a, Map Integer a)]
 
+    -- `merge` is a concatenation that sets its argument as the output.
     merge r = do
         r' <- get
-        let r'' = r <> r'
+        let r'' = (r <> r') { r1csOutput = r1csOutput r}
         put r''
-        return [r'']
+        return r'' 
+
+    atomic r = map (\x -> r { r1csOutput = [x] }) $ r1csOutput r
 
     -- TODO: add check that `length vars == symbolSize @a @t`
     constraint cons = do
@@ -141,7 +143,7 @@ instance (FiniteField a, Eq a, ToBits a, SymbolicVariable a t) => Symbolic (R1CS
         put $ r1 { r1csOutput = vars }
 
     -- TODO: forbid reassignment of variables
-    -- TODO: add check that `length (r1csOutput r) == symbolSize @a @t
+    -- TODO: add check that `length (r1csOutput r) == symbolSize @a @t`
     assignment f = modify $ \r -> r
         {
             r1csWitness = \i -> fromList (zip (r1csOutput r) (fromValue $ f i)) `union` r1csWitness r i
@@ -156,6 +158,7 @@ instance (FiniteField a, Eq a, ToBits a, SymbolicVariable a t) => Symbolic (R1CS
             r1csOutput = [s..s + symbolSize @a @t - 1]
         }) >> get
 
+    -- TODO: add check that `length (r1csOutput r) == symbolSize @a @t`
     current = get
 
     -- TODO: make this safe

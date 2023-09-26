@@ -8,9 +8,9 @@ length = foldl (\c _ -> c + 1) 0
 take :: Integer -> [a] -> [a]
 take 0 _ = []
 take n (x:xs) = x : take (n - 1) xs
-take _ [] = error "take: empty list"
+take _ [] = error "ZkFold.Prelude.take: empty list"
 
 drop :: Integer -> [a] -> [a]
 drop 0 xs = xs
 drop n (_:xs) = drop (n - 1) xs
-drop _ [] = error "drop: empty list"
+drop _ [] = error "ZkFold.Prelude.drop: empty list"

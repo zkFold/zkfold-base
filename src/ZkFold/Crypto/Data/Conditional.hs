@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeApplications #-}
+
 module ZkFold.Crypto.Data.Conditional (
     GeneralizedConditional (..) 
 ) where
@@ -23,7 +25,7 @@ instance GeneralizedConditional Bool a where
 
 instance (Symbolic ctx a, FiniteField ctx) => GeneralizedConditional (SymbolicBool ctx) a where
     bool brFalse brTrue (SymbolicBool b) = flip evalState b $ do
-        f' <- merge brFalse
-        t' <- merge brTrue
+        f' <- atomic @ctx @a <$> merge brFalse
+        t' <- atomic @ctx @a <$> merge brTrue
         put $ mconcat $ zipWith (\f t -> b * t + (one - b) * f) f' t'
         current
