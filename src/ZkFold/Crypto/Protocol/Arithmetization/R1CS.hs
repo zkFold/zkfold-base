@@ -45,7 +45,7 @@ data R1CS a = R1CS
         -- ^ The input variables
         r1csWitness  :: Map Integer a -> Map Integer a,
         -- ^ The witness generation function
-        r1csOutput   :: Integer
+        r1csOutput   :: [Integer]
         -- ^ The output variable
     }
 
@@ -115,7 +115,7 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a) where
             r1csMatrices = empty,
             r1csInput    = [],
             r1csWitness  = insert 0 one,
-            r1csOutput   = 0
+            r1csOutput   = [0]
         }
 
 instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
@@ -136,13 +136,13 @@ instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
         in r
         {
             r1csMatrices = insert (r1csSizeN r) (con x) (r1csMatrices r),
-            r1csOutput   = x
+            r1csOutput   = [x]
         })
 
     -- TODO: forbid reassignment of variables
     assignment f = modify $ \r -> r
         {
-            r1csWitness = \i -> insert (r1csOutput r) (f i) $ r1csWitness r i
+            r1csWitness = \i -> insert (head $ r1csOutput r) (f i) $ r1csWitness r i
         }
 
     input = modify (\r ->
@@ -151,7 +151,7 @@ instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
         in r
         {
             r1csInput  = ins ++ [s],
-            r1csOutput = s
+            r1csOutput = [s]
         }) >> get
 
     current = get
@@ -167,7 +167,7 @@ instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
 
     eval ctx = \i ->
         let w = r1csWitness ctx i
-            o = r1csOutput ctx
+            o = head $ r1csOutput ctx
         in w ! o
 
 instance (FiniteField a) => Finite (R1CS a) where
@@ -175,7 +175,7 @@ instance (FiniteField a) => Finite (R1CS a) where
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
     r1 + r2 = flip execState (r1 <> r2) $ do
-        let con = \z -> (empty, empty, fromListWith (+) [(r1csOutput r1, one), (r1csOutput r2, one), (z, negate one)])
+        let con = \z -> (empty, empty, fromListWith (+) [(head $ r1csOutput r1, one), (head $ r1csOutput r2, one), (z, negate one)])
         constraint @(R1CS a) @(R1CS a) con
         assignment @(R1CS a) @(R1CS a) (eval @(R1CS a) @(R1CS a) r1 + eval @(R1CS a) @(R1CS a) r2)
 
@@ -187,13 +187,13 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a) where
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a) where
     negate r = flip execState r $ do
-        let con = \z -> (empty, empty, fromList [(r1csOutput r, one), (z, one)])
+        let con = \z -> (empty, empty, fromList [(head $ r1csOutput r, one), (z, one)])
         constraint @(R1CS a) @(R1CS a) con
         assignment @(R1CS a) @(R1CS a) (negate . eval @(R1CS a) @(R1CS a) r)
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a) where
     r1 * r2 = flip execState (r1 <> r2) $ do
-        let con = \z -> (singleton (r1csOutput r1) one, singleton (r1csOutput r2) one, singleton z one)
+        let con = \z -> (singleton (head $ r1csOutput r1) one, singleton (head $ r1csOutput r2) one, singleton z one)
         constraint @(R1CS a) @(R1CS a) con
         assignment @(R1CS a) @(R1CS a) (eval @(R1CS a) @(R1CS a) r1 * eval @(R1CS a) @(R1CS a) r2)
 
@@ -202,11 +202,11 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a) where
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
     invert r = flip execState r $ do
-        let con  = \z -> (singleton (r1csOutput r) one, singleton z one, empty)
+        let con  = \z -> (singleton (head $ r1csOutput r) one, singleton z one, empty)
         constraint @(R1CS a) @(R1CS a) con 
         assignment @(R1CS a) @(R1CS a) (bool zero one . (== zero) . eval @(R1CS a) @(R1CS a) r)
-        y  <- gets r1csOutput
-        let con' = \z -> (singleton (r1csOutput r) one, singleton z one, fromList [(0, one), (y, negate one)])
+        y  <- gets (head . r1csOutput)
+        let con' = \z -> (singleton (head $ r1csOutput r) one, singleton z one, fromList [(0, one), (y, negate one)])
         constraint @(R1CS a) @(R1CS a) con'
         assignment @(R1CS a) @(R1CS a) (invert . eval @(R1CS a) @(R1CS a) r)
 
