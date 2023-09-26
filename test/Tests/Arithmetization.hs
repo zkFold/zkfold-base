@@ -1,8 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 
 module Tests.Arithmetization (testArithmetization) where
 
+import           Control.Monad.State                         (execState)
 import           Data.Bifunctor                              (bimap)
 import           Data.List                                   (find)
 import           Prelude                                     hiding (not, Num(..), Eq(..), (^), (/))
@@ -32,7 +34,7 @@ testFunc x y =
 testResult :: Zp SmallField -> Zp SmallField -> Bool
 testResult x y =
     let r = compile (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
-        v = r1csValue $ foldl (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) r [x, y]
+        v = r1csValue $ flip execState r $ mapM (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) [x, y]
     in v == testFunc @(Zp SmallField) @Bool x y
 
 testArithmetization :: IO ()
@@ -45,5 +47,5 @@ testArithmetization = do
             let r = compile (testFunc @(R1CS (Zp SmallField)) @(SymbolicBool (R1CS (Zp SmallField))))
             print @String $ "Failure at " ++ show p ++ "!"
 
-            r1csPrint $ foldl (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) r [x, y]
+            r1csPrint $ flip execState r $ mapM (apply @(R1CS (Zp SmallField)) @(R1CS (Zp SmallField))) [x, y]
             print $ testFunc @(Zp SmallField) @Bool x y

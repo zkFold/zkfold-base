@@ -98,5 +98,6 @@ test-suite zkfold-crypto-test
       Tests.Arithmetization
     build-depends:
       base                          >= 4.9 && < 5,
+      mtl                                        ,
       zkfold-crypto                              ,
     hs-source-dirs: test

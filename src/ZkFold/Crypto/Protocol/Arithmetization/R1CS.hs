@@ -13,7 +13,7 @@ module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
 import           Control.Monad.State                  (MonadState (..), modify, execState, gets)
 import           Data.List                            (nub)
 import           Data.Map                             hiding (foldl, null, map, foldr)
-import           Prelude                              hiding (Num(..), (+), (^), product, length)
+import           Prelude                              hiding (Num(..), (^), product, length)
 import           Text.Pretty.Simple                   (pPrint)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
@@ -64,16 +64,13 @@ r1csSizeM r = length $ nub $ concatMap (keys . f) (elems $ r1csMatrices r)
 r1csOptimize :: R1CS a -> R1CS a
 r1csOptimize = undefined
 
-r1csValue :: R1CS a -> a
-r1csValue r =
-    let w = r1csWitness r empty
-        o = r1csOutput r
-    in w ! o
+r1csValue :: forall a . (FiniteField a, Eq a, ToBits a) => R1CS a -> a
+r1csValue r = eval @(R1CS a) @(R1CS a) r mempty
 
 -- | Prints the constraint system, the witness, and the output on a given input.
 --
 -- TODO: Move this elsewhere.
-r1csPrint :: (Show a) => R1CS a -> IO ()
+r1csPrint :: forall a . (FiniteField a, Eq a, ToBits a, Show a) => R1CS a -> IO ()
 r1csPrint r = do
     let m = elems (r1csMatrices r)
         i = r1csInput r
@@ -148,25 +145,25 @@ instance (FiniteField a, Eq a, ToBits a) => Symbolic (R1CS a) (R1CS a) where
             r1csWitness = \i -> insert (r1csOutput r) (f i) $ r1csWitness r i
         }
 
-    input r =
+    input = modify (\r ->
         let ins = r1csInput r
             s   = if null ins then 1 else maximum (r1csInput r) + 1
         in r
         {
             r1csInput  = ins ++ [s],
             r1csOutput = s
-        }
+        }) >> get
 
-    extract = id
+    current = get
 
     -- TODO: make this safe
-    apply r x =
+    apply x = modify (\r ->
         let ins = r1csInput r
         in r
         {
             r1csInput = tail ins,
             r1csWitness = r1csWitness r . insert (head ins) x
-        }
+        })
 
     eval ctx = \i ->
         let w = r1csWitness ctx i
