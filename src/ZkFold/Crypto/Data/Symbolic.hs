@@ -6,16 +6,28 @@ import           Control.Monad.State       (State, execState, mapM)
 import           Prelude                   (Monoid (..), Integer, (<$>), undefined, concat, head)
 
 class SymbolicVariable a t where
+    type SymbolOf t
+
     fromValue  :: t -> [a]
 
     toValue    :: [a] -> t
 
+    fromSymbol :: SymbolOf t -> [Integer]
+
+    toSymbol   :: [Integer] -> SymbolOf t
+
     symbolSize :: Integer
 
 instance SymbolicVariable a a where
+    type SymbolOf a = Integer
+
     fromValue  = (: [])
 
     toValue    = head
+
+    fromSymbol = (: [])
+
+    toSymbol   = head
 
     symbolSize = 1
 

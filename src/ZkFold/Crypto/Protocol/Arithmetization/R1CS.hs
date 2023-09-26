@@ -173,52 +173,60 @@ instance (FiniteField a, Eq a, ToBits a, SymbolicVariable a t) => Symbolic (R1CS
             o = r1csOutput ctx
         in toValue $ map (w !) o
 
-instance (FiniteField a) => Finite (R1CS a a) where
+type R a = R1CS a a
+
+instance (FiniteField a) => Finite (R a) where
     order = order @a
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a a) where
+instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R a) where
     r1 + r2 = flip execState (r1 <> r2) $ do
-        let con = \z -> (empty, empty, fromListWith (+) [(head $ r1csOutput r1, one), (head $ r1csOutput r2, one), (z, negate one)])
-        constraint @(R1CS a a) @(R1CS a a) [con]
-        assignment @(R1CS a a) @(R1CS a a) (eval @(R1CS a a) @(R1CS a a) r1 + eval @(R1CS a a) @(R1CS a a) r2)
+        let x1  = toSymbol @a @a $ r1csOutput r1
+            x2  = toSymbol @a @a $ r1csOutput r2
+            con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)])
+        constraint @(R a) @(R a) [con]
+        assignment @(R a) @(R a) (eval @(R a) @(R a) r1 + eval @(R a) @(R a) r2)
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a a) where
+instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R a) where
     zero = flip execState mempty $ do
         let con = \z -> (empty, empty, fromList [(z, one)])
-        constraint @(R1CS a a) @(R1CS a a) [con]
-        assignment @(R1CS a a) @(R1CS a a) zero
+        constraint @(R a) @(R a) [con]
+        assignment @(R a) @(R a) zero
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a a) where
+instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R a) where
     negate r = flip execState r $ do
-        let con = \z -> (empty, empty, fromList [(head $ r1csOutput r, one), (z, one)])
-        constraint @(R1CS a a) @(R1CS a a) [con]
-        assignment @(R1CS a a) @(R1CS a a) (negate . eval @(R1CS a a) @(R1CS a a) r)
+        let x  = toSymbol @a @a $ r1csOutput r
+            con = \z -> (empty, empty, fromList [(x, one), (z, one)])
+        constraint @(R a) @(R a) [con]
+        assignment @(R a) @(R a) (negate . eval @(R a) @(R a) r)
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a a) where
+instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R a) where
     r1 * r2 = flip execState (r1 <> r2) $ do
-        let con = \z -> (singleton (head $ r1csOutput r1) one, singleton (head $ r1csOutput r2) one, singleton z one)
-        constraint @(R1CS a a) @(R1CS a a) [con]
-        assignment @(R1CS a a) @(R1CS a a) (eval @(R1CS a a) @(R1CS a a) r1 * eval @(R1CS a a) @(R1CS a a) r2)
+        let x1  = toSymbol @a @a $ r1csOutput r1
+            x2  = toSymbol @a @a $ r1csOutput r2
+            con = \z -> (singleton x1 one, singleton x2 one, singleton z one)
+        constraint @(R a) @(R a) [con]
+        assignment @(R a) @(R a) (eval @(R a) @(R a) r1 * eval @(R a) @(R a) r2)
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a a) where
+instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R a) where
     one = mempty { r1csOutput = [0] }
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a a) where
+instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R a) where
     invert r = flip execState r $ do
-        let con  = \z -> (singleton (head $ r1csOutput r) one, singleton z one, empty)
-        constraint @(R1CS a a) @(R1CS a a) [con]
-        assignment @(R1CS a a) @(R1CS a a) (bool zero one . (== zero) . eval @(R1CS a a) @(R1CS a a) r)
-        y  <- gets (head . r1csOutput)
-        let con' = \z -> (singleton (head $ r1csOutput r) one, singleton z one, fromList [(0, one), (y, negate one)])
-        constraint @(R1CS a a) @(R1CS a a) [con']
-        assignment @(R1CS a a) @(R1CS a a) (invert . eval @(R1CS a a) @(R1CS a a) r)
+        let x    = toSymbol @a @a $ r1csOutput r
+            con  = \z -> (singleton x one, singleton z one, empty)
+        constraint @(R a) @(R a) [con]
+        assignment @(R a) @(R a) (bool zero one . (== zero) . eval @(R a) @(R a) r)
+        y  <- gets (toSymbol @a @a . r1csOutput)
+        let con' = \z -> (singleton x one, singleton z one, fromList [(0, one), (y, negate one)])
+        constraint @(R a) @(R a) [con']
+        assignment @(R a) @(R a) (invert . eval @(R a) @(R a) r)
 
-instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1CS a a) where
+instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R a) where
     fromConstant c = flip execState mempty $ do
         let x = fromConstant c
             con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
-        constraint @(R1CS a a) @(R1CS a a) [con]
-        assignment @(R1CS a a) @(R1CS a a) (const x)
+        constraint @(R a) @(R a) [con]
+        assignment @(R a) @(R a) (const x)
 
 ------------------------------------- Internal -------------------------------------
 
