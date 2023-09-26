@@ -66,6 +66,7 @@ library
       ZkFold.Crypto.Algebra.Basic.Field
       ZkFold.Crypto.Algebra.EllipticCurve.BLS12_381
       ZkFold.Crypto.Algebra.EllipticCurve.Class
+      ZkFold.Crypto.Data.Arithmetization
       ZkFold.Crypto.Data.Bool
       ZkFold.Crypto.Data.Conditional
       ZkFold.Crypto.Data.Eq

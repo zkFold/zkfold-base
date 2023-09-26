@@ -12,10 +12,10 @@ import           Prelude                                     hiding (not, Num(..
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
 import           ZkFold.Crypto.Protocol.Arithmetization.R1CS
+import           ZkFold.Crypto.Data.Arithmetization          (Arithmetization(..))
 import           ZkFold.Crypto.Data.Bool                     (GeneralizedBoolean(..), SymbolicBool (..))
 import           ZkFold.Crypto.Data.Conditional              (GeneralizedConditional(..))
 import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..))
-import           ZkFold.Crypto.Data.Symbolic                 (Symbolic(..))
 
 data SmallField
 instance Finite SmallField where

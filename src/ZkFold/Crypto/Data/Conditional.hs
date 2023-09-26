@@ -8,8 +8,8 @@ import           Control.Monad.State                   (MonadState (..), evalSta
 import           Prelude                               hiding (Num(..), (/))
 
 import           ZkFold.Crypto.Algebra.Basic.Class
+import           ZkFold.Crypto.Data.Arithmetization
 import           ZkFold.Crypto.Data.Bool               (SymbolicBool (..), GeneralizedBoolean)
-import           ZkFold.Crypto.Data.Symbolic
 
 class GeneralizedBoolean b => GeneralizedConditional b a where
     bool :: a -> a -> b -> a
@@ -23,9 +23,9 @@ class GeneralizedBoolean b => GeneralizedConditional b a where
 instance GeneralizedConditional Bool a where
     bool f t b = if b then t else f
 
-instance (Symbolic ctx a, FiniteField ctx) => GeneralizedConditional (SymbolicBool ctx) a where
+instance (Arithmetization ctx a, FiniteField ctx) => GeneralizedConditional (SymbolicBool ctx) a where
     bool brFalse brTrue (SymbolicBool b) = flip evalState b $ do
-        f' <- atomic @ctx @a <$> merge brFalse
-        t' <- atomic @ctx @a <$> merge brTrue
+        f' <- atomic @ctx @a <$> (merge brFalse >> get)
+        t' <- atomic @ctx @a <$> (merge brTrue >> get)
         put $ mconcat $ zipWith (\f t -> b * t + (one - b) * f) f' t'
         current

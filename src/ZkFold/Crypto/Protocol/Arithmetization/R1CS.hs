@@ -18,8 +18,9 @@ import           Text.Pretty.Simple                   (pPrint)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
+import           ZkFold.Crypto.Data.Arithmetization   (Arithmetization (..))
 import           ZkFold.Crypto.Data.Conditional       (bool)
-import           ZkFold.Crypto.Data.Symbolic          (Symbolic (..), SymbolicVariable (..))
+import           ZkFold.Crypto.Data.Symbolic          (Symbolic (..))
 import           ZkFold.Prelude                       (length, drop, take)
 
 -- | A finite field with a large order.
@@ -64,13 +65,13 @@ r1csSizeM r = length $ nub $ concatMap (keys . f) (elems $ r1csMatrices r)
 r1csOptimize :: R1CS a t -> R1CS a t
 r1csOptimize = undefined
 
-r1csValue :: forall a t . (FiniteField a, Eq a, ToBits a, SymbolicVariable a t) => R1CS a t -> t
+r1csValue :: forall a t . (FiniteField a, Eq a, ToBits a, Symbolic a t) => R1CS a t -> t
 r1csValue r = eval @(R1CS a t) @(R1CS a t) r mempty
 
 -- | Prints the constraint system, the witness, and the output on a given input.
 --
 -- TODO: Move this elsewhere.
-r1csPrint :: forall a t . (FiniteField a, Eq a, ToBits a, SymbolicVariable a t, Show a, Show t) => R1CS a t -> IO ()
+r1csPrint :: forall a t . (FiniteField a, Eq a, ToBits a, Symbolic a t, Show a, Show t) => R1CS a t -> IO ()
 r1csPrint r = do
     let m = elems (r1csMatrices r)
         i = r1csInput r
@@ -117,7 +118,7 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a t) where
             r1csOutput   = []
         }
 
-instance (FiniteField a, Eq a, ToBits a, SymbolicVariable a t) => Symbolic (R1CS a t) (R1CS a t) where
+instance (FiniteField a, Eq a, ToBits a, Symbolic a t) => Arithmetization (R1CS a t) (R1CS a t) where
     type ValueOf (R1CS a t) = t
 
     type InputOf (R1CS a t) = Map Integer a
@@ -129,7 +130,6 @@ instance (FiniteField a, Eq a, ToBits a, SymbolicVariable a t) => Symbolic (R1CS
         r' <- get
         let r'' = (r <> r') { r1csOutput = r1csOutput r}
         put r''
-        return r'' 
 
     atomic r = map (\x -> r { r1csOutput = [x] }) $ r1csOutput r
 
