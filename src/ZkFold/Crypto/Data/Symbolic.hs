@@ -6,24 +6,21 @@ import           Prelude                   (Integer, head)
 
 -- | A class for symbolic variables.
 -- We want to describe a value of type `t` using a list of values of type `a`.
--- A symbolic variable is a list of integer numbers.
+-- A symbolic variable that corresponds to type `t` is of type `s`.
+-- It can be converted to and obtained from a list of integers.
 -- Each integer number represents an atomic symbolic variable whose value is of type `a`.
-class Symbolic a t where
-    type SymbolOf t
-
+class Symbolic a t s | t -> s where
     fromValue  :: t -> [a]
 
     toValue    :: [a] -> t
 
-    fromSymbol :: SymbolOf t -> [Integer]
+    fromSymbol :: s -> [Integer]
 
-    toSymbol   :: [Integer] -> SymbolOf t
+    toSymbol   :: [Integer] -> s
 
     symbolSize :: Integer
 
-instance Symbolic a a where
-    type SymbolOf a = Integer
-
+instance Symbolic a a Integer where
     fromValue  = (: [])
 
     toValue    = head

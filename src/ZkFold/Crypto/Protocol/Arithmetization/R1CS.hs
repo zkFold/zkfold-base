@@ -39,7 +39,7 @@ instance Prime BigField
 -- To compile a function @/f :: C a => a -> a/@, we must define an instance @/C (R1CS a)/@.
 -- Keep in mind that the more type constraints we impose on the polymorphic argument @/a/@,
 -- the broader the class of functions that can be compiled.
-data R1CS a t = R1CS
+data R1CS a t s = R1CS
     {
         r1csMatrices :: Map Integer (Map Integer a, Map Integer a, Map Integer a),
         -- ^ The R1CS matrices
@@ -52,31 +52,31 @@ data R1CS a t = R1CS
     }
 
 -- | Calculates the number of constraints in the system.
-r1csSizeN :: R1CS a t -> Integer
+r1csSizeN :: R1CS a t s -> Integer
 r1csSizeN = length . r1csMatrices
 
 -- | Calculates the number of variables in the system.
-r1csSizeM :: R1CS a t -> Integer
+r1csSizeM :: R1CS a t s -> Integer
 r1csSizeM r = length $ nub $ concatMap (keys . f) (elems $ r1csMatrices r)
     where f (a, b, c) = a `union` b `union` c
 
-r1csSystem :: R1CS a t -> Map Integer (Map Integer a, Map Integer a, Map Integer a)
+r1csSystem :: R1CS a t s -> Map Integer (Map Integer a, Map Integer a, Map Integer a)
 r1csSystem = r1csMatrices
 
 -- | Optimizes the constraint system.
 --
 -- TODO: Implement this.
-r1csOptimize :: R1CS a t -> R1CS a t
+r1csOptimize :: R1CS a t s -> R1CS a t s
 r1csOptimize = undefined
 
-r1csValue :: forall a t . (FiniteField a, Eq a, ToBits a, Symbolic a t) => R1CS a t -> t
-r1csValue r = eval @(R1CS a t) @(R1CS a t) r mempty
+r1csValue :: forall a t s . (FiniteField a, Eq a, ToBits a, Symbolic a t s) => R1CS a t s -> t
+r1csValue r = eval @(R1CS a t s) @(R1CS a t s) r mempty
 
 -- | Prints the constraint system, the witness, and the output on a given input.
 --
 -- TODO: Move this elsewhere.
 -- TODO: Check that all arguments have been applied.
-r1csPrint :: forall a t . (FiniteField a, Eq a, ToBits a, Symbolic a t, Show a, Show t) => R1CS a t -> IO ()
+r1csPrint :: forall a t s . (FiniteField a, Eq a, ToBits a, Symbolic a t s, Show a, Show t) => R1CS a t s -> IO ()
 r1csPrint r = do
     let m = elems (r1csMatrices r)
         i = r1csInput r
@@ -100,7 +100,7 @@ r1csPrint r = do
 
 ------------------------------------- Instances -------------------------------------
 
-instance Eq a => Semigroup (R1CS a t) where
+instance Eq a => Semigroup (R1CS a t s) where
     r1 <> r2 = R1CS
         {
             r1csMatrices =
@@ -114,7 +114,7 @@ instance Eq a => Semigroup (R1CS a t) where
             r1csOutput   = r1csOutput r1 ++ r1csOutput r2
         }
 
-instance (FiniteField a, Eq a) => Monoid (R1CS a t) where
+instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
     mempty = R1CS
         {
             r1csMatrices = empty,
@@ -123,65 +123,65 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a t) where
             r1csOutput   = []
         }
 
-instance (FiniteField a, Eq a, ToBits a, Symbolic a t) => Arithmetization (R1CS a t) (R1CS a t) where
-    type ValueOf (R1CS a t) = t
+instance (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetization (R1CS a t s) (R1CS a t s) where
+    type ValueOf (R1CS a t s) = t
 
-    type InputOf (R1CS a t) = Map Integer a
+    type InputOf (R1CS a t s) = Map Integer a
 
-    type Constraint (R1CS a t) (R1CS a t) = [Integer -> (Map Integer a, Map Integer a, Map Integer a)]
+    type Constraint (R1CS a t s) (R1CS a t s) = [Integer -> (Map Integer a, Map Integer a, Map Integer a)]
 
     -- `merge` is a concatenation that sets its argument as the output.
     merge r = do
         r' <- get
-        let r'' = (r <> r') { r1csOutput = r1csOutput r}
+        let r'' = (r <> r') { r1csOutput = r1csOutput r} :: R1CS a t s
         put r''
 
     atomic r = map (\x -> r { r1csOutput = [x] }) $ r1csOutput r
 
     -- TODO: add check that `length vars == symbolSize @a @t`
     constraint cons = do
-        r0 <- get
+        (r0 :: R1CS a t s) <- get
         let (r1, vars) = foldl (\(r, xs) con ->
                 let x = r1csNewVariable (con $ -1)
                 in (r { r1csMatrices = insert (r1csSizeN r) (con x) (r1csMatrices r)}, xs ++ [x]))
                 (r0, []) cons
-        put $ r1 { r1csOutput = vars }
+        put (r1 { r1csOutput = vars } :: R1CS a t s)
 
     -- TODO: forbid reassignment of variables
     -- TODO: add check that `length (r1csOutput r) == symbolSize @a @t`
     assignment f = modify $ \r -> r
         {
-            r1csWitness = \i -> fromList (zip (r1csOutput r) (fromValue $ f i)) `union` r1csWitness r i
-        }
+            r1csWitness = \i -> fromList (zip (r1csOutput r) (fromValue @a @t @s $ f i)) `union` r1csWitness r i
+        } :: R1CS a t s
 
-    input = modify (\r ->
+    input = modify (\(r :: R1CS a t s) ->
         let ins = r1csInput r
             s   = if null ins then 1 else maximum (r1csInput r) + 1
         in r
         {
-            r1csInput  = ins ++ [s..s + symbolSize @a @t - 1],
-            r1csOutput = [s..s + symbolSize @a @t - 1]
+            r1csInput  = ins ++ [s..s + symbolSize @a @t @s - 1],
+            r1csOutput = [s..s + symbolSize @a @t @s - 1]
         }) >> get
 
     -- TODO: add check that `length (r1csOutput r) == symbolSize @a @t`
     current = get
 
     -- TODO: make this safe
-    apply x = modify (\r ->
+    apply x = modify (\(r :: R1CS a t s) ->
         let ins = r1csInput r
-            n   = symbolSize @a @t
+            n   = symbolSize @a @t @s
         in r
         {
             r1csInput = drop n ins,
-            r1csWitness = r1csWitness r . (fromList (zip (take n ins) (fromValue x)) `union`)
+            r1csWitness = r1csWitness r . (fromList (zip (take n ins) (fromValue @a @t @s x)) `union`)
         })
 
     eval ctx = \i ->
         let w = r1csWitness ctx i
             o = r1csOutput ctx
-        in toValue $ map (w !) o
+        in toValue @a @t @s $ map (w !) o
 
-type R a = R1CS a a
+type R a = R1CS a a Integer
 
 instance (FiniteField a) => Finite (R a) where
     order = order @a

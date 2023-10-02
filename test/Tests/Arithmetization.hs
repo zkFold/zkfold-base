@@ -17,7 +17,7 @@ import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..)
 
 import           Tests.Utility.Types                         (SmallField)
 
-type R = R1CS (Zp SmallField) (Zp SmallField)
+type R = R1CS (Zp SmallField) (Zp SmallField) Integer
 type I = Integer
 
 -- f x = if (2 / x == 3) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)

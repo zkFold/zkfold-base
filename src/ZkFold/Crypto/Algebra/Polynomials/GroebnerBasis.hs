@@ -8,6 +8,7 @@ module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (
     groebner,
     fromR1CS,
     -- * Internal
+    -- TODO: Remove these and add wrappers.
     lt, 
     zeroM,
     zeroP,
@@ -40,7 +41,7 @@ polynomial = P . sortBy (flip compare) . filter (not . zeroM)
 groebner :: Prime p => [Polynomial p] -> [Polynomial p]
 groebner = makeGroebner . sort
 
-fromR1CS :: forall p t . Prime p => R1CS (Zp p) t -> [Polynomial p]
+fromR1CS :: forall p t s . Prime p => R1CS (Zp p) t s -> [Polynomial p]
 fromR1CS r = map (fromR1CS' @p n f) $ elems m
     where
         n = r1csSizeM r
