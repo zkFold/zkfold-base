@@ -1,8 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Crypto.Data.Arithmetization where
 
-import           Control.Monad.State       (State, execState)
+import           Control.Monad.State       (State, execState, mapM)
 import           Prelude                   (Monoid (..), undefined)
 
 -- | A class for arithmetization algorithms.
@@ -80,3 +81,6 @@ instance (Arithmetization ctx f, Arithmetization ctx a) => Arithmetization ctx (
 
     -- TODO: complete this definition
     apply = undefined
+
+applyArgs :: forall ctx t . Arithmetization ctx t => ctx -> [ValueOf t] -> ctx
+applyArgs r args = execState (mapM (apply @ctx @t) args) r

@@ -6,12 +6,12 @@ module ZkFold.Crypto.Algebra.Basic.Field (
     fromZp
     ) where
 
-import           Prelude                           hiding (Num(..), length)
+import           Prelude                           hiding (Num(..), Fractional(..), length)
+import qualified Prelude                           as Haskell
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 
 newtype Zp p = Zp Integer
-    deriving (Show)
 
 fromZp :: Zp p -> Integer
 fromZp (Zp a) = a
@@ -56,3 +56,20 @@ instance Prime p => FromConstant Integer (Zp p) where
 
 instance Prime p => ToBits (Zp p) where
     toBits (Zp a) = map Zp $ toBits a
+
+instance Prime p => Haskell.Num (Zp p) where
+    fromInteger = toZp @p
+    (+)         = (+)
+    (-)         = (-)
+    (*)         = (*)
+    negate      = negate
+    abs         = id
+    signum      = const 1
+
+instance Prime p => Haskell.Fractional (Zp p) where
+    fromRational = error "`fromRational` is not implemented for `Zp p`"
+    recip        = invert
+    (/)          = (/)
+
+instance Show (Zp p) where
+    show (Zp a) = show a

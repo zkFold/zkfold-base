@@ -5,6 +5,7 @@ module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
         R1CS,
         r1csSizeN,
         r1csSizeM,
+        r1csSystem,
         r1csOptimize,
         r1csValue,
         r1csPrint
@@ -59,6 +60,9 @@ r1csSizeM :: R1CS a t -> Integer
 r1csSizeM r = length $ nub $ concatMap (keys . f) (elems $ r1csMatrices r)
     where f (a, b, c) = a `union` b `union` c
 
+r1csSystem :: R1CS a t -> Map Integer (Map Integer a, Map Integer a, Map Integer a)
+r1csSystem = r1csMatrices
+
 -- | Optimizes the constraint system.
 --
 -- TODO: Implement this.
@@ -71,6 +75,7 @@ r1csValue r = eval @(R1CS a t) @(R1CS a t) r mempty
 -- | Prints the constraint system, the witness, and the output on a given input.
 --
 -- TODO: Move this elsewhere.
+-- TODO: Check that all arguments have been applied.
 r1csPrint :: forall a t . (FiniteField a, Eq a, ToBits a, Symbolic a t, Show a, Show t) => R1CS a t -> IO ()
 r1csPrint r = do
     let m = elems (r1csMatrices r)

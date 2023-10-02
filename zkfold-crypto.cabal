@@ -66,6 +66,8 @@ library
       ZkFold.Crypto.Algebra.Basic.Field
       ZkFold.Crypto.Algebra.EllipticCurve.BLS12_381
       ZkFold.Crypto.Algebra.EllipticCurve.Class
+      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis
+      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal
       ZkFold.Crypto.Data.Arithmetization
       ZkFold.Crypto.Data.Bool
       ZkFold.Crypto.Data.Conditional
@@ -97,8 +99,10 @@ test-suite zkfold-crypto-test
     main-is: Main.hs
     other-modules:
       Tests.Arithmetization
+      Tests.GroebnerBasis
+      Tests.Utility.Types
     build-depends:
       base                          >= 4.9 && < 5,
-      mtl                                        ,
+      containers                                 ,
       zkfold-crypto                              ,
     hs-source-dirs: test

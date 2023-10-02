@@ -14,3 +14,7 @@ drop :: Integer -> [a] -> [a]
 drop 0 xs = xs
 drop n (_:xs) = drop (n - 1) xs
 drop _ [] = error "ZkFold.Prelude.drop: empty list"
+
+replicate :: Integer -> a -> [a]
+replicate 0 _ = []
+replicate n x = x : replicate (n - 1) x
