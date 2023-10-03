@@ -6,7 +6,7 @@ version:            0.1.0.0
 license:            MIT
 license-file:       LICENSE
 
-author:             zkFold team
+author:             Vladimir Sinyakov
 maintainer:         info@zkfold.io
 
 build-type:         Simple
@@ -98,6 +98,7 @@ test-suite zkfold-crypto-test
     ghc-options: -rtsopts
     main-is: Main.hs
     other-modules:
+      Examples.Fibonacci
       Tests.Arithmetization
       Tests.GroebnerBasis
       Tests.Utility.Types
