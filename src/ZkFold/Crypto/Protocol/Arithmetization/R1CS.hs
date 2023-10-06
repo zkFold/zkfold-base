@@ -21,6 +21,7 @@ import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
 import           ZkFold.Crypto.Data.Arithmetization   (Arithmetization (..))
 import           ZkFold.Crypto.Data.Conditional       (bool)
+import           ZkFold.Crypto.Data.Ord               (mergeMaps)
 import           ZkFold.Crypto.Data.Symbolic          (Symbolic (..))
 import           ZkFold.Prelude                       (length, drop, take)
 
@@ -36,8 +37,8 @@ instance Prime BigField
 -- | A rank-1 constraint system (R1CS).
 -- This type represents the result of a compilation of a function into a R1CS.
 --
--- To compile a function @/f :: C a => a -> a/@, we must define an instance @/C (R1CS a)/@.
--- Keep in mind that the more type constraints we impose on the polymorphic argument @/a/@,
+-- To compile a function @/f :: C t => t -> t/@, we must define an instance @/C (R1CS a t s)/@.
+-- Keep in mind that the more type constraints we impose on the polymorphic argument @/t/@,
 -- the broader the class of functions that can be compiled.
 data R1CS a t s = R1CS
     {
@@ -47,8 +48,10 @@ data R1CS a t s = R1CS
         -- ^ The input variables
         r1csWitness  :: Map Integer a -> Map Integer a,
         -- ^ The witness generation function
-        r1csOutput   :: [Integer]
+        r1csOutput   :: [Integer],
         -- ^ The output variable
+        r1csVarOrder :: Map Integer Integer
+        -- ^ The order of variable assignments
     }
 
 -- | Calculates the number of constraints in the system.
@@ -72,7 +75,7 @@ r1csOptimize = undefined
 r1csValue :: forall a t s . (FiniteField a, Eq a, ToBits a, Symbolic a t s) => R1CS a t s -> t
 r1csValue r = eval @(R1CS a t s) @(R1CS a t s) r mempty
 
--- | Prints the constraint system, the witness, and the output on a given input.
+-- | Prints the constraint system, the witness, and the output.
 --
 -- TODO: Move this elsewhere.
 -- TODO: Check that all arguments have been applied.
@@ -83,6 +86,7 @@ r1csPrint r = do
         w = r1csWitness r empty
         o = r1csOutput r
         v = r1csValue r
+        vo = r1csVarOrder r
     putStr "System size: "
     pPrint $ r1csSizeN r
     putStr "Variable size: "
@@ -93,6 +97,8 @@ r1csPrint r = do
     pPrint i
     putStr "Witness: "
     pPrint w
+    putStr "Variable order: "
+    pPrint vo
     putStr "Output: "
     pPrint o
     putStr"Value: "
@@ -111,7 +117,8 @@ instance Eq a => Semigroup (R1CS a t s) where
             -- We need a way to ensure the correct order no matter how `(<>)` is used.
             r1csInput    = nub $ r1csInput r1 ++ r1csInput r2,
             r1csWitness  = \w -> r1csWitness r1 w `union` r1csWitness r2 w,
-            r1csOutput   = r1csOutput r1 ++ r1csOutput r2
+            r1csOutput   = r1csOutput r1 ++ r1csOutput r2,
+            r1csVarOrder = mergeMaps (r1csVarOrder r1) (r1csVarOrder r2)
         }
 
 instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
@@ -120,7 +127,8 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
             r1csMatrices = empty,
             r1csInput    = [],
             r1csWitness  = insert 0 one,
-            r1csOutput   = []
+            r1csOutput   = [],
+            r1csVarOrder = singleton 0 0
         }
 
 instance (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetization (R1CS a t s) (R1CS a t s) where
@@ -145,7 +153,7 @@ instance (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetization (R1C
                 let x = r1csNewVariable (con $ -1)
                 in (r { r1csMatrices = insert (r1csSizeN r) (con x) (r1csMatrices r)}, xs ++ [x]))
                 (r0, []) cons
-        put (r1 { r1csOutput = vars } :: R1CS a t s)
+        put (r1 { r1csOutput = vars, r1csVarOrder = r1csVarOrder r1 `union` fromList (zip [length (r1csVarOrder r1)..] vars) } :: R1CS a t s)
 
     -- TODO: forbid reassignment of variables
     -- TODO: add check that `length (r1csOutput r) == symbolSize @a @t`
@@ -157,10 +165,12 @@ instance (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetization (R1C
     input = modify (\(r :: R1CS a t s) ->
         let ins = r1csInput r
             s   = if null ins then 1 else maximum (r1csInput r) + 1
+            insNew = [s..s + symbolSize @a @t @s - 1]
         in r
         {
-            r1csInput  = ins ++ [s..s + symbolSize @a @t @s - 1],
-            r1csOutput = [s..s + symbolSize @a @t @s - 1]
+            r1csInput    = ins ++ insNew,
+            r1csOutput   = insNew,
+            r1csVarOrder = r1csVarOrder r `union` fromList (zip [length (r1csVarOrder r)..] insNew)
         }) >> get
 
     -- TODO: add check that `length (r1csOutput r) == symbolSize @a @t`

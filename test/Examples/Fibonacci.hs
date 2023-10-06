@@ -53,4 +53,3 @@ exampleFibonacci = do
 
             print $ eval @R @R r $ singleton one x
             print $ fibonacciIndex @(Zp SmallField) @Bool x
-            

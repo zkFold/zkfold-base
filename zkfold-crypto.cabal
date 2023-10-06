@@ -72,6 +72,7 @@ library
       ZkFold.Crypto.Data.Bool
       ZkFold.Crypto.Data.Conditional
       ZkFold.Crypto.Data.Eq
+      ZkFold.Crypto.Data.Ord
       ZkFold.Crypto.Data.Symbolic
       ZkFold.Crypto.Protocol.Arithmetization.Plonk
       ZkFold.Crypto.Protocol.Arithmetization.R1CS

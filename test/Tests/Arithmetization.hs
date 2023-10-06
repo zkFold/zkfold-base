@@ -38,6 +38,12 @@ testResult x y =
 testArithmetization :: IO ()
 testArithmetization = do
     putStrLn "\nStarting arithmetization test...\n"
+    putStrLn "Test sample:"
+    let r0  = compile (testFunc @R @(SymbolicBool R))
+        r0' = applyArgs @R @R r0 [3, 5]
+    r1csPrint r0'
+
+    putStrLn "\nVerifying the circuit...\n"
     let m   = zipWith (curry (bimap toZp toZp)) [0..order @SmallField - 1] [0..order @SmallField - 1]
         res = zip m $ map (uncurry testResult) m
     case find (not . snd) res of
