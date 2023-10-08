@@ -5,10 +5,11 @@ module Tests.Arithmetization (testArithmetization) where
 
 import           Data.Bifunctor                              (bimap)
 import           Data.List                                   (find)
-import           Prelude                                     hiding (not, Num(..), Eq(..), (^), (/))
+import           Prelude                                     hiding (not, Num(..), Eq(..), (^), (/), replicate)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
+import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (fromR1CS, reduceMany, property, zeroP)
 import           ZkFold.Crypto.Protocol.Arithmetization.R1CS
 import           ZkFold.Crypto.Data.Arithmetization          (Arithmetization(..), applyArgs)
 import           ZkFold.Crypto.Data.Bool                     (GeneralizedBoolean(..), SymbolicBool (..))
@@ -42,6 +43,14 @@ testArithmetization = do
     let r0  = compile (testFunc @R @(SymbolicBool R))
         r0' = applyArgs @R @R r0 [3, 5]
     r1csPrint r0'
+
+    putStrLn "\nR1CS polynomials:\n"
+    let ps = fromR1CS r0'
+        p0 = property r0'
+    print ps
+    print p0
+    print $ reduceMany p0 ps
+    print $ zeroP $ reduceMany p0 ps
 
     putStrLn "\nVerifying the circuit...\n"
     let m   = zipWith (curry (bimap toZp toZp)) [0..order @SmallField - 1] [0..order @SmallField - 1]

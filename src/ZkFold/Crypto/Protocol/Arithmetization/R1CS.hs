@@ -6,6 +6,8 @@ module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
         r1csSizeN,
         r1csSizeM,
         r1csSystem,
+        r1csVarOrder,
+        r1csOutput,
         r1csOptimize,
         r1csValue,
         r1csPrint
@@ -59,9 +61,9 @@ r1csSizeN :: R1CS a t s -> Integer
 r1csSizeN = length . r1csMatrices
 
 -- | Calculates the number of variables in the system.
+-- The constant `1` is not counted.
 r1csSizeM :: R1CS a t s -> Integer
-r1csSizeM r = length $ nub $ concatMap (keys . f) (elems $ r1csMatrices r)
-    where f (a, b, c) = a `union` b `union` c
+r1csSizeM = length . r1csVarOrder
 
 r1csSystem :: R1CS a t s -> Map Integer (Map Integer a, Map Integer a, Map Integer a)
 r1csSystem = r1csMatrices
@@ -128,7 +130,7 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
             r1csInput    = [],
             r1csWitness  = insert 0 one,
             r1csOutput   = [],
-            r1csVarOrder = singleton 0 0
+            r1csVarOrder = empty
         }
 
 instance (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetization (R1CS a t s) (R1CS a t s) where
