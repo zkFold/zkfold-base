@@ -51,7 +51,7 @@ exampleFibonacci = do
 
     putStrLn "\nR1CS polynomials:\n"
     print ps
-    putStrLn "\nOutput polynomial:\n"
+    putStrLn "\n\"The output equals 1\" polynomial:\n"
     print p0
 
     putStrLn "\nVerifying the theorem...\n"
