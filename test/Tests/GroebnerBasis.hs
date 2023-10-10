@@ -2,12 +2,12 @@
 
 module Tests.GroebnerBasis (testGroebner) where
 
-import           Prelude                                     hiding (not, Num(..), Eq(..), (^), (/))
+import           Prelude                                    hiding (not, Num(..), Eq(..), (^), (/))
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis
 
-import           Tests.Utility.Types (SmallField)
+import           Tests.Utility.Types                        (SmallField)
 
 testPoly :: Prime p => [Polynomial p]
 testPoly = map polynomial [

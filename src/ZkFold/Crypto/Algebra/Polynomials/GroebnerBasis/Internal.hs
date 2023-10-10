@@ -3,10 +3,11 @@
 
 module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal where
 
-import           Data.List                         (intercalate, foldl')
-import           Prelude                           hiding (Num(..), (/), lcm)
+import           Data.List                         (intercalate, foldl', sortBy)
+import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
+import           ZkFold.Prelude                    (length, drop, take, (!!))
 
 data Monom c a = M c [a] deriving (Eq)
 newtype Polynom c a = P [Monom c a] deriving (Eq)
@@ -140,3 +141,62 @@ makeGroebner []     = []
 makeGroebner (b:bs) = build [b] bs
     where build checked add@(a:as) = build (checked ++ [a]) (as ++ checkOne a checked add)
           build checked []         = checked
+
+------------------------------------------------------------------------
+
+fullReduceMany :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
+    Polynom c a -> [Polynom c a] -> Polynom c a
+fullReduceMany h fs
+    | zeroP h'   = h'
+    | otherwise = P [lt h'] + fullReduceMany (h' - P [lt h']) fs
+    where h' = reduceMany h fs
+
+varNumber :: Polynom c a -> Integer
+varNumber (P [])         = 0
+varNumber (P (M _ as:_)) = length as
+
+varIsMissing :: (Ord a, AdditiveGroup a) => Integer -> Polynom c a -> Bool
+varIsMissing i (P ms) = all (\(M _ as) -> as !! (i-1) == zero) ms
+
+checkVarUnique :: (Ord a, AdditiveGroup a) => Integer -> [Polynom c a] -> Bool
+checkVarUnique i fs = length (filter (== False) $ map (varIsMissing i) fs) == 1
+
+checkLTSimple :: (Ord a, AdditiveGroup a) => Integer -> Polynom c a -> Bool
+checkLTSimple _ (P [])         = True
+checkLTSimple i (P (M _ as:_)) = all (== zero) $ take (i-1) as ++ drop i as
+
+trimSystem :: (Ord a, AdditiveGroup a) => Polynom c a -> [Polynom c a] -> [Polynom c a]
+trimSystem h fs = go (varNumber h)
+    where
+        go 0 = fs
+        go i = if varIsMissing i h && checkVarUnique i fs && any (checkLTSimple i) fs
+            then trimSystem h (filter (varIsMissing i) fs)
+            else go (i-1)
+
+addSPolyStep :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
+            Integer -> Integer -> [Polynom c a] -> [Polynom c a]
+addSPolyStep i' j' fs
+    | not (zeroP s)          = sortBy (flip compare) (s : fs')
+    | i'' == i' && j'' == j' = fs
+    | otherwise              = addSPolyStep i'' j'' fs
+    where n = length fs
+          fi = fs !! (i'-1)
+          fj = fs !! (j'-1)
+          s = fullReduceMany (makeSPoly fi fj) fs
+          fs' = filter (not . zeroP) $ map (`fullReduceMany` [s]) fs
+          (i'', j'') = go i' j'
+          go i j
+            | j - i > 1 = (i, j-1)
+            | i > 1     = (i-1, n)
+            | otherwise = (i, j)
+
+groebnerStep :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
+                Polynom c a -> [Polynom c a] -> (Polynom c a, [Polynom c a])
+groebnerStep h fs
+    | zeroP h   = (h, fs)
+    | otherwise =
+        let h'   = fullReduceMany h fs
+            fs'  = trimSystem h' fs
+            n = length fs'
+            fs'' = addSPolyStep (n-1) n fs'
+        in (h', fs'')

@@ -101,6 +101,8 @@ test-suite zkfold-crypto-test
     other-modules:
       Examples.Fibonacci
       Tests.Arithmetization
+      Tests.Arithmetization.Test1
+      Tests.Arithmetization.Test2
       Tests.GroebnerBasis
       Tests.Utility.Types
     build-depends:

@@ -1,6 +1,6 @@
 module ZkFold.Prelude where
     
-import Prelude (Foldable, Num (..), Integer, foldl, error)
+import Prelude (Foldable, Num (..), Ord (..), Eq (..), Integer, foldl, error)
 
 length :: Foldable t => t a -> Integer
 length = foldl (\c _ -> c + 1) 0
@@ -18,3 +18,8 @@ drop _ [] = error "ZkFold.Prelude.drop: empty list"
 replicate :: Integer -> a -> [a]
 replicate 0 _ = []
 replicate n x = x : replicate (n - 1) x
+
+(!!) :: [a] -> Integer -> a
+_      !! i | i < 0 = error "ZkFold.Prelude.!!: negative index"
+[]     !! _         = error "ZkFold.Prelude.!!: index too large"
+(x:xs) !! i         = if i == 0 then x else xs !! (i-1)
