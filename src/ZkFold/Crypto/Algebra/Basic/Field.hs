@@ -1,17 +1,20 @@
 {-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Crypto.Algebra.Field (
+module ZkFold.Crypto.Algebra.Basic.Field (
     Zp,
     toZp,
     fromZp
     ) where
 
-import           Prelude                     hiding (Num(..), length)
+import           Prelude                           hiding (Num(..), Fractional(..), length)
+import qualified Prelude                           as Haskell
 
-import           ZkFold.Crypto.Algebra.Class
+import           ZkFold.Crypto.Algebra.Basic.Class
 
-newtype Zp p = Zp { fromZp :: Integer }
-    deriving (Show)
+newtype Zp p = Zp Integer
+
+fromZp :: Zp p -> Integer
+fromZp (Zp a) = a
 
 toZp :: forall p . Prime p => Integer -> Zp p
 toZp a = Zp $ a `mod` order @p
@@ -48,5 +51,25 @@ instance Prime p => MultiplicativeGroup (Zp p) where
             | otherwise = f (x', y') (x - q * x', y - q * y')
             where q = x `div` x'
 
+instance Prime p => FromConstant Integer (Zp p) where
+    fromConstant = toZp @p
+
 instance Prime p => ToBits (Zp p) where
     toBits (Zp a) = map Zp $ toBits a
+
+instance Prime p => Haskell.Num (Zp p) where
+    fromInteger = toZp @p
+    (+)         = (+)
+    (-)         = (-)
+    (*)         = (*)
+    negate      = negate
+    abs         = id
+    signum      = const 1
+
+instance Prime p => Haskell.Fractional (Zp p) where
+    fromRational = error "`fromRational` is not implemented for `Zp p`"
+    recip        = invert
+    (/)          = (/)
+
+instance Show (Zp p) where
+    show (Zp a) = show a

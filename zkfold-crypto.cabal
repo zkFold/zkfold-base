@@ -6,7 +6,7 @@ version:            0.1.0.0
 license:            MIT
 license-file:       LICENSE
 
-author:             zkFold team
+author:             Vladimir Sinyakov
 maintainer:         info@zkfold.io
 
 build-type:         Simple
@@ -54,6 +54,7 @@ common options
       RecordWildCards,
       ScopedTypeVariables,
       StandaloneDeriving,
+      StandaloneKindSignatures,
       TupleSections,
       TypeFamilies,
       ViewPatterns
@@ -61,12 +62,20 @@ common options
 library
     import: options
     exposed-modules:
-      ZkFold.Crypto.Algebra.Class
-      ZkFold.Crypto.Algebra.Field
-      ZkFold.Crypto.Arithmetization.Plonk
-      ZkFold.Crypto.Arithmetization.R1CS
-      ZkFold.Crypto.EllipticCurve.BLS12_381
-      ZkFold.Crypto.EllipticCurve.Class
+      ZkFold.Crypto.Algebra.Basic.Class
+      ZkFold.Crypto.Algebra.Basic.Field
+      ZkFold.Crypto.Algebra.EllipticCurve.BLS12_381
+      ZkFold.Crypto.Algebra.EllipticCurve.Class
+      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis
+      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal
+      ZkFold.Crypto.Data.Arithmetization
+      ZkFold.Crypto.Data.Bool
+      ZkFold.Crypto.Data.Conditional
+      ZkFold.Crypto.Data.Eq
+      ZkFold.Crypto.Data.Ord
+      ZkFold.Crypto.Data.Symbolic
+      ZkFold.Crypto.Protocol.Arithmetization.Plonk
+      ZkFold.Crypto.Protocol.Arithmetization.R1CS
       ZkFold.Crypto.Protocol.ARK.BabyHyrax
       ZkFold.Crypto.Protocol.ARK.HyperPlonk
       ZkFold.Crypto.Protocol.ARK.Lasso
@@ -80,6 +89,7 @@ library
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
+      mtl                                        ,
       pretty-simple                              ,
       poly                                       ,
     hs-source-dirs: src
@@ -87,9 +97,17 @@ library
 test-suite zkfold-crypto-test
     import: options
     type: exitcode-stdio-1.0
-    main-is: Main.hs
     ghc-options: -rtsopts
+    main-is: Main.hs
+    other-modules:
+      Examples.Fibonacci
+      Tests.Arithmetization
+      Tests.Arithmetization.Test1
+      Tests.Arithmetization.Test2
+      Tests.GroebnerBasis
+      Tests.Utility.Types
     build-depends:
       base                          >= 4.9 && < 5,
+      containers                                 ,
       zkfold-crypto                              ,
     hs-source-dirs: test

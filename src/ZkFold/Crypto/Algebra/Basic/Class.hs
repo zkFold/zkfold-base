@@ -1,11 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module ZkFold.Crypto.Algebra.Class where
+module ZkFold.Crypto.Algebra.Basic.Class where
 
 import           Prelude hiding (Num(..), (^), (/), negate)
 import qualified Prelude as Haskell
 
-infixl 7 *
+infixl 7 *, /
 infixl 6 +, -
 
 class AdditiveSemigroup a where
@@ -46,7 +46,7 @@ type Semiring a = (AdditiveMonoid a, MultiplicativeMonoid a)
 
 type Ring a = (AdditiveGroup a, MultiplicativeMonoid a)
 
--- Note: we expect division/inversion to be partial, i.e. throw an error on zero.
+-- NOTE: by convention, division by zero returns zero.
 type Field a = (AdditiveGroup a, MultiplicativeGroup a)
 
 class Finite a where
@@ -63,6 +63,9 @@ type FiniteField a = (Finite a, Field a)
 type PrimeField a = (Prime a, FiniteField a)
 
 --------------------------------------------------------------------------------
+
+class FromConstant a b where
+    fromConstant :: a -> b
 
 -- Note: numbers should convert to Little-endian bit representation.
 class Semiring a => ToBits a where
@@ -104,3 +107,43 @@ instance ToBits Integer where
     toBits x
         | x > 0     = (x `mod` 2) : toBits (x `div` 2)
         | otherwise = error "toBits: Not defined for negative integers!"
+
+--------------------------------------------------------------------------------
+
+instance AdditiveSemigroup a => AdditiveSemigroup [a] where
+    (+) = zipWith (+)
+
+instance AdditiveMonoid a => AdditiveMonoid [a] where
+    zero = repeat zero
+
+instance AdditiveGroup a => AdditiveGroup [a] where
+    negate = map negate
+
+instance MultiplicativeSemigroup a => MultiplicativeSemigroup [a] where
+    (*) = zipWith (*)
+
+instance MultiplicativeMonoid a => MultiplicativeMonoid [a] where
+    one = repeat one
+
+instance MultiplicativeGroup a => MultiplicativeGroup [a] where
+    invert = map invert
+
+--------------------------------------------------------------------------------
+
+instance AdditiveSemigroup a => AdditiveSemigroup (p -> a) where
+    p1 + p2 = \x -> p1 x + p2 x
+
+instance AdditiveMonoid a => AdditiveMonoid (p -> a) where
+    zero = const zero
+
+instance AdditiveGroup a => AdditiveGroup (p -> a) where
+    negate = fmap negate
+
+instance MultiplicativeSemigroup a => MultiplicativeSemigroup (p -> a) where
+    p1 * p2 = \x -> p1 x * p2 x
+
+instance MultiplicativeMonoid a => MultiplicativeMonoid (p -> a) where
+    one = const one
+
+instance MultiplicativeGroup a => MultiplicativeGroup (p -> a) where
+    invert = fmap invert
