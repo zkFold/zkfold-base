@@ -2,8 +2,8 @@
 
 module ZkFold.Crypto.Protocol.Commitment.KZG where
 
-import Data.Poly
-import ZkFold.Crypto.EllipticCurve.Class (EllipticCurve (powers_of_g), generator, mul, add, evaluate, BaseField, ScalarField, Polynomial)
+import ZkFold.Crypto.EllipticCurve.Class (EllipticCurve (powers_of_g), generator, mul, add, evaluate, BaseField, ScalarField)
+import ZkFold.Crypto.Algebra.Polynomials.Poly
 
 -- class Polynomial scalar where
 --     coefs :: [scalar]
@@ -14,7 +14,7 @@ import ZkFold.Crypto.EllipticCurve.Class (EllipticCurve (powers_of_g), generator
 
 
 class KZG g1 g2 where
-    commitment :: Polynomial (ScalarField g1) -> BaseField g1
+    commitment :: Poly (ScalarField g1) -> BaseField g1
 
     whitness :: ScalarField g1 -> BaseField g1
 

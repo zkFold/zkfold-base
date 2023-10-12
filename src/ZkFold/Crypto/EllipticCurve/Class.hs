@@ -3,11 +3,11 @@ module ZkFold.Crypto.EllipticCurve.Class where
 
 import Prelude (Bool, Int)
 import Data.List (zipWith, foldl1', length) 
-import ZkFold.Crypto.Algebra.Class
+import ZkFold.Crypto.Algebra.Polynomials.Poly
 
 newtype BaseField curve = BaseField curve
 newtype ScalarField curve = ScalarField curve
-newtype Polynomial field = Polynomial [field]
+
 
 -- instance MultiplicativeSemigroup (Polynomial field) where
 --     {-# INLINABLE (*) #-}
@@ -15,8 +15,8 @@ newtype Polynomial field = Polynomial [field]
 --         where Polynomial x' = x
 --               Polynomial y' = y
 
-evaluate:: EllipticCurve curve => Polynomial (ScalarField curve) -> BaseField curve
-evaluate (Polynomial coefs) = foldl1' add (zipWith mul coefs (powers_of_g (length coefs)))
+evaluate:: EllipticCurve curve => Poly (ScalarField curve) -> BaseField curve
+evaluate (P coefs) = foldl1' add (zipWith mul coefs (powers_of_g (length coefs)))
 
 class EllipticCurve curve where
     on_curve :: BaseField curve  -> Bool
