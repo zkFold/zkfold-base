@@ -49,6 +49,13 @@ instance (Eq c, FiniteField c, Ord a, AdditiveGroup a) => MultiplicativeMonoid (
 lt :: Polynom c a -> Monom c a
 lt (P as) = head as
 
+lv :: (Eq a, AdditiveMonoid a) => Polynom c a -> Integer
+lv p = go as
+    where
+        M _ as = lt p
+        go [] = 0
+        go (b:bs) = if b == zero then 1 + go bs else 0
+
 zeroM :: (Eq c, FiniteField c) => Monom c a -> Bool
 zeroM (M c _) = c == zero
 
@@ -117,9 +124,17 @@ reduceMany h fs = if reduced then reduceMany h' fs else h'
 lcmM :: (FiniteField c, Ord a) => Monom c a -> Monom c a -> Monom c a
 lcmM (M cl al) (M cr ar) = M (cl*cr) (zipWith max al ar)
 
+gcdM :: (FiniteField c, Ord a) => Monom c a -> Monom c a -> Monom c a
+gcdM (M cl al) (M cr ar) = M (cl*cr) (zipWith min al ar)
+
+gcdNotOne :: (FiniteField c, Ord a, AdditiveMonoid a) => Monom c a -> Monom c a -> Bool
+gcdNotOne l r =
+    let M _ as = gcdM l r
+    in any (/= zero) as
+
 makeSPoly :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
              Polynom c a -> Polynom c a -> Polynom c a
-makeSPoly l r = addPoly l' r'
+makeSPoly l r = if gcdNotOne (lt l) (lt r) then addPoly l' r' else zero
     where l'  = mulPM l ra
           r'  = mulPM r la
           lcm = lcmM (lt l) (lt r)
@@ -165,8 +180,9 @@ checkLTSimple :: (Ord a, AdditiveGroup a) => Integer -> Polynom c a -> Bool
 checkLTSimple _ (P [])         = True
 checkLTSimple i (P (M _ as:_)) = all (== zero) $ take (i-1) as ++ drop i as
 
-trimSystem :: (Ord a, AdditiveGroup a) => Polynom c a -> [Polynom c a] -> [Polynom c a]
-trimSystem h fs = go (varNumber h)
+trimSystem :: (Eq c, Ord a, AdditiveGroup a) => Polynom c a -> [Polynom c a] -> [Polynom c a]
+trimSystem h fs = filter (\f -> lv f >= lv h) $ 
+        go (varNumber h)
     where
         go 0 = fs
         go i = if varIsMissing i h && checkVarUnique i fs && any (checkLTSimple i) fs
@@ -174,21 +190,16 @@ trimSystem h fs = go (varNumber h)
             else go (i-1)
 
 addSPolyStep :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
-            Integer -> Integer -> [Polynom c a] -> [Polynom c a]
-addSPolyStep i' j' fs
-    | not (zeroP s)          = sortBy (flip compare) (s : fs')
-    | i'' == i' && j'' == j' = fs
-    | otherwise              = addSPolyStep i'' j'' fs
-    where n = length fs
-          fi = fs !! (i'-1)
-          fj = fs !! (j'-1)
-          s = fullReduceMany (makeSPoly fi fj) fs
-          fs' = filter (not . zeroP) $ map (`fullReduceMany` [s]) fs
-          (i'', j'') = go i' j'
-          go i j
-            | j - i > 1 = (i, j-1)
-            | i > 1     = (i-1, n)
-            | otherwise = (i, j)
+            [Polynom c a] -> [Polynom c a] -> [Polynom c a] -> [Polynom c a]
+addSPolyStep [] _ rs = rs
+addSPolyStep _ [] rs = rs
+addSPolyStep (p:ps) (q:qs) rs
+    | not (zeroP s)  = sortBy (flip compare) (s : rs')
+    | lt p == lt q   = addSPolyStep ps (reverse rs) rs
+    | otherwise      = addSPolyStep (p:ps) qs rs
+        where
+            s = fullReduceMany (makeSPoly p q) rs
+            rs' = filter (not . zeroP) $ map (`fullReduceMany` [s]) rs
 
 groebnerStep :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
                 Polynom c a -> [Polynom c a] -> (Polynom c a, [Polynom c a])
@@ -197,6 +208,5 @@ groebnerStep h fs
     | otherwise =
         let h'   = fullReduceMany h fs
             fs'  = trimSystem h' fs
-            n = length fs'
-            fs'' = addSPolyStep (n-1) n fs'
+            fs'' = addSPolyStep (reverse fs') (reverse fs') fs'
         in (h', fs'')

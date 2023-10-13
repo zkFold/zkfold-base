@@ -237,6 +237,8 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R a) where
         constraint @(R a) @(R a) [con]
         assignment @(R a) @(R a) (bool zero one . (== zero) . eval @(R a) @(R a) r)
         y  <- gets (toSymbol @a @a . r1csOutput)
+        -- TODO: remove this constraint
+        constraint @(R a) @(R a) [const (singleton y one, singleton y one, singleton y one)]
         let con' = \z -> (singleton x one, singleton z one, fromList [(0, one), (y, negate one)])
         constraint @(R a) @(R a) [con']
         assignment @(R a) @(R a) (invert . eval @(R a) @(R a) r)
