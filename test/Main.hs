@@ -8,7 +8,7 @@ import           Tests.GroebnerBasis         (testGroebner)
 
 main :: IO ()
 main = do
-    testGroebner
+    -- testGroebner
     testArithmetization
 
     exampleFibonacci

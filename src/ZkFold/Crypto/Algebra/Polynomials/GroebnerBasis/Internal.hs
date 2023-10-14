@@ -12,7 +12,34 @@ import           Prelude                           hiding (Num(..), (/), (!!), l
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Prelude                    (length)
 
-data Monom c a = M c (Map Integer a) deriving (Eq)
+data VarType = Free | Bound deriving Eq
+
+data Var a = Var a VarType
+instance Show a => Show (Var a) where
+    show (Var x _) = show x
+instance Eq a => Eq (Var a) where
+    (==) (Var x _) (Var y _) = x == y
+instance Ord a => Ord (Var a) where
+    compare (Var x _) (Var y _) = compare x y
+instance AdditiveSemigroup a => AdditiveSemigroup (Var a) where
+    Var x t1 + Var y t2
+        | t1 == t2 = Var (x + y) t1
+        | otherwise = error "AdditiveSemigroup: VarType mismatch"
+instance AdditiveMonoid a => AdditiveMonoid (Var a) where
+    zero = Var zero Free
+instance AdditiveGroup a => AdditiveGroup (Var a) where
+    negate (Var x t) = Var (negate x) t
+    Var x t1 - Var y t2
+        | t1 == t2 = Var (x - y) t1
+        | otherwise = error "AdditiveGroup: VarType mismatch"
+instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Var a) where
+    Var x t1 * Var y t2
+        | t1 == t2 = Var (x * y) t1
+        | otherwise = error "MultiplicativeSemigroup: VarType mismatch"
+instance MultiplicativeMonoid a => MultiplicativeMonoid (Var a) where
+    one = Var one Free
+
+data Monom c a = M c (Map Integer (Var a)) deriving (Eq)
 newtype Polynom c a = P [Monom c a] deriving (Eq)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
@@ -20,7 +47,7 @@ instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, Multiplica
     show (M c as) = (if c == one then "" else show c) ++
                     intercalate "∙" (map showOne $ toList as)
         where
-            showOne :: (Integer, a) -> String
+            showOne :: (Integer, Var a) -> String
             showOne (i, p) = "x" ++ show i ++ (if p == one then "" else "^" ++ show p)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)

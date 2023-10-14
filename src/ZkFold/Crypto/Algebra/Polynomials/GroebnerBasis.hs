@@ -42,7 +42,7 @@ import           ZkFold.Crypto.Protocol.Arithmetization.R1CS
 type Monomial p = Monom (Zp p) Integer
 
 -- TODO: Check the list length.
-monomial :: Zp p -> Map Integer Integer -> Monomial p
+monomial :: Zp p -> Map Integer (Var Integer) -> Monomial p
 monomial = M
 
 type Polynomial p = Polynom (Zp p) Integer
@@ -78,7 +78,7 @@ mapVars xs x
 var :: [Integer] -> Integer -> Zp p -> Monomial p
 var xs i v = 
     let j = mapVars xs i
-    in M v $ if j > 0 then singleton j 1 else empty
+    in M v $ if j > 0 then singleton j (Var 1 Free) else empty
 
 fromR1CS' :: Prime p => [Integer] -> (Map Integer (Zp p), Map Integer (Zp p), Map Integer (Zp p)) -> Polynomial p
 fromR1CS' xs (a, b, c) = mulM pa pb `addPoly` mulPM pc (M (negate 1) empty)
