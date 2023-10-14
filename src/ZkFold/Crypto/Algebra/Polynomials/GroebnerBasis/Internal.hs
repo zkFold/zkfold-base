@@ -1,23 +1,13 @@
--- This module is adapted from
--- https://gist.github.com/maksbotan/5414897#file-groebner-hs
-
 module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal where
 
 import           Data.Bool                         (bool)
 import           Data.List                         (sortBy)
-import           Data.Map                          (unionWith, isSubmapOfBy, notMember)
-import qualified Data.Map                          as Map
+import           Data.Map                          (notMember)
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Types
 import           ZkFold.Prelude                    (length)
-
-dividable :: (Ord a) => Monom c a -> Monom c a -> Bool
-dividable (M _ al) (M _ ar) = isSubmapOfBy (<=) ar al
-
-divideM :: (FiniteField c, Eq a, AdditiveGroup a) => Monom c a -> Monom c a -> Monom c a
-divideM (M cl al) (M cr ar) = M (cl/cr) (Map.filter (not . oneV) $ unionWith (-) al ar)
 
 reducable :: (Ord a) => Polynom c a -> Polynom c a -> Bool
 reducable l r = dividable (lt l) (lt r)
@@ -40,27 +30,15 @@ reduceMany h fs = if reduced then reduceMany h' fs else h'
                         else reduceStep p qs r
           reduceStep p [] r = (p, r)
 
-lcmM :: (FiniteField c, Ord a) => Monom c a -> Monom c a -> Monom c a
-lcmM (M cl al) (M cr ar) = M (cl*cr) (unionWith max al ar)
-
-gcdM :: (FiniteField c, Ord a) => Monom c a -> Monom c a -> Monom c a
-gcdM (M cl al) (M cr ar) = M (cl*cr) (unionWith min al ar)
-
-gcdNotOne :: (FiniteField c, Ord a, AdditiveMonoid a) => Monom c a -> Monom c a -> Bool
-gcdNotOne l r =
-    let M _ as = gcdM l r
-    in any (/= zero) as
-
 makeSPoly :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
              Polynom c a -> Polynom c a -> Polynom c a
-makeSPoly l r = if gcdNotOne (lt l) (lt r) then addPoly l' r' else zero
-    where l'  = mulPM l ra
+makeSPoly l r = if null as then zero else addPoly l' r'
+    where M _ as = gcdM (lt l) (lt r)
+          l'  = mulPM l ra
           r'  = mulPM r la
           lcm = lcmM (lt l) (lt r)
           ra  = divideM lcm (lt l)
           la  = scale (negate one) $ divideM lcm (lt r)
-
-------------------------------------------------------------------------
 
 fullReduceMany :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
     Polynom c a -> [Polynom c a] -> Polynom c a

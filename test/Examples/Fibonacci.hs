@@ -29,7 +29,7 @@ fibIndexOutOfRange nMax x = fibonacciIndex @a @b nMax x /= fromConstant @I @a (n
 
 exampleFibonacci :: IO ()
 exampleFibonacci = do
-    let nMax = 5
+    let nMax = 10
 
     let r = compile @R (fibonacciIndex @R @(SymbolicBool R) nMax)
 

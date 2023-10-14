@@ -1,7 +1,8 @@
 module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Types where
 
 import           Data.List                         (intercalate, foldl')
-import           Data.Map                          (Map, toList, empty, unionWith, keys)
+import           Data.Map                          (Map, toList, empty, unionWith, keys, isSubmapOfBy, intersectionWith)
+import qualified Data.Map                          as Map
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
@@ -13,15 +14,6 @@ instance Eq a => Eq (Var c a) where
     (==) vx vy = getPower vx == getPower vy
 instance Ord a => Ord (Var c a) where
     compare vx vy = compare (getPower vx) (getPower vy)
-instance AdditiveSemigroup a => AdditiveSemigroup (Var c a) where
-    (Bound x p) + (Bound y _) = Bound (x + y) p
-    (Free x) + (Free y)       = Free (x + y)
-    _ + _                     = error "AdditiveSemigroup: VarType mismatch"
-instance AdditiveMonoid a => AdditiveMonoid (Var c a) where
-    zero = Free zero
-instance AdditiveGroup a => AdditiveGroup (Var c a) where
-    negate (Bound x p) = Bound (negate x) p
-    negate (Free x)    = Free (negate x)
 
 getPower :: Var c a -> a
 getPower (Bound j _) = j
@@ -93,6 +85,20 @@ zeroM (M c _) = c == zero
 zeroP :: Polynom c a -> Bool
 zeroP (P as) = null as
 
+addPower :: AdditiveSemigroup a => Var c a -> Var c a -> Var c a
+addPower (Bound x p) (Bound y q)
+    | p == q = Bound (x + y) p
+    | otherwise = error "addPowers: VarType mismatch"
+addPower (Free x) (Free y)       = Free (x + y)
+addPower _ _                     = error "addPowers: VarType mismatch"
+
+subPower :: AdditiveGroup a => Var c a -> Var c a -> Var c a
+subPower (Bound x p) (Bound y q)
+    | p == q = Bound (x - y) p
+    | otherwise = error "subPower: VarType mismatch"
+subPower (Free x) (Free y)       = Free (x - y)
+subPower _ _                     = error "subPower: VarType mismatch"
+
 scale :: FiniteField c => c -> Monom c a -> Monom c a
 scale c' (M c as) = M (c*c') as
 
@@ -117,10 +123,22 @@ addPoly (P l) (P r) = P $ go l r
             | otherwise = b : go (a:as) bs
 
 mulMono :: (FiniteField c, AdditiveGroup a) => Monom c a -> Monom c a -> Monom c a
-mulMono (M cl asl) (M cr asr) = M (cl*cr) (unionWith (+) asl asr)
+mulMono (M cl asl) (M cr asr) = M (cl*cr) (unionWith addPower asl asr)
 
 mulPM :: (FiniteField c, AdditiveGroup a) => Polynom c a -> Monom c a -> Polynom c a
 mulPM(P as) m = P $ map (mulMono m) as
 
 mulM :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) => Polynom c a -> Polynom c a -> Polynom c a
 mulM (P ml) r = foldl' addPoly (P []) $ map (mulPM r) ml
+
+dividable :: (Ord a) => Monom c a -> Monom c a -> Bool
+dividable (M _ al) (M _ ar) = isSubmapOfBy (<=) ar al
+
+divideM :: (FiniteField c, Eq a, AdditiveGroup a) => Monom c a -> Monom c a -> Monom c a
+divideM (M cl al) (M cr ar) = M (cl/cr) (Map.filter (not . oneV) $ unionWith subPower al ar)
+
+lcmM :: (FiniteField c, Ord a) => Monom c a -> Monom c a -> Monom c a
+lcmM (M cl al) (M cr ar) = M (cl*cr) (unionWith max al ar)
+
+gcdM :: (FiniteField c, Ord a) => Monom c a -> Monom c a -> Monom c a
+gcdM (M cl al) (M cr ar) = M (cl*cr) (intersectionWith min al ar)
