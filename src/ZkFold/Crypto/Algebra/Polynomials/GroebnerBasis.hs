@@ -27,12 +27,14 @@ module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (
     varNumber,
     varIsMissing,
     checkVarUnique,
-    groebnerStep
+    groebnerStep,
+    findVar,
+    makeBound
     ) where
 
 import           Data.List                         (sortBy, intercalate)
-import           Data.Map                          (Map, toList, elems, empty, singleton)
-import           Prelude                           hiding (Num(..), length, replicate)
+import           Data.Map                          (Map, toList, elems, empty, singleton, keys, mapWithKey)
+import           Prelude                           hiding (Num(..), (!!), length, replicate)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field (Zp)
@@ -42,7 +44,7 @@ import           ZkFold.Crypto.Protocol.Arithmetization.R1CS
 type Monomial p = Monom (Zp p) Integer
 
 -- TODO: Check the list length.
-monomial :: Zp p -> Map Integer (Var Integer) -> Monomial p
+monomial :: Zp p -> Map Integer (Var (Zp p) Integer) -> Monomial p
 monomial = M
 
 type Polynomial p = Polynom (Zp p) Integer
@@ -54,12 +56,14 @@ groebner :: Prime p => [Polynomial p] -> [Polynomial p]
 groebner = makeGroebner . sortBy (flip compare)
 
 fromR1CS :: forall p t s . Prime p => R1CS (Zp p) t s -> (Polynomial p, [Polynomial p])
-fromR1CS r = (p0, ps)
+fromR1CS r = (makeBound ps p0, ps')
     where
         m  = r1csSystem r
         xs = reverse $ elems $ r1csVarOrder r
-        ps = systemReduce $ 
+        ps = systemReduce $
             sortBy (flip compare) $ map (fromR1CS' @p xs) $ elems m
+
+        ps' = map (makeBound ps) ps
         j  = head $ r1csOutput r
         p0 = polynomial [var xs j one] - polynomial [var xs 0 one]
 
@@ -76,9 +80,9 @@ mapVars xs x
         Nothing -> error $ "mapVars: variable " ++ show x ++ " not found!"
 
 var :: [Integer] -> Integer -> Zp p -> Monomial p
-var xs i v = 
+var xs i v =
     let j = mapVars xs i
-    in M v $ if j > 0 then singleton j (Var 1 Free) else empty
+    in M v $ if j > 0 then singleton j (Free 1) else empty
 
 fromR1CS' :: Prime p => [Integer] -> (Map Integer (Zp p), Map Integer (Zp p), Map Integer (Zp p)) -> Polynomial p
 fromR1CS' xs (a, b, c) = mulM pa pb `addPoly` mulPM pc (M (negate 1) empty)
@@ -92,3 +96,22 @@ mShow (M c as) = "m" ++ show c ++ "^" ++ show as
 
 pShow :: Polynomial p -> String
 pShow (P ms) = intercalate " + " $ map mShow ms
+
+findVar :: Polynomial p -> Integer
+findVar p = minimum $ keys as
+    where M _ as = lt p
+
+boundVar :: forall p . Integer -> Integer -> Polynomial p -> Polynomial p
+boundVar i k = makeBoundPolynomial
+    where
+        makeBoundVar :: Var (Zp p) Integer -> Var (Zp p) Integer
+        makeBoundVar v = Bound (getPower v) k
+
+        makeBoundMonomial :: Monomial p -> Monomial p
+        makeBoundMonomial (M c as) = M c $ mapWithKey (\j v -> if j == i then makeBoundVar v else v) as
+
+        makeBoundPolynomial :: Polynomial p -> Polynomial p
+        makeBoundPolynomial (P ms) = P $ map makeBoundMonomial ms
+
+makeBound :: forall p . [Polynomial p] -> Polynomial p -> Polynomial p
+makeBound ps p = foldr (\(k, i) q -> boundVar i k q) p $ zip [0..] $ map findVar ps

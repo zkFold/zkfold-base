@@ -47,7 +47,7 @@ exampleFibonacci = do
     putStrLn $ "Number of constraints: " ++ show (r1csSizeN r')
     putStrLn $ "Number of variables: " ++ show (r1csSizeM r')
 
-    let theorem@(p0, ps) = seq (fromR1CS r') $ fromR1CS r'
+    let theorem@(p0, ps) = fromR1CS r'
 
     putStrLn "\nR1CS polynomials:\n"
     print ps

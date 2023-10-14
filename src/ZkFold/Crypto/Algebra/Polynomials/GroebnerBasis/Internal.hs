@@ -12,34 +12,37 @@ import           Prelude                           hiding (Num(..), (/), (!!), l
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Prelude                    (length)
 
-data VarType = Free | Bound deriving Eq
+data Var c a =
+    Free { 
+            getPower :: a
+        }
+    | Bound {
+            getPower :: a,
+            getPoly  :: Integer
+        }
+instance Show a => Show (Var c a) where
+    show = show . getPower
+instance Eq a => Eq (Var c a) where
+    (==) vx vy = getPower vx == getPower vy
+instance Ord a => Ord (Var c a) where
+    compare vx vy = compare (getPower vx) (getPower vy)
+instance AdditiveSemigroup a => AdditiveSemigroup (Var c a) where
+    (Bound x p) + (Bound y _) = Bound (x + y) p
+    (Free x) + (Free y)       = Free (x + y)
+    _ + _                     = error "AdditiveSemigroup: VarType mismatch"
+instance AdditiveMonoid a => AdditiveMonoid (Var c a) where
+    zero = Free zero
+instance AdditiveGroup a => AdditiveGroup (Var c a) where
+    negate (Bound x p) = Bound (negate x) p
+    negate (Free x)    = Free (negate x)
+-- instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Var c a) where
+--     (Bound x p) * (Bound y _) = Bound (x * y) p
+--     (Free x) * (Free y)       = Free (x * y)
+--     _ * _                     = error "MultiplicativeSemigroup: VarType mismatch"
+-- instance MultiplicativeMonoid a => MultiplicativeMonoid (Var c a) where
+--     one = Var one Free
 
-data Var a = Var a VarType
-instance Show a => Show (Var a) where
-    show (Var x _) = show x
-instance Eq a => Eq (Var a) where
-    (==) (Var x _) (Var y _) = x == y
-instance Ord a => Ord (Var a) where
-    compare (Var x _) (Var y _) = compare x y
-instance AdditiveSemigroup a => AdditiveSemigroup (Var a) where
-    Var x t1 + Var y t2
-        | t1 == t2 = Var (x + y) t1
-        | otherwise = error "AdditiveSemigroup: VarType mismatch"
-instance AdditiveMonoid a => AdditiveMonoid (Var a) where
-    zero = Var zero Free
-instance AdditiveGroup a => AdditiveGroup (Var a) where
-    negate (Var x t) = Var (negate x) t
-    Var x t1 - Var y t2
-        | t1 == t2 = Var (x - y) t1
-        | otherwise = error "AdditiveGroup: VarType mismatch"
-instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Var a) where
-    Var x t1 * Var y t2
-        | t1 == t2 = Var (x * y) t1
-        | otherwise = error "MultiplicativeSemigroup: VarType mismatch"
-instance MultiplicativeMonoid a => MultiplicativeMonoid (Var a) where
-    one = Var one Free
-
-data Monom c a = M c (Map Integer (Var a)) deriving (Eq)
+data Monom c a = M c (Map Integer (Var c a)) deriving (Eq)
 newtype Polynom c a = P [Monom c a] deriving (Eq)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
@@ -47,8 +50,8 @@ instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, Multiplica
     show (M c as) = (if c == one then "" else show c) ++
                     intercalate "∙" (map showOne $ toList as)
         where
-            showOne :: (Integer, Var a) -> String
-            showOne (i, p) = "x" ++ show i ++ (if p == one then "" else "^" ++ show p)
+            showOne :: (Integer, Var c a) -> String
+            showOne (i, p) = "x" ++ show i ++ (if getPower p == one then "" else "^" ++ show p)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
         => Show (Polynom c a) where
@@ -92,6 +95,9 @@ lv p
     | otherwise = head $ keys as
     where M _ as = lt p
 
+oneV :: (Eq a, AdditiveMonoid a) => Var c a -> Bool
+oneV v = getPower v == zero
+
 zeroM :: (Eq c, FiniteField c) => Monom c a -> Bool
 zeroM (M c _) = c == zero
 
@@ -134,7 +140,7 @@ dividable :: (Ord a) => Monom c a -> Monom c a -> Bool
 dividable (M _ al) (M _ ar) = isSubmapOfBy (<=) ar al
 
 divideM :: (FiniteField c, Eq a, AdditiveGroup a) => Monom c a -> Monom c a -> Monom c a
-divideM (M cl al) (M cr ar) = M (cl/cr) (Map.filter (/= zero) $ unionWith (-) al ar)
+divideM (M cl al) (M cr ar) = M (cl/cr) (Map.filter (not . oneV) $ unionWith (-) al ar)
 
 reducable :: (Ord a) => Polynom c a -> Polynom c a -> Bool
 reducable l r = dividable (lt l) (lt r)
@@ -250,3 +256,6 @@ groebnerStep h fs
             fs'  = trimSystem h' fs
             fs'' = addSPolyStep (reverse fs') (reverse fs') fs'
         in (h', fs'')
+
+------------------------------------------------------------------------
+
