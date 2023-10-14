@@ -20,6 +20,7 @@ import           Prelude                           hiding (Num(..), (!!), length
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field (Zp)
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal
+import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Reduction
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Types
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Types
 import           ZkFold.Crypto.Protocol.Arithmetization.R1CS

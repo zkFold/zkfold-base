@@ -1,34 +1,13 @@
 module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal where
 
-import           Data.Bool                         (bool)
 import           Data.List                         (sortBy)
 import           Data.Map                          (notMember)
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
+import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Reduction
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Types
 import           ZkFold.Prelude                    (length)
-
-reducable :: (Ord a) => Polynom c a -> Polynom c a -> Bool
-reducable l r = dividable (lt l) (lt r)
-
-reduce :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
-          Polynom c a -> Polynom c a -> Polynom c a
-reduce l r = addPoly l r'
-    where r' = mulPM r (scale (negate one) q)
-          q = divideM (lt l) (lt r)
-
-reduceMany :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
-              Polynom c a -> [Polynom c a] -> Polynom c a
-reduceMany h fs = if reduced then reduceMany h' fs else h'
-    where (h', reduced) = reduceStep h fs False
-          reduceStep p (q:qs) r
-              | zeroP h   = (h, r)
-              | otherwise =
-                    if reducable p q
-                        then (reduce p q, True)
-                        else reduceStep p qs r
-          reduceStep p [] r = (p, r)
 
 makeSPoly :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
              Polynom c a -> Polynom c a -> Polynom c a
@@ -39,17 +18,6 @@ makeSPoly l r = if null as then zero else addPoly l' r'
           lcm = lcmM (lt l) (lt r)
           ra  = divideM lcm (lt l)
           la  = scale (negate one) $ divideM lcm (lt r)
-
-fullReduceMany :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
-    Polynom c a -> [Polynom c a] -> Polynom c a
-fullReduceMany h fs
-    | zeroP h'   = h'
-    | otherwise = P [lt h'] + fullReduceMany (h' - P [lt h']) fs
-    where h' = reduceMany h fs
-
-systemReduce :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) => [Polynom c a] -> [Polynom c a]
-systemReduce = foldr f []
-    where f p ps = let p' = fullReduceMany p ps in bool ps (p' : ps) (not $ zeroP p')
 
 varNumber :: Polynom c a -> Integer
 varNumber (P [])         = 0
