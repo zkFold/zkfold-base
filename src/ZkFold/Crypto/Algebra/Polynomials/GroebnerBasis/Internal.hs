@@ -3,29 +3,39 @@
 
 module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal where
 
+import           Data.Bool                         (bool)
 import           Data.List                         (intercalate, foldl', sortBy)
+import           Data.Map                          (Map, toList, empty, unionWith, isSubmapOfBy, notMember, keys)
+import qualified Data.Map                          as Map
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
-import           ZkFold.Prelude                    (length, drop, take, (!!))
+import           ZkFold.Prelude                    (length)
 
-data Monom c a = M c [a] deriving (Eq)
+data Monom c a = M c (Map Integer a) deriving (Eq)
 newtype Polynom c a = P [Monom c a] deriving (Eq)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
         => Show (Monom c a) where
     show (M c as) = (if c == one then "" else show c) ++
-                    intercalate "∙" (map showOne $ filter (\(p,_) -> p /= zero) (zip as [1..]))
+                    intercalate "∙" (map showOne $ toList as)
         where
-            showOne :: (a, Integer) -> String
-            showOne (p,i) = "x" ++ show i ++ (if p == one then "" else "^" ++ show p)
+            showOne :: (Integer, a) -> String
+            showOne (i, p) = "x" ++ show i ++ (if p == one then "" else "^" ++ show p)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
         => Show (Polynom c a) where
     show (P ms) = intercalate " + " $ map show ms
 
 instance (Eq c, Ord a) => Ord (Monom c a) where
-    compare (M _ asl) (M _ asr) = compare asl asr
+    compare (M _ asl) (M _ asr) = go (toList asl) (toList asr)
+        where
+            go [] [] = EQ
+            go [] _  = LT
+            go _  [] = GT
+            go ((k1, a1):xs) ((k2, a2):ys)
+                | k1 == k2  = if a1 == a2 then go xs ys else compare a1 a2
+                | otherwise = compare k2 k1
 
 instance (Eq c, Ord a) => Ord (Polynom c a) where
     compare (P l) (P r) = compare l r
@@ -44,17 +54,16 @@ instance (Eq c, FiniteField c, Ord a, AdditiveGroup a) => MultiplicativeSemigrou
     P l * P r = mulM (P l) (P r)
 
 instance (Eq c, FiniteField c, Ord a, AdditiveGroup a) => MultiplicativeMonoid (Polynom c a) where
-    one = P [M one []]
+    one = P [M one empty]
 
 lt :: Polynom c a -> Monom c a
 lt (P as) = head as
 
-lv :: (Eq a, AdditiveMonoid a) => Polynom c a -> Integer
-lv p = go as
-    where
-        M _ as = lt p
-        go [] = 0
-        go (b:bs) = if b == zero then 1 + go bs else 0
+lv :: Polynom c a -> Integer
+lv p
+    | null as   = 0
+    | otherwise = head $ keys as
+    where M _ as = lt p
 
 zeroM :: (Eq c, FiniteField c) => Monom c a -> Bool
 zeroM (M c _) = c == zero
@@ -69,7 +78,7 @@ addSimilar :: FiniteField c => Monom c a -> Monom c a -> Monom c a
 addSimilar (M cl as) (M cr _) = M (cl+cr) as
 
 mulMono :: (FiniteField c, AdditiveGroup a) => Monom c a -> Monom c a -> Monom c a
-mulMono (M cl asl) (M cr asr) = M (cl*cr) (zipWith (+) asl asr)
+mulMono (M cl asl) (M cr asr) = M (cl*cr) (unionWith (+) asl asr)
 
 scale :: FiniteField c => c -> Monom c a -> Monom c a
 scale c' (M c as) = M (c*c') as
@@ -95,10 +104,10 @@ mulM :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) => Polynom c a -> Polynom 
 mulM (P ml) r = foldl' addPoly (P []) $ map (mulPM r) ml
 
 dividable :: (Ord a) => Monom c a -> Monom c a -> Bool
-dividable (M _ al) (M _ ar) = and $ zipWith (>=) al ar
+dividable (M _ al) (M _ ar) = isSubmapOfBy (<=) ar al
 
-divideM :: (FiniteField c, AdditiveGroup a) => Monom c a -> Monom c a -> Monom c a
-divideM (M cl al) (M cr ar) = M (cl/cr) (zipWith (-) al ar)
+divideM :: (FiniteField c, Eq a, AdditiveGroup a) => Monom c a -> Monom c a -> Monom c a
+divideM (M cl al) (M cr ar) = M (cl/cr) (Map.filter (/= zero) $ unionWith (-) al ar)
 
 reducable :: (Ord a) => Polynom c a -> Polynom c a -> Bool
 reducable l r = dividable (lt l) (lt r)
@@ -122,10 +131,10 @@ reduceMany h fs = if reduced then reduceMany h' fs else h'
           reduceStep p [] r = (p, r)
 
 lcmM :: (FiniteField c, Ord a) => Monom c a -> Monom c a -> Monom c a
-lcmM (M cl al) (M cr ar) = M (cl*cr) (zipWith max al ar)
+lcmM (M cl al) (M cr ar) = M (cl*cr) (unionWith max al ar)
 
 gcdM :: (FiniteField c, Ord a) => Monom c a -> Monom c a -> Monom c a
-gcdM (M cl al) (M cr ar) = M (cl*cr) (zipWith min al ar)
+gcdM (M cl al) (M cr ar) = M (cl*cr) (unionWith min al ar)
 
 gcdNotOne :: (FiniteField c, Ord a, AdditiveMonoid a) => Monom c a -> Monom c a -> Bool
 gcdNotOne l r =
@@ -166,26 +175,30 @@ fullReduceMany h fs
     | otherwise = P [lt h'] + fullReduceMany (h' - P [lt h']) fs
     where h' = reduceMany h fs
 
+systemReduce :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) => [Polynom c a] -> [Polynom c a]
+systemReduce = foldr f []
+    where f p ps = let p' = fullReduceMany p ps in bool ps (p' : ps) (not $ zeroP p')
+
 varNumber :: Polynom c a -> Integer
 varNumber (P [])         = 0
 varNumber (P (M _ as:_)) = length as
 
-varIsMissing :: (Ord a, AdditiveGroup a) => Integer -> Polynom c a -> Bool
-varIsMissing i (P ms) = all (\(M _ as) -> as !! (i-1) == zero) ms
+varIsMissing :: Integer -> Polynom c a -> Bool
+varIsMissing i (P ms) = all (\(M _ as) -> notMember (i-1) as) ms
 
-checkVarUnique :: (Ord a, AdditiveGroup a) => Integer -> [Polynom c a] -> Bool
+checkVarUnique :: Integer -> [Polynom c a] -> Bool
 checkVarUnique i fs = length (filter (== False) $ map (varIsMissing i) fs) == 1
 
-checkLTSimple :: (Ord a, AdditiveGroup a) => Integer -> Polynom c a -> Bool
-checkLTSimple _ (P [])         = True
-checkLTSimple i (P (M _ as:_)) = all (== zero) $ take (i-1) as ++ drop i as
+checkLTSimple :: Polynom c a -> Bool
+checkLTSimple (P [])         = True
+checkLTSimple (P (M _ as:_)) = length as <= 1
 
 trimSystem :: (Eq c, Ord a, AdditiveGroup a) => Polynom c a -> [Polynom c a] -> [Polynom c a]
-trimSystem h fs = filter (\f -> lv f >= lv h) $ 
+trimSystem h fs = filter (\f -> lv f >= lv h) $
         go (varNumber h)
     where
         go 0 = fs
-        go i = if varIsMissing i h && checkVarUnique i fs && any (checkLTSimple i) fs
+        go i = if varIsMissing i h && checkVarUnique i fs && any checkLTSimple fs
             then trimSystem h (filter (varIsMissing i) fs)
             else go (i-1)
 
