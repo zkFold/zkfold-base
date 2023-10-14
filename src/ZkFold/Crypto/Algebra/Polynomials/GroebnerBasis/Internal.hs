@@ -4,137 +4,14 @@
 module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal where
 
 import           Data.Bool                         (bool)
-import           Data.List                         (intercalate, foldl', sortBy)
-import           Data.Map                          (Map, toList, empty, unionWith, isSubmapOfBy, notMember, keys)
+import           Data.List                         (sortBy)
+import           Data.Map                          (unionWith, isSubmapOfBy, notMember)
 import qualified Data.Map                          as Map
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
+import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Types
 import           ZkFold.Prelude                    (length)
-
-data Var c a =
-    Free { 
-            getPower :: a
-        }
-    | Bound {
-            getPower :: a,
-            getPoly  :: Integer
-        }
-instance Show a => Show (Var c a) where
-    show = show . getPower
-instance Eq a => Eq (Var c a) where
-    (==) vx vy = getPower vx == getPower vy
-instance Ord a => Ord (Var c a) where
-    compare vx vy = compare (getPower vx) (getPower vy)
-instance AdditiveSemigroup a => AdditiveSemigroup (Var c a) where
-    (Bound x p) + (Bound y _) = Bound (x + y) p
-    (Free x) + (Free y)       = Free (x + y)
-    _ + _                     = error "AdditiveSemigroup: VarType mismatch"
-instance AdditiveMonoid a => AdditiveMonoid (Var c a) where
-    zero = Free zero
-instance AdditiveGroup a => AdditiveGroup (Var c a) where
-    negate (Bound x p) = Bound (negate x) p
-    negate (Free x)    = Free (negate x)
--- instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Var c a) where
---     (Bound x p) * (Bound y _) = Bound (x * y) p
---     (Free x) * (Free y)       = Free (x * y)
---     _ * _                     = error "MultiplicativeSemigroup: VarType mismatch"
--- instance MultiplicativeMonoid a => MultiplicativeMonoid (Var c a) where
---     one = Var one Free
-
-data Monom c a = M c (Map Integer (Var c a)) deriving (Eq)
-newtype Polynom c a = P [Monom c a] deriving (Eq)
-
-instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
-        => Show (Monom c a) where
-    show (M c as) = (if c == one then "" else show c) ++
-                    intercalate "∙" (map showOne $ toList as)
-        where
-            showOne :: (Integer, Var c a) -> String
-            showOne (i, p) = "x" ++ show i ++ (if getPower p == one then "" else "^" ++ show p)
-
-instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
-        => Show (Polynom c a) where
-    show (P ms) = intercalate " + " $ map show ms
-
-instance (Eq c, Ord a) => Ord (Monom c a) where
-    compare (M _ asl) (M _ asr) = go (toList asl) (toList asr)
-        where
-            go [] [] = EQ
-            go [] _  = LT
-            go _  [] = GT
-            go ((k1, a1):xs) ((k2, a2):ys)
-                | k1 == k2  = if a1 == a2 then go xs ys else compare a1 a2
-                | otherwise = compare k2 k1
-
-instance (Eq c, Ord a) => Ord (Polynom c a) where
-    compare (P l) (P r) = compare l r
-
-instance (Eq c, FiniteField c, Ord a) => AdditiveSemigroup (Polynom c a) where
-    P l + P r = addPoly (P l) (P r)
-
-instance (Eq c, FiniteField c, Ord a) => AdditiveMonoid (Polynom c a) where
-    zero = P []
-
-instance (Eq c, FiniteField c, Ord a) => AdditiveGroup (Polynom c a) where
-    negate (P as) = P $ map (scale (negate one)) as
-    P l - P r     = addPoly (P l) (negate $ P r)
-
-instance (Eq c, FiniteField c, Ord a, AdditiveGroup a) => MultiplicativeSemigroup (Polynom c a) where
-    P l * P r = mulM (P l) (P r)
-
-instance (Eq c, FiniteField c, Ord a, AdditiveGroup a) => MultiplicativeMonoid (Polynom c a) where
-    one = P [M one empty]
-
-lt :: Polynom c a -> Monom c a
-lt (P as) = head as
-
-lv :: Polynom c a -> Integer
-lv p
-    | null as   = 0
-    | otherwise = head $ keys as
-    where M _ as = lt p
-
-oneV :: (Eq a, AdditiveMonoid a) => Var c a -> Bool
-oneV v = getPower v == zero
-
-zeroM :: (Eq c, FiniteField c) => Monom c a -> Bool
-zeroM (M c _) = c == zero
-
-zeroP :: Polynom c a -> Bool
-zeroP (P as) = null as
-
-similarM :: (Eq a) => Monom c a -> Monom c a -> Bool
-similarM (M _ asl) (M _ asr) = asl == asr
-
-addSimilar :: FiniteField c => Monom c a -> Monom c a -> Monom c a
-addSimilar (M cl as) (M cr _) = M (cl+cr) as
-
-mulMono :: (FiniteField c, AdditiveGroup a) => Monom c a -> Monom c a -> Monom c a
-mulMono (M cl asl) (M cr asr) = M (cl*cr) (unionWith (+) asl asr)
-
-scale :: FiniteField c => c -> Monom c a -> Monom c a
-scale c' (M c as) = M (c*c') as
-
-addPoly :: (Eq c, FiniteField c, Ord a) => Polynom c a -> Polynom c a -> Polynom c a
-addPoly (P l) (P r) = P $ go l r
-    where
-          go [] [] = []
-          go as [] = as
-          go [] bs = bs
-          go (a:as) (b:bs)
-            | similarM a b =
-              if zeroM (addSimilar a b)
-                then go as bs
-                else addSimilar a b : go as bs
-            | a > b     = a : go as (b:bs)
-            | otherwise = b : go (a:as) bs
-
-mulPM :: (FiniteField c, AdditiveGroup a) => Polynom c a -> Monom c a -> Polynom c a
-mulPM(P as) m = P $ map (mulMono m) as
-
-mulM :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) => Polynom c a -> Polynom c a -> Polynom c a
-mulM (P ml) r = foldl' addPoly (P []) $ map (mulPM r) ml
 
 dividable :: (Ord a) => Monom c a -> Monom c a -> Bool
 dividable (M _ al) (M _ ar) = isSubmapOfBy (<=) ar al
@@ -182,22 +59,6 @@ makeSPoly l r = if gcdNotOne (lt l) (lt r) then addPoly l' r' else zero
           lcm = lcmM (lt l) (lt r)
           ra  = divideM lcm (lt l)
           la  = scale (negate one) $ divideM lcm (lt r)
-
-checkOne :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
-            Polynom c a -> [Polynom c a] -> [Polynom c a] -> [Polynom c a]
-checkOne f checked@(c:cs) add =
-    if zeroP s
-        then checkOne f cs add
-        else s : checkOne f cs (add ++ [s])
-    where s = reduceMany (makeSPoly f c) (checked++add)
-checkOne _ [] _ = []
-
-makeGroebner :: (Eq c, FiniteField c, Ord a, AdditiveGroup a) =>
-                [Polynom c a] -> [Polynom c a]
-makeGroebner []     = []
-makeGroebner (b:bs) = build [b] bs
-    where build checked add@(a:as) = build (checked ++ [a]) (as ++ checkOne a checked add)
-          build checked []         = checked
 
 ------------------------------------------------------------------------
 
@@ -256,6 +117,3 @@ groebnerStep h fs
             fs'  = trimSystem h' fs
             fs'' = addSPolyStep (reverse fs') (reverse fs') fs'
         in (h', fs'')
-
-------------------------------------------------------------------------
-

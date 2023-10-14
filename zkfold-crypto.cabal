@@ -68,6 +68,8 @@ library
       ZkFold.Crypto.Algebra.EllipticCurve.Class
       ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis
       ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal
+      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Types
+      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Types
       ZkFold.Crypto.Data.Arithmetization
       ZkFold.Crypto.Data.Bool
       ZkFold.Crypto.Data.Conditional
