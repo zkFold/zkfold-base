@@ -3,6 +3,8 @@ module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (
     boundVariables,
     fromR1CS,
     verify,
+    groebner,
+    variableTypes,
     -- Internal
     lt,
     zeroM,
@@ -10,10 +12,12 @@ module ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (
     similarM,
     makeSPoly,
     fullReduceMany,
-    groebnerStep
+    groebnerStep,
+    groebnerStepMax
     ) where
 
-import           Data.List                         (sortBy)
+import           Data.Bool                         (bool)
+import           Data.List                         (sortBy, nub)
 import           Data.Map                          (Map, toList, elems, empty, singleton, keys, mapWithKey)
 import           Prelude                           hiding (Num(..), (!!), length, replicate)
 
@@ -24,35 +28,49 @@ import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Reduct
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Types
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Types
 import           ZkFold.Crypto.Protocol.Arithmetization.R1CS
+import           ZkFold.Prelude                    ((!!))
 
-boundVariables :: [Polynomial p] -> Polynomial p -> Polynomial p
-boundVariables qs p = foldr (\(s, i) q -> makeBound i s q) p $ zip [0..] $ map findVar qs
+boundVariables :: forall p . Prime p => Polynomial p -> [Polynomial p] -> Polynomial p
+boundVariables p ps = foldr (makeBound . findVar) p $ zip [0..] ps
     where
-        findVar :: Polynomial p -> Integer
-        findVar h = minimum $ keys as
-            where M _ as = lt h
+        findVar :: (Integer, Polynomial p) -> (Integer, Variable p)
+        findVar (k, h) = (i, v)
+            where
+                M _ as = lt h
+                i = minimum $ keys as
+                -- TODO: fix here
+                s = if k > 0 then makeSPoly (ps !! (k-1)) h else zero
+                s' = P [M one (singleton i (variable 2))] - P [M one (singleton i (variable 1))]
+                v = bool (Bound 1 k) (Boolean k) $ zeroP $ s `reduce` s'
 
-        makeBound :: Integer -> Integer -> Polynomial p -> Polynomial p
-        makeBound i s = makeBoundPolynomial
+        makeBound :: (Integer, Variable p) -> Polynomial p -> Polynomial p
+        makeBound (i, v) = makeBoundPolynomial
             where
                 makeBoundVar :: Variable p -> Variable p
-                makeBoundVar v = Bound (getPower v) s
+                makeBoundVar v' = setPower (getPower v') v
 
                 makeBoundMonomial :: Monomial p -> Monomial p
-                makeBoundMonomial (M c as) = M c $ mapWithKey (\j v -> if j == i then makeBoundVar v else v) as
+                makeBoundMonomial (M c as) = M c $ mapWithKey (\j v' -> if j == i then makeBoundVar v' else v') as
 
                 makeBoundPolynomial :: Polynomial p -> Polynomial p
                 makeBoundPolynomial (P ms) = P $ map makeBoundMonomial ms
 
+variableTypes :: forall p . Prime p => [Polynomial p] -> [(Monomial p, VarType)]
+variableTypes = nub . sortBy (\(x1, _) (x2, _) -> compare x2 x1) . concatMap variableTypes'
+    where
+        variableTypes' :: Polynomial p -> [(Monomial p, VarType)]
+        variableTypes' (P ms) = concatMap variableTypes'' ms
+
+        variableTypes'' :: Monomial p -> [(Monomial p, VarType)]
+        variableTypes'' (M _ as) = map (\(j, v) -> (M one (singleton j (setPower 1 v)), getVarType v)) $ toList as
+
 fromR1CS :: forall p t s . Prime p => R1CS (Zp p) t s -> (Polynomial p, [Polynomial p])
-fromR1CS r = (boundVariables ps p0, ps')
+fromR1CS r = (boundVariables p0 ps, systemReduce $ map (`boundVariables` ps) ps)
     where
         m  = r1csSystem r
         xs = reverse $ elems $ r1csVarOrder r
-        ps = systemReduce $
-            sortBy (flip compare) $ map fromR1CS' $ elems m
+        ps = sortBy (flip compare) $ map fromR1CS' $ elems m
 
-        ps' = map (boundVariables ps) ps
         k  = head $ r1csOutput r
         p0 = polynomial [var k one] - polynomial [var 0 one]
 
@@ -75,5 +93,12 @@ fromR1CS r = (boundVariables ps p0, ps')
                 pb = polynomial $ map (uncurry var) $ toList b
                 pc = polynomial $ map (uncurry var) $ toList c
 
+groebnerStepMax :: Integer
+groebnerStepMax = 200
+
 verify :: forall p . Prime p => (Polynomial p, [Polynomial p]) -> Bool
-verify (p0, ps) = zeroP $ fst $ foldl (\args _ -> uncurry groebnerStep args) (p0, ps) [1::Integer ..200]
+verify (p0, ps) = zeroP $ fst $ foldl (\args _ -> uncurry groebnerStep args) (p0, ps) [1..groebnerStepMax]
+
+groebner :: forall p . Prime p => [Polynomial p] -> [Polynomial p]
+groebner ps = snd $ foldl (\args _ -> uncurry groebnerStep args) (p, ps) [1..groebnerStepMax]
+    where p = polynomial [lt $ head ps, monomial (negate one) empty]

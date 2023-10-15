@@ -4,7 +4,7 @@ module Tests.Arithmetization.Test2 (testArithmetization2) where
 
 import           Prelude                                     hiding ((||), not, Num(..), Eq(..), (^), (/), replicate)
 
-import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify)
+import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify, variableTypes)
 import           ZkFold.Crypto.Data.Arithmetization          (Arithmetization(..))
 import           ZkFold.Crypto.Data.Bool                     (GeneralizedBoolean(..), SymbolicBool (..))
 import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..))
@@ -27,6 +27,8 @@ testArithmetization2 = do
     print ps
     putStrLn "\n\"The output equals 1\" polynomial:\n"
     print p0
+    putStrLn "\n\"Variable types:\n"
+    print $ variableTypes ps
 
     putStrLn "\nVerifying the theorem...\n"
     print $ verify theorem
