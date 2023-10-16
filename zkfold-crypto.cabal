@@ -103,6 +103,8 @@ test-suite zkfold-crypto-test
     main-is: Main.hs
     other-modules:
       Examples.Fibonacci
+      Examples.MiMCHash
+      Examples.MiMC.Constants
       Tests.Arithmetization
       Tests.Arithmetization.Test1
       Tests.Arithmetization.Test2

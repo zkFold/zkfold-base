@@ -38,7 +38,6 @@ boundVariables p ps = foldr (makeBound . findVar) p $ zip [0..] ps
             where
                 M _ as = lt h
                 i = minimum $ keys as
-                -- TODO: fix here
                 s = if k > 0 then makeSPoly (ps !! (k-1)) h else zero
                 s' = P [M one (singleton i (variable 2))] - P [M one (singleton i (variable 1))]
                 v = bool (Bound 1 k) (Boolean k) $ zeroP $ s `reduce` s'
@@ -65,7 +64,8 @@ variableTypes = nub . sortBy (\(x1, _) (x2, _) -> compare x2 x1) . concatMap var
         variableTypes'' (M _ as) = map (\(j, v) -> (M one (singleton j (setPower 1 v)), getVarType v)) $ toList as
 
 fromR1CS :: forall p t s . Prime p => R1CS (Zp p) t s -> (Polynomial p, [Polynomial p])
-fromR1CS r = (boundVariables p0 ps, systemReduce $ map (`boundVariables` ps) ps)
+fromR1CS r = (boundVariables p0 ps, --systemReduce $
+        map (`boundVariables` ps) ps)
     where
         m  = r1csSystem r
         xs = reverse $ elems $ r1csVarOrder r

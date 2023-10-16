@@ -16,7 +16,9 @@ import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..)
 import           Tests.Utility.Types                         (R, I)
 
 -- The Fibonacci index function. If `x` is a Fibonacci number, returns its index (up until `nMax`). Otherwise, returns `0`.
-fibonacciIndex :: forall a b . (FiniteField a, GeneralizedEq b a, GeneralizedConditional b a, FromConstant I a) => Integer -> a -> a
+fibonacciIndex :: forall a b .
+    (FiniteField a, GeneralizedEq b a, GeneralizedConditional b a, FromConstant I a) =>
+    Integer -> a -> a
 fibonacciIndex nMax x = foldl (\m k -> bool m (fromConstant @I @a k) (fib k one one == x :: b)) zero [1..nMax]
     where
         fib :: I -> a -> a -> a
@@ -24,7 +26,9 @@ fibonacciIndex nMax x = foldl (\m k -> bool m (fromConstant @I @a k) (fib k one 
         fib n x1 x2 = fib (n - 1) x2 (x1 + x2)
 
 -- The theorem that says that the Fibonacci index function cannot possibly return `nMax + 1`.
-fibIndexOutOfRange :: forall a b . (FiniteField a, GeneralizedEq b a, GeneralizedConditional b a, FromConstant I a) => Integer -> a -> b
+fibIndexOutOfRange :: forall a b .
+    (FiniteField a, GeneralizedEq b a, GeneralizedConditional b a, FromConstant I a) =>
+    Integer -> a -> b
 fibIndexOutOfRange nMax x = fibonacciIndex @a @b nMax x /= fromConstant @I @a (nMax + 1) :: b
 
 exampleFibonacci :: IO ()

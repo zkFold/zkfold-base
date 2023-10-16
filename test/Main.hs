@@ -3,6 +3,7 @@ module Main where
 import           Prelude
 
 import           Examples.Fibonacci          (exampleFibonacci)
+import           Examples.MiMCHash           (exampleMiMC)
 import           Tests.Arithmetization       (testArithmetization)
 import           Tests.GroebnerBasis         (testGroebner)
 
@@ -12,3 +13,4 @@ main = do
     testArithmetization
 
     exampleFibonacci
+    exampleMiMC
