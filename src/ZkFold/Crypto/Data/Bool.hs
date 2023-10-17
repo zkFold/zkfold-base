@@ -40,17 +40,17 @@ instance GeneralizedBoolean Bool where
     (||)  = (Haskell.||)
 
 -- TODO: hide this constructor
-newtype SymbolicBool ctx = SymbolicBool ctx
+newtype SymbolicBool a = SymbolicBool a
     deriving (Show, Eq)
 
-toBool :: (FiniteField ctx, Eq ctx) => SymbolicBool ctx -> Bool
+toBool :: (FiniteField a, Eq a) => SymbolicBool a -> Bool
 toBool (SymbolicBool b) = bool False True $ b == one
 
-fromBool :: (FiniteField ctx) => Bool -> SymbolicBool ctx
+fromBool :: FiniteField a => Bool -> SymbolicBool a
 fromBool True  = SymbolicBool one
 fromBool False = SymbolicBool zero
 
-instance FiniteField ctx => GeneralizedBoolean (SymbolicBool ctx) where
+instance FiniteField a => GeneralizedBoolean (SymbolicBool a) where
     true = SymbolicBool one
 
     false = SymbolicBool zero
@@ -67,16 +67,16 @@ all f = foldr ((&&) . f) true
 any :: GeneralizedBoolean b => (a -> b) -> [a] -> b
 any f = foldr ((||) . f) false
 
-instance Symbolic ctx ctx Integer => Symbolic ctx (SymbolicBool ctx) Integer where
+instance Symbolic a a Integer => Symbolic a (SymbolicBool a) Integer where
     fromValue (SymbolicBool b) = fromValue b
 
     toValue = SymbolicBool . toValue
 
-    fromSymbol = fromSymbol @ctx @ctx
+    fromSymbol = fromSymbol @a @a
 
-    toSymbol = toSymbol @ctx @ctx
+    toSymbol = toSymbol @a @a
 
-    symbolSize = symbolSize @ctx @ctx @Integer
+    symbolSize = symbolSize @a @a @Integer
 
-instance Arithmetization a t s ctx => Arithmetization a t s (SymbolicBool ctx) where
+instance Arithmetization a t s x => Arithmetization a t s (SymbolicBool x) where
     merge (SymbolicBool b) = merge b

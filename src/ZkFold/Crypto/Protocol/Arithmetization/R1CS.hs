@@ -14,7 +14,7 @@ module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
         r1csPrint,
         applyArgs,
         compile,
-        -- low-level interface
+        -- low-level functions
         atomic,
         current
     ) where
@@ -32,7 +32,7 @@ import           ZkFold.Crypto.Data.Ord               (mergeMaps)
 import           ZkFold.Crypto.Data.Symbolic          (Symbolic (..))
 import           ZkFold.Prelude                       (length, drop, take)
 
--- | A finite field with a large order.
+-- | A finite field of a large order.
 -- It is used in the R1CS compiler for generating new variable indices.
 --
 -- TODO: move this elsewhere
@@ -44,11 +44,11 @@ instance Prime BigField
 -- | A class for arithmetization algorithms.
 -- Type `ctx` represents the context, i.e. the already computed part of the arithmetic circuit.
 -- Type `t` represents the current symbolic variable.
-class Symbolic a t s => Arithmetization a t s x where
+class (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetization a t s x where
     -- | Arithmetizes the current symbolic variable and merges it into the current context.
     merge      :: x -> State (R1CS a t s) ()
 
-instance (Eq a, Arithmetization a t s f) => Arithmetization a t s (R1CS a t s -> f) where
+instance Arithmetization a t s f => Arithmetization a t s (R1CS a t s -> f) where
     merge f = do
         x <- input
         merge x
@@ -92,14 +92,14 @@ r1csSystem = r1csMatrices
 r1csOptimize :: R1CS a t s -> R1CS a t s
 r1csOptimize = undefined
 
-r1csValue :: forall a t s . (Symbolic a t s) => R1CS a t s -> t
+r1csValue :: Symbolic a t s => R1CS a t s -> t
 r1csValue r = eval r mempty
 
 -- | Prints the constraint system, the witness, and the output.
 --
 -- TODO: Move this elsewhere.
 -- TODO: Check that all arguments have been applied.
-r1csPrint :: forall a t s . (Symbolic a t s, Show a, Show t) => R1CS a t s -> IO ()
+r1csPrint :: (Symbolic a t s, Show a, Show t) => R1CS a t s -> IO ()
 r1csPrint r = do
     let m = elems (r1csMatrices r)
         i = r1csInput r
@@ -144,24 +144,24 @@ r1csCast :: R1CS a a Integer -> R1CS a t s
 r1csCast r = r { r1csOutput = r1csOutput r }
 
 -- | Splits the current symbolic variable into atomic symbolic variables preserving the context.
-atomic :: forall a t s . R1CS a t s -> [R1CS a a Integer]
+atomic :: R1CS a t s -> [R1CS a a Integer]
 atomic r = map (\x -> r { r1csOutput = [x] }) $ r1csOutput r
 
 -- TODO: add check that `length (r1csOutput r) == symbolSize @a @t`
-current :: forall a t s . State (R1CS a a Integer) (R1CS a t s)
+current :: State (R1CS a a Integer) (R1CS a t s)
 current = gets r1csCast
 
 -- | Assigns the current symbolic variable to the given symbolic computation.
 -- TODO: forbid reassignment of variables
 -- TODO: add check that `length (r1csOutput r) == symbolSize @a @t`
-assignment :: forall a t s . (Symbolic a t s) => (Map Integer a -> t) -> State (R1CS a t s) ()
+assignment :: forall a t s . Symbolic a t s => (Map Integer a -> t) -> State (R1CS a t s) ()
 assignment f = modify $ \r -> r
     {
         r1csWitness = \i -> fromList (zip (r1csOutput r) (fromValue @a @t @s $ f i)) `union` r1csWitness r i
     } :: R1CS a t s
 
 -- | Constructs a new symbolic variable of type `t` within the given context.
-input :: forall a t s . (Symbolic a t s) => State (R1CS a t s) (R1CS a t s)
+input :: forall a t s . Symbolic a t s => State (R1CS a t s) (R1CS a t s)
 input = modify (\(r :: R1CS a t s) ->
         let ins = r1csInput r
             s   = if null ins then 1 else maximum (r1csInput r) + 1
@@ -174,7 +174,7 @@ input = modify (\(r :: R1CS a t s) ->
         }) >> get
 
 -- | Evaluates the arithmetic circuit using the supplied input.
-eval :: forall a t s . (Symbolic a t s) => R1CS a t s -> Map Integer a -> t
+eval :: forall a t s . Symbolic a t s => R1CS a t s -> Map Integer a -> t
 eval ctx i =
     let w = r1csWitness ctx i
         o = r1csOutput ctx
@@ -182,7 +182,7 @@ eval ctx i =
 
 -- | Applies the value of the first input argument to the current context.
 -- TODO: make this safe
-apply :: forall a t s . (Symbolic a t s) => t -> State (R1CS a t s) ()
+apply :: forall a t s . Symbolic a t s => t -> State (R1CS a t s) ()
 apply x = modify (\(r :: R1CS a t s) ->
     let ins = r1csInput r
         n   = symbolSize @a @t @s
@@ -192,11 +192,11 @@ apply x = modify (\(r :: R1CS a t s) ->
         r1csWitness = r1csWitness r . (fromList (zip (take n ins) (fromValue @a @t @s x)) `union`)
     })
 
-applyArgs :: forall a t s . (Symbolic a t s) => R1CS a t s -> [t] -> R1CS a t s
+applyArgs :: forall a t s . Symbolic a t s => R1CS a t s -> [t] -> R1CS a t s
 applyArgs r args = execState (mapM apply args) r
 
 -- | Arithmetizes the current symbolic variable starting from an empty context.
-compile    :: (FiniteField a, Eq a, Arithmetization a t s x) => x -> R1CS a t s
+compile :: Arithmetization a t s x => x -> R1CS a t s
 compile x = execState (merge x) mempty
 
 ------------------------------------- Instances -------------------------------------
@@ -226,19 +226,17 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
             r1csVarOrder = empty
         }
 
-instance (Eq a, Symbolic a t s) => Arithmetization a t s (R1CS a t s) where
+instance (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetization a t s (R1CS a t s) where
     -- `merge` is a concatenation that sets its argument as the output.
     merge r = do
         r' <- get
         let r'' = (r <> r') { r1csOutput = r1csOutput r} :: R1CS a t s
         put r''
 
-type R a = R1CS a a Integer
-
-instance (FiniteField a) => Finite (R a) where
+instance FiniteField a => Finite (R1CS a a Integer) where
     order = order @a
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R a) where
+instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a a Integer) where
     r1 + r2 = flip execState (r1 <> r2) $ do
         let x1  = toSymbol @a @a $ r1csOutput r1
             x2  = toSymbol @a @a $ r1csOutput r2
@@ -246,20 +244,20 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R a) where
         constraint [con]
         assignment (eval r1 + eval r2)
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R a) where
+instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a a Integer) where
     zero = flip execState mempty $ do
         let con = \z -> (empty, empty, fromList [(z, one)])
         constraint [con]
         assignment zero
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R a) where
+instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a a Integer) where
     negate r = flip execState r $ do
         let x  = toSymbol @a @a $ r1csOutput r
             con = \z -> (empty, empty, fromList [(x, one), (z, one)])
         constraint [con]
         assignment (negate $ eval r)
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R a) where
+instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a a Integer) where
     r1 * r2 = flip execState (r1 <> r2) $ do
         let x1  = toSymbol @a @a $ r1csOutput r1
             x2  = toSymbol @a @a $ r1csOutput r2
@@ -267,10 +265,10 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R a) where
         constraint [con]
         assignment (eval r1 * eval r2)
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R a) where
+instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a a Integer) where
     one = mempty { r1csOutput = [0] }
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R a) where
+instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a a Integer) where
     invert r = flip execState r $ do
         let x    = toSymbol @a @a $ r1csOutput r
             con  = \z -> (singleton x one, singleton z one, empty)
@@ -281,7 +279,7 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R a) where
         constraint [con']
         assignment (invert $ eval r)
 
-instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R a) where
+instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1CS a a Integer) where
     fromConstant c = flip execState mempty $ do
         let x = fromConstant c
             con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
