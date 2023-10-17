@@ -6,14 +6,14 @@ module Examples.Fibonacci (exampleFibonacci) where
 import           Prelude                                     hiding ((||), not, Num(..), Eq(..), (^), (/), any)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
+import           ZkFold.Crypto.Algebra.Basic.Field           (Zp)
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify)
 import           ZkFold.Crypto.Protocol.Arithmetization.R1CS
-import           ZkFold.Crypto.Data.Arithmetization          (Arithmetization(..))
 import           ZkFold.Crypto.Data.Bool                     (SymbolicBool (..))
 import           ZkFold.Crypto.Data.Conditional              (GeneralizedConditional, bool)
 import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..))
 
-import           Tests.Utility.Types                         (R, I)
+import           Tests.Utility.Types                         (R, I, SmallField)
 
 -- The Fibonacci index function. If `x` is a Fibonacci number, returns its index (up until `nMax`). Otherwise, returns `0`.
 fibonacciIndex :: forall a b .
@@ -35,7 +35,7 @@ exampleFibonacci :: IO ()
 exampleFibonacci = do
     let nMax = 10
 
-    let r = compile @R (fibonacciIndex @R @(SymbolicBool R) nMax)
+    let r = compile @(Zp SmallField) @(Zp SmallField) @Integer (fibonacciIndex @R @(SymbolicBool R) nMax)
 
     putStrLn "\nStarting Fibonacci test...\n"
 

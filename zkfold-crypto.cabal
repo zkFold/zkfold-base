@@ -71,7 +71,6 @@ library
       ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Reduction
       ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Types
       ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Types
-      ZkFold.Crypto.Data.Arithmetization
       ZkFold.Crypto.Data.Bool
       ZkFold.Crypto.Data.Conditional
       ZkFold.Crypto.Data.Eq

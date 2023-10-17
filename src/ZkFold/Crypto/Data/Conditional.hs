@@ -1,15 +1,13 @@
-{-# LANGUAGE TypeApplications #-}
-
 module ZkFold.Crypto.Data.Conditional (
-    GeneralizedConditional (..) 
+    GeneralizedConditional (..)
 ) where
 
-import           Control.Monad.State                   (MonadState (..), evalState)
-import           Prelude                               hiding (Num(..), (/))
+import           Control.Monad.State                         (MonadState (..), evalState)
+import           Prelude                                     hiding (Num(..), (/))
 
 import           ZkFold.Crypto.Algebra.Basic.Class
-import           ZkFold.Crypto.Data.Arithmetization
-import           ZkFold.Crypto.Data.Bool               (SymbolicBool (..), GeneralizedBoolean)
+import           ZkFold.Crypto.Data.Bool                     (SymbolicBool (..), GeneralizedBoolean)
+import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (atomic, R1CS, current, Arithmetization (..))
 
 class GeneralizedBoolean b => GeneralizedConditional b a where
     bool :: a -> a -> b -> a
@@ -23,9 +21,10 @@ class GeneralizedBoolean b => GeneralizedConditional b a where
 instance GeneralizedConditional Bool a where
     bool f t b = if b then t else f
 
-instance (Arithmetization ctx a, FiniteField ctx) => GeneralizedConditional (SymbolicBool ctx) a where
+instance (FiniteField a, Eq a, ToBits a, Arithmetization (R1CS a a Integer) (R1CS a t s)) =>
+        GeneralizedConditional (SymbolicBool (R1CS a a Integer)) (R1CS a t s) where
     bool brFalse brTrue (SymbolicBool b) = flip evalState b $ do
-        f' <- atomic @ctx @a <$> (merge brFalse >> get)
-        t' <- atomic @ctx @a <$> (merge brTrue >> get)
+        f' <- atomic <$> (merge brFalse >> get)
+        t' <- atomic <$> (merge brTrue >> get)
         put $ mconcat $ zipWith (\f t -> b * t + (one - b) * f) f' t'
         current

@@ -4,12 +4,13 @@ module Tests.Arithmetization.Test2 (testArithmetization2) where
 
 import           Prelude                                     hiding ((||), not, Num(..), Eq(..), (^), (/), replicate)
 
+import           ZkFold.Crypto.Algebra.Basic.Field           (Zp)
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify, variableTypes)
-import           ZkFold.Crypto.Data.Arithmetization          (Arithmetization(..))
 import           ZkFold.Crypto.Data.Bool                     (GeneralizedBoolean(..), SymbolicBool (..))
 import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..))
+import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (compile)
 
-import           Tests.Utility.Types                         (R)
+import           Tests.Utility.Types                         (R, SmallField)
 
 -- A true statement.
 testFunc :: forall a b . (GeneralizedEq b a) => a -> a -> b
@@ -17,7 +18,7 @@ testFunc x y = (x /= y) || (x == y)
 
 testArithmetization2 :: IO ()
 testArithmetization2 = do
-    let r = compile @R (testFunc @R @(SymbolicBool R))
+    let r = compile @(Zp SmallField) @(Zp SmallField) @Integer (testFunc @R @(SymbolicBool R))
 
     putStrLn "\nStarting arithmetization test 2...\n"
 
