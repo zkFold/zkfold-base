@@ -68,9 +68,9 @@ any :: GeneralizedBoolean b => (a -> b) -> [a] -> b
 any f = foldr ((||) . f) false
 
 instance Symbolic ctx ctx Integer => Symbolic ctx (SymbolicBool ctx) Integer where
-    fromValue (SymbolicBool b) = fromValue @ctx @ctx @Integer b
+    fromValue (SymbolicBool b) = fromValue b
 
-    toValue = SymbolicBool . toValue @ctx @ctx @Integer
+    toValue = SymbolicBool . toValue
 
     fromSymbol = fromSymbol @ctx @ctx
 
@@ -78,7 +78,5 @@ instance Symbolic ctx ctx Integer => Symbolic ctx (SymbolicBool ctx) Integer whe
 
     symbolSize = symbolSize @ctx @ctx @Integer
 
-instance Arithmetization ctx ctx => Arithmetization ctx (SymbolicBool ctx) where
-    merge (SymbolicBool b) = merge @ctx @ctx b
-
-    input = fmap SymbolicBool (input @ctx @ctx)
+instance Arithmetization a t s ctx => Arithmetization a t s (SymbolicBool ctx) where
+    merge (SymbolicBool b) = merge b

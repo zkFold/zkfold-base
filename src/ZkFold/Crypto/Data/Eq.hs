@@ -18,7 +18,7 @@ instance Eq a => GeneralizedEq Bool a where
     x == y = x Haskell.== y
     x /= y = x Haskell./= y
 
-instance (Arithmetization (R1CS a a Integer) (R1CS a t s), FiniteField a, Eq a, ToBits a) =>
+instance (Arithmetization a a Integer (R1CS a t s), FiniteField a, Eq a, ToBits a) =>
         GeneralizedEq (SymbolicBool (R1CS a a Integer)) (R1CS a t s) where
     x == y =
         let z = compile x - compile y

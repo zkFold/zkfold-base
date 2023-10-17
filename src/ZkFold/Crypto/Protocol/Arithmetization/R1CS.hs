@@ -44,22 +44,15 @@ instance Prime BigField
 -- | A class for arithmetization algorithms.
 -- Type `ctx` represents the context, i.e. the already computed part of the arithmetic circuit.
 -- Type `t` represents the current symbolic variable.
-class Monoid ctx => Arithmetization ctx t where
-    {-# MINIMAL merge, input #-}
+class Symbolic a t s => Arithmetization a t s x where
     -- | Arithmetizes the current symbolic variable and merges it into the current context.
-    merge      :: t -> State ctx ()
+    merge      :: x -> State (R1CS a t s) ()
 
-    -- | Constructs a new symbolic variable of type `t` within the given context.
-    input      :: State ctx t
-
-instance (Arithmetization ctx f, Arithmetization ctx a) => Arithmetization ctx (a -> f) where
+instance (Eq a, Arithmetization a t s f) => Arithmetization a t s (R1CS a t s -> f) where
     merge f = do
         x <- input
         merge x
         merge (f x)
-
-    -- TODO: complete this definition
-    input = undefined
 
 -- | A rank-1 constraint system (R1CS).
 -- This type represents the result of a compilation of a function into a R1CS.
@@ -137,7 +130,7 @@ r1csPrint r = do
 type Constraints a = [Integer -> (Map Integer a, Map Integer a, Map Integer a)]
 
 -- | Adds a constraint to the current context.
--- TODO: add check that `length vars == symbolSize @a @t`
+-- TODO: add check that `length vars == symbolSize @a @t @s`
 constraint :: (Eq a, ToBits a) => Constraints a -> State (R1CS a t s) ()
 constraint cons = do
     (r0 :: R1CS a t s) <- get
@@ -167,6 +160,19 @@ assignment f = modify $ \r -> r
         r1csWitness = \i -> fromList (zip (r1csOutput r) (fromValue @a @t @s $ f i)) `union` r1csWitness r i
     } :: R1CS a t s
 
+-- | Constructs a new symbolic variable of type `t` within the given context.
+input :: forall a t s . (Symbolic a t s) => State (R1CS a t s) (R1CS a t s)
+input = modify (\(r :: R1CS a t s) ->
+        let ins = r1csInput r
+            s   = if null ins then 1 else maximum (r1csInput r) + 1
+            insNew = [s..s + symbolSize @a @t @s - 1]
+        in r
+        {
+            r1csInput    = ins ++ insNew,
+            r1csOutput   = insNew,
+            r1csVarOrder = r1csVarOrder r `union` fromList (zip [length (r1csVarOrder r)..] insNew)
+        }) >> get
+
 -- | Evaluates the arithmetic circuit using the supplied input.
 eval :: forall a t s . (Symbolic a t s) => R1CS a t s -> Map Integer a -> t
 eval ctx i =
@@ -190,7 +196,7 @@ applyArgs :: forall a t s . (Symbolic a t s) => R1CS a t s -> [t] -> R1CS a t s
 applyArgs r args = execState (mapM apply args) r
 
 -- | Arithmetizes the current symbolic variable starting from an empty context.
-compile    :: (Arithmetization (R1CS a t s) x) => x -> R1CS a t s
+compile    :: (FiniteField a, Eq a, Arithmetization a t s x) => x -> R1CS a t s
 compile x = execState (merge x) mempty
 
 ------------------------------------- Instances -------------------------------------
@@ -220,26 +226,12 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
             r1csVarOrder = empty
         }
 
-instance (FiniteField a, Eq a, Symbolic a t s) => Arithmetization (R1CS a t s) (R1CS a t s) where
-
-    -- type InputOf (R1CS a t s) = Map Integer a
-
+instance (Eq a, Symbolic a t s) => Arithmetization a t s (R1CS a t s) where
     -- `merge` is a concatenation that sets its argument as the output.
     merge r = do
         r' <- get
         let r'' = (r <> r') { r1csOutput = r1csOutput r} :: R1CS a t s
         put r''
-
-    input = modify (\(r :: R1CS a t s) ->
-        let ins = r1csInput r
-            s   = if null ins then 1 else maximum (r1csInput r) + 1
-            insNew = [s..s + symbolSize @a @t @s - 1]
-        in r
-        {
-            r1csInput    = ins ++ insNew,
-            r1csOutput   = insNew,
-            r1csVarOrder = r1csVarOrder r `union` fromList (zip [length (r1csVarOrder r)..] insNew)
-        }) >> get
 
 type R a = R1CS a a Integer
 

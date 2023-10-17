@@ -21,7 +21,7 @@ class GeneralizedBoolean b => GeneralizedConditional b a where
 instance GeneralizedConditional Bool a where
     bool f t b = if b then t else f
 
-instance (FiniteField a, Eq a, ToBits a, Arithmetization (R1CS a a Integer) (R1CS a t s)) =>
+instance (FiniteField a, Eq a, ToBits a, Arithmetization a a Integer (R1CS a t s)) =>
         GeneralizedConditional (SymbolicBool (R1CS a a Integer)) (R1CS a t s) where
     bool brFalse brTrue (SymbolicBool b) = flip evalState b $ do
         f' <- atomic <$> (merge brFalse >> get)
