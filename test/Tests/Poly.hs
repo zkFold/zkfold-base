@@ -17,5 +17,20 @@ testPoly :: IO ()
 testPoly = do
     putStrLn "\nStarting Poly test...\n"
 
-    putStrLn "Test Poly: "
+    putStrLn "Sample Poly: "
     print $ samplePoly @SmallField
+
+    let l = P @(Zp SmallField) [1, 2, 3]
+    let r = P @(Zp SmallField) [3, 2, 1]
+    putStrLn "Polys l and r:"
+    print l
+    print r
+
+    putStrLn "\nPoly addition:"
+    putStrLn "l + r = "
+    print $ l + r
+
+
+    putStrLn "\nPoly multiplication:"
+    putStrLn "l + r = "
+    print $ l * r
