@@ -15,7 +15,7 @@ import qualified Prelude                                      as Haskell
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Data.Symbolic                 (Symbolic(..))
-import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (Arithmetization (..))
+import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (Arithmetizable (..))
 
 class GeneralizedBoolean b where
     true  :: b
@@ -78,5 +78,5 @@ instance Symbolic a a Integer => Symbolic a (SymbolicBool a) Integer where
 
     symbolSize = symbolSize @a @a @Integer
 
-instance Arithmetization a t s x => Arithmetization a t s (SymbolicBool x) where
+instance Arithmetizable a t s x => Arithmetizable a t s (SymbolicBool x) where
     merge (SymbolicBool b) = merge b

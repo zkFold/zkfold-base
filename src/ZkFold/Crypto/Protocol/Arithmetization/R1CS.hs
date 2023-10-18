@@ -2,7 +2,7 @@
 
 module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
         BigField,
-        Arithmetization(..),
+        Arithmetizable(..),
         R1CS,
         r1csSizeN,
         r1csSizeM,
@@ -19,7 +19,7 @@ module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
         current
     ) where
 
-import           Control.Monad.State                  (MonadState (..), modify, execState, gets, State)
+import           Control.Monad.State                  (MonadState (..), State, modify, execState, gets, )
 import           Data.Bool                            (bool)
 import           Data.List                            (nub)
 import           Data.Map                             hiding (take, drop, foldl, null, map, foldr)
@@ -44,11 +44,11 @@ instance Prime BigField
 -- | A class for arithmetization algorithms.
 -- Type `ctx` represents the context, i.e. the already computed part of the arithmetic circuit.
 -- Type `t` represents the current symbolic variable.
-class (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetization a t s x where
+class (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetizable a t s x where
     -- | Arithmetizes the current symbolic variable and merges it into the current context.
     merge      :: x -> State (R1CS a t s) ()
 
-instance Arithmetization a t s f => Arithmetization a t s (R1CS a t s -> f) where
+instance Arithmetizable a t s f => Arithmetizable a t s (R1CS a t s -> f) where
     merge f = do
         x <- input
         merge x
@@ -140,15 +140,15 @@ constraint cons = do
             (r0, []) cons
     put (r1 { r1csOutput = vars, r1csVarOrder = r1csVarOrder r1 `union` fromList (zip [length (r1csVarOrder r1)..] vars) } :: R1CS a t s)
 
-r1csCast :: R1CS a a Integer -> R1CS a t s
+-- TODO: add check that `length (r1csOutput r) == symbolSize @a @t2 @s2`
+r1csCast :: R1CS a t1 s1 -> R1CS a t2 s2
 r1csCast r = r { r1csOutput = r1csOutput r }
 
 -- | Splits the current symbolic variable into atomic symbolic variables preserving the context.
 atomic :: R1CS a t s -> [R1CS a a Integer]
 atomic r = map (\x -> r { r1csOutput = [x] }) $ r1csOutput r
 
--- TODO: add check that `length (r1csOutput r) == symbolSize @a @t`
-current :: State (R1CS a a Integer) (R1CS a t s)
+current :: State (R1CS a t1 s1) (R1CS a t2 s2)
 current = gets r1csCast
 
 -- | Assigns the current symbolic variable to the given symbolic computation.
@@ -196,7 +196,7 @@ applyArgs :: forall a t s . Symbolic a t s => R1CS a t s -> [t] -> R1CS a t s
 applyArgs r args = execState (mapM apply args) r
 
 -- | Arithmetizes the current symbolic variable starting from an empty context.
-compile :: Arithmetization a t s x => x -> R1CS a t s
+compile :: Arithmetizable a t s x => x -> R1CS a t s
 compile x = execState (merge x) mempty
 
 ------------------------------------- Instances -------------------------------------
@@ -226,11 +226,12 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
             r1csVarOrder = empty
         }
 
-instance (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetization a t s (R1CS a t s) where
+instance (FiniteField a, Eq a, ToBits a, Symbolic a t1 s1, Symbolic a t2 s2) =>
+        Arithmetizable a t1 s1 (R1CS a t2 s2) where
     -- `merge` is a concatenation that sets its argument as the output.
     merge r = do
-        r' <- get
-        let r'' = (r <> r') { r1csOutput = r1csOutput r} :: R1CS a t s
+        r' <- current
+        let r'' = (r <> r') { r1csOutput = r1csOutput r} :: R1CS a t1 s1
         put r''
 
 instance FiniteField a => Finite (R1CS a a Integer) where

@@ -7,7 +7,7 @@ import           Prelude                                     hiding (Num(..), (/
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Data.Bool                     (SymbolicBool (..), GeneralizedBoolean)
-import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (atomic, R1CS, current, Arithmetization (..))
+import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (R1CS, Arithmetizable (..), atomic, current)
 
 class GeneralizedBoolean b => GeneralizedConditional b a where
     bool :: a -> a -> b -> a
@@ -21,7 +21,7 @@ class GeneralizedBoolean b => GeneralizedConditional b a where
 instance GeneralizedConditional Bool a where
     bool f t b = if b then t else f
 
-instance Arithmetization a a Integer (R1CS a t s) =>
+instance Arithmetizable a a Integer (R1CS a t s) =>
         GeneralizedConditional (SymbolicBool (R1CS a a Integer)) (R1CS a t s) where
     bool brFalse brTrue (SymbolicBool b) = flip evalState b $ do
         f' <- atomic <$> (merge brFalse >> get)

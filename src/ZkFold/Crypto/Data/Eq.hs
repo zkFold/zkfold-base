@@ -7,7 +7,7 @@ import qualified Prelude                                     as Haskell
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Data.Bool                     (SymbolicBool (..), GeneralizedBoolean)
-import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (compile, R1CS, Arithmetization)
+import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (Arithmetizable, R1CS, compile)
 
 class GeneralizedBoolean b => GeneralizedEq b a where
     (==) :: a -> a -> b
@@ -18,7 +18,7 @@ instance Eq a => GeneralizedEq Bool a where
     x == y = x Haskell.== y
     x /= y = x Haskell./= y
 
-instance Arithmetization a a Integer (R1CS a t s) =>
+instance Arithmetizable a a Integer (R1CS a t s) =>
         GeneralizedEq (SymbolicBool (R1CS a a Integer)) (R1CS a t s) where
     x == y =
         let z = compile x - compile y
