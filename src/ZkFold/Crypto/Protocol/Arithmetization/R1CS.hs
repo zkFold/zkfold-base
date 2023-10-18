@@ -48,10 +48,9 @@ class (FiniteField a, Eq a, ToBits a, Symbolic a t s) => Arithmetizable a t s x 
     -- | Arithmetizes the current symbolic variable and merges it into the current context.
     merge      :: x -> State (R1CS a t s) ()
 
-instance Arithmetizable a t s f => Arithmetizable a t s (R1CS a t s -> f) where
+instance (Symbolic a t1 s1, Arithmetizable a t2 s2 f) => Arithmetizable a t2 s2 (R1CS a t1 s1 -> f) where
     merge f = do
         x <- input
-        merge x
         merge (f x)
 
 -- | A rank-1 constraint system (R1CS).
@@ -140,16 +139,13 @@ constraint cons = do
             (r0, []) cons
     put (r1 { r1csOutput = vars, r1csVarOrder = r1csVarOrder r1 `union` fromList (zip [length (r1csVarOrder r1)..] vars) } :: R1CS a t s)
 
--- TODO: add check that `length (r1csOutput r) == symbolSize @a @t2 @s2`
-r1csCast :: R1CS a t1 s1 -> R1CS a t2 s2
-r1csCast r = r { r1csOutput = r1csOutput r }
-
 -- | Splits the current symbolic variable into atomic symbolic variables preserving the context.
 atomic :: R1CS a t s -> [R1CS a a Integer]
 atomic r = map (\x -> r { r1csOutput = [x] }) $ r1csOutput r
 
-current :: State (R1CS a t1 s1) (R1CS a t2 s2)
-current = gets r1csCast
+-- TODO: add check that `length (r1csOutput r) == symbolSize @a @t2 @s2`
+current :: State (R1CS a t2 s2) (R1CS a t1 s1)
+current = get >>= \r -> return $ r { r1csOutput = r1csOutput r }
 
 -- | Assigns the current symbolic variable to the given symbolic computation.
 -- TODO: forbid reassignment of variables
@@ -161,17 +157,17 @@ assignment f = modify $ \r -> r
     } :: R1CS a t s
 
 -- | Constructs a new symbolic variable of type `t` within the given context.
-input :: forall a t s . Symbolic a t s => State (R1CS a t s) (R1CS a t s)
-input = modify (\(r :: R1CS a t s) ->
+input :: forall a t1 s1 t2 s2 . Symbolic a t1 s1 => State (R1CS a t2 s2) (R1CS a t1 s1)
+input = modify (\(r :: R1CS a t2 s2) ->
         let ins = r1csInput r
             s   = if null ins then 1 else maximum (r1csInput r) + 1
-            insNew = [s..s + symbolSize @a @t @s - 1]
+            insNew = [s..s + symbolSize @a @t1 @s1 - 1]
         in r
         {
             r1csInput    = ins ++ insNew,
             r1csOutput   = insNew,
             r1csVarOrder = r1csVarOrder r `union` fromList (zip [length (r1csVarOrder r)..] insNew)
-        }) >> get
+        }) >> current
 
 -- | Evaluates the arithmetic circuit using the supplied input.
 eval :: forall a t s . Symbolic a t s => R1CS a t s -> Map Integer a -> t
@@ -227,11 +223,11 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
         }
 
 instance (FiniteField a, Eq a, ToBits a, Symbolic a t1 s1, Symbolic a t2 s2) =>
-        Arithmetizable a t1 s1 (R1CS a t2 s2) where
+        Arithmetizable a t2 s2 (R1CS a t1 s1) where
     -- `merge` is a concatenation that sets its argument as the output.
     merge r = do
         r' <- current
-        let r'' = (r <> r') { r1csOutput = r1csOutput r} :: R1CS a t1 s1
+        let r'' = (r <> r') { r1csOutput = r1csOutput r} :: R1CS a t2 s2
         put r''
 
 instance FiniteField a => Finite (R1CS a a Integer) where

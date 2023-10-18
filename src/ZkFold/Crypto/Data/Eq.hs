@@ -18,6 +18,7 @@ instance Eq a => GeneralizedEq Bool a where
     x == y = x Haskell.== y
     x /= y = x Haskell./= y
 
+-- TODO: make this work for any admisible type
 instance Arithmetizable a a Integer (R1CS a t s) =>
         GeneralizedEq (SymbolicBool (R1CS a a Integer)) (R1CS a t s) where
     x == y =

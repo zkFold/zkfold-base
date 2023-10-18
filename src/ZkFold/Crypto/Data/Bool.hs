@@ -40,17 +40,17 @@ instance GeneralizedBoolean Bool where
     (||)  = (Haskell.||)
 
 -- TODO: hide this constructor
-newtype SymbolicBool a = SymbolicBool a
+newtype SymbolicBool x = SymbolicBool x
     deriving (Show, Eq)
 
-toBool :: (FiniteField a, Eq a) => SymbolicBool a -> Bool
+toBool :: (FiniteField x, Eq x) => SymbolicBool x -> Bool
 toBool (SymbolicBool b) = bool False True $ b == one
 
-fromBool :: FiniteField a => Bool -> SymbolicBool a
+fromBool :: FiniteField x => Bool -> SymbolicBool x
 fromBool True  = SymbolicBool one
 fromBool False = SymbolicBool zero
 
-instance FiniteField a => GeneralizedBoolean (SymbolicBool a) where
+instance FiniteField x => GeneralizedBoolean (SymbolicBool x) where
     true = SymbolicBool one
 
     false = SymbolicBool zero
@@ -61,10 +61,10 @@ instance FiniteField a => GeneralizedBoolean (SymbolicBool a) where
 
     (||) (SymbolicBool b1) (SymbolicBool b2) = SymbolicBool $ b1 + b2 - b1 * b2
 
-all :: GeneralizedBoolean b => (a -> b) -> [a] -> b
+all :: GeneralizedBoolean b => (x -> b) -> [x] -> b
 all f = foldr ((&&) . f) true
 
-any :: GeneralizedBoolean b => (a -> b) -> [a] -> b
+any :: GeneralizedBoolean b => (x -> b) -> [x] -> b
 any f = foldr ((||) . f) false
 
 instance Symbolic a a Integer => Symbolic a (SymbolicBool a) Integer where
