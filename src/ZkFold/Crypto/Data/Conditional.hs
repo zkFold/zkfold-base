@@ -24,7 +24,7 @@ instance GeneralizedConditional Bool a where
 instance Arithmetizable a a Integer (R1CS a t s) =>
         GeneralizedConditional (SymbolicBool (R1CS a a Integer)) (R1CS a t s) where
     bool brFalse brTrue (SymbolicBool b) = flip evalState b $ do
-        f' <- atomic <$> (merge brFalse >> get)
-        t' <- atomic <$> (merge brTrue >> get)
+        f' <- atomic <$> (arithmetize brFalse >> get)
+        t' <- atomic <$> (arithmetize brTrue >> get)
         put $ mconcat $ zipWith (\f t -> b * t + (one - b) * f) f' t'
         current

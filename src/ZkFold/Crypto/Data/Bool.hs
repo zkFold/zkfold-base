@@ -79,4 +79,4 @@ instance Symbolic a a Integer => Symbolic a (SymbolicBool a) Integer where
     symbolSize = symbolSize @a @a @Integer
 
 instance Arithmetizable a t s x => Arithmetizable a t s (SymbolicBool x) where
-    merge (SymbolicBool b) = merge b
+    arithmetize (SymbolicBool b) = arithmetize b
