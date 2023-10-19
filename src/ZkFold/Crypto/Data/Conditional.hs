@@ -2,7 +2,7 @@ module ZkFold.Crypto.Data.Conditional (
     GeneralizedConditional (..)
 ) where
 
-import           Control.Monad.State                         (MonadState (..), evalState)
+import           Control.Monad.State                         (evalState)
 import           Prelude                                     hiding (Num(..), (/))
 
 import           ZkFold.Crypto.Algebra.Basic.Class
@@ -21,10 +21,18 @@ class GeneralizedBoolean b => GeneralizedConditional b a where
 instance GeneralizedConditional Bool a where
     bool f t b = if b then t else f
 
+-- TODO: make this instance more general! We need to introduce a function that is inverse to `arithmetize`.
 instance Arithmetizable a a Integer (R1CS a t s) =>
         GeneralizedConditional (SymbolicBool (R1CS a a Integer)) (R1CS a t s) where
-    bool brFalse brTrue (SymbolicBool b) = flip evalState b $ do
-        f' <- atomic <$> (arithmetize brFalse >> get)
-        t' <- atomic <$> (arithmetize brTrue >> get)
-        put $ mconcat $ zipWith (\f t -> b * t + (one - b) * f) f' t'
-        current
+    bool brFalse brTrue (SymbolicBool b) = 
+        let f' = atomic brFalse
+            t' = atomic brTrue
+            r  = mconcat $ zipWith (\f t -> b * t + (one - b) * f) f' t'
+        in evalState current r
+
+instance Arithmetizable a a Integer (SymbolicBool (R1CS a a Integer)) =>
+        GeneralizedConditional (SymbolicBool (R1CS a a Integer)) (SymbolicBool (R1CS a a Integer)) where
+    bool brFalse brTrue (SymbolicBool b) =
+        let SymbolicBool bFalse = brFalse
+            SymbolicBool bTrue  = brTrue
+        in SymbolicBool $ b * bTrue + (one - b) * bFalse

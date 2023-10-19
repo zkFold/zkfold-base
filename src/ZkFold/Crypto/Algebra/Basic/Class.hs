@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Crypto.Algebra.Basic.Class where
 
@@ -51,6 +52,9 @@ type Field a = (AdditiveGroup a, MultiplicativeGroup a)
 
 class Finite a where
     order :: Integer
+
+numberOfBits :: forall a . Finite a => Integer
+numberOfBits = ceiling $ logBase @Double 2 $ Haskell.fromInteger $ order @a
 
 class Finite a => Prime a
 

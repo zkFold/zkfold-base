@@ -11,6 +11,7 @@ module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
         -- low-level functions
         atomic,
         current,
+        constraint,
         -- information about the system
         r1csSizeN,
         r1csSizeM,
@@ -18,19 +19,26 @@ module ZkFold.Crypto.Protocol.Arithmetization.R1CS (
         r1csVarOrder,
         r1csOutput,
         r1csValue,
-        r1csPrint
+        r1csPrint,
+        -- Creating variables
+        newVariable,
+        newVariableFromConstraint,
+        newVariableFromVariable,
+        addVariable
     ) where
 
-import           Control.Monad.State                  (MonadState (..), State, modify, execState, gets, )
+import           Control.Monad.State                  (MonadState (..), State, modify, execState, evalState)
 import           Data.Bool                            (bool)
 import           Data.List                            (nub)
 import           Data.Map                             hiding (take, drop, foldl, null, map, foldr)
-import           Prelude                              hiding (Num (..), (^), take, drop, product, length)
+import           Prelude                              hiding (Num (..), (^), sum, take, drop, product, length)
+import qualified Prelude                              as Haskell
+import           System.Random                        (StdGen, Random (..), mkStdGen, uniform)
 import           Text.Pretty.Simple                   (pPrint)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field
-import           ZkFold.Crypto.Data.Ord               (mergeMaps)
+import           ZkFold.Crypto.Data.PartialOrder      (mergeMaps)
 import           ZkFold.Crypto.Data.Symbolic          (Symbolic (..))
 import           ZkFold.Prelude                       (length, drop, take)
 
@@ -60,8 +68,9 @@ data R1CS a t s = R1CS
         -- ^ The witness generation function
         r1csOutput   :: [Integer],
         -- ^ The output variable
-        r1csVarOrder :: Map Integer Integer
+        r1csVarOrder :: Map Integer Integer,
         -- ^ The order of variable assignments
+        r1csRNG      :: StdGen
     }
 
 --------------------------------- High-level functions --------------------------------
@@ -70,7 +79,7 @@ data R1CS a t s = R1CS
 applyArgs :: forall a t s . Symbolic a t s => R1CS a t s -> [t] -> R1CS a t s
 applyArgs r args = execState (mapM apply args) r
 
--- | Arithmetizes the current symbolic variable starting from an empty context.
+-- | Compiles `x` into a R1CS.
 compile :: Arithmetizable a t s x => x -> R1CS a t s
 compile x = execState (arithmetize x) mempty
 
@@ -83,21 +92,19 @@ optimize = undefined
 ---------------------------------- Low-level functions --------------------------------
 
 -- | The type that represents a constraint in the arithmetic circuit.
-type Constraint a = Integer -> (Map Integer a, Map Integer a, Map Integer a)
+type Constraint a = (Map Integer a, Map Integer a, Map Integer a)
 
 -- | Adds a constraint to the arithmetic circuit.
 -- TODO: add check that `length vars == symbolSize @a @t @s`
-constraint :: (Eq a, ToBits a) => Constraint a -> State (R1CS a t s) ()
-constraint con = do
-    r <- get
-    let x    = r1csNewVariable (con $ -1)
-        vars = r1csVarOrder r `union` singleton (length (r1csVarOrder r)) x
-        m    = insert (r1csSizeN r) (con x) (r1csMatrices r)
-    put r {
-            r1csMatrices = m,
-            r1csOutput = [x],
-            r1csVarOrder = vars
-        }
+constraint :: Constraint a -> State (R1CS a t s) ()
+constraint con = modify $ \r -> r { r1csMatrices = insert (r1csSizeN r) con (r1csMatrices r) }
+
+forceZero :: forall a . FiniteField a => State (R1CS a a Integer) ()
+forceZero = do
+    r <- current
+    let x   = toSymbol @a @a $ r1csOutput r
+        con = (empty, empty, singleton x one)
+    constraint con
 
 -- | Splits the current symbolic variable into atomic symbolic variables.
 -- Each element of the resulting list is a copy of the arithmetic circuit with the corresponding atomic variable as output.
@@ -167,7 +174,8 @@ instance Eq a => Semigroup (R1CS a t s) where
             r1csInput    = nub $ r1csInput r1 ++ r1csInput r2,
             r1csWitness  = \w -> r1csWitness r1 w `union` r1csWitness r2 w,
             r1csOutput   = r1csOutput r1 ++ r1csOutput r2,
-            r1csVarOrder = mergeMaps (r1csVarOrder r1) (r1csVarOrder r2)
+            r1csVarOrder = mergeMaps (r1csVarOrder r1) (r1csVarOrder r2),
+            r1csRNG      = mkStdGen $ fst (uniform (r1csRNG r1)) Haskell.* fst (uniform (r1csRNG r2))
         }
 
 instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
@@ -177,7 +185,8 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a t s) where
             r1csInput    = [],
             r1csWitness  = insert 0 one,
             r1csOutput   = [],
-            r1csVarOrder = empty
+            r1csVarOrder = empty,
+            r1csRNG      = mkStdGen 0
         }
 
 instance (FiniteField a, Eq a, ToBits a, Symbolic a t1 s1, Symbolic a t2 s2) =>
@@ -196,20 +205,26 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a a Integer)
         let x1  = toSymbol @a @a $ r1csOutput r1
             x2  = toSymbol @a @a $ r1csOutput r2
             con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)])
-        constraint con
+        z <- newVariableFromConstraint con
+        addVariable z
+        constraint $ con z
         assignment (eval r1 + eval r2)
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a a Integer) where
     zero = flip execState mempty $ do
         let con = \z -> (empty, empty, fromList [(z, one)])
-        constraint con
+        z <- newVariableFromConstraint con
+        addVariable z
+        constraint $ con z
         assignment zero
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a a Integer) where
     negate r = flip execState r $ do
         let x  = toSymbol @a @a $ r1csOutput r
             con = \z -> (empty, empty, fromList [(x, one), (z, one)])
-        constraint con
+        z <- newVariableFromConstraint con
+        addVariable z
+        constraint $ con z
         assignment (negate $ eval r)
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a a Integer) where
@@ -217,7 +232,9 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a a In
         let x1  = toSymbol @a @a $ r1csOutput r1
             x2  = toSymbol @a @a $ r1csOutput r2
             con = \z -> (singleton x1 one, singleton x2 one, singleton z one)
-        constraint con
+        z <- newVariableFromConstraint con
+        addVariable z
+        constraint $ con z
         assignment (eval r1 * eval r2)
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a a Integer) where
@@ -226,20 +243,39 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a a Integ
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a a Integer) where
     invert r = flip execState r $ do
         let x    = toSymbol @a @a $ r1csOutput r
-            con  = \z -> (singleton x one, singleton z one, empty)
-        constraint con
+            con  = \y -> (singleton x one, singleton y one, empty)
+        y <- newVariableFromConstraint con
+        addVariable y
+        constraint $ con y
         assignment (bool zero one . (== zero) . eval r )
-        y  <- gets (toSymbol @a @a . r1csOutput)
         let con' = \z -> (singleton x one, singleton z one, fromList [(0, one), (y, negate one)])
-        constraint con'
+        z <- newVariableFromConstraint con'
+        addVariable z
+        constraint $ con' z
         assignment (invert $ eval r)
 
 instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1CS a a Integer) where
     fromConstant c = flip execState mempty $ do
         let x = fromConstant c
             con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
-        constraint con
+        z <- newVariableFromConstraint con
+        addVariable z
+        constraint $ con z
         assignment (const x)
+
+instance (FiniteField a, Eq a, ToBits a, FromConstant Integer a) => ToBits (R1CS a a Integer) where
+    toBits x =
+        let ps  = map (fromConstant @Integer @(R1CS a a Integer) 2 ^) [0.. numberOfBits @a - 1]
+            f z = flip evalState z $ mapM (const $ do
+                    x' <- newVariable
+                    addVariable x'
+                    current
+                ) [0.. numberOfBits @a - 1]
+            v z = z - sum (zipWith (*) (f z) ps)
+            y   = x { r1csRNG = r1csRNG (v x) }
+            bs  = map (toSymbol @a @a . r1csOutput) $ f y
+            r   = execState forceZero $ v y
+        in map (\x'' -> r { r1csOutput = [x''] } ) bs
 
 ----------------------------------- Information -----------------------------------
 
@@ -264,7 +300,7 @@ r1csValue r = eval r mempty
 -- TODO: Check that all arguments have been applied.
 r1csPrint :: (Symbolic a t s, Show a, Show t) => R1CS a t s -> IO ()
 r1csPrint r = do
-    let m = elems (r1csMatrices r)
+    let m = elems (r1csSystem r)
         i = r1csInput r
         w = r1csWitness r empty
         o = r1csOutput r
@@ -287,7 +323,7 @@ r1csPrint r = do
     putStr"Value: "
     pPrint v
 
-------------------------------------- Internal -------------------------------------
+------------------------------------- Variables -------------------------------------
 
 -- | A finite field of a large order.
 -- It is used in the R1CS compiler for generating new variable indices.
@@ -298,10 +334,26 @@ instance Finite BigField where
     order = 52435875175126190479447740508185965837690552500527637822603658699938581184513
 instance Prime BigField
 
--- TODO: Remove the hardcoded constant.
-r1csNewVariable :: (Eq a, ToBits a) => (Map Integer a, Map Integer a, Map Integer a) -> Integer
-r1csNewVariable (a, b, c) = g a + g b + g c
+-- -- TODO: Remove the hardcoded constant.
+con2var :: (Eq a, ToBits a) => (Map Integer a, Map Integer a, Map Integer a) -> Integer
+con2var (a, b, c) = g a + g b + g c
     where
         z         = toZp 891752917250912079751095709127490 :: Zp BigField
         f (x, y)  = multiExp z (map (toZp :: Integer -> Zp BigField) x) + multiExp z y
         g m       = fromZp $ f $ unzip $ toList m
+
+newVariable :: State (R1CS a t s) Integer
+newVariable = do
+    r <- get
+    let (x, g) = randomR (0, order @BigField - 1) (r1csRNG r)
+    put r { r1csRNG = g }
+    return x
+
+newVariableFromConstraint :: (Eq a, ToBits a) => (Integer -> Constraint a) -> State (R1CS a t s) Integer
+newVariableFromConstraint con = con2var . con <$> newVariable
+
+newVariableFromVariable :: Integer -> State (R1CS a t s) Integer
+newVariableFromVariable x = fromZp . toZp @BigField . (x *)  <$> newVariable
+
+addVariable :: Integer -> State (R1CS a t s) ()
+addVariable x = modify (\r -> r { r1csOutput = [x], r1csVarOrder = r1csVarOrder r `union` singleton (length (r1csVarOrder r)) x })
