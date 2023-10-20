@@ -18,7 +18,7 @@ testFunc x y = (x /= y) || (x == y)
 
 testArithmetization2 :: IO ()
 testArithmetization2 = do
-    let r = compile @(Zp SmallField) @(Zp SmallField) @Integer (testFunc @R @(SymbolicBool R))
+    let SymbolicBool r = compile @(Zp SmallField) (testFunc @R @(SymbolicBool R)) :: SymbolicBool R
 
     putStrLn "\nStarting arithmetization test 2...\n"
 

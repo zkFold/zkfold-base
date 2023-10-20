@@ -76,7 +76,6 @@ library
       ZkFold.Crypto.Data.Eq
       ZkFold.Crypto.Data.Ord
       ZkFold.Crypto.Data.PartialOrder
-      ZkFold.Crypto.Data.Symbolic
       ZkFold.Crypto.Protocol.Arithmetization.Plonk
       ZkFold.Crypto.Protocol.Arithmetization.R1CS
       ZkFold.Crypto.Protocol.ARK.BabyHyrax

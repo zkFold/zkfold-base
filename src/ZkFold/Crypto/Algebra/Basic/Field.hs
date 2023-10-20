@@ -27,6 +27,9 @@ instance Prime p => Prime (Zp p)
 instance Prime p => Eq (Zp p) where
     Zp a == Zp b = (a - b) `mod` (order @(Zp p)) == 0
 
+instance Prime p => Ord (Zp p) where
+    Zp a <= Zp b = (a `mod` (order @(Zp p))) <= (b `mod` (order @(Zp p)))
+
 instance Prime p => AdditiveSemigroup (Zp p) where
     Zp a + Zp b = Zp $ (a + b) `mod` (order @(Zp p))
 

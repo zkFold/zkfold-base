@@ -11,5 +11,5 @@ instance Finite SmallField where
     order = 97
 instance Prime SmallField
 
-type R = R1CS (Zp SmallField) (Zp SmallField) Integer
+type R = R1CS (Zp SmallField)
 type I = Integer

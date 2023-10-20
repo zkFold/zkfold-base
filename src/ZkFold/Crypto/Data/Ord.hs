@@ -3,8 +3,8 @@
 
 module ZkFold.Crypto.Data.Ord where
 
-import           Prelude                        (Bool, Integer, Ord, map, zipWith, ($))
-import qualified Prelude                        as Haskell
+import           Prelude                                     (Bool, Ord, map, zipWith, ($))
+import qualified Prelude                                     as Haskell
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Data.Bool                     (SymbolicBool (..), GeneralizedBoolean (..))
@@ -37,8 +37,8 @@ instance Ord a => GeneralizedOrd Bool a where
 
     (>) = (Haskell.>)
 
-instance (FromConstant Integer a, Arithmetizable a a Integer (R1CS a a Integer)) =>
-        GeneralizedOrd (SymbolicBool (R1CS a a Integer)) (R1CS a a Integer) where
+instance (Arithmetizable a (R1CS a)) =>
+        GeneralizedOrd (SymbolicBool (R1CS a)) (R1CS a) where
     x <= y =
         let bEQ = zipWith (-) (toBits y) (toBits x)
             bGT = map (\b -> b - one) bEQ

@@ -35,7 +35,7 @@ exampleFibonacci :: IO ()
 exampleFibonacci = do
     let nMax = 10
 
-    let r = compile @(Zp SmallField) @(Zp SmallField) @Integer (fibonacciIndex @R @(SymbolicBool R) nMax)
+    let r = compile @(Zp SmallField) (fibonacciIndex @R @(SymbolicBool R) nMax) :: R
 
     putStrLn "\nStarting Fibonacci test...\n"
 
@@ -44,7 +44,7 @@ exampleFibonacci = do
     putStrLn $ "Number of constraints: " ++ show (r1csSizeN r)
     putStrLn $ "Number of variables: " ++ show (r1csSizeM r)
 
-    let r' = compile (fibIndexOutOfRange @R @(SymbolicBool R) nMax) :: R
+    let SymbolicBool r' = compile @(Zp SmallField) (fibIndexOutOfRange @R @(SymbolicBool R) nMax) :: SymbolicBool R
 
     putStrLn "\nFibonacci index is out of range theorem"
     putStrLn "R1CS size:"

@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeApplications #-}
-
 module ZkFold.Crypto.Data.Bool (
     GeneralizedBoolean(..),
     SymbolicBool(..),
@@ -14,7 +12,6 @@ import           Prelude                                      hiding (Num(..), (
 import qualified Prelude                                      as Haskell
 
 import           ZkFold.Crypto.Algebra.Basic.Class
-import           ZkFold.Crypto.Data.Symbolic                 (Symbolic(..))
 import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (Arithmetizable (..))
 
 class GeneralizedBoolean b where
@@ -67,16 +64,8 @@ all f = foldr ((&&) . f) true
 any :: GeneralizedBoolean b => (x -> b) -> [x] -> b
 any f = foldr ((||) . f) false
 
-instance Symbolic a a Integer => Symbolic a (SymbolicBool a) Integer where
-    fromValue (SymbolicBool b) = fromValue b
-
-    toValue = SymbolicBool . toValue
-
-    fromSymbol = fromSymbol @a @a
-
-    toSymbol = toSymbol @a @a
-
-    symbolSize = symbolSize @a @a @Integer
-
-instance Arithmetizable a t s x => Arithmetizable a t s (SymbolicBool x) where
+instance Arithmetizable a x => Arithmetizable a (SymbolicBool x) where
     arithmetize (SymbolicBool b) = arithmetize b
+
+    restore [r] = SymbolicBool $ restore [r]
+    restore _   = error "SymbolicBool: invalid number of values"

@@ -32,7 +32,7 @@ testArithmetization1 :: IO ()
 testArithmetization1 = do
     putStrLn "\nStarting arithmetization test 1...\n"
     putStrLn "Test sample:"
-    let r = compile (testFunc @R @(SymbolicBool R))
+    let r = compile @(Zp SmallField) (testFunc @R @(SymbolicBool R))
     r1csPrint $ applyArgs r [3, 5]
 
     putStrLn "\nVerifying the circuit...\n"

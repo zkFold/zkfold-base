@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
 module Examples.MiMCHash (exampleMiMC) where
@@ -27,7 +26,7 @@ exampleMiMC = do
     let nRounds = 220
 
     -- TODO: change the type application to build an arithmetization for the correct field
-    let r = compile @(Zp SmallField) @(Zp SmallField) @Integer (mimcHash @R nRounds zero)
+    let r = compile @(Zp SmallField) (mimcHash @R nRounds zero) :: R
 
     putStrLn "\nStarting MiMC test...\n"
 
