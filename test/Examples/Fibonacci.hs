@@ -10,7 +10,7 @@ import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify
 import           ZkFold.Base.Protocol.Arithmetization.R1CS
 import           ZkFold.Base.Data.Bool                         (Bool (..))
 import           ZkFold.Base.Data.Conditional                  (bool)
-import           ZkFold.Base.Data.Eq                           (GeneralizedEq (..))
+import           ZkFold.Base.Data.Eq                           (Eq (..))
 
 import           Tests.Utility.Types                           (R, I, SmallField, Symbolic)
 

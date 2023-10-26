@@ -5,8 +5,8 @@ module Tests.Arithmetization.Test3 (testArithmetization3) where
 import           Prelude                                     hiding (Num(..), Eq(..), Ord(..), Bool, (^), (/), (||), not, replicate)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Data.Bool                       (GeneralizedBoolean(..), Bool (..))
-import           ZkFold.Base.Data.Ord                        (GeneralizedOrd (..))
+import           ZkFold.Base.Data.Bool                       (BoolType(..), Bool (..))
+import           ZkFold.Base.Data.Ord                        (Ord (..))
 import           ZkFold.Base.Protocol.Arithmetization.R1CS   (compile, r1csSizeM, r1csSizeN, r1csValue, applyArgs)
 
 import           Tests.Utility.Types                         (R, SmallField, Symbolic)

@@ -31,7 +31,7 @@ import           Text.Pretty.Simple                   (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Data.PartialOrder        (mergeMaps)
+import           ZkFold.Base.Data.PartialOrder      (mergeMaps)
 import           ZkFold.Prelude                       (length, drop, take)
 
 -- | A class for arithmetizable types.

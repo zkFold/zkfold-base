@@ -4,18 +4,18 @@
 module ZkFold.Base.Data.Ord where
 
 import qualified Data.Bool                                   as Haskell
-import           Prelude                                     (Ord, map, zipWith, ($))
+import           Prelude                                     (map, zipWith, ($))
 import qualified Prelude                                     as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Data.Bool                       (Bool (..), GeneralizedBoolean (..))
-import           ZkFold.Base.Data.Conditional                (GeneralizedConditional, bool)
-import           ZkFold.Base.Data.Eq                         (GeneralizedEq(..))
+import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..))
+import           ZkFold.Base.Data.Conditional                (Conditional(..), bool)
+import           ZkFold.Base.Data.Eq                         (Eq(..))
 import           ZkFold.Base.Protocol.Arithmetization.R1CS   (Arithmetizable, R1CS)
 
 -- TODO: add `compare`
-class GeneralizedOrd b a where
+class Ord b a where
     (<=) :: a -> a -> b
 
     (<) :: a -> a -> b
@@ -30,7 +30,7 @@ class GeneralizedOrd b a where
     min :: a -> a -> a
     -- min x y = bool @b y x $ x >= y
 
-instance Ord a => GeneralizedOrd Haskell.Bool a where
+instance Haskell.Ord a => Ord Haskell.Bool a where
     (<=) = (Haskell.<=)
 
     (<) = (Haskell.<)
@@ -43,7 +43,7 @@ instance Ord a => GeneralizedOrd Haskell.Bool a where
 
     min = Haskell.min
 
-instance (Prime p, Haskell.Ord x) => GeneralizedOrd (Bool (Zp p)) x where
+instance (Prime p, Haskell.Ord x) => Ord (Bool (Zp p)) x where
     x <= y = Bool $ Haskell.bool zero one (x Haskell.<= y)
 
     x <  y = Bool $ Haskell.bool zero one (x Haskell.<  y)
@@ -56,8 +56,7 @@ instance (Prime p, Haskell.Ord x) => GeneralizedOrd (Bool (Zp p)) x where
 
     min x y = Haskell.bool y x $ x >= y
 
-instance (Arithmetizable a (R1CS a)) =>
-        GeneralizedOrd (Bool (R1CS a)) (R1CS a) where
+instance (Arithmetizable a (R1CS a)) => Ord (Bool (R1CS a)) (R1CS a) where
     x <= y =
         let bEQ = zipWith (-) (toBits y) (toBits x)
             bGT = map (\b -> b - one) bEQ
@@ -73,7 +72,7 @@ instance (Arithmetizable a (R1CS a)) =>
 
     min x y = bool @(Bool (R1CS a)) y x $ x >= y
 
-checkBits :: forall b x . (FiniteField x, GeneralizedConditional b b, GeneralizedEq b x) => [x] -> [x] -> b
+checkBits :: forall b x . (FiniteField x, Conditional b b, Eq b x) => [x] -> [x] -> b
 checkBits []     _      = false
 checkBits _      []     = false
 checkBits (x:xs) (y:ys) = bool @b ((y == zero) && checkBits xs ys) true (x == zero)

@@ -6,9 +6,9 @@ import           Prelude                                     (IO, Show (..), ($)
 
 import           ZkFold.Cardano.Types
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Data.Bool                       (GeneralizedBoolean (..), Bool (..), any)
-import           ZkFold.Base.Data.Eq                         (GeneralizedEq(..))
-import           ZkFold.Base.Data.Ord                        (GeneralizedOrd(..))
+import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..), any)
+import           ZkFold.Base.Data.Eq                         (Eq(..))
+import           ZkFold.Base.Data.Ord                        (Ord(..))
 import           ZkFold.Base.Protocol.Arithmetization.R1CS
 
 import           Tests.Utility.Types                         (Symbolic, R, SmallField)
