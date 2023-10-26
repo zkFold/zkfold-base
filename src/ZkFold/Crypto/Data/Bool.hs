@@ -1,14 +1,11 @@
 module ZkFold.Crypto.Data.Bool (
     GeneralizedBoolean(..),
-    SymbolicBool(..),
-    toBool,
-    fromBool,
+    Bool(..),
     all,
     any
 ) where
 
-import           Data.Bool                                    (bool)
-import           Prelude                                      hiding (Num(..), (/), (&&), (||), not, all, any)
+import           Prelude                                      hiding (Num(..), Bool, (/), (&&), (||), not, all, any)
 import qualified Prelude                                      as Haskell
 
 import           ZkFold.Crypto.Algebra.Basic.Class
@@ -25,7 +22,7 @@ class GeneralizedBoolean b where
 
     (||)  :: b -> b -> b
 
-instance GeneralizedBoolean Bool where
+instance GeneralizedBoolean Haskell.Bool where
     true  = True
 
     false = False
@@ -37,26 +34,19 @@ instance GeneralizedBoolean Bool where
     (||)  = (Haskell.||)
 
 -- TODO: hide this constructor
-newtype SymbolicBool x = SymbolicBool x
+newtype Bool x = Bool x
     deriving (Show, Eq)
 
-toBool :: (FiniteField x, Eq x) => SymbolicBool x -> Bool
-toBool (SymbolicBool b) = bool False True $ b == one
+instance FiniteField x => GeneralizedBoolean (Bool x) where
+    true = Bool one
 
-fromBool :: FiniteField x => Bool -> SymbolicBool x
-fromBool True  = SymbolicBool one
-fromBool False = SymbolicBool zero
+    false = Bool zero
 
-instance FiniteField x => GeneralizedBoolean (SymbolicBool x) where
-    true = SymbolicBool one
+    not (Bool b) = Bool $ one - b
 
-    false = SymbolicBool zero
+    (&&) (Bool b1) (Bool b2) = Bool $ b1 * b2
 
-    not (SymbolicBool b) = SymbolicBool $ one - b
-
-    (&&) (SymbolicBool b1) (SymbolicBool b2) = SymbolicBool $ b1 * b2
-
-    (||) (SymbolicBool b1) (SymbolicBool b2) = SymbolicBool $ b1 + b2 - b1 * b2
+    (||) (Bool b1) (Bool b2) = Bool $ b1 + b2 - b1 * b2
 
 all :: GeneralizedBoolean b => (x -> b) -> [x] -> b
 all f = foldr ((&&) . f) true
@@ -64,8 +54,10 @@ all f = foldr ((&&) . f) true
 any :: GeneralizedBoolean b => (x -> b) -> [x] -> b
 any f = foldr ((||) . f) false
 
-instance Arithmetizable a x => Arithmetizable a (SymbolicBool x) where
-    arithmetize (SymbolicBool b) = arithmetize b
+instance Arithmetizable a x => Arithmetizable a (Bool x) where
+    arithmetize (Bool b) = arithmetize b
 
-    restore [r] = SymbolicBool $ restore [r]
+    restore [r] = Bool $ restore [r]
     restore _   = error "SymbolicBool: invalid number of values"
+
+    typeSize = 1

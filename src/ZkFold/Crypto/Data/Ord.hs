@@ -3,17 +3,19 @@
 
 module ZkFold.Crypto.Data.Ord where
 
-import           Prelude                                     (Bool, Ord, map, zipWith, ($))
+import qualified Data.Bool                                   as Haskell
+import           Prelude                                     (Ord, map, zipWith, ($))
 import qualified Prelude                                     as Haskell
 
 import           ZkFold.Crypto.Algebra.Basic.Class
-import           ZkFold.Crypto.Data.Bool                     (SymbolicBool (..), GeneralizedBoolean (..))
+import           ZkFold.Crypto.Algebra.Basic.Field           (Zp)
+import           ZkFold.Crypto.Data.Bool                     (Bool (..), GeneralizedBoolean (..))
 import           ZkFold.Crypto.Data.Conditional              (GeneralizedConditional, bool)
 import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq(..))
 import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (Arithmetizable, R1CS)
 
 -- TODO: add `compare`
-class GeneralizedConditional b a => GeneralizedOrd b a where
+class GeneralizedOrd b a where
     (<=) :: a -> a -> b
 
     (<) :: a -> a -> b
@@ -23,12 +25,12 @@ class GeneralizedConditional b a => GeneralizedOrd b a where
     (>) :: a -> a -> b
 
     max :: a -> a -> a
-    max x y = bool @b y x $ x <= y
+    -- max x y = bool @b y x $ x <= y
 
     min :: a -> a -> a
-    min x y = bool @b y x $ x >= y
+    -- min x y = bool @b y x $ x >= y
 
-instance Ord a => GeneralizedOrd Bool a where
+instance Ord a => GeneralizedOrd Haskell.Bool a where
     (<=) = (Haskell.<=)
 
     (<) = (Haskell.<)
@@ -37,8 +39,25 @@ instance Ord a => GeneralizedOrd Bool a where
 
     (>) = (Haskell.>)
 
+    max = Haskell.max
+
+    min = Haskell.min
+
+instance (Prime p, Haskell.Ord x) => GeneralizedOrd (Bool (Zp p)) x where
+    x <= y = Bool $ Haskell.bool zero one (x Haskell.<= y)
+
+    x <  y = Bool $ Haskell.bool zero one (x Haskell.<  y)
+
+    x >= y = Bool $ Haskell.bool zero one (x Haskell.>= y)
+
+    x >  y = Bool $ Haskell.bool zero one (x Haskell.>  y)
+
+    max x y = Haskell.bool y x $ x <= y
+
+    min x y = Haskell.bool y x $ x >= y
+
 instance (Arithmetizable a (R1CS a)) =>
-        GeneralizedOrd (SymbolicBool (R1CS a)) (R1CS a) where
+        GeneralizedOrd (Bool (R1CS a)) (R1CS a) where
     x <= y =
         let bEQ = zipWith (-) (toBits y) (toBits x)
             bGT = map (\b -> b - one) bEQ
@@ -49,6 +68,10 @@ instance (Arithmetizable a (R1CS a)) =>
     x >= y = y <= x
 
     x > y = y < x
+
+    max x y = bool @(Bool (R1CS a)) y x $ x <= y
+
+    min x y = bool @(Bool (R1CS a)) y x $ x >= y
 
 checkBits :: forall b x . (FiniteField x, GeneralizedConditional b b, GeneralizedEq b x) => [x] -> [x] -> b
 checkBits []     _      = false

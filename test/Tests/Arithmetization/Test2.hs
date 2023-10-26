@@ -2,23 +2,23 @@
 
 module Tests.Arithmetization.Test2 (testArithmetization2) where
 
-import           Prelude                                     hiding ((||), not, Num(..), Eq(..), (^), (/), replicate)
+import           Prelude                                         hiding ((||), not, Num(..), Eq(..), Bool, (^), (/), replicate)
 
-import           ZkFold.Crypto.Algebra.Basic.Field           (Zp)
+import           ZkFold.Crypto.Algebra.Basic.Field               (Zp)
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify, variableTypes)
-import           ZkFold.Crypto.Data.Bool                     (GeneralizedBoolean(..), SymbolicBool (..))
-import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..))
-import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (compile)
+import           ZkFold.Crypto.Data.Bool                         (GeneralizedBoolean(..), Bool (..))
+import           ZkFold.Crypto.Data.Eq                           (GeneralizedEq (..))
+import           ZkFold.Crypto.Protocol.Arithmetization.R1CS     (compile)
 
-import           Tests.Utility.Types                         (R, SmallField)
+import           Tests.Utility.Types                             (R, SmallField, Symbolic)
 
 -- A true statement.
-testFunc :: forall a b . (GeneralizedEq b a) => a -> a -> b
-testFunc x y = (x /= y) || (x == y)
+tautology :: forall a . Symbolic a => a -> a -> Bool a
+tautology x y = (x /= y) || (x == y)
 
 testArithmetization2 :: IO ()
 testArithmetization2 = do
-    let SymbolicBool r = compile @(Zp SmallField) (testFunc @R @(SymbolicBool R)) :: SymbolicBool R
+    let Bool r = compile @(Zp SmallField) (tautology @R) :: Bool R
 
     putStrLn "\nStarting arithmetization test 2...\n"
 

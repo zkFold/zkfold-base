@@ -44,6 +44,9 @@ class (FiniteField a, Eq a, ToBits a) => Arithmetizable a x where
     -- | Restores `x` from outputs from the circuits' outputs.
     restore :: [R1CS a] -> x
 
+    -- | Returns the number of finite field elements needed to desscribe `x`.
+    typeSize :: Integer
+
 instance (Arithmetizable a x, Arithmetizable a y) => Arithmetizable a (x, y) where
     arithmetize (a, b) = do
         x <- arithmetize a
@@ -54,6 +57,8 @@ instance (Arithmetizable a x, Arithmetizable a y) => Arithmetizable a (x, y) whe
     restore [r1, r2] = (restore [r1], restore [r2])
     restore _        = error "restore: wrong number of arguments"
 
+    typeSize = typeSize @a @x + typeSize @a @y
+
 instance Arithmetizable a x => Arithmetizable a [x] where
     arithmetize []     = return []
     arithmetize (a:as) = do
@@ -63,12 +68,16 @@ instance Arithmetizable a x => Arithmetizable a [x] where
     -- TODO: this should work with objects of arbitrary sizes.
     restore rs = map (\r -> restore [r]) rs
 
-instance (Arithmetizable a f) => Arithmetizable a (R1CS a -> f) where
+    typeSize = typeSize @a @x
+
+instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) where
     arithmetize f = do
-        x <- input
-        arithmetize (f x)
+        x <- mapM (const input) [1..typeSize @a @x]
+        arithmetize (f $ restore x)
 
     restore = error "restore: not implemented"
+
+    typeSize = 1 + typeSize @a @f
 
 -- | A rank-1 constraint system (R1CS).
 -- This type represents the result of compilation of a function into a R1CS.
@@ -194,6 +203,8 @@ instance (FiniteField a, Eq a, ToBits a) =>
 
     restore [r] = r
     restore _   = error "restore: wrong number of arguments"
+
+    typeSize = 1
 
 instance FiniteField a => Finite (R1CS a) where
     order = order @a

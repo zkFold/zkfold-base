@@ -1,13 +1,16 @@
 module ZkFold.Crypto.Data.Eq (
-    GeneralizedEq(..)
+    GeneralizedEq(..),
+    elem
 ) where
 
 import           Control.Monad.State                         (evalState)
-import           Prelude                                     hiding (Num(..), (/=), (==), (/), product)
-import qualified Prelude                                     as Haskell hiding (product)
+import           Data.Bool                                   (bool)
+import           Prelude                                     hiding (Num(..), Bool, (/=), (==), (/), any, product, elem)
+import qualified Prelude                                     as Haskell
 
 import           ZkFold.Crypto.Algebra.Basic.Class
-import           ZkFold.Crypto.Data.Bool                     (SymbolicBool (..), GeneralizedBoolean)
+import           ZkFold.Crypto.Algebra.Basic.Field           (Zp)
+import           ZkFold.Crypto.Data.Bool                     (Bool (..), GeneralizedBoolean, any)
 import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (Arithmetizable (..), R1CS)
 
 class GeneralizedBoolean b => GeneralizedEq b a where
@@ -15,22 +18,29 @@ class GeneralizedBoolean b => GeneralizedEq b a where
 
     (/=) :: a -> a -> b
 
-instance Eq a => GeneralizedEq Bool a where
+instance Eq a => GeneralizedEq Haskell.Bool a where
     x == y = x Haskell.== y
     x /= y = x Haskell./= y
 
+instance (Prime p, Haskell.Eq x) => GeneralizedEq (Bool (Zp p)) x where
+    x == y = Bool $ bool zero one (x Haskell.== y)
+    x /= y = Bool $ bool zero one (x Haskell./= y)
+
 instance Arithmetizable a x =>
-        GeneralizedEq (SymbolicBool (R1CS a)) x where
+        GeneralizedEq (Bool (R1CS a)) x where
     x == y =
         let x' = evalState (arithmetize x) mempty
             y' = evalState (arithmetize y) mempty
             zs = zipWith (-) x' y'
             bs = map (\z -> one - z / z) zs
-        in SymbolicBool $ product bs
+        in Bool $ product bs
 
     x /= y =
         let x' = evalState (arithmetize x) mempty
             y' = evalState (arithmetize y) mempty
             zs = zipWith (-) x' y'
             bs = map (\z -> one - z / z) zs
-        in SymbolicBool $ one - product bs
+        in Bool $ one - product bs
+
+elem :: GeneralizedEq b a => a -> [a] -> b
+elem x = any (== x)

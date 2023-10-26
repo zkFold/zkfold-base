@@ -1,41 +1,37 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
 module Examples.Fibonacci (exampleFibonacci) where
 
-import           Prelude                                     hiding ((||), not, Num(..), Eq(..), (^), (/), any)
+import           Prelude                                     hiding ((||), not, Num(..), Eq(..), Bool, (^), (/), any)
 
 import           ZkFold.Crypto.Algebra.Basic.Class
 import           ZkFold.Crypto.Algebra.Basic.Field           (Zp)
 import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify)
 import           ZkFold.Crypto.Protocol.Arithmetization.R1CS
-import           ZkFold.Crypto.Data.Bool                     (SymbolicBool (..))
-import           ZkFold.Crypto.Data.Conditional              (GeneralizedConditional, bool)
+import           ZkFold.Crypto.Data.Bool                     (Bool (..))
+import           ZkFold.Crypto.Data.Conditional              (bool)
 import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..))
 
-import           Tests.Utility.Types                         (R, I, SmallField)
+import           Tests.Utility.Types                         (R, I, SmallField, Symbolic)
 
 -- The Fibonacci index function. If `x` is a Fibonacci number, returns its index (up until `nMax`). Otherwise, returns `0`.
-fibonacciIndex :: forall a b .
-    (FiniteField a, GeneralizedEq b a, GeneralizedConditional b a, FromConstant I a) =>
-    Integer -> a -> a
-fibonacciIndex nMax x = foldl (\m k -> bool m (fromConstant @I @a k) (fib k one one == x :: b)) zero [1..nMax]
+fibonacciIndex :: forall a . Symbolic a => Integer -> a -> a
+fibonacciIndex nMax x = foldl (\m k -> bool m (fromConstant @I @a k) (fib k one one == x :: Bool a)) zero [1..nMax]
     where
         fib :: I -> a -> a -> a
         fib 1 x1 _  = x1
         fib n x1 x2 = fib (n - 1) x2 (x1 + x2)
 
 -- The theorem that says that the Fibonacci index function cannot possibly return `nMax + 1`.
-fibIndexOutOfRange :: forall a b .
-    (FiniteField a, GeneralizedEq b a, GeneralizedConditional b a, FromConstant I a) =>
-    Integer -> a -> b
-fibIndexOutOfRange nMax x = fibonacciIndex @a @b nMax x /= fromConstant @I @a (nMax + 1) :: b
+fibIndexOutOfRange :: forall a . Symbolic a =>
+    Integer -> a -> Bool a
+fibIndexOutOfRange nMax x = fibonacciIndex @a nMax x /= fromConstant (nMax + 1)
 
 exampleFibonacci :: IO ()
 exampleFibonacci = do
     let nMax = 10
 
-    let r = compile @(Zp SmallField) (fibonacciIndex @R @(SymbolicBool R) nMax) :: R
+    let r = compile @(Zp SmallField) (fibonacciIndex @R nMax) :: R
 
     putStrLn "\nStarting Fibonacci test...\n"
 
@@ -44,7 +40,7 @@ exampleFibonacci = do
     putStrLn $ "Number of constraints: " ++ show (r1csSizeN r)
     putStrLn $ "Number of variables: " ++ show (r1csSizeM r)
 
-    let SymbolicBool r' = compile @(Zp SmallField) (fibIndexOutOfRange @R @(SymbolicBool R) nMax) :: SymbolicBool R
+    let Bool r' = compile @(Zp SmallField) (fibIndexOutOfRange @R nMax) :: Bool R
 
     putStrLn "\nFibonacci index is out of range theorem"
     putStrLn "R1CS size:"

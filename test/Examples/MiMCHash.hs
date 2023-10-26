@@ -12,10 +12,9 @@ import           ZkFold.Crypto.Data.Conditional              (bool)
 import           ZkFold.Prelude                              ((!!))
 
 import           Examples.MiMC.Constants                     (mimcConstants)
-import           Tests.Utility.Types                         (R, I, SmallField)
+import           Tests.Utility.Types                         (R, SmallField, Symbolic)
 
-mimcHash :: forall a . (FiniteField a, FromConstant I a) =>
-    Integer -> a -> a -> a -> a
+mimcHash :: forall a . Symbolic a => Integer -> a -> a -> a -> a
 mimcHash nRounds k xL xR = 
     let c  = mimcConstants !! (nRounds-1)
         t5 = (xL + k + c) ^ (5 :: Integer)
