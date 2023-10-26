@@ -63,31 +63,31 @@ library
     import: options
     exposed-modules:
       ZkFold.Cardano.Types
-      ZkFold.Crypto.Algebra.Basic.Class
-      ZkFold.Crypto.Algebra.Basic.Field
-      ZkFold.Crypto.Algebra.EllipticCurve.BLS12_381
-      ZkFold.Crypto.Algebra.EllipticCurve.Class
-      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis
-      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal
-      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Reduction
-      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Internal.Types
-      ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis.Types
-      ZkFold.Crypto.Data.Bool
-      ZkFold.Crypto.Data.Conditional
-      ZkFold.Crypto.Data.Eq
-      ZkFold.Crypto.Data.Ord
-      ZkFold.Crypto.Data.PartialOrder
-      ZkFold.Crypto.Protocol.Arithmetization.Plonk
-      ZkFold.Crypto.Protocol.Arithmetization.R1CS
-      ZkFold.Crypto.Protocol.ARK.BabyHyrax
-      ZkFold.Crypto.Protocol.ARK.HyperPlonk
-      ZkFold.Crypto.Protocol.ARK.Lasso
-      ZkFold.Crypto.Protocol.ARK.Nova
-      ZkFold.Crypto.Protocol.ARK.Plonk
-      ZkFold.Crypto.Protocol.Commitment.KZG
-      ZkFold.Crypto.Protocol.Commitment.Sona
-      ZkFold.Crypto.Protocol.PIOP.Multivariate.Plonk
-      ZkFold.Crypto.Protocol.PIOP.Univariate.Plonk
+      ZkFold.Base.Algebra.Basic.Class
+      ZkFold.Base.Algebra.Basic.Field
+      ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+      ZkFold.Base.Algebra.EllipticCurve.Class
+      ZkFold.Base.Algebra.Polynomials.GroebnerBasis
+      ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal
+      ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Reduction
+      ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Types
+      ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Types
+      ZkFold.Base.Data.Bool
+      ZkFold.Base.Data.Conditional
+      ZkFold.Base.Data.Eq
+      ZkFold.Base.Data.Ord
+      ZkFold.Base.Data.PartialOrder
+      ZkFold.Base.Protocol.Arithmetization.Plonk
+      ZkFold.Base.Protocol.Arithmetization.R1CS
+      ZkFold.Base.Protocol.ARK.BabyHyrax
+      ZkFold.Base.Protocol.ARK.HyperPlonk
+      ZkFold.Base.Protocol.ARK.Lasso
+      ZkFold.Base.Protocol.ARK.Nova
+      ZkFold.Base.Protocol.ARK.Plonk
+      ZkFold.Base.Protocol.Commitment.KZG
+      ZkFold.Base.Protocol.Commitment.Sona
+      ZkFold.Base.Protocol.PIOP.Multivariate.Plonk
+      ZkFold.Base.Protocol.PIOP.Univariate.Plonk
       ZkFold.Prelude
     build-depends:
       base                          >= 4.9 && < 5,

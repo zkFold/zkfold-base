@@ -7,12 +7,12 @@ import           Data.List                                   (find)
 import           Prelude                                     hiding ((||), not, Num(..), Eq(..), Bool, (^), (>), (/), replicate)
 import qualified Prelude                                     as Haskell
 
-import           ZkFold.Crypto.Algebra.Basic.Class
-import           ZkFold.Crypto.Algebra.Basic.Field
-import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (r1csPrint, r1csValue, applyArgs, compile)
-import           ZkFold.Crypto.Data.Bool                     (GeneralizedBoolean(..), Bool (..))
-import           ZkFold.Crypto.Data.Conditional              (GeneralizedConditional(..))
-import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq (..))
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Protocol.Arithmetization.R1CS   (r1csPrint, r1csValue, applyArgs, compile)
+import           ZkFold.Base.Data.Bool                       (GeneralizedBoolean(..), Bool (..))
+import           ZkFold.Base.Data.Conditional                (GeneralizedConditional(..))
+import           ZkFold.Base.Data.Eq                         (GeneralizedEq (..))
 
 import           Tests.Utility.Types                         (SmallField, I, R, Symbolic)
 

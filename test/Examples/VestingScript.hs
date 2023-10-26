@@ -5,11 +5,11 @@ module Examples.VestingScript (exampleVesting) where
 import           Prelude                                     (IO, Show (..), ($), (++), putStrLn)
 
 import           ZkFold.Cardano.Types
-import           ZkFold.Crypto.Algebra.Basic.Field           (Zp)
-import           ZkFold.Crypto.Data.Bool                     (GeneralizedBoolean (..), Bool (..), any)
-import           ZkFold.Crypto.Data.Eq                       (GeneralizedEq(..))
-import           ZkFold.Crypto.Data.Ord                      (GeneralizedOrd(..))
-import           ZkFold.Crypto.Protocol.Arithmetization.R1CS
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Data.Bool                       (GeneralizedBoolean (..), Bool (..), any)
+import           ZkFold.Base.Data.Eq                         (GeneralizedEq(..))
+import           ZkFold.Base.Data.Ord                        (GeneralizedOrd(..))
+import           ZkFold.Base.Protocol.Arithmetization.R1CS
 
 import           Tests.Utility.Types                         (Symbolic, R, SmallField)
 

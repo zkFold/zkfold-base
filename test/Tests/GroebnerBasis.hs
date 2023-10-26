@@ -6,8 +6,8 @@ import           Data.Bool                                  (not)
 import           Data.Map                                   (fromList)
 import           Prelude                                    hiding (not, Num(..), Eq(..), (^), (/))
 
-import           ZkFold.Crypto.Algebra.Basic.Class
-import           ZkFold.Crypto.Algebra.Polynomials.GroebnerBasis
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis
 
 import           Tests.Utility.Types                        (SmallField)
 

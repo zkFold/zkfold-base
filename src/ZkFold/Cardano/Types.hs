@@ -3,8 +3,8 @@ module ZkFold.Cardano.Types where
 import           Prelude                            (($), concat, return, error, (++), fst, snd)
 import qualified Prelude                            as Haskell
 
-import           ZkFold.Crypto.Algebra.Basic.Class
-import           ZkFold.Crypto.Protocol.Arithmetization.R1CS (Arithmetizable(..))
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Protocol.Arithmetization.R1CS (Arithmetizable(..))
 
 data Datum x = Datum x x x
 

@@ -4,7 +4,7 @@ module Examples.MiMC.Constants (mimcConstants) where
 
 import           Prelude                                     hiding ((||), not, Num(..), Eq(..), (^), (/), any)
 
-import           ZkFold.Crypto.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class
 
 import           Tests.Utility.Types                         (I)
 
