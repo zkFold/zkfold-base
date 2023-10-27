@@ -8,7 +8,7 @@ import           ZkFold.Base.Data.Bool                     (Bool)
 import           ZkFold.Base.Data.Conditional              (Conditional)
 import           ZkFold.Base.Data.Eq                       (Eq)
 import           ZkFold.Base.Data.Ord                      (Ord)
-import           ZkFold.Base.Protocol.Arithmetization.R1CS (R1CS)
+import           ZkFold.Base.Protocol.Arithmetization.R1CS (ArithmeticCircuit)
 
 type Symbolic a = (FromConstant I a, FiniteField a, ToBits a, Eq (Bool a) a, Ord (Bool a) a, Conditional (Bool a) a)
 
@@ -17,5 +17,5 @@ instance Finite SmallField where
     order = 97
 instance Prime SmallField
 
-type R = R1CS (Zp SmallField)
+type R = ArithmeticCircuit (Zp SmallField)
 type I = Integer

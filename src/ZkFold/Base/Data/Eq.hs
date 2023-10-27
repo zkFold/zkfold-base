@@ -11,7 +11,7 @@ import qualified Prelude                                     as Haskell
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..), any)
-import           ZkFold.Base.Protocol.Arithmetization.R1CS   (Arithmetizable (..), R1CS)
+import           ZkFold.Base.Protocol.Arithmetization.R1CS   (Arithmetizable (..), ArithmeticCircuit)
 
 class BoolType b => Eq b a where
     (==) :: a -> a -> b
@@ -26,7 +26,7 @@ instance (Prime p, Haskell.Eq x) => Eq (Bool (Zp p)) x where
     x == y = Bool $ bool zero one (x Haskell.== y)
     x /= y = Bool $ bool zero one (x Haskell./= y)
 
-instance Arithmetizable a x => Eq (Bool (R1CS a)) x where
+instance Arithmetizable a x => Eq (Bool (ArithmeticCircuit a)) x where
     x == y =
         let x' = evalState (arithmetize x) mempty
             y' = evalState (arithmetize y) mempty

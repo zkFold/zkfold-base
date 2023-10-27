@@ -3,8 +3,10 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
-import           Prelude hiding (Num(..), (^), (/), negate)
-import qualified Prelude as Haskell
+import           Prelude        hiding (Num(..), (^), (/), negate, replicate, length)
+import qualified Prelude        as Haskell
+
+import           ZkFold.Prelude (replicate, length)
 
 infixl 7 *, /
 infixl 6 +, -
@@ -74,6 +76,9 @@ class FromConstant a b where
 -- Note: numbers should convert to Little-endian bit representation.
 class Semiring a => ToBits a where
     toBits :: a -> [a]
+
+padBits :: forall a . ToBits a => Integer -> [a] -> [a]
+padBits n xs = xs ++ replicate (n - length xs) zero
 
 class MultiplicativeSemigroup a => Exponent a b where
     (^) :: a -> b -> a

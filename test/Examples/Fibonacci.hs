@@ -37,15 +37,15 @@ exampleFibonacci = do
 
     putStrLn "Fibonacci index function"
     putStrLn "R1CS size:"
-    putStrLn $ "Number of constraints: " ++ show (r1csSizeN r)
-    putStrLn $ "Number of variables: " ++ show (r1csSizeM r)
+    putStrLn $ "Number of constraints: " ++ show (acSizeN r)
+    putStrLn $ "Number of variables: " ++ show (acSizeM r)
 
     let Bool r' = compile @(Zp SmallField) (fibIndexOutOfRange @R nMax) :: Bool R
 
     putStrLn "\nFibonacci index is out of range theorem"
     putStrLn "R1CS size:"
-    putStrLn $ "Number of constraints: " ++ show (r1csSizeN r')
-    putStrLn $ "Number of variables: " ++ show (r1csSizeM r')
+    putStrLn $ "Number of constraints: " ++ show (acSizeN r')
+    putStrLn $ "Number of variables: " ++ show (acSizeM r')
 
     let theorem@(p0, ps) = fromR1CS r'
 

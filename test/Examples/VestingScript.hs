@@ -31,5 +31,5 @@ exampleVesting = do
 
     putStrLn "Vesting Script:"
     putStrLn "R1CS size:"
-    putStrLn $ "Number of constraints: " ++ show (r1csSizeN r)
-    putStrLn $ "Number of variables: " ++ show (r1csSizeM r)
+    putStrLn $ "Number of constraints: " ++ show (acSizeN r)
+    putStrLn $ "Number of variables: " ++ show (acSizeM r)

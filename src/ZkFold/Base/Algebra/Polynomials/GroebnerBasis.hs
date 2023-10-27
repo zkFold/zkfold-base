@@ -63,15 +63,15 @@ variableTypes = nub . sortBy (\(x1, _) (x2, _) -> compare x2 x1) . concatMap var
         variableTypes'' :: Monomial p -> [(Monomial p, VarType)]
         variableTypes'' (M _ as) = map (\(j, v) -> (M one (singleton j (setPower 1 v)), getVarType v)) $ toList as
 
-fromR1CS :: forall p . Prime p => R1CS (Zp p) -> (Polynomial p, [Polynomial p])
+fromR1CS :: forall p . Prime p => ArithmeticCircuit (Zp p) -> (Polynomial p, [Polynomial p])
 fromR1CS r = (boundVariables p0 ps, --systemReduce $
         map (`boundVariables` ps) ps)
     where
-        m  = r1csSystem r
-        xs = reverse $ elems $ r1csVarOrder r
+        m  = acSystem r
+        xs = reverse $ elems $ acVarOrder r
         ps = sortBy (flip compare) $ map fromR1CS' $ elems m
 
-        k  = r1csOutput r
+        k  = acOutput r
         p0 = polynomial [var k one] - polynomial [var 0 one]
 
         mapVars :: Integer -> Integer

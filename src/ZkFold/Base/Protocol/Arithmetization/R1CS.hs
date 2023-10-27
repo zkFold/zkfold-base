@@ -4,44 +4,44 @@
 module ZkFold.Base.Protocol.Arithmetization.R1CS (
         BigField,
         Arithmetizable(..),
-        R1CS,
+        ArithmeticCircuit,
         -- high-level functions
         applyArgs,
         compile,
         optimize,
         -- information about the system
-        r1csSizeN,
-        r1csSizeM,
-        r1csSystem,
-        r1csValue,
-        r1csPrint,
+        acSizeN,
+        acSizeM,
+        acSystem,
+        acValue,
+        acPrint,
         -- R1CS type fields
-        r1csVarOrder,
-        r1csOutput
+        acVarOrder,
+        acOutput
     ) where
 
 import           Control.Monad.State                  (MonadState (..), State, modify, execState, evalState)
 import           Data.Bool                            (bool)
 import           Data.List                            (nub)
 import           Data.Map                             hiding (take, drop, foldl, null, map, foldr)
-import           Prelude                              hiding (Num (..), (^), sum, take, drop, product, length)
+import           Prelude                              hiding (Num (..), (^), (!!), sum, take, drop, product, length)
 import qualified Prelude                              as Haskell
 import           System.Random                        (StdGen, Random (..), mkStdGen, uniform)
 import           Text.Pretty.Simple                   (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Prelude                       (length, drop, take)
+import           ZkFold.Prelude                       ((!!), length, drop, take)
 
 -- | A class for arithmetizable types.
 -- Type `a` is the finite field of the arithmetic circuit.
 -- Type `x` represents the type to be arithmetized.
 class (FiniteField a, Eq a, ToBits a) => Arithmetizable a x where
     -- | Arithmetizes `x`, adds it to the current circuit, and returns the outputs that make up `x`.
-    arithmetize :: x -> State (R1CS a) [R1CS a]
+    arithmetize :: x -> State (ArithmeticCircuit a) [ArithmeticCircuit a]
 
     -- | Restores `x` from outputs from the circuits' outputs.
-    restore :: [R1CS a] -> x
+    restore :: [ArithmeticCircuit a] -> x
 
     -- | Returns the number of finite field elements needed to desscribe `x`.
     typeSize :: Integer
@@ -76,39 +76,39 @@ instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) w
 
     restore = error "restore: not implemented"
 
-    typeSize = 1 + typeSize @a @f
+    typeSize = error "typeSize: not implemented"
 
--- | A rank-1 constraint system (R1CS).
+-- | Arithmetic circuit in the form of a rank-1 constraint system (R1CS).
 -- This type represents the result of compilation of a function into a R1CS.
-data R1CS a = R1CS
+data ArithmeticCircuit a = ArithmeticCircuit
     {
-        r1csMatrices :: Map Integer (Map Integer a, Map Integer a, Map Integer a),
+        acMatrices :: Map Integer (Map Integer a, Map Integer a, Map Integer a),
         -- ^ The R1CS matrices
-        r1csInput    :: [Integer],
+        acInput    :: [Integer],
         -- ^ The input variables
-        r1csWitness  :: Map Integer a -> Map Integer a,
+        acWitness  :: Map Integer a -> Map Integer a,
         -- ^ The witness generation function
-        r1csOutput   :: Integer,
+        acOutput   :: Integer,
         -- ^ The output variable
-        r1csVarOrder :: Map (Integer, Integer) Integer,
+        acVarOrder :: Map (Integer, Integer) Integer,
         -- ^ The order of variable assignments
-        r1csRNG      :: StdGen
+        acRNG      :: StdGen
     }
 
 --------------------------------- High-level functions --------------------------------
 
 -- TODO: make this work for different input types.
-applyArgs :: forall a . R1CS a -> [a] -> R1CS a
+applyArgs :: forall a . ArithmeticCircuit a -> [a] -> ArithmeticCircuit a
 applyArgs r args = execState (apply args) r
 
--- | Compiles function `f` into a R1CS.
+-- | Compiles function `f` into an arithmetic circuit.
 compile :: forall a f y . (Arithmetizable a f, Arithmetizable a y) => f -> y
 compile f = restore @a $ evalState (arithmetize f) mempty
 
 -- | Optimizes the constraint system.
 --
 -- TODO: Implement this.
-optimize :: R1CS a -> R1CS a
+optimize :: ArithmeticCircuit a -> ArithmeticCircuit a
 optimize = undefined
 
 ---------------------------------- Low-level functions --------------------------------
@@ -117,83 +117,83 @@ optimize = undefined
 type Constraint a = (Map Integer a, Map Integer a, Map Integer a)
 
 -- | Adds a constraint to the arithmetic circuit.
-constraint :: (Eq a, ToBits a) => Constraint a -> State (R1CS a) ()
-constraint con = modify $ \r -> r { r1csMatrices = insert (con2var con) con (r1csMatrices r) }
+constraint :: (Eq a, ToBits a) => Constraint a -> State (ArithmeticCircuit a) ()
+constraint con = modify $ \r -> r { acMatrices = insert (con2var con) con (acMatrices r) }
 
 -- | Forces the current variable to be zero.
-forceZero :: forall a . (FiniteField a, Eq a, ToBits a) => State (R1CS a) ()
+forceZero :: forall a . (FiniteField a, Eq a, ToBits a) => State (ArithmeticCircuit a) ()
 forceZero = do
     r <- get
-    let x   = r1csOutput r
+    let x   = acOutput r
         con = (empty, empty, singleton x one)
     constraint con
 
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
-assignment :: forall a . (Map Integer a -> a) -> State (R1CS a) ()
-assignment f = modify $ \r -> r { r1csWitness = \i -> insert (r1csOutput r) (f i) (r1csWitness r i) }
+assignment :: forall a . (Map Integer a -> a) -> State (ArithmeticCircuit a) ()
+assignment f = modify $ \r -> r { acWitness = \i -> insert (acOutput r) (f i) (acWitness r i) }
 
 -- | Adds a new input variable to the arithmetic circuit. Returns a copy of the arithmetic circuit with this variable as output.
-input :: forall a . State (R1CS a) (R1CS a)
-input = modify (\(r :: R1CS a) ->
-        let ins    = r1csInput r
-            s      = if null ins then 1 else maximum (r1csInput r) + 1
+input :: forall a . State (ArithmeticCircuit a) (ArithmeticCircuit a)
+input = modify (\(r :: ArithmeticCircuit a) ->
+        let ins    = acInput r
+            s      = if null ins then 1 else maximum (acInput r) + 1
         in r
         {
-            r1csInput    = ins ++ [s],
-            r1csOutput   = s,
-            r1csVarOrder = singleton (0, s) s
+            acInput    = ins ++ [s],
+            acOutput   = s,
+            acVarOrder = singleton (0, s) s
         }) >> get
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: R1CS a -> Map Integer a -> a
+eval :: ArithmeticCircuit a -> Map Integer a -> a
 eval ctx i =
-    let w = r1csWitness ctx i
-        o = r1csOutput ctx
+    let w = acWitness ctx i
+        o = acOutput ctx
     in w ! o
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.
 -- TODO: make this safe
-apply :: [a] -> State (R1CS a) ()
-apply xs = modify (\(r :: R1CS a) ->
-    let ins = r1csInput r
+apply :: [a] -> State (ArithmeticCircuit a) ()
+apply xs = modify (\(r :: ArithmeticCircuit a) ->
+    let ins = acInput r
         n   = length xs
     in r
     {
-        r1csInput = drop n ins,
-        r1csWitness = r1csWitness r . (fromList (zip (take n ins) xs) `union`)
+        acInput = drop n ins,
+        acWitness = acWitness r . (fromList (zip (take n ins) xs) `union`)
     })
 
 ------------------------------------- Instances -------------------------------------
 
-instance Eq a => Semigroup (R1CS a) where
-    r1 <> r2 = R1CS
+instance Eq a => Semigroup (ArithmeticCircuit a) where
+    r1 <> r2 = ArithmeticCircuit
         {
-            r1csMatrices = r1csMatrices r1 `union` r1csMatrices r2,
+            acMatrices = acMatrices r1 `union` acMatrices r2,
             -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
             -- We need a way to ensure the correct order no matter how `(<>)` is used.
-            r1csInput    = nub $ r1csInput r1 ++ r1csInput r2,
-            r1csWitness  = \w -> r1csWitness r1 w `union` r1csWitness r2 w,
-            r1csOutput   = max (r1csOutput r1) (r1csOutput r2),
-            r1csVarOrder = r1csVarOrder r1 `union` r1csVarOrder r2,
-            r1csRNG      = mkStdGen $ fst (uniform (r1csRNG r1)) Haskell.* fst (uniform (r1csRNG r2))
+            acInput    = nub $ acInput r1 ++ acInput r2,
+            acWitness  = \w -> acWitness r1 w `union` acWitness r2 w,
+            acOutput   = max (acOutput r1) (acOutput r2),
+            acVarOrder = acVarOrder r1 `union` acVarOrder r2,
+            acRNG      = mkStdGen $ fst (uniform (acRNG r1)) Haskell.* fst (uniform (acRNG r2))
         }
 
-instance (FiniteField a, Eq a) => Monoid (R1CS a) where
-    mempty = R1CS
+instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
+    mempty = ArithmeticCircuit
         {
-            r1csMatrices = empty,
-            r1csInput    = [],
-            r1csWitness  = insert 0 one,
-            r1csOutput   = 0,
-            r1csVarOrder = empty,
-            r1csRNG      = mkStdGen 0
+            acMatrices = empty,
+            acInput    = [],
+            acWitness  = insert 0 one,
+            acOutput   = 0,
+            acVarOrder = empty,
+            acRNG      = mkStdGen 0
         }
 
-instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (ArithmeticCircuit a) where
     arithmetize r = do
         r' <- get
-        let r'' = r <> r' { r1csOutput = r1csOutput r }
+        let r'' = r <> r' { acOutput = acOutput r }
         put r''
         return [r'']
 
@@ -202,20 +202,20 @@ instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (R1CS a) where
 
     typeSize = 1
 
-instance FiniteField a => Finite (R1CS a) where
+instance FiniteField a => Finite (ArithmeticCircuit a) where
     order = order @a
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (ArithmeticCircuit a) where
     r1 + r2 = flip execState (r1 <> r2) $ do
-        let x1  = r1csOutput r1
-            x2  = r1csOutput r2
+        let x1  = acOutput r1
+            x2  = acOutput r2
             con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)])
         z <- newVariableFromConstraint con
         addVariable z
         constraint $ con z
         assignment (eval r1 + eval r2)
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (ArithmeticCircuit a) where
     zero = flip execState mempty $ do
         let con = \z -> (empty, empty, fromList [(z, one)])
         z <- newVariableFromConstraint con
@@ -223,31 +223,31 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (R1CS a) where
         constraint $ con z
         assignment zero
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (ArithmeticCircuit a) where
     negate r = flip execState r $ do
-        let x   = r1csOutput r
+        let x   = acOutput r
             con = \z -> (empty, empty, fromList [(x, one), (z, one)])
         z <- newVariableFromConstraint con
         addVariable z
         constraint $ con z
         assignment (negate $ eval r)
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (ArithmeticCircuit a) where
     r1 * r2 = flip execState (r1 <> r2) $ do
-        let x1  = r1csOutput r1
-            x2  = r1csOutput r2
+        let x1  = acOutput r1
+            x2  = acOutput r2
             con = \z -> (singleton x1 one, singleton x2 one, singleton z one)
         z <- newVariableFromConstraint con
         addVariable z
         constraint $ con z
         assignment (eval r1 * eval r2)
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (ArithmeticCircuit a) where
     one = mempty
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (ArithmeticCircuit a) where
     invert r = flip execState r $ do
-        let x    = r1csOutput r
+        let x    = acOutput r
             con  = \y -> (singleton x one, singleton y one, empty)
         y <- newVariableFromConstraint con
         addVariable y
@@ -259,7 +259,7 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (R1CS a) where
         constraint $ con' z
         assignment (invert $ eval r)
 
-instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
     fromConstant c = flip execState mempty $ do
         let x = fromConstant c
             con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
@@ -268,54 +268,56 @@ instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (R1
         constraint $ con z
         assignment (const x)
 
-instance (FiniteField a, Eq a, ToBits a) => ToBits (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => ToBits (ArithmeticCircuit a) where
     toBits x =
         let two = one + one
             ps  = map (two ^) [0.. numberOfBits @a - 1]
-            f z = flip evalState z $ mapM (const $ do
+            f z = flip evalState z $ mapM (\i -> do
                     x' <- newVariable
                     addVariable x'
+                    assignment ((!! i) . padBits (numberOfBits @a) . toBits . eval x)
+                    constraint (singleton x' one, fromList [(0, one), (x', negate one)], empty)
                     get
                 ) [0.. numberOfBits @a - 1]
             v z = z - sum (zipWith (*) (f z) ps)
-            y   = x { r1csRNG = r1csRNG (v x) }
-            bs  = map r1csOutput $ f y
+            y   = x { acRNG = acRNG (v x) }
+            bs  = map acOutput $ f y
             r   = execState forceZero $ v y
-        in map (\x'' -> r { r1csOutput = x'' } ) bs
+        in map (\x'' -> r { acOutput = x'' } ) bs
 
 ----------------------------------- Information -----------------------------------
 
 -- | Calculates the number of constraints in the system.
-r1csSizeN :: R1CS a -> Integer
-r1csSizeN = length . r1csMatrices
+acSizeN :: ArithmeticCircuit a -> Integer
+acSizeN = length . acMatrices
 
 -- | Calculates the number of variables in the system.
 -- The constant `1` is not counted.
-r1csSizeM :: R1CS a -> Integer
-r1csSizeM = length . r1csVarOrder
+acSizeM :: ArithmeticCircuit a -> Integer
+acSizeM = length . acVarOrder
 
-r1csSystem :: R1CS a -> Map Integer (Map Integer a, Map Integer a, Map Integer a)
-r1csSystem = r1csMatrices
+acSystem :: ArithmeticCircuit a -> Map Integer (Map Integer a, Map Integer a, Map Integer a)
+acSystem = acMatrices
 
-r1csValue :: R1CS a -> a
-r1csValue r = eval r mempty
+acValue :: ArithmeticCircuit a -> a
+acValue r = eval r mempty
 
 -- | Prints the constraint system, the witness, and the output.
 --
 -- TODO: Move this elsewhere.
 -- TODO: Check that all arguments have been applied.
-r1csPrint :: forall a . Show a => R1CS a -> IO ()
-r1csPrint r = do
-    let m = elems (r1csSystem r)
-        i = r1csInput r
-        w = r1csWitness r empty
-        o = r1csOutput r
-        v = r1csValue r
-        vo = r1csVarOrder r
+acPrint :: forall a . Show a => ArithmeticCircuit a -> IO ()
+acPrint r = do
+    let m = elems (acSystem r)
+        i = acInput r
+        w = acWitness r empty
+        o = acOutput r
+        v = acValue r
+        vo = acVarOrder r
     putStr "System size: "
-    pPrint $ r1csSizeN r
+    pPrint $ acSizeN r
     putStr "Variable size: "
-    pPrint $ r1csSizeM r
+    pPrint $ acSizeM r
     putStr "Matrices: "
     pPrint m
     putStr "Input: "
@@ -348,18 +350,18 @@ con2var (a, b, c) = g a + g b + g c
         f (x, y)  = multiExp z (map (toZp :: Integer -> Zp BigField) x) + multiExp z y
         g m       = fromZp $ f $ unzip $ toList m
 
-newVariable :: State (R1CS a) Integer
+newVariable :: State (ArithmeticCircuit a) Integer
 newVariable = do
     r <- get
-    let (x, g) = randomR (0, order @BigField - 1) (r1csRNG r)
-    put r { r1csRNG = g }
+    let (x, g) = randomR (0, order @BigField - 1) (acRNG r)
+    put r { acRNG = g }
     return x
 
-newVariableFromConstraint :: (Eq a, ToBits a) => (Integer -> Constraint a) -> State (R1CS a) Integer
+newVariableFromConstraint :: (Eq a, ToBits a) => (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
 newVariableFromConstraint con = con2var . con <$> newVariable
 
 -- newVariableFromVariable :: Integer -> State (R1CS a) Integer
 -- newVariableFromVariable x = fromZp . toZp @BigField . (x *)  <$> newVariable
 
-addVariable :: Integer -> State (R1CS a) ()
-addVariable x = modify (\r -> r { r1csOutput = x, r1csVarOrder = insert (length (r1csVarOrder r), x) x (r1csVarOrder r)})
+addVariable :: Integer -> State (ArithmeticCircuit a) ()
+addVariable x = modify (\r -> r { acOutput = x, acVarOrder = insert (length (acVarOrder r), x) x (acVarOrder r)})

@@ -2,18 +2,18 @@
 
 module Tests.Arithmetization.Test3 (testArithmetization3) where
 
-import           Prelude                                     hiding (Num(..), Eq(..), Ord(..), Bool, (^), (/), (||), not, replicate)
+import           Prelude                                     hiding (Num(..), Eq(..), Ord(..), Bool, (^), (/), (||), not, any, replicate)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Data.Bool                       (BoolType(..), Bool (..))
+import           ZkFold.Base.Data.Bool                       (Bool (..))
 import           ZkFold.Base.Data.Ord                        (Ord (..))
-import           ZkFold.Base.Protocol.Arithmetization.R1CS   (compile, r1csSizeM, r1csSizeN, r1csValue, applyArgs)
+import           ZkFold.Base.Protocol.Arithmetization.R1CS   (compile, acSizeM, acSizeN, acValue, applyArgs, acValue)
 
 import           Tests.Utility.Types                         (R, SmallField, Symbolic)
 
--- A true statement.
+-- A comparison test
 testFunc :: forall a . Symbolic a => a -> a -> Bool a
-testFunc x y = (x <= y) || (x > y)
+testFunc x y = x <= y
 
 testArithmetization3 :: IO ()
 testArithmetization3 = do
@@ -22,11 +22,11 @@ testArithmetization3 = do
     putStrLn "\nStarting arithmetization test 3...\n"
 
     putStr "System size: "
-    print $ r1csSizeN r
+    print $ acSizeN r
     putStr "Variable size: "
-    print $ r1csSizeM r
+    print $ acSizeM r
 
     putStr "Value (AC): "
-    print $ r1csValue $ applyArgs r [3, 5]
+    print $ acValue $ applyArgs r [3, 5]
     putStr "Value (function): "
     print $ testFunc @(Zp SmallField) 3 5

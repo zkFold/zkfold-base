@@ -4,7 +4,7 @@
 module ZkFold.Base.Data.Ord where
 
 import qualified Data.Bool                                   as Haskell
-import           Prelude                                     (map, zipWith, ($))
+import           Prelude                                     (map, zipWith, ($), reverse)
 import qualified Prelude                                     as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -12,7 +12,7 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..))
 import           ZkFold.Base.Data.Conditional                (Conditional(..), bool)
 import           ZkFold.Base.Data.Eq                         (Eq(..))
-import           ZkFold.Base.Protocol.Arithmetization.R1CS   (Arithmetizable, R1CS)
+import           ZkFold.Base.Protocol.Arithmetization.R1CS   (Arithmetizable, ArithmeticCircuit)
 
 -- TODO: add `compare`
 class Ord b a where
@@ -56,9 +56,9 @@ instance (Prime p, Haskell.Ord x) => Ord (Bool (Zp p)) x where
 
     min x y = Haskell.bool y x $ x >= y
 
-instance (Arithmetizable a (R1CS a)) => Ord (Bool (R1CS a)) (R1CS a) where
+instance (Arithmetizable a (ArithmeticCircuit a)) => Ord (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) where
     x <= y =
-        let bEQ = zipWith (-) (toBits y) (toBits x)
+        let bEQ = reverse $ zipWith (-) (toBits y) (toBits x)
             bGT = map (\b -> b - one) bEQ
         in checkBits bGT bEQ
 
@@ -68,11 +68,12 @@ instance (Arithmetizable a (R1CS a)) => Ord (Bool (R1CS a)) (R1CS a) where
 
     x > y = y < x
 
-    max x y = bool @(Bool (R1CS a)) y x $ x <= y
+    max x y = bool @(Bool (ArithmeticCircuit a)) y x $ x <= y
 
-    min x y = bool @(Bool (R1CS a)) y x $ x >= y
+    min x y = bool @(Bool (ArithmeticCircuit a)) y x $ x >= y
 
 checkBits :: forall b x . (FiniteField x, Conditional b b, Eq b x) => [x] -> [x] -> b
+checkBits []     []     = true
 checkBits []     _      = false
 checkBits _      []     = false
 checkBits (x:xs) (y:ys) = bool @b ((y == zero) && checkBits xs ys) true (x == zero)
