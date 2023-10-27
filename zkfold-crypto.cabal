@@ -76,7 +76,6 @@ library
       ZkFold.Base.Data.Conditional
       ZkFold.Base.Data.Eq
       ZkFold.Base.Data.Ord
-      ZkFold.Base.Data.PartialOrder
       ZkFold.Base.Protocol.Arithmetization.Plonk
       ZkFold.Base.Protocol.Arithmetization.R1CS
       ZkFold.Base.Protocol.ARK.BabyHyrax

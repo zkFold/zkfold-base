@@ -31,7 +31,6 @@ import           Text.Pretty.Simple                   (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Data.PartialOrder      (mergeMaps)
 import           ZkFold.Prelude                       (length, drop, take)
 
 -- | A class for arithmetizable types.
@@ -91,7 +90,7 @@ data R1CS a = R1CS
         -- ^ The witness generation function
         r1csOutput   :: Integer,
         -- ^ The output variable
-        r1csVarOrder :: Map Integer Integer,
+        r1csVarOrder :: Map (Integer, Integer) Integer,
         -- ^ The order of variable assignments
         r1csRNG      :: StdGen
     }
@@ -118,11 +117,11 @@ optimize = undefined
 type Constraint a = (Map Integer a, Map Integer a, Map Integer a)
 
 -- | Adds a constraint to the arithmetic circuit.
-constraint :: Constraint a -> State (R1CS a) ()
-constraint con = modify $ \r -> r { r1csMatrices = insert (r1csSizeN r) con (r1csMatrices r) }
+constraint :: (Eq a, ToBits a) => Constraint a -> State (R1CS a) ()
+constraint con = modify $ \r -> r { r1csMatrices = insert (con2var con) con (r1csMatrices r) }
 
 -- | Forces the current variable to be zero.
-forceZero :: forall a . FiniteField a => State (R1CS a) ()
+forceZero :: forall a . (FiniteField a, Eq a, ToBits a) => State (R1CS a) ()
 forceZero = do
     r <- get
     let x   = r1csOutput r
@@ -137,13 +136,13 @@ assignment f = modify $ \r -> r { r1csWitness = \i -> insert (r1csOutput r) (f i
 -- | Adds a new input variable to the arithmetic circuit. Returns a copy of the arithmetic circuit with this variable as output.
 input :: forall a . State (R1CS a) (R1CS a)
 input = modify (\(r :: R1CS a) ->
-        let ins = r1csInput r
-            s   = if null ins then 1 else maximum (r1csInput r) + 1
+        let ins    = r1csInput r
+            s      = if null ins then 1 else maximum (r1csInput r) + 1
         in r
         {
             r1csInput    = ins ++ [s],
             r1csOutput   = s,
-            r1csVarOrder = insert (length $ r1csVarOrder r) s (r1csVarOrder r)
+            r1csVarOrder = singleton (0, s) s
         }) >> get
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
@@ -170,16 +169,13 @@ apply xs = modify (\(r :: R1CS a) ->
 instance Eq a => Semigroup (R1CS a) where
     r1 <> r2 = R1CS
         {
-            r1csMatrices =
-                let m1 = elems $ r1csMatrices r1
-                    m2 = elems $ r1csMatrices r2
-                in fromList $ zip [0..] $ nub (m1 ++ m2),
+            r1csMatrices = r1csMatrices r1 `union` r1csMatrices r2,
             -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
             -- We need a way to ensure the correct order no matter how `(<>)` is used.
             r1csInput    = nub $ r1csInput r1 ++ r1csInput r2,
             r1csWitness  = \w -> r1csWitness r1 w `union` r1csWitness r2 w,
-            r1csOutput   = r1csOutput r1,
-            r1csVarOrder = mergeMaps (r1csVarOrder r1) (r1csVarOrder r2),
+            r1csOutput   = max (r1csOutput r1) (r1csOutput r2),
+            r1csVarOrder = r1csVarOrder r1 `union` r1csVarOrder r2,
             r1csRNG      = mkStdGen $ fst (uniform (r1csRNG r1)) Haskell.* fst (uniform (r1csRNG r2))
         }
 
@@ -194,12 +190,12 @@ instance (FiniteField a, Eq a) => Monoid (R1CS a) where
             r1csRNG      = mkStdGen 0
         }
 
-instance (FiniteField a, Eq a, ToBits a) =>
-        Arithmetizable a (R1CS a) where
+instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (R1CS a) where
     arithmetize r = do
         r' <- get
-        put $ r <> r'
-        return [r <> r']
+        let r'' = r <> r' { r1csOutput = r1csOutput r }
+        put r''
+        return [r'']
 
     restore [r] = r
     restore _   = error "restore: wrong number of arguments"
@@ -344,7 +340,7 @@ instance Finite BigField where
     order = 52435875175126190479447740508185965837690552500527637822603658699938581184513
 instance Prime BigField
 
--- -- TODO: Remove the hardcoded constant.
+-- TODO: Remove the hardcoded constant.
 con2var :: (Eq a, ToBits a) => (Map Integer a, Map Integer a, Map Integer a) -> Integer
 con2var (a, b, c) = g a + g b + g c
     where
@@ -366,4 +362,4 @@ newVariableFromConstraint con = con2var . con <$> newVariable
 -- newVariableFromVariable x = fromZp . toZp @BigField . (x *)  <$> newVariable
 
 addVariable :: Integer -> State (R1CS a) ()
-addVariable x = modify (\r -> r { r1csOutput = x, r1csVarOrder = r1csVarOrder r `union` singleton (length (r1csVarOrder r)) x })
+addVariable x = modify (\r -> r { r1csOutput = x, r1csVarOrder = insert (length (r1csVarOrder r), x) x (r1csVarOrder r)})
