@@ -1,2 +1,2 @@
-# zkfold-crypto
-ZkFold's Crypto library
+# zkfold-base
+ZkFold's Base library
