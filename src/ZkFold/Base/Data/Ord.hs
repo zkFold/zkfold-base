@@ -12,7 +12,7 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..))
 import           ZkFold.Base.Data.Conditional                (Conditional(..), bool)
 import           ZkFold.Base.Data.Eq                         (Eq(..))
-import           ZkFold.Base.Protocol.Arithmetization.R1CS   (Arithmetizable, ArithmeticCircuit)
+import           ZkFold.Base.Protocol.Arithmetization        (Arithmetizable, ArithmeticCircuit)
 
 -- TODO: add `compare`
 class Ord b a where

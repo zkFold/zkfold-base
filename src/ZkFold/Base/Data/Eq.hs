@@ -11,7 +11,7 @@ import qualified Prelude                                     as Haskell
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..), any)
-import           ZkFold.Base.Protocol.Arithmetization.R1CS   (Arithmetizable (..), ArithmeticCircuit)
+import           ZkFold.Base.Protocol.Arithmetization        (Arithmetizable (..), ArithmeticCircuit)
 
 class BoolType b => Eq b a where
     (==) :: a -> a -> b

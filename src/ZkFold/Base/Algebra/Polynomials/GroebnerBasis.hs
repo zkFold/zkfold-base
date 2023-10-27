@@ -27,7 +27,7 @@ import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal
 import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Reduction
 import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Types
 import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Types
-import           ZkFold.Base.Protocol.Arithmetization.R1CS
+import           ZkFold.Base.Protocol.Arithmetization
 import           ZkFold.Prelude                    ((!!))
 
 boundVariables :: forall p . Prime p => Polynomial p -> [Polynomial p] -> Polynomial p

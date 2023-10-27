@@ -9,7 +9,7 @@ import           Prelude                                      hiding (Num(..), B
 import qualified Prelude                                      as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Protocol.Arithmetization.R1CS    (Arithmetizable (..))
+import           ZkFold.Base.Protocol.Arithmetization         (Arithmetizable (..))
 
 class BoolType b where
     true  :: b

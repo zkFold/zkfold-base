@@ -7,7 +7,7 @@ import           Prelude                                       hiding ((||), not
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field               (Zp)
 import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis (fromR1CS)
-import           ZkFold.Base.Protocol.Arithmetization.R1CS
+import           ZkFold.Base.Protocol.Arithmetization          (compile, acSizeM, acSizeN)
 import           ZkFold.Base.Data.Conditional                  (bool)
 import           ZkFold.Prelude                                ((!!))
 

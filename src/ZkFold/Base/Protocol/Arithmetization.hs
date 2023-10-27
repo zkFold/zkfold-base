@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module ZkFold.Base.Protocol.Arithmetization.R1CS (
+module ZkFold.Base.Protocol.Arithmetization (
         BigField,
         Arithmetizable(..),
         ArithmeticCircuit,

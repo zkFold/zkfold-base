@@ -9,7 +9,7 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..), any)
 import           ZkFold.Base.Data.Eq                         (Eq(..))
 import           ZkFold.Base.Data.Ord                        (Ord(..))
-import           ZkFold.Base.Protocol.Arithmetization.R1CS
+import           ZkFold.Base.Protocol.Arithmetization
 
 import           Tests.Utility.Types                         (Symbolic, R, SmallField)
 

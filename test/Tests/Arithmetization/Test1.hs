@@ -9,7 +9,7 @@ import qualified Prelude                                     as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Protocol.Arithmetization.R1CS   (acPrint, acValue, applyArgs, compile)
+import           ZkFold.Base.Protocol.Arithmetization        (acPrint, acValue, applyArgs, compile)
 import           ZkFold.Base.Data.Bool                       (BoolType(..), Bool (..))
 import           ZkFold.Base.Data.Conditional                (Conditional(..))
 import           ZkFold.Base.Data.Eq                         (Eq (..))

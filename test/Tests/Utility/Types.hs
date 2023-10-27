@@ -8,7 +8,7 @@ import           ZkFold.Base.Data.Bool                     (Bool)
 import           ZkFold.Base.Data.Conditional              (Conditional)
 import           ZkFold.Base.Data.Eq                       (Eq)
 import           ZkFold.Base.Data.Ord                      (Ord)
-import           ZkFold.Base.Protocol.Arithmetization.R1CS (ArithmeticCircuit)
+import           ZkFold.Base.Protocol.Arithmetization      (ArithmeticCircuit)
 
 type Symbolic a = (FromConstant I a, FiniteField a, ToBits a, Eq (Bool a) a, Ord (Bool a) a, Conditional (Bool a) a)
 

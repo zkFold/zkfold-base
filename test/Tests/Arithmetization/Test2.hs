@@ -8,7 +8,7 @@ import           ZkFold.Base.Algebra.Basic.Field               (Zp)
 import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify, variableTypes)
 import           ZkFold.Base.Data.Bool                         (BoolType(..), Bool (..))
 import           ZkFold.Base.Data.Eq                           (Eq (..))
-import           ZkFold.Base.Protocol.Arithmetization.R1CS     (compile)
+import           ZkFold.Base.Protocol.Arithmetization          (compile)
 
 import           Tests.Utility.Types                           (R, SmallField, Symbolic)
 

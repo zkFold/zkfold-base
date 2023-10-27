@@ -7,7 +7,7 @@ import           Prelude                                     hiding (Num(..), Eq
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Data.Bool                       (Bool (..))
 import           ZkFold.Base.Data.Ord                        (Ord (..))
-import           ZkFold.Base.Protocol.Arithmetization.R1CS   (compile, acSizeM, acSizeN, acValue, applyArgs, acValue)
+import           ZkFold.Base.Protocol.Arithmetization        (compile, acSizeM, acSizeN, acValue, applyArgs, acValue)
 
 import           Tests.Utility.Types                         (R, SmallField, Symbolic)
 
