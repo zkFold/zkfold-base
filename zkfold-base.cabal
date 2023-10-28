@@ -1,6 +1,6 @@
 cabal-version:      3.0
 
-name:               zkfold-crypto
+name:               zkfold-base
 version:            0.1.0.0
 
 license:            MIT
@@ -99,7 +99,7 @@ library
       tfp                                        ,
     hs-source-dirs: src
 
-test-suite zkfold-crypto-test
+test-suite zkfold-base-test
     import: options
     type: exitcode-stdio-1.0
     ghc-options: -rtsopts
@@ -118,5 +118,5 @@ test-suite zkfold-crypto-test
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
-      zkfold-crypto                              ,
+      zkfold-base                                ,
     hs-source-dirs: test

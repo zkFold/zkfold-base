@@ -2,6 +2,7 @@
 
 module Examples.VestingScript (exampleVesting) where
 
+import           Data.Foldable                               (toList)
 import           Prelude                                     (IO, Show (..), ($), (++), putStrLn)
 
 import           ZkFold.Cardano.Types
@@ -19,7 +20,7 @@ vestingScript datum _ ctx =
 
         info  = scriptContextTxInfo ctx
         now   = lowerBound $ txInfoValidRange info
-        outs  = txInfoOutputs info
+        outs  = toList $ txInfoOutputs info
 
     in now >= vestTime && any (\(TxOut addr val _) -> (addr == vestAddr) && (val == vestValue)) outs
 

@@ -1,6 +1,6 @@
 cradle:
   cabal:
     - path: "src"
-      component: "zkfold-crypto:lib:zkfold-crypto"
+      component: "zkfold-base:lib:zkfold-base"
     - path: "test"
-      component: "zkfold-crypto:test:zkfold-crypto-test"
+      component: "zkfold-base:test:zkfold-base-test"
