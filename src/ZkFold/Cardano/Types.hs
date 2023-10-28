@@ -4,6 +4,7 @@ import           Prelude                              (($), concat, return, erro
 import qualified Prelude                              as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.List                (U32, List)
 import           ZkFold.Base.Protocol.Arithmetization (Arithmetizable(..))
 
 data Datum x = Datum x x x
@@ -32,19 +33,19 @@ instance Arithmetizable a x => Arithmetizable a (Redeemer x) where
 
 data TxInfo x = TxInfo
     {
-        txInfoInputs          :: [x],
-        txInfoReferenceInputs :: [x],
-        txInfoOutputs         :: [TxOut x],
-        txInfoFee             :: x,
+        txInfoInputs          :: List U32 x,
+        txInfoReferenceInputs :: List U32 x,
+        txInfoOutputs         :: List U32 (TxOut x),
+        txInfoFee             :: List U32 x,
         txInfoForge           :: x,
-        txInfoDCert           :: [x],
+        txInfoDCert           :: List U32 x,
         txInfoWdrl            :: x,
         txInfoValidRange      :: (x, x),
-        txInfoSignatories     :: [x],
-        txInfoData            :: [x],
+        txInfoSignatories     :: List U32 x,
+        txInfoData            :: List U32 x,
         txInfoId              :: x
     }
-    deriving (Haskell.Show, Haskell.Eq)
+    -- deriving (Haskell.Show, Haskell.Eq)
 
 instance Arithmetizable a x => Arithmetizable a (TxInfo x) where
     arithmetize (TxInfo inputs referenceInputs outputs fee forge dCert wdrl validRange signatories data' id) = do
@@ -88,7 +89,7 @@ data ScriptContext x = ScriptContext
         scriptContextTxInfo  :: TxInfo x,
         scriptContextPurpose :: x
     }
-    deriving (Haskell.Show, Haskell.Eq)
+    -- deriving (Haskell.Show, Haskell.Eq)
 
 instance Arithmetizable a x => Arithmetizable a (ScriptContext x) where
     arithmetize (ScriptContext txInfo purpose) = do

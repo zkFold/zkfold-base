@@ -23,15 +23,17 @@ module ZkFold.Base.Protocol.Arithmetization (
 import           Control.Monad.State                  (MonadState (..), State, modify, execState, evalState)
 import           Data.Bool                            (bool)
 import           Data.List                            (nub)
-import           Data.Map                             hiding (take, drop, foldl, null, map, foldr)
-import           Prelude                              hiding (Num (..), (^), (!!), sum, take, drop, product, length)
+import           Data.Map                             hiding (take, drop, splitAt, foldl, null, map, foldr)
+import           Prelude                              hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
 import qualified Prelude                              as Haskell
 import           System.Random                        (StdGen, Random (..), mkStdGen, uniform)
 import           Text.Pretty.Simple                   (pPrint)
+import           Type.Data.Num.Unary                  (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Prelude                       ((!!), length, drop, take)
+import           ZkFold.Base.Data.List                (List, mapList, lengthList, indicesInteger)
+import           ZkFold.Prelude                       ((!!), length, drop, take, splitAt)
 
 -- | A class for arithmetizable types.
 -- Type `a` is the finite field of the arithmetic circuit.
@@ -52,22 +54,24 @@ instance (Arithmetizable a x, Arithmetizable a y) => Arithmetizable a (x, y) whe
         y <- arithmetize b
         return $ x ++ y
 
-    -- TODO: this should work with objects of arbitrary sizes.
-    restore [r1, r2] = (restore [r1], restore [r2])
-    restore _        = error "restore: wrong number of arguments"
+    restore rs
+        | length rs /= typeSize @a @(x, y) = error "restore: wrong number of arguments"
+        | otherwise = (restore rsX, restore rsY)
+        where (rsX, rsY) = splitAt (typeSize @a @x) rs 
 
     typeSize = typeSize @a @x + typeSize @a @y
 
-instance Arithmetizable a x => Arithmetizable a [x] where
-    arithmetize []     = return []
-    arithmetize (a:as) = do
-        x <- arithmetize a
-        (x ++) <$> arithmetize as
+instance (Arithmetizable a x, Natural n) => Arithmetizable a (List n x) where
+    arithmetize xs = concat <$> mapM arithmetize xs
 
-    -- TODO: this should work with objects of arbitrary sizes.
-    restore rs = map (\r -> restore [r]) rs
+    restore rs
+        | length rs /= typeSize @a @(List n x) = error "restore: wrong number of arguments"
+        | otherwise = mapList (f rs) indicesInteger
+        where
+            f :: [ArithmeticCircuit a] -> Integer -> x
+            f as = restore @a @x . take (lengthList @n) . flip drop as . ((lengthList @n) *)
 
-    typeSize = typeSize @a @x
+    typeSize = typeSize @a @x * (lengthList @n)
 
 instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) where
     arithmetize f = do

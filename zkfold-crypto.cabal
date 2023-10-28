@@ -75,6 +75,7 @@ library
       ZkFold.Base.Data.Bool
       ZkFold.Base.Data.Conditional
       ZkFold.Base.Data.Eq
+      ZkFold.Base.Data.List
       ZkFold.Base.Data.Ord
       ZkFold.Base.Protocol.Arithmetization
       ZkFold.Base.Protocol.ARK.BabyHyrax
@@ -90,9 +91,12 @@ library
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
+      fixed-length                               ,
       mtl                                        ,
+      non-empty                                  ,
       pretty-simple                              ,
       random                                     ,
+      tfp                                        ,
     hs-source-dirs: src
 
 test-suite zkfold-crypto-test
