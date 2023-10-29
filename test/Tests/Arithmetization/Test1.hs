@@ -9,7 +9,8 @@ import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Symbolic.Arithmetization  (acPrint, acValue, applyArgs, compile)
+import           ZkFold.Symbolic.Arithmetization  (acPrint, acValue, applyArgs)
+import           ZkFold.Symbolic.Compiler         (compile)
 import           ZkFold.Symbolic.Data.Bool        (BoolType(..), Bool (..))
 import           ZkFold.Symbolic.Data.Conditional (Conditional(..))
 import           ZkFold.Symbolic.Data.Eq          (Eq (..))

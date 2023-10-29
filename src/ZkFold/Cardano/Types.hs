@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeApplications #-}
+
 module ZkFold.Cardano.Types where
 
 import           Prelude                          (($), concat, return, error, (++), fst, snd)
@@ -76,7 +78,7 @@ instance Arithmetizable a x => Arithmetizable a (TxInfo x) where
         (restore [id'])
     restore _ = error "restore TxInfo: wrong number of arguments"
 
-    typeSize = 0
+    typeSize = 6 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x)) + 3 * typeSize @a @x + typeSize @a @(x, x)
 
 lowerBound :: (x, x) -> x
 lowerBound = fst
@@ -102,7 +104,7 @@ instance Arithmetizable a x => Arithmetizable a (ScriptContext x) where
         (restore [purpose'])
     restore _ = error "restore ScriptContext: wrong number of arguments"
 
-    typeSize = 0
+    typeSize = typeSize @a @(TxInfo x) + typeSize @a @x
 
 newtype Value x = Value x
 
@@ -112,7 +114,7 @@ instance Arithmetizable a x => Arithmetizable a (Value x) where
     restore [x] = Value $ restore [x]
     restore _   = error "restore Value: wrong number of arguments"
 
-    typeSize = 1
+    typeSize = typeSize @a @x
 
 data TxOut x = TxOut x x x
     deriving (Haskell.Show, Haskell.Eq)
@@ -127,4 +129,4 @@ instance Arithmetizable a x => Arithmetizable a (TxOut x) where
     restore [addr', value', data''] = TxOut (restore [addr']) (restore [value']) (restore [data''])
     restore _ = error "restore TxOut: wrong number of arguments"
 
-    typeSize = 0
+    typeSize = 3 * typeSize @a @x

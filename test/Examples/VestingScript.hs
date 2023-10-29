@@ -8,6 +8,7 @@ import           Prelude                         (IO, Show (..), ($), (++), putS
 import           ZkFold.Cardano.Types
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
 import           ZkFold.Symbolic.Arithmetization
+import           ZkFold.Symbolic.Compiler        (compile)
 import           ZkFold.Symbolic.Data.Bool       (BoolType (..), Bool (..), any)
 import           ZkFold.Symbolic.Data.Eq         (Eq(..))
 import           ZkFold.Symbolic.Data.Ord        (Ord(..))

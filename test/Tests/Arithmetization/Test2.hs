@@ -5,7 +5,7 @@ module Tests.Arithmetization.Test2 (testArithmetization2) where
 import           Prelude                         hiding (Num(..), Eq(..), Bool, (^), (/), (||), not, replicate)
 
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Symbolic.Arithmetization (compile)
+import           ZkFold.Symbolic.Compiler        (compile)
 import           ZkFold.Symbolic.Data.Bool       (BoolType(..), Bool (..))
 import           ZkFold.Symbolic.Data.Eq         (Eq (..))
 import           ZkFold.Symbolic.GroebnerBasis   (fromR1CS, verify, variableTypes)

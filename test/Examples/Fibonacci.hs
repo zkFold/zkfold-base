@@ -6,7 +6,8 @@ import           Prelude                         hiding (Num(..), Eq(..), Bool, 
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field  (Zp)
-import           ZkFold.Symbolic.Arithmetization  (compile, acSizeM, acSizeN)
+import           ZkFold.Symbolic.Arithmetization  (acSizeM, acSizeN)
+import           ZkFold.Symbolic.Compiler         (compile)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional (bool)
 import           ZkFold.Symbolic.Data.Eq          (Eq (..))

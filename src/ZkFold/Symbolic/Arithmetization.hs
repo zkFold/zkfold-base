@@ -7,7 +7,6 @@ module ZkFold.Symbolic.Arithmetization (
         ArithmeticCircuit,
         -- high-level functions
         applyArgs,
-        compile,
         optimize,
         -- information about the system
         acSizeN,
@@ -105,10 +104,6 @@ data ArithmeticCircuit a = ArithmeticCircuit
 -- TODO: make this work for different input types.
 applyArgs :: forall a . ArithmeticCircuit a -> [a] -> ArithmeticCircuit a
 applyArgs r args = execState (apply args) r
-
--- | Compiles function `f` into an arithmetic circuit.
-compile :: forall a f y . (Arithmetizable a f, Arithmetizable a y) => f -> y
-compile f = restore @a $ evalState (arithmetize f) mempty
 
 -- | Optimizes the constraint system.
 --

@@ -68,6 +68,7 @@ library
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Symbolic.Arithmetization
+      ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.Eq
