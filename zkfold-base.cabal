@@ -91,6 +91,8 @@ library
       ZkFold.Prelude
     build-depends:
       base                          >= 4.9 && < 5,
+      aeson                                      ,
+      bytestring                                 ,
       containers                                 ,
       fixed-length                               ,
       mtl                                        ,

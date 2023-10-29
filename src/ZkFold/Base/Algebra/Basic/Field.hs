@@ -10,6 +10,7 @@ import           Prelude                           hiding (Num(..), Fractional(.
 import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import Data.Aeson (ToJSON (..), FromJSON (..))
 
 newtype Zp p = Zp Integer
 
@@ -76,3 +77,9 @@ instance Prime p => Haskell.Fractional (Zp p) where
 
 instance Show (Zp p) where
     show (Zp a) = show a
+
+instance ToJSON (Zp p) where
+    toJSON (Zp a) = toJSON a
+
+instance FromJSON (Zp p) where
+    parseJSON = fmap Zp . parseJSON

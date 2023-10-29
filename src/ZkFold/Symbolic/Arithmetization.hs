@@ -21,6 +21,7 @@ module ZkFold.Symbolic.Arithmetization (
     ) where
 
 import           Control.Monad.State             (MonadState (..), State, modify, execState, evalState)
+import           Data.Aeson
 import           Data.Bool                       (bool)
 import           Data.List                       (nub)
 import           Data.Map                        hiding (take, drop, splitAt, foldl, null, map, foldr)
@@ -288,6 +289,26 @@ instance (FiniteField a, Eq a, ToBits a) => ToBits (ArithmeticCircuit a) where
             bs  = map acOutput $ f y
             r   = execState forceZero $ v y
         in map (\x'' -> r { acOutput = x'' } ) bs
+
+-- TODO: add witness generation info to the JSON object
+instance ToJSON a => ToJSON (ArithmeticCircuit a) where
+    toJSON r = object
+        [
+            "matrices" .= acMatrices r,
+            "input"    .= acInput r,
+            "output"   .= acOutput r,
+            "order"    .= acVarOrder r
+        ]
+
+-- TODO: properly restore the witness generation function
+instance FromJSON a => FromJSON (ArithmeticCircuit a) where
+    parseJSON = withObject "ArithmeticCircuit" $ \v -> ArithmeticCircuit
+        <$> v .: "matrices"
+        <*> v .: "input"
+        <*> pure (const empty)
+        <*> v .: "output"
+        <*> v .: "order"
+        <*> pure (mkStdGen 0)
 
 ----------------------------------- Information -----------------------------------
 
