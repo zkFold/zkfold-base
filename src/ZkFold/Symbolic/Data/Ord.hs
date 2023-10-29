@@ -1,18 +1,18 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module ZkFold.Base.Data.Ord where
+module ZkFold.Symbolic.Data.Ord where
 
-import qualified Data.Bool                                   as Haskell
-import           Prelude                                     (map, zipWith, ($), reverse)
-import qualified Prelude                                     as Haskell
+import qualified Data.Bool                        as Haskell
+import           Prelude                          (map, zipWith, ($), reverse)
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..))
-import           ZkFold.Base.Data.Conditional                (Conditional(..), bool)
-import           ZkFold.Base.Data.Eq                         (Eq(..))
-import           ZkFold.Base.Protocol.Arithmetization        (Arithmetizable, ArithmeticCircuit)
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Symbolic.Arithmetization  (Arithmetizable, ArithmeticCircuit)
+import           ZkFold.Symbolic.Data.Bool        (BoolType (..), Bool (..))
+import           ZkFold.Symbolic.Data.Conditional (Conditional(..), bool)
+import           ZkFold.Symbolic.Data.Eq          (Eq(..))
 
 -- TODO: add `compare`
 class Ord b a where

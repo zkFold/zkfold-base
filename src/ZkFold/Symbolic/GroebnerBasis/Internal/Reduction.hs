@@ -1,10 +1,10 @@
-module ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Reduction where
+module ZkFold.Symbolic.GroebnerBasis.Internal.Reduction where
 
-import           Data.Bool                         (bool)
-import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
+import           Data.Bool                        (bool)
+import           Prelude                          hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Types
+import           ZkFold.Symbolic.GroebnerBasis.Internal.Types
 
 reducable :: (Ord a, MultiplicativeMonoid a) => Polynom c a -> Polynom c a -> Bool
 reducable l r = dividable (lt l) (lt r)

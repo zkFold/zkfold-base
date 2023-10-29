@@ -67,17 +67,18 @@ library
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class
-      ZkFold.Base.Algebra.Polynomials.GroebnerBasis
-      ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal
-      ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Reduction
-      ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Types
-      ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Types
-      ZkFold.Base.Data.Bool
-      ZkFold.Base.Data.Conditional
-      ZkFold.Base.Data.Eq
-      ZkFold.Base.Data.List
-      ZkFold.Base.Data.Ord
-      ZkFold.Base.Protocol.Arithmetization
+      ZkFold.Symbolic.Arithmetization
+      ZkFold.Symbolic.Data.Bool
+      ZkFold.Symbolic.Data.Conditional
+      ZkFold.Symbolic.Data.Eq
+      ZkFold.Symbolic.Data.List
+      ZkFold.Symbolic.Data.Ord
+      ZkFold.Symbolic.GroebnerBasis
+      ZkFold.Symbolic.GroebnerBasis.Internal
+      ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
+      ZkFold.Symbolic.GroebnerBasis.Internal.Types
+      ZkFold.Symbolic.GroebnerBasis.Types
+      ZkFold.Symbolic.Types
       ZkFold.Base.Protocol.ARK.BabyHyrax
       ZkFold.Base.Protocol.ARK.HyperPlonk
       ZkFold.Base.Protocol.ARK.Lasso
@@ -114,7 +115,6 @@ test-suite zkfold-base-test
       Tests.Arithmetization.Test2
       Tests.Arithmetization.Test3
       Tests.GroebnerBasis
-      Tests.Utility.Types
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,

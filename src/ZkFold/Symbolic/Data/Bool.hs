@@ -1,15 +1,15 @@
-module ZkFold.Base.Data.Bool (
+module ZkFold.Symbolic.Data.Bool (
     BoolType(..),
     Bool(..),
     all,
     any
 ) where
 
-import           Prelude                                      hiding (Num(..), Bool, (/), (&&), (||), not, all, any)
-import qualified Prelude                                      as Haskell
+import           Prelude                         hiding (Num(..), Bool, (/), (&&), (||), not, all, any)
+import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Protocol.Arithmetization         (Arithmetizable (..))
+import           ZkFold.Symbolic.Arithmetization (Arithmetizable (..))
 
 class BoolType b where
     true  :: b

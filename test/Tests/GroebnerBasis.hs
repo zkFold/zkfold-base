@@ -2,14 +2,13 @@
 
 module Tests.GroebnerBasis (testGroebner) where
 
-import           Data.Bool                                  (not)
-import           Data.Map                                   (fromList)
-import           Prelude                                    hiding (not, Num(..), Eq(..), (^), (/))
+import           Data.Bool                       (not)
+import           Data.Map                        (fromList)
+import           Prelude                         hiding (not, Num(..), Eq(..), (^), (/))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis
-
-import           Tests.Utility.Types                        (SmallField)
+import           ZkFold.Symbolic.GroebnerBasis
+import           ZkFold.Symbolic.Types           (SmallField)
 
 testPoly :: Prime p => [Polynomial p]
 testPoly = map polynomial [

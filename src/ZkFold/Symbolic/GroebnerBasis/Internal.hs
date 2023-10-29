@@ -1,13 +1,13 @@
-module ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal where
+module ZkFold.Symbolic.GroebnerBasis.Internal where
 
-import           Data.List                         (sortBy)
-import           Data.Map                          (notMember)
-import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
+import           Data.List                       (sortBy)
+import           Data.Map                        (notMember)
+import           Prelude                         hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Reduction
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Types
-import           ZkFold.Prelude                    (length)
+import           ZkFold.Prelude                  (length)
+import           ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
+import           ZkFold.Symbolic.GroebnerBasis.Internal.Types
 
 makeSPoly :: (Eq c, FiniteField c, Ord a, AdditiveGroup a, MultiplicativeMonoid a) =>
              Polynom c a -> Polynom c a -> Polynom c a

@@ -2,19 +2,18 @@
 
 module Tests.Arithmetization.Test1 (testArithmetization1) where
 
-import           Data.Bifunctor                              (bimap)
-import           Data.List                                   (find)
-import           Prelude                                     hiding ((||), not, Num(..), Eq(..), Bool, (^), (>), (/), replicate)
-import qualified Prelude                                     as Haskell
+import           Data.Bifunctor                   (bimap)
+import           Data.List                        (find)
+import           Prelude                          hiding (Num(..), Eq(..), Bool, (^), (>), (/), (||), not, replicate)
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Protocol.Arithmetization        (acPrint, acValue, applyArgs, compile)
-import           ZkFold.Base.Data.Bool                       (BoolType(..), Bool (..))
-import           ZkFold.Base.Data.Conditional                (Conditional(..))
-import           ZkFold.Base.Data.Eq                         (Eq (..))
-
-import           Tests.Utility.Types                         (SmallField, I, R, Symbolic)
+import           ZkFold.Symbolic.Arithmetization  (acPrint, acValue, applyArgs, compile)
+import           ZkFold.Symbolic.Data.Bool        (BoolType(..), Bool (..))
+import           ZkFold.Symbolic.Data.Conditional (Conditional(..))
+import           ZkFold.Symbolic.Data.Eq          (Eq (..))
+import           ZkFold.Symbolic.Types            (SmallField, I, R, Symbolic)
 
 -- f x y = if (2 / x > y) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)
 testFunc :: forall a . Symbolic a => a -> a -> a

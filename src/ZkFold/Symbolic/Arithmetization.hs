@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module ZkFold.Base.Protocol.Arithmetization (
+module ZkFold.Symbolic.Arithmetization (
         BigField,
         Arithmetizable(..),
         ArithmeticCircuit,
@@ -20,20 +20,20 @@ module ZkFold.Base.Protocol.Arithmetization (
         acOutput
     ) where
 
-import           Control.Monad.State                  (MonadState (..), State, modify, execState, evalState)
-import           Data.Bool                            (bool)
-import           Data.List                            (nub)
-import           Data.Map                             hiding (take, drop, splitAt, foldl, null, map, foldr)
-import           Prelude                              hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
-import qualified Prelude                              as Haskell
-import           System.Random                        (StdGen, Random (..), mkStdGen, uniform)
-import           Text.Pretty.Simple                   (pPrint)
-import           Type.Data.Num.Unary                  (Natural)
+import           Control.Monad.State             (MonadState (..), State, modify, execState, evalState)
+import           Data.Bool                       (bool)
+import           Data.List                       (nub)
+import           Data.Map                        hiding (take, drop, splitAt, foldl, null, map, foldr)
+import           Prelude                         hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
+import qualified Prelude                         as Haskell
+import           System.Random                   (StdGen, Random (..), mkStdGen, uniform)
+import           Text.Pretty.Simple              (pPrint)
+import           Type.Data.Num.Unary             (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Data.List                (List, mapList, lengthList, indicesInteger)
-import           ZkFold.Prelude                       ((!!), length, drop, take, splitAt)
+import           ZkFold.Prelude                  ((!!), length, drop, take, splitAt)
+import           ZkFold.Symbolic.Data.List       (List, mapList, lengthList, indicesInteger)
 
 -- | A class for arithmetizable types.
 -- Type `a` is the finite field of the arithmetic circuit.

@@ -2,11 +2,10 @@
 
 module Examples.MiMC.Constants (mimcConstants) where
 
-import           Prelude                                     hiding ((||), not, Num(..), Eq(..), (^), (/), any)
+import           Prelude                        hiding (Num(..), Eq(..), (^), (/), (||), not, any)
 
 import           ZkFold.Base.Algebra.Basic.Class
-
-import           Tests.Utility.Types                         (I)
+import           ZkFold.Symbolic.Types           (I)
 
 -- TODO: these are the constants for BN254 curve, we would probably want to change them to the ones for BLS12-381.
 mimcConstants :: forall a . (FromConstant I a) => [a]

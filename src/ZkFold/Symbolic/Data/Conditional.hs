@@ -1,15 +1,15 @@
-module ZkFold.Base.Data.Conditional (
+module ZkFold.Symbolic.Data.Conditional (
     Conditional (..)
 ) where
 
-import           Control.Monad.State                         (evalState)
-import           Prelude                                     hiding (Num(..), Bool, (/))
-import qualified Prelude                                     as Haskell
+import           Control.Monad.State             (evalState)
+import           Prelude                         hiding (Num(..), Bool, (/))
+import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..))
-import           ZkFold.Base.Protocol.Arithmetization        (ArithmeticCircuit, Arithmetizable (..))
+import           ZkFold.Base.Algebra.Basic.Field (Zp)
+import           ZkFold.Symbolic.Arithmetization (ArithmeticCircuit, Arithmetizable (..))
+import           ZkFold.Symbolic.Data.Bool       (BoolType (..), Bool (..))
 
 class BoolType b => Conditional b a where
     bool :: a -> a -> b -> a

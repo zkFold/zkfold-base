@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module ZkFold.Base.Data.List where
+module ZkFold.Symbolic.Data.List where
 
 import           Data.FixedLength            hiding (List)
 import qualified Data.NonEmpty               as NonEmpty

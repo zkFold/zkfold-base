@@ -1,17 +1,17 @@
-module ZkFold.Base.Data.Eq (
+module ZkFold.Symbolic.Data.Eq (
     Eq(..),
     elem
 ) where
 
-import           Control.Monad.State                         (evalState)
-import           Data.Bool                                   (bool)
-import           Prelude                                     hiding (Num(..), Eq(..), Bool, (/=), (==), (/), any, product, elem)
-import qualified Prelude                                     as Haskell
+import           Control.Monad.State             (evalState)
+import           Data.Bool                       (bool)
+import           Prelude                         hiding (Num(..), Eq(..), Bool, (/=), (==), (/), any, product, elem)
+import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Data.Bool                       (BoolType (..), Bool (..), any)
-import           ZkFold.Base.Protocol.Arithmetization        (Arithmetizable (..), ArithmeticCircuit)
+import           ZkFold.Base.Algebra.Basic.Field (Zp)
+import           ZkFold.Symbolic.Arithmetization (Arithmetizable (..), ArithmeticCircuit)
+import           ZkFold.Symbolic.Data.Bool       (BoolType (..), Bool (..), any)
 
 class BoolType b => Eq b a where
     (==) :: a -> a -> b

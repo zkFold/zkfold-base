@@ -1,4 +1,4 @@
-module ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Types (
+module ZkFold.Symbolic.GroebnerBasis.Types (
     Variable,
     Monomial,
     Polynomial,
@@ -13,7 +13,7 @@ import           Prelude                           hiding (Num(..), (!!), length
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field   (Zp)
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Types
+import           ZkFold.Symbolic.GroebnerBasis.Internal.Types
 
 type Variable p = Var (Zp p) Integer
 

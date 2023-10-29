@@ -1,5 +1,5 @@
-module ZkFold.Base.Algebra.Polynomials.GroebnerBasis (
-    module ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Types,
+module ZkFold.Symbolic.GroebnerBasis (
+    module ZkFold.Symbolic.GroebnerBasis.Types,
     boundVariables,
     fromR1CS,
     verify,
@@ -16,19 +16,19 @@ module ZkFold.Base.Algebra.Polynomials.GroebnerBasis (
     groebnerStepMax
     ) where
 
-import           Data.Bool                         (bool)
-import           Data.List                         (sortBy, nub)
-import           Data.Map                          (Map, toList, elems, empty, singleton, keys, mapWithKey)
-import           Prelude                           hiding (Num(..), (!!), length, replicate)
+import           Data.Bool                        (bool)
+import           Data.List                        (sortBy, nub)
+import           Data.Map                         (Map, toList, elems, empty, singleton, keys, mapWithKey)
+import           Prelude                          hiding (Num(..), (!!), length, replicate)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field   (Zp)
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Reduction
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Types
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Types
-import           ZkFold.Base.Protocol.Arithmetization
-import           ZkFold.Prelude                    ((!!))
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Prelude                   ((!!))
+import           ZkFold.Symbolic.Arithmetization
+import           ZkFold.Symbolic.GroebnerBasis.Internal
+import           ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
+import           ZkFold.Symbolic.GroebnerBasis.Internal.Types
+import           ZkFold.Symbolic.GroebnerBasis.Types
 
 boundVariables :: forall p . Prime p => Polynomial p -> [Polynomial p] -> Polynomial p
 boundVariables p ps = foldr (makeBound . findVar) p $ zip [0..] ps

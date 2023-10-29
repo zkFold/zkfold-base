@@ -1,11 +1,11 @@
 module ZkFold.Cardano.Types where
 
-import           Prelude                              (($), concat, return, error, (++), fst, snd)
-import qualified Prelude                              as Haskell
+import           Prelude                          (($), concat, return, error, (++), fst, snd)
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.List                (U32, List)
-import           ZkFold.Base.Protocol.Arithmetization (Arithmetizable(..))
+import           ZkFold.Symbolic.Arithmetization  (Arithmetizable(..))
+import           ZkFold.Symbolic.Data.List        (U32, List)
 
 data Datum x = Datum x x x
 

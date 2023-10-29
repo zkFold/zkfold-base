@@ -2,15 +2,14 @@
 
 module Tests.Arithmetization.Test2 (testArithmetization2) where
 
-import           Prelude                                       hiding ((||), not, Num(..), Eq(..), Bool, (^), (/), replicate)
+import           Prelude                         hiding (Num(..), Eq(..), Bool, (^), (/), (||), not, replicate)
 
-import           ZkFold.Base.Algebra.Basic.Field               (Zp)
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify, variableTypes)
-import           ZkFold.Base.Data.Bool                         (BoolType(..), Bool (..))
-import           ZkFold.Base.Data.Eq                           (Eq (..))
-import           ZkFold.Base.Protocol.Arithmetization          (compile)
-
-import           Tests.Utility.Types                           (R, SmallField, Symbolic)
+import           ZkFold.Base.Algebra.Basic.Field (Zp)
+import           ZkFold.Symbolic.Arithmetization (compile)
+import           ZkFold.Symbolic.Data.Bool       (BoolType(..), Bool (..))
+import           ZkFold.Symbolic.Data.Eq         (Eq (..))
+import           ZkFold.Symbolic.GroebnerBasis   (fromR1CS, verify, variableTypes)
+import           ZkFold.Symbolic.Types           (R, SmallField, Symbolic)
 
 -- A true statement.
 tautology :: forall a . Symbolic a => a -> a -> Bool a

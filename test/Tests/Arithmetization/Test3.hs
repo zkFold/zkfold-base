@@ -2,14 +2,13 @@
 
 module Tests.Arithmetization.Test3 (testArithmetization3) where
 
-import           Prelude                                     hiding (Num(..), Eq(..), Ord(..), Bool, (^), (/), (||), not, any, replicate)
+import           Prelude                         hiding (Num(..), Eq(..), Ord(..), Bool, (^), (/), (||), not, any, replicate)
 
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Data.Bool                       (Bool (..))
-import           ZkFold.Base.Data.Ord                        (Ord (..))
-import           ZkFold.Base.Protocol.Arithmetization        (compile, acSizeM, acSizeN, acValue, applyArgs, acValue)
-
-import           Tests.Utility.Types                         (R, SmallField, Symbolic)
+import           ZkFold.Base.Algebra.Basic.Field (Zp)
+import           ZkFold.Symbolic.Arithmetization (compile, acSizeM, acSizeN, acValue, applyArgs, acValue)
+import           ZkFold.Symbolic.Data.Bool       (Bool (..))
+import           ZkFold.Symbolic.Data.Ord        (Ord (..))
+import           ZkFold.Symbolic.Types           (R, SmallField, Symbolic)
 
 -- A comparison test
 testFunc :: forall a . Symbolic a => a -> a -> Bool a

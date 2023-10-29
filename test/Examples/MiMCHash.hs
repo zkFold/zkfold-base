@@ -2,17 +2,17 @@
 
 module Examples.MiMCHash (exampleMiMC) where
 
-import           Prelude                                       hiding ((||), not, Num(..), Eq(..), (^), (/), (!!), any)
+import           Prelude                          hiding ((||), not, Num(..), Eq(..), (^), (/), (!!), any)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field               (Zp)
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis (fromR1CS)
-import           ZkFold.Base.Protocol.Arithmetization          (compile, acSizeM, acSizeN)
-import           ZkFold.Base.Data.Conditional                  (bool)
-import           ZkFold.Prelude                                ((!!))
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Prelude                   ((!!))
+import           ZkFold.Symbolic.Arithmetization  (compile, acSizeM, acSizeN)
+import           ZkFold.Symbolic.Data.Conditional (bool)
+import           ZkFold.Symbolic.GroebnerBasis    (fromR1CS)
+import           ZkFold.Symbolic.Types            (R, SmallField, Symbolic)
 
-import           Examples.MiMC.Constants                       (mimcConstants)
-import           Tests.Utility.Types                           (R, SmallField, Symbolic)
+import           Examples.MiMC.Constants          (mimcConstants)
 
 mimcHash :: forall a . Symbolic a => Integer -> a -> a -> a -> a
 mimcHash nRounds k xL xR = 

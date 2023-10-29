@@ -2,17 +2,16 @@
 
 module Examples.Fibonacci (exampleFibonacci) where
 
-import           Prelude                                       hiding ((||), not, Num(..), Eq(..), Bool, (^), (/), any)
+import           Prelude                         hiding (Num(..), Eq(..), Bool, (^), (/), (||), not, any)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field               (Zp)
-import           ZkFold.Base.Algebra.Polynomials.GroebnerBasis (fromR1CS, verify)
-import           ZkFold.Base.Protocol.Arithmetization          (compile, acSizeM, acSizeN)
-import           ZkFold.Base.Data.Bool                         (Bool (..))
-import           ZkFold.Base.Data.Conditional                  (bool)
-import           ZkFold.Base.Data.Eq                           (Eq (..))
-
-import           Tests.Utility.Types                           (R, I, SmallField, Symbolic)
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Symbolic.Arithmetization  (compile, acSizeM, acSizeN)
+import           ZkFold.Symbolic.Data.Bool        (Bool (..))
+import           ZkFold.Symbolic.Data.Conditional (bool)
+import           ZkFold.Symbolic.Data.Eq          (Eq (..))
+import           ZkFold.Symbolic.GroebnerBasis    (fromR1CS, verify)
+import           ZkFold.Symbolic.Types            (R, I, SmallField, Symbolic)
 
 -- The Fibonacci index function. If `x` is a Fibonacci number, returns its index (up until `nMax`). Otherwise, returns `0`.
 fibonacciIndex :: forall a . Symbolic a => Integer -> a -> a

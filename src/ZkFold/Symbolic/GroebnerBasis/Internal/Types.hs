@@ -1,4 +1,4 @@
-module ZkFold.Base.Algebra.Polynomials.GroebnerBasis.Internal.Types where
+module ZkFold.Symbolic.GroebnerBasis.Internal.Types where
 
 import           Data.List                         (intercalate, foldl')
 import           Data.Map                          (Map, toList, empty, unionWith, keys, isSubmapOfBy, intersectionWith, differenceWith)
