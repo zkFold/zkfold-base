@@ -19,3 +19,8 @@ instance Prime SmallField
 
 type R = ArithmeticCircuit (Zp SmallField)
 type I = Integer
+
+data BLS12_381_Scalar
+instance Finite BLS12_381_Scalar where
+    order = 52435875175126190479447740508185965837690552500527637822603658699938581184513
+instance Prime BLS12_381_Scalar
