@@ -69,7 +69,7 @@ instance (Arithmetizable a x, Natural n) => Arithmetizable a (List n x) where
         | otherwise = mapList (f rs) indicesInteger
         where
             f :: [ArithmeticCircuit a] -> Integer -> x
-            f as = restore @a @x . take (lengthList @n) . flip drop as . ((lengthList @n) *)
+            f as = restore @a @x . take (typeSize @a @x) . flip drop as . ((lengthList @n) *)
 
     typeSize = typeSize @a @x * (lengthList @n)
 
@@ -198,7 +198,7 @@ instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (ArithmeticCircuit 
         return [r'']
 
     restore [r] = r
-    restore _   = error "restore: wrong number of arguments"
+    restore _   = error "restore ArithmeticCircuit: wrong number of arguments"
 
     typeSize = 1
 

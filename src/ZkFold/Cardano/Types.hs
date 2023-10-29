@@ -2,12 +2,13 @@
 
 module ZkFold.Cardano.Types where
 
-import           Prelude                          (($), concat, return, error, (++), fst, snd)
+import           Prelude                          (($), concat, return, error, (++), fst, snd, Eq (..), otherwise)
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Arithmetization  (Arithmetizable(..))
-import           ZkFold.Symbolic.Data.List        (U32, List)
+import           ZkFold.Symbolic.Arithmetization (Arithmetizable(..))
+import           ZkFold.Symbolic.Data.List       (U32, List)
+import           ZkFold.Prelude                  (drop, take, length)
 
 data Datum x = Datum x x x
 
@@ -18,10 +19,15 @@ instance Arithmetizable a x => Arithmetizable a (Datum x) where
         adaAC   <- arithmetize ada
         return $ concat [addrAC, vTimeAC, adaAC]
 
-    restore [addrAC, vTimeAC, adaAC] = Datum (restore [addrAC]) (restore [vTimeAC]) (restore [adaAC])
-    restore _ = error "restore Datum: wrong number of arguments"
+    restore datum
+        | length datum == typeSize @a @(Datum x) =
+            let addrAC  = restore $ take (typeSize @a @x) datum
+                vTimeAC = restore $ take (typeSize @a @x) $ drop (typeSize @a @x) datum
+                adaAC   = restore $ take (typeSize @a @x) $ drop (typeSize @a @x + typeSize @a @x) datum
+            in Datum addrAC vTimeAC adaAC
+        | otherwise = error "restore Datum: wrong number of arguments"
 
-    typeSize = 3
+    typeSize = 3 * typeSize @a @x
 
 data Redeemer x = Redeemer
 
@@ -38,47 +44,46 @@ data TxInfo x = TxInfo
         txInfoInputs          :: List U32 x,
         txInfoReferenceInputs :: List U32 x,
         txInfoOutputs         :: List U32 (TxOut x),
-        txInfoFee             :: List U32 x,
-        txInfoForge           :: x,
+        txInfoFee             :: x,
+        txInfoMint            :: x,
         txInfoDCert           :: List U32 x,
         txInfoWdrl            :: x,
         txInfoValidRange      :: (x, x),
         txInfoSignatories     :: List U32 x,
-        txInfoData            :: List U32 x,
         txInfoId              :: x
     }
     -- deriving (Haskell.Show, Haskell.Eq)
 
 instance Arithmetizable a x => Arithmetizable a (TxInfo x) where
-    arithmetize (TxInfo inputs referenceInputs outputs fee forge dCert wdrl validRange signatories data' id) = do
+    arithmetize (TxInfo inputs referenceInputs outputs fee mint dCert wdrl validRange signatories id) = do
         inputs'          <- arithmetize inputs
         referenceInputs' <- arithmetize referenceInputs
         outputs'         <- arithmetize outputs
         fee'             <- arithmetize fee
-        forge'           <- arithmetize forge
+        forge'           <- arithmetize mint
         dCert'           <- arithmetize dCert
         wdrl'            <- arithmetize wdrl
         validRange'      <- arithmetize validRange
         signatories'     <- arithmetize signatories
-        data''           <- arithmetize data'
         id'              <- arithmetize id
-        return $ concat [inputs', referenceInputs', outputs', fee', forge', dCert', wdrl', validRange', signatories', data'', id']
+        return $ concat [inputs', referenceInputs', outputs', fee', forge', dCert', wdrl', validRange', signatories', id']
 
-    restore [inputs', referenceInputs', outputs', fee', forge', dCert', wdrl', validRange', signatories', data'', id'] = TxInfo
-        (restore [inputs'])
-        (restore [referenceInputs'])
-        (restore [outputs'])
-        (restore [fee'])
-        (restore [forge'])
-        (restore [dCert'])
-        (restore [wdrl'])
-        (restore [validRange'])
-        (restore [signatories'])
-        (restore [data''])
-        (restore [id'])
-    restore _ = error "restore TxInfo: wrong number of arguments"
+    restore info
+        | length info == typeSize @a @(TxInfo x) =
+            let inputs          = restore $ take (typeSize @a @(List U32 x)) info
+                referenceInputs = restore $ take (typeSize @a @(List U32 x)) $ drop (typeSize @a @(List U32 x)) info
+                outputs         = restore $ take (typeSize @a @(List U32 (TxOut x))) $ drop (2 * typeSize @a @(List U32 x)) info
+                fee             = restore $ take (typeSize @a @(List U32 x)) $ drop (2 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x))) info
+                mint            = restore $ take (typeSize @a @x) $ drop (2 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x)) + typeSize @a @x) info
+                dCert           = restore $ take (typeSize @a @(List U32 x)) $ drop (2 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x)) + 2 * typeSize @a @x) info
+                wdrl            = restore $ take (typeSize @a @x) $ drop (3 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x)) + 2 * typeSize @a @x) info
+                validRange      = restore $ take (typeSize @a @(x, x)) $ drop (3 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x)) + 3 * typeSize @a @x) info
+                signatories     = restore $ take (typeSize @a @(List U32 x)) $ drop (3 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x)) + 3 * typeSize @a @x + typeSize @a @(x, x)) info
+                id              = restore $ take (typeSize @a @x) $ drop (4 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x)) + 3 * typeSize @a @x + typeSize @a @(x, x)) info
+            in TxInfo inputs referenceInputs outputs fee mint dCert wdrl validRange signatories id
+        | otherwise = error "restore TxInfo: wrong number of arguments"
 
-    typeSize = 6 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x)) + 3 * typeSize @a @x + typeSize @a @(x, x)
+    typeSize = 4 * typeSize @a @(List U32 x) + typeSize @a @(List U32 (TxOut x)) + 4 * typeSize @a @x + typeSize @a @(x, x)
 
 lowerBound :: (x, x) -> x
 lowerBound = fst
@@ -99,10 +104,12 @@ instance Arithmetizable a x => Arithmetizable a (ScriptContext x) where
         purpose' <- arithmetize purpose
         return $ txInfo' ++ purpose'
 
-    restore [txInfo', purpose'] = ScriptContext
-        (restore [txInfo'])
-        (restore [purpose'])
-    restore _ = error "restore ScriptContext: wrong number of arguments"
+    restore ctx
+        | length ctx == typeSize @a @(ScriptContext x) =
+            let txInfo  = restore $ take (typeSize @a @(TxInfo x)) ctx
+                purpose = restore $ take (typeSize @a @x) $ drop (typeSize @a @(TxInfo x)) ctx
+            in ScriptContext txInfo purpose
+        | otherwise = error "restore ScriptContext: wrong number of arguments"
 
     typeSize = typeSize @a @(TxInfo x) + typeSize @a @x
 
@@ -111,8 +118,9 @@ newtype Value x = Value x
 instance Arithmetizable a x => Arithmetizable a (Value x) where
     arithmetize (Value x) = arithmetize x
 
-    restore [x] = Value $ restore [x]
-    restore _   = error "restore Value: wrong number of arguments"
+    restore v
+        | length v == typeSize @a @x = Value $ restore v
+        | otherwise = error "restore Value: wrong number of arguments"
 
     typeSize = typeSize @a @x
 
@@ -126,7 +134,12 @@ instance Arithmetizable a x => Arithmetizable a (TxOut x) where
         data'' <- arithmetize data'
         return $ concat [addr', value', data'']
 
-    restore [addr', value', data''] = TxOut (restore [addr']) (restore [value']) (restore [data''])
-    restore _ = error "restore TxOut: wrong number of arguments"
+    restore out
+        | length out == typeSize @a @(TxOut x) =
+            let addr  = restore $ take (typeSize @a @x) out
+                value = restore $ take (typeSize @a @x) $ drop (typeSize @a @x) out
+                data' = restore $ take (typeSize @a @x) $ drop (typeSize @a @x + typeSize @a @x) out
+            in TxOut addr value data'
+        | otherwise = error "restore TxOut: wrong number of arguments"
 
     typeSize = 3 * typeSize @a @x
