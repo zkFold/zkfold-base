@@ -69,7 +69,7 @@ instance (Arithmetizable a x, Natural n) => Arithmetizable a (List n x) where
         | otherwise = mapList (f rs) indicesInteger
         where
             f :: [ArithmeticCircuit a] -> Integer -> x
-            f as = restore @a @x . take (typeSize @a @x) . flip drop as . ((lengthList @n) *)
+            f as = restore @a @x . take (typeSize @a @x) . flip drop as . ((typeSize @a @x) *)
 
     typeSize = typeSize @a @x * (lengthList @n)
 

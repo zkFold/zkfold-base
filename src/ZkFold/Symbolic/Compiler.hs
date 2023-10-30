@@ -22,7 +22,6 @@ compileIO scriptFile f = do
 
     putStrLn "\nCompiling the script...\n"
 
-    putStrLn "Arithmetic circuit size:"
     putStrLn $ "Number of constraints: " ++ show (acSizeN ac)
     putStrLn $ "Number of variables: " ++ show (acSizeM ac)
     writeFileJSON scriptFile ac
