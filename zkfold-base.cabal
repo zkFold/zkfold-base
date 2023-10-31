@@ -110,6 +110,7 @@ test-suite zkfold-base-test
     main-is: Main.hs
     other-modules:
       Examples.Fibonacci
+      Examples.LEQ
       Examples.MiMCHash
       Examples.MiMC.Constants
       Examples.VestingScript
