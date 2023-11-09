@@ -8,13 +8,15 @@ module ZkFold.Symbolic.Arithmetization (
         -- high-level functions
         applyArgs,
         optimize,
+        -- low-level functions
+        forceZero,
         -- information about the system
         acSizeN,
         acSizeM,
         acSystem,
         acValue,
         acPrint,
-        -- R1CS type fields
+        -- Arithmetization type fields
         acVarOrder,
         acOutput
     ) where

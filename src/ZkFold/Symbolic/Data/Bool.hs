@@ -9,7 +9,7 @@ import           Prelude                         hiding (Num(..), Bool, (/), (&&
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable (..))
+import           ZkFold.Symbolic.Arithmetization (Arithmetizable (..), ArithmeticCircuit)
 
 class BoolType b where
     true  :: b
@@ -54,7 +54,7 @@ all f = foldr ((&&) . f) true
 any :: BoolType b => (x -> b) -> [x] -> b
 any f = foldr ((||) . f) false
 
-instance Arithmetizable a x => Arithmetizable a (Bool x) where
+instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (Bool (ArithmeticCircuit a)) where
     arithmetize (Bool b) = arithmetize b
 
     restore [r] = Bool $ restore [r]

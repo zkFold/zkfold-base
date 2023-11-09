@@ -67,19 +67,6 @@ library
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class
-      ZkFold.Symbolic.Arithmetization
-      ZkFold.Symbolic.Compiler
-      ZkFold.Symbolic.Data.Bool
-      ZkFold.Symbolic.Data.Conditional
-      ZkFold.Symbolic.Data.Eq
-      ZkFold.Symbolic.Data.List
-      ZkFold.Symbolic.Data.Ord
-      ZkFold.Symbolic.GroebnerBasis
-      ZkFold.Symbolic.GroebnerBasis.Internal
-      ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
-      ZkFold.Symbolic.GroebnerBasis.Internal.Types
-      ZkFold.Symbolic.GroebnerBasis.Types
-      ZkFold.Symbolic.Types
       ZkFold.Base.Protocol.ARK.BabyHyrax
       ZkFold.Base.Protocol.ARK.HyperPlonk
       ZkFold.Base.Protocol.ARK.Lasso
@@ -90,6 +77,20 @@ library
       ZkFold.Base.Protocol.PIOP.Multivariate.Plonk
       ZkFold.Base.Protocol.PIOP.Univariate.Plonk
       ZkFold.Prelude
+      ZkFold.Symbolic.Arithmetization
+      ZkFold.Symbolic.Compiler
+      ZkFold.Symbolic.Data.Bool
+      ZkFold.Symbolic.Data.Conditional
+      ZkFold.Symbolic.Data.Eq
+      ZkFold.Symbolic.Data.List
+      ZkFold.Symbolic.Data.Ord
+      ZkFold.Symbolic.Data.UInt
+      ZkFold.Symbolic.GroebnerBasis
+      ZkFold.Symbolic.GroebnerBasis.Internal
+      ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
+      ZkFold.Symbolic.GroebnerBasis.Internal.Types
+      ZkFold.Symbolic.GroebnerBasis.Types
+      ZkFold.Symbolic.Types
     build-depends:
       base                          >= 4.9 && < 5,
       aeson                                      ,
