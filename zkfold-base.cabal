@@ -67,6 +67,7 @@ library
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class
+      ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Protocol.ARK.BabyHyrax
       ZkFold.Base.Protocol.ARK.HyperPlonk
       ZkFold.Base.Protocol.ARK.Lasso
