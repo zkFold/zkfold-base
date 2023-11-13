@@ -6,11 +6,11 @@ module ZkFold.Base.Algebra.Basic.Field (
     fromZp
     ) where
 
+import           Data.Aeson                        (ToJSON (..), FromJSON (..))
 import           Prelude                           hiding (Num(..), Fractional(..), length)
 import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import Data.Aeson (ToJSON (..), FromJSON (..))
 
 newtype Zp p = Zp Integer
 

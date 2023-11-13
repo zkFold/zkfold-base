@@ -11,7 +11,9 @@ type family ScalarField curve
 
 data Point curve = Point (BaseField curve) (BaseField curve) | Inf
 
-class (FiniteField (BaseField curve), Haskell.Num (BaseField curve), Eq (BaseField curve)) => EllipticCurve curve where
+class (FiniteField (BaseField curve), Haskell.Num (BaseField curve), Eq (BaseField curve),
+        FiniteField (ScalarField curve), Haskell.Num (ScalarField curve), Eq (ScalarField curve)
+    ) => EllipticCurve curve where
     inf :: Point curve
 
     gen :: Point curve
@@ -45,16 +47,21 @@ pointDouble (Point x y) = Point x' y'
     x' = slope * slope - x - x
     y' = slope * (x - x') - y
 
+addPoints :: EllipticCurve curve => Point curve -> Point curve -> Point curve
+addPoints p1 p2
+    | p1 == p2  = pointDouble p1
+    | otherwise = pointAdd p1 p2
+
 pointNegate :: EllipticCurve curve => Point curve -> Point curve
 pointNegate Inf = Inf
 pointNegate (Point x y) = Point x (negate y)
 
-pointMul :: EllipticCurve curve => Integer -> Point curve -> Point curve
+-- TODO: use ToBits
+pointMul :: EllipticCurve curve => ScalarField curve -> Point curve -> Point curve
 pointMul n p
-  | n < 0     = pointNegate $ pointMul (negate n) p
-  | n == 0    = Inf
-  | n == 1    = p
-  | even n    = p'
-  | otherwise = pointAdd p p'
+  | n == 0     = Inf
+  | n == 1     = p
+  | n / 2 == 0 = p'
+  | otherwise  = pointAdd p p'
   where
-    p' = pointMul (n `div` 2) (pointDouble p)
+    p' = pointMul (n / 2) (pointDouble p)
