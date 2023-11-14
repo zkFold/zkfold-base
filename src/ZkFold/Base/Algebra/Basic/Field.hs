@@ -1,9 +1,13 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Base.Algebra.Basic.Field (
+    IrreduciblePoly(..),
     Zp,
     toZp,
-    fromZp
+    fromZp,
+    Ext2(..),
+    Ext3(..)
     ) where
 
 import           Data.Aeson                        (ToJSON (..), FromJSON (..))
@@ -11,6 +15,9 @@ import           Prelude                           hiding (Num(..), Fractional(.
 import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import ZkFold.Base.Algebra.Polynomials.Univariate
+
+------------------------------ Prime Fields -----------------------------------
 
 newtype Zp p = Zp Integer
 
@@ -83,3 +90,82 @@ instance ToJSON (Zp p) where
 
 instance FromJSON (Zp p) where
     parseJSON = fmap Zp . parseJSON
+
+----------------------------- Field Extensions --------------------------------
+
+class IrreduciblePoly f e | e -> f where
+    irreduciblePoly :: Poly f size
+
+data Ext2 f e = Ext2 f f
+    deriving (Eq, Show)
+
+instance Finite f => Finite (Ext2 f e) where
+    order = order @f * order @f
+
+instance Field f => AdditiveSemigroup (Ext2 f e) where
+    Ext2 a b + Ext2 c d = Ext2 (a + c) (b + d)
+
+instance Field f => AdditiveMonoid (Ext2 f e) where
+    zero = Ext2 zero zero
+
+instance Field f => AdditiveGroup (Ext2 f e) where
+    negate (Ext2 a b) = Ext2 (negate a) (negate b)
+    Ext2 a b - Ext2 c d = Ext2 (a - c) (b - d)
+
+instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext2 f e) where
+    Ext2 a b * Ext2 c d = case snd $ qr (toPoly [a, b] * toPoly [c, d]) (irreduciblePoly @f @e) of
+            P (x:y:_) -> Ext2 x y
+            P [x]     -> Ext2 x zero
+            _         -> error "Ext2: error in multiplication"
+
+instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext2 f e) where
+    one = Ext2 one zero
+
+instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) where
+    invert (Ext2 a b) =
+        let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @f @e)
+        in case scale (one / lt g) 0 s of
+            P (x:y:_) -> Ext2 x y
+            P [x]     -> Ext2 x zero
+            _         -> error "Ext2: error in inversion"
+
+instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
+    fromConstant e = Ext2 (fromConstant e) zero
+
+data Ext3 f e = Ext3 f f f
+    deriving (Eq, Show)
+
+instance Finite f => Finite (Ext3 f e) where
+    order = order @f * order @f * order @f
+
+instance Field f => AdditiveSemigroup (Ext3 f e) where
+    Ext3 a b c + Ext3 d e f = Ext3 (a + d) (b + e) (c + f)
+
+instance Field f => AdditiveMonoid (Ext3 f e) where
+    zero = Ext3 zero zero zero
+
+instance Field f => AdditiveGroup (Ext3 f e) where
+    negate (Ext3 a b c) = Ext3 (negate a) (negate b) (negate c)
+    Ext3 a b c - Ext3 d e f = Ext3 (a - d) (b - e) (c - f)
+
+instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext3 f e) where
+    Ext3 a b c * Ext3 d e f = case snd $ qr (toPoly [a, b, c] * toPoly [d, e, f]) (irreduciblePoly @f @e) of
+            P (x:y:z:_) -> Ext3 x y z
+            P [x, y]    -> Ext3 x y zero
+            P [x]       -> Ext3 x zero zero
+            _           -> error "Ext3: error in multiplication"
+
+instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext3 f e) where
+    one = Ext3 one zero zero
+
+instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) where
+    invert (Ext3 a b c) =
+        let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @f @e)
+        in case scale (one / lt g) 0 s of
+            P (x:y:z:_) -> Ext3 x y z
+            P [x, y]    -> Ext3 x y zero
+            P [x]       -> Ext3 x zero zero
+            _           -> error "Ext3: error in inversion"
+
+instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
+    fromConstant e = Ext3 (fromConstant e) zero zero

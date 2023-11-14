@@ -11,8 +11,8 @@ type family ScalarField curve
 
 data Point curve = Point (BaseField curve) (BaseField curve) | Inf
 
-class (FiniteField (BaseField curve), Haskell.Num (BaseField curve), Eq (BaseField curve),
-        FiniteField (ScalarField curve), Haskell.Num (ScalarField curve), Eq (ScalarField curve)
+class (FiniteField (BaseField curve), Eq (BaseField curve),
+      FiniteField (ScalarField curve), Haskell.Num (ScalarField curve), Eq (ScalarField curve)
     ) => EllipticCurve curve where
     inf :: Point curve
 
@@ -43,7 +43,7 @@ pointDouble :: EllipticCurve curve => Point curve -> Point curve
 pointDouble Inf = Inf
 pointDouble (Point x y) = Point x' y'
   where
-    slope = (3 * x * x) / (2 * y)
+    slope = (x * x + x * x + x * x) / (y + y)
     x' = slope * slope - x - x
     y' = slope * (x - x') - y
 

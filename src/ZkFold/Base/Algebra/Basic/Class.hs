@@ -73,6 +73,9 @@ type PrimeField a = (Prime a, FiniteField a)
 class FromConstant a b where
     fromConstant :: a -> b
 
+instance FromConstant a a where
+    fromConstant = id
+
 -- Note: numbers should convert to Little-endian bit representation.
 class Semiring a => ToBits a where
     toBits :: a -> [a]
