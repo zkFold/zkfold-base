@@ -132,6 +132,9 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
 
+instance (Field f, ToBits f, Eq f, IrreduciblePoly f e) => ToBits (Ext2 f e) where
+    toBits (Ext2 a b) = map (`Ext2` zero) $ toBits a ++ toBits b
+
 data Ext3 f e = Ext3 f f f
     deriving (Eq, Show)
 
@@ -169,3 +172,6 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) 
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero
+
+instance (Field f, ToBits f, Eq f, IrreduciblePoly f e) => ToBits (Ext3 f e) where
+    toBits (Ext3 a b c) = map (\x -> Ext3 x zero zero) $ toBits a ++ toBits b ++ toBits c

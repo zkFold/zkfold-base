@@ -103,8 +103,8 @@ instance (Field c, Finite size, Eq c) => MultiplicativeGroup (PolyVec c size) wh
 
     l / r = poly2vec $ fst $ qr (vec2poly l) (vec2poly r)
 
-scale :: Ring c => c -> PolyVec c size -> PolyVec c size
-scale c (PV as) = PV $ map (*c) as
+scalePV :: Ring c => c -> PolyVec c size -> PolyVec c size
+scalePV c (PV as) = PV $ map (*c) as
 
 -------------------------------- Helper functions --------------------------------
 

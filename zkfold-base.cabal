@@ -98,6 +98,7 @@ library
       aeson                                      ,
       bytestring                                 ,
       containers                                 ,
+      cryptohash-sha256                          ,
       fixed-length                               ,
       mtl                                        ,
       non-empty                                  ,

@@ -1,6 +1,6 @@
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
-import           Prelude                         hiding (Num(..), (/))
+import           Prelude                         hiding (Num(..), (/), (^), sum)
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -11,8 +11,9 @@ type family ScalarField curve
 
 data Point curve = Point (BaseField curve) (BaseField curve) | Inf
 
-class (FiniteField (BaseField curve), Eq (BaseField curve),
-      FiniteField (ScalarField curve), Haskell.Num (ScalarField curve), Eq (ScalarField curve)
+class (FiniteField (BaseField curve), Eq (BaseField curve), ToBits (BaseField curve),
+      PrimeField (ScalarField curve), Haskell.Num (ScalarField curve),
+      Eq (ScalarField curve), ToBits (ScalarField curve)
     ) => EllipticCurve curve where
     inf :: Point curve
 

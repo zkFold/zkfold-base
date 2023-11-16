@@ -3,7 +3,7 @@ module ZkFold.Symbolic.GroebnerBasis.Internal.Reduction where
 import           Data.Bool                        (bool)
 import           Prelude                          hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class  hiding (scale)
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Types
 
 reducable :: (Ord a, MultiplicativeMonoid a) => Polynom c a -> Polynom c a -> Bool

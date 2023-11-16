@@ -4,6 +4,13 @@ module ZkFold.Base.Protocol.NonInteractiveProof where
 
 import           Prelude (Bool)
 
+class Challenge c where
+    type ChallengeInput c
+
+    type ChallengeOutput c
+
+    challenge :: ChallengeInput c -> ChallengeOutput c
+
 class NonInteractiveProof a where
     type Params a
 

@@ -4,7 +4,7 @@ import           Data.List                       (sortBy)
 import           Data.Map                        (notMember)
 import           Prelude                         hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class hiding (scale)
 import           ZkFold.Prelude                  (length)
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Types

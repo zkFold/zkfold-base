@@ -2,13 +2,17 @@
 
 module ZkFold.Base.Protocol.Commitment.KZG where
 
-import           Prelude hiding (Num(..), (^), (/), sum, negate, replicate, length)
+import           Crypto.Hash.SHA256                          (hash)
+import           Data.ByteString                             (ByteString, pack, unpack)
+import           Data.Word                                   (Word8)
+import           Prelude                                     hiding (Num(..), (^), (/), sum, negate, replicate, length, splitAt)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Protocol.NonInteractiveProof
+import           ZkFold.Prelude                              (length, splitAt)
 
 type F = ScalarField BLS12_381_G1
 type G1 = Point BLS12_381_G1
@@ -24,8 +28,31 @@ data ProofKZG = ProofKZG G1 G1
 data KZG
 
 -- The degree of polynomials in the protocol
+-- TODO: remove hard-coding
 instance Finite KZG where
     order = 32
+
+instance Challenge KZG where
+    type ChallengeInput KZG  = [G1]
+    type ChallengeOutput KZG = [F]
+
+    challenge ps = f : challenge @KZG [f `mul` gen]
+        where
+            go Inf = [0]
+            go (Point x y) = toBits x ++ toBits y
+
+            inputBits = concatMap go ps
+            bs = hash $ pack $ map (fromIntegral @Integer) $ castBits inputBits :: ByteString
+            outputBits = castBits @Integer $ map (fromIntegral @Word8) $ unpack bs
+            f = sum $ zipWith (*) outputBits (map (2^) [0::Integer ..]) :: F
+
+challengeKZG :: [G1] -> Integer -> Integer -> ([F], [F], F)
+challengeKZG ps t1 t2 =
+    let cs = challenge @KZG ps
+        (gamma, cs')   = splitAt t1 cs
+        (gamma', cs'') = splitAt t2 cs'
+    in (gamma, gamma', head cs'')
+
 
 -- TODO: add challenge computations
 instance NonInteractiveProof KZG where
@@ -51,24 +78,22 @@ instance NonInteractiveProof KZG where
             fzs  = map (fst . (`provePolyVecEval` z)) fs
             fzs' = map (fst . (`provePolyVecEval` z')) fs'
 
-            gammas  = map (23^) [0 :: Integer ..]
-            gammas' = map (54^) [0 :: Integer ..]
+            msg = z `mul` gen : z' `mul` gen : map (`mul` gen) fzs ++ map (`mul` gen) fzs' ++ cms ++ cms'
+            (gamma, gamma', _) = challengeKZG msg (length cms) (length cms')
 
-            h    = sum $ zipWith scale gammas  $ map (snd . (`provePolyVecEval` z)) fs
-            h'   = sum $ zipWith scale gammas' $ map (snd . (`provePolyVecEval` z)) fs
+            h    = sum $ zipWith scalePV gamma  $ map (snd . (`provePolyVecEval` z)) fs
+            h'   = sum $ zipWith scalePV gamma' $ map (snd . (`provePolyVecEval` z)) fs
         in (InputKZG z cms fzs z' cms' fzs', ProofKZG (gs `com` h) (gs `com` h'))
 
     verify :: Setup KZG -> Input KZG -> Proof KZG -> Bool
     verify (gs, h0, h1) (InputKZG z cms fzs z' cms' fzs') (ProofKZG w w') =
-        let gammas  = map (23^) [0 :: Integer ..]
-            gammas' = map (54^) [0 :: Integer ..]
+        let msg = z `mul` gen : z' `mul` gen : map (`mul` gen) fzs ++ map (`mul` gen) fzs' ++ cms ++ cms'
+            (gamma, gamma', r) = challengeKZG msg (length cms) (length cms')
 
-            r = 654
-
-            v = sum (zipWith mul gammas cms)
-                - gs `com` toPolyVec @F @KZG [sum $ zipWith (*) gammas fzs]
-                + r `mul` sum (zipWith mul gammas' cms')
-                - r `mul` (gs `com` toPolyVec @F @KZG [sum $ zipWith (*) gammas' fzs'])
+            v = sum (zipWith mul gamma cms)
+                - gs `com` toPolyVec @F @KZG [sum $ zipWith (*) gamma fzs]
+                + r `mul` sum (zipWith mul gamma' cms')
+                - r `mul` (gs `com` toPolyVec @F @KZG [sum $ zipWith (*) gamma' fzs'])
 
             p1 = pairing (v + z `mul` w + (r*z') `mul` w') h0
             p2 = pairing (negate $ w + r `mul` w') h1
