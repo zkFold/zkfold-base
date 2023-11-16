@@ -28,6 +28,15 @@ instance EllipticCurve curve => Eq (Point curve) where
     _   == Inf = False
     Point x1 y1 == Point x2 y2 = x1 == x2 && y1 == y2
 
+instance EllipticCurve curve => AdditiveSemigroup (Point curve) where
+    (+) = add
+
+instance EllipticCurve curve => AdditiveMonoid (Point curve) where
+    zero = Inf
+
+instance EllipticCurve curve => AdditiveGroup (Point curve) where
+    negate = pointNegate
+
 pointAdd :: EllipticCurve curve => Point curve -> Point curve -> Point curve
 pointAdd p   Inf     = p
 pointAdd Inf q       = q

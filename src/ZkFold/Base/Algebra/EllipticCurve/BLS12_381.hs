@@ -150,10 +150,10 @@ miller' p q r (i:iters) result =
     doubleR = pointDouble r
 
 -- | Pairing calculation for a valid point in G1 and another valid point in G2.
-pairing :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> Maybe BLS12_381_GT
-pairing Inf _ = Nothing
-pairing _ Inf = Nothing
-pairing p q = Just (pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Integer) - 1) `div` (order @(ScalarField BLS12_381_G1))) one)
+pairing :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> BLS12_381_GT
+pairing Inf _ = zero
+pairing _ Inf = zero
+pairing p q = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Integer) - 1) `div` (order @(ScalarField BLS12_381_G1))) one
 
 -- Used for the final exponentiation; opportunity for further perf optimization
 pow' :: (Field a) => a -> Integer -> a -> a

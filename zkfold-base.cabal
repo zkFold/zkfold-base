@@ -75,6 +75,7 @@ library
       ZkFold.Base.Protocol.ARK.Plonk
       ZkFold.Base.Protocol.Commitment.KZG
       ZkFold.Base.Protocol.Commitment.Sona
+      ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Base.Protocol.PIOP.Multivariate.Plonk
       ZkFold.Base.Protocol.PIOP.Univariate.Plonk
       ZkFold.Prelude

@@ -15,7 +15,7 @@ import           Prelude                           hiding (Num(..), Fractional(.
 import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Polynomials.Univariate
+import           ZkFold.Base.Algebra.Polynomials.Univariate
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -94,7 +94,7 @@ instance FromJSON (Zp p) where
 ----------------------------- Field Extensions --------------------------------
 
 class IrreduciblePoly f e | e -> f where
-    irreduciblePoly :: Poly f size
+    irreduciblePoly :: Poly f
 
 data Ext2 f e = Ext2 f f
     deriving (Eq, Show)
@@ -124,7 +124,7 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext2 f e)
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) where
     invert (Ext2 a b) =
         let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @f @e)
-        in case scale (one / lt g) 0 s of
+        in case scaleP (one / lt g) 0 s of
             P (x:y:_) -> Ext2 x y
             P [x]     -> Ext2 x zero
             _         -> error "Ext2: error in inversion"
@@ -161,7 +161,7 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext3 f e)
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) where
     invert (Ext3 a b c) =
         let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @f @e)
-        in case scale (one / lt g) 0 s of
+        in case scaleP (one / lt g) 0 s of
             P (x:y:z:_) -> Ext3 x y z
             P [x, y]    -> Ext3 x y zero
             P [x]       -> Ext3 x zero zero
