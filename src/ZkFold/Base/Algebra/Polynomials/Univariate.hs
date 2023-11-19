@@ -2,10 +2,10 @@
 
 module ZkFold.Base.Algebra.Polynomials.Univariate where
 
-import           Prelude                           hiding (Num(..), (/), sum, length, replicate, take)
+import           Prelude                           hiding (Num(..), (/), (^), sum, length, replicate, take, drop)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Prelude                    (replicate, length, take)
+import           ZkFold.Prelude                    (replicate, length, take, drop)
 
 -------------------------------- Arbitrary degree polynomials --------------------------------
 
@@ -105,6 +105,19 @@ instance (Field c, Finite size, Eq c) => MultiplicativeGroup (PolyVec c size) wh
 
 scalePV :: Ring c => c -> PolyVec c size -> PolyVec c size
 scalePV c (PV as) = PV $ map (*c) as
+
+castPolyVec :: forall c size size' . (Ring c, Finite size, Finite size', Eq c) => PolyVec c size -> PolyVec c size'
+castPolyVec (PV cs)
+    | order @size <= order @size'            = PV $ cs ++ replicate (order @size' - order @size) zero
+    | all (== zero) (drop (order @size') cs) = PV $ take (order @size') cs
+    | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
+
+polyVecZero :: forall c size . (Ring c, Finite size) => Integer -> PolyVec c size
+polyVecZero n = PV $ replicate n zero ++ [one] ++ replicate (order @size - n - 1) zero
+
+polyVecLagrange :: forall c size . (Field c, Eq c, FromConstant Integer c, Finite size) =>
+    Integer -> Integer -> c -> PolyVec c size
+polyVecLagrange n i omega = scalePV (omega / fromConstant n) $ polyVecZero n / toPolyVec [negate (omega^i), one]
 
 -------------------------------- Helper functions --------------------------------
 

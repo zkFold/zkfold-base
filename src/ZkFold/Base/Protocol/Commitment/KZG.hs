@@ -14,6 +14,8 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                              (length, splitAt)
 
+-- TODO: generalize this to arbitrary number of evaluation points
+
 type F = ScalarField BLS12_381_G1
 type G1 = Point BLS12_381_G1
 type G2 = Point BLS12_381_G2
@@ -53,8 +55,7 @@ challengeKZG ps t1 t2 =
         (gamma', cs'') = splitAt t2 cs'
     in (gamma, gamma', head cs'')
 
-
--- TODO: add challenge computations
+-- TODO: check list lengths
 instance NonInteractiveProof KZG where
     type Params KZG       = Integer
     type SetupSecret KZG  = F
@@ -96,8 +97,8 @@ instance NonInteractiveProof KZG where
                 - r `mul` (gs `com` toPolyVec @F @KZG [sum $ zipWith (*) gamma' fzs'])
 
             p1 = pairing (v + z `mul` w + (r*z') `mul` w') h0
-            p2 = pairing (negate $ w + r `mul` w') h1
-        in p1 * p2 == one
+            p2 = pairing (w + r `mul` w') h1
+        in p1 == p2
 
 ------------------------------------ Helper functions ------------------------------------
 
