@@ -16,6 +16,7 @@ import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
+import           ZkFold.Base.Data.ByteString
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -91,6 +92,12 @@ instance ToJSON (Zp p) where
 instance FromJSON (Zp p) where
     parseJSON = fmap Zp . parseJSON
 
+instance ToByteString (Zp p) where
+    toByteString (Zp a) = toByteString a
+
+instance FromByteString (Zp p) where
+    fromByteString = fmap Zp . fromByteString
+
 ----------------------------- Field Extensions --------------------------------
 
 class IrreduciblePoly f e | e -> f where
@@ -135,6 +142,9 @@ instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
 instance (Field f, ToBits f, Eq f, IrreduciblePoly f e) => ToBits (Ext2 f e) where
     toBits (Ext2 a b) = map (`Ext2` zero) $ toBits a ++ toBits b
 
+instance ToByteString f => ToByteString (Ext2 f e) where
+    toByteString (Ext2 a b) = toByteString a <> toByteString b
+
 data Ext3 f e = Ext3 f f f
     deriving (Eq, Show)
 
@@ -175,3 +185,6 @@ instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
 
 instance (Field f, ToBits f, Eq f, IrreduciblePoly f e) => ToBits (Ext3 f e) where
     toBits (Ext3 a b c) = map (\x -> Ext3 x zero zero) $ toBits a ++ toBits b ++ toBits c
+
+instance ToByteString f => ToByteString (Ext3 f e) where
+    toByteString (Ext3 a b c) = toByteString a <> toByteString b <> toByteString c

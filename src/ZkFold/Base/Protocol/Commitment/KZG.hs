@@ -2,9 +2,7 @@
 
 module ZkFold.Base.Protocol.Commitment.KZG where
 
-import           Crypto.Hash.SHA256                          (hash)
-import           Data.ByteString                             (ByteString, pack, unpack)
-import           Data.Word                                   (Word8)
+import           Data.ByteString                             (empty)
 import           Prelude                                     hiding (Num(..), (^), (/), sum, negate, replicate, length, splitAt)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -12,7 +10,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                              (length, splitAt)
+import           ZkFold.Prelude                              (length)
 
 -- TODO: generalize this to arbitrary number of evaluation points
 
@@ -33,27 +31,6 @@ data KZG
 -- TODO: remove hard-coding
 instance Finite KZG where
     order = 32
-
-instance Challenge KZG where
-    type ChallengeInput KZG  = [G1]
-    type ChallengeOutput KZG = [F]
-
-    challenge ps = f : challenge @KZG [f `mul` gen]
-        where
-            go Inf = [0]
-            go (Point x y) = toBits x ++ toBits y
-
-            inputBits = concatMap go ps
-            bs = hash $ pack $ map (fromIntegral @Integer) $ castBits inputBits :: ByteString
-            outputBits = castBits @Integer $ map (fromIntegral @Word8) $ unpack bs
-            f = sum $ zipWith (*) outputBits (map (2^) [0::Integer ..]) :: F
-
-challengeKZG :: [G1] -> Integer -> Integer -> ([F], [F], F)
-challengeKZG ps t1 t2 =
-    let cs = challenge @KZG ps
-        (gamma, cs')   = splitAt t1 cs
-        (gamma', cs'') = splitAt t2 cs'
-    in (gamma, gamma', head cs'')
 
 -- TODO: check list lengths
 instance NonInteractiveProof KZG where
@@ -79,8 +56,15 @@ instance NonInteractiveProof KZG where
             fzs  = map (fst . (`provePolyVecEval` z)) fs
             fzs' = map (fst . (`provePolyVecEval` z')) fs'
 
-            msg = z `mul` gen : z' `mul` gen : map (`mul` gen) fzs ++ map (`mul` gen) fzs' ++ cms ++ cms'
-            (gamma, gamma', _) = challengeKZG msg (length cms) (length cms')
+            ts = empty
+                `transcript` z
+                `transcript` z'
+                `transcript` fzs
+                `transcript` fzs'
+                `transcript` cms
+                `transcript` cms'
+            (gamma, ts') = challenges ts  (length cms)
+            (gamma', _)  = challenges ts' (length cms')
 
             h    = sum $ zipWith scalePV gamma  $ map (snd . (`provePolyVecEval` z)) fs
             h'   = sum $ zipWith scalePV gamma' $ map (snd . (`provePolyVecEval` z)) fs
@@ -88,8 +72,16 @@ instance NonInteractiveProof KZG where
 
     verify :: Setup KZG -> Input KZG -> Proof KZG -> Bool
     verify (gs, h0, h1) (InputKZG z cms fzs z' cms' fzs') (ProofKZG w w') =
-        let msg = z `mul` gen : z' `mul` gen : map (`mul` gen) fzs ++ map (`mul` gen) fzs' ++ cms ++ cms'
-            (gamma, gamma', r) = challengeKZG msg (length cms) (length cms')
+        let ts = empty
+                `transcript` z
+                `transcript` z'
+                `transcript` fzs
+                `transcript` fzs'
+                `transcript` cms
+                `transcript` cms'
+            (gamma, ts')   = challenges ts  (length cms)
+            (gamma', ts'') = challenges ts' (length cms')
+            (r, _)         = challenge ts''
 
             v = sum (zipWith mul gamma cms)
                 - gs `com` toPolyVec @F @KZG [sum $ zipWith (*) gamma fzs]

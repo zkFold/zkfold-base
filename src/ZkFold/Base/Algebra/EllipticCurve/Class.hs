@@ -4,6 +4,7 @@ import           Prelude                         hiding (Num(..), (/), (^), sum)
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.ByteString     (ToByteString (..))
 
 type family BaseField curve
 
@@ -11,7 +12,8 @@ type family ScalarField curve
 
 data Point curve = Point (BaseField curve) (BaseField curve) | Inf
 
-class (FiniteField (BaseField curve), Eq (BaseField curve), ToBits (BaseField curve),
+class (FiniteField (BaseField curve), Eq (BaseField curve),
+      ToBits (BaseField curve), ToByteString (BaseField curve),
       PrimeField (ScalarField curve), Haskell.Num (ScalarField curve),
       Eq (ScalarField curve), ToBits (ScalarField curve)
     ) => EllipticCurve curve where
@@ -37,6 +39,10 @@ instance EllipticCurve curve => AdditiveMonoid (Point curve) where
 
 instance EllipticCurve curve => AdditiveGroup (Point curve) where
     negate = pointNegate
+
+instance EllipticCurve curve => ToByteString (Point curve) where
+    toByteString Inf = toByteString (0 :: Integer)
+    toByteString (Point x y) = toByteString (1 :: Integer) <> toByteString x <> toByteString y
 
 pointAdd :: EllipticCurve curve => Point curve -> Point curve -> Point curve
 pointAdd p   Inf     = p
