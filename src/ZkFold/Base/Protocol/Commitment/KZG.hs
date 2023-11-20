@@ -29,7 +29,7 @@ instance Finite KZG where
 
 -- TODO: check list lengths
 instance NonInteractiveProof KZG where
-    type Params KZG       = Integer
+    type Params KZG       = ()
     type SetupSecret KZG  = F
     type Setup KZG        = ([G1], G2, G2)
     type ProverSecret KZG = ()
@@ -38,8 +38,9 @@ instance NonInteractiveProof KZG where
     type Proof KZG        = Map F G1
 
     setup :: Params KZG -> SetupSecret KZG -> Setup KZG
-    setup d x =
-        let xs = map (x^) [0..d-1]
+    setup _ x =
+        let d  = order @KZG
+            xs = map (x^) [0..d-1]
             gs = map (`mul` gen) xs
         in (gs, gen, x `mul` gen)
 

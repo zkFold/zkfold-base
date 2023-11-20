@@ -2,7 +2,7 @@
 
 module ZkFold.Base.Algebra.Polynomials.Univariate where
 
-import           Prelude                           hiding (Num(..), (/), (^), sum, length, replicate, take, drop)
+import           Prelude                           hiding (Num(..), (/), (^), sum, product, length, replicate, take, drop)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                    (replicate, length, take, drop)
@@ -103,6 +103,12 @@ instance (Field c, Finite size, Eq c) => MultiplicativeGroup (PolyVec c size) wh
 
     l / r = poly2vec $ fst $ qr (vec2poly l) (vec2poly r)
 
+polyVecLinear :: forall c size . (Ring c, Finite size) => c -> c -> PolyVec c size
+polyVecLinear a0 a1 = PV $ a0 : a1 : replicate (order @size - 2) zero
+
+polyVecQuadratic :: forall c size . (Ring c, Finite size) => c -> c -> c -> PolyVec c size
+polyVecQuadratic a0 a1 a2 = PV $ a0 : a1 : a2 : replicate (order @size - 3) zero
+
 scalePV :: Ring c => c -> PolyVec c size -> PolyVec c size
 scalePV c (PV as) = PV $ map (*c) as
 
@@ -120,7 +126,21 @@ polyVecZero n = PV $ replicate n zero ++ [one] ++ replicate (order @size - n - 1
 
 polyVecLagrange :: forall c size . (Field c, Eq c, FromConstant Integer c, Finite size) =>
     Integer -> Integer -> c -> PolyVec c size
-polyVecLagrange n i omega = scalePV (omega / fromConstant n) $ polyVecZero n / toPolyVec [negate (omega^i), one]
+polyVecLagrange n i omega = scalePV (omega / fromConstant n) $ (polyVecZero n - one) / polyVecLinear (negate $ omega^i) one
+
+polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, FromConstant Integer c, Finite size') =>
+    Integer -> c -> PolyVec c size -> PolyVec c size'
+polyVecInLagrangeBasis n omega (PV cs) =
+    let ls = map (\i -> polyVecLagrange n i omega) [1..]
+    in sum $ zipWith scalePV cs ls
+
+polyVecGrandProduct :: forall c size . (Field c, Finite size) =>
+    PolyVec c size -> PolyVec c size -> PolyVec c size -> c -> c -> PolyVec c size
+polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
+    let ps = map (+ gamma) (zipWith (+) as (map (* beta) bs))
+        qs = map (+ gamma) (zipWith (+) as (map (* beta) sigmas))
+        zs = map (product . flip take (zipWith (/) ps qs)) [0..order @size - 1]
+    in PV zs
 
 -------------------------------- Helper functions --------------------------------
 
