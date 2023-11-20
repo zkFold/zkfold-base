@@ -106,6 +106,9 @@ instance (Field c, Finite size, Eq c) => MultiplicativeGroup (PolyVec c size) wh
 scalePV :: Ring c => c -> PolyVec c size -> PolyVec c size
 scalePV c (PV as) = PV $ map (*c) as
 
+evalPolyVec :: Ring c => PolyVec c size -> c -> c
+evalPolyVec (PV cs) x = sum $ zipWith (*) cs $ map (x^) [0 :: Integer ..]
+
 castPolyVec :: forall c size size' . (Ring c, Finite size, Finite size', Eq c) => PolyVec c size -> PolyVec c size'
 castPolyVec (PV cs)
     | order @size <= order @size'            = PV $ cs ++ replicate (order @size' - order @size) zero
