@@ -73,12 +73,36 @@ type PrimeField a = (Prime a, FiniteField a)
 class FromConstant a b where
     fromConstant :: a -> b
 
+instance FromConstant a a where
+    fromConstant = id
+
 -- Note: numbers should convert to Little-endian bit representation.
 class Semiring a => ToBits a where
     toBits :: a -> [a]
 
+class Semiring a => FromBits a where
+    fromBits :: [a] -> a
+
 padBits :: forall a . ToBits a => Integer -> [a] -> [a]
 padBits n xs = xs ++ replicate (n - length xs) zero
+
+castBits :: (Semiring a, Eq a, Semiring b) => [a] -> [b]
+castBits []     = []
+castBits (x:xs)
+    | x == zero = zero : castBits xs
+    | x == one  = one  : castBits xs
+    | otherwise = error "castBits: impossible bit value"
+
+class AdditiveSemigroup a => Scale a b where
+    scale :: b -> a -> a
+
+instance (AdditiveMonoid a, Semiring b, Eq b, ToBits b) => Scale a b where
+    scale n a = foldl (+) zero $ zipWith f (toBits n) (iterate (\x -> x + x) a)
+      where
+        f x y
+            | x == zero = zero
+            | x == one  = y
+            | otherwise = error "scale: This should never happen."
 
 class MultiplicativeSemigroup a => Exponent a b where
     (^) :: a -> b -> a

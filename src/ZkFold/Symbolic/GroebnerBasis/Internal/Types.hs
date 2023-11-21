@@ -5,7 +5,7 @@ import           Data.Map                          (Map, toList, empty, unionWit
 import qualified Data.Map                          as Map
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class   hiding (scale)
 
 data VarType = VarTypeFree | VarTypeBound | VarTypeBoolean deriving (Eq)
 instance Show VarType where

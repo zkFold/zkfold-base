@@ -9,7 +9,7 @@ import           ZkFold.Symbolic.Arithmetization  (acSizeM, acSizeN, ArithmeticC
 import           ZkFold.Symbolic.Data.Bool        (Bool(..))
 import           ZkFold.Symbolic.Data.Ord         (Ord(..))
 import           ZkFold.Symbolic.Compiler         (compile)
-import           ZkFold.Symbolic.Types            (Symbolic, BLS12_381_Scalar)
+import           ZkFold.Symbolic.Types            (Symbolic, BigField)
 
 -- | (<=) operation
 leq :: forall a . Symbolic a => a -> a -> Bool a
@@ -17,7 +17,7 @@ leq x y = x <= y
           
 exampleLEQ :: IO ()
 exampleLEQ = do
-    let ac   = compile @(Zp BLS12_381_Scalar) (leq @(ArithmeticCircuit (Zp BLS12_381_Scalar))) :: ArithmeticCircuit (Zp BLS12_381_Scalar)
+    let ac   = compile @(Zp BigField) (leq @(ArithmeticCircuit (Zp BigField))) :: ArithmeticCircuit (Zp BigField)
 
     putStrLn "\nExample: (<=) operation\n"
 

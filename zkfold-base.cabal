@@ -67,6 +67,8 @@ library
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class
+      ZkFold.Base.Algebra.Polynomials.Univariate
+      ZkFold.Base.Data.ByteString
       ZkFold.Base.Protocol.ARK.BabyHyrax
       ZkFold.Base.Protocol.ARK.HyperPlonk
       ZkFold.Base.Protocol.ARK.Lasso
@@ -74,6 +76,7 @@ library
       ZkFold.Base.Protocol.ARK.Plonk
       ZkFold.Base.Protocol.Commitment.KZG
       ZkFold.Base.Protocol.Commitment.Sona
+      ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Base.Protocol.PIOP.Multivariate.Plonk
       ZkFold.Base.Protocol.PIOP.Univariate.Plonk
       ZkFold.Prelude
@@ -96,6 +99,7 @@ library
       aeson                                      ,
       bytestring                                 ,
       containers                                 ,
+      cryptohash-sha256                          ,
       fixed-length                               ,
       mtl                                        ,
       non-empty                                  ,
