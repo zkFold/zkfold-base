@@ -3,15 +3,15 @@
 module ZkFold.Base.Protocol.ARK.Plonk where
 
 import           Data.ByteString                             (empty)
-import           Prelude                                     hiding (Num(..), (^), (/), sum, length, take, drop)
+import           Prelude                                     hiding (Num(..), (^), (/), (!!), sum, length, take, drop)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
+import           ZkFold.Base.Algebra.Polynomials.Univariate  hiding (qr)
 import           ZkFold.Base.Protocol.Commitment.KZG
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                             (take, drop)
+import           ZkFold.Prelude                              (take, drop)
 
 data Plonk
 

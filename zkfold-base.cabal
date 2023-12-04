@@ -65,8 +65,11 @@ library
       ZkFold.Cardano.Types
       ZkFold.Base.Algebra.Basic.Class
       ZkFold.Base.Algebra.Basic.Field
+      ZkFold.Base.Algebra.Basic.Permutations
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class
+      ZkFold.Base.Algebra.Polynomials.Multivariate
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Internal
       ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Data.ByteString
       ZkFold.Base.Protocol.ARK.BabyHyrax
