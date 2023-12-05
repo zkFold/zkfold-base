@@ -1,13 +1,27 @@
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE DerivingStrategies #-}
+
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Internal where
 
+import           Data.Aeson                        (FromJSON, ToJSON)
 import           Data.List                         (intercalate, foldl')
 import           Data.Map                          (Map, toList, empty, unionWith, keys, isSubmapOfBy, intersectionWith, differenceWith)
 import qualified Data.Map                          as Map
+import           GHC.Generics                      (Generic)
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
 import           ZkFold.Base.Algebra.Basic.Class   hiding (scale)
 
 newtype Var c a = Var a
+    deriving newtype (FromJSON, ToJSON)
+instance AdditiveSemigroup a => AdditiveSemigroup (Var c a) where
+    Var x + Var y = Var (x + y)
+instance AdditiveMonoid a => AdditiveMonoid (Var c a) where
+    zero = Var zero
+instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Var c a) where
+    Var x * Var y = Var (x * y)
+instance MultiplicativeMonoid a => MultiplicativeMonoid (Var c a) where
+    one = Var one
 instance (Show a, MultiplicativeMonoid a) => Show (Var c a) where
     show = show . getPower
 instance (Eq a, MultiplicativeMonoid a) => Eq (Var c a) where
@@ -21,8 +35,11 @@ getPower (Var j) = j
 setPower :: a -> Var c a -> Var c a
 setPower j _ = Var j
 
-data Monom c a = M c (Map Integer (Var c a)) deriving (Eq)
-newtype Polynom c a = P [Monom c a] deriving (Eq)
+data Monom c a = M c (Map Integer (Var c a))
+    deriving (Eq, Generic, FromJSON, ToJSON)
+newtype Polynom c a = P [Monom c a]
+    deriving (Eq)
+    deriving newtype (FromJSON, ToJSON)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
         => Show (Monom c a) where

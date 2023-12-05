@@ -5,6 +5,7 @@ module ZkFold.Symbolic.Arithmetization (
         BigField,
         Arithmetizable(..),
         ArithmeticCircuit,
+        Constraint,
         -- high-level functions
         applyArgs,
         optimize,
@@ -21,21 +22,22 @@ module ZkFold.Symbolic.Arithmetization (
         acOutput
     ) where
 
-import           Control.Monad.State             (MonadState (..), State, modify, execState, evalState)
+import           Control.Monad.State                          (MonadState (..), State, modify, execState, evalState)
 import           Data.Aeson
-import           Data.Bool                       (bool)
-import           Data.List                       (nub)
-import           Data.Map                        hiding (take, drop, splitAt, foldl, null, map, foldr)
-import           Prelude                         hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
-import qualified Prelude                         as Haskell
-import           System.Random                   (StdGen, Random (..), mkStdGen, uniform)
-import           Text.Pretty.Simple              (pPrint)
-import           Type.Data.Num.Unary             (Natural)
+import           Data.Bool                                    (bool)
+import           Data.List                                    (nub)
+import           Data.Map                                     hiding (take, drop, splitAt, foldl, null, map, foldr)
+import           Prelude                                      hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
+import qualified Prelude                                      as Haskell
+import           System.Random                                (StdGen, Random (..), mkStdGen, uniform)
+import           Text.Pretty.Simple                           (pPrint)
+import           Type.Data.Num.Unary                          (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Prelude                  ((!!), length, drop, take, splitAt)
-import           ZkFold.Symbolic.Data.List       (List, mapList, lengthList, indicesInteger)
+import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial, variableList, evalMultivariate, monomial, polynomial)
+import           ZkFold.Prelude                               ((!!), length, drop, take, splitAt)
+import           ZkFold.Symbolic.Data.List                    (List, mapList, lengthList, indicesInteger)
 
 -- | A class for arithmetizable types.
 -- Type `a` is the finite field of the arithmetic circuit.
@@ -59,7 +61,7 @@ instance (Arithmetizable a x, Arithmetizable a y) => Arithmetizable a (x, y) whe
     restore rs
         | length rs /= typeSize @a @(x, y) = error "restore: wrong number of arguments"
         | otherwise = (restore rsX, restore rsY)
-        where (rsX, rsY) = splitAt (typeSize @a @x) rs 
+        where (rsX, rsY) = splitAt (typeSize @a @x) rs
 
     typeSize = typeSize @a @x + typeSize @a @y
 
@@ -88,7 +90,7 @@ instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) w
 -- This type represents the result of compilation of a function into a R1CS.
 data ArithmeticCircuit a = ArithmeticCircuit
     {
-        acMatrices :: Map Integer (Map Integer a, Map Integer a, Map Integer a),
+        acMatrices :: Map Integer (Constraint a),
         -- ^ The R1CS matrices
         acInput    :: [Integer],
         -- ^ The input variables
@@ -116,7 +118,7 @@ optimize = undefined
 ---------------------------------- Low-level functions --------------------------------
 
 -- | The type that represents a constraint in the arithmetic circuit.
-type Constraint a = (Map Integer a, Map Integer a, Map Integer a)
+type Constraint a = Polynomial a
 
 -- | Adds a constraint to the arithmetic circuit.
 constraint :: (Eq a, ToBits a) => Constraint a -> State (ArithmeticCircuit a) ()
@@ -127,7 +129,7 @@ forceZero :: forall a . (FiniteField a, Eq a, ToBits a) => State (ArithmeticCirc
 forceZero = do
     r <- get
     let x   = acOutput r
-        con = (empty, empty, singleton x one)
+        con = polynomial [monomial one (singleton x one)]
     constraint con
 
 -- | Adds a new variable assignment to the arithmetic circuit.
@@ -211,7 +213,11 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (ArithmeticCircuit
     r1 + r2 = flip execState (r1 <> r2) $ do
         let x1  = acOutput r1
             x2  = acOutput r2
-            con = \z -> (empty, empty, fromListWith (+) [(x1, one), (x2, one), (z, negate one)])
+            con = \z -> polynomial [
+                            monomial one (singleton x1 one),
+                            monomial one (singleton x2 one),
+                            monomial (negate one) (singleton z one)
+                        ]
         z <- newVariableFromConstraint con
         addVariable z
         constraint $ con z
@@ -219,7 +225,7 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (ArithmeticCircuit
 
 instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (ArithmeticCircuit a) where
     zero = flip execState mempty $ do
-        let con = \z -> (empty, empty, fromList [(z, one)])
+        let con = \z -> polynomial [monomial one (singleton z one)]
         z <- newVariableFromConstraint con
         addVariable z
         constraint $ con z
@@ -228,7 +234,10 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (ArithmeticCircuit a)
 instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (ArithmeticCircuit a) where
     negate r = flip execState r $ do
         let x   = acOutput r
-            con = \z -> (empty, empty, fromList [(x, one), (z, one)])
+            con = \z -> polynomial [
+                            monomial one (singleton x one),
+                            monomial one (singleton z one)
+                        ]
         z <- newVariableFromConstraint con
         addVariable z
         constraint $ con z
@@ -238,7 +247,10 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (ArithmeticC
     r1 * r2 = flip execState (r1 <> r2) $ do
         let x1  = acOutput r1
             x2  = acOutput r2
-            con = \z -> (singleton x1 one, singleton x2 one, singleton z one)
+            con = \z -> polynomial [
+                            monomial one (fromListWith (+) [(x1, one), (x2, one)]),
+                            monomial (negate one) (singleton z one)
+                        ]
         z <- newVariableFromConstraint con
         addVariable z
         constraint $ con z
@@ -250,12 +262,12 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (ArithmeticCirc
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (ArithmeticCircuit a) where
     invert r = flip execState r $ do
         let x    = acOutput r
-            con  = \y -> (singleton x one, singleton y one, empty)
+            con  = \y -> polynomial [monomial one (fromListWith (+) [(x, one), (y, one)])]
         y <- newVariableFromConstraint con
         addVariable y
         constraint $ con y
         assignment (bool zero one . (== zero) . eval r )
-        let con' = \z -> (singleton x one, singleton z one, fromList [(0, one), (y, negate one)])
+        let con' = \z -> polynomial [monomial one (fromListWith (+) [(x, one), (z, one)]), monomial one (singleton y one), monomial (negate one) (singleton 0 one)]
         z <- newVariableFromConstraint con'
         addVariable z
         constraint $ con' z
@@ -264,7 +276,7 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (ArithmeticCircu
 instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
     fromConstant c = flip execState mempty $ do
         let x = fromConstant c
-            con = \z -> (empty, empty, fromList [(0, x), (z, negate one)])
+            con = \z -> polynomial [monomial one (singleton z one), monomial (negate x) (singleton 0 one)]
         z <- newVariableFromConstraint con
         addVariable z
         constraint $ con z
@@ -278,7 +290,7 @@ instance (FiniteField a, Eq a, ToBits a) => ToBits (ArithmeticCircuit a) where
                     x' <- newVariable
                     addVariable x'
                     assignment ((!! i) . padBits (numberOfBits @a) . toBits . eval x)
-                    constraint (singleton x' one, fromList [(0, one), (x', negate one)], empty)
+                    constraint $ polynomial [monomial one (singleton x' (one + one)), monomial (negate one) (singleton x' one)]
                     get
                 ) [0.. numberOfBits @a - 1]
             v z = z - sum (zipWith (*) (f z) ps)
@@ -318,7 +330,7 @@ acSizeN = length . acMatrices
 acSizeM :: ArithmeticCircuit a -> Integer
 acSizeM = length . acVarOrder
 
-acSystem :: ArithmeticCircuit a -> Map Integer (Map Integer a, Map Integer a, Map Integer a)
+acSystem :: ArithmeticCircuit a -> Map Integer (Constraint a)
 acSystem = acMatrices
 
 acValue :: ArithmeticCircuit a -> a
@@ -328,7 +340,7 @@ acValue r = eval r mempty
 --
 -- TODO: Move this elsewhere.
 -- TODO: Check that all arguments have been applied.
-acPrint :: forall a . Show a => ArithmeticCircuit a -> IO ()
+acPrint :: forall a . (FiniteField a, Eq a, Show a) => ArithmeticCircuit a -> IO ()
 acPrint r = do
     let m = elems (acSystem r)
         i = acInput r
@@ -365,12 +377,13 @@ instance Finite BigField where
 instance Prime BigField
 
 -- TODO: Remove the hardcoded constant.
-con2var :: (Eq a, ToBits a) => (Map Integer a, Map Integer a, Map Integer a) -> Integer
-con2var (a, b, c) = g a + g b + g c
+con2var :: (Eq a, ToBits a) => Constraint a -> Integer
+con2var c =  fromBits $ castBits $ toBits $ g ^(c `evalMultivariate` vs)
     where
-        z         = toZp 891752917250912079751095709127490 :: Zp BigField
-        f (x, y)  = multiExp z (map (toZp :: Integer -> Zp BigField) x) + multiExp z y
-        g m       = fromZp $ f $ unzip $ toList m
+        r  = toZp 903489679376934896793395274328947923579382759823 :: Zp BigField
+        g  = toZp 89175291725091202781479751781509570912743212325 :: Zp BigField
+        zs = variableList c
+        vs = fromList $ zip zs (map ((+) r . toZp @BigField) zs)
 
 newVariable :: State (ArithmeticCircuit a) Integer
 newVariable = do

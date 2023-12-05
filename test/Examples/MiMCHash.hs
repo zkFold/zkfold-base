@@ -10,7 +10,7 @@ import           ZkFold.Prelude                   ((!!))
 import           ZkFold.Symbolic.Arithmetization  (acSizeM, acSizeN)
 import           ZkFold.Symbolic.Compiler         (compile)
 import           ZkFold.Symbolic.Data.Conditional (bool)
-import           ZkFold.Symbolic.GroebnerBasis    (fromR1CS)
+import           ZkFold.Symbolic.GroebnerBasis    (makeTheorem)
 import           ZkFold.Symbolic.Types            (R, SmallField, Symbolic)
 
 import           Examples.MiMC.Constants          (mimcConstants)
@@ -36,4 +36,4 @@ exampleMiMC = do
     putStrLn $ "Number of variables: " ++ show (acSizeM r)
 
     putStrLn "\nR1CS polynomials:\n"
-    print $ fromR1CS r
+    print $ makeTheorem r

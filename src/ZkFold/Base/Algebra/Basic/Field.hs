@@ -69,6 +69,9 @@ instance Prime p => FromConstant Integer (Zp p) where
 instance Prime p => ToBits (Zp p) where
     toBits (Zp a) = map Zp $ toBits a
 
+instance Prime p => FromBits (Zp p) where
+    fromBits = toZp . fromBits . map fromZp
+
 instance Prime p => Haskell.Num (Zp p) where
     fromInteger = toZp @p
     (+)         = (+)

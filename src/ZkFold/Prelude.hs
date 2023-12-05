@@ -2,7 +2,8 @@ module ZkFold.Prelude where
     
 import           Data.Aeson           (ToJSON, encode, FromJSON, decode)
 import           Data.ByteString.Lazy (writeFile, readFile)
-import           Prelude              hiding ((!!), take, drop, replicate, writeFile, readFile)
+import           Data.Map             (Map, lookup)
+import           Prelude              hiding ((!!), take, drop, lookup, replicate, writeFile, readFile)
 
 length :: Foldable t => t a -> Integer
 length = foldl (\c _ -> c + 1) 0
@@ -28,6 +29,11 @@ replicate n x = x : replicate (n - 1) x
 _      !! i | i < 0 = error "ZkFold.Prelude.!!: negative index"
 []     !! _         = error "ZkFold.Prelude.!!: index too large"
 (x:xs) !! i         = if i == 0 then x else xs !! (i-1)
+
+(!) :: Ord k => Map k a -> k -> a
+(!) m k = case lookup k m of
+    Just x  -> x
+    Nothing -> error "ZkFold.Prelude.!: key not found"
 
 writeFileJSON :: ToJSON a => FilePath -> a -> IO ()
 writeFileJSON file = writeFile file . encode

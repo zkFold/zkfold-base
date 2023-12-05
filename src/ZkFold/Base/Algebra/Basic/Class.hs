@@ -141,6 +141,9 @@ instance ToBits Integer where
         | x > 0     = (x `mod` 2) : toBits (x `div` 2)
         | otherwise = error "toBits: Not defined for negative integers!"
 
+instance FromBits Integer where
+    fromBits = foldl (\x y -> x * 2 + y) 0 . reverse
+
 --------------------------------------------------------------------------------
 
 instance AdditiveSemigroup a => AdditiveSemigroup [a] where

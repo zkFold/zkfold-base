@@ -8,7 +8,7 @@ import           ZkFold.Base.Algebra.Basic.Field (Zp)
 import           ZkFold.Symbolic.Compiler        (compile)
 import           ZkFold.Symbolic.Data.Bool       (BoolType(..), Bool (..))
 import           ZkFold.Symbolic.Data.Eq         (Eq (..))
-import           ZkFold.Symbolic.GroebnerBasis   (fromR1CS, verify, variableTypes)
+import           ZkFold.Symbolic.GroebnerBasis   (verify, variableTypes, makeTheorem)
 import           ZkFold.Symbolic.Types           (R, SmallField, Symbolic)
 
 -- A true statement.
@@ -21,7 +21,7 @@ testArithmetization2 = do
 
     putStrLn "\nStarting arithmetization test 2...\n"
 
-    let theorem@(p0, ps) = fromR1CS r
+    let theorem@(p0, ps) = makeTheorem r
 
     putStrLn "R1CS polynomials:\n"
     print ps

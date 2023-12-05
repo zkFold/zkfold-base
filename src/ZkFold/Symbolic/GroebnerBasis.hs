@@ -1,7 +1,7 @@
 module ZkFold.Symbolic.GroebnerBasis (
     module ZkFold.Symbolic.GroebnerBasis.Types,
     boundVariables,
-    fromR1CS,
+    makeTheorem,
     verify,
     groebner,
     variableTypes,
@@ -16,13 +16,16 @@ module ZkFold.Symbolic.GroebnerBasis (
     groebnerStepMax
     ) where
 
-import           Data.Bool                        (bool)
-import           Data.List                        (sortBy, nub)
-import           Data.Map                         (Map, toList, elems, empty, singleton, keys, mapWithKey)
-import           Prelude                          hiding (Num(..), (!!), length, replicate)
+import           Data.Bool                                             (bool)
+import           Data.List                                             (sortBy, nub)
+import           Data.Map                                              (toList, elems, empty, singleton, keys, mapWithKey, fromList)
+import           Data.Maybe                                            (mapMaybe)
+import           Prelude                                               hiding (Num(..), (!!), length, replicate)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate          as Poly
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate.Internal as Poly
 import           ZkFold.Prelude                   ((!!))
 import           ZkFold.Symbolic.Arithmetization
 import           ZkFold.Symbolic.GroebnerBasis.Internal
@@ -63,16 +66,16 @@ variableTypes = nub . sortBy (\(x1, _) (x2, _) -> compare x2 x1) . concatMap var
         variableTypes'' :: Monomial p -> [(Monomial p, VarType)]
         variableTypes'' (M _ as) = map (\(j, v) -> (M one (singleton j (setPower 1 v)), getVarType v)) $ toList as
 
-fromR1CS :: forall p . Prime p => ArithmeticCircuit (Zp p) -> (Polynomial p, [Polynomial p])
-fromR1CS r = (boundVariables p0 ps, --systemReduce $
+makeTheorem :: forall p . Prime p => ArithmeticCircuit (Zp p) -> (Polynomial p, [Polynomial p])
+makeTheorem r = (boundVariables p0 ps, --systemReduce $
         map (`boundVariables` ps) ps)
     where
         m  = acSystem r
         xs = reverse $ elems $ acVarOrder r
-        ps = sortBy (flip compare) $ map fromR1CS' $ elems m
+        ps = sortBy (flip compare) $ map convert $ elems m
 
         k  = acOutput r
-        p0 = polynomial [var k one] - polynomial [var 0 one]
+        p0 = polynomial [M one (singleton (mapVars k) (Free 1))] - polynomial [M one empty]
 
         mapVars :: Integer -> Integer
         mapVars x
@@ -81,17 +84,16 @@ fromR1CS r = (boundVariables p0 ps, --systemReduce $
                 Just i  -> i
                 Nothing -> error $ "mapVars: variable " ++ show x ++ " not found!"
 
-        var :: Integer -> Zp p -> Monomial p
-        var i v =
-            let j = mapVars i
-            in M v $ if j > 0 then singleton j (Free 1) else empty
-
-        fromR1CS' :: (Map Integer (Zp p), Map Integer (Zp p), Map Integer (Zp p)) -> Polynomial p
-        fromR1CS' (a, b, c) = mulM pa pb `addPoly` mulPM pc (M (negate 1) empty)
+        convert :: Constraint (Zp p) -> Polynomial p
+        convert (Poly.P ms) = polynomial $ map convert' ms
             where
-                pa = polynomial $ map (uncurry var) $ toList a
-                pb = polynomial $ map (uncurry var) $ toList b
-                pc = polynomial $ map (uncurry var) $ toList c
+                convert' :: Poly.Monomial (Zp p) -> Monomial p
+                convert' (Poly.M c as) = M c $ fromList $ mapMaybe convert'' $ toList as
+                    where
+                        convert'' :: (Integer, Poly.Variable (Zp p)) -> Maybe (Integer, Variable p)
+                        convert'' (j, Poly.Var i) =
+                            let ind = mapVars j
+                            in if ind > 0 then Just (ind, Free i) else Nothing
 
 groebnerStepMax :: Integer
 groebnerStepMax = 200

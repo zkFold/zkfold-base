@@ -2,7 +2,7 @@
 
 module Examples.Fibonacci (exampleFibonacci) where
 
-import           Prelude                         hiding (Num(..), Eq(..), Bool, (^), (/), (||), not, any)
+import           Prelude                          hiding (Num(..), Eq(..), Bool, (^), (/), (||), not, any)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field  (Zp)
@@ -11,7 +11,7 @@ import           ZkFold.Symbolic.Compiler         (compile)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional (bool)
 import           ZkFold.Symbolic.Data.Eq          (Eq (..))
-import           ZkFold.Symbolic.GroebnerBasis    (fromR1CS, verify)
+import           ZkFold.Symbolic.GroebnerBasis    (verify, makeTheorem)
 import           ZkFold.Symbolic.Types            (R, I, SmallField, Symbolic)
 
 -- The Fibonacci index function. If `x` is a Fibonacci number, returns its index (up until `nMax`). Otherwise, returns `0`.
@@ -47,7 +47,7 @@ exampleFibonacci = do
     putStrLn $ "Number of constraints: " ++ show (acSizeN r')
     putStrLn $ "Number of variables: " ++ show (acSizeM r')
 
-    let theorem@(p0, ps) = fromR1CS r'
+    let theorem@(p0, ps) = makeTheorem r'
 
     putStrLn "\nR1CS polynomials:\n"
     print ps

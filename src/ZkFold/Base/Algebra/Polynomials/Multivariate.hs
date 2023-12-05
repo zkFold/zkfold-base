@@ -4,29 +4,43 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate (
     Polynomial,
     variable,
     monomial,
-    polynomial
+    polynomial,
+    evalMultivariate,
+    variableList
     ) where
 
-import           Data.List                         (sortBy)
-import           Data.Map                          (Map)
-import           Prelude                           hiding (Num(..), (!!), length, replicate)
+import           Data.Map                        (Map, toList, keys)
+import           Prelude                         hiding (sum, (^), product, Num(..), (!!), length, replicate)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field   (Zp)
+import           ZkFold.Prelude                  ((!))
 
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal hiding (scale)
 
-type Variable p = Var (Zp p) Integer
+type Variable a = Var a Integer
 
-variable :: Integer -> Variable p
+variable :: Integer -> Variable a
 variable = Var
 
-type Monomial p = Monom (Zp p) Integer
+type Monomial a = Monom a Integer
 
-monomial :: Zp p -> Map Integer (Variable p) -> Monomial p
+monomial :: a -> Map Integer (Variable a) -> Monomial a
 monomial = M
 
-type Polynomial p = Polynom (Zp p) Integer
+type Polynomial a = Polynom a Integer
 
-polynomial :: Prime p => [Monomial p] -> Polynomial p
-polynomial = P . sortBy (flip compare) . filter (not . zeroM)
+polynomial :: (FiniteField a, Eq a) => [Monomial a] -> Polynomial a
+polynomial = sum . map (\m -> P [m]) . filter (not . zeroM)
+
+evalMonomial :: (Eq a, ToBits a, FiniteField b) =>Monom a Integer -> Map Integer b -> b
+evalMonomial (M c m) xs = scale c $ product (map (\(i, Var j) -> (xs ! i)^j) (toList m))
+
+evalMultivariate :: (Eq a, ToBits a, FiniteField b) => Polynomial a -> Map Integer b -> b
+evalMultivariate (P []) _ = zero
+evalMultivariate (P (m:ms)) xs = evalMultivariate (P ms) xs + evalMonomial m xs
+
+variableList :: Polynomial a -> [Integer]
+variableList (P []) = []
+variableList (P (m:ms)) =
+    let variableList' (M _ as) = keys as
+    in variableList' m ++ variableList (P ms)
