@@ -77,6 +77,7 @@ library
       ZkFold.Base.Protocol.ARK.Lasso
       ZkFold.Base.Protocol.ARK.Nova
       ZkFold.Base.Protocol.ARK.Plonk
+      ZkFold.Base.Protocol.ARK.Plonk.Internal
       ZkFold.Base.Protocol.Commitment.KZG
       ZkFold.Base.Protocol.Commitment.Sona
       ZkFold.Base.Protocol.NonInteractiveProof

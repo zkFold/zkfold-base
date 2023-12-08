@@ -10,6 +10,11 @@ import           ZkFold.Prelude                             ((!!), length)
 newtype IndexSet a = IndexSet [Integer]
 newtype IndexPartition a = IndexPartition [IndexSet a]
 
+mkIndexPartition :: [Integer] -> IndexPartition a
+mkIndexPartition vs =
+    let f = \i -> IndexSet $ map fst $ filter (\(_, v) -> v == i) $ zip [1 ..] vs
+    in IndexPartition $ map f [1 .. maximum vs]
+
 newtype Permutation a = Permutation [Integer]
 
 applyCycle :: IndexSet a -> Permutation a -> Permutation a

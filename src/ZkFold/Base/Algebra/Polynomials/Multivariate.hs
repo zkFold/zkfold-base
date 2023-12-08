@@ -4,7 +4,9 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate (
     Polynomial,
     variable,
     monomial,
+    getPowers,
     polynomial,
+    getMonomials,
     evalMultivariate,
     variableList
     ) where
@@ -27,10 +29,16 @@ type Monomial a = Monom a Integer
 monomial :: a -> Map Integer (Variable a) -> Monomial a
 monomial = M
 
+getPowers :: Monomial a -> Map Integer Integer
+getPowers (M _ as) = fmap getPower as
+
 type Polynomial a = Polynom a Integer
 
 polynomial :: (FiniteField a, Eq a) => [Monomial a] -> Polynomial a
 polynomial = sum . map (\m -> P [m]) . filter (not . zeroM)
+
+getMonomials :: Polynomial a -> [Monomial a]
+getMonomials (P ms) = ms
 
 evalMonomial :: (Eq a, ToBits a, FiniteField b) =>Monom a Integer -> Map Integer b -> b
 evalMonomial (M c m) xs = scale c $ product (map (\(i, Var j) -> (xs ! i)^j) (toList m))
