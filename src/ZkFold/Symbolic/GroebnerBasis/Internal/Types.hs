@@ -56,8 +56,12 @@ instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, Multiplica
         => Show (Polynom c a) where
     show (P ms) = intercalate " + " $ map show ms
 
-instance (Eq c, Ord a, MultiplicativeMonoid a) => Ord (Monom c a) where
-    compare (M _ asl) (M _ asr) = go (toList asl) (toList asr)
+instance (AdditiveMonoid c, Eq c, Ord a, MultiplicativeMonoid a) => Ord (Monom c a) where
+    compare (M c1 asl) (M c2 asr)
+        | c1 == zero && c2 == zero = EQ
+        | c1 == zero               = LT
+        | c2 == zero               = GT
+        | otherwise                = go (toList asl) (toList asr)
         where
             go [] [] = EQ
             go [] _  = LT
@@ -66,7 +70,7 @@ instance (Eq c, Ord a, MultiplicativeMonoid a) => Ord (Monom c a) where
                 | k1 == k2  = if a1 == a2 then go xs ys else compare a1 a2
                 | otherwise = compare k2 k1
 
-instance (Eq c, Ord a, MultiplicativeMonoid a) => Ord (Polynom c a) where
+instance (AdditiveMonoid c, Eq c, Ord a, MultiplicativeMonoid a) => Ord (Polynom c a) where
     compare (P l) (P r) = compare l r
 
 instance (Eq c, FiniteField c, Ord a, MultiplicativeMonoid a) => AdditiveSemigroup (Polynom c a) where

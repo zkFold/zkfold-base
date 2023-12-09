@@ -118,11 +118,6 @@ test-suite zkfold-base-test
     ghc-options: -rtsopts
     main-is: Main.hs
     other-modules:
-      Examples.Fibonacci
-      Examples.LEQ
-      Examples.MiMCHash
-      Examples.MiMC.Constants
-      Examples.VestingScript
       Tests.Arithmetization
       Tests.Arithmetization.Test1
       Tests.Arithmetization.Test2
@@ -131,5 +126,23 @@ test-suite zkfold-base-test
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
+      hspec                                      ,
       zkfold-base                                ,
-    hs-source-dirs: test
+    hs-source-dirs: tests
+
+test-suite zkfold-base-examples
+    import: options
+    type: exitcode-stdio-1.0
+    ghc-options: -rtsopts
+    main-is: Main.hs
+    other-modules:
+      Examples.Fibonacci
+      Examples.LEQ
+      Examples.MiMCHash
+      Examples.MiMC.Constants
+      Examples.VestingScript
+    build-depends:
+      base                          >= 4.9 && < 5,
+      containers                                 ,
+      zkfold-base                                ,
+    hs-source-dirs: examples

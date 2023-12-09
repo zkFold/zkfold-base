@@ -1,17 +1,17 @@
 {-# LANGUAGE TypeApplications      #-}
 
-module Tests.Arithmetization.Test1 (testArithmetization1) where
+module Tests.Arithmetization.Test1 (specArithmetization1) where
 
 import           Data.Bifunctor                   (bimap)
-import           Data.List                        (find)
 import           Prelude                          hiding (Num(..), Eq(..), Bool, (^), (>), (/), (||), not, replicate)
 import qualified Prelude                          as Haskell
+import           Test.Hspec
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Symbolic.Arithmetization  (acPrint, acValue, applyArgs)
+import           ZkFold.Symbolic.Arithmetization  (acValue, applyArgs)
 import           ZkFold.Symbolic.Compiler         (compile)
-import           ZkFold.Symbolic.Data.Bool        (BoolType(..), Bool (..))
+import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional (Conditional(..))
 import           ZkFold.Symbolic.Data.Eq          (Eq (..))
 import           ZkFold.Symbolic.Types            (SmallField, I, R, Symbolic)
@@ -28,19 +28,9 @@ testFunc x y =
 testResult :: R -> Zp SmallField -> Zp SmallField -> Haskell.Bool
 testResult r x y = acValue (applyArgs r [x, y]) == testFunc @(Zp SmallField) x y
 
-testArithmetization1 :: IO ()
-testArithmetization1 = do
-    putStrLn "\nStarting arithmetization test 1...\n"
-    putStrLn "Test sample:"
-    let r = compile @(Zp SmallField) (testFunc @R)
-    acPrint $ applyArgs r [3, 5]
-
-    putStrLn "\nVerifying the circuit...\n"
-    let m   = zipWith (curry (bimap toZp toZp)) [0..order @SmallField - 1] [0..order @SmallField - 1]
-        res = zip m $ map (uncurry $ testResult r) m
-    case find (not . snd) res of
-        Nothing     -> putStrLn "Success!"
-        Just (p@(x, y), _) -> do
-            putStrLn $ "Failure at " ++ show p ++ "!"
-            acPrint $ applyArgs r [x, y]
-            print $ testFunc @(Zp SmallField) x y
+specArithmetization1 :: Spec
+specArithmetization1 = do
+    describe "Arithmetization test 1" $ do
+        it "should pass" $ do
+            let r = compile @(Zp SmallField) (testFunc @R)
+            all (uncurry $ testResult r) $ zipWith (curry (bimap toZp toZp)) [0..order @SmallField - 1] [0..order @SmallField - 1]
