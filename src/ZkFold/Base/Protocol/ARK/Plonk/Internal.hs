@@ -5,7 +5,7 @@ module ZkFold.Base.Protocol.ARK.Plonk.Internal where
 import           Control.Monad                                         (guard)
 import           Data.Containers.ListUtils                             (nubOrd)
 import           Data.List                                             (permutations, sort, find, transpose)
-import           Data.Map                                              (Map, keys, fromList, empty)
+import           Data.Map                                              (Map, keys, fromList, empty, mapKeys)
 import           Data.Maybe                                            (mapMaybe)
 import           Prelude                                               hiding (Num(..), (^), (/), (!!), sum, length, take, drop)
 
@@ -13,13 +13,28 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                       (toZp, fromZp)
 import           ZkFold.Base.Algebra.Basic.Permutations                (Permutation (..), mkIndexPartition, fromCycles)
 import           ZkFold.Base.Algebra.Polynomials.Univariate            (PolyVec, toPolyVec, fromPolyVec)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Polynomial, getMonomials, getPowers, polynomial)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal (Monom(..), Var(..))
+import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Polynomial, Monomial, getMonomials, getPowers, polynomial)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal (Polynom(..), Monom(..), Var(..))
 import           ZkFold.Base.Protocol.Commitment.KZG
-import           ZkFold.Prelude                                        (take, length, drop)
+import           ZkFold.Prelude                                        (take, length, drop, elemIndex)
 
--- TODO: map variables to [1..m]
 -- TODO: safe code
+
+mapVariables :: [Polynomial F] -> [Polynomial F]
+mapVariables ps = map mapVarPolynomial ps
+    where
+        vars = concatMap (keys . getPowers) $ concatMap getMonomials ps
+
+        mapVar :: Integer -> Integer
+        mapVar x = case x `elemIndex` vars of
+            Just i  -> i
+            Nothing -> error "mapVariables: something went wrong"
+
+        mapVarMonomial :: Monomial F -> Monomial F
+        mapVarMonomial (M c as) = M c $ mapKeys mapVar as
+
+        mapVarPolynomial :: Polynomial F -> Polynomial F
+        mapVarPolynomial (P ms) = P $ map mapVarMonomial ms
 
 toPlonkConstaint :: Polynomial F -> (F, F, F, F, F, F, F, F)
 toPlonkConstaint p =
@@ -58,8 +73,8 @@ toPlonkArithmetization :: forall a . Finite a => [Polynomial F]
 toPlonkArithmetization ps =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]
 
-    in case map toPolyVec $ transpose $ map (f . toPlonkConstaint) ps of
-            [ql, qr, qo, qm, qc, a, b, c] -> 
+    in case map toPolyVec $ transpose $ map (f . toPlonkConstaint) $ mapVariables ps of
+            [ql, qr, qo, qm, qc, a, b, c] ->
                 let Permutation s = fromCycles @a $ mkIndexPartition $ map fromZp $ fromPolyVec a ++ fromPolyVec b ++ fromPolyVec c
                     s1   = toPolyVec $ map toZp $ take (order @a) s
                     s2   = toPolyVec $ map toZp $ take (order @a) $ drop (order @a) s

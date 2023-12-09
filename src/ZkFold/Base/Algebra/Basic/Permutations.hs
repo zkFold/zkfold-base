@@ -23,4 +23,4 @@ applyCycle (IndexSet c) (Permutation perm) =
     in Permutation $ map f perm
 
 fromCycles :: forall a . Finite a => IndexPartition a -> Permutation a
-fromCycles (IndexPartition cs) = foldr applyCycle (Permutation [0 .. order @a -1]) cs
+fromCycles (IndexPartition cs) = foldr applyCycle (Permutation [0 .. order @a - 1]) cs

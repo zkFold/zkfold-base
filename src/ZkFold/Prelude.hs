@@ -25,6 +25,14 @@ replicate :: Integer -> a -> [a]
 replicate 0 _ = []
 replicate n x = x : replicate (n - 1) x
 
+elemIndex :: Eq a => a -> [a] -> Maybe Integer
+elemIndex x = go 0
+    where
+        go _ [] = Nothing
+        go i (y:ys)
+            | x == y    = Just i
+            | otherwise = go (i + 1) ys
+
 (!!) :: [a] -> Integer -> a
 _      !! i | i < 0 = error "ZkFold.Prelude.!!: negative index"
 []     !! _         = error "ZkFold.Prelude.!!: index too large"
