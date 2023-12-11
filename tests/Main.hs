@@ -8,9 +8,11 @@ import           Tests.Arithmetization                       (specArithmetizatio
 import           Tests.Field                                 (specField)
 import           Tests.GroebnerBasis                         (specGroebner)
 import           Tests.Group                                 (specAdditiveGroup)
+import           Tests.NonInteractiveProof                   (specNonInteractiveProof)
+import           Tests.Pairing                               (specPairing)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr, Fq, Fq2, Fq6, Fq12)
-import           ZkFold.Base.Protocol.Commitment.KZG         (G1, G2)
+import           ZkFold.Base.Protocol.Commitment.KZG         (G1, G2, KZG)
 
 main :: IO ()
 main = do
@@ -21,6 +23,9 @@ main = do
     specField @Fq12
     specAdditiveGroup @G1
     specAdditiveGroup @G2
+    specPairing
+    specNonInteractiveProof @KZG
+
     specArithmetization
     specGroebner
 

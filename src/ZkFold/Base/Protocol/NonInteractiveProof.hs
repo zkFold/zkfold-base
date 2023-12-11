@@ -5,7 +5,9 @@ module ZkFold.Base.Protocol.NonInteractiveProof where
 import           Crypto.Hash.SHA256          (hash)
 import           Data.ByteString             (ByteString, snoc)
 import           Data.Maybe                  (fromJust)
+import           Data.Typeable               (Typeable)
 import           Prelude
+import           Test.QuickCheck             (Arbitrary)
 
 import           ZkFold.Base.Data.ByteString (ToByteString(..), FromByteString (..))
 
@@ -28,7 +30,9 @@ challenges ts0 n = go ts0 n []
         let (c, ts') = challenge ts
         in go ts' (k - 1) (c : acc)
 
-class NonInteractiveProof a where
+class (Arbitrary (Params a), Arbitrary (SetupSecret a), Arbitrary (ProverSecret a), Arbitrary (Witness a),
+       Show (Setup a), Show (ProverSecret a), Show (Witness a), Typeable a)
+        => NonInteractiveProof a where
     type Params a
 
     type SetupSecret a

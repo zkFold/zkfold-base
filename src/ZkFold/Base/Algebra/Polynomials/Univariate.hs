@@ -1,8 +1,10 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Base.Algebra.Polynomials.Univariate where
 
 import           Prelude                           hiding (Num(..), (/), (^), sum, product, length, replicate, take, drop)
+import           Test.QuickCheck                   (Arbitrary(..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                    (replicate, length, take, drop, zipWithDefault)
@@ -71,13 +73,13 @@ newtype PolyVec c size = PV [c]
     deriving (Eq, Show)
 
 toPolyVec :: forall c size . (Ring c, Finite size) => [c] -> PolyVec c size
-toPolyVec = addZeros . PV . take (order @size)
+toPolyVec = PV . take (order @size) . addZeros @c @size
 
 fromPolyVec :: PolyVec c size -> [c]
 fromPolyVec (PV cs) = cs
 
 poly2vec :: forall c size . (Ring c, Finite size) => Poly c -> PolyVec c size
-poly2vec (P cs) = addZeros $ PV $ take (order @size) cs
+poly2vec (P cs) = PV $ take (order @size) $ addZeros @c @size cs
 
 vec2poly :: (Ring c, Eq c) => PolyVec c size -> Poly c
 vec2poly (PV cs) = removeZeros $ P cs
@@ -102,6 +104,9 @@ instance (Field c, Finite size, Eq c) => MultiplicativeGroup (PolyVec c size) wh
     invert = undefined
 
     l / r = poly2vec $ fst $ qr (vec2poly l) (vec2poly r)
+
+instance (Ring c, Arbitrary c, Finite size) => Arbitrary (PolyVec c size) where
+    arbitrary = toPolyVec <$> arbitrary
 
 polyVecLinear :: forall c size . (Ring c, Finite size) => c -> c -> PolyVec c size
 polyVecLinear a0 a1 = PV $ a0 : a1 : replicate (order @size - 2) zero
@@ -150,5 +155,5 @@ removeZeros (P cs) = P $ reverse $ go $ reverse cs
         go [] = []
         go (x:xs) = if x == zero then go xs else x:xs
 
-addZeros :: forall c size . (Ring c, Finite size) => PolyVec c size -> PolyVec c size
-addZeros (PV cs) = PV $ cs ++ replicate (order @size - length cs) zero
+addZeros :: forall c size . (Ring c, Finite size) => [c] -> [c]
+addZeros cs = cs ++ replicate (order @size - length cs) zero

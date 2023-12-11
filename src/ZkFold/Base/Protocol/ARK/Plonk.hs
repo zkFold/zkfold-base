@@ -4,6 +4,7 @@ module ZkFold.Base.Protocol.ARK.Plonk where
 
 import           Data.ByteString                             (empty)
 import           Prelude                                     hiding (Num(..), (^), (/), (!!), sum, length, take, drop)
+import           Test.QuickCheck                             (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
@@ -25,24 +26,31 @@ instance Finite PlonkMaxPolyDegree where
     order = 4 * order @Plonk + 5
 type PolyPlonkExtended = PolyVec F PlonkMaxPolyDegree
 
+data ProverSecretPlonk = ProverSecretPlonk F F F F F F F F F F F
+    deriving (Show)
+instance Arbitrary ProverSecretPlonk where
+    arbitrary = ProverSecretPlonk <$>
+        arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+        <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+
 -- TODO: check list lengths
 instance NonInteractiveProof Plonk where
-    type Params Plonk       = (Integer, F, F, F,
-        PolyVec F Plonk, PolyVec F Plonk, PolyVec F Plonk, PolyVec F Plonk, PolyVec F Plonk,
-        PolyVec F Plonk, PolyVec F Plonk, PolyVec F Plonk)
+    type Params Plonk       = ((Integer, F, F, F),
+        (PolyVec F Plonk, PolyVec F Plonk, PolyVec F Plonk, PolyVec F Plonk, PolyVec F Plonk,
+        PolyVec F Plonk, PolyVec F Plonk, PolyVec F Plonk))
     type SetupSecret Plonk  = F
-    type Setup Plonk        = (Integer, [G1], G2, G2, F, F, F,
-        PolyPlonkExtended, PolyPlonkExtended, PolyPlonkExtended, PolyPlonkExtended, PolyPlonkExtended,
-        PolyPlonkExtended, PolyPlonkExtended, PolyPlonkExtended,
-        G1, G1, G1, G1, G1,
-        G1, G1, G1)
-    type ProverSecret Plonk = (F, F, F, F, F, F, F, F, F, F, F)
+    type Setup Plonk        = ((Integer, [G1], G2, G2, F, F, F),
+        (PolyPlonkExtended, PolyPlonkExtended, PolyPlonkExtended, PolyPlonkExtended, PolyPlonkExtended,
+        PolyPlonkExtended, PolyPlonkExtended, PolyPlonkExtended),
+        (G1, G1, G1, G1, G1,
+        G1, G1, G1))
+    type ProverSecret Plonk = ProverSecretPlonk
     type Witness Plonk      = (PolyVec F Plonk, PolyVec F Plonk, PolyVec F Plonk)
     type Input Plonk        = [F]
     type Proof Plonk        = (G1, G1, G1, G1, G1, G1, G1, G1, G1, F, F, F, F, F, F)
 
     setup :: Params Plonk -> SetupSecret Plonk -> Setup Plonk
-    setup (l, omega, k1, k2, qm, ql, qr, qo, qc, sigma1, sigma2, sigma3) x =
+    setup ((l, omega, k1, k2), (qm, ql, qr, qo, qc, sigma1, sigma2, sigma3)) x =
         let (gs, h0, h1) = setup @KZG () x
             qmE     = polyVecInLagrangeBasis @F @Plonk @PlonkMaxPolyDegree (order @Plonk) omega qm
             qlE     = polyVecInLagrangeBasis @F @Plonk @PlonkMaxPolyDegree (order @Plonk) omega ql
@@ -52,14 +60,14 @@ instance NonInteractiveProof Plonk where
             sigma1E = polyVecInLagrangeBasis @F @Plonk @PlonkMaxPolyDegree (order @Plonk) omega sigma1
             sigma2E = polyVecInLagrangeBasis @F @Plonk @PlonkMaxPolyDegree (order @Plonk) omega sigma2
             sigma3E = polyVecInLagrangeBasis @F @Plonk @PlonkMaxPolyDegree (order @Plonk) omega sigma3
-        in (l, gs, h0, h1, omega, k1, k2, qmE, qlE, qrE, qoE, qcE, sigma1E, sigma2E, sigma3E,
-            gs `com` qmE, gs `com` qlE, gs `com` qrE, gs `com` qoE, gs `com` qcE,
-            gs `com` sigma1E, gs `com` sigma2E, gs `com` sigma3E)
+        in ((l, gs, h0, h1, omega, k1, k2), (qmE, qlE, qrE, qoE, qcE, sigma1E, sigma2E, sigma3E),
+            (gs `com` qmE, gs `com` qlE, gs `com` qrE, gs `com` qoE, gs `com` qcE,
+            gs `com` sigma1E, gs `com` sigma2E, gs `com` sigma3E))
 
     prove :: ProverSecret Plonk -> Setup Plonk -> Witness Plonk -> (Input Plonk, Proof Plonk)
     prove
-        (b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11)
-        (l, gs, _, _, omega, k1, k2, qm, ql, qr, qo, qc, sigma1, sigma2, sigma3, _, _, _, _, _, _, _, _)
+        (ProverSecretPlonk b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)
+        ((l, gs, _, _, omega, k1, k2), (qm, ql, qr, qo, qc, sigma1, sigma2, sigma3), _)
         (w1, w2, w3) = (ws, (cmA, cmB, cmC, cmZ, cmT1, cmT2, cmT3, proof1, proof2, a_xi, b_xi, c_xi, s1_xi, s2_xi, z_xi))
         where
             n = order @Plonk
@@ -145,7 +153,7 @@ instance NonInteractiveProof Plonk where
 
     verify :: Setup Plonk -> Input Plonk -> Proof Plonk -> Bool
     verify
-        (_, gs, h0, h1, omega, k1, k2, _, _, _, _, _, _, _, _, cmQm, cmQl, cmQr, cmQo, cmQc, cmS1, cmS2, cmS3)
+        ((_, gs, h0, h1, omega, k1, k2), _, (cmQm, cmQl, cmQr, cmQo, cmQc, cmS1, cmS2, cmS3))
         ws
         (cmA, cmB, cmC, cmZ, cmT1, cmT2, cmT3, proof1, proof2, a_xi, b_xi, c_xi, s1_xi, s2_xi, z_xi) = p1 == p2
         where

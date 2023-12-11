@@ -50,7 +50,7 @@ instance NonInteractiveProof KZG where
             proveOne :: (Transcript, (Input KZG, Proof KZG))
                 -> (F, [PolyVec F KZG])
                 -> (Transcript, (Input KZG, Proof KZG))
-            proveOne (ts, (iMap, pMap)) (z, fs) = (ts', (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
+            proveOne (ts, (iMap, pMap)) (z, fs) = (ts'', (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
                     cms  = map (com gs) fs
                     fzs  = map (`evalPolyVec` z) fs
@@ -60,6 +60,7 @@ instance NonInteractiveProof KZG where
                         `transcript` fzs
                         `transcript` cms
                     h            = sum $ zipWith scalePV gamma  $ map (`provePolyVecEval` z) fs
+                    ts''         = if ts == empty then ts' else snd $ challenge @F ts'
 
     verify :: Setup KZG -> Input KZG -> Proof KZG -> Bool
     verify (gs, h0, h1) input proof =
@@ -78,7 +79,7 @@ instance NonInteractiveProof KZG where
                         `transcript` z
                         `transcript` fzs
                         `transcript` cms
-                    (r, ts'')    = if v0 == inf && v1 == inf then (one, ts') else challenge ts'
+                    (r, ts'')    = if ts == empty then (one, ts') else challenge ts'
 
                     v0' = r `mul` sum (zipWith mul gamma cms)
                         - r `mul` (gs `com` toPolyVec @F @KZG [sum $ zipWith (*) gamma fzs])
@@ -88,7 +89,7 @@ instance NonInteractiveProof KZG where
 ------------------------------------ Helper functions ------------------------------------
 
 provePolyVecEval :: forall size . Finite size => PolyVec F size -> F -> PolyVec F size
-provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) / toPolyVec [z, one]
+provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) / toPolyVec [negate z, one]
 
 com :: [G1] -> PolyVec F size -> G1
 com gs f = sum $ zipWith mul (fromPolyVec f) gs
