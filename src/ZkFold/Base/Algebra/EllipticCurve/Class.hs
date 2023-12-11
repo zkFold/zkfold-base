@@ -1,7 +1,9 @@
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
+import           Data.Functor                    ((<&>))
 import           Prelude                         hiding (Num(..), (/), (^), sum)
 import qualified Prelude                         as Haskell
+import           Test.QuickCheck                 hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString     (ToByteString (..))
@@ -12,10 +14,10 @@ type family ScalarField curve
 
 data Point curve = Point (BaseField curve) (BaseField curve) | Inf
 
-class (FiniteField (BaseField curve), Eq (BaseField curve),
+class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curve),
       ToBits (BaseField curve), ToByteString (BaseField curve),
       PrimeField (ScalarField curve), Haskell.Num (ScalarField curve),
-      Eq (ScalarField curve), ToBits (ScalarField curve)
+      Eq (ScalarField curve), ToBits (ScalarField curve), Arbitrary (ScalarField curve)
     ) => EllipticCurve curve where
     inf :: Point curve
 
@@ -24,6 +26,10 @@ class (FiniteField (BaseField curve), Eq (BaseField curve),
     add :: Point curve -> Point curve -> Point curve
 
     mul :: ScalarField curve -> Point curve -> Point curve
+
+instance EllipticCurve curve => Show (Point curve) where
+    show Inf = "Inf"
+    show (Point x y) = "(" ++ show x ++ ", " ++ show y ++ ")"
 
 instance EllipticCurve curve => Eq (Point curve) where
     Inf == Inf = True
@@ -43,6 +49,9 @@ instance EllipticCurve curve => AdditiveGroup (Point curve) where
 instance EllipticCurve curve => ToByteString (Point curve) where
     toByteString Inf = toByteString (0 :: Integer)
     toByteString (Point x y) = toByteString (1 :: Integer) <> toByteString x <> toByteString y
+
+instance EllipticCurve curve => Arbitrary (Point curve) where
+    arbitrary = arbitrary <&> (`mul` gen)
 
 pointAdd :: EllipticCurve curve => Point curve -> Point curve -> Point curve
 pointAdd p   Inf     = p
@@ -72,12 +81,5 @@ pointNegate :: EllipticCurve curve => Point curve -> Point curve
 pointNegate Inf = Inf
 pointNegate (Point x y) = Point x (negate y)
 
--- TODO: use ToBits
 pointMul :: EllipticCurve curve => ScalarField curve -> Point curve -> Point curve
-pointMul n p
-  | n == 0     = Inf
-  | n == 1     = p
-  | n / 2 == 0 = p'
-  | otherwise  = pointAdd p p'
-  where
-    p' = pointMul (n / 2) (pointDouble p)
+pointMul n p = n `scale` p
