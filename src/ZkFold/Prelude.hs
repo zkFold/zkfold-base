@@ -25,6 +25,12 @@ replicate :: Integer -> a -> [a]
 replicate 0 _ = []
 replicate n x = x : replicate (n - 1) x
 
+zipWithDefault :: (a -> b -> c) -> a -> b -> [a] -> [b] -> [c]
+zipWithDefault _ _ _ [] [] = []
+zipWithDefault f x _ [] bs = map (f x) bs
+zipWithDefault f _ y as [] = map (`f` y) as
+zipWithDefault f x y (a:as) (b:bs) = f a b : zipWithDefault f x y as bs
+
 elemIndex :: Eq a => a -> [a] -> Maybe Integer
 elemIndex x = go 0
     where

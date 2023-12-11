@@ -108,6 +108,7 @@ library
       mtl                                        ,
       non-empty                                  ,
       pretty-simple                              ,
+      QuickCheck                                 ,
       random                                     ,
       tfp                                        ,
     hs-source-dirs: src
@@ -122,11 +123,13 @@ test-suite zkfold-base-test
       Tests.Arithmetization.Test1
       Tests.Arithmetization.Test2
       Tests.Arithmetization.Test3
+      Tests.Field
       Tests.GroebnerBasis
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
       hspec                                      ,
+      QuickCheck                                 ,
       zkfold-base                                ,
     hs-source-dirs: tests
 

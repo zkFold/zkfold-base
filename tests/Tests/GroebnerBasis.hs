@@ -4,7 +4,7 @@ module Tests.GroebnerBasis (specGroebner) where
 
 import           Data.Map                        (fromList)
 import           Prelude                         hiding (Num(..), Eq(..), (^), (/))
-import           Test.Hspec                      (Spec, describe, it, shouldBe)
+import           Test.Hspec                      
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.GroebnerBasis
@@ -20,8 +20,8 @@ testPoly = map polynomial [
          monomial 1 (fromList [(1, variable 1), (3, variable 1)])]
     ]
 
-specGroebner :: Spec
-specGroebner = do
+specGroebner :: IO ()
+specGroebner = hspec $ do
     describe "Groebner basis specification" $ do
         describe "Monomial zero test" $ do
             it "should pass" $ do

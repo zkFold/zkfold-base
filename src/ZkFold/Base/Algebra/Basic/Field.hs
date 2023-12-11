@@ -13,6 +13,7 @@ module ZkFold.Base.Algebra.Basic.Field (
 import           Data.Aeson                        (ToJSON (..), FromJSON (..))
 import           Prelude                           hiding (Num(..), Fractional(..), length)
 import qualified Prelude                           as Haskell
+import           Test.QuickCheck                   
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
@@ -101,6 +102,9 @@ instance ToByteString (Zp p) where
 instance FromByteString (Zp p) where
     fromByteString = fmap Zp . fromByteString
 
+instance Prime p => Arbitrary (Zp p) where
+    arbitrary = toZp <$> chooseInteger (0, order @(Zp p) - 1)
+
 ----------------------------- Field Extensions --------------------------------
 
 class IrreduciblePoly f e | e -> f where
@@ -126,7 +130,7 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext2 f
     Ext2 a b * Ext2 c d = case snd $ qr (toPoly [a, b] * toPoly [c, d]) (irreduciblePoly @f @e) of
             P (x:y:_) -> Ext2 x y
             P [x]     -> Ext2 x zero
-            _         -> error "Ext2: error in multiplication"
+            P []      -> Ext2 zero zero
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext2 f e) where
     one = Ext2 one zero
@@ -137,7 +141,7 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) 
         in case scaleP (one / lt g) 0 s of
             P (x:y:_) -> Ext2 x y
             P [x]     -> Ext2 x zero
-            _         -> error "Ext2: error in inversion"
+            P []      -> Ext2 zero zero
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
@@ -147,6 +151,9 @@ instance (Field f, ToBits f, Eq f, IrreduciblePoly f e) => ToBits (Ext2 f e) whe
 
 instance ToByteString f => ToByteString (Ext2 f e) where
     toByteString (Ext2 a b) = toByteString a <> toByteString b
+
+instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext2 f e) where
+    arbitrary = Ext2 <$> arbitrary <*> arbitrary
 
 data Ext3 f e = Ext3 f f f
     deriving (Eq, Show)
@@ -169,7 +176,7 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext3 f
             P (x:y:z:_) -> Ext3 x y z
             P [x, y]    -> Ext3 x y zero
             P [x]       -> Ext3 x zero zero
-            _           -> error "Ext3: error in multiplication"
+            P []        -> Ext3 zero zero zero
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext3 f e) where
     one = Ext3 one zero zero
@@ -181,7 +188,7 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) 
             P (x:y:z:_) -> Ext3 x y z
             P [x, y]    -> Ext3 x y zero
             P [x]       -> Ext3 x zero zero
-            _           -> error "Ext3: error in inversion"
+            P []        -> Ext3 zero zero zero
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero
@@ -191,3 +198,6 @@ instance (Field f, ToBits f, Eq f, IrreduciblePoly f e) => ToBits (Ext3 f e) whe
 
 instance ToByteString f => ToByteString (Ext3 f e) where
     toByteString (Ext3 a b c) = toByteString a <> toByteString b <> toByteString c
+
+instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext3 f e) where
+    arbitrary = Ext3 <$> arbitrary <*> arbitrary <*> arbitrary

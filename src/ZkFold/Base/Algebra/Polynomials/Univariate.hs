@@ -5,7 +5,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate where
 import           Prelude                           hiding (Num(..), (/), (^), sum, product, length, replicate, take, drop)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Prelude                    (replicate, length, take, drop)
+import           ZkFold.Prelude                    (replicate, length, take, drop, zipWithDefault)
 
 -------------------------------- Arbitrary degree polynomials --------------------------------
 
@@ -20,7 +20,7 @@ fromPoly :: Poly c -> [c]
 fromPoly (P cs) = cs
 
 instance (Ring c, Eq c) => AdditiveSemigroup (Poly c) where
-    P l + P r = removeZeros $ P $ zipWith (+) l r
+    P l + P r = removeZeros $ P $ zipWithDefault (+) zero zero l r
 
 instance (Ring c, Eq c) => AdditiveMonoid (Poly c) where
     zero = P []
@@ -32,7 +32,7 @@ instance (Ring c, Eq c) => MultiplicativeSemigroup (Poly c) where
     P l * P r = removeZeros $ P $ go l r
         where
             go [] _      = []
-            go (x:xs) ys = zipWith (+) (map (x *) ys) (zero : go xs ys)
+            go (x:xs) ys = zipWithDefault (+) zero zero (map (x *) ys) (zero : go xs ys)
 
 instance (Ring c, Eq c) => MultiplicativeMonoid (Poly c) where
     one = P [one]
