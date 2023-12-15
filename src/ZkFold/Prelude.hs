@@ -22,8 +22,9 @@ splitAt :: Integer -> [a] -> ([a], [a])
 splitAt n xs = (take n xs, drop n xs)
 
 replicate :: Integer -> a -> [a]
-replicate 0 _ = []
-replicate n x = x : replicate (n - 1) x
+replicate n x
+    | n <= 0    = []
+    | otherwise = x : replicate (n - 1) x
 
 zipWithDefault :: (a -> b -> c) -> a -> b -> [a] -> [b] -> [c]
 zipWithDefault _ _ _ [] [] = []
@@ -58,3 +59,6 @@ readFileJSON file = do
     case decode content of
         Nothing -> error "ZkFold.Prelude.readFileJSON: invalid JSON"
         Just x  -> return x
+
+assert :: Show a => Bool -> a -> x -> x
+assert statement obj x = if statement then x else error $ show obj

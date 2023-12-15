@@ -3,8 +3,11 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
+import           Data.Bifunctor (first)
+import           Data.Bool      (bool)
 import           Prelude        hiding (Num(..), (^), (/), negate, replicate, length)
 import qualified Prelude        as Haskell
+import           System.Random  (RandomGen, Random (..), mkStdGen)
 
 import           ZkFold.Prelude (replicate, length)
 
@@ -117,6 +120,22 @@ instance (MultiplicativeMonoid a, Semiring b, Eq b, ToBits b) => Exponent a b wh
 
 multiExp :: (MultiplicativeMonoid a, Exponent a b, Foldable t) => a -> t b -> a
 multiExp a = foldl (\x y -> x * (a ^ y)) one
+
+------------------------------- Roots of unity ---------------------------------
+
+-- | Returns a primitive root of unity of order 2^l.
+rootOfUnity :: forall a . (PrimeField a, Eq a, FromConstant Integer a) => Integer -> a
+rootOfUnity l
+    | l <= 0                      = error "rootOfUnity: l should be positive!"
+    | (order @a - 1) `mod` n /= 0 = error $ "rootOfUnity: 2^" ++ show l ++ " should divide (p-1)!"
+    | otherwise = rootOfUnity' (mkStdGen 0)
+    where
+        n = 2 ^ l
+        rootOfUnity' :: RandomGen g => g -> a
+        rootOfUnity' g =
+            let (x, g') = first fromConstant $ randomR (1, order @a - 1) g
+                x' = x ^ ((order @a - 1) `div` n)
+            in bool (rootOfUnity' g') x' (x' ^ (n `div` 2) /= one)
 
 --------------------------------------------------------------------------------
 

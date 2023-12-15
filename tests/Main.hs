@@ -2,7 +2,7 @@
 
 module Main where
 
-import           Prelude                                      hiding (Num(..), Fractional(..), length)
+import           Prelude                                      hiding (Bool, Num (..), Fractional(..), (==), length, take, drop, replicate)
 
 import           Tests.Arithmetization                       (specArithmetization)
 import           Tests.Field                                 (specField)
@@ -10,12 +10,20 @@ import           Tests.GroebnerBasis                         (specGroebner)
 import           Tests.Group                                 (specAdditiveGroup)
 import           Tests.NonInteractiveProof                   (specNonInteractiveProof)
 import           Tests.Pairing                               (specPairing)
+import           Tests.Permutations                          (specPermutations)
+import           Tests.Plonk                                 (specPlonk)
+import           Tests.Univariate                            (specUnivariate)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr, Fq, Fq2, Fq6, Fq12)
-import           ZkFold.Base.Protocol.Commitment.KZG         (G1, G2, KZG)
+import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk)
+import           ZkFold.Base.Protocol.Commitment.KZG         (KZG, G1, G2)
 
 main :: IO ()
 main = do
+    specArithmetization @Fr
+    specGroebner
+
+    specPermutations
     specField @Fr
     specField @Fq
     specField @Fq2
@@ -24,9 +32,10 @@ main = do
     specAdditiveGroup @G1
     specAdditiveGroup @G2
     specPairing
-    specNonInteractiveProof @KZG
+    specUnivariate
 
-    specArithmetization
-    specGroebner
+    specNonInteractiveProof @KZG
+    specPlonk
+    specNonInteractiveProof @Plonk
 
     putStrLn "\nAll tests passed!"

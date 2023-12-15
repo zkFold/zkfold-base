@@ -13,6 +13,8 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                              (length)
 
+-- TODO: make this module generic in the elliptic curve with pairing
+
 type F = ScalarField BLS12_381_G1
 type G1 = Point BLS12_381_G1
 type G2 = Point BLS12_381_G2

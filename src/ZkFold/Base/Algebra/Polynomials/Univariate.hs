@@ -79,7 +79,7 @@ fromPolyVec :: PolyVec c size -> [c]
 fromPolyVec (PV cs) = cs
 
 poly2vec :: forall c size . (Ring c, Finite size) => Poly c -> PolyVec c size
-poly2vec (P cs) = PV $ take (order @size) $ addZeros @c @size cs
+poly2vec (P cs) = toPolyVec cs
 
 vec2poly :: (Ring c, Eq c) => PolyVec c size -> Poly c
 vec2poly (PV cs) = removeZeros $ P cs
@@ -108,9 +108,11 @@ instance (Field c, Finite size, Eq c) => MultiplicativeGroup (PolyVec c size) wh
 instance (Ring c, Arbitrary c, Finite size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec <$> arbitrary
 
+-- p(x) = a0 + a1 * x
 polyVecLinear :: forall c size . (Ring c, Finite size) => c -> c -> PolyVec c size
 polyVecLinear a0 a1 = PV $ a0 : a1 : replicate (order @size - 2) zero
 
+-- p(x) = a0 + a1 * x + a2 * x^2
 polyVecQuadratic :: forall c size . (Ring c, Finite size) => c -> c -> c -> PolyVec c size
 polyVecQuadratic a0 a1 a2 = PV $ a0 : a1 : a2 : replicate (order @size - 3) zero
 
@@ -122,21 +124,24 @@ evalPolyVec (PV cs) x = sum $ zipWith (*) cs $ map (x^) [0 :: Integer ..]
 
 castPolyVec :: forall c size size' . (Ring c, Finite size, Finite size', Eq c) => PolyVec c size -> PolyVec c size'
 castPolyVec (PV cs)
-    | order @size <= order @size'            = PV $ cs ++ replicate (order @size' - order @size) zero
-    | all (== zero) (drop (order @size') cs) = PV $ take (order @size') cs
+    | order @size <= order @size'            = toPolyVec cs
+    | all (== zero) (drop (order @size') cs) = toPolyVec cs
     | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
 
-polyVecZero :: forall c size . (Ring c, Finite size) => Integer -> PolyVec c size
-polyVecZero n = PV $ replicate n zero ++ [one] ++ replicate (order @size - n - 1) zero
+-- p(x) = x^n - 1
+polyVecZero :: forall c size size' . (Ring c, Finite size, Finite size', Eq c) => PolyVec c size'
+polyVecZero = poly2vec $ scaleP one (order @size) one - one
 
-polyVecLagrange :: forall c size . (Field c, Eq c, FromConstant Integer c, Finite size) =>
-    Integer -> Integer -> c -> PolyVec c size
-polyVecLagrange n i omega = scalePV (omega / fromConstant n) $ (polyVecZero n - one) / polyVecLinear (negate $ omega^i) one
+-- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
+polyVecLagrange :: forall c size size' . (Field c, Eq c, FromConstant Integer c, Finite size, Finite size') =>
+    Integer -> c -> PolyVec c size'
+polyVecLagrange i omega = scalePV (omega^i / fromConstant (order @size)) $ (polyVecZero @c @size @size' - one) / polyVecLinear (negate $ omega^i) one
 
-polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, FromConstant Integer c, Finite size') =>
-    Integer -> c -> PolyVec c size -> PolyVec c size'
-polyVecInLagrangeBasis n omega (PV cs) =
-    let ls = map (\i -> polyVecLagrange n i omega) [1..]
+-- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
+polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, FromConstant Integer c, Finite size, Finite size') =>
+    c -> PolyVec c size -> PolyVec c size'
+polyVecInLagrangeBasis omega (PV cs) =
+    let ls = map (\i -> polyVecLagrange @c @size @size' i omega) [1..]
     in sum $ zipWith scalePV cs ls
 
 polyVecGrandProduct :: forall c size . (Field c, Finite size) =>

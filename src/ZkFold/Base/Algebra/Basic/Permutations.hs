@@ -1,26 +1,32 @@
-{-# LANGUAGE TypeApplications #-}
-
 module ZkFold.Base.Algebra.Basic.Permutations where
 
-import           Prelude                                     hiding (Num(..), (^), (/), (!!), sum, length, take, drop)
+import           Data.Map                         (Map, empty, union, elems, singleton)
+import           Prelude                          hiding (Num(..), (!!), length)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Prelude                             ((!!), length)
+import           ZkFold.Prelude                   ((!!), length, elemIndex)
 
-newtype IndexSet a = IndexSet [Integer]
-newtype IndexPartition a = IndexPartition [IndexSet a]
+-- TODO: make the code safer
 
-mkIndexPartition :: [Integer] -> IndexPartition a
+type IndexSet = [Integer]
+type IndexPartition = Map Integer IndexSet
+
+mkIndexPartition :: [Integer] -> IndexPartition
 mkIndexPartition vs =
-    let f = \i -> IndexSet $ map fst $ filter (\(_, v) -> v == i) $ zip [1 ..] vs
-    in IndexPartition $ map f [1 .. maximum vs]
+    let f = \i -> singleton i $ map snd $ filter (\(v, _) -> v == i) $ zip vs [1 .. length vs]
+    in foldl union empty $ map f vs
 
-newtype Permutation a = Permutation [Integer]
+newtype Permutation = Permutation [Integer]
 
-applyCycle :: IndexSet a -> Permutation a -> Permutation a
-applyCycle (IndexSet c) (Permutation perm) =
-    let f = \i -> if i `elem` c then c !! (i + 1) `mod` length c else i
-    in Permutation $ map f perm
+applyCycle :: IndexSet -> Permutation -> Permutation
+applyCycle c (Permutation perm) = Permutation $ map f perm
+    where
+        f :: Integer -> Integer
+        f i = case i `elemIndex` c of
+            Just j  -> c !! ((j + 1) `mod` length c)
+            Nothing -> i
 
-fromCycles :: forall a . Finite a => IndexPartition a -> Permutation a
-fromCycles (IndexPartition cs) = foldr applyCycle (Permutation [0 .. order @a - 1]) cs
+fromCycles :: IndexPartition -> Permutation
+fromCycles p =
+    let n = length $ concat $ elems p
+    in foldr applyCycle (Permutation [1 .. n]) $ elems p

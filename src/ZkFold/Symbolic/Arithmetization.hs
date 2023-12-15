@@ -9,7 +9,10 @@ module ZkFold.Symbolic.Arithmetization (
         -- high-level functions
         applyArgs,
         optimize,
+        mapVarArithmeticCircuit,
+        mapVarWitness,
         -- low-level functions
+        eval,
         forceZero,
         -- information about the system
         acSizeN,
@@ -18,6 +21,7 @@ module ZkFold.Symbolic.Arithmetization (
         acValue,
         acPrint,
         -- Arithmetization type fields
+        acWitness,
         acVarOrder,
         acOutput
     ) where
@@ -30,14 +34,18 @@ import           Data.Map                                     hiding (take, drop
 import           Prelude                                      hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
 import qualified Prelude                                      as Haskell
 import           System.Random                                (StdGen, Random (..), mkStdGen, uniform)
+import           Test.QuickCheck                              (Arbitrary (..))
 import           Text.Pretty.Simple                           (pPrint)
 import           Type.Data.Num.Unary                          (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial, variableList, evalMultivariate, monomial, polynomial)
-import           ZkFold.Prelude                               ((!!), length, drop, take, splitAt)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial, variableList, evalMultivariate, monomial, polynomial, Monomial, getPowers, getMonomials)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal
+import           ZkFold.Prelude                               ((!!), length, drop, take, splitAt, elemIndex)
 import           ZkFold.Symbolic.Data.List                    (List, mapList, lengthList, indicesInteger)
+
+-- TODO: hide low-level functions and data fields behind a safer interface
 
 -- | A class for arithmetizable types.
 -- Type `a` is the finite field of the arithmetic circuit.
@@ -299,6 +307,18 @@ instance (FiniteField a, Eq a, ToBits a) => ToBits (ArithmeticCircuit a) where
             r   = execState forceZero $ v y
         in map (\x'' -> r { acOutput = x'' } ) bs
 
+-- TODO: make a proper implementation of Arbitrary
+instance (FiniteField a, Eq a, ToBits a) => Arbitrary (ArithmeticCircuit a) where
+    arbitrary = do
+        let ac = restore @a $ evalState (arithmetize @a @(ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a) $
+                \x y -> x * y) mempty
+        return ac
+
+-- TODO: make it more readable
+instance (FiniteField a, Eq a, ToBits a, Show a) => Show (ArithmeticCircuit a) where
+    show r = "ArithmeticCircuit { acMatrices = " ++ show (acMatrices r) ++ ", acInput = "
+        ++ show (acInput r) ++ ", acOutput = " ++ show (acOutput r) ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
+
 -- TODO: add witness generation info to the JSON object
 instance ToJSON a => ToJSON (ArithmeticCircuit a) where
     toJSON r = object
@@ -400,3 +420,32 @@ newVariableFromConstraint con = con2var . con <$> newVariable
 
 addVariable :: Integer -> State (ArithmeticCircuit a) ()
 addVariable x = modify (\r -> r { acOutput = x, acVarOrder = insert (length (acVarOrder r), x) x (acVarOrder r)})
+
+----------------------------- Variable mapping functions -----------------------------
+
+mapVar :: [Integer] -> Integer -> Integer
+mapVar vars x = case x `elemIndex` vars of
+    Just i  -> i
+    Nothing -> error "mapVar: something went wrong"
+
+mapVarMonomial :: [Integer] -> Monomial a -> Monomial a
+mapVarMonomial vars (M c as) = M c $ mapKeys (mapVar vars) as
+
+mapVarPolynomial :: [Integer] -> Polynomial a -> Polynomial a
+mapVarPolynomial vars (P ms) = P $ map (mapVarMonomial vars) ms
+
+mapVarPolynomials :: [Integer] -> [Polynomial a] -> [Polynomial a]
+mapVarPolynomials vars = map (mapVarPolynomial vars)
+
+mapVarWitness :: [Integer] -> (Map Integer a -> Map Integer a)
+mapVarWitness vars = mapKeys (mapVar vars)
+
+mapVarArithmeticCircuit :: ArithmeticCircuit a -> ArithmeticCircuit a
+mapVarArithmeticCircuit ac = 
+    let vars  = 0 : concatMap (keys . getPowers) (concatMap getMonomials $ acSystem ac)
+    in ac
+    {
+        acMatrices = fromList $ zip [0..] $ mapVarPolynomials vars $ elems $ acMatrices ac,
+        acWitness  = mapVarWitness vars . acWitness ac . mapVarWitness vars,
+        acOutput   = mapVar vars $ acOutput ac
+    }
