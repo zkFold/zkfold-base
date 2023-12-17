@@ -27,6 +27,6 @@ specArithmetization = hspec $ do
     describe "Arithmetization specification" $ do
         describe "Variable mapping" $ do
             it "does not change the circuit" $ property $ propCircuitInvariance @a
-        specArithmetization1
+        specArithmetization1 @a
         specArithmetization2
         specArithmetization3

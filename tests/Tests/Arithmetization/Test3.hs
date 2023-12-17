@@ -5,12 +5,20 @@ module Tests.Arithmetization.Test3 (specArithmetization3) where
 import           Prelude                         hiding (Num(..), Eq(..), Ord(..), Bool, (^), (/), (||), not, any, replicate)
 import           Test.Hspec
 
+import           ZkFold.Base.Algebra.Basic.Class (Finite (..), Prime)
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Symbolic.Arithmetization (acValue, applyArgs, acValue)
+import           ZkFold.Symbolic.Arithmetization (ArithmeticCircuit, acValue, applyArgs, acValue)
 import           ZkFold.Symbolic.Compiler        (compile)
 import           ZkFold.Symbolic.Data.Bool       (Bool (..))
 import           ZkFold.Symbolic.Data.Ord        (Ord (..))
-import           ZkFold.Symbolic.Types           (R, SmallField, Symbolic)
+import           ZkFold.Symbolic.Types           (Symbolic)
+
+data SmallField
+instance Finite SmallField where
+    order = 97
+instance Prime SmallField
+
+type R = ArithmeticCircuit (Zp SmallField)
 
 -- A comparison test
 testFunc :: forall a . Symbolic a => a -> a -> Bool a
