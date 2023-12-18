@@ -29,7 +29,8 @@ module ZkFold.Symbolic.Arithmetization (
 import           Control.Monad.State                          (MonadState (..), State, modify, execState, evalState)
 import           Data.Aeson
 import           Data.Bool                                    (bool)
-import           Data.List                                    (nub)
+import           Data.Containers.ListUtils                    (nubOrd)
+import           Data.List                                    (nub, sort)
 import           Data.Map                                     hiding (take, drop, splitAt, foldl, null, map, foldr)
 import           Prelude                                      hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
 import qualified Prelude                                      as Haskell
@@ -40,7 +41,7 @@ import           Type.Data.Num.Unary                          (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial, variableList, evalMultivariate, monomial, polynomial, Monomial, getPowers, getMonomials)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial, Monomial, variableList, evalMultivariate, monomial, polynomial, getPowers, getMonomials)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal
 import           ZkFold.Prelude                               ((!!), length, drop, take, splitAt, elemIndex)
 import           ZkFold.Symbolic.Data.List                    (List, mapList, lengthList, indicesInteger)
@@ -59,6 +60,14 @@ class (FiniteField a, Eq a, ToBits a) => Arithmetizable a x where
 
     -- | Returns the number of finite field elements needed to desscribe `x`.
     typeSize :: Integer
+
+instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a () where
+    arithmetize () = return []
+
+    restore [] = ()
+    restore _  = error "restore (): wrong number of arguments"
+
+    typeSize = 0
 
 instance (Arithmetizable a x, Arithmetizable a y) => Arithmetizable a (x, y) where
     arithmetize (a, b) = do
@@ -442,10 +451,11 @@ mapVarWitness vars = mapKeys (mapVar vars)
 
 mapVarArithmeticCircuit :: ArithmeticCircuit a -> ArithmeticCircuit a
 mapVarArithmeticCircuit ac = 
-    let vars  = 0 : concatMap (keys . getPowers) (concatMap getMonomials $ acSystem ac)
+    let vars = nubOrd $ sort $ 0 : concatMap (keys . getPowers) (concatMap getMonomials $ acSystem ac)
     in ac
     {
         acMatrices = fromList $ zip [0..] $ mapVarPolynomials vars $ elems $ acMatrices ac,
-        acWitness  = mapVarWitness vars . acWitness ac . mapVarWitness vars,
+        -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
+        acWitness  = mapVarWitness vars . acWitness ac,
         acOutput   = mapVar vars $ acOutput ac
     }

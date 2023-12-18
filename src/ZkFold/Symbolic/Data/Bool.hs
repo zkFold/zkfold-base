@@ -35,7 +35,9 @@ instance BoolType Haskell.Bool where
 
 -- TODO: hide this constructor
 newtype Bool x = Bool x
-    deriving (Show, Eq)
+    deriving (Eq)
+instance (Field x, Eq x) => Show (Bool x) where
+    show (Bool x) = if x == one then "True" else "False"
 
 instance FiniteField x => BoolType (Bool x) where
     true = Bool one

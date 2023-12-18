@@ -62,7 +62,6 @@ common options
 library
     import: options
     exposed-modules:
-      ZkFold.Cardano.Types
       ZkFold.Base.Algebra.Basic.Class
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.Basic.Permutations
@@ -83,6 +82,9 @@ library
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Base.Protocol.PIOP.Multivariate.Plonk
       ZkFold.Base.Protocol.PIOP.Univariate.Plonk
+      ZkFold.Cardano.Types
+      ZkFold.Cardano.Types.Script
+      ZkFold.Cardano.Types.Tx
       ZkFold.Prelude
       ZkFold.Symbolic.Arithmetization
       ZkFold.Symbolic.Compiler
@@ -130,6 +132,7 @@ test-suite zkfold-base-test
       Tests.Pairing
       Tests.Permutations
       Tests.Plonk
+      Tests.Scripts.LockedByTxId
       Tests.Univariate
     build-depends:
       base                          >= 4.9 && < 5,

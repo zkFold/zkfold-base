@@ -6,8 +6,8 @@ import           Control.Monad                                         (guard)
 import           Data.Bifunctor                                        (first)
 import           Data.Bool                                             (bool)
 import           Data.Containers.ListUtils                             (nubOrd)
-import           Data.List                                             (permutations, find, transpose)
-import           Data.Map                                              (Map, keys, fromList, empty, elems, toList)
+import           Data.List                                             (permutations, find, transpose, sort)
+import           Data.Map                                              (Map, keys, fromList, empty, elems, toList, delete)
 import           Data.Maybe                                            (mapMaybe)
 import           Prelude                                               hiding (Num(..), (^), (/), (!!), sum, length, take, drop)
 import           System.Random                                         (RandomGen, Random (..), mkStdGen)
@@ -43,9 +43,11 @@ getParams l = findK' $ mkStdGen 0
 toPlonkConstaint :: Polynomial F -> (F, F, F, F, F, F, F, F)
 toPlonkConstaint p =
     let xs    = nubOrd $ concatMap (keys . getPowers) (getMonomials p)
+        i     = order @F
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
-            0         -> [0, 0, 0]
-            1         -> [0, 0, head xs, head xs]
+            0         -> [i, i, i]
+            1         -> [i, i, head xs, head xs]
+            2         -> [i] ++ xs ++ xs
             _         -> xs ++ xs
 
         getCoef :: Map Integer (Var F Integer) -> F
@@ -87,15 +89,19 @@ addPublicInput i _ ps =
 addPublicInputs :: Map Integer F -> [Polynomial F] -> [Polynomial F]
 addPublicInputs inputs ps = foldr (\(i, x) ps' -> addPublicInput i x ps') ps $ toList inputs
 
+removeConstantVariable :: Polynomial F -> Polynomial F
+removeConstantVariable p =
+    polynomial . map (\(M c as) -> M c (0 `delete` as)) $ getMonomials p
+
 toPlonkArithmetization :: forall a . Finite a => Map Integer F -> ArithmeticCircuit F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
 toPlonkArithmetization inputs ac =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]
-        vars  = 0 : concatMap (keys . getPowers) (concatMap getMonomials $ acSystem ac)
+        vars    = nubOrd $ sort $ 0 : concatMap (keys . getPowers) (concatMap getMonomials $ acSystem ac)
         ac'     = mapVarArithmeticCircuit ac
         inputs' = mapVarWitness vars inputs
-        system = addPublicInputs inputs' $ elems $ acSystem ac'
+        system  = addPublicInputs inputs' $ elems $ acSystem ac'
 
-    in case map toPolyVec $ transpose $ map (f . toPlonkConstaint) system of
+    in case map toPolyVec $ transpose $ map (f . toPlonkConstaint . removeConstantVariable) system of
             [ql, qr, qo, qm, qc, a, b, c] -> (ql, qr, qo, qm, qc, a, b, c)
             _                             -> error "toPlonkArithmetization: something went wrong"

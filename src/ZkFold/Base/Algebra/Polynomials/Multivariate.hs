@@ -40,7 +40,7 @@ polynomial = sum . map (\m -> P [m]) . filter (not . zeroM)
 getMonomials :: Polynomial a -> [Monomial a]
 getMonomials (P ms) = ms
 
-evalMonomial :: (Eq a, ToBits a, FiniteField b) =>Monom a Integer -> Map Integer b -> b
+evalMonomial :: (Eq a, ToBits a, FiniteField b) => Monom a Integer -> Map Integer b -> b
 evalMonomial (M c m) xs = scale c $ product (map (\(i, Var j) -> (xs ! i)^j) (toList m))
 
 evalMultivariate :: (Eq a, ToBits a, FiniteField b) => Polynomial a -> Map Integer b -> b
