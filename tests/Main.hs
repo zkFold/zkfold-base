@@ -37,6 +37,7 @@ main = do
     specPairing
     specUnivariate
 
+    -- TODO: make a wrapper for this test to limit the time it takes to run
     specNonInteractiveProof @KZG
     specPlonk
     specNonInteractiveProof @Plonk

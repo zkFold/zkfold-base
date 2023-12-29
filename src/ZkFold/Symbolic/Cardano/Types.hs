@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Cardano.Types where
+module ZkFold.Symbolic.Cardano.Types where
 
 import           Prelude                          (($), concat, return, error, (++), fst, snd, Eq (..), otherwise)
 import qualified Prelude                          as Haskell

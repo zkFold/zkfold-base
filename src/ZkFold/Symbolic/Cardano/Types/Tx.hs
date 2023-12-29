@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Cardano.Types.Tx where
+module ZkFold.Symbolic.Cardano.Types.Tx where
 
 import           Prelude                          (Eq (..), ($), error, otherwise)
 

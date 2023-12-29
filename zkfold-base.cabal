@@ -82,11 +82,11 @@ library
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Base.Protocol.PIOP.Multivariate.Plonk
       ZkFold.Base.Protocol.PIOP.Univariate.Plonk
-      ZkFold.Cardano.Types
-      ZkFold.Cardano.Types.Script
-      ZkFold.Cardano.Types.Tx
       ZkFold.Prelude
       ZkFold.Symbolic.Arithmetization
+      ZkFold.Symbolic.Cardano.Types
+      ZkFold.Symbolic.Cardano.Types.Script
+      ZkFold.Symbolic.Cardano.Types.Tx
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.Conditional
@@ -156,5 +156,7 @@ test-suite zkfold-base-examples
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
+      fixed-length                               ,
+      tfp                                        ,
       zkfold-base                                ,
     hs-source-dirs: examples
