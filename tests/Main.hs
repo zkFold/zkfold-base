@@ -17,7 +17,7 @@ import           Tests.Univariate                            (specUnivariate)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr, Fq, Fq2, Fq6, Fq12)
 import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk)
-import           ZkFold.Base.Protocol.Commitment.KZG         (KZG, G1, G2)
+import           ZkFold.Base.Protocol.Commitment.KZG         (KZG, G1, G2, D32)
 
 main :: IO ()
 main = do
@@ -37,8 +37,7 @@ main = do
     specPairing
     specUnivariate
 
-    -- TODO: make a wrapper for this test to limit the time it takes to run
-    specNonInteractiveProof @KZG
+    specNonInteractiveProof @(KZG D32)
     specPlonk
     specNonInteractiveProof @Plonk
 
