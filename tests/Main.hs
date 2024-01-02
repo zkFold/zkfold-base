@@ -16,7 +16,7 @@ import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.Univariate                            (specUnivariate)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr, Fq, Fq2, Fq6, Fq12)
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk)
+import           ZkFold.Base.Protocol.ARK.Plonk              (PlonkBS)
 import           ZkFold.Base.Protocol.Commitment.KZG         (KZG, G1, G2, D32)
 
 main :: IO ()
@@ -39,6 +39,6 @@ main = do
 
     specNonInteractiveProof @(KZG D32)
     specPlonk
-    specNonInteractiveProof @Plonk
+    specNonInteractiveProof @PlonkBS
 
     putStrLn "\nAll tests passed!"

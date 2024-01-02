@@ -18,7 +18,6 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate (getPowers, getMon
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (toPolyVec, polyVecInLagrangeBasis, fromPolyVec, polyVecZero, polyVecLinear, evalPolyVec)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkConstaint, toPlonkArithmetization)
-import           ZkFold.Base.Protocol.Commitment.KZG          (F)
 import           ZkFold.Prelude                               ((!), take, replicate)
 import           ZkFold.Symbolic.Arithmetization              (ArithmeticCircuit (..), mapVarArithmeticCircuit)
 
@@ -32,17 +31,17 @@ propPlonkConstraintConversion x (x1, x2, x3) =
         v'  = fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)]
     in p `evalMultivariate` v == p' `evalMultivariate` v'
 
-propPlonkConstraintSatisfaction :: ParamsPlonk -> NonInteractiveProofTestData Plonk -> Bool
+propPlonkConstraintSatisfaction :: ParamsPlonk -> NonInteractiveProofTestData PlonkBS -> Bool
 propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ _ w) =
     let wmap = acWitness $ mapVarArithmeticCircuit ac
-        (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @Plonk (singleton (acOutput ac) 15) ac
+        (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkBS (singleton (acOutput ac) 15) ac
         l = 1
 
         WitnessInputPlonk wInput = w
         w1'     = map ((wmap wInput !) . fromZp) (fromPolyVec a)
         w2'     = map ((wmap wInput !) . fromZp) (fromPolyVec b)
         w3'     = map ((wmap wInput !) . fromZp) (fromPolyVec c)
-        wPub    = take l (map negate $ elems inputs) ++ replicate (order @Plonk - l) zero
+        wPub    = take l (map negate $ elems inputs) ++ replicate (order @PlonkBS - l) zero
         
         ql' = fromPolyVec ql
         qr' = fromPolyVec qr
@@ -56,15 +55,15 @@ propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ _ w) =
 
     in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', w1', w2', w3', wPub]
 
-propPlonkPolyIdentity :: NonInteractiveProofTestData Plonk -> Bool
+propPlonkPolyIdentity :: NonInteractiveProofTestData PlonkBS -> Bool
 propPlonkPolyIdentity (TestData s ps w) =
-    let zH = polyVecZero @F @Plonk @PlonkMaxPolyDegree
+    let zH = polyVecZero @F @PlonkBS @PlonkMaxPolyDegreeBS
 
         ((wPub, _, _, _, omega, _, _), (qlE, qrE, qoE, qmE, qcE, _, _, _), _, WitnessMap wmap, _) = s
         ProverSecretPlonk b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
         WitnessInputPlonk wInput = w
         (w1, w2, w3) = wmap wInput
-        pubPoly = polyVecInLagrangeBasis @F @Plonk @PlonkMaxPolyDegree omega $ toPolyVec @F @Plonk wPub
+        pubPoly = polyVecInLagrangeBasis @F @PlonkBS @PlonkMaxPolyDegreeBS omega $ toPolyVec @F @PlonkBS wPub
 
         a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega w1
         b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega w2
@@ -82,7 +81,7 @@ propPlonkPolyIdentity (TestData s ps w) =
                 pubX = pubPoly `evalPolyVec` x
             in qlX * aX + qrX * bX + qoX * cX + qmX * aX * bX + qcX + pubX
 
-    in all ((== zero) . f . (omega^)) [0 .. order @Plonk - 1]
+    in all ((== zero) . f . (omega^)) [0 .. order @PlonkBS - 1]
 
 specPlonk :: IO ()
 specPlonk = hspec $ do

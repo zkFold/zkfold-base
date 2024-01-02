@@ -17,10 +17,11 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Protocol.ARK.Plonk             (Plonk, PlonkMaxPolyDegree)
+import           ZkFold.Base.Protocol.ARK.Plonk             (PlonkBS, PlonkMaxPolyDegreeBS)
 import           ZkFold.Base.Protocol.Commitment.KZG        (F)
 import           ZkFold.Prelude                             (take, length)
 
+-- TODO: remove dependencies from KZG and Plonk
 -- TODO: make all tests polymorphic in the polynomial type
 
 propToPolyVec :: forall c size . (Ring c, Finite size) => [c] -> Bool
@@ -44,16 +45,16 @@ propPolyVecDivision p q =
 propPolyVecZero :: Integer -> Bool
 propPolyVecZero i =
     let omega = rootOfUnity 5 :: F
-        p = polyVecZero @F @Plonk @PlonkMaxPolyDegree
+        p = polyVecZero @F @PlonkBS @PlonkMaxPolyDegreeBS
         x = omega^abs i
     in p `evalPolyVec` x == zero
 
 propPolyVecLagrange :: Integer -> Bool
 propPolyVecLagrange i =
     let omega = rootOfUnity 5 :: F
-        p = polyVecLagrange @F @Plonk @PlonkMaxPolyDegree i omega
+        p = polyVecLagrange @F @PlonkBS @PlonkMaxPolyDegreeBS i omega
     in p `evalPolyVec` (omega^i) == one && 
-        all ((== zero) . (p `evalPolyVec`) . (omega^)) ([1 .. order @Plonk] \\ [i])
+        all ((== zero) . (p `evalPolyVec`) . (omega^)) ([1 .. order @PlonkBS] \\ [i])
 
 propPolyVecGrandProduct :: (Field c, Finite size, Ord c) => PolyVec c size -> c -> c -> Bool
 propPolyVecGrandProduct p beta gamma =
@@ -66,43 +67,43 @@ propPolyVecGrandProduct p beta gamma =
 specUnivariate :: IO ()
 specUnivariate = hspec $ do
     describe "Univariate polynomials specification" $ do
-        describe ("Type: " ++ show (typeOf @(PolyVec F Plonk) zero)) $ do
+        describe ("Type: " ++ show (typeOf @(PolyVec F PlonkBS) zero)) $ do
             describe "toPolyVec" $ do
                 it "should return a list of the correct length" $ do
-                    property $ propToPolyVec @F @Plonk
+                    property $ propToPolyVec @F @PlonkBS
             describe "castPolyVec" $ do
                 it "should return a list of the correct length" $ do
-                    property $ propCastPolyVec @F @Plonk @Plonk
+                    property $ propCastPolyVec @F @PlonkBS @PlonkBS
                 it "should return a list of the correct length" $ do
-                    property $ propCastPolyVec @F @Plonk @PlonkMaxPolyDegree
+                    property $ propCastPolyVec @F @PlonkBS @PlonkMaxPolyDegreeBS
                 it "should return a list of the correct length" $ do
-                    property $ propCastPolyVec @F @PlonkMaxPolyDegree @Plonk
+                    property $ propCastPolyVec @F @PlonkMaxPolyDegreeBS @PlonkBS
             describe "Ring axioms" $ do
                 it "should satisfy additive associativity" $ do
-                    property $ \(a :: PolyVec F Plonk) b c -> (a + b) + c == a + (b + c)
+                    property $ \(a :: PolyVec F PlonkBS) b c -> (a + b) + c == a + (b + c)
                 it "should satisfy additive commutativity" $ do
-                    property $ \(a :: PolyVec F Plonk) b -> a + b == b + a
+                    property $ \(a :: PolyVec F PlonkBS) b -> a + b == b + a
                 it "should satisfy additive identity" $ do
-                    property $ \(a :: PolyVec F Plonk) -> a + zero == a
+                    property $ \(a :: PolyVec F PlonkBS) -> a + zero == a
                 it "should satisfy additive inverse" $ do
-                    property $ \(a :: PolyVec F Plonk) -> a + negate a == zero
+                    property $ \(a :: PolyVec F PlonkBS) -> a + negate a == zero
                 it "should satisfy multiplicative associativity" $ do
-                    property $ \(a :: PolyVec F Plonk) b c -> (a * b) * c == a * (b * c)
+                    property $ \(a :: PolyVec F PlonkBS) b c -> (a * b) * c == a * (b * c)
                 it "should satisfy multiplicative commutativity" $ do
-                    property $ \(a :: PolyVec F Plonk) b -> a * b == b * a
+                    property $ \(a :: PolyVec F PlonkBS) b -> a * b == b * a
                 it "should satisfy multiplicative identity" $ do
-                    property $ \(a :: PolyVec F Plonk) -> a * one == a
+                    property $ \(a :: PolyVec F PlonkBS) -> a * one == a
                 it "should satisfy distributivity" $ do
-                    property $ \(a :: PolyVec F Plonk) b c -> a * (b + c) == a * b + a * c
+                    property $ \(a :: PolyVec F PlonkBS) b c -> a * (b + c) == a * b + a * c
             describe "Polynomial division" $ do
                 it "should satisfy the definition" $ do
-                    property $ \(p :: PolyVec F Plonk) q -> q /= zero ==> propPolyVecDivision p q
+                    property $ \(p :: PolyVec F PlonkBS) q -> q /= zero ==> propPolyVecDivision p q
             describe "polyVecZero" $ do
                 it "should satisfy the definition" $ do
-                    all propPolyVecZero [0 .. order @PlonkMaxPolyDegree - 1] `shouldBe` True
+                    all propPolyVecZero [0 .. order @PlonkMaxPolyDegreeBS - 1] `shouldBe` True
             describe "Lagrange polynomial" $ do
                 it "should satisfy the definition" $ do
-                    all propPolyVecLagrange [1 .. order @Plonk] `shouldBe` True
+                    all propPolyVecLagrange [1 .. order @PlonkBS] `shouldBe` True
             describe "polyVecGrandProduct" $ do
                 it "should satisfy the definition" $ do
-                    property $ propPolyVecGrandProduct @F @Plonk
+                    property $ propPolyVecGrandProduct @F @PlonkBS

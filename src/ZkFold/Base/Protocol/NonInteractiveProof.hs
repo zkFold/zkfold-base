@@ -1,9 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof where
 
 import           Crypto.Hash.SHA256          (hash)
-import           Data.ByteString             (ByteString, snoc)
+import           Data.ByteString             (ByteString, cons)
 import           Data.Maybe                  (fromJust)
 import           Data.Typeable               (Typeable)
 import           Prelude
@@ -11,18 +12,29 @@ import           Test.QuickCheck             (Arbitrary)
 
 import           ZkFold.Base.Data.ByteString (ToByteString(..), FromByteString (..))
 
-type Transcript = ByteString
+class Monoid t => ToTranscript t a where
+    toTranscript :: a -> t
 
-transcript :: ToByteString a => Transcript -> a -> Transcript
-transcript ts a = ts <> toByteString a
+instance ToByteString a => ToTranscript ByteString a where
+    toTranscript = toByteString
 
-challenge :: FromByteString a => Transcript -> (a, Transcript)
+transcript :: ToTranscript t a => t -> a -> t
+transcript ts a = ts <> toTranscript a
+
+class Monoid t => FromTranscript t a where
+    newTranscript  :: t -> t
+    fromTranscript :: t -> a
+
+instance FromByteString a => FromTranscript ByteString a where
+    newTranscript  = cons 0
+    fromTranscript = fromJust . fromByteString . hash
+
+challenge :: forall t a . FromTranscript t a => t -> (a, t)
 challenge ts =
-    let bs  = hash ts
-        ts' = snoc ts 0
-    in (fromJust $ fromByteString bs, ts')
+    let ts' = newTranscript @t @a ts
+    in (fromTranscript ts', ts')
 
-challenges :: FromByteString a => Transcript -> Integer -> ([a], Transcript)
+challenges :: FromTranscript t a => t -> Integer -> ([a], t)
 challenges ts0 n = go ts0 n []
   where
     go ts 0 acc = (acc, ts)
@@ -33,6 +45,8 @@ challenges ts0 n = go ts0 n []
 class (Arbitrary (Params a), Arbitrary (SetupSecret a), Arbitrary (ProverSecret a), Arbitrary (Witness a),
        Show (Setup a), Show (ProverSecret a), Show (Witness a), Typeable a)
         => NonInteractiveProof a where
+    type Transcript a
+
     type Params a
 
     type SetupSecret a

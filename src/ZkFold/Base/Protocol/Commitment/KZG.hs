@@ -2,7 +2,7 @@
 
 module ZkFold.Base.Protocol.Commitment.KZG where
 
-import           Data.ByteString                             (empty)
+import           Data.ByteString                             (ByteString, empty)
 import           Data.Map                                    (Map, (!), insert, toList, keys, fromList)
 import           Data.Data                                   (Typeable)
 import           Prelude                                     hiding (Num(..), (^), (/), sum, length)
@@ -45,6 +45,7 @@ instance Finite d => Arbitrary (WitnessKZG d) where
 
 -- TODO: check list lengths
 instance forall d . (Finite d, Typeable (KZG d)) => NonInteractiveProof (KZG d) where
+    type Transcript (KZG d)   = ByteString
     type Params (KZG d)       = ()
     type SetupSecret (KZG d)  = F
     type Setup (KZG d)        = ([G1], G2, G2)
@@ -63,9 +64,9 @@ instance forall d . (Finite d, Typeable (KZG d)) => NonInteractiveProof (KZG d) 
     prove :: ProverSecret (KZG d) -> Setup (KZG d) -> Witness (KZG d) -> (Input (KZG d), Proof (KZG d))
     prove _ (gs, _, _) w = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
-            proveOne :: (Transcript, (Input (KZG d), Proof (KZG d)))
+            proveOne :: (Transcript (KZG d), (Input (KZG d), Proof (KZG d)))
                 -> (F, [PolyVec F (KZG d)])
-                -> (Transcript, (Input (KZG d), Proof (KZG d)))
+                -> (Transcript (KZG d), (Input (KZG d), Proof (KZG d)))
             proveOne (ts, (iMap, pMap)) (z, fs) = (ts'', (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
                     cms  = map (com gs) fs
@@ -76,7 +77,7 @@ instance forall d . (Finite d, Typeable (KZG d)) => NonInteractiveProof (KZG d) 
                         `transcript` fzs
                         `transcript` cms
                     h            = sum $ zipWith scalePV gamma  $ map (`provePolyVecEval` z) fs
-                    ts''         = if ts == empty then ts' else snd $ challenge @F ts'
+                    ts''         = if ts == empty then ts' else snd $ challenge @(Transcript (KZG d)) @F ts'
 
     verify :: Setup (KZG d) -> Input (KZG d) -> Proof (KZG d) -> Bool
     verify (gs, h0, h1) input proof =
@@ -85,7 +86,7 @@ instance forall d . (Finite d, Typeable (KZG d)) => NonInteractiveProof (KZG d) 
                 p2 = pairing e1 h1
             in p1 == p2
         where
-            prepareVerifyOne :: (Input (KZG d), Proof (KZG d)) -> (Transcript, (G1, G1)) -> F -> (Transcript, (G1, G1))
+            prepareVerifyOne :: (Input (KZG d), Proof (KZG d)) -> (Transcript (KZG d), (G1, G1)) -> F -> (Transcript (KZG d), (G1, G1))
             prepareVerifyOne (iMap, pMap) (ts, (v0, v1)) z = (ts'', (v0 + v0', v1 + v1'))
                 where
                     (cms, fzs) = iMap ! z
