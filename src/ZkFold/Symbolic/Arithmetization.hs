@@ -103,12 +103,11 @@ instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) w
 
     typeSize = error "typeSize: not implemented"
 
--- | Arithmetic circuit in the form of a rank-1 constraint system (R1CS).
--- This type represents the result of compilation of a function into a R1CS.
+-- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a = ArithmeticCircuit
     {
         acMatrices :: Map Integer (Constraint a),
-        -- ^ The R1CS matrices
+        -- ^ The system of polynomial constraints
         acInput    :: [Integer],
         -- ^ The input variables
         acWitness  :: Map Integer a -> Map Integer a,
@@ -397,7 +396,7 @@ acPrint r = do
 ------------------------------------- Variables -------------------------------------
 
 -- | A finite field of a large order.
--- It is used in the R1CS compiler for generating new variable indices.
+-- It is used in the compiler for generating new variable indices.
 --
 -- TODO: move this elsewhere
 data BigField
@@ -423,9 +422,6 @@ newVariable = do
 
 newVariableFromConstraint :: (Eq a, ToBits a) => (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
 newVariableFromConstraint con = con2var . con <$> newVariable
-
--- newVariableFromVariable :: Integer -> State (R1CS a) Integer
--- newVariableFromVariable x = fromZp . toZp @BigField . (x *)  <$> newVariable
 
 addVariable :: Integer -> State (ArithmeticCircuit a) ()
 addVariable x = modify (\r -> r { acOutput = x, acVarOrder = insert (length (acVarOrder r), x) x (acVarOrder r)})
