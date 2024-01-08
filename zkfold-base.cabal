@@ -154,6 +154,7 @@ test-suite zkfold-base-examples
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
+      cryptohash-sha256                          ,
       fixed-length                               ,
       tfp                                        ,
       zkfold-base                                ,
