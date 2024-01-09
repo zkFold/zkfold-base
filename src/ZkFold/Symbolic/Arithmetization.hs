@@ -12,6 +12,11 @@ module ZkFold.Symbolic.Arithmetization (
         mapVarArithmeticCircuit,
         mapVarWitness,
         -- low-level functions
+        constraint,
+        assignment,
+        addVariable,
+        newVariable,
+        newVariableFromConstraint,
         eval,
         forceZero,
         -- information about the system
