@@ -83,8 +83,10 @@ library
       ZkFold.Prelude
       ZkFold.Symbolic.Arithmetization
       ZkFold.Symbolic.Cardano.Types
+      ZkFold.Symbolic.Cardano.Types.Address
       ZkFold.Symbolic.Cardano.Types.Script
       ZkFold.Symbolic.Cardano.Types.Tx
+      ZkFold.Symbolic.Cardano.Types.TxOut
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.Conditional

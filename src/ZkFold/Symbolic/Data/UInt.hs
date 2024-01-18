@@ -51,7 +51,7 @@ instance (FiniteField a, Eq a, ToBits a) => IntType UInt32 (ArithmeticCircuit a)
             Bool b = ac >= (two ^ (32 :: Integer))
         in execState forceZero b
 
-instance (FiniteField a, Eq a, ToBits a, IntType UInt32 (ArithmeticCircuit a)) => Arithmetizable a (UInt32 (ArithmeticCircuit a)) where
+instance (FiniteField a, Eq a, ToBits a, Arithmetizable a x) => Arithmetizable a (UInt32 x) where
     arithmetize (UInt32 a) = do
         modify (rangeCheck @UInt32)
         arithmetize a

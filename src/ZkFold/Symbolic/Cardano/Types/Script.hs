@@ -7,13 +7,13 @@ import           Prelude                          (Eq (..), ($), error, otherwis
 import           ZkFold.Symbolic.Arithmetization (Arithmetizable(..))
 import           ZkFold.Prelude                  (length)
 
-newtype Script x = Script x
+newtype ScriptHash x = ScriptHash x
 
-instance Arithmetizable a x => Arithmetizable a (Script x) where
-    arithmetize (Script x) = arithmetize x
+instance Arithmetizable a x => Arithmetizable a (ScriptHash x) where
+    arithmetize (ScriptHash x) = arithmetize x
 
     restore script
-        | length script == typeSize @a @(Script x) = Script $ restore script
-        | otherwise = error "restore Script: wrong number of arguments"
+        | length script == typeSize @a @(ScriptHash x) = ScriptHash $ restore script
+        | otherwise = error "restore ScriptHash: wrong number of arguments"
 
     typeSize = typeSize @a @x

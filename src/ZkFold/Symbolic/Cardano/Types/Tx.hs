@@ -7,6 +7,7 @@ import           Prelude                          (Eq (..), ($), error, otherwis
 import           ZkFold.Symbolic.Arithmetization (Arithmetizable(..))
 import           ZkFold.Prelude                  (length)
 
+-- TODO: make a proper implementation
 newtype Tx x = Tx x
 
 instance Arithmetizable a x => Arithmetizable a (Tx x) where

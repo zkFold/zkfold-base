@@ -87,6 +87,22 @@ instance (Arithmetizable a x, Arithmetizable a y) => Arithmetizable a (x, y) whe
 
     typeSize = typeSize @a @x + typeSize @a @y
 
+instance (Arithmetizable a x, Arithmetizable a y, Arithmetizable a z) => Arithmetizable a (x, y, z) where
+    arithmetize (a, b, c) = do
+        x <- arithmetize a
+        y <- arithmetize b
+        z <- arithmetize c
+        return $ x ++ y ++ z
+
+    restore rs
+        | length rs /= typeSize @a @(x, y, z) = error "restore: wrong number of arguments"
+        | otherwise = (restore rsX, restore rsY, restore rsZ)
+        where
+            (rsX, rsYZ) = splitAt (typeSize @a @x) rs
+            (rsY, rsZ)  = splitAt (typeSize @a @y) rsYZ
+
+    typeSize = typeSize @a @x + typeSize @a @y + typeSize @a @z
+
 instance (Arithmetizable a x, Natural n) => Arithmetizable a (List n x) where
     arithmetize xs = concat <$> mapM arithmetize xs
 
