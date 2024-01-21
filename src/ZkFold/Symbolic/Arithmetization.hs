@@ -120,9 +120,9 @@ instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) w
         x <- mapM (const input) [1..typeSize @a @x]
         arithmetize (f $ restore x)
 
-    restore = error "restore: not implemented"
+    restore = error "restore (x -> f): not implemented"
 
-    typeSize = error "typeSize: not implemented"
+    typeSize = error "typeSize (x -> f): not implemented"
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a = ArithmeticCircuit
@@ -204,6 +204,23 @@ apply xs = modify (\(r :: ArithmeticCircuit a) ->
         acInput = drop n ins,
         acWitness = acWitness r . (fromList (zip (take n ins) xs) `union`)
     })
+
+-- TODO: Add proper symbolic application functions
+
+-- applySymOne :: ArithmeticCircuit a -> State (ArithmeticCircuit a) ()
+-- applySymOne x = modify (\(f :: ArithmeticCircuit a) ->
+--     let ins = acInput f
+--     in f
+--     {
+--         acInput = tail ins,
+--         acWitness = acWitness f . (singleton (head ins) (eval x empty)  `union`)
+--     })
+
+-- applySym :: [ArithmeticCircuit a] -> State (ArithmeticCircuit a) ()
+-- applySym = foldr ((>>) . applySymOne) (return ())
+
+-- applySymArgs :: ArithmeticCircuit a -> [ArithmeticCircuit a] -> ArithmeticCircuit a
+-- applySymArgs x xs = execState (applySym xs) x
 
 ------------------------------------- Instances -------------------------------------
 
@@ -467,7 +484,7 @@ mapVarWitness :: [Integer] -> (Map Integer a -> Map Integer a)
 mapVarWitness vars = mapKeys (mapVar vars)
 
 mapVarArithmeticCircuit :: ArithmeticCircuit a -> ArithmeticCircuit a
-mapVarArithmeticCircuit ac = 
+mapVarArithmeticCircuit ac =
     let vars = nubOrd $ sort $ 0 : concatMap (keys . getPowers) (concatMap getMonomials $ acSystem ac)
     in ac
     {
