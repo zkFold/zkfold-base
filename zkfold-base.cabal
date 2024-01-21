@@ -87,6 +87,7 @@ library
       ZkFold.Symbolic.Cardano.Types.Script
       ZkFold.Symbolic.Cardano.Types.Tx
       ZkFold.Symbolic.Cardano.Types.TxOut
+      ZkFold.Symbolic.Cardano.UPLC
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.Conditional
