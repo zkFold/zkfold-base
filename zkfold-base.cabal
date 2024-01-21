@@ -87,6 +87,7 @@ library
       ZkFold.Symbolic.Cardano.Types.Script
       ZkFold.Symbolic.Cardano.Types.Tx
       ZkFold.Symbolic.Cardano.Types.TxOut
+      ZkFold.Symbolic.Cardano.Types.Value
       ZkFold.Symbolic.Cardano.UPLC
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Data.Bool
@@ -154,7 +155,7 @@ test-suite zkfold-base-examples
       Examples.LEQ
       Examples.MiMCHash
       Examples.MiMC.Constants
-      Examples.VestingScript
+      Examples.ReverseList
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
