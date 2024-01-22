@@ -6,7 +6,6 @@ import           Prelude                                     hiding (Num(..), Eq
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Prelude                              (writeFileJSON)
 import           ZkFold.Symbolic.Data.Bool                   (Bool(..))
 import           ZkFold.Symbolic.Data.Ord                    (Ord(..))
 import           ZkFold.Symbolic.Compiler
@@ -18,12 +17,8 @@ leq x y = x <= y
           
 exampleLEQ :: IO ()
 exampleLEQ = do
-    let ac   = compile @(Zp BLS12_381_Scalar) (leq @(ArithmeticCircuit (Zp BLS12_381_Scalar))) :: ArithmeticCircuit (Zp BLS12_381_Scalar)
-        file = "compiled_scripts/leq.json"
+    let file = "compiled_scripts/leq.json"
 
     putStrLn "\nExample: (<=) operation\n"
 
-    putStrLn $ "Number of constraints: " ++ show (acSizeN ac)
-    putStrLn $ "Number of variables: "   ++ show (acSizeM ac)
-    writeFileJSON file ac
-    putStrLn $ "Script saved: " ++ file
+    compileIO @(Zp BLS12_381_Scalar) file (leq @(ArithmeticCircuit (Zp BLS12_381_Scalar)))

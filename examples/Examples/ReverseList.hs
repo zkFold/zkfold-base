@@ -10,7 +10,7 @@ import           Type.Data.Num.Unary                         (Natural)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Prelude                              ((!!), writeFileJSON)
+import           ZkFold.Prelude                              ((!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.List                   (List, U32, lengthList, indicesInteger)
 
@@ -25,15 +25,8 @@ reverseList lst = map (`index` lst) (map (toList indices !!) inds)
 
 exampleReverseList :: IO ()
 exampleReverseList = do
-
-    let acs   = toList @U32 (compile @(Zp BLS12_381_Scalar) (reverseList @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @U32))
-                    :: [X (ArithmeticCircuit (Zp BLS12_381_Scalar))]
-        ac    = fst $ head acs
-        file = "compiled_scripts/reverseList.json"
+    let file = "compiled_scripts/reverseList.json"
 
     putStrLn "\nExample: Reverse List function\n"
 
-    putStrLn $ "Number of constraints: " ++ show (acSizeN ac)
-    putStrLn $ "Number of variables: "   ++ show (acSizeM ac)
-    writeFileJSON file ac
-    putStrLn $ "Script saved: " ++ file
+    compileIO @(Zp BLS12_381_Scalar) file (reverseList @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @U32)

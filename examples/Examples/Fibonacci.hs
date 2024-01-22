@@ -7,7 +7,6 @@ import           Prelude                         hiding (Num(..), Eq(..), Bool, 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Prelude                              (writeFileJSON)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional            (bool)
@@ -25,13 +24,8 @@ fibonacciIndex nMax x = foldl (\m k -> bool m (fromConstant @I @a k) (fib k one 
 exampleFibonacci :: IO ()
 exampleFibonacci = do
     let nMax = 100
-
-    let ac   = compile @(Zp BLS12_381_Scalar) (fibonacciIndex @(ArithmeticCircuit (Zp BLS12_381_Scalar)) nMax) :: ArithmeticCircuit (Zp BLS12_381_Scalar)
         file = "compiled_scripts/fibonacciIndex.json"
 
     putStrLn "\nExample: Fibonacci index function\n"
 
-    putStrLn $ "Number of constraints: " ++ show (acSizeN ac)
-    putStrLn $ "Number of variables: "   ++ show (acSizeM ac)
-    writeFileJSON file ac
-    putStrLn $ "Script saved: " ++ file
+    compileIO @(Zp BLS12_381_Scalar) file (fibonacciIndex @(ArithmeticCircuit (Zp BLS12_381_Scalar)) nMax)

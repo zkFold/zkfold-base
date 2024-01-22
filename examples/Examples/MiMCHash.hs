@@ -7,7 +7,7 @@ import           Prelude                                     hiding ((||), not, 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Prelude                              ((!!), writeFileJSON)
+import           ZkFold.Prelude                              ((!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Conditional            (bool)
 import           ZkFold.Symbolic.Types                       (Symbolic)
@@ -24,13 +24,8 @@ mimcHash nRounds k xL xR =
 exampleMiMC :: IO ()
 exampleMiMC = do
     let nRounds = 220
-
-    let ac   = compile @(Zp BLS12_381_Scalar) (mimcHash @(ArithmeticCircuit (Zp BLS12_381_Scalar)) nRounds zero) :: ArithmeticCircuit (Zp BLS12_381_Scalar)
         file = "compiled_scripts/mimcHash.json"
 
     putStrLn "\nExample: MiMC hash function\n"
 
-    putStrLn $ "Number of constraints: " ++ show (acSizeN ac)
-    putStrLn $ "Number of variables: "   ++ show (acSizeM ac)
-    writeFileJSON file ac
-    putStrLn $ "Script saved: " ++ file
+    compileIO @(Zp BLS12_381_Scalar) file (mimcHash @(ArithmeticCircuit (Zp BLS12_381_Scalar)) nRounds zero)
