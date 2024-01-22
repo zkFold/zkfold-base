@@ -15,7 +15,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                              (length)
 
--- TODO: make this module generic in the elliptic curve with pairing
+-- TODO (Issue #24): make this module generic in the elliptic curve with pairing
 
 type F = ScalarField BLS12_381_G1
 type G1 = Point BLS12_381_G1
@@ -26,7 +26,7 @@ type PolyVecEvalProof size = (F, PolyVec F size)
 
 data KZG d
 
--- TODO: move this to another module
+-- TODO (Issue #24): move this to another module
 data D32
 instance Finite D32 where
     order = 32
@@ -43,7 +43,7 @@ instance Finite d => Arbitrary (WitnessKZG d) where
         m <- chooseInteger (1, 5)
         WitnessKZG . fromList <$> mapM (const $ (,) <$> arbitrary <*> mapM (const arbitrary) [1..m]) [1..n]
 
--- TODO: check list lengths
+-- TODO (Issue #18): check list lengths
 instance forall d . (Finite d, Typeable (KZG d)) => NonInteractiveProof (KZG d) where
     type Transcript (KZG d)   = ByteString
     type Params (KZG d)       = ()

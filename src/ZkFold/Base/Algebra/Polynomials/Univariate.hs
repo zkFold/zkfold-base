@@ -11,7 +11,7 @@ import           ZkFold.Prelude                    (replicate, length, take, dro
 
 -------------------------------- Arbitrary degree polynomials --------------------------------
 
--- TODO: hide constructor
+-- TODO (Issue #17): hide constructor
 newtype Poly c = P [c]
     deriving (Eq, Show)
 
@@ -68,7 +68,7 @@ eea a b = go (a, one) (b, zero)
 
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
--- TODO: hide constructor
+-- TODO (Issue #17): hide constructor
 newtype PolyVec c size = PV [c]
     deriving (Eq, Show)
 
@@ -93,7 +93,7 @@ instance (Ring c, Finite size) => AdditiveMonoid (PolyVec c size) where
 instance (Ring c, Finite size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ map negate cs
 
--- TODO: check for overflow
+-- TODO (Issue #18): check for overflow
 instance (Ring c, Finite size, Eq c) => MultiplicativeSemigroup (PolyVec c size) where
     l * r = poly2vec $ vec2poly l * vec2poly r
 

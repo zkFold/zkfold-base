@@ -13,7 +13,7 @@ import           ZkFold.Symbolic.Data.Eq                     (Eq(..))
 import           ZkFold.Symbolic.Compiler                    (compile)
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
--- | == operation
+-- | (==) operation
 eq :: forall a . Symbolic a => a -> a -> Bool a
 eq x y = x == y
           

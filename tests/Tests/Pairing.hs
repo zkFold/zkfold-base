@@ -11,7 +11,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve(..),
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, scalePV, evalPolyVec, toPolyVec, vec2poly, deg)
 import           ZkFold.Base.Protocol.Commitment.KZG         (com)
 
--- TODO: make this test polymorphic in the elliptic curve
+-- TODO (Issue #21): make this test polymorphic in the elliptic curve
 
 data TestPairing
 instance Finite TestPairing where

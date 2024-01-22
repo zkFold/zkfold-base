@@ -6,7 +6,7 @@ import           Prelude                          hiding (Num(..), (!!), length)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                   ((!!), length, elemIndex)
 
--- TODO: make the code safer
+-- TODO (Issue #18): make the code safer
 
 type IndexSet = [Integer]
 type IndexPartition = Map Integer IndexSet

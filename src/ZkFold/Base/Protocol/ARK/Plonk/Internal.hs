@@ -22,8 +22,7 @@ import           ZkFold.Prelude                                        (take, le
 
 import           ZkFold.Symbolic.Arithmetization                       (ArithmeticCircuit (..), acSystem, mapVarArithmeticCircuit, mapVarWitness)
 
--- TODO: safer code
--- TODO: better tests for this module
+-- TODO (Issue #18): safer code and better tests for this module
 
 getParams :: Integer -> (F, F, F)
 getParams l = findK' $ mkStdGen 0

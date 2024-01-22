@@ -14,7 +14,7 @@ import           ZkFold.Symbolic.Data.Bool        (BoolType (..), Bool (..))
 import           ZkFold.Symbolic.Data.Conditional (Conditional(..), bool)
 import           ZkFold.Symbolic.Data.Eq          (Eq(..))
 
--- TODO: add `compare`
+-- TODO (Issue #23): add `compare`
 class Ord b a where
     (<=) :: a -> a -> b
 

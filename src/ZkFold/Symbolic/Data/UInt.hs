@@ -20,7 +20,7 @@ class IntType i x where
 instance IntType i (Zp a) where
     rangeCheck = id
 
--- TODO: hide this constructor
+-- TODO (Issue #18): hide this constructor
 newtype UInt32 x = UInt32 x
     deriving (Show, Eq)
 

@@ -33,7 +33,7 @@ instance BoolType Haskell.Bool where
 
     (||)  = (Haskell.||)
 
--- TODO: hide this constructor
+-- TODO (Issue #18): hide this constructor
 newtype Bool x = Bool x
     deriving (Eq)
 instance (Field x, Eq x) => Show (Bool x) where

@@ -4,6 +4,9 @@ import           Data.ByteString (ByteString, cons, uncons, empty)
 import           Data.Word       (Word8)
 import           Prelude
 
+-- This module is currently used for transcripts in non-interactive proof protocols.
+-- TODO (Issue #19): use a serialisation library instead
+
 class ToByteString a where
     toByteString :: a -> ByteString
 

@@ -21,7 +21,7 @@ import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                              (take, drop, (!))
 import           ZkFold.Symbolic.Arithmetization             (ArithmeticCircuit (..), mapVarArithmeticCircuit)
 
--- TODO: make this module generic in the elliptic curve with pairing
+-- TODO (Issue #25): make this module generic in the elliptic curve with pairing
 
 type F = Zp BLS12_381_Scalar
 type G1 = Point BLS12_381_G1
@@ -31,12 +31,12 @@ data Plonk t
 
 type PlonkBS = Plonk ByteString
 
--- TODO: We should have several options for size of the polynomials. Most code should be generic in this parameter.
+-- TODO (Issue #25): We should have several options for size of the polynomials. Most code should be generic in this parameter.
 instance Finite (Plonk t) where
     -- n
     order = 32
 
--- TODO: check that the extended polynomials are of the right size
+-- TODO (Issue #25): check that the extended polynomials are of the right size
 data PlonkMaxPolyDegree t
 type PlonkMaxPolyDegreeBS = PlonkMaxPolyDegree ByteString
 instance Finite (PlonkMaxPolyDegree t) where
@@ -46,7 +46,7 @@ type PolyPlonkExtended t = PolyVec F (PlonkMaxPolyDegree t)
 
 data ParamsPlonk = ParamsPlonk F F F (Map Integer F) (ArithmeticCircuit F)
     deriving (Show)
--- TODO: make a proper implementation of Arbitrary
+-- TODO (Issue #25): make a proper implementation of Arbitrary
 instance Arbitrary ParamsPlonk where
     arbitrary = do
         let (omega, k1, k2) = getParams 5
@@ -61,21 +61,21 @@ instance Arbitrary ProverSecretPlonk where
         <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
 newtype WitnessMapPlonk t = WitnessMap (Map.Map Integer F -> (PolyVec F (Plonk t), PolyVec F (Plonk t), PolyVec F (Plonk t)))
--- TODO: make a proper implementation of Show
+-- TODO (Issue #25): make a proper implementation of Show
 instance Show (WitnessMapPlonk t) where
     show _ = "WitnessMap"
 
 newtype WitnessInputPlonk = WitnessInputPlonk (Map.Map Integer F)
--- TODO: make a proper implementation of Show
+-- TODO (Issue #25): make a proper implementation of Show
 instance Show WitnessInputPlonk where
     show _ = "WitnessInput"
--- TODO: make a proper implementation of Arbitrary
+-- TODO (Issue #25): make a proper implementation of Arbitrary
 instance Arbitrary WitnessInputPlonk where
     arbitrary = do
         x <- arbitrary
         return $ WitnessInputPlonk $ Map.fromList [(1, x), (2, 15/x)]
 
--- TODO: check list lengths
+-- TODO (Issue #18): make the code safer, check list lengths (?)
 instance forall t . (Typeable t, ToTranscript t F, ToTranscript t G1, FromTranscript t F) => NonInteractiveProof (Plonk t) where
     type Transcript (Plonk t)   = t
     type Params (Plonk t)       = ParamsPlonk

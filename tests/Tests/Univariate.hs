@@ -21,8 +21,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk             (PlonkBS, PlonkMaxPo
 import           ZkFold.Base.Protocol.Commitment.KZG        (F)
 import           ZkFold.Prelude                             (take, length)
 
--- TODO: remove dependencies from KZG and Plonk
--- TODO: make all tests polymorphic in the polynomial type
+-- TODO (Issue #22): remove dependencies from KZG and Plonk
+-- TODO (Issue #22): make all tests polymorphic in the polynomial type
 
 propToPolyVec :: forall c size . (Ring c, Finite size) => [c] -> Bool
 propToPolyVec cs =
