@@ -4,7 +4,7 @@ module ZkFold.Symbolic.Cardano.Types.Script where
 
 import           Prelude                          (Eq (..), ($), error, otherwise)
 
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable(..))
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Prelude                  (length)
 
 newtype ScriptHash x = ScriptHash x

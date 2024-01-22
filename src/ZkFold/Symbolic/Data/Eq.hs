@@ -10,7 +10,7 @@ import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable (..), ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool       (BoolType (..), Bool (..), any)
 
 class BoolType b => Eq b a where

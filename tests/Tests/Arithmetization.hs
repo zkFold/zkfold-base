@@ -12,7 +12,7 @@ import           Tests.Arithmetization.Test1     (specArithmetization1)
 import           Tests.Arithmetization.Test2     (specArithmetization2)
 import           Tests.Arithmetization.Test3     (specArithmetization3)
 
-import           ZkFold.Symbolic.Arithmetization (ArithmeticCircuit (..), mapVarArithmeticCircuit, eval)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Types           (Symbolic)
 
 propCircuitInvariance :: Eq a => (ArithmeticCircuit a, a, a) -> Bool

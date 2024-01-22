@@ -7,8 +7,7 @@ import           Test.Hspec
 
 import           ZkFold.Base.Algebra.Basic.Class (Finite (..), Prime)
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Symbolic.Arithmetization (ArithmeticCircuit, acValue, applyArgs, acValue)
-import           ZkFold.Symbolic.Compiler        (compile)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool       (Bool (..))
 import           ZkFold.Symbolic.Data.Ord        (Ord (..))
 import           ZkFold.Symbolic.Types           (Symbolic)

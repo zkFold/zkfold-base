@@ -5,7 +5,7 @@ module ZkFold.Symbolic.Cardano.Types.Value where
 import           Prelude                         (Eq (..), ($), error, otherwise, concat, return, mapM, (++), map)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable(..))
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.UInt       (UInt32)
 import           ZkFold.Prelude                  (length, take, drop)
 

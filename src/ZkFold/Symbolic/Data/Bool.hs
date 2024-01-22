@@ -9,7 +9,7 @@ import           Prelude                         hiding (Num(..), Bool, (/), (&&
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable (..), ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler
 
 class BoolType b where
     true  :: b

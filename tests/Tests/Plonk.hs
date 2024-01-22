@@ -19,7 +19,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate   (toPolyVec, polyVe
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkConstaint, toPlonkArithmetization)
 import           ZkFold.Prelude                               ((!), take, replicate)
-import           ZkFold.Symbolic.Arithmetization              (ArithmeticCircuit (..), mapVarArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler
 
 propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
 propPlonkConstraintConversion x (x1, x2, x3) =

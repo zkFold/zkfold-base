@@ -81,7 +81,6 @@ library
       ZkFold.Base.Protocol.Commitment.Sona
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Prelude
-      ZkFold.Symbolic.Arithmetization
       ZkFold.Symbolic.Cardano.Types
       ZkFold.Symbolic.Cardano.Types.Address
       ZkFold.Symbolic.Cardano.Types.Script
@@ -90,6 +89,11 @@ library
       ZkFold.Symbolic.Cardano.Types.Value
       ZkFold.Symbolic.Cardano.UPLC
       ZkFold.Symbolic.Compiler
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
+      ZkFold.Symbolic.Compiler.Arithmetizable
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.Eq

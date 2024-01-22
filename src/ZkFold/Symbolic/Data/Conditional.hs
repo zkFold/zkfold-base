@@ -8,7 +8,7 @@ import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Symbolic.Arithmetization (ArithmeticCircuit, Arithmetizable (..))
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool       (BoolType (..), Bool (..))
 
 class BoolType b => Conditional b a where

@@ -4,7 +4,7 @@ module ZkFold.Symbolic.Cardano.Types.Tx where
 
 import           Prelude                          (Eq (..), ($), error, otherwise)
 
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable(..))
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Prelude                  (length)
 
 -- TODO (Issue #10): make a proper implementation

@@ -27,7 +27,7 @@ import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate          as Poly
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate.Internal as Poly
 import           ZkFold.Prelude                   ((!!))
-import           ZkFold.Symbolic.Arithmetization
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.GroebnerBasis.Internal
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Types

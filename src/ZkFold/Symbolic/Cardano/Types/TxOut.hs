@@ -4,7 +4,7 @@ module ZkFold.Symbolic.Cardano.Types.TxOut where
 
 import           Prelude                          (Eq (..), ($), error, otherwise)
 
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable(..))
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Prelude                  (length)
 
 newtype DatumHash x = DatumHash x

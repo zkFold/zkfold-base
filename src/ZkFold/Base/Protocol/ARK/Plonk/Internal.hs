@@ -19,8 +19,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Polynomi
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal (Monom(..), Var(..))
 import           ZkFold.Base.Protocol.Commitment.KZG
 import           ZkFold.Prelude                                        (take, length)
-
-import           ZkFold.Symbolic.Arithmetization                       (ArithmeticCircuit (..), acSystem, mapVarArithmeticCircuit, mapVarWitness)
+import           ZkFold.Symbolic.Compiler
 
 -- TODO (Issue #18): safer code and better tests for this module
 

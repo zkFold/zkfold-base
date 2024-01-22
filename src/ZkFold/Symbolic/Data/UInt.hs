@@ -10,7 +10,7 @@ import           Prelude                         hiding ((^), Num(..), Bool(..),
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable (..), ArithmeticCircuit(..), forceZero)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool       (Bool(..))
 import           ZkFold.Symbolic.Data.Ord        (Ord(..))
 

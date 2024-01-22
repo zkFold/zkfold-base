@@ -7,10 +7,9 @@ import           Prelude                                     hiding (Num(..), Eq
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Prelude                              (writeFileJSON)
-import           ZkFold.Symbolic.Arithmetization             (acSizeM, acSizeN, ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.Bool                   (Bool(..))
 import           ZkFold.Symbolic.Data.Ord                    (Ord(..))
-import           ZkFold.Symbolic.Compiler                    (compile)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 -- | (<=) operation

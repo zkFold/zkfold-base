@@ -8,8 +8,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Prelude                              ((!!), writeFileJSON)
-import           ZkFold.Symbolic.Arithmetization             (ArithmeticCircuit, acSizeM, acSizeN)
-import           ZkFold.Symbolic.Compiler                    (compile)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Conditional            (bool)
 import           ZkFold.Symbolic.Types                       (Symbolic)
 

@@ -9,8 +9,7 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Arithmetization  (acValue, applyArgs, ArithmeticCircuit(..))
-import           ZkFold.Symbolic.Compiler         (compile)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional (Conditional(..))
 import           ZkFold.Symbolic.Data.Eq          (Eq (..))

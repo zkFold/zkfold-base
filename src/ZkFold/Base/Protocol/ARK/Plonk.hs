@@ -19,7 +19,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (toPlonkArithmetiza
 import           ZkFold.Base.Protocol.Commitment.KZG         (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                              (take, drop, (!))
-import           ZkFold.Symbolic.Arithmetization             (ArithmeticCircuit (..), mapVarArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
 

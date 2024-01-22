@@ -5,7 +5,7 @@ module ZkFold.Symbolic.Cardano.Types.Address where
 import           Prelude                          (Eq (..), ($), error, otherwise, concat, return)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable(..))
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Prelude                  (length, take, drop)
 
 data Address x = Address

@@ -7,7 +7,7 @@ import           Control.Monad.State             (MonadState (..))
 import           Prelude                         (Eq, Monoid (..), ($), return, error)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Arithmetization (Arithmetizable (..), ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler
 
 data BuiltinFunctions
     = AddField
