@@ -1,51 +1,69 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
+{-# OPTIONS_GHC -Wno-orphans     #-}
+
 module ZkFold.Symbolic.Cardano.UPLC where
 
-import           Control.Monad.State             (MonadState (..))
-import           Prelude                         (Eq, Monoid (..), ($), return, error)
+import           Data.Kind                               (Type)
+import           Data.Maybe                              (fromJust)
+import           Data.Typeable                           (Typeable, Proxy(..), cast)
+import           Prelude                                 (Eq (..), ($), error, snd, otherwise)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Base.Algebra.Basic.Class         (FiniteField, ToBits)
+import           ZkFold.Symbolic.Cardano.UPLC.Builtins
+import           ZkFold.Symbolic.Cardano.UPLC.Inference
+import           ZkFold.Symbolic.Cardano.UPLC.Term
+import           ZkFold.Symbolic.Cardano.UPLC.Type
+import           ZkFold.Symbolic.Compiler                (Arithmetizable (..))
+import           ZkFold.Symbolic.Compiler.Arithmetizable (SomeArithmetizable (..))
 
-data BuiltinFunctions
-    = AddField
-    | MulField
+-- TODO: we need to figure out what to do with error terms
 
-instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a BuiltinFunctions where
-    arithmetize AddField = arithmetize @a @(ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a) (+)
-    arithmetize MulField = arithmetize @a @(ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a) (*)
+data ArgList name a where
+    ArgListEmpty :: ArgList name a
+    ArgListCons  :: (Typeable t, Arithmetizable a t) => (name, t) -> ArgList name a -> ArgList name a
 
-    restore = error "restore Builtins: not implemented"
+class FromUPLC name fun a where
+    fromUPLC :: ArgList name a -> Term name fun a -> SomeArithmetizable a
 
-    typeSize = error "typeSize Builtins: not implemented"
+instance forall name fun (a :: Type) . (Eq name, Typeable name, Typeable fun, Eq fun, PlutusBuiltinFunction a fun, Typeable a) => FromUPLC name fun a where
+    fromUPLC ArgListEmpty (Var _) = error "fromUPLC: unknown variable"
+    fromUPLC (ArgListCons (x, t) xs) (Var y)
+        | x == y    = SomeArithmetizable t
+        | otherwise = fromUPLC @name @fun xs (Var y)
+    fromUPLC args term@(LamAbs x f) =
+        case snd $ inferTypes @name @fun term of
+            SomeFunction t1 t2 -> 
+                let t1' = functionToData t1
+                    t2' = functionToData t2
+                in case (t1', t2') of
+                    (SomeData (_ :: Proxy t1), SomeData (_ :: Proxy t2)) ->
+                        SomeArithmetizable $ \(arg :: t1) ->
+                            case fromUPLC (ArgListCons (x, arg) args) f of
+                                SomeArithmetizable res -> fromJust $ cast @_ @t2 res
+                    _ -> error "fromUPLC: LamAbs"
+            _ -> error "fromUPLC: LamAbs"
+    fromUPLC args (Apply f x) =
+        case snd $ inferTypes @name @fun f of
+            SomeFunction t1 t2 ->
+                let t1' = functionToData t1
+                    t2' = functionToData t2
+                in case (t1', t2', fromUPLC args f, fromUPLC args x) of
+                    (SomeData (_ :: Proxy t1), SomeData (_ :: Proxy t2), SomeArithmetizable f', SomeArithmetizable x') ->
+                        SomeArithmetizable ((fromJust $ cast @_ @(t1 -> t2) f') (fromJust $ cast @_ @t1 x') :: t2)
+                    _ -> error "fromUPLC: Apply"
+            _ -> error "fromUPLC: Apply"
+    fromUPLC args (Force t) = fromUPLC args t
+    fromUPLC args (Delay t) = fromUPLC args t
+    fromUPLC _ (Constant c) = SomeArithmetizable c
+    fromUPLC _ (Builtin b)  = builtinFunctionRep b
+    fromUPLC _ Error        = error "fromUPLC: Error"
 
--- Based on the November 2022 UPLC spec
-data Term fun a where
-    Var      :: (Arithmetizable a t) => t -> Term fun a
-    LamAbs   :: (Arithmetizable a t) => (t -> Term fun a) -> Term fun a
-    Apply    :: (Arithmetizable a t) => (t -> Term fun a) -> Term fun a -> Term fun a
-    Force    :: Term fun a -> Term fun a
-    Delay    :: Term fun a -> Term fun a
-    Constant :: (FromConstant c [ArithmeticCircuit a]) => c -> Term fun a
-    Builtin  :: fun -> Term fun a
-    Error    :: Term fun a
-
-instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (Term BuiltinFunctions a) where
-    arithmetize (Var x)       = arithmetize x
-    arithmetize (LamAbs f)    = arithmetize f
-    arithmetize (Apply f x)   = do
-        aX <- arithmetize x
-        arithmetize (f $ restore aX)
-    arithmetize (Force x)     = arithmetize x
-    arithmetize (Delay x)     = arithmetize x
-    arithmetize (Constant x)  = do
-        let vs = fromConstant x :: [ArithmeticCircuit a]
-        put $ mconcat vs
-        return vs
-    arithmetize (Builtin fun) = arithmetize fun
-    arithmetize Error         = error "arithmetize Term: Error"
+instance forall name (a :: Type) . (Typeable name, Eq name, Eq BuiltinFunctions, Typeable a, FiniteField a, Eq a, ToBits a)
+        => Arithmetizable a (Term name BuiltinFunctions a) where
+    arithmetize term = case fromUPLC @name @_ @a ArgListEmpty term of
+        SomeArithmetizable t -> arithmetize t
 
     restore = error "restore Term: not implemented"
 

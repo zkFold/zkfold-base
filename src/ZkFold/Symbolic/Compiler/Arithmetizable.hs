@@ -2,10 +2,12 @@
 {-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Symbolic.Compiler.Arithmetizable (
-        Arithmetizable(..)
+        Arithmetizable(..),
+        SomeArithmetizable (..)
     ) where
 
 import           Control.Monad.State                                 (State)
+import           Data.Typeable                                       (Typeable)
 import           Prelude                                             hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
 import           Type.Data.Num.Unary                                 (Natural)
 
@@ -26,6 +28,10 @@ class (FiniteField a, Eq a, ToBits a) => Arithmetizable a x where
 
     -- | Returns the number of finite field elements needed to desscribe `x`.
     typeSize :: Integer
+
+-- A wrapper for `Arithmetizable` types.
+data SomeArithmetizable a where
+    SomeArithmetizable :: (Typeable t, Arithmetizable a t) => t -> SomeArithmetizable a
 
 instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a () where
     arithmetize () = return []

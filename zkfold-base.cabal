@@ -88,6 +88,11 @@ library
       ZkFold.Symbolic.Cardano.Types.TxOut
       ZkFold.Symbolic.Cardano.Types.Value
       ZkFold.Symbolic.Cardano.UPLC
+      ZkFold.Symbolic.Cardano.UPLC.Builtins
+      ZkFold.Symbolic.Cardano.UPLC.Inference
+      ZkFold.Symbolic.Cardano.UPLC.Inference.Internal
+      ZkFold.Symbolic.Cardano.UPLC.Term
+      ZkFold.Symbolic.Cardano.UPLC.Type
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Compiler.ArithmeticCircuit
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance

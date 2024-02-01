@@ -1,5 +1,5 @@
 # zkfold-base
-ZkFold's Base library
+ZkFold's Base library. Compiles with GHC 9.6.3 and Cabal 3.10.2.1.
 
 # Tests
 To run tests, execute
