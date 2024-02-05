@@ -95,12 +95,14 @@ library
       ZkFold.Symbolic.Cardano.UPLC.Type
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Compiler.ArithmeticCircuit
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
       ZkFold.Symbolic.Compiler.Arithmetizable
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.Conditional
+      ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Ord

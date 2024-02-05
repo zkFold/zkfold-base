@@ -34,6 +34,9 @@ class AdditiveMonoid a => AdditiveGroup a where
 class MultiplicativeSemigroup a where
     (*) :: a -> a -> a
 
+product1 :: (Foldable t, MultiplicativeSemigroup a) => t a -> a
+product1 = foldl1 (*)
+
 class MultiplicativeSemigroup a => MultiplicativeMonoid a where
     one :: a
 

@@ -5,22 +5,22 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
-import           Control.Monad.State                                (MonadState (..), execState, evalState)
+import           Control.Monad.State                                    (MonadState (..), evalState, execState)
 import           Data.Aeson
-import           Data.Bool                                          (bool)
-import           Data.List                                          (nub)
-import           Data.Map                                           hiding (take, drop, splitAt, foldl, null, map, foldr)
-import           Prelude                                            hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
-import qualified Prelude                                            as Haskell
-import           System.Random                                      (mkStdGen, uniform)
-import           Test.QuickCheck                                    (Arbitrary (..))
+import           Data.List                                              (nub)
+import           Data.Map                                               hiding (drop,foldl,foldr, map, null, splitAt, take)
+import           Prelude                                                hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
+import qualified Prelude                                                as Haskell
+import           System.Random                                          (mkStdGen, uniform)
+import           Test.QuickCheck                                        (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate       (monomial, polynomial)
-import           ZkFold.Prelude                                     ((!!))
+import           ZkFold.Base.Algebra.Polynomials.Multivariate           (monomial, polynomial)
+import           ZkFold.Prelude                                         ((!!))
 
-import          ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import          ZkFold.Symbolic.Compiler.Arithmetizable             (Arithmetizable (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (invertC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.Arithmetizable                (Arithmetizable (..))
 
 ------------------------------------- Instances -------------------------------------
 
@@ -97,6 +97,20 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (ArithmeticCircuit a) 
         constraint $ con z
         assignment (negate $ eval r)
 
+    r1 - r2 = flip execState (r1 <> r2) $ do
+        let x1    = acOutput r1
+            x2    = acOutput r2
+            con z =
+                polynomial [
+                    monomial one (singleton x1 one),
+                    monomial (negate one) (singleton x2 one),
+                    monomial (negate one) (singleton z one)
+                ]
+        z <- newVariableFromConstraint con
+        addVariable z
+        constraint (con z)
+        assignment (eval r1 - eval r2)
+
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (ArithmeticCircuit a) where
     r1 * r2 = flip execState (r1 <> r2) $ do
         let x1  = acOutput r1
@@ -114,18 +128,7 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (ArithmeticCirc
     one = mempty
 
 instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (ArithmeticCircuit a) where
-    invert r = flip execState r $ do
-        let x    = acOutput r
-            con  = \y -> polynomial [monomial one (fromListWith (+) [(x, one), (y, one)])]
-        y <- newVariableFromConstraint con
-        addVariable y
-        constraint $ con y
-        assignment (bool zero one . (== zero) . eval r )
-        let con' = \z -> polynomial [monomial one (fromListWith (+) [(x, one), (z, one)]), monomial one (singleton y one), monomial (negate one) (singleton 0 one)]
-        z <- newVariableFromConstraint con'
-        addVariable z
-        constraint $ con' z
-        assignment (invert $ eval r)
+    invert = invertC
 
 instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
     fromConstant c = flip execState mempty $ do
