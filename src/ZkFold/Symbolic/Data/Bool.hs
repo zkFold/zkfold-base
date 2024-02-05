@@ -2,6 +2,7 @@ module ZkFold.Symbolic.Data.Bool (
     BoolType(..),
     Bool(..),
     all,
+    all1,
     any
 ) where
 
@@ -52,6 +53,9 @@ instance FiniteField x => BoolType (Bool x) where
 
 all :: BoolType b => (x -> b) -> [x] -> b
 all f = foldr ((&&) . f) true
+
+all1 :: BoolType b => (x -> b) -> [x] -> b
+all1 f = foldr1 (&&) . map f
 
 any :: BoolType b => (x -> b) -> [x] -> b
 any f = foldr ((||) . f) false
