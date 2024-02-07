@@ -1,18 +1,20 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module ZkFold.Symbolic.Data.Ord where
+module ZkFold.Symbolic.Data.Ord (Ord (..)) where
 
-import qualified Data.Bool                        as Haskell
-import           Prelude                          (map, zipWith, ($), reverse)
-import qualified Prelude                          as Haskell
+import           Control.Monad.State                                    (evalState)
+import qualified Data.Bool                                              as Haskell
+import           Prelude                                                (concatMap, flip, mempty, reverse, zipWith, ($), (.))
+import qualified Prelude                                                as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool        (BoolType (..), Bool (..))
-import           ZkFold.Symbolic.Data.Conditional (Conditional(..), bool)
-import           ZkFold.Symbolic.Data.Eq          (Eq(..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (plusMultC)
+import           ZkFold.Symbolic.Data.Bool                              (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Conditional                       (Conditional (..))
+import           ZkFold.Symbolic.Data.DiscreteField                     (DiscreteField (..))
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
@@ -56,24 +58,45 @@ instance (Prime p, Haskell.Ord x) => Ord (Bool (Zp p)) x where
 
     min x y = Haskell.bool y x $ x >= y
 
-instance (Arithmetizable a (ArithmeticCircuit a)) => Ord (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) where
-    x <= y =
-        let bEQ = reverse $ zipWith (-) (toBits y) (toBits x)
-            bGT = map (\b -> b - one) bEQ
-        in checkBits bGT bEQ
+-- | Every @Arithmetizable@ type can be compared lexicographically.
+instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) x where
+    x <= y = y >= x
 
-    x < y = (x <= y) && (x /= y)
+    x <  y = y > x
 
-    x >= y = y <= x
+    x >= y = bitCheckGE dorAnd $ zipWith (-) (getBitsBE @a x) (getBitsBE y)
 
-    x > y = y < x
+    x >  y = bitCheckGT dorAnd $ zipWith (-) (getBitsBE @a x) (getBitsBE y)
 
-    max x y = bool @(Bool (ArithmeticCircuit a)) y x $ x <= y
+    max x y = bool @(Bool (ArithmeticCircuit a)) y x $ x < y
 
-    min x y = bool @(Bool (ArithmeticCircuit a)) y x $ x >= y
+    min x y = bool @(Bool (ArithmeticCircuit a)) y x $ x > y
 
-checkBits :: forall b x . (FiniteField x, Conditional b b, Eq b x) => [x] -> [x] -> b
-checkBits []     []     = true
-checkBits []     _      = false
-checkBits _      []     = false
-checkBits (x:xs) (y:ys) = bool @b ((y == zero) && checkBits xs ys) true (x == zero)
+getBitsBE :: Arithmetizable a x => x -> [ArithmeticCircuit a]
+-- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
+-- youngest.
+getBitsBE = concatMap (reverse . toBits) . flip evalState mempty . arithmetize
+
+dorAnd ::
+  (FiniteField a, Haskell.Eq a, ToBits a) =>
+  Bool (ArithmeticCircuit a) ->
+  Bool (ArithmeticCircuit a) ->
+  Bool (ArithmeticCircuit a) ->
+  Bool (ArithmeticCircuit a)
+-- ^ @dorAnd a b c@ is a schema which computes @a || b && c@ given @a && b@ is
+-- false.
+dorAnd (Bool a) (Bool b) (Bool c) = Bool (plusMultC a b c)
+
+bitCheckGE :: DiscreteField b x => (b -> b -> b -> b) -> [x] -> b
+-- ^ @bitCheckGE plm ds@ checks if @ds@ contains delta lexicographically greater
+-- than or equal to 0, given @plm a b c = a || b && c@ when @a && b@ is false.
+bitCheckGE _   []     = true
+bitCheckGE _   [d]    = isZero ((d - one) * d)
+bitCheckGE plm (d:ds) = plm (isZero $ d - one) (isZero d) (bitCheckGE plm ds)
+
+bitCheckGT :: DiscreteField b x => (b -> b -> b -> b) -> [x] -> b
+-- ^ @bitCheckGT plm ds@ checks if @ds@ contains delta lexicographically greater
+-- than 0, given @plm a b c = a || b && c@ when @a && b@ is false.
+bitCheckGT _   []     = false
+bitCheckGT _   [d]    = isZero (d - one)
+bitCheckGT plm (d:ds) = plm (isZero $ d - one) (isZero d) (bitCheckGT plm ds)

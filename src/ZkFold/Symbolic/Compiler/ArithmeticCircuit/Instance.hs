@@ -7,35 +7,23 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Control.Monad.State                                    (MonadState (..), evalState, execState)
 import           Data.Aeson
-import           Data.List                                              (nub)
 import           Data.Map                                               hiding (drop,foldl,foldr, map, null, splitAt, take)
 import           Prelude                                                hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
-import qualified Prelude                                                as Haskell
-import           System.Random                                          (mkStdGen, uniform)
+import           System.Random                                          (mkStdGen)
 import           Test.QuickCheck                                        (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate           (monomial, polynomial)
 import           ZkFold.Prelude                                         ((!!))
 
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (invertC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (invertC, mappendC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.Arithmetizable                (Arithmetizable (..))
 
 ------------------------------------- Instances -------------------------------------
 
 instance Eq a => Semigroup (ArithmeticCircuit a) where
-    r1 <> r2 = ArithmeticCircuit
-        {
-            acSystem   = acSystem r1 `union` acSystem r2,
-            -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
-            -- We need a way to ensure the correct order no matter how `(<>)` is used.
-            acInput    = nub $ acInput r1 ++ acInput r2,
-            acWitness  = \w -> acWitness r1 w `union` acWitness r2 w,
-            acOutput   = max (acOutput r1) (acOutput r2),
-            acVarOrder = acVarOrder r1 `union` acVarOrder r2,
-            acRNG      = mkStdGen $ fst (uniform (acRNG r1)) Haskell.* fst (uniform (acRNG r2))
-        }
+    (<>) = mappendC
 
 instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
     mempty = ArithmeticCircuit
