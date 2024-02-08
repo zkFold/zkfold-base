@@ -1,4 +1,5 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
+    boolCheckC,
     isZeroC,
     invertC,
     mappendC,
@@ -9,7 +10,7 @@ import           Control.Monad.State                                 (State, exe
 import           Data.Bool                                           (bool)
 import           Data.List                                           (nub)
 import           Data.Map                                            (fromListWith, singleton, union)
-import           Prelude                                             hiding (negate, (+), (*))
+import           Prelude                                             hiding (negate, (*), (+), (-))
 import qualified Prelude                                             as Haskell
 import           System.Random                                       (mkStdGen, uniform)
 
@@ -17,6 +18,21 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (monomial, polynomial)
 
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+
+boolCheckC :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> ArithmeticCircuit a
+-- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
+boolCheckC r = flip execState r $ do
+    let x     = acOutput r
+        con y = polynomial [
+                    monomial one (singleton x (one + one)),
+                    monomial (negate one) (singleton x one),
+                    monomial (negate one) (singleton y one)
+                ]
+    y <- newVariableFromConstraint con
+    addVariable y
+    constraint (con y)
+    let ex = eval r
+    assignment (ex * ex - ex)
 
 isZeroC :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> ArithmeticCircuit a
 isZeroC r = flip execState r $ do

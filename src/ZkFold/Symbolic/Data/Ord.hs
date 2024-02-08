@@ -11,7 +11,7 @@ import qualified Prelude                                                as Haske
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (plusMultC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (plusMultC, boolCheckC)
 import           ZkFold.Symbolic.Data.Bool                              (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Conditional                       (Conditional (..))
 import           ZkFold.Symbolic.Data.DiscreteField                     (DiscreteField (..))
@@ -64,7 +64,7 @@ instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) x where
 
     x <  y = y > x
 
-    x >= y = bitCheckGE dorAnd $ zipWith (-) (getBitsBE @a x) (getBitsBE y)
+    x >= y = bitCheckGE dorAnd boolCheckC $ zipWith (-) (getBitsBE @a x) (getBitsBE y)
 
     x >  y = bitCheckGT dorAnd $ zipWith (-) (getBitsBE @a x) (getBitsBE y)
 
@@ -87,12 +87,13 @@ dorAnd ::
 -- false.
 dorAnd (Bool a) (Bool b) (Bool c) = Bool (plusMultC a b c)
 
-bitCheckGE :: DiscreteField b x => (b -> b -> b -> b) -> [x] -> b
--- ^ @bitCheckGE plm ds@ checks if @ds@ contains delta lexicographically greater
--- than or equal to 0, given @plm a b c = a || b && c@ when @a && b@ is false.
-bitCheckGE _   []     = true
-bitCheckGE _   [d]    = isZero ((d - one) * d)
-bitCheckGE plm (d:ds) = plm (isZero $ d - one) (isZero d) (bitCheckGE plm ds)
+bitCheckGE :: DiscreteField b x => (b -> b -> b -> b) -> (x -> x) -> [x] -> b
+-- ^ @bitCheckGE plm bc ds@ checks if @ds@ contains delta lexicographically
+-- greater than or equal to 0, given @plm a b c = a || b && c@ when @a && b@ is
+-- false and @bc d = d (d - 1)@.
+bitCheckGE _   _  []     = true
+bitCheckGE _   bc [d]    = isZero (bc d)
+bitCheckGE plm bc (d:ds) = plm (isZero $ d - one) (isZero d) (bitCheckGE plm bc ds)
 
 bitCheckGT :: DiscreteField b x => (b -> b -> b -> b) -> [x] -> b
 -- ^ @bitCheckGT plm ds@ checks if @ds@ contains delta lexicographically greater
