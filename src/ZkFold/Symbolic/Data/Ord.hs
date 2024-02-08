@@ -54,9 +54,9 @@ instance (Prime p, Haskell.Ord x) => Ord (Bool (Zp p)) x where
 
     x >  y = Bool $ Haskell.bool zero one (x Haskell.>  y)
 
-    max x y = Haskell.bool y x $ x <= y
+    max x y = Haskell.bool x y $ x <= y
 
-    min x y = Haskell.bool y x $ x >= y
+    min x y = Haskell.bool x y $ x >= y
 
 -- | Every @Arithmetizable@ type can be compared lexicographically.
 instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) x where
@@ -68,9 +68,9 @@ instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) x where
 
     x >  y = bitCheckGT dorAnd $ zipWith (-) (getBitsBE @a x) (getBitsBE y)
 
-    max x y = bool @(Bool (ArithmeticCircuit a)) y x $ x < y
+    max x y = bool @(Bool (ArithmeticCircuit a)) x y $ x < y
 
-    min x y = bool @(Bool (ArithmeticCircuit a)) y x $ x > y
+    min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
 getBitsBE :: Arithmetizable a x => x -> [ArithmeticCircuit a]
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
