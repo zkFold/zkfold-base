@@ -137,7 +137,7 @@ instance (FiniteField a, Eq a, ToBits a) => ToBits (ArithmeticCircuit a) where
                              monomial (negate one) (singleton b one)
                          ]
             (bits, x') = flip runState x . for [0 .. numberOfBits @a - 1] $ \i -> do
-                b <- newVariable
+                b <- newVariableWithSource [acOutput x] boolCon
                 addVariable b
                 assignment ((!! i) . repr)
                 constraint (boolCon b)
