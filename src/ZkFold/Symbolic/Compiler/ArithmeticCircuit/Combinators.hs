@@ -1,17 +1,38 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
+    boolCheckC,
     isZeroC,
     invertC,
+    mappendC,
+    plusMultC,
 ) where
 
 import           Control.Monad.State                                 (State, execState)
 import           Data.Bool                                           (bool)
-import           Data.Map                                            (fromListWith, singleton)
-import           Prelude                                             hiding (negate, (+), (*))
+import           Data.List                                           (nub)
+import           Data.Map                                            (fromListWith, singleton, union)
+import           Prelude                                             hiding (negate, (*), (+), (-))
+import qualified Prelude                                             as Haskell
+import           System.Random                                       (mkStdGen, uniform)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (monomial, polynomial)
 
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+
+boolCheckC :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> ArithmeticCircuit a
+-- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
+boolCheckC r = flip execState r $ do
+    let x     = acOutput r
+        con y = polynomial [
+                    monomial one (singleton x (one + one)),
+                    monomial (negate one) (singleton x one),
+                    monomial (negate one) (singleton y one)
+                ]
+    y <- newVariableFromConstraint con
+    addVariable y
+    constraint (con y)
+    let ex = eval r
+    assignment (ex * ex - ex)
 
 isZeroC :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> ArithmeticCircuit a
 isZeroC r = flip execState r $ do
@@ -40,3 +61,32 @@ runInvert r = do
         constraint $ con' z
         assignment (invert $ eval r)
       )
+
+mappendC :: ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a
+mappendC r1 r2 = ArithmeticCircuit
+    {
+        acSystem   = acSystem r1 `union` acSystem r2,
+        -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
+        -- We need a way to ensure the correct order no matter how `(<>)` is used.
+        acInput    = nub $ acInput r1 ++ acInput r2,
+        acWitness  = \w -> acWitness r1 w `union` acWitness r2 w,
+        acOutput   = max (acOutput r1) (acOutput r2),
+        acVarOrder = acVarOrder r1 `union` acVarOrder r2,
+        acRNG      = mkStdGen $ fst (uniform (acRNG r1)) Haskell.* fst (uniform (acRNG r2))
+    }
+
+plusMultC :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a
+-- ^ @plusMult a b c@ computes @a + b * c@ in one PLONK constraint.
+plusMultC a b c = flip execState (a `mappendC` b `mappendC` c) $ do
+    let x     = acOutput a
+        y     = acOutput b
+        z     = acOutput c
+        con w = polynomial [
+                    monomial one (singleton x one),
+                    monomial one (fromListWith (+) [(y, one), (z, one)]),
+                    monomial (negate one) (singleton w one)
+                ]
+    w <- newVariableFromConstraint con
+    addVariable w
+    constraint (con w)
+    assignment (eval a + eval b * eval c)

@@ -8,7 +8,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         constraint,
         assignment,
         addVariable,
-        newVariable,
+        newVariableWithSource,
         newVariableFromConstraint,
         input,
         eval,
@@ -50,13 +50,18 @@ data ArithmeticCircuit a = ArithmeticCircuit
 type VarField = BLS12_381_Scalar
 
 -- TODO: Remove the hardcoded constant.
-con2var :: (Eq a, ToBits a) => Constraint a -> Integer
-con2var c =  fromBits $ castBits $ toBits $ g ^(c `evalMultivariate` vs)
+toVar :: (Eq a, ToBits a) => [Integer] -> Constraint a -> Integer
+toVar srcs c = fromBits $ castBits $ toBits ex
     where
         r  = toZp 903489679376934896793395274328947923579382759823 :: Zp VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: Zp VarField
         zs = variableList c
         vs = fromList $ zip zs (map ((+) r . toZp) zs)
+        x  = g ^(c `evalMultivariate` vs)
+        ex = foldr (\p y -> x ^ p + y) x srcs
+
+con2var :: (Eq a, ToBits a) => Constraint a -> Integer
+con2var = toVar []
 
 newVariable :: State (ArithmeticCircuit a) Integer
 newVariable = do
@@ -66,7 +71,10 @@ newVariable = do
     return x
 
 newVariableFromConstraint :: (Eq a, ToBits a) => (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
-newVariableFromConstraint con = con2var . con <$> newVariable
+newVariableFromConstraint = newVariableWithSource []
+
+newVariableWithSource :: (Eq a, ToBits a) => [Integer] -> (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
+newVariableWithSource srcs con = toVar srcs . con <$> newVariable
 
 addVariable :: Integer -> State (ArithmeticCircuit a) ()
 addVariable x = modify (\r -> r { acOutput = x, acVarOrder = insert (length (acVarOrder r), x) x (acVarOrder r)})

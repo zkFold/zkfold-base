@@ -5,37 +5,27 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
-import           Control.Monad.State                                    (MonadState (..), evalState, execState)
+import           Control.Monad.State                                    (MonadState (..), execState, runState)
 import           Data.Aeson
-import           Data.List                                              (nub)
-import           Data.Map                                               hiding (drop,foldl,foldr, map, null, splitAt, take)
+import           Data.List                                              (foldl')
+import           Data.Map                                               hiding (drop, foldl, foldl', foldr, map, null, splitAt, take)
+import           Data.Traversable                                       (for)
 import           Prelude                                                hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
-import qualified Prelude                                                as Haskell
-import           System.Random                                          (mkStdGen, uniform)
+import           System.Random                                          (mkStdGen)
 import           Test.QuickCheck                                        (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate           (monomial, polynomial)
 import           ZkFold.Prelude                                         ((!!))
 
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (invertC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (invertC, mappendC, plusMultC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.Arithmetizable                (Arithmetizable (..))
 
 ------------------------------------- Instances -------------------------------------
 
 instance Eq a => Semigroup (ArithmeticCircuit a) where
-    r1 <> r2 = ArithmeticCircuit
-        {
-            acSystem   = acSystem r1 `union` acSystem r2,
-            -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
-            -- We need a way to ensure the correct order no matter how `(<>)` is used.
-            acInput    = nub $ acInput r1 ++ acInput r2,
-            acWitness  = \w -> acWitness r1 w `union` acWitness r2 w,
-            acOutput   = max (acOutput r1) (acOutput r2),
-            acVarOrder = acVarOrder r1 `union` acVarOrder r2,
-            acRNG      = mkStdGen $ fst (uniform (acRNG r1)) Haskell.* fst (uniform (acRNG r2))
-        }
+    (<>) = mappendC
 
 instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
     mempty = ArithmeticCircuit
@@ -141,20 +131,28 @@ instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (Ar
 
 instance (FiniteField a, Eq a, ToBits a) => ToBits (ArithmeticCircuit a) where
     toBits x =
-        let two = one + one
-            ps  = map (two ^) [0.. numberOfBits @a - 1]
-            f z = flip evalState z $ mapM (\i -> do
-                    x' <- newVariable
-                    addVariable x'
-                    assignment ((!! i) . padBits (numberOfBits @a) . toBits . eval x)
-                    constraint $ polynomial [monomial one (singleton x' (one + one)), monomial (negate one) (singleton x' one)]
-                    get
-                ) [0.. numberOfBits @a - 1]
-            v z = z - sum (zipWith (*) (f z) ps)
-            y   = x { acRNG = acRNG (v x) }
-            bs  = map acOutput $ f y
-            r   = execState forceZero $ v y
-        in map (\x'' -> r { acOutput = x'' } ) bs
+        let repr       = padBits (numberOfBits @a) . toBits . eval x
+            boolCon b  = polynomial [
+                             monomial one (singleton b (one + one)),
+                             monomial (negate one) (singleton b one)
+                         ]
+            (bits, x') = flip runState x . for [0 .. numberOfBits @a - 1] $ \i -> do
+                b <- newVariableWithSource [acOutput x] boolCon
+                addVariable b
+                assignment ((!! i) . repr)
+                constraint (boolCon b)
+                return b
+         in case bits of
+            []       -> []
+            (b : bs) -> let two         = one + one
+                            f (y, p) b' = (plusMultC y (x' { acOutput = b' }) p, p * two)
+                            (x'', _)    = foldl' f (x' { acOutput = b }, two) bs
+                            constrained = flip execState x'' $ constraint
+                                $ polynomial [
+                                      monomial one (singleton (acOutput x) one),
+                                      monomial (negate one) (singleton (acOutput x'') one)
+                                  ]
+                         in [ constrained { acOutput = b' } | b' <- b : bs ]
 
 -- TODO: make a proper implementation of Arbitrary
 instance (FiniteField a, Eq a, ToBits a) => Arbitrary (ArithmeticCircuit a) where
