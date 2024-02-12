@@ -77,8 +77,7 @@ instance Arithmetic a => ToBits (ArithmeticCircuit a) where
         case reverse bits of
             [] -> return []
             (b : bs) -> do
-                let two = one + one :: a
-                k' <- foldrM (\i s -> newAssigned $ \x -> x i + (two `scale` x s)) b bs
+                k' <- foldrM (\i s -> newAssigned $ \x -> x i + x s + x s) b bs
                 constraint (\x -> x k - x k')
                 return bits
 
