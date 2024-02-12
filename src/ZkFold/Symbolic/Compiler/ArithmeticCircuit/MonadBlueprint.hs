@@ -9,7 +9,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
     circuits
 ) where
 
-import           Control.Monad.State                                    (State, modify, runState)
+import           Control.Monad.State                                    (State, gets, modify, runState)
 import           Data.Functor                                           (($>))
 import           Data.Map                                               (singleton, (!))
 import           Prelude                                                hiding ((*), (-))
@@ -34,6 +34,8 @@ type ClosedPoly i a = forall x . Algebra x a => Eval i x
 class (Ring a, Monad m) => MonadBlueprint i a m | m -> i, m -> a where
     input :: m i
 
+    output :: i -> m (ArithmeticCircuit a)
+
     runCircuit :: ArithmeticCircuit a -> m i
 
     newSourced :: [i] -> NewConstraint i a -> Eval i a -> m i
@@ -48,6 +50,8 @@ class (Ring a, Monad m) => MonadBlueprint i a m | m -> i, m -> a where
 
 instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) where
     input = acOutput <$> I.input
+
+    output i = gets (\r -> r { acOutput = i })
 
     runCircuit r = modify (<> r) $> acOutput r
 

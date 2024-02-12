@@ -86,9 +86,9 @@ instance (Arithmetizable a x, Natural n) => Arithmetizable a (List n x) where
     typeSize = typeSize @a @x * (lengthList @n)
 
 instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) where
-    arithmetize f =
-        let x = circuits @a $ replicateA (typeSize @a @x) input
-         in arithmetize (f $ restore x)
+    arithmetize f = do
+        x <- replicateA (typeSize @a @x) (input >>= output)
+        arithmetize (f $ restore x)
 
     restore = error "restore (x -> f): not implemented"
 
