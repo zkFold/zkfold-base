@@ -19,7 +19,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate        (monomial, 
 
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
-boolCheckC :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> ArithmeticCircuit a
+boolCheckC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
 boolCheckC r = flip execState r $ do
     let x     = acOutput r
@@ -34,17 +34,17 @@ boolCheckC r = flip execState r $ do
     let ex = eval r
     assignment (ex * ex - ex)
 
-isZeroC :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> ArithmeticCircuit a
+isZeroC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 isZeroC r = flip execState r $ do
     (setupY, setupZ) <- runInvert r
     setupZ >> setupY
 
-invertC :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> ArithmeticCircuit a
+invertC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 invertC r = flip execState r $ do
     (setupY, setupZ) <- runInvert r
     setupY >> setupZ
 
-runInvert :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> State (ArithmeticCircuit a) (State (ArithmeticCircuit a) (), State (ArithmeticCircuit a) ())
+runInvert :: Arithmetic a => ArithmeticCircuit a -> State (ArithmeticCircuit a) (State (ArithmeticCircuit a) (), State (ArithmeticCircuit a) ())
 runInvert r = do
     let x     = acOutput r
         con y = polynomial [monomial one (fromListWith (+) [(x, one), (y, one)])]
@@ -75,7 +75,7 @@ mappendC r1 r2 = ArithmeticCircuit
         acRNG      = mkStdGen $ fst (uniform (acRNG r1)) Haskell.* fst (uniform (acRNG r2))
     }
 
-plusMultC :: (FiniteField a, Eq a, ToBits a) => ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a
+plusMultC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a
 -- ^ @plusMult a b c@ computes @a + b * c@ in one PLONK constraint.
 plusMultC a b c = flip execState (a `mappendC` b `mappendC` c) $ do
     let x     = acOutput a

@@ -59,7 +59,7 @@ instance (Prime p, Haskell.Ord x) => Ord (Bool (Zp p)) x where
     min x y = Haskell.bool x y $ x >= y
 
 -- | Every @Arithmetizable@ type can be compared lexicographically.
-instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) x where
+instance (ToBits a, Arithmetizable a x) => Ord (Bool (ArithmeticCircuit a)) x where
     x <= y = y >= x
 
     x <  y = y > x
@@ -72,13 +72,13 @@ instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) x where
 
     min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
-getBitsBE :: Arithmetizable a x => x -> [ArithmeticCircuit a]
+getBitsBE :: (ToBits a, Arithmetizable a x) => x -> [ArithmeticCircuit a]
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
 getBitsBE = concatMap (reverse . toBits) . flip evalState mempty . arithmetize
 
 dorAnd ::
-  (FiniteField a, Haskell.Eq a, ToBits a) =>
+  Arithmetic a =>
   Bool (ArithmeticCircuit a) ->
   Bool (ArithmeticCircuit a) ->
   Bool (ArithmeticCircuit a) ->

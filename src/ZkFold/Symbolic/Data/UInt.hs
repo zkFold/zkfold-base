@@ -46,13 +46,13 @@ instance (MultiplicativeMonoid (Zp a)) => MultiplicativeMonoid (UInt32 (Zp a)) w
 
 --------------------------------------------------------------------------------
 
-instance (FiniteField a, Eq a, ToBits a) => IntType UInt32 (ArithmeticCircuit a) where
+instance Arithmetic a => IntType UInt32 (ArithmeticCircuit a) where
     rangeCheck ac =
         let two = one + one :: ArithmeticCircuit a
             Bool b = ac >= (two ^ (32 :: Integer))
         in execState forceZero b
 
-instance (FiniteField a, Eq a, ToBits a, Arithmetizable a x) => Arithmetizable a (UInt32 x) where
+instance Arithmetizable a x => Arithmetizable a (UInt32 x) where
     arithmetize (UInt32 a) = do
         modify (rangeCheck @UInt32)
         arithmetize a
@@ -62,19 +62,19 @@ instance (FiniteField a, Eq a, ToBits a, Arithmetizable a x) => Arithmetizable a
 
     typeSize = 1
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => AdditiveSemigroup (UInt32 (ArithmeticCircuit a)) where
     UInt32 x + UInt32 y = UInt32 $ rangeCheck @UInt32 $ x + y
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => AdditiveMonoid (UInt32 (ArithmeticCircuit a)) where
     zero = UInt32 zero
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => AdditiveGroup (UInt32 (ArithmeticCircuit a)) where
     UInt32 x - UInt32 y = UInt32 $ rangeCheck @UInt32 $ x - y
 
     negate (UInt32 x) = UInt32 $ rangeCheck @UInt32 $ negate x
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => MultiplicativeSemigroup (UInt32 (ArithmeticCircuit a)) where
     UInt32 x * UInt32 y = UInt32 $ rangeCheck @UInt32 $ x * y
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => MultiplicativeMonoid (UInt32 (ArithmeticCircuit a)) where
     one = UInt32 one

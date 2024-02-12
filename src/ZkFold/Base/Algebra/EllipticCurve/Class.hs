@@ -81,5 +81,5 @@ pointNegate :: EllipticCurve curve => Point curve -> Point curve
 pointNegate Inf = Inf
 pointNegate (Point x y) = Point x (negate y)
 
-pointMul :: EllipticCurve curve => ScalarField curve -> Point curve -> Point curve
+pointMul :: Scale (Point curve) (ScalarField curve) => ScalarField curve -> Point curve -> Point curve
 pointMul n p = n `scale` p

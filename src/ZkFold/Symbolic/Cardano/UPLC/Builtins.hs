@@ -4,7 +4,7 @@
 module ZkFold.Symbolic.Cardano.UPLC.Builtins where
 
 import           Data.Typeable                         (Typeable, Proxy (..))
-import           Prelude                               (Eq, ($))
+import           Prelude                               (($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Cardano.UPLC.Type
@@ -22,7 +22,7 @@ data BuiltinFunctions =
     | MulField
 
 -- TODO: use shortcuts to make these definitions more readable
-instance forall a . (FiniteField a, Eq a, ToBits a, Typeable a) => PlutusBuiltinFunction a BuiltinFunctions where
+instance forall a . (Arithmetic a, Typeable a) => PlutusBuiltinFunction a BuiltinFunctions where
     builtinFunctionType AddField =
           SomeFunction (SomeData $ Proxy @(ArithmeticCircuit a))
         $ SomeFunction (SomeData $ Proxy @(ArithmeticCircuit a))
@@ -34,4 +34,3 @@ instance forall a . (FiniteField a, Eq a, ToBits a, Typeable a) => PlutusBuiltin
 
     builtinFunctionRep AddField = SomeArithmetizable $ \(x :: ArithmeticCircuit a) (y :: ArithmeticCircuit a) -> x + y
     builtinFunctionRep MulField = SomeArithmetizable $ \(x :: ArithmeticCircuit a) (y :: ArithmeticCircuit a) -> x * y
-

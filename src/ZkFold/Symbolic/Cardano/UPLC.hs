@@ -10,12 +10,11 @@ import           Data.Maybe                              (fromJust)
 import           Data.Typeable                           (Typeable, Proxy(..), cast)
 import           Prelude                                 (Eq (..), ($), error, snd, otherwise)
 
-import           ZkFold.Base.Algebra.Basic.Class         (FiniteField, ToBits)
 import           ZkFold.Symbolic.Cardano.UPLC.Builtins
 import           ZkFold.Symbolic.Cardano.UPLC.Inference
 import           ZkFold.Symbolic.Cardano.UPLC.Term
 import           ZkFold.Symbolic.Cardano.UPLC.Type
-import           ZkFold.Symbolic.Compiler                (Arithmetizable (..), SomeArithmetizable (..))
+import           ZkFold.Symbolic.Compiler                (Arithmetic, Arithmetizable (..), SomeArithmetizable (..))
 
 -- TODO: we need to figure out what to do with error terms
 
@@ -59,7 +58,7 @@ instance forall name fun (a :: Type) . (Eq name, Typeable name, Typeable fun, Eq
     fromUPLC _ (Builtin b)  = builtinFunctionRep b
     fromUPLC _ Error        = error "fromUPLC: Error"
 
-instance forall name (a :: Type) . (Typeable name, Eq name, Eq BuiltinFunctions, Typeable a, FiniteField a, Eq a, ToBits a)
+instance forall name (a :: Type) . (Typeable name, Eq name, Eq BuiltinFunctions, Typeable a, Arithmetic a)
         => Arithmetizable a (Term name BuiltinFunctions a) where
     arithmetize term = case fromUPLC @name @_ @a ArgListEmpty term of
         SomeArithmetizable t -> arithmetize t

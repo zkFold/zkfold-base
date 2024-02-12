@@ -5,7 +5,7 @@ module ZkFold.Base.Algebra.Basic.Class where
 
 import           Data.Bifunctor (first)
 import           Data.Bool      (bool)
-import           Prelude        hiding (Num(..), (^), (/), negate, replicate, length)
+import           Prelude        hiding (Num(..), length, negate, product, replicate, sum, (/), (^))
 import qualified Prelude        as Haskell
 import           System.Random  (RandomGen, Random (..), mkStdGen)
 
@@ -99,29 +99,15 @@ castBits (x:xs)
     | x == one  = one  : castBits xs
     | otherwise = error "castBits: impossible bit value"
 
-class AdditiveSemigroup a => Scale a b where
+class (AdditiveSemigroup a, Semiring b) => Scale a b where
     scale :: b -> a -> a
 
-instance (AdditiveMonoid a, Semiring b, Eq b, ToBits b) => Scale a b where
-    scale n a = foldl (+) zero $ zipWith f (toBits n) (iterate (\x -> x + x) a)
-      where
-        f x y
-            | x == zero = zero
-            | x == one  = y
-            | otherwise = error "scale: This should never happen."
+type Algebra a b = (Ring a, Scale a b)
 
-class MultiplicativeSemigroup a => Exponent a b where
+class (MultiplicativeMonoid a, Semiring b) => Exponent a b where
     (^) :: a -> b -> a
 
-instance (MultiplicativeMonoid a, Semiring b, Eq b, ToBits b) => Exponent a b where
-    a ^ n = foldl (*) one $ zipWith f (toBits n) (iterate (\x -> x * x) a)
-      where
-        f x y
-            | x == zero = one
-            | x == one  = y
-            | otherwise = error "^: This should never happen."
-
-multiExp :: (MultiplicativeMonoid a, Exponent a b, Foldable t) => a -> t b -> a
+multiExp :: (Exponent a b, Foldable t) => a -> t b -> a
 multiExp a = foldl (\x y -> x * (a ^ y)) one
 
 ------------------------------- Roots of unity ---------------------------------
@@ -165,6 +151,20 @@ instance ToBits Integer where
 
 instance FromBits Integer where
     fromBits = foldl (\x y -> x * 2 + y) 0 . reverse
+
+instance AdditiveMonoid a => Scale a Integer where
+    scale n a = sum $ zipWith f (toBits n) (iterate (\x -> x + x) a)
+      where
+        f 0 _ = zero
+        f 1 y = y
+        f _ _ = error "scale: This should never happen."
+
+instance MultiplicativeMonoid a => Exponent a Integer where
+    a ^ n = product $ zipWith f (toBits n) (iterate (\x -> x * x) a)
+      where
+        f 0 _ = one
+        f 1 y = y
+        f _ _ = error "^: This should never happen."
 
 --------------------------------------------------------------------------------
 

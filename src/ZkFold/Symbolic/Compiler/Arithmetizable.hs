@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Symbolic.Compiler.Arithmetizable (
+        Arithmetic,
         Arithmetizable(..),
         SomeArithmetizable (..)
     ) where
@@ -14,12 +15,12 @@ import           Type.Data.Num.Unary                                 (Natural)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                                      (length, drop, take, splitAt)
 import           ZkFold.Symbolic.Data.List                           (List, mapList, lengthList, indicesInteger)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), input)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), Arithmetic, input)
 
 -- | A class for arithmetizable types.
 -- Type `a` is the finite field of the arithmetic circuit.
 -- Type `x` represents the type to be arithmetized.
-class (FiniteField a, Eq a, ToBits a) => Arithmetizable a x where
+class Arithmetic a => Arithmetizable a x where
     -- | Arithmetizes `x`, adds it to the current circuit, and returns the outputs that make up `x`.
     arithmetize :: x -> State (ArithmeticCircuit a) [ArithmeticCircuit a]
 
@@ -33,7 +34,7 @@ class (FiniteField a, Eq a, ToBits a) => Arithmetizable a x where
 data SomeArithmetizable a where
     SomeArithmetizable :: (Typeable t, Arithmetizable a t) => t -> SomeArithmetizable a
 
-instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a () where
+instance Arithmetic a => Arithmetizable a () where
     arithmetize () = return []
 
     restore [] = ()

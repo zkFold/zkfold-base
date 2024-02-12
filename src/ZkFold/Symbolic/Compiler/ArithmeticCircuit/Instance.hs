@@ -38,7 +38,7 @@ instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
             acRNG      = mkStdGen 0
         }
 
-instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (ArithmeticCircuit a) where
+instance Arithmetic a => Arithmetizable a (ArithmeticCircuit a) where
     arithmetize r = do
         r' <- get
         let r'' = r <> r' { acOutput = acOutput r }
@@ -53,7 +53,7 @@ instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (ArithmeticCircuit 
 instance FiniteField a => Finite (ArithmeticCircuit a) where
     order = order @a
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (ArithmeticCircuit a) where
+instance Arithmetic a => AdditiveSemigroup (ArithmeticCircuit a) where
     r1 + r2 = flip execState (r1 <> r2) $ do
         let x1  = acOutput r1
             x2  = acOutput r2
@@ -67,7 +67,7 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (ArithmeticCircuit
         constraint $ con z
         assignment (eval r1 + eval r2)
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (ArithmeticCircuit a) where
+instance Arithmetic a => AdditiveMonoid (ArithmeticCircuit a) where
     zero = flip execState mempty $ do
         let con = \z -> polynomial [monomial one (singleton z one)]
         z <- newVariableFromConstraint con
@@ -75,7 +75,7 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (ArithmeticCircuit a)
         constraint $ con z
         assignment zero
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (ArithmeticCircuit a) where
+instance Arithmetic a => AdditiveGroup (ArithmeticCircuit a) where
     negate r = flip execState r $ do
         let x   = acOutput r
             con = \z -> polynomial [
@@ -101,7 +101,7 @@ instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (ArithmeticCircuit a) 
         constraint (con z)
         assignment (eval r1 - eval r2)
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (ArithmeticCircuit a) where
+instance Arithmetic a => MultiplicativeSemigroup (ArithmeticCircuit a) where
     r1 * r2 = flip execState (r1 <> r2) $ do
         let x1  = acOutput r1
             x2  = acOutput r2
@@ -114,13 +114,13 @@ instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (ArithmeticC
         constraint $ con z
         assignment (eval r1 * eval r2)
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (ArithmeticCircuit a) where
+instance Arithmetic a => MultiplicativeMonoid (ArithmeticCircuit a) where
     one = mempty
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeGroup (ArithmeticCircuit a) where
+instance Arithmetic a => MultiplicativeGroup (ArithmeticCircuit a) where
     invert = invertC
 
-instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
+instance (Arithmetic a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
     fromConstant c = flip execState mempty $ do
         let x = fromConstant c
             con = \z -> polynomial [monomial one (singleton z one), monomial (negate x) (singleton 0 one)]
@@ -129,7 +129,7 @@ instance (FiniteField a, Eq a, ToBits a, FromConstant b a) => FromConstant b (Ar
         constraint $ con z
         assignment (const x)
 
-instance (FiniteField a, Eq a, ToBits a) => ToBits (ArithmeticCircuit a) where
+instance Arithmetic a => ToBits (ArithmeticCircuit a) where
     toBits x =
         let repr       = padBits (numberOfBits @a) . toBits . eval x
             boolCon b  = polynomial [
@@ -155,13 +155,13 @@ instance (FiniteField a, Eq a, ToBits a) => ToBits (ArithmeticCircuit a) where
                          in [ constrained { acOutput = b' } | b' <- b : bs ]
 
 -- TODO: make a proper implementation of Arbitrary
-instance (FiniteField a, Eq a, ToBits a) => Arbitrary (ArithmeticCircuit a) where
+instance Arithmetic a => Arbitrary (ArithmeticCircuit a) where
     arbitrary = do
         let ac = mempty { acOutput = 1} * mempty { acOutput = 2}
         return ac
 
 -- TODO: make it more readable
-instance (FiniteField a, Eq a, ToBits a, Show a) => Show (ArithmeticCircuit a) where
+instance (FiniteField a, Eq a, Show a) => Show (ArithmeticCircuit a) where
     show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r) ++ ", acInput = "
         ++ show (acInput r) ++ ", acOutput = " ++ show (acOutput r) ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
