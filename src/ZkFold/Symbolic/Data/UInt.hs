@@ -21,6 +21,7 @@ instance IntType i (Zp a) where
     rangeCheck = id
 
 -- TODO (Issue #18): hide this constructor
+-- TODO: change bytes to bits in the name
 newtype UInt32 x = UInt32 x
     deriving (Show, Eq)
 

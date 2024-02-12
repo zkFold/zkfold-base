@@ -3,6 +3,7 @@ module Main where
 import           Prelude
 import           System.Directory       (createDirectoryIfMissing)
 
+import           Examples.Conditional   (exampleConditional)
 import           Examples.Eq            (exampleEq)
 import           Examples.Fibonacci     (exampleFibonacci)
 import           Examples.LEQ           (exampleLEQ)
@@ -18,4 +19,5 @@ main = do
     exampleFibonacci
     exampleMiMC
     exampleLEQ
+    exampleConditional
     

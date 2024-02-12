@@ -15,8 +15,7 @@ import           ZkFold.Symbolic.Cardano.UPLC.Builtins
 import           ZkFold.Symbolic.Cardano.UPLC.Inference
 import           ZkFold.Symbolic.Cardano.UPLC.Term
 import           ZkFold.Symbolic.Cardano.UPLC.Type
-import           ZkFold.Symbolic.Compiler                (Arithmetizable (..))
-import           ZkFold.Symbolic.Compiler.Arithmetizable (SomeArithmetizable (..))
+import           ZkFold.Symbolic.Compiler                (Arithmetizable (..), SomeArithmetizable (..))
 
 -- TODO: we need to figure out what to do with error terms
 
