@@ -4,17 +4,18 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
     Eval,
     NewConstraint,
     ClosedPoly,
-    MonadBlueprint (..)
+    MonadBlueprint (..),
+    circuit,
+    circuits
 ) where
 
-import           Control.Monad.State                                    (State, modify)
+import           Control.Monad.State                                    (State, modify, runState)
 import           Data.Functor                                           (($>))
 import           Data.Map                                               (singleton, (!))
 import           Prelude                                                hiding ((*), (-))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate           (monomial, polynomial)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (mappendC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    hiding (Constraint, constraint)
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    as I
 
@@ -31,6 +32,8 @@ type NewConstraint i a = forall x . Algebra x a => (i -> x) -> i -> x
 type ClosedPoly i a = forall x . Algebra x a => Eval i x
 
 class (Ring a, Monad m) => MonadBlueprint i a m | m -> i, m -> a where
+    input :: m i
+
     runCircuit :: ArithmeticCircuit a -> m i
 
     newSourced :: [i] -> NewConstraint i a -> Eval i a -> m i
@@ -44,7 +47,9 @@ class (Ring a, Monad m) => MonadBlueprint i a m | m -> i, m -> a where
     newAssigned p = newConstrained (\x i -> p x - x i) (\c -> getSelf (p (Self . c)))
 
 instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) where
-    runCircuit r = modify (mappendC r) $> acOutput r
+    input = acOutput <$> I.input
+
+    runCircuit r = modify (<> r) $> acOutput r
 
     newSourced s c e = do
         i <- newVariableWithSource s (c var)
@@ -57,3 +62,9 @@ instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) 
 
 var :: Arithmetic a => Integer -> I.Constraint a
 var x = polynomial [ monomial one (singleton x one) ]
+
+circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> ArithmeticCircuit a
+circuit b = let (o, r) = runState b mempty in r { acOutput = o }
+
+circuits :: Arithmetic a => (forall i m . MonadBlueprint i a m => m [i]) -> [ArithmeticCircuit a]
+circuits b = let (os, r) = runState b mempty in [ r { acOutput = o } | o <- os ]

@@ -2,7 +2,6 @@ module ZkFold.Symbolic.Data.Conditional (
     Conditional (..)
 ) where
 
-import           Control.Monad.State             (evalState)
 import           Prelude                         hiding (Num(..), Bool, (/))
 import qualified Prelude                         as Haskell
 
@@ -27,7 +26,7 @@ instance Prime p => Conditional (Bool (Zp p)) x where
     bool f t b = if b == true then t else f
 
 instance Arithmetizable a x => Conditional (Bool (ArithmeticCircuit a)) x where
-    bool brFalse brTrue (Bool b) = 
-        let f' = evalState (arithmetize brFalse) mempty
-            t' = evalState (arithmetize brTrue) mempty
+    bool brFalse brTrue (Bool b) =
+        let f' = circuits (arithmetize brFalse)
+            t' = circuits (arithmetize brTrue)
         in restore $ zipWith (\f t -> b * t + (one - b) * f) f' t'

@@ -1,5 +1,5 @@
 module ZkFold.Prelude where
-    
+
 import           Data.Aeson           (ToJSON, encode, FromJSON, decode)
 import           Data.ByteString.Lazy (writeFile, readFile)
 import           Data.Map             (Map, lookup)
@@ -25,6 +25,9 @@ replicate :: Integer -> a -> [a]
 replicate n x
     | n <= 0    = []
     | otherwise = x : replicate (n - 1) x
+
+replicateA :: Applicative f => Integer -> f a -> f [a]
+replicateA n fx = sequenceA (replicate n fx)
 
 zipWithDefault :: (a -> b -> c) -> a -> b -> [a] -> [b] -> [c]
 zipWithDefault _ _ _ [] [] = []

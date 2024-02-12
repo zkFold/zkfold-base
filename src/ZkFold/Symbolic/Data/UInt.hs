@@ -5,7 +5,8 @@ module ZkFold.Symbolic.Data.UInt (
     UInt32(..)
 ) where
 
-import           Control.Monad.State             (execState, modify)
+import           Data.Foldable                   (for_)
+import           Data.Traversable                (for)
 import           Prelude                         hiding ((^), Num(..), Bool(..), Ord(..), (/), (&&), (||), not, all, any)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -47,15 +48,18 @@ instance (MultiplicativeMonoid (Zp a)) => MultiplicativeMonoid (UInt32 (Zp a)) w
 --------------------------------------------------------------------------------
 
 instance Arithmetic a => IntType UInt32 (ArithmeticCircuit a) where
-    rangeCheck ac =
-        let two = one + one :: ArithmeticCircuit a
+    rangeCheck ac = circuit $ do
+        let two = one + one
             Bool b = ac >= (two ^ (32 :: Integer))
-        in execState forceZero b
+        i <- runCircuit b
+        constraint (\x -> x i)
+        return i
 
 instance Arithmetizable a x => Arithmetizable a (UInt32 x) where
     arithmetize (UInt32 a) = do
-        modify (rangeCheck @UInt32)
-        arithmetize a
+        let cs = circuits (arithmetize a)
+        for_ cs $ runCircuit . rangeCheck @UInt32
+        for cs runCircuit
 
     restore [ac] = UInt32 $ restore [ac]
     restore _   = error "UInt32: invalid number of values"

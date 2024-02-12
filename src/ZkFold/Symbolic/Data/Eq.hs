@@ -5,7 +5,6 @@ module ZkFold.Symbolic.Data.Eq (
     elem
 ) where
 
-import           Control.Monad.State                                    (evalState)
 import           Data.Bool                                              (bool)
 import           Prelude                                                hiding (Bool, Eq (..), Num (..), any, elem, not, product, (/), (/=), (==))
 import qualified Prelude                                                as Haskell
@@ -31,16 +30,16 @@ instance (Prime p, Haskell.Eq x) => Eq (Bool (Zp p)) x where
 
 instance Arithmetizable a x => Eq (Bool (ArithmeticCircuit a)) x where
     x == y =
-        let x' = evalState (arithmetize x) mempty
-            y' = evalState (arithmetize y) mempty
+        let x' = circuits (arithmetize x)
+            y' = circuits (arithmetize y)
             zs = zipWith (-) x' y'
         in case zs of
             [] -> true
             _  -> all1 (isZero @(Bool (ArithmeticCircuit a)) @(ArithmeticCircuit a)) zs
 
     x /= y =
-        let x' = evalState (arithmetize x) mempty
-            y' = evalState (arithmetize y) mempty
+        let x' = circuits (arithmetize x)
+            y' = circuits (arithmetize y)
             zs = zipWith (-) x' y'
         in case zs of
             [] -> false

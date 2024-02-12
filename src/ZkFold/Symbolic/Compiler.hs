@@ -8,7 +8,7 @@ module ZkFold.Symbolic.Compiler (
     compileIO
 ) where
 
-import           Control.Monad.State                        (evalState, execState)
+import           Control.Monad.State                        (execState)
 import           Data.Aeson                                 (ToJSON)
 import           Prelude                                    (IO, Show (..), FilePath, ($), (++), putStrLn, mempty)
 
@@ -28,7 +28,7 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 
 -- | Compiles function `f` into an arithmetic circuit.
 compile :: forall a f y . (Arithmetizable a f, Arithmetizable a y) => f -> y
-compile f = restore @a $ evalState (arithmetize f) mempty
+compile f = restore @a $ circuits (arithmetize f)
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO :: forall a f . (ToJSON a, Arithmetizable a f) => FilePath -> f -> IO ()

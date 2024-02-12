@@ -19,9 +19,11 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
     ) where
 
 import           Control.Monad.State                          (MonadState (..), State, modify)
+import           Data.List                                    (nub)
 import           Data.Map                                     hiding (take, drop, splitAt, foldl, null, map, foldr)
 import           Prelude                                      hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
-import           System.Random                                (StdGen, Random (..))
+import qualified Prelude                                      as Haskell
+import           System.Random                                (Random (..), StdGen, mkStdGen, uniform)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
@@ -44,6 +46,32 @@ data ArithmeticCircuit a = ArithmeticCircuit
         -- ^ The order of variable assignments
         acRNG      :: StdGen
     }
+
+----------------------------------- Circuit monoid ----------------------------------
+
+instance Eq a => Semigroup (ArithmeticCircuit a) where
+    r1 <> r2 = ArithmeticCircuit
+        {
+            acSystem   = acSystem r1 `union` acSystem r2,
+            -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
+            -- We need a way to ensure the correct order no matter how `(<>)` is used.
+            acInput    = nub $ acInput r1 ++ acInput r2,
+            acWitness  = \w -> acWitness r1 w `union` acWitness r2 w,
+            acOutput   = max (acOutput r1) (acOutput r2),
+            acVarOrder = acVarOrder r1 `union` acVarOrder r2,
+            acRNG      = mkStdGen $ fst (uniform (acRNG r1)) Haskell.* fst (uniform (acRNG r2))
+        }
+
+instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
+    mempty = ArithmeticCircuit
+        {
+            acSystem   = empty,
+            acInput    = [],
+            acWitness  = insert 0 one,
+            acOutput   = 0,
+            acVarOrder = empty,
+            acRNG      = mkStdGen 0
+        }
 
 ------------------------------------- Variables -------------------------------------
 

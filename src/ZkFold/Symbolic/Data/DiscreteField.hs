@@ -1,6 +1,5 @@
 module ZkFold.Symbolic.Data.DiscreteField where
 
-import           Control.Monad.State                                    (evalState)
 import           Data.Bool                                              (bool)
 import           Prelude                                                hiding (Bool)
 import qualified Prelude                                                as Haskell
@@ -21,6 +20,6 @@ instance (Prime p, Field x, Eq x) => DiscreteField (Bool (Zp p)) x where
     isZero = Bool . bool zero one . (== zero)
 
 instance (Arithmetizable a x, Field x) => DiscreteField (Bool (ArithmeticCircuit a)) x where
-    isZero x = case evalState (arithmetize x) mempty of
+    isZero x = case circuits (arithmetize x) of
       [] -> true
       xs -> Bool $ product1 (map isZeroC xs)

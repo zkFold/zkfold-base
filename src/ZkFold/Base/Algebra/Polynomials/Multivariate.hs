@@ -17,7 +17,7 @@ import           Prelude                         hiding (sum, (^), product, Num(
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                  ((!))
 
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal hiding (scale)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal
 
 type Variable a = Var a Integer
 

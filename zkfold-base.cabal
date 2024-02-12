@@ -99,6 +99,7 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
       ZkFold.Symbolic.Compiler.Arithmetizable
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.Conditional
