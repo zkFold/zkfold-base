@@ -11,7 +11,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         assignment,
         addVariable,
         newVariableWithSource,
-        newVariableFromConstraint,
         input,
         eval,
         apply,
@@ -103,9 +102,6 @@ newVariable = do
     let (x, g) = randomR (0, order @VarField - 1) (acRNG r)
     put r { acRNG = g }
     return x
-
-newVariableFromConstraint :: Scale (Zp VarField) a => (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
-newVariableFromConstraint = newVariableWithSource []
 
 newVariableWithSource :: Scale (Zp VarField) a => [Integer] -> (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
 newVariableWithSource srcs con = toVar srcs . con <$> newVariable

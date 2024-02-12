@@ -20,10 +20,12 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
     ZkFold Symbolic compiler module dependency order:
     1. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
     2. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
-    3. ZkFold.Symbolic.Compiler.Arithmetizable
-    4. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
-    5. ZkFold.Symbolic.Compiler.ArithmeticCircuit
-    6. ZkFold.Symbolic.Compiler
+    3. ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
+    4. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
+    5. ZkFold.Symbolic.Compiler.Arithmetizable
+    6. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
+    7. ZkFold.Symbolic.Compiler.ArithmeticCircuit
+    8. ZkFold.Symbolic.Compiler
 -}
 
 -- | Compiles function `f` into an arithmetic circuit.
