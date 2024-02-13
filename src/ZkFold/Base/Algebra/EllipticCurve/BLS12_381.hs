@@ -23,7 +23,9 @@ instance Finite BLS12_381_Base where
     order = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
 instance Prime BLS12_381_Base
 
-type Fr = Zp BLS12_381_Scalar
+type BLS12_381_F = Zp BLS12_381_Scalar
+
+type Fr = BLS12_381_F
 type Fq = Zp BLS12_381_Base
 
 data IP1
@@ -93,6 +95,9 @@ instance EllipticCurve BLS12_381_G2 where
 
 type BLS12_381_GT = Fq12
 
+instance Pairing BLS12_381_G1 BLS12_381_G2 BLS12_381_GT where
+    pairing = pairingBLS
+
 -- Adapted from https://github.com/nccgroup/pairing-bls12381/blob/master/Crypto/Pairing_bls12381.hs
 
 -- Untwist point on E2 for pairing calculation
@@ -150,10 +155,10 @@ miller' p q r (i:iters) result =
     doubleR = pointDouble r
 
 -- | Pairing calculation for a valid point in G1 and another valid point in G2.
-pairing :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> BLS12_381_GT
-pairing Inf _ = zero
-pairing _ Inf = zero
-pairing p q = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Integer) - 1) `div` (order @(ScalarField BLS12_381_G1))) one
+pairingBLS :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> BLS12_381_GT
+pairingBLS Inf _ = zero
+pairingBLS _ Inf = zero
+pairingBLS p q = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Integer) - 1) `div` (order @(ScalarField BLS12_381_G1))) one
 
 -- Used for the final exponentiation; opportunity for further perf optimization
 pow' :: (Field a) => a -> Integer -> a -> a

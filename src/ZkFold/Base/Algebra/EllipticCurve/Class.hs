@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
 import           Data.Functor                    ((<&>))
@@ -16,8 +18,8 @@ data Point curve = Point (BaseField curve) (BaseField curve) | Inf
 
 class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curve),
       ToBits (BaseField curve), ToByteString (BaseField curve),
-      PrimeField (ScalarField curve), Haskell.Num (ScalarField curve),
-      Eq (ScalarField curve), ToBits (ScalarField curve), Arbitrary (ScalarField curve)
+      Haskell.Show (ScalarField curve), Haskell.Num (ScalarField curve), Haskell.Ord (ScalarField curve),
+      PrimeField (ScalarField curve), Eq (ScalarField curve), ToBits (ScalarField curve), Arbitrary (ScalarField curve)
     ) => EllipticCurve curve where
     inf :: Point curve
 
@@ -52,6 +54,10 @@ instance EllipticCurve curve => ToByteString (Point curve) where
 
 instance EllipticCurve curve => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)
+
+class (EllipticCurve curve1, EllipticCurve curve2, ScalarField curve1 ~ ScalarField curve2,
+        Eq t, MultiplicativeGroup t) => Pairing curve1 curve2 t | curve1 curve2 -> t where
+    pairing :: Point curve1 -> Point curve2 -> t
 
 pointAdd :: EllipticCurve curve => Point curve -> Point curve -> Point curve
 pointAdd p   Inf     = p

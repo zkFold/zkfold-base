@@ -16,15 +16,16 @@ import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.Univariate                            (specUnivariate)
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr, Fq, Fq2, Fq6, Fq12)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Protocol.ARK.Plonk              (PlonkBS)
-import           ZkFold.Base.Protocol.Commitment.KZG         (KZG, G1, G2)
+import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 
 main :: IO ()
 main = do
     specLockedByTxId
 
-    specArithmetization @Fr
+    specArithmetization @BLS12_381_F
     specGroebner
 
     specPermutations
@@ -33,12 +34,12 @@ main = do
     specField @Fq2
     specField @Fq6
     specField @Fq12
-    specAdditiveGroup @G1
-    specAdditiveGroup @G2
-    specPairing
+    specAdditiveGroup @(Point BLS12_381_G1)
+    specAdditiveGroup @(Point BLS12_381_G2)
+    specPairing @BLS12_381_G1 @BLS12_381_G2
     specUnivariate
 
-    specNonInteractiveProof @(KZG N32)
+    specNonInteractiveProof @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT BLS12_381_F N32)
     specPlonk
     specNonInteractiveProof @PlonkBS
 

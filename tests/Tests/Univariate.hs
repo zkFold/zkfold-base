@@ -17,8 +17,7 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Protocol.ARK.Plonk             (PlonkBS, PlonkMaxPolyDegreeBS)
-import           ZkFold.Base.Protocol.Commitment.KZG        (F)
+import           ZkFold.Base.Protocol.ARK.Plonk             (PlonkBS, PlonkMaxPolyDegreeBS, F)
 import           ZkFold.Prelude                             (take, length)
 
 -- TODO (Issue #22): remove dependencies from KZG and Plonk

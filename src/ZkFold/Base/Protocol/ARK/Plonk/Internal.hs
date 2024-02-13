@@ -14,12 +14,17 @@ import           System.Random                                         (RandomGe
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                       (toZp, fromZp)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381           (BLS12_381_G1, BLS12_381_G2)
+import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate            (PolyVec, toPolyVec)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Polynomial, getMonomials, getPowers, polynomial)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal (Monom(..), Var(..))
-import           ZkFold.Base.Protocol.Commitment.KZG
 import           ZkFold.Prelude                                        (take, length)
 import           ZkFold.Symbolic.Compiler
+
+type F = ScalarField BLS12_381_G1
+type G1 = Point BLS12_381_G1
+type G2 = Point BLS12_381_G2
 
 -- TODO (Issue #18): safer code and better tests for this module
 
