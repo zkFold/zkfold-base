@@ -4,7 +4,7 @@
 module Tests.Arithmetization (specArithmetization) where
 
 import           Data.Map                        (fromList)
-import           Prelude                         
+import           Prelude
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -22,7 +22,7 @@ propCircuitInvariance (ac, x, y) =
         v'  = ac' `eval` fromList [(1, x), (2, y)]
     in v == v'
 
-specArithmetization :: forall a . (Symbolic a, Eq a, Arbitrary a, Show a) => IO ()
+specArithmetization :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a) => IO ()
 specArithmetization = hspec $ do
     describe "Arithmetization specification" $ do
         describe "Variable mapping" $ do
