@@ -129,7 +129,7 @@ forceZero = do
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
 assignment :: forall a . (Map Integer a -> a) -> State (ArithmeticCircuit a) ()
-assignment f = modify $ \r -> r { acWitness = \i -> insert (acOutput r) (f i) (acWitness r i) }
+assignment f = modify $ \r -> r { acWitness = (insert (acOutput r) =<< f) . acWitness r }
 
 -- | Adds a new input variable to the arithmetic circuit. Returns a copy of the arithmetic circuit with this variable as output.
 input :: forall a . State (ArithmeticCircuit a) (ArithmeticCircuit a)
