@@ -5,7 +5,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     plusMultC,
 ) where
 
-import           Control.Monad.State                                       (execState)
 import           Data.Bool                                                 (bool)
 import           Prelude                                                   hiding (negate, (*), (+), (-))
 
@@ -24,7 +23,7 @@ isZeroC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 isZeroC r = circuit $ fst <$> runInvert r
 
 invertC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
-invertC r = flip execState r $ snd <$> runInvert r
+invertC r = circuit $ snd <$> runInvert r
 
 runInvert :: (Arithmetic a, MonadBlueprint i a m) => ArithmeticCircuit a -> m (i, i)
 runInvert r = do
