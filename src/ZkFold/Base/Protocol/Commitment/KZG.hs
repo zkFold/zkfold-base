@@ -33,8 +33,8 @@ instance (EllipticCurve c1, f ~ ScalarField c1, Finite d) => Arbitrary (WitnessK
         WitnessKZG . fromList <$> mapM (const $ (,) <$> arbitrary <*> mapM (const arbitrary) [1..m]) [1..n]
 
 -- TODO (Issue #18): check list lengths
-instance forall (c1 :: Type) (c2 :: Type) t f d . (EllipticCurve c1, f ~ ScalarField c1, EllipticCurve c2, f ~ ScalarField c2,
-        Pairing c1 c2 t, ToByteString f, FromByteString f, Finite d, Typeable (KZG c1 c2 t f d))
+instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (EllipticCurve c1, f ~ ScalarField c1, EllipticCurve c2, f ~ ScalarField c2,
+        Pairing c1 c2 t, ToByteString f, FromByteString f, Finite d, Typeable kzg, KZG c1 c2 t f d ~ kzg)
         => NonInteractiveProof (KZG c1 c2 t f d) where
     type Transcript (KZG c1 c2 t f d)   = ByteString
     type Params (KZG c1 c2 t f d)       = ()
@@ -45,23 +45,22 @@ instance forall (c1 :: Type) (c2 :: Type) t f d . (EllipticCurve c1, f ~ ScalarF
     type Input (KZG c1 c2 t f d)        = Map f ([Point c1], [f])
     type Proof (KZG c1 c2 t f d)        = Map f (Point c1)
 
-    setup :: Params (KZG c1 c2 t f d) -> SetupSecret (KZG c1 c2 t f d) -> Setup (KZG c1 c2 t f d)
+    setup :: Params kzg -> SetupSecret kzg -> Setup kzg
     setup _ x =
-        let d  = order @(KZG c1 c2 t f d)
+        let d  = order @kzg
             xs = map (x^) [0..d-1]
             gs = map (`mul` gen) xs
         in (gs, gen, x `mul` gen)
 
-    prove :: ToTranscript ByteString f =>
-           ProverSecret (KZG c1 c2 t f d)
-        -> Setup (KZG c1 c2 t f d)
-        -> Witness (KZG c1 c2 t f d)
-        -> (Input (KZG c1 c2 t f d), Proof (KZG c1 c2 t f d))
+    prove :: ProverSecret kzg
+          -> Setup kzg
+          -> Witness kzg
+          -> (Input kzg, Proof kzg)
     prove _ (gs, _, _) w = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
-            proveOne :: (Transcript (KZG c1 c2 t f d), (Input (KZG c1 c2 t f d), Proof (KZG c1 c2 t f d)))
-                     -> (f, [PolyVec f (KZG c1 c2 t f d)])
-                     -> (Transcript (KZG c1 c2 t f d), (Input (KZG c1 c2 t f d), Proof (KZG c1 c2 t f d)))
+            proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
+                     -> (f, [PolyVec f kzg])
+                     -> (Transcript kzg, (Input kzg, Proof kzg))
             proveOne (ts, (iMap, pMap)) (z, fs) = (ts'', (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
                     cms  = map (com gs) fs
@@ -72,19 +71,19 @@ instance forall (c1 :: Type) (c2 :: Type) t f d . (EllipticCurve c1, f ~ ScalarF
                         `transcript` fzs
                         `transcript` cms
                     h            = sum $ zipWith scalePV gamma  $ map (`provePolyVecEval` z) fs
-                    ts''         = if ts == empty then ts' else snd $ challenge @(Transcript (KZG c1 c2 t f d)) @f ts'
+                    ts''         = if ts == empty then ts' else snd $ challenge @(Transcript kzg) @f ts'
 
-    verify :: Setup (KZG c1 c2 t f d) -> Input (KZG c1 c2 t f d) -> Proof (KZG c1 c2 t f d) -> Bool
+    verify :: Setup kzg -> Input kzg -> Proof kzg -> Bool
     verify (gs, h0, h1) input proof =
             let (e0, e1) = snd $ foldl (prepareVerifyOne (input, proof)) (empty, (inf, inf)) $ keys input
                 p1 = pairing e0 h0
                 p2 = pairing e1 h1
             in p1 == p2
         where
-            prepareVerifyOne :: (Input (KZG c1 c2 t f d), Proof (KZG c1 c2 t f d))
-                             -> (Transcript (KZG c1 c2 t f d), (Point c1, Point c1))
+            prepareVerifyOne :: (Input kzg, Proof kzg)
+                             -> (Transcript kzg, (Point c1, Point c1))
                              -> f
-                             -> (Transcript (KZG c1 c2 t f d), (Point c1, Point c1))
+                             -> (Transcript kzg, (Point c1, Point c1))
             prepareVerifyOne (iMap, pMap) (ts, (v0, v1)) z = (ts'', (v0 + v0', v1 + v1'))
                 where
                     (cms, fzs) = iMap ! z
@@ -97,7 +96,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d . (EllipticCurve c1, f ~ ScalarF
                     (r, ts'')    = if ts == empty then (one, ts') else challenge ts'
 
                     v0' = r `mul` sum (zipWith mul gamma cms)
-                        - r `mul` (gs `com` toPolyVec @f @(KZG c1 c2 t f d) [sum $ zipWith (*) gamma fzs])
+                        - r `mul` (gs `com` toPolyVec @f @kzg [sum $ zipWith (*) gamma fzs])
                         + (r * z) `mul` w
                     v1' = r `mul` w
 
