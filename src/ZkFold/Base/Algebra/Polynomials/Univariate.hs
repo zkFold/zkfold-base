@@ -106,7 +106,7 @@ instance (Field c, Finite size, Eq c) => MultiplicativeGroup (PolyVec c size) wh
     l / r = poly2vec $ fst $ qr (vec2poly l) (vec2poly r)
 
 instance (Ring c, Arbitrary c, Finite size) => Arbitrary (PolyVec c size) where
-    arbitrary = toPolyVec <$> arbitrary
+    arbitrary = toPolyVec <$> mapM (const arbitrary) [1..order @size]
 
 -- p(x) = a0 + a1 * x
 polyVecLinear :: forall c size . (Ring c, Finite size) => c -> c -> PolyVec c size
