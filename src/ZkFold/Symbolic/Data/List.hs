@@ -6,12 +6,8 @@ import           Data.FixedLength            hiding (List)
 import qualified Data.NonEmpty               as NonEmpty
 import           Prelude                     (Integer, Applicative (..), Num (..), ($))
 import           Type.Data.Num.Unary         (Natural)
-import           Type.Data.Num.Unary.Literal (U0)
 
 import           ZkFold.Prelude              (length)
-
-type GE16 n = GE8 (GE8 n)
-type U32 = GE16 (GE16 U0)
 
 type List n x = T n x
 

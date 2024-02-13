@@ -9,10 +9,11 @@ import           Type.Data.Num.Unary                         (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Prelude                              ((!!))
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.List                   (List, U32, lengthList, indicesInteger)
+import           ZkFold.Symbolic.Data.List                   (List, lengthList, indicesInteger)
 
 type X a = (a, a)
 
@@ -29,4 +30,4 @@ exampleReverseList = do
 
     putStrLn "\nExample: Reverse List function\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file (reverseList @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @U32)
+    compileIO @(Zp BLS12_381_Scalar) file (reverseList @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @N32)

@@ -15,9 +15,10 @@ import           Tests.Plonk                                 (specPlonk)
 import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.Univariate                            (specUnivariate)
 
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr, Fq, Fq2, Fq6, Fq12)
 import           ZkFold.Base.Protocol.ARK.Plonk              (PlonkBS)
-import           ZkFold.Base.Protocol.Commitment.KZG         (KZG, G1, G2, D32)
+import           ZkFold.Base.Protocol.Commitment.KZG         (KZG, G1, G2)
 
 main :: IO ()
 main = do
@@ -37,7 +38,7 @@ main = do
     specPairing
     specUnivariate
 
-    specNonInteractiveProof @(KZG D32)
+    specNonInteractiveProof @(KZG N32)
     specPlonk
     specNonInteractiveProof @PlonkBS
 

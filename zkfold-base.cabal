@@ -64,6 +64,7 @@ library
     exposed-modules:
       ZkFold.Base.Algebra.Basic.Class
       ZkFold.Base.Algebra.Basic.Field
+      ZkFold.Base.Algebra.Basic.Number
       ZkFold.Base.Algebra.Basic.Permutations
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class

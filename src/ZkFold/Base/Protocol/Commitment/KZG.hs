@@ -26,11 +26,6 @@ type PolyVecEvalProof size = (F, PolyVec F size)
 
 data KZG d
 
--- TODO (Issue #24): move this to another module
-data D32
-instance Finite D32 where
-    order = 32
-
 -- The degree of polynomials in the protocol
 instance Finite d => Finite (KZG d) where
     order = order @d
