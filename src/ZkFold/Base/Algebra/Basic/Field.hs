@@ -11,9 +11,9 @@ module ZkFold.Base.Algebra.Basic.Field (
     ) where
 
 import           Data.Aeson                        (ToJSON (..), FromJSON (..))
-import           Prelude                           hiding (Num(..), Fractional(..), length)
+import           Prelude                           hiding (Num(..), Fractional(..), length, (^))
 import qualified Prelude                           as Haskell
-import           Test.QuickCheck                   
+import           Test.QuickCheck                   hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
@@ -72,6 +72,12 @@ instance Prime p => ToBits (Zp p) where
 
 instance Prime p => FromBits (Zp p) where
     fromBits = toZp . fromBits . map fromZp
+
+instance (AdditiveMonoid a, Prime p) => Scale a (Zp p) where
+    scale (Zp n) = scale n
+
+instance (MultiplicativeMonoid a, Prime p) => Exponent a (Zp p) where
+    a ^ Zp n = a ^ n
 
 instance Prime p => Haskell.Num (Zp p) where
     fromInteger = toZp @p

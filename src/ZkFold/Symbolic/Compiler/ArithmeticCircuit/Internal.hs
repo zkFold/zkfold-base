@@ -1,15 +1,16 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
+        Arithmetic,
         Constraint,
         -- low-level functions
         constraint,
         assignment,
         addVariable,
         newVariableWithSource,
-        newVariableFromConstraint,
         input,
         eval,
         apply,
@@ -17,9 +18,11 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
     ) where
 
 import           Control.Monad.State                          (MonadState (..), State, modify)
+import           Data.List                                    (nub)
 import           Data.Map                                     hiding (take, drop, splitAt, foldl, null, map, foldr)
 import           Prelude                                      hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
-import           System.Random                                (StdGen, Random (..))
+import qualified Prelude                                      as Haskell
+import           System.Random                                (Random (..), StdGen, mkStdGen, uniform)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
@@ -43,24 +46,54 @@ data ArithmeticCircuit a = ArithmeticCircuit
         acRNG      :: StdGen
     }
 
+----------------------------------- Circuit monoid ----------------------------------
+
+instance Eq a => Semigroup (ArithmeticCircuit a) where
+    r1 <> r2 = ArithmeticCircuit
+        {
+            acSystem   = acSystem r1 `union` acSystem r2,
+            -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
+            -- We need a way to ensure the correct order no matter how `(<>)` is used.
+            acInput    = nub $ acInput r1 ++ acInput r2,
+            acWitness  = \w -> acWitness r1 w `union` acWitness r2 w,
+            acOutput   = max (acOutput r1) (acOutput r2),
+            acVarOrder = acVarOrder r1 `union` acVarOrder r2,
+            acRNG      = mkStdGen $ fst (uniform (acRNG r1)) Haskell.* fst (uniform (acRNG r2))
+        }
+
+instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
+    mempty = ArithmeticCircuit
+        {
+            acSystem   = empty,
+            acInput    = [],
+            acWitness  = insert 0 one,
+            acOutput   = 0,
+            acVarOrder = empty,
+            acRNG      = mkStdGen 0
+        }
+
 ------------------------------------- Variables -------------------------------------
 
 -- | A finite field of a large order.
 -- It is used in the compiler for generating new variable indices.
 type VarField = BLS12_381_Scalar
 
+class (FiniteField a, Eq a, ToBits a, Scale (Zp VarField) a) => Arithmetic a
+
+instance (FiniteField a, Eq a, ToBits a, Scale (Zp VarField) a) => Arithmetic a
+
 -- TODO: Remove the hardcoded constant.
-toVar :: (Eq a, ToBits a) => [Integer] -> Constraint a -> Integer
+toVar :: Scale (Zp VarField) a => [Integer] -> Constraint a -> Integer
 toVar srcs c = fromBits $ castBits $ toBits ex
     where
         r  = toZp 903489679376934896793395274328947923579382759823 :: Zp VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: Zp VarField
         zs = variableList c
         vs = fromList $ zip zs (map ((+) r . toZp) zs)
-        x  = g ^(c `evalMultivariate` vs)
+        x  = g ^ (c `evalMultivariate` vs)
         ex = foldr (\p y -> x ^ p + y) x srcs
 
-con2var :: (Eq a, ToBits a) => Constraint a -> Integer
+con2var :: Scale (Zp VarField) a => Constraint a -> Integer
 con2var = toVar []
 
 newVariable :: State (ArithmeticCircuit a) Integer
@@ -70,10 +103,7 @@ newVariable = do
     put r { acRNG = g }
     return x
 
-newVariableFromConstraint :: (Eq a, ToBits a) => (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
-newVariableFromConstraint = newVariableWithSource []
-
-newVariableWithSource :: (Eq a, ToBits a) => [Integer] -> (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
+newVariableWithSource :: Scale (Zp VarField) a => [Integer] -> (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
 newVariableWithSource srcs con = toVar srcs . con <$> newVariable
 
 addVariable :: Integer -> State (ArithmeticCircuit a) ()
@@ -85,11 +115,11 @@ addVariable x = modify (\r -> r { acOutput = x, acVarOrder = insert (length (acV
 type Constraint a = Polynomial a
 
 -- | Adds a constraint to the arithmetic circuit.
-constraint :: (Eq a, ToBits a) => Constraint a -> State (ArithmeticCircuit a) ()
+constraint :: Scale (Zp VarField) a => Constraint a -> State (ArithmeticCircuit a) ()
 constraint con = modify $ \r -> r { acSystem = insert (con2var con) con (acSystem r) }
 
 -- | Forces the current variable to be zero.
-forceZero :: forall a . (FiniteField a, Eq a, ToBits a) => State (ArithmeticCircuit a) ()
+forceZero :: forall a . Arithmetic a => State (ArithmeticCircuit a) ()
 forceZero = do
     r <- get
     let x   = acOutput r
@@ -99,7 +129,7 @@ forceZero = do
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
 assignment :: forall a . (Map Integer a -> a) -> State (ArithmeticCircuit a) ()
-assignment f = modify $ \r -> r { acWitness = \i -> insert (acOutput r) (f i) (acWitness r i) }
+assignment f = modify $ \r -> r { acWitness = (insert (acOutput r) =<< f) . acWitness r }
 
 -- | Adds a new input variable to the arithmetic circuit. Returns a copy of the arithmetic circuit with this variable as output.
 input :: forall a . State (ArithmeticCircuit a) (ArithmeticCircuit a)

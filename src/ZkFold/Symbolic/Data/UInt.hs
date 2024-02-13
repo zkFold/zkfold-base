@@ -5,7 +5,8 @@ module ZkFold.Symbolic.Data.UInt (
     UInt32(..)
 ) where
 
-import           Control.Monad.State             (execState, modify)
+import           Data.Foldable                   (for_)
+import           Data.Traversable                (for)
 import           Prelude                         hiding ((^), Num(..), Bool(..), Ord(..), (/), (&&), (||), not, all, any)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -46,35 +47,38 @@ instance (MultiplicativeMonoid (Zp a)) => MultiplicativeMonoid (UInt32 (Zp a)) w
 
 --------------------------------------------------------------------------------
 
-instance (FiniteField a, Eq a, ToBits a) => IntType UInt32 (ArithmeticCircuit a) where
-    rangeCheck ac =
-        let two = one + one :: ArithmeticCircuit a
+instance Arithmetic a => IntType UInt32 (ArithmeticCircuit a) where
+    rangeCheck ac = circuit $ do
+        let two = one + one
             Bool b = ac >= (two ^ (32 :: Integer))
-        in execState forceZero b
+        i <- runCircuit b
+        constraint (\x -> x i)
+        return i
 
-instance (FiniteField a, Eq a, ToBits a, Arithmetizable a x) => Arithmetizable a (UInt32 x) where
+instance Arithmetizable a x => Arithmetizable a (UInt32 x) where
     arithmetize (UInt32 a) = do
-        modify (rangeCheck @UInt32)
-        arithmetize a
+        let cs = circuits (arithmetize a)
+        for_ cs $ runCircuit . rangeCheck @UInt32
+        for cs runCircuit
 
     restore [ac] = UInt32 $ restore [ac]
     restore _   = error "UInt32: invalid number of values"
 
     typeSize = 1
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveSemigroup (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => AdditiveSemigroup (UInt32 (ArithmeticCircuit a)) where
     UInt32 x + UInt32 y = UInt32 $ rangeCheck @UInt32 $ x + y
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveMonoid (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => AdditiveMonoid (UInt32 (ArithmeticCircuit a)) where
     zero = UInt32 zero
 
-instance (FiniteField a, Eq a, ToBits a) => AdditiveGroup (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => AdditiveGroup (UInt32 (ArithmeticCircuit a)) where
     UInt32 x - UInt32 y = UInt32 $ rangeCheck @UInt32 $ x - y
 
     negate (UInt32 x) = UInt32 $ rangeCheck @UInt32 $ negate x
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeSemigroup (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => MultiplicativeSemigroup (UInt32 (ArithmeticCircuit a)) where
     UInt32 x * UInt32 y = UInt32 $ rangeCheck @UInt32 $ x * y
 
-instance (FiniteField a, Eq a, ToBits a) => MultiplicativeMonoid (UInt32 (ArithmeticCircuit a)) where
+instance Arithmetic a => MultiplicativeMonoid (UInt32 (ArithmeticCircuit a)) where
     one = UInt32 one

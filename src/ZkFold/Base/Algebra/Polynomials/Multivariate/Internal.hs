@@ -10,7 +10,7 @@ import qualified Data.Map                          as Map
 import           GHC.Generics                      (Generic)
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 
-import           ZkFold.Base.Algebra.Basic.Class   hiding (scale)
+import           ZkFold.Base.Algebra.Basic.Class
 
 newtype Var c a = Var a
     deriving newtype (FromJSON, ToJSON)
@@ -73,14 +73,17 @@ instance (Eq c, FiniteField c, Ord a, MultiplicativeMonoid a) => AdditiveMonoid 
     zero = P []
 
 instance (Eq c, FiniteField c, Ord a, MultiplicativeMonoid a) => AdditiveGroup (Polynom c a) where
-    negate (P as) = P $ map (scale (negate one)) as
-    P l - P r     = addPoly (P l) (negate $ P r)
+    negate    = scale (negate one :: c)
+    P l - P r = addPoly (P l) (negate $ P r)
 
 instance (Eq c, FiniteField c, Ord a, AdditiveGroup a, MultiplicativeMonoid a) => MultiplicativeSemigroup (Polynom c a) where
     P l * P r = mulM (P l) (P r)
 
 instance (Eq c, FiniteField c, Ord a, AdditiveGroup a, MultiplicativeMonoid a) => MultiplicativeMonoid (Polynom c a) where
     one = P [M one empty]
+
+instance (Eq c, FiniteField c, Ord a, MultiplicativeMonoid a) => Scale (Polynom c a) c where
+    scale c (P as) = P $ map (scaleM c) as
 
 lt :: Polynom c a -> Monom c a
 lt (P as) = head as
@@ -106,8 +109,8 @@ addPower (Var x) (Var y) = Var (x + y)
 subPower :: AdditiveGroup a => Var c a -> Var c a -> Var c a
 subPower (Var x) (Var y) = Var (x - y)
 
-scale :: FiniteField c => c -> Monom c a -> Monom c a
-scale c' (M c as) = M (c*c') as
+scaleM :: FiniteField c => c -> Monom c a -> Monom c a
+scaleM c' (M c as) = M (c*c') as
 
 similarM :: (Eq a, MultiplicativeMonoid a) => Monom c a -> Monom c a -> Bool
 similarM (M _ asl) (M _ asr) = asl == asr

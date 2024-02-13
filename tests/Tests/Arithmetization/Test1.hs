@@ -27,7 +27,7 @@ testFunc x y =
 testResult :: forall a . (Symbolic a, Haskell.Eq a) => ArithmeticCircuit a -> a -> a -> Haskell.Bool
 testResult r x y = acValue (applyArgs r [x, y]) == testFunc @a x y
 
-specArithmetization1 :: forall a . (Symbolic a, Haskell.Eq a, Arbitrary a, Show a) => Spec
+specArithmetization1 :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a) => Spec
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do

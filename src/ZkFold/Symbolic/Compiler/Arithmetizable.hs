@@ -2,26 +2,30 @@
 {-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Symbolic.Compiler.Arithmetizable (
+        Arithmetic,
         Arithmetizable(..),
-        SomeArithmetizable (..)
+        MonadBlueprint(..),
+        SomeArithmetizable (..),
+        circuit,
+        circuits,
     ) where
 
-import           Control.Monad.State                                 (State)
-import           Data.Typeable                                       (Typeable)
-import           Prelude                                             hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
-import           Type.Data.Num.Unary                                 (Natural)
+import           Data.Typeable                                             (Typeable)
+import           Prelude                                                   hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
+import           Type.Data.Num.Unary                                       (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Prelude                                      (length, drop, take, splitAt)
-import           ZkFold.Symbolic.Data.List                           (List, mapList, lengthList, indicesInteger)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), input)
+import           ZkFold.Prelude                                            (drop, length, replicateA, splitAt, take)
+import           ZkFold.Symbolic.Data.List                                 (List, mapList, lengthList, indicesInteger)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
 
 -- | A class for arithmetizable types.
 -- Type `a` is the finite field of the arithmetic circuit.
 -- Type `x` represents the type to be arithmetized.
-class (FiniteField a, Eq a, ToBits a) => Arithmetizable a x where
+class Arithmetic a => Arithmetizable a x where
     -- | Arithmetizes `x`, adds it to the current circuit, and returns the outputs that make up `x`.
-    arithmetize :: x -> State (ArithmeticCircuit a) [ArithmeticCircuit a]
+    arithmetize :: MonadBlueprint i a m => x -> m [i]
 
     -- | Restores `x` from outputs from the circuits' outputs.
     restore :: [ArithmeticCircuit a] -> x
@@ -33,7 +37,7 @@ class (FiniteField a, Eq a, ToBits a) => Arithmetizable a x where
 data SomeArithmetizable a where
     SomeArithmetizable :: (Typeable t, Arithmetizable a t) => t -> SomeArithmetizable a
 
-instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a () where
+instance Arithmetic a => Arithmetizable a () where
     arithmetize () = return []
 
     restore [] = ()
@@ -77,14 +81,13 @@ instance (Arithmetizable a x, Natural n) => Arithmetizable a (List n x) where
         | length rs /= typeSize @a @(List n x) = error "restore: wrong number of arguments"
         | otherwise = mapList (f rs) indicesInteger
         where
-            f :: [ArithmeticCircuit a] -> Integer -> x
             f as = restore @a @x . take (typeSize @a @x) . flip drop as . ((typeSize @a @x) *)
 
     typeSize = typeSize @a @x * (lengthList @n)
 
 instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) where
     arithmetize f = do
-        x <- mapM (const input) [1..typeSize @a @x]
+        x <- replicateA (typeSize @a @x) (input >>= output)
         arithmetize (f $ restore x)
 
     restore = error "restore (x -> f): not implemented"

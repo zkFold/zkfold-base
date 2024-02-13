@@ -60,7 +60,7 @@ all1 f = foldr1 (&&) . map f
 any :: BoolType b => (x -> b) -> [x] -> b
 any f = foldr ((||) . f) false
 
-instance (FiniteField a, Eq a, ToBits a) => Arithmetizable a (Bool (ArithmeticCircuit a)) where
+instance Arithmetic a => Arithmetizable a (Bool (ArithmeticCircuit a)) where
     arithmetize (Bool b) = arithmetize b
 
     restore [r] = Bool $ restore [r]

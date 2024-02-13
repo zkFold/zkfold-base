@@ -17,7 +17,7 @@ import           Prelude                         hiding (sum, (^), product, Num(
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                  ((!))
 
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal hiding (scale)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal
 
 type Variable a = Var a Integer
 
@@ -40,10 +40,10 @@ polynomial = sum . map (\m -> P [m]) . filter (not . zeroM)
 getMonomials :: Polynomial a -> [Monomial a]
 getMonomials (P ms) = ms
 
-evalMonomial :: (Eq a, ToBits a, FiniteField b) => Monom a Integer -> Map Integer b -> b
+evalMonomial :: Algebra b a => Monom a Integer -> Map Integer b -> b
 evalMonomial (M c m) xs = scale c $ product (map (\(i, Var j) -> (xs ! i)^j) (toList m))
 
-evalMultivariate :: (Eq a, ToBits a, FiniteField b) => Polynomial a -> Map Integer b -> b
+evalMultivariate :: Algebra b a => Polynomial a -> Map Integer b -> b
 evalMultivariate (P []) _ = zero
 evalMultivariate (P (m:ms)) xs = evalMultivariate (P ms) xs + evalMonomial m xs
 

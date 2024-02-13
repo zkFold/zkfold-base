@@ -3,9 +3,8 @@
 
 module ZkFold.Symbolic.Data.Ord (Ord (..)) where
 
-import           Control.Monad.State                                    (evalState)
 import qualified Data.Bool                                              as Haskell
-import           Prelude                                                (concatMap, flip, mempty, reverse, zipWith, ($), (.))
+import           Prelude                                                (concatMap, reverse, zipWith, ($), (.))
 import qualified Prelude                                                as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -75,10 +74,10 @@ instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) x where
 getBitsBE :: Arithmetizable a x => x -> [ArithmeticCircuit a]
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE = concatMap (reverse . toBits) . flip evalState mempty . arithmetize
+getBitsBE x = concatMap (reverse . toBits) $ circuits $ arithmetize x
 
 dorAnd ::
-  (FiniteField a, Haskell.Eq a, ToBits a) =>
+  Arithmetic a =>
   Bool (ArithmeticCircuit a) ->
   Bool (ArithmeticCircuit a) ->
   Bool (ArithmeticCircuit a) ->
