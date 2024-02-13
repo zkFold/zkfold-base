@@ -15,6 +15,7 @@ import           Tests.Plonk                                 (specPlonk)
 import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.Univariate                            (specUnivariate)
 
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
@@ -25,7 +26,7 @@ main :: IO ()
 main = do
     specLockedByTxId
 
-    specArithmetization @BLS12_381_F
+    specArithmetization @(Zp BLS12_381_Scalar)
     specGroebner
 
     specPermutations
@@ -39,7 +40,7 @@ main = do
     specPairing @BLS12_381_G1 @BLS12_381_G2
     specUnivariate
 
-    specNonInteractiveProof @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT BLS12_381_F N32)
+    specNonInteractiveProof @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) N32)
     specPlonk
     specNonInteractiveProof @PlonkBS
 

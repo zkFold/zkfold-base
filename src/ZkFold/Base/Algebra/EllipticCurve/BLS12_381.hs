@@ -23,9 +23,7 @@ instance Finite BLS12_381_Base where
     order = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
 instance Prime BLS12_381_Base
 
-type BLS12_381_F = Zp BLS12_381_Scalar
-
-type Fr = BLS12_381_F
+type Fr = Zp BLS12_381_Scalar
 type Fq = Zp BLS12_381_Base
 
 data IP1
