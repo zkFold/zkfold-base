@@ -42,6 +42,7 @@ challenges ts0 n = go ts0 n []
         let (c, ts') = challenge ts
         in go ts' (k - 1) (c : acc)
 
+-- TODO: remove Arbitrary constraints from Params and Witness
 class (Arbitrary (Params a), Arbitrary (SetupSecret a), Arbitrary (ProverSecret a), Arbitrary (Witness a),
        Show (Setup a), Show (ProverSecret a), Show (Witness a), Typeable a)
         => NonInteractiveProof a where

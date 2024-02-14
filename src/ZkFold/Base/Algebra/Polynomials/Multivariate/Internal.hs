@@ -9,6 +9,7 @@ import           Data.Map                          (Map, toList, empty, unionWit
 import qualified Data.Map                          as Map
 import           GHC.Generics                      (Generic)
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
+import           Test.QuickCheck                   (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 
@@ -28,6 +29,8 @@ instance (Eq a, MultiplicativeMonoid a) => Eq (Var c a) where
     (==) vx vy = getPower vx == getPower vy
 instance (Ord a, MultiplicativeMonoid a) => Ord (Var c a) where
     compare vx vy = compare (getPower vx) (getPower vy)
+instance Arbitrary a => Arbitrary (Var c a) where
+    arbitrary = error "arbitrary not implemented for Var"
 
 getPower :: Var c a -> a
 getPower (Var j) = j
@@ -63,8 +66,14 @@ instance (Eq c, Ord a, MultiplicativeMonoid a) => Ord (Monom c a) where
                 | k1 == k2  = if a1 == a2 then go xs ys else compare a1 a2
                 | otherwise = compare k2 k1
 
+instance Arbitrary a => Arbitrary (Monom c a) where
+    arbitrary = error "arbitrary not implemented for Monom"
+
 instance (Eq c, Ord a, MultiplicativeMonoid a) => Ord (Polynom c a) where
     compare (P l) (P r) = compare l r
+
+instance Arbitrary a => Arbitrary (Polynom c a) where
+    arbitrary = error "arbitrary not implemented for Polynom"
 
 instance (Eq c, FiniteField c, Ord a, MultiplicativeMonoid a) => AdditiveSemigroup (Polynom c a) where
     P l + P r = addPoly (P l) (P r)

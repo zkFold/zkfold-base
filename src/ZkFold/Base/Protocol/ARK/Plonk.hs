@@ -27,6 +27,10 @@ type F = Zp BLS12_381_Scalar
 type G1 = Point BLS12_381_G1
 type G2 = Point BLS12_381_G2
 
+{-
+    NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
+    Additionally, we don't want this library to depend on Cardano libraries.
+-}
 data Plonk t
 
 type PlonkBS = Plonk ByteString

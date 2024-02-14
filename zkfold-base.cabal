@@ -72,6 +72,7 @@ library
       ZkFold.Base.Algebra.Polynomials.Multivariate.Internal
       ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Data.ByteString
+      ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.ARK.BabyHyrax
       ZkFold.Base.Protocol.ARK.HyperPlonk
       ZkFold.Base.Protocol.ARK.Lasso
