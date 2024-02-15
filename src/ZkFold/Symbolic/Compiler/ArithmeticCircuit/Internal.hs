@@ -5,6 +5,7 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
         Arithmetic,
+        ConstraintMonomial,
         Constraint,
         -- low-level functions
         constraint,
@@ -27,7 +28,7 @@ import           System.Random                                (Random (..), StdG
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial, variableList, evalMultivariate, monomial, polynomial)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, monomial, polynomial, variables, evalPolynomial)
 import           ZkFold.Prelude                               (length, drop, take)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
@@ -83,17 +84,17 @@ class (FiniteField a, Eq a, ToBits a, Scale (Zp VarField) a) => Arithmetic a
 instance (FiniteField a, Eq a, ToBits a, Scale (Zp VarField) a) => Arithmetic a
 
 -- TODO: Remove the hardcoded constant.
-toVar :: Scale (Zp VarField) a => [Integer] -> Constraint a -> Integer
+toVar :: Arithmetic a => [Integer] -> Constraint a -> Integer
 toVar srcs c = fromBits $ castBits $ toBits ex
     where
         r  = toZp 903489679376934896793395274328947923579382759823 :: Zp VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: Zp VarField
-        zs = variableList c
+        zs = variables c
         vs = fromList $ zip zs (map ((+) r . toZp) zs)
-        x  = g ^ (c `evalMultivariate` vs)
+        x  = g ^ (c `evalPolynomial` vs)
         ex = foldr (\p y -> x ^ p + y) x srcs
 
-con2var :: Scale (Zp VarField) a => Constraint a -> Integer
+con2var :: Arithmetic a => Constraint a -> Integer
 con2var = toVar []
 
 newVariable :: State (ArithmeticCircuit a) Integer
@@ -103,7 +104,7 @@ newVariable = do
     put r { acRNG = g }
     return x
 
-newVariableWithSource :: Scale (Zp VarField) a => [Integer] -> (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
+newVariableWithSource :: Arithmetic a => [Integer] -> (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
 newVariableWithSource srcs con = toVar srcs . con <$> newVariable
 
 addVariable :: Integer -> State (ArithmeticCircuit a) ()
@@ -111,11 +112,13 @@ addVariable x = modify (\r -> r { acOutput = x, acVarOrder = insert (length (acV
 
 ---------------------------------- Low-level functions --------------------------------
 
+type ConstraintMonomial = SomeMonomial
+
 -- | The type that represents a constraint in the arithmetic circuit.
-type Constraint a = Polynomial a
+type Constraint a = SomePolynomial a
 
 -- | Adds a constraint to the arithmetic circuit.
-constraint :: Scale (Zp VarField) a => Constraint a -> State (ArithmeticCircuit a) ()
+constraint :: Arithmetic a => Constraint a -> State (ArithmeticCircuit a) ()
 constraint con = modify $ \r -> r { acSystem = insert (con2var con) con (acSystem r) }
 
 -- | Forces the current variable to be zero.
@@ -123,7 +126,7 @@ forceZero :: forall a . Arithmetic a => State (ArithmeticCircuit a) ()
 forceZero = do
     r <- get
     let x   = acOutput r
-        con = polynomial [monomial one (singleton x one)]
+        con = polynomial [(one, monomial  (singleton x one))]
     constraint con
 
 -- | Adds a new variable assignment to the arithmetic circuit.

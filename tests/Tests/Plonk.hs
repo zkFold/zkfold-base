@@ -5,7 +5,7 @@ module Tests.Plonk (specPlonk) where
 
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (transpose)
-import           Data.Map                                     (keys, fromList, singleton, elems)
+import           Data.Map                                     (fromList, singleton, elems)
 import           Prelude                                      hiding (Num(..), Fractional(..), length, take, drop, replicate)
 import           Test.Hspec
 import           Test.QuickCheck
@@ -14,7 +14,7 @@ import           Tests.NonInteractiveProof                    (NonInteractivePro
 
 import           ZkFold.Base.Algebra.Basic.Class              (AdditiveSemigroup (..), AdditiveGroup (..), MultiplicativeSemigroup (..), Finite (..), zero, negate)
 import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (getPowers, getMonomials, evalMultivariate)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate 
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (toPolyVec, polyVecInLagrangeBasis, fromPolyVec, polyVecZero, polyVecLinear, evalPolyVec)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkConstaint, toPlonkArithmetization)
@@ -24,12 +24,12 @@ import           ZkFold.Symbolic.Compiler
 propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
 propPlonkConstraintConversion x (x1, x2, x3) =
     let p   = fromPlonkConstraint x
-        xs  = nubOrd $ concatMap (keys . getPowers) (getMonomials p)
+        xs  = nubOrd $ variables p
         v   = fromList [(head xs, x1), (xs !! 1, x2), (xs !! 2, x3)]
         p'  = fromPlonkConstraint $ toPlonkConstaint p
-        xs' = nubOrd $ concatMap (keys . getPowers) (getMonomials p)
+        xs' = nubOrd $ variables p'
         v'  = fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)]
-    in p `evalMultivariate` v == p' `evalMultivariate` v'
+    in p `evalPolynomial` v == p' `evalPolynomial` v'
 
 propPlonkConstraintSatisfaction :: ParamsPlonk -> NonInteractiveProofTestData PlonkBS -> Bool
 propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ _ w) =

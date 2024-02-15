@@ -7,7 +7,7 @@ import           Prelude                                      (Show, Eq, Bool, u
 import           Test.QuickCheck                              (Arbitrary)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomePolynomial)
 import           ZkFold.Base.Data.Vector                      (Vector)
 import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof (..))
 
@@ -17,9 +17,9 @@ data ProtostarGate (m :: Type) (n :: Type) (c :: Type) (d :: Type) (f :: Type)
 instance (Finite m, Finite n, Finite c, Finite d, Typeable m, Typeable n, Typeable c, Typeable d, Typeable f,
         Show f, Arbitrary f, FiniteField f, Eq f) => NonInteractiveProof (ProtostarGate m n c d f) where
     type Transcript (ProtostarGate m n c d f)   = ByteString
-    type Params (ProtostarGate m n c d f)       = Vector m (Vector n f, Polynomial f)
+    type Params (ProtostarGate m n c d f)       = Vector m (Vector n f, SomePolynomial f)
     type SetupSecret (ProtostarGate m n c d f)  = ()
-    type Setup (ProtostarGate m n c d f)        = Vector m (Vector n f, Polynomial f)
+    type Setup (ProtostarGate m n c d f)        = Vector m (Vector n f, SomePolynomial f)
     type ProverSecret (ProtostarGate m n c d f) = ()
     type Witness (ProtostarGate m n c d f)      = Vector n (Vector c f)
     type Input (ProtostarGate m n c d f)        = ()

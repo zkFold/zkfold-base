@@ -1,54 +1,47 @@
+{-# LANGUAGE TypeApplications #-}
 module ZkFold.Base.Algebra.Polynomials.Multivariate (
-    Variable,
-    Monomial,
-    Polynomial,
-    variable,
+    module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial,
+    module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial,
+    SomeMonomial,
+    SomePolynomial,
     monomial,
-    getPowers,
     polynomial,
-    getMonomials,
-    evalMultivariate,
-    variableList
+    evalPolynomial,
+    variables
     ) where
 
+import           Data.Containers.ListUtils       (nubOrd)
 import           Data.Map                        (Map, toList, keys)
+import           Data.Maybe                      (fromJust)
 import           Prelude                         hiding (sum, (^), product, Num(..), (!!), length, replicate)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                  ((!))
 
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Internal
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 
-type Variable a = Var a Integer
+-- | Most general type for a multivariate monomial
+type SomeMonomial = M Integer Integer (Map Integer Integer)
 
-variable :: Integer -> Variable a
-variable = Var
+-- | Most general type for a multivariate polynomial
+type SomePolynomial c = P c Integer Integer (Map Integer Integer) [(c, M Integer Integer (Map Integer Integer))]
 
-type Monomial a = Monom a Integer
+-- | Monomial constructor
+monomial :: Monomial i j => Map i j -> M i j (Map i j)
+monomial = M . fromJust . toMonomial
 
-monomial :: a -> Map Integer (Variable a) -> Monomial a
-monomial = M
+-- | Polynomial constructor
+polynomial :: Polynomial c i j => [(c, M i j (Map i j))] -> P c i j (Map i j) [(c, M i j (Map i j))]
+polynomial = sum . map (\m -> P [m]) . fromJust . toPolynomial
 
-getPowers :: Monomial a -> Map Integer Integer
-getPowers (M _ as) = fmap getPower as
 
-type Polynomial a = Polynom a Integer
+evalMonomial :: forall i j m b . (FromMonomial i j m, Exponent b j) => M i j m -> Map i b -> b
+evalMonomial (M m) xs = product (map (\(i, j) -> (xs ! i)^j) (toList $ fromMonomial @i @j m))
 
-polynomial :: (FiniteField a, Eq a) => [Monomial a] -> Polynomial a
-polynomial = sum . map (\m -> P [m]) . filter (not . zeroM)
+evalPolynomial :: forall c i j m p b . (FromMonomial i j m, FromPolynomial c i j m p, Algebra b c, Exponent b j)
+    => P c i j m p -> Map i b -> b
+evalPolynomial (P p) xs = sum $ map (\(c, m) -> scale c (evalMonomial m xs)) (fromPolynomial @c @i @j @m @p p)
 
-getMonomials :: Polynomial a -> [Monomial a]
-getMonomials (P ms) = ms
-
-evalMonomial :: Algebra b a => Monom a Integer -> Map Integer b -> b
-evalMonomial (M c m) xs = scale c $ product (map (\(i, Var j) -> (xs ! i)^j) (toList m))
-
-evalMultivariate :: Algebra b a => Polynomial a -> Map Integer b -> b
-evalMultivariate (P []) _ = zero
-evalMultivariate (P (m:ms)) xs = evalMultivariate (P ms) xs + evalMonomial m xs
-
-variableList :: Polynomial a -> [Integer]
-variableList (P []) = []
-variableList (P (m:ms)) =
-    let variableList' (M _ as) = keys as
-    in variableList' m ++ variableList (P ms)
+variables :: forall c i j m p . (FromMonomial i j m, FromPolynomial c i j m p) => P c i j m p -> [i]
+variables (P p) = nubOrd $ concatMap (\(_, M m) -> keys (fromMonomial @i @j @m m)) $ fromPolynomial @c @i @j @m @p p

@@ -65,7 +65,7 @@ instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) 
     constraint p = I.constraint (p var)
 
 var :: Arithmetic a => Integer -> I.Constraint a
-var x = polynomial [ monomial one (singleton x one) ]
+var x = polynomial [(one, monomial (singleton x one))]
 
 circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> ArithmeticCircuit a
 circuit b = let (o, r) = runState b mempty in r { acOutput = o }

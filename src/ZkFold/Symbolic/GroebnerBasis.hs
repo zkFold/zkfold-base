@@ -18,14 +18,13 @@ module ZkFold.Symbolic.GroebnerBasis (
 
 import           Data.Bool                                             (bool)
 import           Data.List                                             (sortBy, nub)
-import           Data.Map                                              (toList, elems, empty, singleton, keys, mapWithKey, fromList)
+import           Data.Map                                              (toList, elems, empty, singleton, keys, mapWithKey, fromList, Map)
 import           Data.Maybe                                            (mapMaybe)
 import           Prelude                                               hiding (Num(..), (!!), length, replicate)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate          as Poly
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate.Internal as Poly
 import           ZkFold.Prelude                   ((!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.GroebnerBasis.Internal
@@ -87,11 +86,11 @@ makeTheorem r = (boundVariables p0 ps, --systemReduce $
         convert :: Constraint (Zp p) -> Polynomial p
         convert (Poly.P ms) = polynomial $ map convert' ms
             where
-                convert' :: Poly.Monomial (Zp p) -> Monomial p
-                convert' (Poly.M c as) = M c $ fromList $ mapMaybe convert'' $ toList as
+                convert' :: (Zp p, Poly.M Integer Integer (Map Integer Integer)) -> Monomial p
+                convert' (c, Poly.M as) = M c $ fromList $ mapMaybe convert'' $ toList as
                     where
-                        convert'' :: (Integer, Poly.Variable (Zp p)) -> Maybe (Integer, Variable p)
-                        convert'' (j, Poly.Var i) =
+                        convert'' :: (Integer, Integer) -> Maybe (Integer, Variable p)
+                        convert'' (j, i) =
                             let ind = mapVars j
                             in if ind > 0 then Just (ind, Free i) else Nothing
 

@@ -69,9 +69,13 @@ library
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.Polynomials.Multivariate
-      ZkFold.Base.Algebra.Polynomials.Multivariate.Internal
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial.Class
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial.Class
       ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Data.ByteString
+      ZkFold.Base.Data.Type
       ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.ARK.BabyHyrax
       ZkFold.Base.Protocol.ARK.HyperPlonk
