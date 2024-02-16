@@ -27,8 +27,9 @@ import           System.Random                                (Random (..), StdG
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
+import           ZkFold.Base.Algebra.Basic.Scale              (BinScale(..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, monomial, polynomial, variables, evalPolynomial)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, monomial, polynomial, evalPolynomial)
 import           ZkFold.Prelude                               (length, drop, take)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
@@ -79,19 +80,16 @@ instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
 -- It is used in the compiler for generating new variable indices.
 type VarField = BLS12_381_Scalar
 
-class (FiniteField a, Eq a, ToBits a, Scale (Zp VarField) a) => Arithmetic a
-
-instance (FiniteField a, Eq a, ToBits a, Scale (Zp VarField) a) => Arithmetic a
+type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a)
 
 -- TODO: Remove the hardcoded constant.
-toVar :: Arithmetic a => [Integer] -> Constraint a -> Integer
-toVar srcs c = fromBits $ castBits $ toBits ex
+toVar :: forall a . Arithmetic a => [Integer] -> Constraint a -> Integer
+toVar srcs c = fromBinary $ castBits $ binaryExpansion ex
     where
         r  = toZp 903489679376934896793395274328947923579382759823 :: Zp VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: Zp VarField
-        zs = variables c
-        vs = fromList $ zip zs (map ((+) r . toZp) zs)
-        x  = g ^ (c `evalPolynomial` vs)
+        v  = BinScale @a . (+ r) . toZp
+        x  = g ^ runBinScale (v `evalPolynomial` c)
         ex = foldr (\p y -> x ^ p + y) x srcs
 
 con2var :: Arithmetic a => Constraint a -> Integer

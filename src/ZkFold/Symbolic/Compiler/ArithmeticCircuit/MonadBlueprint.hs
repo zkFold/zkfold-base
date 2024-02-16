@@ -15,15 +15,10 @@ import           Data.Map                                               (singlet
 import           Prelude                                                hiding ((*), (-))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Scale                        (Self(..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate           (monomial, polynomial)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    hiding (Constraint, constraint)
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    as I
-
-newtype Self a = Self { getSelf :: a }
-    deriving newtype (AdditiveSemigroup, AdditiveMonoid, AdditiveGroup, MultiplicativeSemigroup, MultiplicativeMonoid)
-
-instance Ring a => Scale (Self a) a where
-    scale a (Self b) = Self (a * b)
 
 type Eval i a = (i -> a) -> a
 

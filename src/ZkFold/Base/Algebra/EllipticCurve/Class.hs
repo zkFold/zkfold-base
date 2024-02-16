@@ -1,13 +1,15 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators    #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
 import           Data.Functor                    ((<&>))
-import           Prelude                         hiding (Num(..), (/), (^), sum)
+import           Prelude                         hiding (Num (..), sum, (/), (^))
 import qualified Prelude                         as Haskell
 import           Test.QuickCheck                 hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Scale (BinScale (..))
 import           ZkFold.Base.Data.ByteString     (ToByteString (..))
 
 type family BaseField curve
@@ -16,10 +18,9 @@ type family ScalarField curve
 
 data Point curve = Point (BaseField curve) (BaseField curve) | Inf
 
-class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curve),
-      ToBits (BaseField curve), ToByteString (BaseField curve),
+class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curve), ToByteString (BaseField curve),
       Haskell.Show (ScalarField curve), Haskell.Num (ScalarField curve), Haskell.Ord (ScalarField curve),
-      PrimeField (ScalarField curve), Eq (ScalarField curve), ToBits (ScalarField curve), Arbitrary (ScalarField curve)
+      PrimeField (ScalarField curve), Eq (ScalarField curve), BinaryExpansion (ScalarField curve), Arbitrary (ScalarField curve)
     ) => EllipticCurve curve where
     inf :: Point curve
 
@@ -30,13 +31,13 @@ class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curv
     mul :: ScalarField curve -> Point curve -> Point curve
 
 instance EllipticCurve curve => Show (Point curve) where
-    show Inf = "Inf"
+    show Inf         = "Inf"
     show (Point x y) = "(" ++ show x ++ ", " ++ show y ++ ")"
 
 instance EllipticCurve curve => Eq (Point curve) where
-    Inf == Inf = True
-    Inf == _   = False
-    _   == Inf = False
+    Inf         == Inf         = True
+    Inf         == _           = False
+    _           == Inf         = False
     Point x1 y1 == Point x2 y2 = x1 == x2 && y1 == y2
 
 instance EllipticCurve curve => AdditiveSemigroup (Point curve) where
@@ -84,8 +85,8 @@ addPoints p1 p2
     | otherwise = pointAdd p1 p2
 
 pointNegate :: EllipticCurve curve => Point curve -> Point curve
-pointNegate Inf = Inf
+pointNegate Inf         = Inf
 pointNegate (Point x y) = Point x (negate y)
 
-pointMul :: Scale (Point curve) (ScalarField curve) => ScalarField curve -> Point curve -> Point curve
-pointMul n p = n `scale` p
+pointMul :: forall curve . EllipticCurve curve => ScalarField curve -> Point curve -> Point curve
+pointMul n p = runBinScale $ n `scale` BinScale @(ScalarField curve) p

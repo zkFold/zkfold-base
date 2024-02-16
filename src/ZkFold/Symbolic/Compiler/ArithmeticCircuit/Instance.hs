@@ -6,7 +6,7 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Data.Aeson
-import           Data.Foldable                                             (foldrM)
+import           Data.Foldable                                             (foldl')
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map, null, splitAt, take)
 import           Data.Traversable                                          (for)
 import           Prelude                                                   hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
@@ -68,18 +68,25 @@ instance Arithmetic a => MultiplicativeGroup (ArithmeticCircuit a) where
 instance (Arithmetic a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
     fromConstant c = circuit $ newAssigned $ const (fromConstant @b @a c `scale` one)
 
-instance Arithmetic a => ToBits (ArithmeticCircuit a) where
-    toBits r = circuits $ do
+instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
+    binaryExpansion r = if numberOfBits @a == 0 then [] else circuits $ do
         k <- runCircuit r
-        let repr = padBits (numberOfBits @a) . toBits . ($ k)
+        let repr = padBits (numberOfBits @a) . binaryExpansion . ($ k)
         bits <- for [0 .. numberOfBits @a - 1] $ \j -> do
             newSourced [k] (\x i -> x i * (x i - one)) ((!! j) . repr)
+        outputs <- for bits output
+        k' <- runCircuit (fromBinary outputs)
+        constraint (\x -> x k - x k')
+        return bits
+
+    fromBinary bits =
         case reverse bits of
-            [] -> return []
-            (b : bs) -> do
-                k' <- foldrM (\i s -> newAssigned $ \x -> x i + x s + x s) b bs
-                constraint (\x -> x k - x k')
-                return bits
+            [] -> zero
+            (b : bs) -> foldl' gorner b bs
+        where gorner s b = circuit $ do
+                i <- runCircuit s
+                j <- runCircuit b
+                newAssigned (\x -> x i + x i + x j)
 
 -- TODO: make a proper implementation of Arbitrary
 instance Arithmetic a => Arbitrary (ArithmeticCircuit a) where

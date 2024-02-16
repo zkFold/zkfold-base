@@ -14,7 +14,8 @@ import           Tests.NonInteractiveProof                    (NonInteractivePro
 
 import           ZkFold.Base.Algebra.Basic.Class              (AdditiveSemigroup (..), AdditiveGroup (..), MultiplicativeSemigroup (..), Finite (..), zero, negate)
 import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate 
+import           ZkFold.Base.Algebra.Basic.Scale              (Self(..))
+import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (toPolyVec, polyVecInLagrangeBasis, fromPolyVec, polyVecZero, polyVecLinear, evalPolyVec)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkConstaint, toPlonkArithmetization)
@@ -25,11 +26,11 @@ propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
 propPlonkConstraintConversion x (x1, x2, x3) =
     let p   = fromPlonkConstraint x
         xs  = nubOrd $ variables p
-        v   = fromList [(head xs, x1), (xs !! 1, x2), (xs !! 2, x3)]
+        v   = Self . (fromList [(head xs, x1), (xs !! 1, x2), (xs !! 2, x3)] !)
         p'  = fromPlonkConstraint $ toPlonkConstaint p
         xs' = nubOrd $ variables p'
-        v'  = fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)]
-    in p `evalPolynomial` v == p' `evalPolynomial` v'
+        v'  = Self . (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
+    in v `evalPolynomial` p == v' `evalPolynomial` p'
 
 propPlonkConstraintSatisfaction :: ParamsPlonk -> NonInteractiveProofTestData PlonkBS -> Bool
 propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ _ w) =
@@ -42,7 +43,7 @@ propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ _ w) =
         w2'     = map ((wmap wInput !) . fromZp) (fromPolyVec b)
         w3'     = map ((wmap wInput !) . fromZp) (fromPolyVec c)
         wPub    = take l (map negate $ elems inputs) ++ replicate (order @PlonkBS - l) zero
-        
+
         ql' = fromPolyVec ql
         qr' = fromPolyVec qr
         qo' = fromPolyVec qo
