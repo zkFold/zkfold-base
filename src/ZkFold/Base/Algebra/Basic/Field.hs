@@ -67,17 +67,8 @@ instance Prime p => MultiplicativeGroup (Zp p) where
 instance Finite p => FromConstant Integer (Zp p) where
     fromConstant = toZp @p
 
-instance Finite p => ToBits (Zp p) where
-    toBits (Zp a) = map Zp $ toBits a
-
-instance Finite p => FromBits (Zp p) where
-    fromBits = toZp . fromBits . map fromZp
-
-instance (AdditiveMonoid a, Finite p) => Scale a (Zp p) where
-    scale (Zp n) = scale n
-
-instance (MultiplicativeMonoid a, Finite p) => Exponent a (Zp p) where
-    a ^ Zp n = a ^ n
+instance Prime p => BinaryExpansion (Zp p) where
+    binaryExpansion (Zp a) = map Zp $ binaryExpansion a
 
 instance Finite p => Haskell.Num (Zp p) where
     fromInteger = toZp @p
@@ -152,9 +143,6 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
 
-instance (Field f, ToBits f, Eq f, IrreduciblePoly f e) => ToBits (Ext2 f e) where
-    toBits (Ext2 a b) = map (`Ext2` zero) $ toBits a ++ toBits b
-
 instance ToByteString f => ToByteString (Ext2 f e) where
     toByteString (Ext2 a b) = toByteString a <> toByteString b
 
@@ -198,9 +186,6 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) 
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero
-
-instance (Field f, ToBits f, Eq f, IrreduciblePoly f e) => ToBits (Ext3 f e) where
-    toBits (Ext3 a b c) = map (\x -> Ext3 x zero zero) $ toBits a ++ toBits b ++ toBits c
 
 instance ToByteString f => ToByteString (Ext3 f e) where
     toByteString (Ext3 a b c) = toByteString a <> toByteString b <> toByteString c

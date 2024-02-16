@@ -83,13 +83,13 @@ instance FromConstant a a where
     fromConstant = id
 
 -- Note: numbers should convert to Little-endian bit representation.
-class Semiring a => ToBits a where
-    toBits :: a -> [a]
+class Semiring a => BinaryExpansion a where
+    binaryExpansion :: a -> [a]
 
-class Semiring a => FromBits a where
-    fromBits :: [a] -> a
+    fromBinary :: [a] -> a
+    fromBinary = foldr (\x y -> x + y + y) zero
 
-padBits :: forall a . ToBits a => Integer -> [a] -> [a]
+padBits :: forall a . BinaryExpansion a => Integer -> [a] -> [a]
 padBits n xs = xs ++ replicate (n - length xs) zero
 
 castBits :: (Semiring a, Eq a, Semiring b) => [a] -> [b]
@@ -99,13 +99,21 @@ castBits (x:xs)
     | x == one  = one  : castBits xs
     | otherwise = error "castBits: impossible bit value"
 
-class (AdditiveMonoid a, Semiring b) => Scale a b where
+class (AdditiveMonoid a, Semiring b) => Scale a b | a -> b where
     scale :: b -> a -> a
 
 type Algebra a b = (Ring a, Scale a b)
 
 class (MultiplicativeMonoid a, Semiring b) => Exponent a b where
     (^) :: a -> b -> a
+
+instance (MultiplicativeMonoid a, Eq b, BinaryExpansion b) => Exponent a b where
+    a ^ n = product $ zipWith f (binaryExpansion n) (iterate (\x -> x * x) a)
+      where
+        f x y
+          | x == zero = one
+          | x == one  = y
+          | otherwise = error "^: This should never happen."
 
 multiExp :: (Exponent a b, Foldable t) => a -> t b -> a
 multiExp a = foldl (\x y -> x * (a ^ y)) one
@@ -143,28 +151,11 @@ instance MultiplicativeSemigroup Integer where
 instance MultiplicativeMonoid Integer where
     one = 1
 
-instance ToBits Integer where
-    toBits 0 = []
-    toBits x
-        | x > 0     = (x `mod` 2) : toBits (x `div` 2)
+instance BinaryExpansion Integer where
+    binaryExpansion 0 = []
+    binaryExpansion x
+        | x > 0     = (x `mod` 2) : binaryExpansion (x `div` 2)
         | otherwise = error "toBits: Not defined for negative integers!"
-
-instance FromBits Integer where
-    fromBits = foldl (\x y -> x * 2 + y) 0 . reverse
-
-instance AdditiveMonoid a => Scale a Integer where
-    scale n a = sum $ zipWith f (toBits n) (iterate (\x -> x + x) a)
-      where
-        f 0 _ = zero
-        f 1 y = y
-        f _ _ = error "scale: This should never happen."
-
-instance MultiplicativeMonoid a => Exponent a Integer where
-    a ^ n = product $ zipWith f (toBits n) (iterate (\x -> x * x) a)
-      where
-        f 0 _ = one
-        f 1 y = y
-        f _ _ = error "^: This should never happen."
 
 --------------------------------------------------------------------------------
 
@@ -186,13 +177,12 @@ instance MultiplicativeMonoid Bool where
 instance MultiplicativeGroup Bool where
     invert = id
 
-instance ToBits Bool where
-    toBits = (:[])
+instance BinaryExpansion Bool where
+    binaryExpansion = (:[])
 
-instance FromBits Bool where
-    fromBits []  = False
-    fromBits [x] = x
-    fromBits _   = error "fromBits: This should never happen."
+    fromBinary []  = False
+    fromBinary [x] = x
+    fromBinary _   = error "fromBits: This should never happen."
 
 --------------------------------------------------------------------------------
 

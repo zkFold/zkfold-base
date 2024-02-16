@@ -74,7 +74,7 @@ instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) x where
 getBitsBE :: Arithmetizable a x => x -> [ArithmeticCircuit a]
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = concatMap (reverse . toBits) $ circuits $ arithmetize x
+getBitsBE x = concatMap (reverse . binaryExpansion) $ circuits $ arithmetize x
 
 dorAnd ::
   Arithmetic a =>
