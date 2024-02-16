@@ -177,13 +177,12 @@ instance MultiplicativeMonoid Bool where
 instance MultiplicativeGroup Bool where
     invert = id
 
-instance ToBits Bool where
-    toBits = (:[])
+instance BinaryExpansion Bool where
+    binaryExpansion = (:[])
 
-instance FromBits Bool where
-    fromBits []  = False
-    fromBits [x] = x
-    fromBits _   = error "fromBits: This should never happen."
+    fromBinary []  = False
+    fromBinary [x] = x
+    fromBinary _   = error "fromBits: This should never happen."
 
 --------------------------------------------------------------------------------
 
