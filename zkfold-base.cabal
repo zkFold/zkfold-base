@@ -69,10 +69,11 @@ library
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.Polynomials.Multivariate
-      ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
-      ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial.Class
       ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial.Class
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial.Class
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Set
       ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Data.ByteString
       ZkFold.Base.Data.Type
@@ -84,6 +85,7 @@ library
       ZkFold.Base.Protocol.ARK.Plonk
       ZkFold.Base.Protocol.ARK.Plonk.Internal
       ZkFold.Base.Protocol.ARK.Protostar
+      ZkFold.Base.Protocol.ARK.Protostar.Internal
       ZkFold.Base.Protocol.ARK.Protostar.Gate
       ZkFold.Base.Protocol.ARK.Protostar.Lookup
       ZkFold.Base.Protocol.ARK.Protostar.Permutation

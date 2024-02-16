@@ -168,6 +168,34 @@ instance MultiplicativeMonoid a => Exponent a Integer where
 
 --------------------------------------------------------------------------------
 
+instance AdditiveSemigroup Bool where
+    (+) = (||)
+
+instance AdditiveMonoid Bool where
+    zero = False
+
+instance AdditiveGroup Bool where
+    negate = id
+
+instance MultiplicativeSemigroup Bool where
+    (*) = (&&)
+
+instance MultiplicativeMonoid Bool where
+    one = True
+
+instance MultiplicativeGroup Bool where
+    invert = id
+
+instance ToBits Bool where
+    toBits = (:[])
+
+instance FromBits Bool where
+    fromBits []  = False
+    fromBits [x] = x
+    fromBits _   = error "fromBits: This should never happen."
+
+--------------------------------------------------------------------------------
+
 instance AdditiveSemigroup a => AdditiveSemigroup [a] where
     (+) = zipWith (+)
 

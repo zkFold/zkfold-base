@@ -2,6 +2,7 @@
 module ZkFold.Base.Algebra.Polynomials.Multivariate (
     module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial,
     module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial,
+    module ZkFold.Base.Algebra.Polynomials.Multivariate.Set,
     SomeMonomial,
     SomePolynomial,
     monomial,
@@ -20,6 +21,7 @@ import           ZkFold.Prelude                  ((!))
 
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Set
 
 -- | Most general type for a multivariate monomial
 type SomeMonomial = M Integer Integer (Map Integer Integer)
@@ -34,7 +36,6 @@ monomial = M . fromJust . toMonomial
 -- | Polynomial constructor
 polynomial :: Polynomial c i j => [(c, M i j (Map i j))] -> P c i j (Map i j) [(c, M i j (Map i j))]
 polynomial = sum . map (\m -> P [m]) . fromJust . toPolynomial
-
 
 evalMonomial :: forall i j m b . (FromMonomial i j m, Exponent b j) => M i j m -> Map i b -> b
 evalMonomial (M m) xs = product (map (\(i, j) -> (xs ! i)^j) (toList $ fromMonomial @i @j m))

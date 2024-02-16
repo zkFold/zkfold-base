@@ -26,34 +26,34 @@ newtype Zp p = Zp Integer
 fromZp :: Zp p -> Integer
 fromZp (Zp a) = a
 
-toZp :: forall p . Prime p => Integer -> Zp p
+toZp :: forall p . Finite p => Integer -> Zp p
 toZp a = Zp $ a `mod` order @p
 
-instance Prime p => Finite (Zp p) where
+instance Finite p => Finite (Zp p) where
     order = order @p
 
 instance Prime p => Prime (Zp p)
 
-instance Prime p => Eq (Zp p) where
+instance Finite p => Eq (Zp p) where
     Zp a == Zp b = (a - b) `mod` (order @(Zp p)) == 0
 
-instance Prime p => Ord (Zp p) where
+instance Finite p => Ord (Zp p) where
     Zp a <= Zp b = (a `mod` (order @(Zp p))) <= (b `mod` (order @(Zp p)))
 
-instance Prime p => AdditiveSemigroup (Zp p) where
+instance Finite p => AdditiveSemigroup (Zp p) where
     Zp a + Zp b = Zp $ (a + b) `mod` (order @(Zp p))
 
-instance Prime p => AdditiveMonoid (Zp p) where
+instance Finite p => AdditiveMonoid (Zp p) where
     zero = Zp 0
 
-instance Prime p => AdditiveGroup (Zp p) where
+instance Finite p => AdditiveGroup (Zp p) where
     negate (Zp a) = Zp $ negate a `mod` (order @(Zp p))
     Zp a - Zp b   = Zp $ (a - b) `mod` (order @(Zp p))
 
-instance Prime p => MultiplicativeSemigroup (Zp p) where
+instance Finite p => MultiplicativeSemigroup (Zp p) where
     Zp a * Zp b = Zp $ (a * b) `mod` (order @(Zp p))
 
-instance Prime p => MultiplicativeMonoid (Zp p) where
+instance Finite p => MultiplicativeMonoid (Zp p) where
     one = Zp 1
 
 instance Prime p => MultiplicativeGroup (Zp p) where
@@ -64,22 +64,22 @@ instance Prime p => MultiplicativeGroup (Zp p) where
             | otherwise = f (x', y') (x - q * x', y - q * y')
             where q = x `div` x'
 
-instance Prime p => FromConstant Integer (Zp p) where
+instance Finite p => FromConstant Integer (Zp p) where
     fromConstant = toZp @p
 
-instance Prime p => ToBits (Zp p) where
+instance Finite p => ToBits (Zp p) where
     toBits (Zp a) = map Zp $ toBits a
 
-instance Prime p => FromBits (Zp p) where
+instance Finite p => FromBits (Zp p) where
     fromBits = toZp . fromBits . map fromZp
 
-instance (AdditiveMonoid a, Prime p) => Scale a (Zp p) where
+instance (AdditiveMonoid a, Finite p) => Scale a (Zp p) where
     scale (Zp n) = scale n
 
-instance (MultiplicativeMonoid a, Prime p) => Exponent a (Zp p) where
+instance (MultiplicativeMonoid a, Finite p) => Exponent a (Zp p) where
     a ^ Zp n = a ^ n
 
-instance Prime p => Haskell.Num (Zp p) where
+instance Finite p => Haskell.Num (Zp p) where
     fromInteger = toZp @p
     (+)         = (+)
     (-)         = (-)
@@ -108,7 +108,7 @@ instance ToByteString (Zp p) where
 instance FromByteString (Zp p) where
     fromByteString = fmap Zp . fromByteString
 
-instance Prime p => Arbitrary (Zp p) where
+instance Finite p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, order @(Zp p) - 1)
 
 ----------------------------- Field Extensions --------------------------------
