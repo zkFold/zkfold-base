@@ -2,6 +2,7 @@ module ZkFold.Prelude where
 
 import           Data.Aeson           (ToJSON, encode, FromJSON, decode)
 import           Data.ByteString.Lazy (writeFile, readFile)
+import           Data.List            (genericIndex)
 import           Data.Map             (Map, lookup)
 import           Prelude              hiding ((!!), take, drop, lookup, replicate, writeFile, readFile)
 
@@ -44,9 +45,7 @@ elemIndex x = go 0
             | otherwise = go (i + 1) ys
 
 (!!) :: [a] -> Integer -> a
-_      !! i | i < 0 = error "ZkFold.Prelude.!!: negative index"
-[]     !! _         = error "ZkFold.Prelude.!!: index too large"
-(x:xs) !! i         = if i == 0 then x else xs !! (i-1)
+(!!) = genericIndex
 
 (!) :: Ord k => Map k a -> k -> a
 (!) m k = case lookup k m of

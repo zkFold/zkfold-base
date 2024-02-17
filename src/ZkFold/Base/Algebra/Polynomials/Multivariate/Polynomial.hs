@@ -31,6 +31,7 @@ instance (Show c, Show i, Show j, Polynomial c i j, FromPolynomial c i j m p, Fr
 instance (Polynomial c i j, FromPolynomial c i j m p, FromMonomial i j m) => Eq (P c i j m p) where
     (P l) == (P r) = fromPolynomial @c @i @j @m l == fromPolynomial r
 
+-- TODO: this assumes sorted monomials! Needs fixing.
 instance (Polynomial c i j, FromPolynomial c i j m p, FromMonomial i j m) => Ord (P c i j m p) where
     compare (P l) (P r) = compare (map snd $ fromPolynomial @c @i @j @m l) (map snd $ fromPolynomial @c @i @j @m r)
 

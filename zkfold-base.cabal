@@ -75,8 +75,10 @@ library
       ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial.Class
       ZkFold.Base.Algebra.Polynomials.Multivariate.Set
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
       ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Data.ByteString
+      ZkFold.Base.Data.Matrix
       ZkFold.Base.Data.Type
       ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.ARK.BabyHyrax
