@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeApplications #-}
+
 module Tests.Permutations (specPermutations) where
 
 import           Data.List                              (sort)
@@ -6,8 +8,14 @@ import           Prelude                                hiding (Num(..), Fractio
 import           Test.Hspec
 import           Test.QuickCheck
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Permutations
+import           ZkFold.Base.Data.Vector                (fromVector)
 import           ZkFold.Prelude                         (length)
+
+data TestSize
+instance Finite TestSize where
+    order = 100
 
 specPermutations :: IO ()
 specPermutations = hspec $ do
@@ -17,7 +25,7 @@ specPermutations = hspec $ do
                 \xs -> length (concat $ elems $ mkIndexPartition xs) `shouldBe` length xs
         describe "Function: fromCycles" $ do
             it "should preserve the elements" $ property $
-                \xs -> 
-                    let ts = mkIndexPartition xs
-                        Permutation p = fromCycles ts
+                \v -> 
+                    let ts = mkIndexPartition $ fromVector @TestSize v
+                        p = fromPermutation @TestSize $ fromCycles ts
                     in sort p == sort (concat $ elems ts)

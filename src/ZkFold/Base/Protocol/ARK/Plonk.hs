@@ -11,14 +11,14 @@ import           Test.QuickCheck                             (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp, fromZp)
-import           ZkFold.Base.Algebra.Basic.Permutations      (Permutation(..), fromCycles, mkIndexPartition)
+import           ZkFold.Base.Algebra.Basic.Permutations      (fromPermutation, fromCycles, mkIndexPartition)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate  hiding (qr)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (toPlonkArithmetization, getParams)
 import           ZkFold.Base.Protocol.Commitment.KZG         (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                              (take, drop, (!))
+import           ZkFold.Prelude                              ((!), take, drop)
 import           ZkFold.Symbolic.Compiler
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
@@ -39,6 +39,11 @@ type PlonkBS = Plonk ByteString
 instance Finite (Plonk t) where
     -- n
     order = 32
+
+data PlonkPermutationSize t
+instance Finite (PlonkPermutationSize t) where
+    -- 3n
+    order = 3 * order @(Plonk t)
 
 -- TODO (Issue #25): check that the extended polynomials are of the right size
 data PlonkMaxPolyDegree t
@@ -107,7 +112,9 @@ instance forall t . (Typeable t, ToTranscript t F, ToTranscript t G1, FromTransc
             h0 = gen
             h1 = x `mul` gen
 
-            Permutation s = fromCycles $ mkIndexPartition $ map fromZp $ fromPolyVec a ++ fromPolyVec b ++ fromPolyVec c
+
+            s = fromPermutation @(PlonkPermutationSize t) $ fromCycles $
+                    mkIndexPartition $ map fromZp $ fromPolyVec a ++ fromPolyVec b ++ fromPolyVec c
             f i = case (i-1) `div` order @(Plonk t) of
                 0 -> omega^i
                 1 -> k1 * (omega^i)

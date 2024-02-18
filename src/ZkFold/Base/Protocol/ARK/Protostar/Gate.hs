@@ -45,4 +45,3 @@ instance (Finite m, Finite n, Finite c, Finite d, Typeable m, Typeable n, Typeab
       let w' = fmap subs w :: Vector n (Zp c -> f)
           z  = transpose $ outer evalPolynomial' w' g
       in matrixDotProduct s z == zero
-
