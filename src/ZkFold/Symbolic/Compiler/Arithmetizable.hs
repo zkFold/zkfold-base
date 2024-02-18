@@ -12,11 +12,10 @@ module ZkFold.Symbolic.Compiler.Arithmetizable (
 
 import           Data.Typeable                                             (Typeable)
 import           Prelude                                                   hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
-import           Type.Data.Num.Unary                                       (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                                            (drop, length, replicateA, splitAt, take)
-import           ZkFold.Symbolic.Data.List                                 (List, mapList, lengthList, indicesInteger)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
 
@@ -74,16 +73,16 @@ instance (Arithmetizable a x, Arithmetizable a y, Arithmetizable a z) => Arithme
 
     typeSize = typeSize @a @x + typeSize @a @y + typeSize @a @z
 
-instance (Arithmetizable a x, Natural n) => Arithmetizable a (List n x) where
-    arithmetize xs = concat <$> mapM arithmetize xs
+instance (Arithmetizable a x, Finite n) => Arithmetizable a (Vector n x) where
+    arithmetize (Vector xs) = concat <$> mapM arithmetize xs
 
     restore rs
-        | length rs /= typeSize @a @(List n x) = error "restore: wrong number of arguments"
-        | otherwise = mapList (f rs) indicesInteger
+        | length rs /= typeSize @a @(Vector n x) = error "restore: wrong number of arguments"
+        | otherwise = f rs <$> Vector [0 .. order @n - 1]
         where
             f as = restore @a @x . take (typeSize @a @x) . flip drop as . ((typeSize @a @x) *)
 
-    typeSize = typeSize @a @x * (lengthList @n)
+    typeSize = typeSize @a @x * (order @n)
 
 instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) where
     arithmetize f = do

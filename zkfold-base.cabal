@@ -79,6 +79,8 @@ library
       ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Data.ByteString
       ZkFold.Base.Data.Matrix
+      ZkFold.Base.Data.Sparse.Matrix
+      ZkFold.Base.Data.Sparse.Vector
       ZkFold.Base.Data.Type
       ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.ARK.BabyHyrax
@@ -120,7 +122,6 @@ library
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Eq
-      ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.GroebnerBasis
@@ -135,13 +136,13 @@ library
       bytestring                                 ,
       containers                                 ,
       cryptohash-sha256                          ,
-      fixed-length                               ,
       mtl                                        ,
-      non-empty                                  ,
       pretty-simple                              ,
       QuickCheck                                 ,
       random                                     ,
+      semialign                                  ,
       tfp                                        ,
+      these                                      ,
     hs-source-dirs: src
 
 test-suite zkfold-base-test
@@ -189,7 +190,6 @@ test-suite zkfold-base-examples
       containers                                 ,
       cryptohash-sha256                          ,
       directory                                  ,
-      fixed-length                               ,
       tfp                                        ,
       zkfold-base                                ,
     hs-source-dirs: examples

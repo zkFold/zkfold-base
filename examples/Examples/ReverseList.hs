@@ -3,26 +3,17 @@
 
 module Examples.ReverseList (exampleReverseList) where
 
-import           Data.FixedLength                            (indices, toList, index, map)
-import           Prelude                                     hiding (Num(..), Eq(..), (^), (/), (!!), (||), zipWith, not, any, map)
-import           Type.Data.Num.Unary                         (Natural)
+import           Prelude                                     
 
-import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Prelude                              ((!!))
+import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.List                   (List, lengthList, indicesInteger)
 
-type X a = (a, a)
-
--- | Reverses the order of elements in a fixed size list
-reverseList :: forall a n . (Natural n) => List n (X a) -> List n (X a)
-reverseList lst = map (`index` lst) (map (toList indices !!) inds)
-    where
-        inds = map f indicesInteger
-        f i = lengthList @n - 1 - i
+-- | Reverses the order of elements in a vector
+reverseList :: forall t n . Vector n t -> Vector n t
+reverseList (Vector as) = Vector $ reverse as
 
 exampleReverseList :: IO ()
 exampleReverseList = do
