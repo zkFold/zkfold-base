@@ -7,7 +7,6 @@ import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool       (BoolType (..), Bool (..))
 
 class BoolType b => Conditional b a where
@@ -24,9 +23,3 @@ instance Conditional Haskell.Bool a where
 
 instance Prime p => Conditional (Bool (Zp p)) x where
     bool f t b = if b == true then t else f
-
-instance Arithmetizable a x => Conditional (Bool (ArithmeticCircuit a)) x where
-    bool brFalse brTrue (Bool b) =
-        let f' = circuits (arithmetize brFalse)
-            t' = circuits (arithmetize brTrue)
-        in restore $ zipWith (\f t -> b * t + (one - b) * f) f' t'
