@@ -1,10 +1,13 @@
 {-# LANGUAGE DerivingStrategies #-}
 
+{-# OPTIONS_GHC -Wno-orphans    #-}
+
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
-    Eval,
     NewConstraint,
     ClosedPoly,
     MonadBlueprint (..),
+    Witness,
+    WitnessField,
     circuit,
     circuits
 ) where
@@ -12,19 +15,26 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
 import           Control.Monad.State                                    (State, gets, modify, runState)
 import           Data.Functor                                           (($>))
 import           Data.Map                                               (singleton, (!))
-import           Prelude                                                hiding ((*), (-))
+import           Prelude                                                hiding (Bool (..), Eq (..), (*), (-))
+import qualified Prelude                                                as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Scale                        (Self(..))
+import           ZkFold.Base.Algebra.Basic.Scale                        (Self (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate           (monomial, polynomial)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    hiding (Constraint, constraint)
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    as I
+import           ZkFold.Symbolic.Data.Bool                              (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Conditional                       (Conditional (..))
+import           ZkFold.Symbolic.Data.Eq                                (Eq (..))
 
-type Eval i a = (i -> a) -> a
+type WitnessField x a = (Algebra x a, FiniteField x, BinaryExpansion x,
+    Eq (Bool x) x, Conditional (Bool x) x, Conditional (Bool x) (Bool x))
+
+type Witness i a = forall x . WitnessField x a => (i -> x) -> x
 
 type NewConstraint i a = forall x . Algebra x a => (i -> x) -> i -> x
 
-type ClosedPoly i a = forall x . Algebra x a => Eval i x
+type ClosedPoly i a = forall x . Algebra x a => (i -> x) -> x
 
 class (Ring a, Monad m) => MonadBlueprint i a m | m -> i, m -> a where
     input :: m i
@@ -33,15 +43,15 @@ class (Ring a, Monad m) => MonadBlueprint i a m | m -> i, m -> a where
 
     runCircuit :: ArithmeticCircuit a -> m i
 
-    newSourced :: [i] -> NewConstraint i a -> Eval i a -> m i
+    newSourced :: [i] -> NewConstraint i a -> Witness i a -> m i
 
     constraint :: ClosedPoly i a -> m ()
 
-    newConstrained :: NewConstraint i a -> Eval i a -> m i
+    newConstrained :: NewConstraint i a -> Witness i a -> m i
     newConstrained = newSourced []
 
     newAssigned :: ClosedPoly i a -> m i
-    newAssigned p = newConstrained (\x i -> p x - x i) (\c -> getSelf (p (Self . c)))
+    newAssigned p = newConstrained (\x i -> p x - x i) p
 
 instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) where
     input = acOutput <$> I.input
@@ -54,10 +64,20 @@ instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) 
         i <- newVariableWithSource s (c var)
         addVariable i
         constraint (`c` i)
-        assignment (\m -> e (m !))
+        assignment (\m -> getSelf $ e (Self . (m !)))
         return i
 
     constraint p = I.constraint (p var)
+
+instance (FiniteField a, Haskell.Eq a) => Eq (Bool (Self a)) (Self a) where
+    Self x == Self y = Bool . Self $ bool zero one (x Haskell.== y)
+    Self x /= Self y = Bool . Self $ bool zero one (x Haskell./= y)
+
+instance (FiniteField a, Haskell.Eq a) => Conditional (Bool (Self a)) (Self a) where
+    bool x y b = if b Haskell.== true then y else x
+
+instance (FiniteField a, Haskell.Eq a) => Conditional (Bool (Self a)) (Bool (Self a)) where
+    bool x y b = if b Haskell.== true then y else x
 
 var :: Arithmetic a => Integer -> I.Constraint a
 var x = polynomial [(one, monomial (singleton x one))]

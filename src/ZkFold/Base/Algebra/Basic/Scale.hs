@@ -19,7 +19,9 @@ instance (AdditiveMonoid a, Eq b, BinaryExpansion b) => Scale (BinScale b a) b w
 
 newtype Self a = Self { getSelf :: a }
     deriving (Eq)
-    deriving newtype (AdditiveSemigroup, AdditiveMonoid, AdditiveGroup, MultiplicativeSemigroup, MultiplicativeMonoid)
+    deriving newtype (AdditiveSemigroup, AdditiveMonoid, AdditiveGroup,
+                      MultiplicativeSemigroup, MultiplicativeMonoid, MultiplicativeGroup,
+                      BinaryExpansion, Finite)
 
 instance Ring a => Scale (Self a) a where
     scale a (Self b) = Self (a * b)
