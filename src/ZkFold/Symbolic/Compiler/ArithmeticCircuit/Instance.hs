@@ -76,13 +76,15 @@ instance (Arithmetic a, FromConstant b a) => FromConstant b (ArithmeticCircuit a
 instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
     binaryExpansion r = if numberOfBits @a Haskell.== 0 then [] else circuits $ do
         k <- runCircuit r
-        let repr = padBits (numberOfBits @a) . binaryExpansion . ($ k)
         bits <- for [0 .. numberOfBits @a - 1] $ \j -> do
-            newSourced [k] (\x i -> x i * (x i - one)) ((!! j) . repr)
+            newConstrained (\x i -> x i * (x i - one)) ((!! j) . repr . ($ k))
         outputs <- for bits output
         k' <- runCircuit (fromBinary outputs)
         constraint (\x -> x k - x k')
         return bits
+        where
+          repr :: forall b . (BinaryExpansion b, Finite b) => b -> [b]
+          repr = padBits (numberOfBits @b) . binaryExpansion
 
     fromBinary bits =
         case reverse bits of
