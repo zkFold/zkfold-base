@@ -8,6 +8,7 @@ import           Prelude                         hiding ((*), sum, length, zip, 
 import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.ByteString     (ToByteString(..))
 import           ZkFold.Prelude                  (length)
 
 newtype Vector size a = Vector [a]
@@ -23,6 +24,9 @@ fromVector (Vector as) = as
 
 vectorDotProduct :: forall size a . Semiring a => Vector size a -> Vector size a -> a
 vectorDotProduct (Vector as) (Vector bs) = sum $ zipWith (*) as bs
+
+instance ToByteString a => ToByteString (Vector n a) where
+    toByteString = toByteString . fromVector
 
 instance Foldable (Vector size) where
     foldr f z (Vector as) = foldr f z as

@@ -1,6 +1,7 @@
 module ZkFold.Base.Data.ByteString where
 
 import           Data.ByteString (ByteString, cons, uncons, empty)
+import           Data.Map        (Map, toList)
 import           Data.Word       (Word8)
 import           Prelude
 
@@ -28,6 +29,9 @@ instance (ToByteString a, ToByteString b) => ToByteString (a, b) where
 
 instance ToByteString a => ToByteString [a] where
     toByteString = foldMap toByteString
+
+instance (ToByteString k, ToByteString a) => ToByteString (Map k a) where
+    toByteString = toByteString . toList
 
 class FromByteString a where
     fromByteString :: ByteString -> Maybe a
