@@ -46,17 +46,17 @@ specArithmeticCircuit = hspec $ do
         it "inverts nonzero correctly" $ correctHom1 @a invert
         it "inverts zero correctly" $ correctHom0 @a (invert zero)
         it "checks isZero(nonzero)" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a) = isZero (embed x :: ArithmeticCircuit a)
+          let Bool (r :: ArithmeticCircuit a) = isZero (embed x)
            in checkClosedCircuit r .&&. eval' r === bool zero one (x Haskell.== zero)
         it "checks isZero(0)" $
           let Bool (r :: ArithmeticCircuit a) = isZero (zero :: ArithmeticCircuit a)
            in withMaxSuccess 1 $ checkClosedCircuit r .&&. eval' r === one
-        it "computes binary expansion" $ withMaxSuccess 1 $ \(x :: a) ->
+        it "computes binary expansion" $ withMaxSuccess 10 $ \(x :: a) ->
           let rs = binaryExpansion (embed x)
-           in checkClosedCircuit (head rs) .&&. map eval' rs === binaryExpansion x
+           in checkClosedCircuit (head rs) .&&. map eval' rs === padBits (numberOfBits @a) (binaryExpansion x)
         it "internalizes equality" $ \(x :: a) (y :: a) ->
-          let Bool (r :: ArithmeticCircuit a) = (embed x :: ArithmeticCircuit a) == embed y
+          let Bool (r :: ArithmeticCircuit a) = embed x == embed y
            in checkClosedCircuit r .&&. eval' r === bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a) = (embed x :: ArithmeticCircuit a) == embed x
+          let Bool (r :: ArithmeticCircuit a) = embed x == embed x
            in checkClosedCircuit r .&&. eval' r === one
