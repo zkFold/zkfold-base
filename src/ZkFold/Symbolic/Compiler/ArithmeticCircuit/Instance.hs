@@ -17,7 +17,7 @@ import           Test.QuickCheck                                           (Arbi
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                                            ((!!))
 
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (invertC, isZeroC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint(..), circuit, circuits)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (Arithmetizable (..))
@@ -71,7 +71,7 @@ instance Arithmetic a => MultiplicativeGroup (ArithmeticCircuit a) where
     invert = invertC
 
 instance (Arithmetic a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
-    fromConstant c = circuit $ newAssigned $ const (fromConstant @b @a c `scale` one)
+    fromConstant c = embed (fromConstant c)
 
 instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
     binaryExpansion r = if numberOfBits @a Haskell.== 0 then [] else circuits $ do

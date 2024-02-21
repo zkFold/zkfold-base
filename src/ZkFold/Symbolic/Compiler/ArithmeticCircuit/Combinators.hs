@@ -2,6 +2,7 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     boolCheckC,
+    embed,
     isZeroC,
     invertC,
     plusMultC,
@@ -22,6 +23,9 @@ boolCheckC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 boolCheckC r = circuit $ do
     i <- runCircuit r
     newAssigned (\x -> x i * (x i - one))
+
+embed :: Arithmetic a => a -> ArithmeticCircuit a
+embed x = circuit $ newAssigned $ const (x `scale` one)
 
 isZeroC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 isZeroC r = circuit $ fst <$> runInvert r

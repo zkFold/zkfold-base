@@ -4,6 +4,7 @@ module Main where
 
 import           Prelude                                     hiding (Bool, Num (..), Fractional(..), (==), length, take, drop, replicate)
 
+import           Tests.ArithmeticCircuit                     (specArithmeticCircuit)
 import           Tests.Arithmetization                       (specArithmetization)
 import           Tests.Field                                 (specField)
 import           Tests.GroebnerBasis                         (specGroebner)
@@ -24,6 +25,8 @@ import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 
 main :: IO ()
 main = do
+    specArithmeticCircuit @(Zp BLS12_381_Scalar)
+
     specLockedByTxId
 
     specArithmetization @(Zp BLS12_381_Scalar)
