@@ -151,6 +151,7 @@ test-suite zkfold-base-test
     ghc-options: -rtsopts
     main-is: Main.hs
     other-modules:
+      Tests.ArithmeticCircuit
       Tests.Arithmetization
       Tests.Arithmetization.Test1
       Tests.Arithmetization.Test2
