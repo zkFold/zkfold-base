@@ -96,6 +96,7 @@ library
       ZkFold.Base.Protocol.ARK.Protostar.Permutation
       ZkFold.Base.Protocol.Commitment.KZG
       ZkFold.Base.Protocol.Commitment.Sona
+      ZkFold.Base.Protocol.InteractiveProof
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Prelude
       ZkFold.Symbolic.Cardano.Types
