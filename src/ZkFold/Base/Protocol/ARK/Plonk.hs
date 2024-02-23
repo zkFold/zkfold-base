@@ -3,7 +3,6 @@
 module ZkFold.Base.Protocol.ARK.Plonk where
 
 import           Data.ByteString                             (ByteString)
-import           Data.Data                                   (Typeable)
 import           Data.Map                                    (Map, singleton, elems)
 import qualified Data.Map                                    as Map
 import           Prelude                                     hiding (Num(..), (^), (/), (!!), sum, length, take, drop, replicate)
@@ -85,7 +84,7 @@ instance Arbitrary WitnessInputPlonk where
         return $ WitnessInputPlonk $ Map.fromList [(1, x), (2, 15/x)]
 
 -- TODO (Issue #18): make the code safer, check list lengths (?)
-instance forall t . (Typeable t, ToTranscript t F, ToTranscript t G1, FromTranscript t F) => NonInteractiveProof (Plonk t) where
+instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) => NonInteractiveProof (Plonk t) where
     type Transcript (Plonk t)   = t
     type Params (Plonk t)       = ParamsPlonk
     type SetupSecret (Plonk t)  = F

@@ -2,19 +2,15 @@ module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
 import           Data.ByteString                              (ByteString)
 import           Data.Kind                                    (Type)
-import           Data.Typeable                                (Typeable)
 import           Prelude                                      hiding (Num (..), (^), (!!))
-import           Test.QuickCheck                              (Arbitrary)
 
-import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Permutations       (Permutation, applyPermutation)
 import           ZkFold.Base.Data.Vector                      (Vector)
 import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof (..))
 
 data ProtostarPermutation (n :: Type) (f :: Type)
 
-instance (Finite n, Typeable n, Typeable f, Show f, Arbitrary f, Eq f)
-        => NonInteractiveProof (ProtostarPermutation n f) where
+instance Eq f => NonInteractiveProof (ProtostarPermutation n f) where
     type Transcript (ProtostarPermutation n f)   = ByteString
     type Params (ProtostarPermutation n f)       = Permutation n
     -- ^ \sigma in the paper

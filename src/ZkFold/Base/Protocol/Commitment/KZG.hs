@@ -4,7 +4,6 @@
 module ZkFold.Base.Protocol.Commitment.KZG where
 
 import           Data.ByteString                             (ByteString, empty)
-import           Data.Data                                   (Typeable)
 import           Data.Map                                    (Map, (!), insert, toList, keys, fromList)
 import           Data.Kind                                   (Type)
 import           Prelude                                     hiding (Num(..), (^), (/), sum, length)
@@ -34,7 +33,7 @@ instance (EllipticCurve c1, f ~ ScalarField c1, Finite d) => Arbitrary (WitnessK
 
 -- TODO (Issue #18): check list lengths
 instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (EllipticCurve c1, f ~ ScalarField c1, EllipticCurve c2, f ~ ScalarField c2,
-        Pairing c1 c2 t, ToByteString f, FromByteString f, Finite d, Typeable kzg, KZG c1 c2 t f d ~ kzg)
+        Pairing c1 c2 t, ToByteString f, FromByteString f, Finite d, KZG c1 c2 t f d ~ kzg)
         => NonInteractiveProof (KZG c1 c2 t f d) where
     type Transcript (KZG c1 c2 t f d)   = ByteString
     type Params (KZG c1 c2 t f d)       = ()

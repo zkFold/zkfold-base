@@ -2,9 +2,7 @@ module ZkFold.Base.Protocol.ARK.Protostar.Gate where
 
 import           Data.ByteString                              (ByteString)
 import           Data.Kind                                    (Type)
-import           Data.Typeable                                (Typeable)
 import           Prelude                                      hiding (Num (..), (^), (!!))
-import           Test.QuickCheck                              (Arbitrary)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp)
@@ -16,8 +14,7 @@ import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractivePro
 
 data ProtostarGate (m :: Type) (n :: Type) (c :: Type) (d :: Type) (f :: Type)
 
-instance (Finite m, Finite n, Finite c, Finite d, Typeable m, Typeable n, Typeable c, Typeable d, Typeable f,
-        Show f, Arbitrary f, FiniteField f, Eq f) => NonInteractiveProof (ProtostarGate m n c d f) where
+instance (Finite m, Finite n, Finite c, Eq f, FiniteField f) => NonInteractiveProof (ProtostarGate m n c d f) where
     type Transcript (ProtostarGate m n c d f)   = ByteString
     type Params (ProtostarGate m n c d f)       = (Matrix m n f, Vector m (PolynomialProtostar f c d))
     -- ^ (s_{i, j}, [G_i]_{i=1}^m) in the paper

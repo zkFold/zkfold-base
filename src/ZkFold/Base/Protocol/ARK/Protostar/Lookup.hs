@@ -4,7 +4,6 @@ import           Data.ByteString                              (ByteString)
 import           Data.Kind                                    (Type)
 import           Data.Map                                     (fromList, mapWithKey)
 import           Data.These                                   (These(..))
-import           Data.Typeable                                (Typeable)
 import           Data.Zip
 import           Prelude                                      hiding (zip, repeat, (/), sum, Num (..), (^), (!!), zipWith)
 import           Test.QuickCheck                              (Arbitrary (..))
@@ -24,8 +23,7 @@ instance Show (ProtostarLookupParams sizeT f) where
 instance AdditiveMonoid f => Arbitrary (ProtostarLookupParams sizeT f) where
     arbitrary = return $ ProtostarLookupParams (const zero) (const [])
 
-instance (Finite l, Finite sizeT, Typeable l, Typeable sizeT, Typeable f, Show f, Arbitrary f,
-    ToByteString f, FromByteString f, FiniteField f, Eq f)
+instance (Finite sizeT, Eq f, FiniteField f, ToByteString f, FromByteString f)
         => NonInteractiveProof (ProtostarLookup l sizeT f) where
     type Transcript (ProtostarLookup l sizeT f)   = ByteString
     type Params (ProtostarLookup l sizeT f)       = ProtostarLookupParams sizeT f

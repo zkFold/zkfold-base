@@ -14,7 +14,7 @@ import           ZkFold.Symbolic.Types                       (Symbolic)
 -- | (==) operation
 eq :: forall a . Symbolic a => a -> a -> Bool a
 eq x y = x == y
-          
+
 exampleEq :: IO ()
 exampleEq = do
     let file = "compiled_scripts/eq.json"
