@@ -17,9 +17,9 @@ instance Eq f => NonInteractiveProof (ProtostarPermutation n f) where
     type SetupSecret (ProtostarPermutation n f)  = ()
     type Setup (ProtostarPermutation n f)        = Permutation n
     -- ^ same as Params
-    type ProverSecret (ProtostarPermutation n f) = ()
     type Witness (ProtostarPermutation n f)      = Vector n f
     -- ^ w in the paper
+    type ProverSecret (ProtostarPermutation n f) = ()
     type Input (ProtostarPermutation n f)        = ()
     type Proof (ProtostarPermutation n f)        = Vector n f
     -- ^ same as Witness
@@ -27,11 +27,11 @@ instance Eq f => NonInteractiveProof (ProtostarPermutation n f) where
     setup :: Params (ProtostarPermutation n f) -> SetupSecret (ProtostarPermutation n f) -> Setup (ProtostarPermutation n f)
     setup p _ = p
 
-    prove :: ProverSecret (ProtostarPermutation n f)
-          -> Setup (ProtostarPermutation n f)
+    prove :: Setup (ProtostarPermutation n f)
           -> Witness (ProtostarPermutation n f)
+          -> ProverSecret (ProtostarPermutation n f)
           -> (Input (ProtostarPermutation n f), Proof (ProtostarPermutation n f))
-    prove _ _ w = ((), w)
+    prove _ w _ = ((), w)
 
     verify :: Setup (ProtostarPermutation n f) -> Input (ProtostarPermutation n f) -> Proof (ProtostarPermutation n f) -> Bool
     verify sigma _ w = applyPermutation sigma w == w

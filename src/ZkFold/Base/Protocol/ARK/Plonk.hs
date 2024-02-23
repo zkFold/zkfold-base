@@ -94,8 +94,8 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
         (G1, G1, G1, G1, G1,
         G1, G1, G1),
         WitnessMapPlonk t, (PolyVec F (Plonk t), PolyVec F (Plonk t), PolyVec F (Plonk t)))
-    type ProverSecret (Plonk t) = ProverSecretPlonk
     type Witness (Plonk t)      = WitnessInputPlonk
+    type ProverSecret (Plonk t) = ProverSecretPlonk
     type Input (Plonk t)        = [F]
     type Proof (Plonk t)        = (G1, G1, G1, G1, G1, G1, G1, G1, G1, F, F, F, F, F, F)
 
@@ -140,11 +140,11 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
             (gs `com` qlE, gs `com` qrE, gs `com` qoE, gs `com` qmE, gs `com` qcE,
             gs `com` sigma1E, gs `com` sigma2E, gs `com` sigma3E), WitnessMap wmap', (sigma1, sigma2, sigma3))
 
-    prove :: ProverSecret (Plonk t) -> Setup (Plonk t) -> Witness (Plonk t) -> (Input (Plonk t), Proof (Plonk t))
-    prove
+    prove :: Setup (Plonk t) -> Witness (Plonk t) -> ProverSecret (Plonk t) -> (Input (Plonk t), Proof (Plonk t))
+    prove ((wPub, gs, _, _, omega, k1, k2), (ql, qr, qo, qm, qc, sigma1, sigma2, sigma3), _, WitnessMap wmap, (sigma1s, sigma2s, sigma3s))
+        (WitnessInputPlonk wInput)
         (ProverSecretPlonk b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)
-        ((wPub, gs, _, _, omega, k1, k2), (ql, qr, qo, qm, qc, sigma1, sigma2, sigma3), _, WitnessMap wmap, (sigma1s, sigma2s, sigma3s))
-        (WitnessInputPlonk wInput) = (wPub, (cmA, cmB, cmC, cmZ, cmT1, cmT2, cmT3, proof1, proof2, a_xi, b_xi, c_xi, s1_xi, s2_xi, z_xi))
+            = (wPub, (cmA, cmB, cmC, cmZ, cmT1, cmT2, cmT3, proof1, proof2, a_xi, b_xi, c_xi, s1_xi, s2_xi, z_xi))
         where
             n = order @(Plonk t)
             zH = polyVecZero @F @(Plonk t) @(PlonkMaxPolyDegree t)

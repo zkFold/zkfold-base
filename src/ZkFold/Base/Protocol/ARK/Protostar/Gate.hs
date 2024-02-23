@@ -21,9 +21,9 @@ instance (Finite m, Finite n, Finite c, Eq f, FiniteField f) => NonInteractivePr
     type SetupSecret (ProtostarGate m n c d f)  = ()
     type Setup (ProtostarGate m n c d f)        = (Matrix m n f, Vector m (PolynomialProtostar f c d))
     -- ^ same as Params
-    type ProverSecret (ProtostarGate m n c d f) = ()
     type Witness (ProtostarGate m n c d f)      = Vector n (Vector c f)
     -- ^ [w_j]_{j=1}^n in the paper
+    type ProverSecret (ProtostarGate m n c d f) = ()
     type Input (ProtostarGate m n c d f)        = ()
     type Proof (ProtostarGate m n c d f)        = Vector n (Vector c f)
     -- ^ same as Witness
@@ -31,11 +31,11 @@ instance (Finite m, Finite n, Finite c, Eq f, FiniteField f) => NonInteractivePr
     setup :: Params (ProtostarGate m n c d f) -> SetupSecret (ProtostarGate m n c d f) -> Setup (ProtostarGate m n c d f)
     setup p _ = p
 
-    prove :: ProverSecret (ProtostarGate m n c d f)
-          -> Setup (ProtostarGate m n c d f)
+    prove :: Setup (ProtostarGate m n c d f)
           -> Witness (ProtostarGate m n c d f)
+          -> ProverSecret (ProtostarGate m n c d f)
           -> (Input (ProtostarGate m n c d f), Proof (ProtostarGate m n c d f))
-    prove _ _ w = ((), w)
+    prove _ w _ = ((), w)
 
     verify :: Setup (ProtostarGate m n c d f) -> Input (ProtostarGate m n c d f) -> Proof (ProtostarGate m n c d f) -> Bool
     verify (s, g) _ w =

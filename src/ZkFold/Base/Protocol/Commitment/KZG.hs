@@ -39,8 +39,8 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (EllipticCurve c1, f ~ Sca
     type Params (KZG c1 c2 t f d)       = ()
     type SetupSecret (KZG c1 c2 t f d)  = f
     type Setup (KZG c1 c2 t f d)        = ([Point c1], Point c2, Point c2)
-    type ProverSecret (KZG c1 c2 t f d) = ()
     type Witness (KZG c1 c2 t f d)      = Map f [PolyVec f (KZG c1 c2 t f d)]
+    type ProverSecret (KZG c1 c2 t f d) = ()
     type Input (KZG c1 c2 t f d)        = Map f ([Point c1], [f])
     type Proof (KZG c1 c2 t f d)        = Map f (Point c1)
 
@@ -51,11 +51,11 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (EllipticCurve c1, f ~ Sca
             gs = map (`mul` gen) xs
         in (gs, gen, x `mul` gen)
 
-    prove :: ProverSecret kzg
-          -> Setup kzg
+    prove :: Setup kzg
           -> Witness kzg
+          -> ProverSecret kzg
           -> (Input kzg, Proof kzg)
-    prove _ (gs, _, _) w = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
+    prove (gs, _, _) w _ = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
             proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
                      -> (f, [PolyVec f kzg])

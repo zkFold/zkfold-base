@@ -43,7 +43,7 @@ testZKP x ps targetId =
         pp      = ParamsPlonk omega k1 k2 inputs ac
         s       = setup @PlonkBS pp x
         w       = WitnessInputPlonk inputs
-        (input, proof) = prove @PlonkBS ps s w
+        (input, proof) = prove @PlonkBS s w ps
 
     in verify @PlonkBS s input proof
 

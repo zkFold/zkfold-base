@@ -49,9 +49,9 @@ class NonInteractiveProof a where
 
     type Setup a
 
-    type ProverSecret a
-
     type Witness a
+
+    type ProverSecret a
 
     type Input a
 
@@ -59,6 +59,6 @@ class NonInteractiveProof a where
 
     setup :: Params a -> SetupSecret a -> Setup a
 
-    prove :: ProverSecret a -> Setup a -> Witness a -> (Input a, Proof a)
+    prove :: Setup a -> Witness a -> ProverSecret a -> (Input a, Proof a)
 
     verify :: Setup a -> Input a -> Proof a -> Bool

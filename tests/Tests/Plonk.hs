@@ -33,7 +33,7 @@ propPlonkConstraintConversion x (x1, x2, x3) =
     in v `evalPolynomial` p == v' `evalPolynomial` p'
 
 propPlonkConstraintSatisfaction :: ParamsPlonk -> NonInteractiveProofTestData PlonkBS -> Bool
-propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ _ w) =
+propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ w _) =
     let wmap = acWitness $ mapVarArithmeticCircuit ac
         (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkBS (singleton (acOutput ac) 15) ac
         l = 1
@@ -57,7 +57,7 @@ propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ _ w) =
     in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', w1', w2', w3', wPub]
 
 propPlonkPolyIdentity :: NonInteractiveProofTestData PlonkBS -> Bool
-propPlonkPolyIdentity (TestData s ps w) =
+propPlonkPolyIdentity (TestData s w ps) =
     let zH = polyVecZero @F @PlonkBS @PlonkMaxPolyDegreeBS
 
         ((wPub, _, _, _, omega, _, _), (qlE, qrE, qoE, qmE, qcE, _, _, _), _, WitnessMap wmap, _) = s

@@ -31,9 +31,9 @@ instance (Finite sizeT, Eq f, FiniteField f, ToByteString f, FromByteString f)
     type SetupSecret (ProtostarLookup l sizeT f)  = ()
     type Setup (ProtostarLookup l sizeT f)        = ProtostarLookupParams sizeT f
     -- ^ same as Params
-    type ProverSecret (ProtostarLookup l sizeT f) = ()
     type Witness (ProtostarLookup l sizeT f)      = Vector l f
     -- ^ w in the paper
+    type ProverSecret (ProtostarLookup l sizeT f) = ()
     type Input (ProtostarLookup l sizeT f)        = ()
     type Proof (ProtostarLookup l sizeT f)        = (Vector l f, SVector sizeT f, Vector l f, SVector sizeT f)
     -- ^ (w, m, h, g) in the paper
@@ -41,11 +41,11 @@ instance (Finite sizeT, Eq f, FiniteField f, ToByteString f, FromByteString f)
     setup :: Params (ProtostarLookup l sizeT f) -> SetupSecret (ProtostarLookup l sizeT f) -> Setup (ProtostarLookup l sizeT f)
     setup p _ = p
 
-    prove :: ProverSecret (ProtostarLookup l sizeT f)
-          -> Setup (ProtostarLookup l sizeT f)
+    prove :: Setup (ProtostarLookup l sizeT f)
           -> Witness (ProtostarLookup l sizeT f)
+          -> ProverSecret (ProtostarLookup l sizeT f)
           -> (Input (ProtostarLookup l sizeT f), Proof (ProtostarLookup l sizeT f))
-    prove _ (ProtostarLookupParams t invT) w =
+    prove (ProtostarLookupParams t invT) w _ =
         let m      = sum (SVector . fromList . (`zip` repeat one) . invT <$> w)
             (r, _) = challenge $ (mempty :: ByteString) `transcript` (w, m)
             h      = fmap (\w_i -> one / (w_i + r)) w
