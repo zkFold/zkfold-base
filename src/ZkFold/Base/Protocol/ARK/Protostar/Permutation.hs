@@ -1,37 +1,36 @@
 module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
-import           Data.ByteString                              (ByteString)
-import           Data.Kind                                    (Type)
-import           Prelude                                      hiding (Num (..), (^), (!!))
+import           Data.Kind                                       (Type)
+import           Prelude                                         hiding (Num (..), (^), (!!))
 
-import           ZkFold.Base.Algebra.Basic.Permutations       (Permutation, applyPermutation)
-import           ZkFold.Base.Data.Vector                      (Vector)
-import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof (..))
+import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
+import           ZkFold.Base.Data.Vector                         (Vector)
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
 
 data ProtostarPermutation (n :: Type) (f :: Type)
 
-instance Eq f => NonInteractiveProof (ProtostarPermutation n f) where
-    type Transcript (ProtostarPermutation n f)   = ByteString
-    type Params (ProtostarPermutation n f)       = Permutation n
-    -- ^ \sigma in the paper
-    type SetupSecret (ProtostarPermutation n f)  = ()
-    type Setup (ProtostarPermutation n f)        = Permutation n
-    -- ^ same as Params
-    type Witness (ProtostarPermutation n f)      = Vector n f
+instance Eq f => SpecialSoundProtocol (ProtostarPermutation n f) where
+    type Witness (ProtostarPermutation n f)         = Vector n f
     -- ^ w in the paper
-    type ProverSecret (ProtostarPermutation n f) = ()
-    type Input (ProtostarPermutation n f)        = ()
-    type Proof (ProtostarPermutation n f)        = Vector n f
+    type Input (ProtostarPermutation n f)           = Permutation n
+    -- ^ \sigma in the paper
+    type ProverMessage (ProtostarPermutation n f)   = Vector n f
     -- ^ same as Witness
+    type VerifierMessage (ProtostarPermutation n f) = ()
 
-    setup :: Params (ProtostarPermutation n f) -> SetupSecret (ProtostarPermutation n f) -> Setup (ProtostarPermutation n f)
-    setup p _ = p
+    rounds :: Integer
+    rounds = 1
 
-    prove :: Setup (ProtostarPermutation n f)
+    prover :: ProtostarPermutation n f
           -> Witness (ProtostarPermutation n f)
-          -> ProverSecret (ProtostarPermutation n f)
-          -> (Input (ProtostarPermutation n f), Proof (ProtostarPermutation n f))
-    prove _ w _ = ((), w)
+          -> Input (ProtostarPermutation n f)
+          -> SpecialSoundTranscript (ProtostarPermutation n f)
+          -> ProverMessage (ProtostarPermutation n f)
+    prover _ w _ _ = w
 
-    verify :: Setup (ProtostarPermutation n f) -> Input (ProtostarPermutation n f) -> Proof (ProtostarPermutation n f) -> Bool
-    verify sigma _ w = applyPermutation sigma w == w
+    verifier :: ProtostarPermutation n f
+             -> Input (ProtostarPermutation n f)
+             -> SpecialSoundTranscript (ProtostarPermutation n f)
+             -> Bool
+    verifier _ sigma [(w, _)] = applyPermutation sigma w == w
+    verifier _ _     _        = error "Invalid transcript"
