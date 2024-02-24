@@ -43,22 +43,16 @@ challenges ts0 n = go ts0 n []
 class NonInteractiveProof a where
     type Transcript a
 
-    type Params a
-
-    type SetupSecret a
-
     type Setup a
 
     type Witness a
-
-    type ProverSecret a
 
     type Input a
 
     type Proof a
 
-    setup :: Params a -> SetupSecret a -> Setup a
+    setup :: a -> Setup a
 
-    prove :: Setup a -> Witness a -> ProverSecret a -> (Input a, Proof a)
+    prove :: Setup a -> Witness a -> (Input a, Proof a)
 
     verify :: Setup a -> Input a -> Proof a -> Bool

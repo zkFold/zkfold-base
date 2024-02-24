@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.ARK.Plonk where
 
@@ -30,7 +31,13 @@ type G2 = Point BLS12_381_G2
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
-data Plonk t
+data Plonk t = Plonk F F F (Map Integer F) (ArithmeticCircuit F) F
+    deriving (Show)
+instance Arbitrary (Plonk t) where
+    arbitrary = do
+        let (omega, k1, k2) = getParams 5
+        ac <- arbitrary
+        Plonk omega k1 k2 (singleton (acOutput ac) 15) ac <$> arbitrary
 
 type PlonkBS = Plonk ByteString
 
@@ -86,21 +93,18 @@ instance Arbitrary WitnessInputPlonk where
 -- TODO (Issue #18): make the code safer, check list lengths (?)
 instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) => NonInteractiveProof (Plonk t) where
     type Transcript (Plonk t)   = t
-    type Params (Plonk t)       = ParamsPlonk
-    type SetupSecret (Plonk t)  = F
     type Setup (Plonk t)        = (([F], [G1], G2, G2, F, F, F),
         (PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t,
         PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t),
         (G1, G1, G1, G1, G1,
         G1, G1, G1),
         WitnessMapPlonk t, (PolyVec F (Plonk t), PolyVec F (Plonk t), PolyVec F (Plonk t)))
-    type Witness (Plonk t)      = WitnessInputPlonk
-    type ProverSecret (Plonk t) = ProverSecretPlonk
+    type Witness (Plonk t)      = (WitnessInputPlonk, ProverSecretPlonk)
     type Input (Plonk t)        = [F]
     type Proof (Plonk t)        = (G1, G1, G1, G1, G1, G1, G1, G1, G1, F, F, F, F, F, F)
 
-    setup :: Params (Plonk t) -> SetupSecret (Plonk t) -> Setup (Plonk t)
-    setup (ParamsPlonk omega k1 k2 inputs ac) x =
+    setup :: Plonk t -> Setup (Plonk t)
+    setup (Plonk omega k1 k2 inputs ac x) =
         let wmap = acWitness $ mapVarArithmeticCircuit ac
             (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization inputs ac
             wPub = map negate $ elems inputs
@@ -140,10 +144,9 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
             (gs `com` qlE, gs `com` qrE, gs `com` qoE, gs `com` qmE, gs `com` qcE,
             gs `com` sigma1E, gs `com` sigma2E, gs `com` sigma3E), WitnessMap wmap', (sigma1, sigma2, sigma3))
 
-    prove :: Setup (Plonk t) -> Witness (Plonk t) -> ProverSecret (Plonk t) -> (Input (Plonk t), Proof (Plonk t))
+    prove :: Setup (Plonk t) -> Witness (Plonk t) -> (Input (Plonk t), Proof (Plonk t))
     prove ((wPub, gs, _, _, omega, k1, k2), (ql, qr, qo, qm, qc, sigma1, sigma2, sigma3), _, WitnessMap wmap, (sigma1s, sigma2s, sigma3s))
-        (WitnessInputPlonk wInput)
-        (ProverSecretPlonk b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)
+        (WitnessInputPlonk wInput, ProverSecretPlonk b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)
             = (wPub, (cmA, cmB, cmC, cmZ, cmT1, cmT2, cmT3, proof1, proof2, a_xi, b_xi, c_xi, s1_xi, s2_xi, z_xi))
         where
             n = order @(Plonk t)

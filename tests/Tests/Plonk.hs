@@ -19,6 +19,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (toPolyVec, polyVecInLagrangeBasis, fromPolyVec, polyVecZero, polyVecLinear, evalPolyVec)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkConstaint, toPlonkArithmetization)
+import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof(..))
 import           ZkFold.Prelude                               ((!), take, replicate)
 import           ZkFold.Symbolic.Compiler
 
@@ -33,12 +34,12 @@ propPlonkConstraintConversion x (x1, x2, x3) =
     in v `evalPolynomial` p == v' `evalPolynomial` p'
 
 propPlonkConstraintSatisfaction :: ParamsPlonk -> NonInteractiveProofTestData PlonkBS -> Bool
-propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ w _) =
+propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ w) =
     let wmap = acWitness $ mapVarArithmeticCircuit ac
         (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkBS (singleton (acOutput ac) 15) ac
         l = 1
 
-        WitnessInputPlonk wInput = w
+        (WitnessInputPlonk wInput, _) = w
         w1'     = map ((wmap wInput !) . fromZp) (fromPolyVec a)
         w2'     = map ((wmap wInput !) . fromZp) (fromPolyVec b)
         w3'     = map ((wmap wInput !) . fromZp) (fromPolyVec c)
@@ -57,12 +58,13 @@ propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ w _) =
     in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', w1', w2', w3', wPub]
 
 propPlonkPolyIdentity :: NonInteractiveProofTestData PlonkBS -> Bool
-propPlonkPolyIdentity (TestData s w ps) =
+propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @F @PlonkBS @PlonkMaxPolyDegreeBS
 
+        s = setup @PlonkBS plonk
         ((wPub, _, _, _, omega, _, _), (qlE, qrE, qoE, qmE, qcE, _, _, _), _, WitnessMap wmap, _) = s
+        (WitnessInputPlonk wInput, ps) = w
         ProverSecretPlonk b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
-        WitnessInputPlonk wInput = w
         (w1, w2, w3) = wmap wInput
         pubPoly = polyVecInLagrangeBasis @F @PlonkBS @PlonkMaxPolyDegreeBS omega $ toPolyVec @F @PlonkBS wPub
 

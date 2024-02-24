@@ -11,22 +11,20 @@ import           Test.QuickCheck
 
 import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof(..))
 
-data NonInteractiveProofTestData a = TestData (Setup a) (Witness a) (ProverSecret a)
-instance (Show (Setup a), Show (Witness a), Show (ProverSecret a)) => Show (NonInteractiveProofTestData a) where
-    show (TestData s ps w) = "TestData " ++ show s ++ " " ++ show ps ++ " " ++ show w
-instance (NonInteractiveProof a, Arbitrary (Params a), Arbitrary (SetupSecret a), Arbitrary (Witness a), Arbitrary (ProverSecret a))
-        => Arbitrary (NonInteractiveProofTestData a) where
-    arbitrary = do
-        s <- setup @a <$> arbitrary <*> arbitrary
-        TestData s <$> arbitrary <*> arbitrary
+data NonInteractiveProofTestData a = TestData a (Witness a)
+instance (Show a, Show (Setup a), Show (Witness a)) => Show (NonInteractiveProofTestData a) where
+    show (TestData a w) = "TestData " ++ show a ++ " " ++ show w
+instance (Arbitrary a, NonInteractiveProof a, Arbitrary (Witness a)) => Arbitrary (NonInteractiveProofTestData a) where
+    arbitrary = TestData <$> arbitrary <*> arbitrary
 
 propNonInteractiveProof :: forall a . NonInteractiveProof a => NonInteractiveProofTestData a -> Bool
-propNonInteractiveProof (TestData s w ps) =
-    let (i, p) = prove @a s w ps
+propNonInteractiveProof (TestData a w) =
+    let s      = setup a
+        (i, p) = prove @a s w
     in verify @a s i p
 
-specNonInteractiveProof :: forall a . (Typeable a, NonInteractiveProof a, Show (Setup a), Show (Witness a), Show (ProverSecret a),
-    Arbitrary (Params a), Arbitrary (SetupSecret a), Arbitrary (Witness a), Arbitrary (ProverSecret a)) => IO ()
+specNonInteractiveProof :: forall a . (Typeable a, Show a, Arbitrary a, NonInteractiveProof a,
+    Show (Setup a), Show (Witness a), Arbitrary (Witness a)) => IO ()
 specNonInteractiveProof = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do

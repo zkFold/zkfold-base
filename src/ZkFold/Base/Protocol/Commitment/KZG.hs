@@ -16,7 +16,8 @@ import           ZkFold.Base.Data.ByteString                 (ToByteString, From
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                              (length)
 
-data KZG c1 c2 t f d
+newtype KZG c1 c2 t f d = KZG f
+    deriving (Show, Eq, Arbitrary)
 
 -- The degree of polynomials in the protocol
 instance Finite d => Finite (KZG c1 c2 t f d) where
@@ -36,16 +37,13 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (EllipticCurve c1, f ~ Sca
         Pairing c1 c2 t, ToByteString f, FromByteString f, Finite d, KZG c1 c2 t f d ~ kzg)
         => NonInteractiveProof (KZG c1 c2 t f d) where
     type Transcript (KZG c1 c2 t f d)   = ByteString
-    type Params (KZG c1 c2 t f d)       = ()
-    type SetupSecret (KZG c1 c2 t f d)  = f
     type Setup (KZG c1 c2 t f d)        = ([Point c1], Point c2, Point c2)
     type Witness (KZG c1 c2 t f d)      = Map f [PolyVec f (KZG c1 c2 t f d)]
-    type ProverSecret (KZG c1 c2 t f d) = ()
     type Input (KZG c1 c2 t f d)        = Map f ([Point c1], [f])
     type Proof (KZG c1 c2 t f d)        = Map f (Point c1)
 
-    setup :: Params kzg -> SetupSecret kzg -> Setup kzg
-    setup _ x =
+    setup :: kzg -> Setup kzg
+    setup (KZG x) =
         let d  = order @kzg
             xs = map (x^) [0..d-1]
             gs = map (`mul` gen) xs
@@ -53,9 +51,8 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (EllipticCurve c1, f ~ Sca
 
     prove :: Setup kzg
           -> Witness kzg
-          -> ProverSecret kzg
           -> (Input kzg, Proof kzg)
-    prove (gs, _, _) w _ = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
+    prove (gs, _, _) w = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
             proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
                      -> (f, [PolyVec f kzg])
