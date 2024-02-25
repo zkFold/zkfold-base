@@ -90,6 +90,7 @@ library
       ZkFold.Base.Protocol.ARK.Plonk
       ZkFold.Base.Protocol.ARK.Plonk.Internal
       ZkFold.Base.Protocol.ARK.Protostar
+      ZkFold.Base.Protocol.ARK.Protostar.Accumulator
       ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
       ZkFold.Base.Protocol.ARK.Protostar.Internal
       ZkFold.Base.Protocol.ARK.Protostar.Gate
