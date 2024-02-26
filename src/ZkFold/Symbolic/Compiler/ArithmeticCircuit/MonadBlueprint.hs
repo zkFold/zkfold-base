@@ -13,44 +13,94 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
     circuits
 ) where
 
-import           Control.Monad.State                                    (State, gets, modify, runState)
-import           Data.Functor                                           (($>))
-import           Data.Map                                               (singleton, (!))
-import           Data.Set                                               (Set)
-import qualified Data.Set                                               as Set
-import           Prelude                                                hiding (Bool (..), Eq (..), replicate, (*), (-))
-import qualified Prelude                                                as Haskell
+import           Control.Monad.State                                 (State, gets, modify, runState)
+import           Data.Functor                                        (($>))
+import           Data.Map                                            ((!))
+import           Data.Set                                            (Set)
+import qualified Data.Set                                            as Set
+import           Prelude                                             hiding (Bool (..), Eq (..), replicate, (*), (-))
+import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Scale                        (Self (..))
-import           ZkFold.Base.Algebra.Polynomials.Multivariate           (monomial, polynomial)
-import           ZkFold.Prelude                                         (replicate)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    hiding (Constraint, constraint)
-import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    as I
-import           ZkFold.Symbolic.Data.Bool                              (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Conditional                       (Conditional (..))
-import           ZkFold.Symbolic.Data.Eq                                (Eq (..))
+import           ZkFold.Base.Algebra.Basic.Scale                     (Self (..))
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
+import           ZkFold.Prelude                                      (replicate)
+import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal as I
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
+import           ZkFold.Symbolic.Data.Bool                           (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Conditional                    (Conditional (..))
+import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
 
 type WitnessField x a = (Algebra x a, FiniteField x, BinaryExpansion x,
     Eq (Bool x) x, Conditional (Bool x) x, Conditional (Bool x) (Bool x))
+-- ^ DSL for constructing witnesses in an arithmetic circuit. @a@ is a base
+-- field; @x@ is a "field of witnesses over @a@" which you can safely assume to
+-- be identical to @a@ with internalized equality.
 
 type Witness i a = forall x . WitnessField x a => (i -> x) -> x
+-- ^ A type of witness builders. @i@ is a type of variables, @a@ is a base field.
+--
+-- A function is a witness builer if, given an arbitrary field of witnesses @x@
+-- over @a@ and a function mapping known variables to their witnesses, it computes
+-- the new witness in @x@.
+--
+-- NOTE: the property above is correct by construction for each function of a
+-- suitable type, you don't have to check it yourself.
 
 type NewConstraint i a = forall x . Algebra x a => (i -> x) -> i -> x
+-- ^ A type of constraints for new variables. @i@ is a type of variables, @a@ is a base field.
+--
+-- A function is a constraint for a new variable if, given an arbitrary algebra
+-- @x@ over @a@, a function mapping known variables to their witnesses in that
+-- algebra and a new variable, it computes the value of a constraint polynomial
+-- in that algebra.
+--
+-- NOTE: the property above is correct by construction for each function of a
+-- suitable type, you don't have to check it yourself.
 
 type ClosedPoly i a = forall x . Algebra x a => (i -> x) -> x
+-- ^ A type of polynomial expressions. @i@ is a type of variables, @a@ is a base field.
+--
+-- A function is a polynomial expression if, given an arbitrary algebra @x@ over
+-- @a@ and a function mapping known variables to their witnesses, it computes a
+-- new value in that algebra.
+--
+-- NOTE: the property above is correct by construction for each function of a
+-- suitable type, you don't have to check it yourself.
 
-class (Ring a, Monad m) => MonadBlueprint i a m | m -> i, m -> a where
+class Monad m => MonadBlueprint i a m | m -> i, m -> a where
+    -- ^ DSL for constructing arithmetic circuits. @i@ is a type of variables,
+    -- @a@ is a base field and @m@ is a monad for constructing the circuit.
+    --
+    -- DSL provides the following guarantees:
+    -- * There are no unconstrained variables;
+    -- * Variables with equal constraints and witnesses are reused as much as possible;
+    -- * Variables with either different constraints or different witnesses are different;
+    -- * There is an order in which witnesses can be generated;
+    -- * Constraints never reference undefined variables.
+    --
+    -- However, DSL does NOT provide the following guarantees (yet):
+    -- * That provided witnesses satisfy the provided constraints. To check this,
+    --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
+    -- * That introduced polynomial constraints are supported by the zk-SNARK
+    --   utilized for later proving.
+
+    -- | Creates new input variable.
     input :: m i
 
+    -- | Returns a circuit with supplied variable as output.
     output :: i -> m (ArithmeticCircuit a)
 
+    -- | Adds the supplied circuit to the blueprint and returns its output variable.
     runCircuit :: ArithmeticCircuit a -> m i
 
+    -- | Creates new variable given a constraint polynomial and a witness.
     newConstrained :: NewConstraint i a -> Witness i a -> m i
 
+    -- | Adds new constraint to the system.
     constraint :: ClosedPoly i a -> m ()
 
+    -- | Creates new variable given a polynomial witness.
     newAssigned :: ClosedPoly i a -> m i
     newAssigned p = newConstrained (\x i -> p x - x i) p
 
@@ -72,13 +122,16 @@ instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) 
     constraint p = I.constraint (p var)
 
 circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> ArithmeticCircuit a
+-- ^ Builds a circuit from blueprint. A blueprint is a function which, given an
+-- arbitrary type of variables @i@ and a monad @m@ supporting the 'MonadBlueprint'
+-- API, computes the output variable of a future circuit.
 circuit b = let (o, r) = runState b mempty in r { acOutput = o }
 
 circuits :: Arithmetic a => (forall i m . MonadBlueprint i a m => m [i]) -> [ArithmeticCircuit a]
+-- ^ Builds a list of circuits from one blueprint. A blueprint is a function
+-- which, given an arbitrary type of variables @i@ and a monad @m@ supporting the
+-- 'MonadBlueprint' API, computes the list of output variables of future circuits.
 circuits b = let (os, r) = runState b mempty in [ r { acOutput = o } | o <- os ]
-
-var :: Arithmetic a => Integer -> I.Constraint a
-var x = polynomial [(one, monomial (singleton x one))]
 
 instance (FiniteField a, Haskell.Eq a) => Eq (Bool (Self a)) (Self a) where
     Self x == Self y = Bool . Self $ bool zero one (x Haskell.== y)
