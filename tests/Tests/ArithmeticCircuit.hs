@@ -8,8 +8,8 @@ import           Data.Bool                                              (bool)
 import           Data.Map                                               (empty)
 import           Prelude                                                (IO, Show, String, flip, head, id, map, ($))
 import qualified Prelude                                                as Haskell
-import           Test.Hspec                                             (Spec, describe, hspec)
 import qualified Test.Hspec
+import           Test.Hspec                                             (Spec, describe, hspec)
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -51,7 +51,7 @@ specArithmeticCircuit = hspec $ do
         it "checks isZero(0)" $
           let Bool (r :: ArithmeticCircuit a) = isZero (zero :: ArithmeticCircuit a)
            in withMaxSuccess 1 $ checkClosedCircuit r .&&. eval' r === one
-        it "computes binary expansion" $ withMaxSuccess 10 $ \(x :: a) ->
+        it "computes binary expansion" $ \(x :: a) ->
           let rs = binaryExpansion (embed x)
            in checkClosedCircuit (head rs) .&&. map eval' rs === padBits (numberOfBits @a) (binaryExpansion x)
         it "internalizes equality" $ \(x :: a) (y :: a) ->
