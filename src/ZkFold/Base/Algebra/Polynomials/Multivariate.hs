@@ -13,18 +13,19 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate (
     evalPolynomial,
     evalPolynomial',
     substitutePolynomial,
+    var,
     variables
     ) where
 
-import           Data.Containers.ListUtils       (nubOrd)
-import           Data.Map                        (Map, toList, keys)
-import           Data.Maybe                      (fromJust)
-import           Prelude                         hiding (sum, (^), product, Num(..), (!!), length, replicate)
+import           Data.Containers.ListUtils                                 (nubOrd)
+import           Data.Map                                                  (Map, keys, singleton, toList)
+import           Data.Maybe                                                (fromJust)
+import           Prelude                                                   hiding (Num (..), length, product, replicate, sum, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Scale (Self(..))
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
+import           ZkFold.Base.Algebra.Basic.Scale                           (Self (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Set
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
 
@@ -41,6 +42,10 @@ monomial = M . fromJust . toMonomial
 -- | Polynomial constructor
 polynomial :: Polynomial c i j => [(c, M i j (Map i j))] -> P c i j (Map i j) [(c, M i j (Map i j))]
 polynomial = sum . map (\m -> P [m]) . fromJust . toPolynomial
+
+-- | @'var' i@ is a polynomial \(p(x) = x_i\)
+var :: Polynomial c i j => i -> P c i j (Map i j) [(c, M i j (Map i j))]
+var x = polynomial [(one, monomial (singleton x one))]
 
 evalMonomial :: forall i j m b . (FromMonomial i j m, Exponent b j) => (i -> b) -> M i j m -> b
 evalMonomial f (M m) = product (map (\(i, j) -> f i ^ j) (toList $ fromMonomial @i @j m))
