@@ -6,10 +6,10 @@ import           Prelude                         (Eq (..), ($), error, otherwise
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.UInt       (UInt32)
+import           ZkFold.Symbolic.Data.UInt       (UInt)
 import           ZkFold.Prelude                  (length, take, drop)
 
-newtype Value size x = Value [(x, x, UInt32 x)]
+newtype Value size x = Value [(x, x, UInt 32 x)]
 
 instance (Arithmetizable a x, Finite size) => Arithmetizable a (Value size x) where
     arithmetize (Value value) = do
