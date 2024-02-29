@@ -15,7 +15,7 @@ import           System.Random                                             (mkSt
 import           Test.QuickCheck                                           (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, expansion, gorner, invertC, isZeroC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, expansion, horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (Arithmetizable (..))
@@ -77,7 +77,7 @@ instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
             then []
             else circuits $ runCircuit r Haskell.>>= expansion (numberOfBits @a)
 
-    fromBinary bits = circuit $ for bits runCircuit Haskell.>>= gorner
+    fromBinary bits = circuit $ for bits runCircuit Haskell.>>= horner
 
 instance Arithmetic a => Arithmetizable a (Bool (ArithmeticCircuit a)) where
     arithmetize (Bool b) = arithmetize b
