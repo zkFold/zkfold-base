@@ -9,7 +9,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         Constraint,
         -- low-level functions
         constraint,
-        var,
         assignment,
         addVariable,
         newVariableWithSource,
@@ -32,7 +31,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
 import           ZkFold.Base.Algebra.Basic.Scale              (BinScale(..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, monomial, polynomial, evalPolynomial)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, monomial, polynomial, evalPolynomial, var)
 import           ZkFold.Prelude                               (length, drop)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
@@ -116,9 +115,6 @@ type Constraint a = SomePolynomial a
 -- | Adds a constraint to the arithmetic circuit.
 constraint :: Arithmetic a => Constraint a -> State (ArithmeticCircuit a) ()
 constraint c = zoom #acSystem . modify $ insert (toVar [] c) c
-
-var :: Arithmetic a => Integer -> Constraint a
-var x = polynomial [(one, monomial (singleton x one))]
 
 -- | Forces the current variable to be zero.
 forceZero :: forall a . Arithmetic a => State (ArithmeticCircuit a) ()
