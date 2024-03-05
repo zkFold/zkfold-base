@@ -111,15 +111,18 @@ instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) 
 
     runCircuit r = modify (<> r) $> acOutput r
 
-    newConstrained c e = do
-        let s = sources e `Set.difference` sources (`c` (-1))
-        i <- newVariableWithSource (Set.toList s) (c var)
-        addVariable i
-        constraint (`c` i)
-        assignment (\m -> getSelf $ e (Self . (m !)))
+    newConstrained
+        :: NewConstraint Integer a
+        -> Witness Integer a
+        -> State (ArithmeticCircuit a) Integer
+    newConstrained new witness = do
+        let s = sources witness `Set.difference` sources (`new` (-1))
+        i <- addVariable =<< newVariableWithSource (Set.toList s) (new I.var)
+        constraint (`new` i)
+        assignment (\m -> getSelf $ witness (Self . (m !)))
         return i
 
-    constraint p = I.constraint (p var)
+    constraint p = I.constraint (p I.var)
 
 circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> ArithmeticCircuit a
 -- ^ Builds a circuit from blueprint. A blueprint is a function which, given an
