@@ -25,3 +25,6 @@ newtype Self a = Self { getSelf :: a }
 
 instance Ring a => Scale (Self a) a where
     scale a (Self b) = Self (a * b)
+
+scale' :: Ring a => a -> a -> a
+scale' a b = getSelf $ scale a (Self b)

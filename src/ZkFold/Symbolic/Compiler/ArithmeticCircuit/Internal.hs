@@ -31,7 +31,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
 import           ZkFold.Base.Algebra.Basic.Scale              (BinScale(..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, monomial, polynomial, evalPolynomial, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, evalPolynomial, var)
 import           ZkFold.Prelude                               (length, drop)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.

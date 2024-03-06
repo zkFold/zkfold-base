@@ -2,14 +2,16 @@
 
 module ZkFold.Base.Data.Vector where
 
+import           Data.Bifunctor                  (first)
+import           Data.These                      (These (..))
 import           Data.Zip                        (Semialign (..), Zip (..))
-import           Data.These
-import           Prelude                         hiding ((*), sum, length, zip, zipWith)
+import           Prelude                         hiding ((*), sum, length, zip, zipWith, replicate)
+import           System.Random                   (Random(..))
 import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString     (ToByteString(..))
-import           ZkFold.Prelude                  (length)
+import           ZkFold.Prelude                  (length, replicate)
 
 newtype Vector size a = Vector [a]
     deriving (Show, Eq)
@@ -34,6 +36,11 @@ instance Foldable (Vector size) where
 instance Functor (Vector size) where
     fmap f (Vector as) = Vector $ map f as
 
+instance Finite size => Applicative (Vector size) where
+    pure a = Vector $ replicate (order @size) a
+
+    (Vector fs) <*> (Vector as) = Vector $ zipWith ($) fs as
+
 instance Semialign (Vector size) where
     align (Vector as) (Vector bs) = Vector $ zipWith These as bs
 
@@ -44,3 +51,17 @@ instance Zip (Vector size) where
 
 instance (Arbitrary a, Finite size) => Arbitrary (Vector size a) where
     arbitrary = Vector <$> mapM (const arbitrary) [1..order @size]
+
+instance (Random a, Finite size) => Random (Vector size a) where
+    random g =
+        let as = foldl (\(as', g') _ ->
+                let (a, g'') = random g'
+                in (as' ++ [a], g''))
+                ([], g) [1..order @size]
+        in first Vector as
+    
+    randomR (Vector xs, Vector ys) g =
+        let as = fst $ foldl (\((as', g'), (xs', ys')) _ ->
+                let (a, g'') = randomR (head xs', head ys') g'
+                in ((as' ++ [a], g''), (tail xs', tail ys'))) (([], g), (xs, ys)) [1..order @size]
+        in first Vector as

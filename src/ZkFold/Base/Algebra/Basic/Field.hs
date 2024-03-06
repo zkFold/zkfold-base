@@ -13,6 +13,7 @@ module ZkFold.Base.Algebra.Basic.Field (
 import           Data.Aeson                        (ToJSON (..), FromJSON (..))
 import           Prelude                           hiding (Num(..), Fractional(..), length, (^))
 import qualified Prelude                           as Haskell
+import           System.Random                     (Random (..))
 import           Test.QuickCheck                   hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -101,6 +102,15 @@ instance FromByteString (Zp p) where
 
 instance Finite p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, order @(Zp p) - 1)
+
+instance Finite p => Random (Zp p) where
+    randomR (Zp a, Zp b) g = (Zp r, g')
+      where
+        (r, g') = randomR (a, b) g
+    
+    random g = (Zp r, g')
+      where
+        (r, g') = randomR (0, order @(Zp p) - 1) g
 
 ----------------------------- Field Extensions --------------------------------
 

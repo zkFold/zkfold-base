@@ -1,38 +1,47 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Base.Protocol.ARK.Protostar.Lookup where
 
 import           Data.Kind                                       (Type)
 import           Data.Map                                        (fromList, mapWithKey)
 import           Data.These                                      (These(..))
 import           Data.Zip
-import           Prelude                                         hiding (zip, repeat, (/), sum, Num (..), (^), (!!), zipWith)
+import           Prelude                                         hiding (Num (..), (/), (^), (!!), sum, zip, repeat, zipWith)
+import           Type.Data.Num.Unary                             ((:+:), Succ)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
+import           ZkFold.Base.Algebra.Basic.Number                (N2)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial)
 import           ZkFold.Base.Data.Sparse.Vector                  (SVector(..))
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
+import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
-data ProtostarLookup (l :: Type) (sizeT :: Type) (f :: Type)
+data ProtostarLookup (l :: Type) (sizeT :: Type)
 
-data ProtostarLookupParams sizeT f = ProtostarLookupParams (Zp sizeT -> f) (f -> [Zp sizeT])
+data ProtostarLookupParams f sizeT = ProtostarLookupParams (Zp sizeT -> f) (f -> [Zp sizeT])
 
-instance (Finite sizeT, Eq f, FiniteField f) => SpecialSoundProtocol (ProtostarLookup l sizeT f) where
-    type Witness (ProtostarLookup l sizeT f)         = Vector l f
+instance (Arithmetic f, Finite sizeT) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
+    type Witness f (ProtostarLookup l sizeT)         = Vector l f
     -- ^ w in the paper
-    type Input (ProtostarLookup l sizeT f)           = ProtostarLookupParams sizeT f
+    type Input f (ProtostarLookup l sizeT)           = ProtostarLookupParams f sizeT
     -- ^ t and t^{-1} from the paper
-    type ProverMessage (ProtostarLookup l sizeT f)   = (Vector l f, SVector sizeT f)
+    type ProverMessage t (ProtostarLookup l sizeT)   = (Vector l t, SVector sizeT t)
     -- ^ (w, m) or (h, g) in the paper
-    type VerifierMessage (ProtostarLookup l sizeT f) = f
+    type VerifierMessage t (ProtostarLookup l sizeT) = t
 
-    rounds :: Integer
-    rounds = 2
+    type Dimension (ProtostarLookup l sizeT)         = Succ (l :+: sizeT)
+    type Degree (ProtostarLookup l sizeT)            = N2
 
-    prover :: ProtostarLookup l sizeT f
-           -> Witness (ProtostarLookup l sizeT f)
-           -> Input (ProtostarLookup l sizeT f)
-           -> SpecialSoundTranscript (ProtostarLookup l sizeT f)
-           -> ProverMessage (ProtostarLookup l sizeT f)
+    rounds :: ProtostarLookup l sizeT -> Integer
+    rounds _ = 2
+
+    prover :: ProtostarLookup l sizeT
+           -> Witness f (ProtostarLookup l sizeT)
+           -> Input f (ProtostarLookup l sizeT)
+           -> SpecialSoundTranscript f (ProtostarLookup l sizeT)
+           -> ProverMessage f (ProtostarLookup l sizeT)
     prover _ w (ProtostarLookupParams _ invT) [] =
         let m      = sum (SVector . fromList . (`zip` repeat one) . invT <$> w)
         in (w, m)
@@ -42,9 +51,16 @@ instance (Finite sizeT, Eq f, FiniteField f) => SpecialSoundProtocol (ProtostarL
         in (h, g)
     prover _ _ _ _ = error "Invalid transcript"
 
-    verifier :: ProtostarLookup l sizeT f
-             -> Input (ProtostarLookup l sizeT f)
-             -> SpecialSoundTranscript (ProtostarLookup l sizeT f)
+    -- TODO: implement this
+    verifier' :: ProtostarLookup l sizeT
+              -> Input f (ProtostarLookup l sizeT)
+              -> SpecialSoundTranscript Integer (ProtostarLookup l sizeT)
+              -> Vector (Dimension (ProtostarLookup l sizeT)) (SomePolynomial f)
+    verifier' = undefined
+
+    verifier :: ProtostarLookup l sizeT
+             -> Input f (ProtostarLookup l sizeT)
+             -> SpecialSoundTranscript f (ProtostarLookup l sizeT)
              -> Bool
     verifier _ (ProtostarLookupParams t _) [((w, m), r), ((h, g), _)] =
         let c1 = sum h == sum g

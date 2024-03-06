@@ -1,36 +1,53 @@
 module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
 import           Data.Kind                                       (Type)
-import           Prelude                                         hiding (Num (..), (^), (!!))
+import           Data.Zip                                        (Zip(..))
+import           Prelude                                         hiding (Num (..), (^), (!!), zipWith)
 
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number                (N1)
 import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, var)
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
+import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
-data ProtostarPermutation (n :: Type) (f :: Type)
+data ProtostarPermutation (n :: Type)
 
-instance Eq f => SpecialSoundProtocol (ProtostarPermutation n f) where
-    type Witness (ProtostarPermutation n f)         = Vector n f
+instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
+    type Witness f (ProtostarPermutation n)         = Vector n f
     -- ^ w in the paper
-    type Input (ProtostarPermutation n f)           = Permutation n
+    type Input f (ProtostarPermutation n)           = Permutation n
     -- ^ \sigma in the paper
-    type ProverMessage (ProtostarPermutation n f)   = Vector n f
+    type ProverMessage t (ProtostarPermutation n)   = Vector n t
     -- ^ same as Witness
-    type VerifierMessage (ProtostarPermutation n f) = ()
+    type VerifierMessage t (ProtostarPermutation n) = ()
 
-    rounds :: Integer
-    rounds = 1
+    type Dimension (ProtostarPermutation n)         = n
+    type Degree (ProtostarPermutation n)            = N1
 
-    prover :: ProtostarPermutation n f
-          -> Witness (ProtostarPermutation n f)
-          -> Input (ProtostarPermutation n f)
-          -> SpecialSoundTranscript (ProtostarPermutation n f)
-          -> ProverMessage (ProtostarPermutation n f)
+    rounds :: ProtostarPermutation n -> Integer
+    rounds _ = 1
+
+    prover :: ProtostarPermutation n
+           -> Witness f (ProtostarPermutation n)
+           -> Input f (ProtostarPermutation n)
+           -> SpecialSoundTranscript f (ProtostarPermutation n)
+           -> ProverMessage f (ProtostarPermutation n)
     prover _ w _ _ = w
 
-    verifier :: ProtostarPermutation n f
-             -> Input (ProtostarPermutation n f)
-             -> SpecialSoundTranscript (ProtostarPermutation n f)
+    verifier' :: ProtostarPermutation n
+              -> Input f (ProtostarPermutation n)
+              -> SpecialSoundTranscript Integer (ProtostarPermutation n)
+              -> Vector (Dimension (ProtostarPermutation n)) (SomePolynomial f)
+    verifier' _ sigma [(w, _)] = zipWith (-) (applyPermutation sigma wX) wX
+      where wX = fmap var w
+    verifier' _ _ _ = error "Invalid transcript"
+
+
+    verifier :: ProtostarPermutation n
+             -> Input f (ProtostarPermutation n)
+             -> SpecialSoundTranscript f (ProtostarPermutation n)
              -> Bool
     verifier _ sigma [(w, _)] = applyPermutation sigma w == w
     verifier _ _     _        = error "Invalid transcript"

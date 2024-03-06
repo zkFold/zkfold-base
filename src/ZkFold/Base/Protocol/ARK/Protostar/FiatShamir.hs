@@ -12,23 +12,23 @@ import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundPr
 import qualified ZkFold.Base.Protocol.ARK.Protostar.SpecialSound as SpS
 import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractiveProof(..), ToTranscript (..), challenge)
 
-data FiatShamir a = FiatShamir a (SpS.Input a)
+data FiatShamir f a = FiatShamir a (SpS.Input f a)
 
-fsChallenge :: forall a c . (ToByteString (SpS.Input a), FromByteString (VerifierMessage a),
-      ToByteString c, ToByteString (VerifierMessage a)) => FiatShamir (CommitOpen c a)
-      -> SpecialSoundTranscript (CommitOpen c a) -> ProverMessage (CommitOpen c a) -> VerifierMessage a
+fsChallenge :: forall f a c . (ToByteString (SpS.Input f a), FromByteString (VerifierMessage f a),
+      ToByteString c, ToByteString (VerifierMessage f a)) => FiatShamir f (CommitOpen f c a)
+      -> SpecialSoundTranscript f (CommitOpen f c a) -> ProverMessage f (CommitOpen f c a) -> VerifierMessage f a
 fsChallenge (FiatShamir _ ip) []           c =
-      let r0 = fst $ challenge @ByteString $ toTranscript ip :: VerifierMessage a
+      let r0 = fst $ challenge @ByteString $ toTranscript ip :: VerifierMessage f a
       in fst $ challenge @ByteString $ toTranscript r0 <> toTranscript c
 fsChallenge _                 ((_, r) : _) c = fst $ challenge @ByteString $ toTranscript r <> toTranscript c
 
-instance (SpS.SpecialSoundProtocol a, Eq c, ToByteString (SpS.Input a), FromByteString (VerifierMessage a),
-            ToByteString c, ToByteString (VerifierMessage a)) => NonInteractiveProof (FiatShamir (CommitOpen c a)) where
-      type Transcript (FiatShamir (CommitOpen c a)) = ByteString
-      type Setup (FiatShamir (CommitOpen c a))      = FiatShamir (CommitOpen c a)
-      type Witness (FiatShamir (CommitOpen c a))    = SpS.Witness a
-      type Input (FiatShamir (CommitOpen c a))      = (SpS.Input a, [c])
-      type Proof (FiatShamir (CommitOpen c a))      = [ProverMessage a]
+instance (SpS.SpecialSoundProtocol f a, Eq c, ToByteString (SpS.Input f a), FromByteString (VerifierMessage f a),
+            ToByteString c, ToByteString (VerifierMessage f a)) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) where
+      type Transcript (FiatShamir f (CommitOpen f c a)) = ByteString
+      type Setup (FiatShamir f (CommitOpen f c a))      = FiatShamir f (CommitOpen f c a)
+      type Witness (FiatShamir f (CommitOpen f c a))    = SpS.Witness f a
+      type Input (FiatShamir f (CommitOpen f c a))      = (SpS.Input f a, [c])
+      type Proof (FiatShamir f (CommitOpen f c a))      = [ProverMessage f a]
 
       setup x = x
 
