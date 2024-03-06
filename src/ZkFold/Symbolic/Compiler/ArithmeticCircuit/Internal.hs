@@ -102,7 +102,7 @@ addVariable :: Integer -> State (ArithmeticCircuit a) Integer
 addVariable x = do
     zoom #acOutput $ put x
     zoom #acVarOrder . modify
-        $ insert <$> (,x) . length <*> const x <*> id
+        $ \vo -> insert (length vo, x) x vo
     pure x
 
 ---------------------------------- Low-level functions --------------------------------
@@ -125,7 +125,7 @@ forceZero = zoom #acOutput get >>= constraint . var
 assignment :: (Map Integer a -> a) -> State (ArithmeticCircuit a) ()
 assignment f = do
     i <- insert <$> zoom #acOutput get
-    zoom #acWitness . modify $ (.) (f >>= i)
+    zoom #acWitness . modify $ (.) (\m -> i (f m) m)
 
 -- | Adds a new input variable to the arithmetic circuit. Returns a copy of the arithmetic circuit with this variable as output.
 input :: forall a . State (ArithmeticCircuit a) (ArithmeticCircuit a)
@@ -147,7 +147,7 @@ apply :: [a] -> State (ArithmeticCircuit a) ()
 apply xs = do
     inputs <- zoom #acInput get
     zoom #acInput . put $ drop (length xs) inputs
-    zoom #acWitness . modify $ (. (union . fromList $ zip inputs xs))
+    zoom #acWitness . modify $ (. union (fromList $ zip inputs xs))
 
 -- TODO: Add proper symbolic application functions
 
