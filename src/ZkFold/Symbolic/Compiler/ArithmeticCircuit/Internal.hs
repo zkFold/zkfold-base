@@ -21,6 +21,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
 import           Control.Monad.State                          (MonadState (..), State, modify)
 import           Data.List                                    (nub)
 import           Data.Map                                     hiding (take, drop, splitAt, foldl, null, map, foldr)
+import           GHC.Generics
+import           Optics
 import           Prelude                                      hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
 import qualified Prelude                                      as Haskell
 import           System.Random                                (Random (..), StdGen, mkStdGen, uniform)
@@ -29,8 +31,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
 import           ZkFold.Base.Algebra.Basic.Scale              (BinScale(..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, monomial, polynomial, evalPolynomial)
-import           ZkFold.Prelude                               (length, drop, take)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, monomial, polynomial, evalPolynomial, var)
+import           ZkFold.Prelude                               (length, drop)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a = ArithmeticCircuit
@@ -46,7 +48,7 @@ data ArithmeticCircuit a = ArithmeticCircuit
         acVarOrder :: Map (Integer, Integer) Integer,
         -- ^ The order of variable assignments
         acRNG      :: StdGen
-    }
+    } deriving Generic
 
 ----------------------------------- Circuit monoid ----------------------------------
 
@@ -57,7 +59,7 @@ instance Eq a => Semigroup (ArithmeticCircuit a) where
             -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
             -- We need a way to ensure the correct order no matter how `(<>)` is used.
             acInput    = nub $ acInput r1 ++ acInput r2,
-            acWitness  = \w -> acWitness r1 w `union` acWitness r2 w,
+            acWitness  = union <$> acWitness r1 <*> acWitness r2,
             acOutput   = max (acOutput r1) (acOutput r2),
             acVarOrder = acVarOrder r1 `union` acVarOrder r2,
             acRNG      = mkStdGen $ fst (uniform (acRNG r1)) Haskell.* fst (uniform (acRNG r2))
@@ -92,21 +94,16 @@ toVar srcs c = fromBinary $ castBits $ binaryExpansion ex
         x  = g ^ runBinScale (v `evalPolynomial` c)
         ex = foldr (\p y -> x ^ p + y) x srcs
 
-con2var :: Arithmetic a => Constraint a -> Integer
-con2var = toVar []
-
-newVariable :: State (ArithmeticCircuit a) Integer
-newVariable = do
-    r <- get
-    let (x, g) = randomR (0, order @VarField - 1) (acRNG r)
-    put r { acRNG = g }
-    return x
-
 newVariableWithSource :: Arithmetic a => [Integer] -> (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
-newVariableWithSource srcs con = toVar srcs . con <$> newVariable
+newVariableWithSource srcs con = toVar srcs . con . fst <$> do
+    zoom #acRNG $ get >>= traverse put . randomR (0, order @VarField - 1)
 
-addVariable :: Integer -> State (ArithmeticCircuit a) ()
-addVariable x = modify (\r -> r { acOutput = x, acVarOrder = insert (length (acVarOrder r), x) x (acVarOrder r)})
+addVariable :: Integer -> State (ArithmeticCircuit a) Integer
+addVariable x = do
+    zoom #acOutput $ put x
+    zoom #acVarOrder . modify
+        $ \vo -> insert (length vo, x) x vo
+    pure x
 
 ---------------------------------- Low-level functions --------------------------------
 
@@ -117,51 +114,40 @@ type Constraint a = SomePolynomial a
 
 -- | Adds a constraint to the arithmetic circuit.
 constraint :: Arithmetic a => Constraint a -> State (ArithmeticCircuit a) ()
-constraint con = modify $ \r -> r { acSystem = insert (con2var con) con (acSystem r) }
+constraint c = zoom #acSystem . modify $ insert (toVar [] c) c
 
 -- | Forces the current variable to be zero.
 forceZero :: forall a . Arithmetic a => State (ArithmeticCircuit a) ()
-forceZero = do
-    r <- get
-    let x   = acOutput r
-        con = polynomial [(one, monomial  (singleton x one))]
-    constraint con
+forceZero = zoom #acOutput get >>= constraint . var
 
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
-assignment :: forall a . (Map Integer a -> a) -> State (ArithmeticCircuit a) ()
-assignment f = modify $ \r -> r { acWitness = (insert (acOutput r) =<< f) . acWitness r }
+assignment :: (Map Integer a -> a) -> State (ArithmeticCircuit a) ()
+assignment f = do
+    i <- insert <$> zoom #acOutput get
+    zoom #acWitness . modify $ (.) (\m -> i (f m) m)
 
 -- | Adds a new input variable to the arithmetic circuit. Returns a copy of the arithmetic circuit with this variable as output.
 input :: forall a . State (ArithmeticCircuit a) (ArithmeticCircuit a)
-input = modify (\(r :: ArithmeticCircuit a) ->
-        let ins    = acInput r
-            s      = if null ins then 1 else maximum (acInput r) + 1
-        in r
-        {
-            acInput    = ins ++ [s],
-            acOutput   = s,
-            acVarOrder = singleton (0, s) s
-        }) >> get
+input = do
+  inputs <- zoom #acInput get
+  let s = if null inputs then 1 else maximum inputs + 1
+  zoom #acInput $ modify (++ [s])
+  zoom #acOutput $ put s
+  zoom #acVarOrder $ put $ singleton (0, s) s
+  get
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
 eval :: ArithmeticCircuit a -> Map Integer a -> a
-eval ctx i =
-    let w = acWitness ctx i
-        o = acOutput ctx
-    in w ! o
+eval ctx i = acWitness ctx i ! acOutput ctx
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.
 -- TODO: make this safe
 apply :: [a] -> State (ArithmeticCircuit a) ()
-apply xs = modify (\(r :: ArithmeticCircuit a) ->
-    let ins = acInput r
-        n   = length xs
-    in r
-    {
-        acInput = drop n ins,
-        acWitness = acWitness r . (fromList (zip (take n ins) xs) `union`)
-    })
+apply xs = do
+    inputs <- zoom #acInput get
+    zoom #acInput . put $ drop (length xs) inputs
+    zoom #acWitness . modify $ (. union (fromList $ zip inputs xs))
 
 -- TODO: Add proper symbolic application functions
 

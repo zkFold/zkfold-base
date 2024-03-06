@@ -111,12 +111,15 @@ instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) 
 
     runCircuit r = modify (<> r) $> acOutput r
 
-    newConstrained c e = do
-        let s = sources e `Set.difference` sources (`c` (-1))
-        i <- newVariableWithSource (Set.toList s) (c var)
-        addVariable i
-        constraint (`c` i)
-        assignment (\m -> getSelf $ e (Self . (m !)))
+    newConstrained
+        :: NewConstraint Integer a
+        -> Witness Integer a
+        -> State (ArithmeticCircuit a) Integer
+    newConstrained new witness = do
+        let s = sources witness `Set.difference` sources (`new` (-1))
+        i <- addVariable =<< newVariableWithSource (Set.toList s) (new var)
+        constraint (`new` i)
+        assignment (\m -> getSelf $ witness (Self . (m !)))
         return i
 
     constraint p = I.constraint (p var)
