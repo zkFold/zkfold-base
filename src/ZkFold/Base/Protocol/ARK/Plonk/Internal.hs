@@ -27,7 +27,7 @@ type G2 = Point BLS12_381_G2
 
 type SomePolynomialF = SomePolynomial F
 
--- TODO (Issue #18): safer code and better tests for this module
+-- TODO (Issue #15): safer code and better tests for this module
 
 getParams :: Integer -> (F, F, F)
 getParams l = findK' $ mkStdGen 0
