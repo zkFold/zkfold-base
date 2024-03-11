@@ -7,6 +7,9 @@ license:            MIT
 license-file:       LICENSE
 
 author:             Vladimir Sinyakov
+                    Pavel Sokolov
+                    Murat Kasimov
+                    Vladimir Morozov
 maintainer:         info@zkfold.io
 
 build-type:         Simple
