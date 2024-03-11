@@ -10,6 +10,6 @@ type family (:++) (xs :: [k]) (ys :: [k]) :: [k] where
 
 -- | Type list membership test.
 type family Find x ys where
-    Find x '[]       = False
-    Find x (x ': ys) = True
+    Find x '[]       = 'False
+    Find x (x ': ys) = 'True
     Find x (y ': ys) = Find x ys
