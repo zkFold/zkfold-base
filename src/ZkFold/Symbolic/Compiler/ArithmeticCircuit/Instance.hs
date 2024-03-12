@@ -16,7 +16,7 @@ import           Test.QuickCheck                                           (Arbi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                                            ((!!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, horner, invertC, isZeroC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, expansion, horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (Arithmetizable (..))
@@ -73,17 +73,7 @@ instance (Arithmetic a, FromConstant b a) => FromConstant b (ArithmeticCircuit a
     fromConstant c = embed (fromConstant c)
 
 instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
-    binaryExpansion r = circuits $ do
-        k <- runCircuit r
-        bits <- for [0 .. numberOfBits @a - 1] $ \j -> do
-            newConstrained (\x i -> x i * (x i - one)) ((!! j) . repr . ($ k))
-        k' <- horner bits
-        constraint (\x -> x k - x k')
-        return bits
-        where
-          repr :: forall b . (BinaryExpansion b, Finite b) => b -> [b]
-          repr = padBits (numberOfBits @b) . binaryExpansion
-
+    binaryExpansion r = circuits $ runCircuit r >>= expansion (numberOfBits @a)
     fromBinary bits = circuit $ Haskell.traverse runCircuit bits >>= horner
 
 instance Arithmetic a => Arithmetizable a (Bool (ArithmeticCircuit a)) where
