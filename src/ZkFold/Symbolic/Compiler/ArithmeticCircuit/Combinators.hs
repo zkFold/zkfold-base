@@ -3,20 +3,21 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     boolCheckC,
     embed,
+    horner,
     isZeroC,
     invertC,
     plusMultC,
 ) where
 
+import           Data.Foldable                                             (foldlM)
 import           Prelude                                                   hiding (Bool, Eq (..), negate, (*), (+), (-))
 
 import           ZkFold.Base.Algebra.Basic.Class
-
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-import           ZkFold.Symbolic.Data.Eq                                   (Eq(..))
-import           ZkFold.Symbolic.Data.Conditional                          (Conditional(..))
 import           ZkFold.Symbolic.Data.Bool                                 (Bool)
+import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
+import           ZkFold.Symbolic.Data.Eq                                   (Eq (..))
 
 boolCheckC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
@@ -26,6 +27,13 @@ boolCheckC r = circuit $ do
 
 embed :: Arithmetic a => a -> ArithmeticCircuit a
 embed x = circuit $ newAssigned $ const (x `scale` one)
+
+horner :: MonadBlueprint i a m => [i] -> m i
+-- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
+-- Horner's scheme.
+horner xs = case reverse xs of
+    []       -> newAssigned (const zero)
+    (b : bs) -> foldlM (\a i -> newAssigned (\x -> x i + x a + x a)) b bs
 
 isZeroC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 isZeroC r = circuit $ fst <$> runInvert r

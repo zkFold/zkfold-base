@@ -6,20 +6,19 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Data.Aeson                                                hiding (Bool)
-import           Data.Foldable                                             (foldl', null)
+import           Data.Foldable                                             (null)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map, null, splitAt, take)
 import           Data.Traversable                                          (for)
-import           Prelude                                                   (const, error, map, mempty, pure, return, reverse, show, zipWith, ($), (++), (.), (<$>), (<*>))
+import           Prelude                                                   (const, error, map, mempty, pure, return, show, zipWith, ($), (++), (.), (<$>), (<*>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                                            ((!!))
-
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, invertC, isZeroC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint(..), circuit, circuits)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (Arithmetizable (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
@@ -74,26 +73,18 @@ instance (Arithmetic a, FromConstant b a) => FromConstant b (ArithmeticCircuit a
     fromConstant c = embed (fromConstant c)
 
 instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
-    binaryExpansion r = if numberOfBits @a Haskell.== 0 then [] else circuits $ do
+    binaryExpansion r = circuits $ do
         k <- runCircuit r
         bits <- for [0 .. numberOfBits @a - 1] $ \j -> do
             newConstrained (\x i -> x i * (x i - one)) ((!! j) . repr . ($ k))
-        outputs <- for bits output
-        k' <- runCircuit (fromBinary outputs)
+        k' <- horner bits
         constraint (\x -> x k - x k')
         return bits
         where
           repr :: forall b . (BinaryExpansion b, Finite b) => b -> [b]
           repr = padBits (numberOfBits @b) . binaryExpansion
 
-    fromBinary bits =
-        case reverse bits of
-            [] -> zero
-            (b : bs) -> foldl' gorner b bs
-        where gorner s b = circuit $ do
-                i <- runCircuit s
-                j <- runCircuit b
-                newAssigned (\x -> x i + x i + x j)
+    fromBinary bits = circuit $ Haskell.traverse runCircuit bits >>= horner
 
 instance Arithmetic a => Arithmetizable a (Bool (ArithmeticCircuit a)) where
     arithmetize (Bool b) = arithmetize b
