@@ -2,18 +2,19 @@
 {-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Symbolic.Data.UInt (
-    UInt32(..)
+    UInt(..)
 ) where
 
 import           Data.Foldable                   (for_)
 import           Data.Traversable                (for)
-import           Prelude                         hiding ((^), Num(..), Bool(..), Ord(..), (/), (&&), (||), not, all, any)
+import           GHC.TypeNats                    (Natural)
+import           Prelude                         hiding (Bool (..), Num (..), Ord (..), all, any, not, (&&), (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool       (Bool(..))
-import           ZkFold.Symbolic.Data.Ord        (Ord(..))
+import           ZkFold.Symbolic.Data.Bool       (Bool (..))
+import           ZkFold.Symbolic.Data.Ord        (Ord (..))
 
 class IntType i x where
     rangeCheck :: x -> x
@@ -22,32 +23,31 @@ instance IntType i (Zp a) where
     rangeCheck = id
 
 -- TODO (Issue #18): hide this constructor
--- TODO: change bytes to bits in the name
-newtype UInt32 x = UInt32 x
+newtype UInt (n :: Natural) x = UInt x
     deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
 
-instance (AdditiveSemigroup (Zp a)) => AdditiveSemigroup (UInt32 (Zp a)) where
-    UInt32 x + UInt32 y = UInt32 $ rangeCheck @UInt32 $ x + y
+instance (AdditiveSemigroup (Zp a)) => AdditiveSemigroup (UInt n (Zp a)) where
+    UInt x + UInt y = UInt $ rangeCheck @UInt $ x + y
 
-instance (AdditiveMonoid (Zp a)) => AdditiveMonoid (UInt32 (Zp a)) where
-    zero = UInt32 zero
+instance (AdditiveMonoid (Zp a)) => AdditiveMonoid (UInt n (Zp a)) where
+    zero = UInt zero
 
-instance (AdditiveGroup (Zp a)) => AdditiveGroup (UInt32 (Zp a)) where
-    UInt32 x - UInt32 y = UInt32 $ rangeCheck @UInt32 $ x - y
+instance (AdditiveGroup (Zp a)) => AdditiveGroup (UInt n (Zp a)) where
+    UInt x - UInt y = UInt $ rangeCheck @UInt $ x - y
 
-    negate (UInt32 x) = UInt32 $ rangeCheck @UInt32 $ negate x
+    negate (UInt x) = UInt $ rangeCheck @UInt $ negate x
 
-instance (MultiplicativeSemigroup (Zp a)) => MultiplicativeSemigroup (UInt32 (Zp a)) where
-    UInt32 x * UInt32 y = UInt32 $ rangeCheck @UInt32 $ x * y
+instance (MultiplicativeSemigroup (Zp a)) => MultiplicativeSemigroup (UInt n (Zp a)) where
+    UInt x * UInt y = UInt $ rangeCheck @UInt $ x * y
 
-instance (MultiplicativeMonoid (Zp a)) => MultiplicativeMonoid (UInt32 (Zp a)) where
-    one = UInt32 one
+instance (MultiplicativeMonoid (Zp a)) => MultiplicativeMonoid (UInt n (Zp a)) where
+    one = UInt one
 
 --------------------------------------------------------------------------------
 
-instance Arithmetic a => IntType UInt32 (ArithmeticCircuit a) where
+instance Arithmetic a => IntType UInt (ArithmeticCircuit a) where
     rangeCheck ac = circuit $ do
         let two = one + one
             Bool b = ac >= (two ^ (32 :: Integer))
@@ -55,30 +55,30 @@ instance Arithmetic a => IntType UInt32 (ArithmeticCircuit a) where
         constraint (\x -> x i)
         return i
 
-instance Arithmetizable a x => Arithmetizable a (UInt32 x) where
-    arithmetize (UInt32 a) = do
+instance Arithmetizable a x => Arithmetizable a (UInt n x) where
+    arithmetize (UInt a) = do
         let cs = circuits (arithmetize a)
-        for_ cs $ runCircuit . rangeCheck @UInt32
+        for_ cs $ runCircuit . rangeCheck @UInt
         for cs runCircuit
 
-    restore [ac] = UInt32 $ restore [ac]
-    restore _   = error "UInt32: invalid number of values"
+    restore [ac] = UInt $ restore [ac]
+    restore _    = error "UInt32: invalid number of values"
 
     typeSize = 1
 
-instance Arithmetic a => AdditiveSemigroup (UInt32 (ArithmeticCircuit a)) where
-    UInt32 x + UInt32 y = UInt32 $ rangeCheck @UInt32 $ x + y
+instance Arithmetic a => AdditiveSemigroup (UInt n (ArithmeticCircuit a)) where
+    UInt x + UInt y = UInt $ rangeCheck @UInt $ x + y
 
-instance Arithmetic a => AdditiveMonoid (UInt32 (ArithmeticCircuit a)) where
-    zero = UInt32 zero
+instance Arithmetic a => AdditiveMonoid (UInt n (ArithmeticCircuit a)) where
+    zero = UInt zero
 
-instance Arithmetic a => AdditiveGroup (UInt32 (ArithmeticCircuit a)) where
-    UInt32 x - UInt32 y = UInt32 $ rangeCheck @UInt32 $ x - y
+instance Arithmetic a => AdditiveGroup (UInt n (ArithmeticCircuit a)) where
+    UInt x - UInt y = UInt $ rangeCheck @UInt $ x - y
 
-    negate (UInt32 x) = UInt32 $ rangeCheck @UInt32 $ negate x
+    negate (UInt x) = UInt $ rangeCheck @UInt $ negate x
 
-instance Arithmetic a => MultiplicativeSemigroup (UInt32 (ArithmeticCircuit a)) where
-    UInt32 x * UInt32 y = UInt32 $ rangeCheck @UInt32 $ x * y
+instance Arithmetic a => MultiplicativeSemigroup (UInt n (ArithmeticCircuit a)) where
+    UInt x * UInt y = UInt $ rangeCheck @UInt $ x * y
 
-instance Arithmetic a => MultiplicativeMonoid (UInt32 (ArithmeticCircuit a)) where
-    one = UInt32 one
+instance Arithmetic a => MultiplicativeMonoid (UInt n (ArithmeticCircuit a)) where
+    one = UInt one

@@ -2,14 +2,14 @@
 
 module ZkFold.Symbolic.Cardano.Types.Value where
 
-import           Prelude                         (Eq (..), ($), error, otherwise, concat, return, mapM, (++), map)
+import           Prelude                         (Eq (..), concat, error, map, mapM, otherwise, return, ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Prelude                  (drop, length, take)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.UInt       (UInt32)
-import           ZkFold.Prelude                  (length, take, drop)
+import           ZkFold.Symbolic.Data.UInt       (UInt)
 
-newtype Value size x = Value [(x, x, UInt32 x)]
+newtype Value size x = Value [(x, x, UInt 32 x)]
 
 instance (Arithmetizable a x, Finite size) => Arithmetizable a (Value size x) where
     arithmetize (Value value) = do
@@ -26,3 +26,4 @@ instance (Arithmetizable a x, Finite size) => Arithmetizable a (Value size x) wh
         | otherwise = error "restore Value: wrong number of arguments"
 
     typeSize = 3 * order @size * typeSize @a @x
+
