@@ -22,17 +22,17 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial.Class
 newtype P c i j m p = P p
     deriving (Generic, FromJSON, ToJSON)
 
-instance (Show c, Show i, Show j, Polynomial c i j, FromPolynomial c i j m p, FromMonomial i j m) => Show (P c i j m p) where
+instance (Show c, Show i, Show j, FromPolynomial c i j m p, FromMonomial i j m) => Show (P c i j m p) where
     show (P p) = intercalate " + " $ map showMono (fromPolynomial @c @i @j p)
         where
             showMono :: (c, M i j m) -> String
             showMono (c, m) = show c <> "∙" <> show m
 
-instance (Polynomial c i j, FromPolynomial c i j m p, FromMonomial i j m) => Eq (P c i j m p) where
+instance (FromPolynomial c i j m p, FromMonomial i j m) => Eq (P c i j m p) where
     (P l) == (P r) = fromPolynomial @c @i @j @m l == fromPolynomial r
 
 -- TODO: this assumes sorted monomials! Needs fixing.
-instance (Polynomial c i j, FromPolynomial c i j m p, FromMonomial i j m) => Ord (P c i j m p) where
+instance (FromPolynomial c i j m p, FromMonomial i j m) => Ord (P c i j m p) where
     compare (P l) (P r) = compare (map snd $ fromPolynomial @c @i @j @m l) (map snd $ fromPolynomial @c @i @j @m r)
 
 instance Arbitrary p => Arbitrary (P c i j m p) where

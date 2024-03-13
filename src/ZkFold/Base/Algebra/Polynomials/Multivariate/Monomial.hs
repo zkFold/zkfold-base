@@ -20,16 +20,16 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial.Class
 newtype M i j m = M m
     deriving (Generic, FromJSON, ToJSON)
 
-instance (Show i, Show j, Monomial i j, FromMonomial i j m) => Show (M i j m) where
+instance (Show i, Show j, FromMonomial i j m) => Show (M i j m) where
     show (M m) = intercalate "∙" (map showVar (toList $ fromMonomial @i @j @m m))
         where
             showVar :: (i, j) -> String
             showVar (i, j) = "x" ++ show i ++ (if j == one then "" else "^" ++ show j)
 
-instance (Monomial i j, FromMonomial i j m) => (Eq (M i j m)) where
+instance (FromMonomial i j m) => (Eq (M i j m)) where
     (M asl) == (M asr) = fromMonomial @i @j @m asl == fromMonomial @i @j @m asr
 
-instance (Monomial i j, FromMonomial i j m) => Ord (M i j m) where
+instance (FromMonomial i j m) => Ord (M i j m) where
     compare (M asl) (M asr) = go (toList $ fromMonomial @i @j @m asl) (toList $ fromMonomial @i @j @m asr)
         where
             go [] [] = EQ
