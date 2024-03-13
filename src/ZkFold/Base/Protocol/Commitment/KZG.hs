@@ -3,18 +3,19 @@
 
 module ZkFold.Base.Protocol.Commitment.KZG where
 
-import           Data.ByteString                             (ByteString, empty)
-import           Data.Map                                    (Map, (!), insert, toList, keys, fromList)
-import           Data.Kind                                   (Type)
-import           Prelude                                     hiding (Num(..), (^), (/), sum, length)
-import           Test.QuickCheck                             (Arbitrary (..), chooseInteger)
+import           Control.Monad                              (replicateM)
+import           Data.ByteString                            (ByteString, empty)
+import           Data.Kind                                  (Type)
+import           Data.Map.Strict                            (Map, fromList, insert, keys, toList, (!))
+import           Prelude                                    hiding (Num (..), length, sum, (/), (^))
+import           Test.QuickCheck                            (Arbitrary (..), chooseInt)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Data.ByteString                 (ToByteString, FromByteString)
+import           ZkFold.Base.Data.ByteString                (FromByteString, ToByteString)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                              (length)
+import           ZkFold.Prelude                             (length)
 
 newtype KZG c1 c2 t f d = KZG f
     deriving (Show, Eq, Arbitrary)
@@ -23,22 +24,22 @@ newtype KZG c1 c2 t f d = KZG f
 instance Finite d => Finite (KZG c1 c2 t f d) where
     order = order @d
 
-newtype WitnessKZG c1 c2 t f d = WitnessKZG (Map f [PolyVec f (KZG c1 c2 t f d)])
+newtype WitnessKZG c1 c2 t f d = WitnessKZG { runWitness :: Map f [PolyVec f (KZG c1 c2 t f d)] }
 instance (EllipticCurve c1, f ~ ScalarField c1) => Show (WitnessKZG c1 c2 t f d) where
     show (WitnessKZG w) = "WitnessKZG " <> show w
 instance (EllipticCurve c1, f ~ ScalarField c1, Finite d) => Arbitrary (WitnessKZG c1 c2 t f d) where
     arbitrary = do
-        n <- chooseInteger (1, 3)
-        m <- chooseInteger (1, 5)
-        WitnessKZG . fromList <$> mapM (const $ (,) <$> arbitrary <*> mapM (const arbitrary) [1..m]) [1..n]
+        n <- chooseInt (1, 3)
+        m <- chooseInt (1, 5)
+        WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> replicateM m arbitrary)
 
 -- TODO (Issue #18): check list lengths
-instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (EllipticCurve c1, f ~ ScalarField c1, EllipticCurve c2, f ~ ScalarField c2,
+instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ ScalarField c2,
         Pairing c1 c2 t, ToByteString f, FromByteString f, Finite d, KZG c1 c2 t f d ~ kzg)
         => NonInteractiveProof (KZG c1 c2 t f d) where
     type Transcript (KZG c1 c2 t f d)   = ByteString
     type Setup (KZG c1 c2 t f d)        = ([Point c1], Point c2, Point c2)
-    type Witness (KZG c1 c2 t f d)      = Map f [PolyVec f (KZG c1 c2 t f d)]
+    type Witness (KZG c1 c2 t f d)      = WitnessKZG c1 c2 t f d
     type Input (KZG c1 c2 t f d)        = Map f ([Point c1], [f])
     type Proof (KZG c1 c2 t f d)        = Map f (Point c1)
 
@@ -52,7 +53,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (EllipticCurve c1, f ~ Sca
     prove :: Setup kzg
           -> Witness kzg
           -> (Input kzg, Proof kzg)
-    prove (gs, _, _) w = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
+    prove (gs, _, _) (WitnessKZG w) = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
             proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
                      -> (f, [PolyVec f kzg])

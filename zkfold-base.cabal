@@ -20,6 +20,7 @@ common options
     ghc-options:
       -fwarn-redundant-constraints
       -Wall
+      -Werror
       -Wcompat
       -Widentities
       -Wincomplete-record-updates
@@ -27,6 +28,7 @@ common options
       -Wnoncanonical-monad-instances
       -Wpartial-fields
       -Wredundant-constraints
+      -O2
     default-extensions:
       BangPatterns,
       BinaryLiterals,

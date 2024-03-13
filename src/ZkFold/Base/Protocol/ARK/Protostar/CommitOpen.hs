@@ -7,7 +7,6 @@ import           Prelude                                         hiding (length)
 import           ZkFold.Base.Data.ByteString                     (ToByteString(..))
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
 import           ZkFold.Prelude                                  (length)
-import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
 data CommitOpen f c a = CommitOpen (ProverMessage f a -> c) a
 
@@ -16,7 +15,7 @@ instance ToByteString c => ToByteString (CommitOpenProverMessage t c a) where
       toByteString (Commit c) = toByteString c
       toByteString _          = mempty
 
-instance (Arithmetic f, SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen f c a) where
+instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen f c a) where
       type Witness f (CommitOpen f c a)         = (Witness f a, [ProverMessage f a])
       type Input f (CommitOpen f c a)           = Input f a
       type ProverMessage t (CommitOpen f c a)   = CommitOpenProverMessage t c a
