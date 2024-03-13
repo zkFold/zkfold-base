@@ -31,13 +31,15 @@ jobs:
           ${{ runner.os }}-
           
     - name: Build package
+      shell: bash
       run: |
-      	cabal update
+        cabal update
         cabal new-build all
 
     - name: Upload package
       env:
-      	HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+        HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+      shell: bash
       run: |
         cabal sdist
         cabal upload --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/sdist/*.tar.gz
