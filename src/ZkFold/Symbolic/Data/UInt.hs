@@ -2,11 +2,14 @@
 {-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Symbolic.Data.UInt (
-    UInt(..)
+    UInt(..),
+    toInteger
 ) where
 
+import           Control.Applicative                                    ((<*>))
 import           Control.Monad.State                                    (StateT (..))
 import           Data.Foldable                                          (find, foldr, foldrM, for_)
+import           Data.Functor                                           ((<$>))
 import           Data.List                                              (map, unfoldr, zip, zipWith)
 import           Data.Map                                               (fromList, (!))
 import           Data.Maybe                                             (fromMaybe)
@@ -17,10 +20,11 @@ import           Data.Tuple                                             (swap)
 import           GHC.TypeNats                                           (KnownNat, Natural, natVal)
 import           Prelude                                                (Integer, error, flip, otherwise, return, ($), (++), (.), (>>=))
 import qualified Prelude                                                as Haskell
+import           Test.QuickCheck                                        (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                        (Zp, fromZp)
-import           ZkFold.Prelude                                         (length, replicate, splitAt)
+import           ZkFold.Prelude                                         (length, replicate, replicateA, splitAt)
 import           ZkFold.Symbolic.Compiler                               hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, splitExpansion)
 
@@ -37,10 +41,17 @@ instance (FromConstant Integer a, Finite a, AdditiveMonoid a, KnownNat n) => Fro
                     0 -> Haskell.Nothing
                     x -> Haskell.Just (swap $ x `Haskell.divMod` base)
                 r = numberOfRegisters @a @n - 1
-            in case splitAt r redex of
+            in case greedySplitAt r redex of
                 (lo, [hi]) -> UInt lo hi
-                (lo, [])   -> UInt (lo ++ replicate (length lo - r) zero) zero
+                (lo, [])   -> UInt (lo ++ replicate (r - length lo) zero) zero
                 (_, _)     -> error "number is too big"
+
+greedySplitAt :: Integer -> [a] -> ([a], [a])
+greedySplitAt 0 xs = ([], xs)
+greedySplitAt _ [] = ([], [])
+greedySplitAt n (x : xs) =
+    let (ys, zs) = greedySplitAt (n - 1) xs
+     in (x : ys, zs)
 
 --------------------------------------------------------------------------------
 
@@ -63,6 +74,12 @@ instance (Finite p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
 
 instance (Finite p, KnownNat n) => MultiplicativeMonoid (UInt n (Zp p)) where
     one = fromConstant (1 :: Integer)
+
+instance (Finite p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
+    arbitrary = UInt
+        <$> replicateA (numberOfRegisters @p @n - 1) (toss $ registerSize @p @n)
+        <*> toss (highRegisterSize @p @n)
+        where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 --------------------------------------------------------------------------------
 
@@ -122,12 +139,12 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
             solve = do
                 i <- runCircuit x
                 j <- runCircuit y
-                s <- newAssigned (\v -> v i - v j + t `scale` one)
+                s <- newAssigned (\v -> v i - v j + (t + one) `scale` one)
                 (k, b0) <- splitExpansion (registerSize @a @n) 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub xs ys)
                 i' <- runCircuit z
                 j' <- runCircuit w
-                s' <- newAssigned (\v -> v i' - v j' + v b)
+                s' <- newAssigned (\v -> v i' - v j' + v b - one)
                 _ <- expansion (highRegisterSize @a @n) s'
                 return (s' : k : zs)
 
@@ -182,7 +199,7 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (Arithmet
                     s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
                     splitExpansion (registerSize @a @n) (maxOverflow @a @n) s
                 -- high register
-                p' <- foldrM (\k l -> newAssigned (\v -> v l + v (cs ! k) * v (cs ! (r - 1 - k)))) c' [0 .. r - 1]
+                p' <- foldrM (\k l -> newAssigned (\v -> v l + v (cs ! k) * v (ds ! (r - 1 - k)))) c' [0 .. r - 1]
                 _ <- expansion (highRegisterSize @a @n) p'
                 -- all addends higher should be zero
                 for_ [r .. r * 2 - 2] $ \k ->
