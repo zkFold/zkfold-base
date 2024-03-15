@@ -12,7 +12,7 @@ license-file:       LICENSE
 build-type:         Simple
 
 description:
-  This pacakge contains the base library for the ZkFold project. It includes zkFold Symbolic compiler and a number of zero knowledge proof protocols.
+  This package contains the base library for the ZkFold project. It includes zkFold Symbolic compiler and a number of zero knowledge proof protocols.
   The compiler translates a subset of Haskell into arithmetic circuits, which can be used to generate zero knowledge proofs.
 
 common options
