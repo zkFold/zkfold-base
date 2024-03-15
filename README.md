@@ -1,10 +1,12 @@
-# zkfold-base
-This repository contains the base library for the ZkFold project. It includes zkFold Symbolic compiler and a number of zero knowledge proof protocols. The compiler translates a subset of Haskell into arithmetic circuits, which can be used to generate zero knowledge proofs.
+# zkFold Base library
+This repository contains the base library for the ZkFold project. It includes the zkFold Symbolic compiler and a number of zero knowledge proof protocols. The compiler translates a subset of Haskell into arithmetic circuits, which can be used to generate zero knowledge proofs.
 
 # Documentation
-The zkFold Symbolic language can be utilized for creating zero-knowledge smart contracts and privacy-preserving applications. User documentation can be found at <docs.zkfold.io>.
+The zkFold Symbolic language can be utilized to create zero-knowledge smart contracts and privacy-preserving applications.
 
-If you want to contribute to the project or find out how it works "under the hood", check out [package documentation](https://hackage.haskell.org/package/zkfold-base-0.1.0.0/candidate zkFold Base package) on Hackage.
+User documentation can be found at [docs.zkfold.io](https://docs.zkfold.io "zkFold Symbolic User Documentation").
+
+If you want to contribute to the project or find out how it works "under the hood", check out [package documentation](https://hackage.haskell.org/package/zkfold-base-0.1.0.0/candidate "zkFold Base package") on Hackage.
 
 # Build
 The package compiles with GHC 9.6.3 and Cabal 3.10.2.1.
