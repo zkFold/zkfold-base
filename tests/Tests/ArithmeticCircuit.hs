@@ -2,14 +2,14 @@
 {-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Tests.ArithmeticCircuit (specArithmeticCircuit) where
+module Tests.ArithmeticCircuit (eval', it, specArithmeticCircuit) where
 
 import           Data.Bool                                              (bool)
 import           Data.Map                                               (empty)
 import           Prelude                                                (IO, Show, String, flip, head, id, map, ($))
 import qualified Prelude                                                as Haskell
-import           Test.Hspec                                             (Spec, describe, hspec)
 import qualified Test.Hspec
+import           Test.Hspec                                             (Spec, describe, hspec)
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class

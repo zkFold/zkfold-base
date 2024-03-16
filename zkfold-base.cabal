@@ -175,6 +175,7 @@ test-suite zkfold-base-test
       Tests.Permutations
       Tests.Plonk
       Tests.Scripts.LockedByTxId
+      Tests.UInt
       Tests.Univariate
     build-depends:
       base                          >= 4.9 && < 5,
@@ -197,6 +198,7 @@ test-suite zkfold-base-examples
       Examples.MiMCHash
       Examples.MiMC.Constants
       Examples.ReverseList
+      Examples.UInt
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
