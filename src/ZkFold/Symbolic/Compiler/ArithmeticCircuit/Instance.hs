@@ -69,6 +69,8 @@ instance Arithmetic a => MultiplicativeGroup (ArithmeticCircuit a) where
 instance (Arithmetic a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
     fromConstant c = embed (fromConstant c)
 
+instance Arithmetic a => Ring (ArithmeticCircuit a)
+
 instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
     binaryExpansion r = circuits $ runCircuit r >>= expansion (numberOfBits @a)
     fromBinary bits = circuit $ Haskell.traverse runCircuit bits >>= horner

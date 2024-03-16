@@ -51,12 +51,20 @@ class MultiplicativeMonoid a => MultiplicativeGroup a where
     invert :: a -> a
     invert x = one / x
 
+--------------------------------------------------------------------------------
+
+class FromConstant a b where
+    fromConstant :: a -> b
+
+instance FromConstant a a where
+    fromConstant = id
+
 type Semiring a = (AdditiveMonoid a, MultiplicativeMonoid a)
 
-type Ring a = (AdditiveGroup a, MultiplicativeMonoid a)
+class (AdditiveGroup a, MultiplicativeMonoid a, FromConstant Integer a) => Ring a
 
 -- NOTE: by convention, division by zero returns zero.
-type Field a = (AdditiveGroup a, MultiplicativeGroup a)
+type Field a = (Ring a, MultiplicativeGroup a)
 
 class Finite a where
     order :: Integer
@@ -75,12 +83,6 @@ type FiniteField a = (Finite a, Field a)
 type PrimeField a = (Prime a, FiniteField a)
 
 --------------------------------------------------------------------------------
-
-class FromConstant a b where
-    fromConstant :: a -> b
-
-instance FromConstant a a where
-    fromConstant = id
 
 -- Note: numbers should convert to Little-endian bit representation.
 class Semiring a => BinaryExpansion a where
@@ -121,7 +123,7 @@ multiExp a = foldl (\x y -> x * (a ^ y)) one
 ------------------------------- Roots of unity ---------------------------------
 
 -- | Returns a primitive root of unity of order 2^l.
-rootOfUnity :: forall a . (PrimeField a, Eq a, FromConstant Integer a) => Integer -> a
+rootOfUnity :: forall a . (PrimeField a, Eq a) => Integer -> a
 rootOfUnity l
     | l <= 0                      = error "rootOfUnity: l should be positive!"
     | (order @a - 1) `mod` n /= 0 = error $ "rootOfUnity: 2^" ++ show l ++ " should divide (p-1)!"
@@ -151,6 +153,8 @@ instance MultiplicativeSemigroup Integer where
 instance MultiplicativeMonoid Integer where
     one = 1
 
+instance Ring Integer
+
 instance BinaryExpansion Integer where
     binaryExpansion 0 = []
     binaryExpansion x
@@ -176,6 +180,11 @@ instance MultiplicativeMonoid Bool where
 
 instance MultiplicativeGroup Bool where
     invert = id
+
+instance FromConstant Integer Bool where
+    fromConstant = (/= 0)
+
+instance Ring Bool
 
 instance BinaryExpansion Bool where
     binaryExpansion = (:[])
@@ -204,6 +213,11 @@ instance MultiplicativeMonoid a => MultiplicativeMonoid [a] where
 instance MultiplicativeGroup a => MultiplicativeGroup [a] where
     invert = map invert
 
+instance FromConstant b a => FromConstant b [a] where
+    fromConstant = repeat . fromConstant
+
+instance Ring a => Ring [a]
+
 --------------------------------------------------------------------------------
 
 instance AdditiveSemigroup a => AdditiveSemigroup (p -> a) where
@@ -223,3 +237,8 @@ instance MultiplicativeMonoid a => MultiplicativeMonoid (p -> a) where
 
 instance MultiplicativeGroup a => MultiplicativeGroup (p -> a) where
     invert = fmap invert
+
+instance FromConstant b a => FromConstant b (p -> a) where
+    fromConstant = const . fromConstant
+
+instance Ring a => Ring (p -> a)
