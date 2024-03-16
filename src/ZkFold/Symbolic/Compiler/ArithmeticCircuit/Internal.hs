@@ -41,7 +41,7 @@ data ArithmeticCircuit a = ArithmeticCircuit
         -- ^ The system of polynomial constraints
         acInput    :: [Integer],
         -- ^ The input variables
-        acWitness  :: Map Integer a -> Map Integer a,
+        acWitness  :: Map Integer a,
         -- ^ The witness generation function
         acOutput   :: Integer,
         -- ^ The output variable
@@ -59,7 +59,7 @@ instance Eq a => Semigroup (ArithmeticCircuit a) where
             -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
             -- We need a way to ensure the correct order no matter how `(<>)` is used.
             acInput    = nub $ acInput r1 ++ acInput r2,
-            acWitness  = union <$> acWitness r1 <*> acWitness r2,
+            acWitness  = union (acWitness r1) (acWitness r2),
             acOutput   = max (acOutput r1) (acOutput r2),
             acVarOrder = acVarOrder r1 `union` acVarOrder r2,
             acRNG      = mkStdGen $ fst (uniform (acRNG r1)) Haskell.* fst (uniform (acRNG r2))
@@ -70,7 +70,7 @@ instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
         {
             acSystem   = empty,
             acInput    = [],
-            acWitness  = insert 0 one,
+            acWitness  = insert 0 one mempty,
             acOutput   = 0,
             acVarOrder = empty,
             acRNG      = mkStdGen 0
@@ -125,7 +125,7 @@ forceZero = zoom #acOutput get >>= constraint . var
 assignment :: (Map Integer a -> a) -> State (ArithmeticCircuit a) ()
 assignment f = do
     i <- insert <$> zoom #acOutput get
-    zoom #acWitness . modify $ (.) (\m -> i (f m) m)
+    zoom #acWitness . modify $ (\m -> i (f m) m)
 
 -- | Adds a new input variable to the arithmetic circuit. Returns a copy of the arithmetic circuit with this variable as output.
 input :: forall a . State (ArithmeticCircuit a) (ArithmeticCircuit a)
@@ -138,8 +138,9 @@ input = do
   get
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: ArithmeticCircuit a -> Map Integer a -> a
-eval ctx i = acWitness ctx i ! acOutput ctx
+-- TODO: looks like comonadic `extract`
+eval :: ArithmeticCircuit a -> a
+eval ctx = acWitness ctx ! acOutput ctx
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.
 -- TODO: make this safe
@@ -147,7 +148,7 @@ apply :: [a] -> State (ArithmeticCircuit a) ()
 apply xs = do
     inputs <- zoom #acInput get
     zoom #acInput . put $ drop (length xs) inputs
-    zoom #acWitness . modify $ (. union (fromList $ zip inputs xs))
+    zoom #acWitness . modify . union . fromList $ zip inputs xs
 
 -- TODO: Add proper symbolic application functions
 

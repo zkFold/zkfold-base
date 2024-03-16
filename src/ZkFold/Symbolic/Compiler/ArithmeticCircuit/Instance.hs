@@ -157,7 +157,7 @@ instance FromJSON a => FromJSON (ArithmeticCircuit a) where
     parseJSON = withObject "ArithmeticCircuit" $ \v -> ArithmeticCircuit
         <$> v .: "system"
         <*> v .: "input"
-        <*> pure (const empty)
+        <*> pure empty
         <*> v .: "output"
         <*> v .: "order"
         <*> pure (mkStdGen 0)
