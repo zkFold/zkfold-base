@@ -132,6 +132,7 @@ library
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Eq
+      ZkFold.Symbolic.Data.Eq.Structural
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.GroebnerBasis

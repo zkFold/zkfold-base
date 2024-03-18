@@ -6,7 +6,6 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Data.Aeson                                                hiding (Bool)
-import           Data.Foldable                                             (null)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map, null, splitAt, take)
 import           Prelude                                                   (const, error, map, mempty, pure, return, show, zipWith, ($), (++), (<$>), (<*>), (>>=))
 import qualified Prelude                                                   as Haskell
@@ -87,22 +86,9 @@ instance (Arithmetizable a x, Field x) => DiscreteField (Bool (ArithmeticCircuit
       [] -> true
       xs -> Bool $ product1 (map isZeroC xs)
 
-instance Arithmetizable a x => Eq (Bool (ArithmeticCircuit a)) x where
-    x == y =
-        let x' = circuits (arithmetize x)
-            y' = circuits (arithmetize y)
-            zs = zipWith (-) x' y'
-        in if null zs
-            then true
-            else all1 (isZero @(Bool (ArithmeticCircuit a)) @(ArithmeticCircuit a)) zs
-
-    x /= y =
-        let x' = circuits (arithmetize x)
-            y' = circuits (arithmetize y)
-            zs = zipWith (-) x' y'
-        in if null zs
-            then false
-            else not $ all1 (isZero @(Bool (ArithmeticCircuit a)) @(ArithmeticCircuit a)) zs
+instance Arithmetic a => Eq (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) where
+    x == y = isZero (x - y)
+    x /= y = not $ isZero (x - y)
 
 instance Arithmetizable a x => Conditional (Bool (ArithmeticCircuit a)) x where
     bool brFalse brTrue (Bool b) =
