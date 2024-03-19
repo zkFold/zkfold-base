@@ -9,6 +9,10 @@ import           ZkFold.Base.Algebra.Basic.Class
 newtype BinScale b a = BinScale { runBinScale :: a }
     deriving newtype (AdditiveSemigroup, AdditiveMonoid, AdditiveGroup, MultiplicativeSemigroup, MultiplicativeMonoid)
 
+deriving newtype instance FromConstant c a => FromConstant c (BinScale b a)
+
+deriving newtype instance Ring a => Ring (BinScale b a)
+
 instance (AdditiveMonoid a, Eq b, BinaryExpansion b) => Scale (BinScale b a) b where
     scale n a = sum $ zipWith f (binaryExpansion n) (iterate (\x -> x + x) a)
       where
@@ -22,6 +26,10 @@ newtype Self a = Self { getSelf :: a }
     deriving newtype (AdditiveSemigroup, AdditiveMonoid, AdditiveGroup,
                       MultiplicativeSemigroup, MultiplicativeMonoid, MultiplicativeGroup,
                       BinaryExpansion, Finite)
+
+deriving newtype instance FromConstant c a => FromConstant c (Self a)
+
+deriving newtype instance Ring a => Ring (Self a)
 
 instance Ring a => Scale (Self a) a where
     scale a (Self b) = Self (a * b)

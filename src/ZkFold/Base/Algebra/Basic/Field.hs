@@ -68,6 +68,8 @@ instance Prime p => MultiplicativeGroup (Zp p) where
 instance Finite p => FromConstant Integer (Zp p) where
     fromConstant = toZp @p
 
+instance Finite p => Ring (Zp p)
+
 instance Prime p => BinaryExpansion (Zp p) where
     binaryExpansion (Zp a) = map Zp $ binaryExpansion a
 
@@ -107,7 +109,7 @@ instance Finite p => Random (Zp p) where
     randomR (Zp a, Zp b) g = (Zp r, g')
       where
         (r, g') = randomR (a, b) g
-    
+
     random g = (Zp r, g')
       where
         (r, g') = randomR (0, order @(Zp p) - 1) g
@@ -153,6 +155,8 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
 
+instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext2 f e)
+
 instance ToByteString f => ToByteString (Ext2 f e) where
     toByteString (Ext2 a b) = toByteString a <> toByteString b
 
@@ -196,6 +200,8 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) 
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero
+
+instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext3 f e)
 
 instance ToByteString f => ToByteString (Ext3 f e) where
     toByteString (Ext3 a b c) = toByteString a <> toByteString b <> toByteString c

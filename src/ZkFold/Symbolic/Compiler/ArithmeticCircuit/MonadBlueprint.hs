@@ -175,6 +175,11 @@ instance Ord i => MultiplicativeMonoid (Sources a i) where
 instance Ord i => MultiplicativeGroup (Sources a i) where
   invert = id
 
+instance Ord i => FromConstant c (Sources a i) where
+  fromConstant _ = mempty
+
+instance Ord i => Ring (Sources a i)
+
 instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where
   binaryExpansion = replicate (numberOfBits @a)
 

@@ -133,12 +133,12 @@ polyVecZero :: forall c size size' . (Ring c, Finite size, Finite size', Eq c) =
 polyVecZero = poly2vec $ scaleP one (order @size) one - one
 
 -- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
-polyVecLagrange :: forall c size size' . (Field c, Eq c, FromConstant Integer c, Finite size, Finite size') =>
+polyVecLagrange :: forall c size size' . (Field c, Eq c, Finite size, Finite size') =>
     Integer -> c -> PolyVec c size'
 polyVecLagrange i omega = scalePV (omega^i / fromConstant (order @size)) $ (polyVecZero @c @size @size' - one) / polyVecLinear (negate $ omega^i) one
 
 -- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
-polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, FromConstant Integer c, Finite size, Finite size') =>
+polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, Finite size, Finite size') =>
     c -> PolyVec c size -> PolyVec c size'
 polyVecInLagrangeBasis omega (PV cs) =
     let ls = map (\i -> polyVecLagrange @c @size @size' i omega) [1..]
