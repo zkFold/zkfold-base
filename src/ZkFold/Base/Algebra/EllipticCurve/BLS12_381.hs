@@ -2,9 +2,10 @@
 
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
-import           Data.Bits                         (shiftR)
-import           Data.List                         (unfoldr)
-import           Prelude                           hiding (Num(..), (/), (^))
+import           Data.Bits                                  (shiftR)
+import           Data.List                                  (unfoldr)
+import           Numeric.Natural                            (Natural)
+import           Prelude                                    hiding (Num (..), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
@@ -156,10 +157,10 @@ miller' p q r (i:iters) result =
 pairingBLS :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> BLS12_381_GT
 pairingBLS Inf _ = zero
 pairingBLS _ Inf = zero
-pairingBLS p q = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Integer) - 1) `div` (order @(ScalarField BLS12_381_G1))) one
+pairingBLS p q   = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Integer) - 1) `div` (order @(ScalarField BLS12_381_G1))) one
 
 -- Used for the final exponentiation; opportunity for further perf optimization
-pow' :: (Field a) => a -> Integer -> a -> a
+pow' :: (Field a) => a -> Natural -> a -> a
 pow' a0 e result
   | e <= 1    = a0
   | even e    = accum2
@@ -167,3 +168,4 @@ pow' a0 e result
   where
     accum  = pow' a0 (shiftR e 1) result
     accum2 = accum * accum
+

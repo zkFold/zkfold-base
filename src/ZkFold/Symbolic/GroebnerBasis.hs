@@ -16,16 +16,17 @@ module ZkFold.Symbolic.GroebnerBasis (
     groebnerStepMax
     ) where
 
-import           Data.Bool                                             (bool)
-import           Data.List                                             (sortBy, nub)
-import           Data.Map                                              (toList, elems, empty, singleton, keys, mapWithKey, fromList, Map)
-import           Data.Maybe                                            (mapMaybe)
-import           Prelude                                               hiding (Num(..), (!!), length, replicate)
+import           Data.Bool                                        (bool)
+import           Data.List                                        (nub, sortBy)
+import           Data.Map                                         (Map, elems, empty, fromList, keys, mapWithKey, singleton, toList)
+import           Data.Maybe                                       (mapMaybe)
+import           Numeric.Natural                                  (Natural)
+import           Prelude                                          hiding (Num (..), length, replicate, (!!))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate          as Poly
-import           ZkFold.Prelude                   ((!!))
+import           ZkFold.Base.Algebra.Basic.Field                  (Zp)
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate     as Poly
+import           ZkFold.Prelude                                   ((!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.GroebnerBasis.Internal
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
@@ -35,7 +36,7 @@ import           ZkFold.Symbolic.GroebnerBasis.Types
 boundVariables :: forall p . Prime p => Polynomial p -> [Polynomial p] -> Polynomial p
 boundVariables p ps = foldr (makeBound . findVar) p $ zip [0..] ps
     where
-        findVar :: (Integer, Polynomial p) -> (Integer, Variable p)
+        findVar :: (Natural, Polynomial p) -> (Natural, Variable p)
         findVar (k, h) = (i, v)
             where
                 M _ as = lt h
@@ -44,7 +45,7 @@ boundVariables p ps = foldr (makeBound . findVar) p $ zip [0..] ps
                 s' = P [M one (singleton i (variable 2))] - P [M one (singleton i (variable 1))]
                 v = bool (Bound 1 k) (Boolean k) $ zeroP $ s `reduce` s'
 
-        makeBound :: (Integer, Variable p) -> Polynomial p -> Polynomial p
+        makeBound :: (Natural, Variable p) -> Polynomial p -> Polynomial p
         makeBound (i, v) = makeBoundPolynomial
             where
                 makeBoundVar :: Variable p -> Variable p
@@ -76,7 +77,7 @@ makeTheorem r = (boundVariables p0 ps, --systemReduce $
         k  = acOutput r
         p0 = polynomial [M one (singleton (mapVars k) (Free 1))] - polynomial [M one empty]
 
-        mapVars :: Integer -> Integer
+        mapVars :: Natural -> Natural
         mapVars x
             | x == 0    = 0
             | otherwise = case lookup x (zip xs [1..]) of
@@ -86,10 +87,10 @@ makeTheorem r = (boundVariables p0 ps, --systemReduce $
         convert :: Constraint (Zp p) -> Polynomial p
         convert (Poly.P ms) = polynomial $ map convert' ms
             where
-                convert' :: (Zp p, Poly.M Integer Integer (Map Integer Integer)) -> Monomial p
+                convert' :: (Zp p, Poly.M Natural Natural (Map Natural Natural)) -> Monomial p
                 convert' (c, Poly.M as) = M c $ fromList $ mapMaybe convert'' $ toList as
                     where
-                        convert'' :: (Integer, Integer) -> Maybe (Integer, Variable p)
+                        convert'' :: (Natural, Natural) -> Maybe (Natural, Variable p)
                         convert'' (j, i) =
                             let ind = mapVars j
                             in if ind > 0 then Just (ind, Free i) else Nothing
@@ -103,3 +104,4 @@ verify (p0, ps) = zeroP $ fst $ foldl (\args _ -> uncurry groebnerStep args) (p0
 groebner :: forall p . Prime p => [Polynomial p] -> [Polynomial p]
 groebner ps = snd $ foldl (\args _ -> uncurry groebnerStep args) (p, ps) [1..groebnerStepMax]
     where p = polynomial [lt $ head ps, monomial (negate one) empty]
+

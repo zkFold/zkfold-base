@@ -7,8 +7,10 @@ import           Control.Monad                   (return)
 import           Data.Data                       (Proxy (..))
 import           Data.Function                   (($))
 import           Data.List                       (map, (++))
+import           GHC.Num                         (integerToNatural)
 import           GHC.TypeNats                    (KnownNat, natVal)
-import           Prelude                         (Integer, div, show)
+import           Numeric.Natural                 (Natural)
+import           Prelude                         (div, show)
 import qualified Prelude                         as Haskell
 import           System.IO                       (IO)
 import           Test.Hspec                      (describe, hspec)
@@ -20,8 +22,8 @@ import           ZkFold.Base.Algebra.Basic.Field (Zp)
 import           ZkFold.Symbolic.Compiler        (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.UInt
 
-toss :: Integer -> Gen Integer
-toss x = chooseInteger (0, x)
+toss :: Natural -> Gen Natural
+toss x = integerToNatural Haskell.<$> chooseInteger (0, Haskell.fromIntegral x)
 
 value :: forall a n . UInt n (ArithmeticCircuit a) -> UInt n a
 value (UInt xs x) = UInt (map eval' xs) (eval' x)
@@ -32,9 +34,9 @@ specUInt = hspec $ do
     describe ("UInt" ++ show n ++ " specification") $ do
         it "Zp embeds Integer" $ do
             x <- toss (2 ^ n - 1)
-            return $ toInteger @p @n (fromConstant x) === x
+            return $ toNatural @p @n (fromConstant x) === x
         it "Integer embeds Zp" $ \(x :: UInt n (Zp p)) ->
-            fromConstant (toInteger x) === x
+            fromConstant (toNatural x) === x
         it "AC embeds Integer" $ do
             x <- toss (2 ^ n - 1)
             return $ value @(Zp p) @n (fromConstant x) === fromConstant x

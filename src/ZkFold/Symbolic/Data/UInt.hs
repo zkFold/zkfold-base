@@ -3,7 +3,7 @@
 
 module ZkFold.Symbolic.Data.UInt (
     UInt(..),
-    toInteger
+    toNatural
 ) where
 
 import           Control.Applicative                                    ((<*>))
@@ -32,21 +32,19 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansi
 data UInt (n :: Natural) a = UInt ![a] !a
     deriving (Haskell.Show, Haskell.Eq)
 
-instance (FromConstant Integer a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Integer (UInt n a) where
-    fromConstant n
-        | n Haskell.< 0 = error "n is negative"
-        | otherwise =
-            let base = 2 ^ registerSize @a @n
-                redex = map fromConstant $ flip unfoldr n $ \case
-                    0 -> Haskell.Nothing
-                    x -> Haskell.Just (swap $ x `Haskell.divMod` base)
-                r = numberOfRegisters @a @n - 1
-            in case greedySplitAt r redex of
-                (lo, [hi]) -> UInt lo hi
-                (lo, [])   -> UInt (lo ++ replicate (r - length lo) zero) zero
-                (_, _)     -> error "number is too big"
+instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
+    fromConstant n =
+        let base = 2 ^ registerSize @a @n
+            redex = map fromConstant $ flip unfoldr n $ \case
+                0 -> Haskell.Nothing
+                x -> Haskell.Just (swap $ x `Haskell.divMod` base)
+            r = numberOfRegisters @a @n - 1
+        in case greedySplitAt r redex of
+            (lo, [hi]) -> UInt lo hi
+            (lo, [])   -> UInt (lo ++ replicate (r - length lo) zero) zero
+            (_, _)     -> error "number is too big"
 
-greedySplitAt :: Integer -> [a] -> ([a], [a])
+greedySplitAt :: Natural -> [a] -> ([a], [a])
 greedySplitAt 0 xs = ([], xs)
 greedySplitAt _ [] = ([], [])
 greedySplitAt n (x : xs) =
@@ -55,25 +53,27 @@ greedySplitAt n (x : xs) =
 
 --------------------------------------------------------------------------------
 
-toInteger :: forall p n . (Finite p, KnownNat n) => UInt n (Zp p) -> Integer
-toInteger (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
+toNatural :: forall p n . (Finite p, KnownNat n) => UInt n (Zp p) -> Natural
+toNatural (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
     where base = 2 ^ registerSize @p @n
 
 instance (Finite p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
-    x + y = fromConstant $ toInteger x + toInteger y
+    x + y = fromConstant $ toNatural x + toNatural y
 
 instance (Finite p, KnownNat n) => AdditiveMonoid (UInt n (Zp p)) where
-    zero = fromConstant (0 :: Integer)
+    zero = fromConstant (0 :: Natural)
 
 instance (Finite p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
-    x - y = fromConstant $ toInteger x - toInteger y
-    negate = fromConstant . negate . toInteger
+    x - y = fromConstant $ toNatural x - toNatural y
+    negate = fromConstant . negate . toNatural
 
 instance (Finite p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
-    x * y = fromConstant $ toInteger x * toInteger y
+    x * y = fromConstant $ toNatural x * toNatural y
 
 instance (Finite p, KnownNat n) => MultiplicativeMonoid (UInt n (Zp p)) where
-    one = fromConstant (1 :: Integer)
+    one = fromConstant (1 :: Natural)
+
+instance (Finite p, KnownNat n) => Semiring (UInt n (Zp p))
 
 instance (Finite p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
     arbitrary = UInt
@@ -217,20 +217,22 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (UInt n (ArithmeticC
     one | numberOfRegisters @a @n Haskell.== 1 = UInt [] one
         | otherwise = UInt (one : replicate (numberOfRegisters @a @n - 2) zero) zero
 
+instance (Arithmetic a, KnownNat n) => Semiring (UInt n (ArithmeticCircuit a))
+
 --------------------------------------------------------------------------------
 
-maxOverflow :: forall a n . (Finite a, KnownNat n) => Integer
+maxOverflow :: forall a n . (Finite a, KnownNat n) => Natural
 maxOverflow = registerSize @a @n + Haskell.ceiling (log2 $ numberOfRegisters @a @n)
 
-highRegisterSize :: forall a n . (Finite a, KnownNat n) => Integer
-highRegisterSize = getInteger @n - registerSize @a @n * (numberOfRegisters @a @n - 1)
+highRegisterSize :: forall a n . (Finite a, KnownNat n) => Natural
+highRegisterSize = getNatural @n - registerSize @a @n * (numberOfRegisters @a @n - 1)
 
-registerSize :: forall a n . (Finite a, KnownNat n) => Integer
-registerSize = Haskell.ceiling (getInteger @n % numberOfRegisters @a @n)
+registerSize :: forall a n . (Finite a, KnownNat n) => Natural
+registerSize = Haskell.ceiling (getNatural @n % numberOfRegisters @a @n)
 
-numberOfRegisters :: forall a n . (Finite a, KnownNat n) => Integer
+numberOfRegisters :: forall a n . (Finite a, KnownNat n) => Natural
 numberOfRegisters = fromMaybe (error "too many bits, field is not big enough")
-    $ find (\c -> c * maxRegisterSize c Haskell.>= getInteger @n) [1 .. maxRegisterCount]
+    $ find (\c -> c * maxRegisterSize c Haskell.>= getNatural @n) [1 .. maxRegisterCount]
     where
         maxRegisterCount = 2 ^ bitLimit
         bitLimit = Haskell.floor $ log2 (order @a)
@@ -238,8 +240,8 @@ numberOfRegisters = fromMaybe (error "too many bits, field is not big enough")
             let maxAdded = Haskell.ceiling $ log2 regCount
              in Haskell.floor $ (bitLimit - maxAdded) % (2 :: Integer)
 
-log2 :: Integer -> Haskell.Double
-log2 = Haskell.logBase 2 . Haskell.fromInteger
+log2 :: Natural -> Haskell.Double
+log2 = Haskell.logBase 2 . Haskell.fromIntegral
 
-getInteger :: forall n . KnownNat n => Integer
-getInteger = Haskell.fromIntegral $ natVal (Proxy :: Proxy n)
+getNatural :: forall n . KnownNat n => Natural
+getNatural = natVal (Proxy :: Proxy n)

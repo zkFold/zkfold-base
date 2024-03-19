@@ -6,9 +6,10 @@ module ZkFold.Base.Protocol.NonInteractiveProof where
 import           Crypto.Hash.SHA256          (hash)
 import           Data.ByteString             (ByteString, cons)
 import           Data.Maybe                  (fromJust)
+import           Numeric.Natural             (Natural)
 import           Prelude
 
-import           ZkFold.Base.Data.ByteString (ToByteString(..), FromByteString (..))
+import           ZkFold.Base.Data.ByteString (FromByteString (..), ToByteString (..))
 
 class Monoid t => ToTranscript t a where
     toTranscript :: a -> t
@@ -32,7 +33,7 @@ challenge ts =
     let ts' = newTranscript @t @a ts
     in (fromTranscript ts', ts')
 
-challenges :: FromTranscript t a => t -> Integer -> ([a], t)
+challenges :: FromTranscript t a => t -> Natural -> ([a], t)
 challenges ts0 n = go ts0 n []
   where
     go ts 0 acc = (acc, ts)
@@ -56,3 +57,4 @@ class NonInteractiveProof a where
     prove :: Setup a -> Witness a -> (Input a, Proof a)
 
     verify :: Setup a -> Input a -> Proof a -> Bool
+

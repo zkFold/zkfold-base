@@ -1,11 +1,12 @@
 module ZkFold.Symbolic.GroebnerBasis.Internal where
 
-import           Data.List                       (sortBy)
-import           Data.Map                        (notMember)
-import           Prelude                         hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
+import           Data.List                                        (sortBy)
+import           Data.Map                                         (notMember)
+import           Numeric.Natural                                  (Natural)
+import           Prelude                                          hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
 
-import           ZkFold.Base.Algebra.Basic.Class hiding (scale)
-import           ZkFold.Prelude                  (length)
+import           ZkFold.Base.Algebra.Basic.Class                  hiding (scale)
+import           ZkFold.Prelude                                   (length)
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Types
 
@@ -19,14 +20,14 @@ makeSPoly l r = if null as then zero else addPoly l' r'
           ra  = divideM lcm (lt l)
           la  = scale (negate one) $ divideM lcm (lt r)
 
-varNumber :: Polynom c a -> Integer
+varNumber :: Polynom c a -> Natural
 varNumber (P [])         = 0
 varNumber (P (M _ as:_)) = length as
 
-varIsMissing :: Integer -> Polynom c a -> Bool
+varIsMissing :: Natural -> Polynom c a -> Bool
 varIsMissing i (P ms) = all (\(M _ as) -> notMember (i-1) as) ms
 
-checkVarUnique :: Integer -> [Polynom c a] -> Bool
+checkVarUnique :: Natural -> [Polynom c a] -> Bool
 checkVarUnique i fs = length (filter (== False) $ map (varIsMissing i) fs) == 1
 
 checkLTSimple :: Polynom c a -> Bool
@@ -63,3 +64,4 @@ groebnerStep h fs
             fs'  = trimSystem h' fs
             fs'' = addSPolyStep (reverse fs') (reverse fs') fs'
         in (h', fs'')
+

@@ -3,14 +3,14 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
-import           Data.Bifunctor  (first)
-import           Data.Bool       (bool)
-import           Numeric.Natural (Natural)
-import           Prelude         hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
-import qualified Prelude         as Haskell
-import           System.Random   (Random (..), RandomGen, mkStdGen)
+import           Data.Bifunctor (first)
+import           Data.Bool      (bool)
+import           GHC.Natural    (Natural, naturalFromInteger)
+import           Prelude        hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
+import qualified Prelude        as Haskell
+import           System.Random  (RandomGen, mkStdGen, uniformR)
 
-import           ZkFold.Prelude  (length, replicate)
+import           ZkFold.Prelude (length, replicate)
 
 infixl 7 *, /
 infixl 6 +, -
@@ -68,10 +68,10 @@ class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
 type Field a = (Ring a, MultiplicativeGroup a)
 
 class Finite a where
-    order :: Integer
+    order :: Natural
 
-numberOfBits :: forall a . Finite a => Integer
-numberOfBits = ceiling $ logBase @Double 2 $ Haskell.fromInteger $ order @a
+numberOfBits :: forall a . Finite a => Natural
+numberOfBits = ceiling $ logBase @Double 2 $ Haskell.fromIntegral $ order @a
 
 class Finite a => Prime a
 
@@ -92,7 +92,7 @@ class Semiring a => BinaryExpansion a where
     fromBinary :: [a] -> a
     fromBinary = foldr (\x y -> x + y + y) zero
 
-padBits :: forall a . BinaryExpansion a => Integer -> [a] -> [a]
+padBits :: forall a . BinaryExpansion a => Natural -> [a] -> [a]
 padBits n xs = xs ++ replicate (n - length xs) zero
 
 castBits :: (Semiring a, Eq a, Semiring b) => [a] -> [b]
@@ -124,16 +124,16 @@ multiExp a = foldl (\x y -> x * (a ^ y)) one
 ------------------------------- Roots of unity ---------------------------------
 
 -- | Returns a primitive root of unity of order 2^l.
-rootOfUnity :: forall a . (PrimeField a, Eq a) => Integer -> a
+rootOfUnity :: forall a . (PrimeField a, Eq a) => Natural -> a
 rootOfUnity l
-    | l <= 0                      = error "rootOfUnity: l should be positive!"
+    | l == 0                      = error "rootOfUnity: l should be positive!"
     | (order @a - 1) `mod` n /= 0 = error $ "rootOfUnity: 2^" ++ show l ++ " should divide (p-1)!"
     | otherwise = rootOfUnity' (mkStdGen 0)
     where
         n = 2 ^ l
         rootOfUnity' :: RandomGen g => g -> a
         rootOfUnity' g =
-            let (x, g') = first fromConstant $ randomR (1, order @a - 1) g
+            let (x, g') = first fromConstant $ uniformR (1, order @a - 1) g
                 x' = x ^ ((order @a - 1) `div` n)
             in bool (rootOfUnity' g') x' (x' ^ (n `div` 2) /= one)
 
@@ -186,10 +186,7 @@ instance Semiring Integer
 instance Ring Integer
 
 instance BinaryExpansion Integer where
-    binaryExpansion 0 = []
-    binaryExpansion x
-        | x > 0     = (x `mod` 2) : binaryExpansion (x `div` 2)
-        | otherwise = error "toBits: Not defined for negative integers!"
+    binaryExpansion = map fromConstant . binaryExpansion . naturalFromInteger
 
 --------------------------------------------------------------------------------
 

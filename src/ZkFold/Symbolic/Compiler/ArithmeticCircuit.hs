@@ -28,16 +28,17 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
     ) where
 
 import           Control.Monad.State                                 (execState)
-import           Data.Map                                            hiding (take, drop, splitAt, foldl, null, map, foldr)
-import           Prelude                                             hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
+import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt, take)
+import           Numeric.Natural                                     (Natural)
+import           Prelude                                             hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
 import           Test.QuickCheck                                     (Arbitrary, Property, conjoin, property, vector, withMaxSuccess, (===))
 import           Text.Pretty.Simple                                  (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalPolynomial')
 import           ZkFold.Prelude                                      (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit(..), Arithmetic, Constraint, apply, eval, forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint, apply, eval, forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 
 --------------------------------- High-level functions --------------------------------
@@ -55,12 +56,12 @@ optimize = undefined
 ----------------------------------- Information -----------------------------------
 
 -- | Calculates the number of constraints in the system.
-acSizeN :: ArithmeticCircuit a -> Integer
+acSizeN :: ArithmeticCircuit a -> Natural
 acSizeN = length . acSystem
 
 -- | Calculates the number of variables in the system.
 -- The constant `1` is not counted.
-acSizeM :: ArithmeticCircuit a -> Integer
+acSizeM :: ArithmeticCircuit a -> Natural
 acSizeM = length . acVarOrder
 
 acValue :: ArithmeticCircuit a -> a

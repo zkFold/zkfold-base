@@ -4,21 +4,22 @@
 module ZkFold.Base.Protocol.ARK.Plonk where
 
 import           Data.ByteString                             (ByteString)
-import           Data.Map                                    (Map, singleton, elems)
+import           Data.Map                                    (Map, elems, singleton)
 import qualified Data.Map                                    as Map
-import           Prelude                                     hiding (Num(..), (^), (/), (!!), sum, length, take, drop, replicate)
+import           Numeric.Natural                             (Natural)
+import           Prelude                                     hiding (Num (..), drop, length, replicate, sum, take, (!!), (/), (^))
 import           Test.QuickCheck                             (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp, fromZp)
-import           ZkFold.Base.Algebra.Basic.Permutations      (fromPermutation, fromCycles, mkIndexPartition)
+import           ZkFold.Base.Algebra.Basic.Permutations      (fromCycles, fromPermutation, mkIndexPartition)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate  hiding (qr)
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (toPlonkArithmetization, getParams)
+import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams, toPlonkArithmetization)
 import           ZkFold.Base.Protocol.Commitment.KZG         (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                              ((!), take, drop)
+import           ZkFold.Prelude                              (drop, take, (!))
 import           ZkFold.Symbolic.Compiler
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
@@ -31,7 +32,7 @@ type G2 = Point BLS12_381_G2
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
-data Plonk t = Plonk F F F (Map Integer F) (ArithmeticCircuit F) F
+data Plonk t = Plonk F F F (Map Natural F) (ArithmeticCircuit F) F
     deriving (Show)
 instance Arbitrary (Plonk t) where
     arbitrary = do
@@ -59,7 +60,7 @@ instance Finite (PlonkMaxPolyDegree t) where
     order = 4 * order @(Plonk t) + 7
 type PolyPlonkExtended t = PolyVec F (PlonkMaxPolyDegree t)
 
-data ParamsPlonk = ParamsPlonk F F F (Map Integer F) (ArithmeticCircuit F)
+data ParamsPlonk = ParamsPlonk F F F (Map Natural F) (ArithmeticCircuit F)
     deriving (Show)
 -- TODO (Issue #25): make a proper implementation of Arbitrary
 instance Arbitrary ParamsPlonk where
@@ -75,12 +76,12 @@ instance Arbitrary ProverSecretPlonk where
         arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
         <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
-newtype WitnessMapPlonk t = WitnessMap (Map.Map Integer F -> (PolyVec F (Plonk t), PolyVec F (Plonk t), PolyVec F (Plonk t)))
+newtype WitnessMapPlonk t = WitnessMap (Map.Map Natural F -> (PolyVec F (Plonk t), PolyVec F (Plonk t), PolyVec F (Plonk t)))
 -- TODO (Issue #25): make a proper implementation of Show
 instance Show (WitnessMapPlonk t) where
     show _ = "WitnessMap"
 
-newtype WitnessInputPlonk = WitnessInputPlonk (Map.Map Integer F)
+newtype WitnessInputPlonk = WitnessInputPlonk (Map.Map Natural F)
 -- TODO (Issue #25): make a proper implementation of Show
 instance Show WitnessInputPlonk where
     show _ = "WitnessInput"
@@ -343,3 +344,4 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
 
             p1 = pairing (xi `mul` proof1 + (u * xi * omega) `mul` proof2 + f - e) h0
             p2 = pairing (proof1 + u `mul` proof2) h1
+

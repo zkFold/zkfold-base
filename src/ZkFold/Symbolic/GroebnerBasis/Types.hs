@@ -7,25 +7,27 @@ module ZkFold.Symbolic.GroebnerBasis.Types (
     polynomial
     ) where
 
-import           Data.List                         (sortBy)
-import           Data.Map                          (Map)
-import           Prelude                           hiding (Num(..), (!!), length, replicate)
+import           Data.List                                    (sortBy)
+import           Data.Map                                     (Map)
+import           Numeric.Natural                              (Natural)
+import           Prelude                                      hiding (Num (..), length, replicate, (!!))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field   (Zp)
+import           ZkFold.Base.Algebra.Basic.Field              (Zp)
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Types
 
-type Variable p = Var (Zp p) Integer
+type Variable p = Var (Zp p) Natural
 
-variable :: Integer -> Variable p
+variable :: Natural -> Variable p
 variable = Free
 
-type Monomial p = Monom (Zp p) Integer
+type Monomial p = Monom (Zp p) Natural
 
-monomial :: Zp p -> Map Integer (Variable p) -> Monomial p
+monomial :: Zp p -> Map Natural (Variable p) -> Monomial p
 monomial = M
 
-type Polynomial p = Polynom (Zp p) Integer
+type Polynomial p = Polynom (Zp p) Natural
 
 polynomial :: Prime p => [Monomial p] -> Polynomial p
 polynomial = P . sortBy (flip compare) . filter (not . zeroM)
+
