@@ -160,7 +160,7 @@ instance BinaryExpansion Integer where
 --------------------------------------------------------------------------------
 
 instance AdditiveSemigroup Bool where
-    (+) = (||)
+    (+) = (/=)
 
 instance AdditiveMonoid Bool where
     zero = False
