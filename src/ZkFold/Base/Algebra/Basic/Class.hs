@@ -3,13 +3,14 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
-import           Data.Bifunctor (first)
-import           Data.Bool      (bool)
-import           Prelude        hiding (Num(..), length, negate, product, replicate, sum, (/), (^))
-import qualified Prelude        as Haskell
-import           System.Random  (RandomGen, Random (..), mkStdGen)
+import           Data.Bifunctor  (first)
+import           Data.Bool       (bool)
+import           Numeric.Natural (Natural)
+import           Prelude         hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
+import qualified Prelude         as Haskell
+import           System.Random   (Random (..), RandomGen, mkStdGen)
 
-import           ZkFold.Prelude (replicate, length)
+import           ZkFold.Prelude  (length, replicate)
 
 infixl 7 *, /
 infixl 6 +, -
@@ -59,9 +60,9 @@ class FromConstant a b where
 instance FromConstant a a where
     fromConstant = id
 
-type Semiring a = (AdditiveMonoid a, MultiplicativeMonoid a)
+class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semiring a
 
-class (AdditiveGroup a, MultiplicativeMonoid a, FromConstant Integer a) => Ring a
+class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
 
 -- NOTE: by convention, division by zero returns zero.
 type Field a = (Ring a, MultiplicativeGroup a)
@@ -138,6 +139,30 @@ rootOfUnity l
 
 --------------------------------------------------------------------------------
 
+instance AdditiveSemigroup Natural where
+    (+) = (Haskell.+)
+
+instance AdditiveMonoid Natural where
+    zero = 0
+
+instance AdditiveGroup Natural where
+    negate = Haskell.negate
+    (-) = (Haskell.-)
+
+instance MultiplicativeSemigroup Natural where
+    (*) = (Haskell.*)
+
+instance MultiplicativeMonoid Natural where
+    one = 1
+
+instance Semiring Natural
+
+instance BinaryExpansion Natural where
+    binaryExpansion 0 = []
+    binaryExpansion x = (x `mod` 2) : binaryExpansion (x `div` 2)
+
+--------------------------------------------------------------------------------
+
 instance AdditiveSemigroup Integer where
     (+) = (Haskell.+)
 
@@ -152,6 +177,11 @@ instance MultiplicativeSemigroup Integer where
 
 instance MultiplicativeMonoid Integer where
     one = 1
+
+instance FromConstant Natural Integer where
+    fromConstant = Haskell.fromIntegral
+
+instance Semiring Integer
 
 instance Ring Integer
 
@@ -181,8 +211,13 @@ instance MultiplicativeMonoid Bool where
 instance MultiplicativeGroup Bool where
     invert = id
 
+instance FromConstant Natural Bool where
+    fromConstant = (/= 0)
+
 instance FromConstant Integer Bool where
     fromConstant = (/= 0)
+
+instance Semiring Bool
 
 instance Ring Bool
 
@@ -216,6 +251,8 @@ instance MultiplicativeGroup a => MultiplicativeGroup [a] where
 instance FromConstant b a => FromConstant b [a] where
     fromConstant = repeat . fromConstant
 
+instance Semiring a => Semiring [a]
+
 instance Ring a => Ring [a]
 
 --------------------------------------------------------------------------------
@@ -240,5 +277,7 @@ instance MultiplicativeGroup a => MultiplicativeGroup (p -> a) where
 
 instance FromConstant b a => FromConstant b (p -> a) where
     fromConstant = const . fromConstant
+
+instance Semiring a => Semiring (p -> a)
 
 instance Ring a => Ring (p -> a)

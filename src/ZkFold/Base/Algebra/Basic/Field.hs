@@ -10,11 +10,12 @@ module ZkFold.Base.Algebra.Basic.Field (
     Ext3(..)
     ) where
 
-import           Data.Aeson                        (ToJSON (..), FromJSON (..))
-import           Prelude                           hiding (Num(..), Fractional(..), length, (^))
-import qualified Prelude                           as Haskell
-import           System.Random                     (Random (..))
-import           Test.QuickCheck                   hiding (scale)
+import           Data.Aeson                                 (FromJSON (..), ToJSON (..))
+import           Numeric.Natural                            (Natural)
+import           Prelude                                    hiding (Fractional (..), Num (..), length, (^))
+import qualified Prelude                                    as Haskell
+import           System.Random                              (Random (..))
+import           Test.QuickCheck                            hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
@@ -67,6 +68,11 @@ instance Prime p => MultiplicativeGroup (Zp p) where
 
 instance Finite p => FromConstant Integer (Zp p) where
     fromConstant = toZp @p
+
+instance Finite p => FromConstant Natural (Zp p) where
+    fromConstant = toZp @p . fromConstant
+
+instance Finite p => Semiring (Zp p)
 
 instance Finite p => Ring (Zp p)
 
@@ -155,6 +161,8 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
 
+instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext2 f e)
+
 instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext2 f e)
 
 instance ToByteString f => ToByteString (Ext2 f e) where
@@ -200,6 +208,8 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) 
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero
+
+instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext3 f e)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext3 f e)
 

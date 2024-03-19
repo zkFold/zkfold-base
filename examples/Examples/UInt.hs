@@ -11,7 +11,7 @@ import           GHC.TypeNats                                (KnownNat, natVal)
 import           System.IO                                   (IO, putStrLn)
 import           Text.Show                                   (show)
 
-import           ZkFold.Base.Algebra.Basic.Class             (AdditiveSemigroup (..), MultiplicativeSemigroup (..), Semiring)
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
@@ -23,7 +23,9 @@ exampleUIntAdd = makeExample @n "+" "add" (+)
 exampleUIntMul :: forall n . KnownNat n => IO ()
 exampleUIntMul = makeExample @n "*" "mul" (*)
 
-makeExample :: forall n . KnownNat n => String -> String -> (forall a . Semiring (UInt n a) => UInt n a -> UInt n a -> UInt n a) -> IO ()
+makeExample ::
+    forall n . KnownNat n => String -> String ->
+    (forall a . (AdditiveMonoid (UInt n a), MultiplicativeMonoid (UInt n a)) => UInt n a -> UInt n a -> UInt n a) -> IO ()
 makeExample shortName name op = do
     let n = show $ natVal (Proxy @n)
     putStrLn $ "\nExample: (" ++ shortName ++ ") operation on UInt" ++ n

@@ -178,6 +178,8 @@ instance Ord i => MultiplicativeGroup (Sources a i) where
 instance Ord i => FromConstant c (Sources a i) where
   fromConstant _ = mempty
 
+instance Ord i => Semiring (Sources a i)
+
 instance Ord i => Ring (Sources a i)
 
 instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where

@@ -72,8 +72,10 @@ instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) 
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => MultiplicativeMonoid (P c i j m p) where
     one = P [(one, M empty)]
 
-instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => FromConstant Integer (P c i j m p) where
+instance forall c c' i j m p . (FromConstant c' c, m ~ Map i j, p ~ [(c, M i j m)]) => FromConstant c' (P c i j m p) where
     fromConstant x = P [(fromConstant x, M empty)]
+
+instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Semiring (P c i j m p)
 
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Ring (P c i j m p)
 
