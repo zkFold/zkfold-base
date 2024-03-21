@@ -139,8 +139,11 @@ instance Arithmetic a => Arbitrary (ArithmeticCircuit a) where
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Haskell.Show a) => Haskell.Show (ArithmeticCircuit a) where
-    show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r) ++ ", acInput = "
-        ++ show (acInput r) ++ ", acOutput = " ++ show (acOutput r) ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
+    show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r)
+        ++ ", acInput = " ++ show (acInput r)
+        ++ ", acWitness = " ++ show (acWitness r)
+        ++ ", acOutput = " ++ show (acOutput r)
+        ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
 -- TODO: add witness generation info to the JSON object
 instance ToJSON a => ToJSON (ArithmeticCircuit a) where
@@ -148,6 +151,7 @@ instance ToJSON a => ToJSON (ArithmeticCircuit a) where
         [
             "system" .= acSystem r,
             "input"  .= acInput r,
+            "witness" .= acWitness r,
             "output" .= acOutput r,
             "order"  .= acVarOrder r
         ]
@@ -157,7 +161,7 @@ instance FromJSON a => FromJSON (ArithmeticCircuit a) where
     parseJSON = withObject "ArithmeticCircuit" $ \v -> ArithmeticCircuit
         <$> v .: "system"
         <*> v .: "input"
-        <*> pure empty
+        <*> v .: "witness"
         <*> v .: "output"
         <*> v .: "order"
         <*> pure (mkStdGen 0)
