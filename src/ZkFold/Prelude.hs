@@ -1,5 +1,6 @@
 module ZkFold.Prelude where
 
+import           GHC.Stack
 import           Data.Aeson           (ToJSON, encode, FromJSON, decode)
 import           Data.ByteString.Lazy (writeFile, readFile)
 import           Data.List            (genericIndex)
@@ -47,10 +48,10 @@ elemIndex x = go 0
 (!!) :: [a] -> Integer -> a
 (!!) = genericIndex
 
-(!) :: Ord k => Map k a -> k -> a
+(!) :: (HasCallStack, Show k, Show a, Ord k) => Map k a -> k -> a
 (!) m k = case lookup k m of
     Just x  -> x
-    Nothing -> error "ZkFold.Prelude.!: key not found"
+    Nothing -> error $ "Key <" ++ show k ++ "> not found in: " ++ show m
 
 writeFileJSON :: ToJSON a => FilePath -> a -> IO ()
 writeFileJSON file = writeFile file . encode
