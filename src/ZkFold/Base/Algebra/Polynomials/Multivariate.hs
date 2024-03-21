@@ -20,6 +20,7 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate (
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Map                                                  (Map, keys, singleton, toList)
 import           Data.Maybe                                                (fromJust)
+import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Num (..), length, product, replicate, sum, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -30,10 +31,10 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Set
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
 
 -- | Most general type for a multivariate monomial
-type SomeMonomial = M Integer Integer (Map Integer Integer)
+type SomeMonomial = M Natural Natural (Map Natural Natural)
 
 -- | Most general type for a multivariate polynomial
-type SomePolynomial c = P c Integer Integer (Map Integer Integer) [(c, M Integer Integer (Map Integer Integer))]
+type SomePolynomial c = P c Natural Natural (Map Natural Natural) [(c, M Natural Natural (Map Natural Natural))]
 
 -- | Monomial constructor
 monomial :: Monomial i j => Map i j -> M i j (Map i j)

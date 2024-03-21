@@ -1,15 +1,16 @@
 module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
 import           Data.Kind                                       (Type)
-import           Data.Zip                                        (Zip(..))
-import           Prelude                                         hiding (Num (..), (^), (!!), zipWith)
+import           Data.Zip                                        (Zip (..))
+import           Numeric.Natural                                 (Natural)
+import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                (N1)
 import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, var)
 import           ZkFold.Base.Data.Vector                         (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
 data ProtostarPermutation (n :: Type)
@@ -26,7 +27,7 @@ instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
     type Dimension (ProtostarPermutation n)         = n
     type Degree (ProtostarPermutation n)            = N1
 
-    rounds :: ProtostarPermutation n -> Integer
+    rounds :: ProtostarPermutation n -> Natural
     rounds _ = 1
 
     prover :: ProtostarPermutation n
@@ -38,7 +39,7 @@ instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
 
     verifier' :: ProtostarPermutation n
               -> Input f (ProtostarPermutation n)
-              -> SpecialSoundTranscript Integer (ProtostarPermutation n)
+              -> SpecialSoundTranscript Natural (ProtostarPermutation n)
               -> Vector (Dimension (ProtostarPermutation n)) (SomePolynomial f)
     verifier' _ sigma [(w, _)] = zipWith (-) (applyPermutation sigma wX) wX
       where wX = fmap var w
@@ -51,3 +52,4 @@ instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
              -> Bool
     verifier _ sigma [(w, _)] = applyPermutation sigma w == w
     verifier _ _     _        = error "Invalid transcript"
+

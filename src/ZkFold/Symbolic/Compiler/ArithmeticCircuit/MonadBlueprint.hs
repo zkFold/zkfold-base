@@ -18,7 +18,8 @@ import           Data.Functor                                        (($>))
 import           Data.Map                                            ((!))
 import           Data.Set                                            (Set)
 import qualified Data.Set                                            as Set
-import           Prelude                                             hiding (Bool (..), Eq (..), replicate, (*), (-))
+import           Numeric.Natural                                     (Natural)
+import           Prelude                                             hiding (Bool (..), Eq (..), replicate, (*), (+), (-))
 import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -104,7 +105,7 @@ class Monad m => MonadBlueprint i a m | m -> i, m -> a where
     newAssigned :: ClosedPoly i a -> m i
     newAssigned p = newConstrained (\x i -> p x - x i) p
 
-instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) where
+instance Arithmetic a => MonadBlueprint Natural a (State (ArithmeticCircuit a)) where
     input = acOutput <$> I.input
 
     output i = gets (\r -> r { acOutput = i })
@@ -112,11 +113,15 @@ instance Arithmetic a => MonadBlueprint Integer a (State (ArithmeticCircuit a)) 
     runCircuit r = modify (<> r) $> acOutput r
 
     newConstrained
-        :: NewConstraint Integer a
-        -> Witness Integer a
-        -> State (ArithmeticCircuit a) Integer
+        :: NewConstraint Natural a
+        -> Witness Natural a
+        -> State (ArithmeticCircuit a) Natural
     newConstrained new witness = do
-        let s = sources witness `Set.difference` sources (`new` (-1))
+        let ws = sources witness
+            -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
+            x = maximum (Set.mapMonotonic (+1) ws <> Set.singleton 0)
+            -- | `s` is meant to be a set of variables used in a witness not present in a constraint.
+            s = ws `Set.difference` sources (`new` x)
         i <- addVariable =<< newVariableWithSource (Set.toList s) (new var)
         constraint (`new` i)
         assignment (\m -> getSelf $ witness (Self . (m !)))
@@ -177,6 +182,8 @@ instance Ord i => MultiplicativeGroup (Sources a i) where
 
 instance Ord i => FromConstant c (Sources a i) where
   fromConstant _ = mempty
+
+instance Ord i => Semiring (Sources a i)
 
 instance Ord i => Ring (Sources a i)
 

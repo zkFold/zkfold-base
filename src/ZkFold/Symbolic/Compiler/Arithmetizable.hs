@@ -11,7 +11,8 @@ module ZkFold.Symbolic.Compiler.Arithmetizable (
     ) where
 
 import           Data.Typeable                                             (Typeable)
-import           Prelude                                                   hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
+import           Numeric.Natural                                           (Natural)
+import           Prelude                                                   hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector
@@ -30,7 +31,7 @@ class Arithmetic a => Arithmetizable a x where
     restore :: [ArithmeticCircuit a] -> x
 
     -- | Returns the number of finite field elements needed to desscribe `x`.
-    typeSize :: Integer
+    typeSize :: Natural
 
 -- A wrapper for `Arithmetizable` types.
 data SomeArithmetizable a where

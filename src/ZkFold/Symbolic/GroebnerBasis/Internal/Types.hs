@@ -1,11 +1,12 @@
 module ZkFold.Symbolic.GroebnerBasis.Internal.Types where
 
-import           Data.List                         (intercalate, foldl')
-import           Data.Map                          (Map, toList, empty, unionWith, keys, isSubmapOfBy, intersectionWith, differenceWith)
-import qualified Data.Map                          as Map
-import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
+import           Data.List                       (foldl', intercalate)
+import           Data.Map                        (Map, differenceWith, empty, intersectionWith, isSubmapOfBy, keys, toList, unionWith)
+import qualified Data.Map                        as Map
+import           Prelude                         hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
 
-import           ZkFold.Base.Algebra.Basic.Class   hiding (scale)
+import           ZkFold.Base.Algebra.Basic.Class hiding (scale)
+import Numeric.Natural (Natural)
 
 data VarType = VarTypeFree | VarTypeBound | VarTypeBoolean deriving (Eq)
 instance Show VarType where
@@ -13,7 +14,7 @@ instance Show VarType where
     show VarTypeBound   = "Bound"
     show VarTypeBoolean = "Boolean"
 
-data Var c a = Free a | Bound a Integer | Boolean Integer
+data Var c a = Free a | Bound a Natural | Boolean Natural
 instance (Show a, MultiplicativeMonoid a) => Show (Var c a) where
     show = show . getPower
 instance (Eq a, MultiplicativeMonoid a) => Eq (Var c a) where
@@ -22,8 +23,8 @@ instance (Ord a, MultiplicativeMonoid a) => Ord (Var c a) where
     compare vx vy = compare (getPower vx) (getPower vy)
 
 getVarType :: Var c a -> VarType
-getVarType (Free _)      = VarTypeFree
-getVarType (Bound _ _)   = VarTypeBound
+getVarType (Free _)    = VarTypeFree
+getVarType (Bound _ _) = VarTypeBound
 getVarType (Boolean _) = VarTypeBoolean
 
 getPower :: MultiplicativeMonoid a => Var c a -> a
@@ -36,12 +37,12 @@ setPower j (Bound _ i) = Bound j i
 setPower _ (Boolean i) = Boolean i
 setPower j (Free _)    = Free j
 
-getPoly :: Var c a -> Integer
+getPoly :: Var c a -> Natural
 getPoly (Bound _ p) = p
 getPoly (Boolean p) = p
 getPoly _           = error "getPoly: VarType mismatch"
 
-data Monom c a = M c (Map Integer (Var c a)) deriving (Eq)
+data Monom c a = M c (Map Natural (Var c a)) deriving (Eq)
 newtype Polynom c a = P [Monom c a] deriving (Eq)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
@@ -49,7 +50,7 @@ instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, Multiplica
     show (M c as) = (if c == one then "" else show c) ++
                     intercalate "∙" (map showOne $ toList as)
         where
-            showOne :: (Integer, Var c a) -> String
+            showOne :: (Natural, Var c a) -> String
             showOne (i, p) = "x" ++ show i ++ (if getPower p == one then "" else "^" ++ show p)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
@@ -92,7 +93,7 @@ instance (Eq c, FiniteField c, Ord a, AdditiveGroup a, MultiplicativeMonoid a) =
 lt :: Polynom c a -> Monom c a
 lt (P as) = head as
 
-lv :: Polynom c a -> Integer
+lv :: Polynom c a -> Natural
 lv p
     | null as   = 0
     | otherwise = head $ keys as
@@ -170,3 +171,4 @@ lcmM (M cl al) (M cr ar) = M (cl*cr) (unionWith max al ar)
 
 gcdM :: (FiniteField c, Ord a, MultiplicativeMonoid a) => Monom c a -> Monom c a -> Monom c a
 gcdM (M cl al) (M cr ar) = M (cl*cr) (intersectionWith min al ar)
+

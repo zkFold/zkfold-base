@@ -3,11 +3,12 @@
 
 module ZkFold.Base.Algebra.Polynomials.Univariate where
 
-import           Prelude                           hiding (Num(..), (/), (^), sum, product, length, replicate, take, drop)
-import           Test.QuickCheck                   (Arbitrary(..))
+import           Numeric.Natural                 (Natural)
+import           Prelude                         hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
+import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Prelude                    (replicate, length, take, drop, zipWithDefault)
+import           ZkFold.Prelude                  (drop, length, replicate, take, zipWithDefault)
 
 -------------------------------- Arbitrary degree polynomials --------------------------------
 
@@ -43,9 +44,10 @@ lt :: Poly c -> c
 lt (P cs) = last cs
 
 deg :: Poly c -> Integer
-deg (P cs) = length cs - 1
+-- | Degree of zero polynomial is `-1`
+deg (P cs) = fromIntegral (length cs) - 1
 
-scaleP :: Ring c => c -> Integer -> Poly c -> Poly c
+scaleP :: Ring c => c -> Natural -> Poly c -> Poly c
 scaleP a n (P cs) = P $ replicate n zero ++ map (a *) cs
 
 qr :: (Field c, Eq c) => Poly c -> Poly c -> (Poly c, Poly c)
@@ -54,7 +56,8 @@ qr a b = go a b zero
         go x y q = if deg x < deg y then (q, x) else go x' y q'
             where
                 c = lt x / lt y
-                n = deg x - deg y
+                n = fromIntegral (deg x - deg y)
+                -- ^ if `deg x < deg y`, `n` is not evaluated, so this would not error out
                 x' = x - scaleP c n y
                 q' = q + scaleP c n one
 
@@ -134,7 +137,7 @@ polyVecZero = poly2vec $ scaleP one (order @size) one - one
 
 -- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
 polyVecLagrange :: forall c size size' . (Field c, Eq c, Finite size, Finite size') =>
-    Integer -> c -> PolyVec c size'
+    Natural -> c -> PolyVec c size'
 polyVecLagrange i omega = scalePV (omega^i / fromConstant (order @size)) $ (polyVecZero @c @size @size' - one) / polyVecLinear (negate $ omega^i) one
 
 -- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
@@ -157,7 +160,7 @@ polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
 removeZeros :: (Ring c, Eq c) => Poly c -> Poly c
 removeZeros (P cs) = P $ reverse $ go $ reverse cs
     where
-        go [] = []
+        go []     = []
         go (x:xs) = if x == zero then go xs else x:xs
 
 addZeros :: forall c size . (Ring c, Finite size) => [c] -> [c]

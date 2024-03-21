@@ -8,17 +8,17 @@ module Tests.Univariate (specUnivariate) where
 
 import           Data.Bool                                  (bool)
 import           Data.Data                                  (typeOf)
-import           Data.List                                  ((\\), sort)
+import           Data.List                                  (sort, (\\))
+import           Numeric.Natural                            (Natural)
+import           Prelude                                    hiding (Fractional (..), Num (..), drop, length, take, (!!), (^))
 import           Prelude                                    (abs)
-import           Prelude                                    hiding ((^), Num(..), Fractional(..), (!!), length, take, drop)
 import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
-
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Protocol.ARK.Plonk             (PlonkBS, PlonkMaxPolyDegreeBS, F)
-import           ZkFold.Prelude                             (take, length)
+import           ZkFold.Base.Protocol.ARK.Plonk             (F, PlonkBS, PlonkMaxPolyDegreeBS)
+import           ZkFold.Prelude                             (length, take)
 
 -- TODO (Issue #22): remove dependencies from KZG and Plonk
 -- TODO (Issue #22): make all tests polymorphic in the polynomial type
@@ -36,23 +36,23 @@ propCastPolyVec cs =
     in length p' == order @size'
 
 propPolyVecDivision :: forall c size . (Field c, Finite size, Eq c) => PolyVec c size -> PolyVec c size -> Bool
-propPolyVecDivision p q = 
+propPolyVecDivision p q =
     let d1 = deg $ vec2poly p
         d2 = deg $ vec2poly q
-    in (p * q) / q == p || (d1 + d2 > order @size - 1)
+    in (p * q) / q == p || (d1 + d2 > fromIntegral (order @size) - 1)
 
-propPolyVecZero :: Integer -> Bool
+propPolyVecZero :: Natural -> Bool
 propPolyVecZero i =
     let omega = rootOfUnity 5 :: F
         p = polyVecZero @F @PlonkBS @PlonkMaxPolyDegreeBS
         x = omega^abs i
     in p `evalPolyVec` x == zero
 
-propPolyVecLagrange :: Integer -> Bool
+propPolyVecLagrange :: Natural -> Bool
 propPolyVecLagrange i =
     let omega = rootOfUnity 5 :: F
         p = polyVecLagrange @F @PlonkBS @PlonkMaxPolyDegreeBS i omega
-    in p `evalPolyVec` (omega^i) == one && 
+    in p `evalPolyVec` (omega^i) == one &&
         all ((== zero) . (p `evalPolyVec`) . (omega^)) ([1 .. order @PlonkBS] \\ [i])
 
 propPolyVecGrandProduct :: (Field c, Finite size, Ord c) => PolyVec c size -> c -> c -> Bool
@@ -106,3 +106,4 @@ specUnivariate = hspec $ do
             describe "polyVecGrandProduct" $ do
                 it "should satisfy the definition" $ do
                     property $ propPolyVecGrandProduct @F @PlonkBS
+

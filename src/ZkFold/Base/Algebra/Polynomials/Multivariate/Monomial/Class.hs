@@ -10,7 +10,7 @@ import           ZkFold.Prelude                    (replicate)
 
 type Variable i = Ord i
 
-type Monomial i j = (Variable i, Eq j, Ord j, Ring j)
+type Monomial i j = (Variable i, Ord j, Semiring j)
 
 ----------------------------------- FromMonomial -----------------------------------
 
@@ -33,5 +33,5 @@ instance Monomial i j => ToMonomial i j (Map i j) where
 
 instance (Monomial i j, Integral j, Finite d) => ToMonomial i j (Vector d (i, Bool)) where
     toMonomial m =
-        let v = foldl (\acc (i, j) -> acc ++ replicate (toInteger j) (i, True)) [] $ Map.toList m
+        let v = foldl (\acc (i, j) -> acc ++ replicate (fromIntegral j) (i, True)) [] $ Map.toList m
         in toVector v

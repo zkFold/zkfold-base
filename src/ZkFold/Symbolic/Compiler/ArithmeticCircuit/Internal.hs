@@ -20,32 +20,33 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
 
 import           Control.Monad.State                          (MonadState (..), State, modify)
 import           Data.List                                    (nub)
-import           Data.Map                                     hiding (take, drop, splitAt, foldl, null, map, foldr)
+import           Data.Map                                     hiding (drop, foldl, foldr, map, null, splitAt, take)
 import           GHC.Generics
+import           Numeric.Natural                              (Natural)
 import           Optics
-import           Prelude                                      hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
+import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
 import qualified Prelude                                      as Haskell
-import           System.Random                                (Random (..), StdGen, mkStdGen, uniform)
+import           System.Random                                (StdGen, mkStdGen, uniform, uniformR)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
-import           ZkFold.Base.Algebra.Basic.Scale              (BinScale(..))
+import           ZkFold.Base.Algebra.Basic.Scale              (BinScale (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, evalPolynomial, var)
-import           ZkFold.Prelude                               (length, drop)
+import           ZkFold.Prelude                               (drop, length)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a = ArithmeticCircuit
     {
-        acSystem   :: Map Integer (Constraint a),
+        acSystem   :: Map Natural (Constraint a),
         -- ^ The system of polynomial constraints
-        acInput    :: [Integer],
+        acInput    :: [Natural],
         -- ^ The input variables
-        acWitness  :: Map Integer a -> Map Integer a,
+        acWitness  :: Map Natural a -> Map Natural a,
         -- ^ The witness generation function
-        acOutput   :: Integer,
+        acOutput   :: Natural,
         -- ^ The output variable
-        acVarOrder :: Map (Integer, Integer) Integer,
+        acVarOrder :: Map (Natural, Natural) Natural,
         -- ^ The order of variable assignments
         acRNG      :: StdGen
     } deriving Generic
@@ -85,20 +86,20 @@ type VarField = BLS12_381_Scalar
 type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a)
 
 -- TODO: Remove the hardcoded constant.
-toVar :: forall a . Arithmetic a => [Integer] -> Constraint a -> Integer
+toVar :: forall a . Arithmetic a => [Natural] -> Constraint a -> Natural
 toVar srcs c = fromBinary $ castBits $ binaryExpansion ex
     where
         r  = toZp 903489679376934896793395274328947923579382759823 :: Zp VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: Zp VarField
-        v  = BinScale @a . (+ r) . toZp
+        v  = BinScale @a . (+ r) . fromConstant
         x  = g ^ runBinScale (v `evalPolynomial` c)
         ex = foldr (\p y -> x ^ p + y) x srcs
 
-newVariableWithSource :: Arithmetic a => [Integer] -> (Integer -> Constraint a) -> State (ArithmeticCircuit a) Integer
+newVariableWithSource :: Arithmetic a => [Natural] -> (Natural -> Constraint a) -> State (ArithmeticCircuit a) Natural
 newVariableWithSource srcs con = toVar srcs . con . fst <$> do
-    zoom #acRNG $ get >>= traverse put . randomR (0, order @VarField - 1)
+    zoom #acRNG $ get >>= traverse put . uniformR (0, order @VarField - 1)
 
-addVariable :: Integer -> State (ArithmeticCircuit a) Integer
+addVariable :: Natural -> State (ArithmeticCircuit a) Natural
 addVariable x = do
     zoom #acOutput $ put x
     zoom #acVarOrder . modify
@@ -122,7 +123,7 @@ forceZero = zoom #acOutput get >>= constraint . var
 
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
-assignment :: (Map Integer a -> a) -> State (ArithmeticCircuit a) ()
+assignment :: (Map Natural a -> a) -> State (ArithmeticCircuit a) ()
 assignment f = do
     i <- insert <$> zoom #acOutput get
     zoom #acWitness . modify $ (.) (\m -> i (f m) m)
@@ -138,7 +139,7 @@ input = do
   get
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: ArithmeticCircuit a -> Map Integer a -> a
+eval :: ArithmeticCircuit a -> Map Natural a -> a
 eval ctx i = acWitness ctx i ! acOutput ctx
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.

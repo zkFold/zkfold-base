@@ -4,18 +4,19 @@ module ZkFold.Base.Protocol.ARK.Protostar.Lookup where
 
 import           Data.Kind                                       (Type)
 import           Data.Map                                        (fromList, mapWithKey)
-import           Data.These                                      (These(..))
+import           Data.These                                      (These (..))
 import           Data.Zip
-import           Prelude                                         hiding (Num (..), (/), (^), (!!), sum, zip, repeat, zipWith)
-import           Type.Data.Num.Unary                             ((:+:), Succ)
+import           Numeric.Natural                                 (Natural)
+import           Prelude                                         hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/), (^))
+import           Type.Data.Num.Unary                             (Succ, (:+:))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                (N2)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial)
-import           ZkFold.Base.Data.Sparse.Vector                  (SVector(..))
+import           ZkFold.Base.Data.Sparse.Vector                  (SVector (..))
 import           ZkFold.Base.Data.Vector                         (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
 data ProtostarLookup (l :: Type) (sizeT :: Type)
@@ -34,7 +35,7 @@ instance (Arithmetic f, Finite sizeT) => SpecialSoundProtocol f (ProtostarLookup
     type Dimension (ProtostarLookup l sizeT)         = Succ (l :+: sizeT)
     type Degree (ProtostarLookup l sizeT)            = N2
 
-    rounds :: ProtostarLookup l sizeT -> Integer
+    rounds :: ProtostarLookup l sizeT -> Natural
     rounds _ = 2
 
     prover :: ProtostarLookup l sizeT
@@ -54,7 +55,7 @@ instance (Arithmetic f, Finite sizeT) => SpecialSoundProtocol f (ProtostarLookup
     -- TODO: implement this
     verifier' :: ProtostarLookup l sizeT
               -> Input f (ProtostarLookup l sizeT)
-              -> SpecialSoundTranscript Integer (ProtostarLookup l sizeT)
+              -> SpecialSoundTranscript Natural (ProtostarLookup l sizeT)
               -> Vector (Dimension (ProtostarLookup l sizeT)) (SomePolynomial f)
     verifier' = undefined
 
@@ -73,3 +74,4 @@ instance (Arithmetic f, Finite sizeT) => SpecialSoundProtocol f (ProtostarLookup
             c3 = all (== one) $ alignWith f g' m
         in c1 && c2 && c3
     verifier _ _ _ = error "Invalid transcript"
+

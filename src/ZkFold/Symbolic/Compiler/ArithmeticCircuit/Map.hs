@@ -5,33 +5,34 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         mapVarWitness
     ) where
 
-import           Data.Bifunctor                                        (Bifunctor(..))
-import           Data.Containers.ListUtils                             (nubOrd)
-import           Data.List                                             (sort)
-import           Data.Map                                              hiding (take, drop, splitAt, foldl, null, map, foldr)
-import           Prelude                                               hiding (Num (..), (^), (!!), sum, take, drop, splitAt, product, length)
+import           Data.Bifunctor                                      (Bifunctor (..))
+import           Data.Containers.ListUtils                           (nubOrd)
+import           Data.List                                           (sort)
+import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt, take)
+import           Numeric.Natural                                     (Natural)
+import           Prelude                                             hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Prelude                                        (elemIndex)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal   (Arithmetic, ArithmeticCircuit(..), ConstraintMonomial, Constraint)
+import           ZkFold.Prelude                                      (elemIndex)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint, ConstraintMonomial)
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
-mapVar :: [Integer] -> Integer -> Integer
+mapVar :: [Natural] -> Natural -> Natural
 mapVar vars x = case x `elemIndex` vars of
     Just i  -> i
     Nothing -> error "mapVar: something went wrong"
 
-mapVarMonomial :: [Integer] -> ConstraintMonomial -> ConstraintMonomial
+mapVarMonomial :: [Natural] -> ConstraintMonomial -> ConstraintMonomial
 mapVarMonomial vars (M as) = M $ mapKeys (mapVar vars) as
 
-mapVarPolynomial :: [Integer] -> Constraint c -> Constraint c
+mapVarPolynomial :: [Natural] -> Constraint c -> Constraint c
 mapVarPolynomial vars (P ms) = P $ map (second $ mapVarMonomial vars) ms
 
-mapVarPolynomials :: [Integer] -> [Constraint c] -> [Constraint c]
+mapVarPolynomials :: [Natural] -> [Constraint c] -> [Constraint c]
 mapVarPolynomials vars = map (mapVarPolynomial vars)
 
-mapVarWitness :: [Integer] -> (Map Integer a -> Map Integer a)
+mapVarWitness :: [Natural] -> (Map Natural a -> Map Natural a)
 mapVarWitness vars = mapKeys (mapVar vars)
 
 mapVarArithmeticCircuit :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
@@ -44,3 +45,4 @@ mapVarArithmeticCircuit ac =
         acWitness = mapVarWitness vars . acWitness ac,
         acOutput  = mapVar vars $ acOutput ac
     }
+

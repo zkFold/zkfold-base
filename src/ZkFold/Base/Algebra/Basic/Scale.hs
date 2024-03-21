@@ -11,6 +11,8 @@ newtype BinScale b a = BinScale { runBinScale :: a }
 
 deriving newtype instance FromConstant c a => FromConstant c (BinScale b a)
 
+deriving newtype instance Semiring a => Semiring (BinScale b a)
+
 deriving newtype instance Ring a => Ring (BinScale b a)
 
 instance (AdditiveMonoid a, Eq b, BinaryExpansion b) => Scale (BinScale b a) b where
@@ -28,6 +30,8 @@ newtype Self a = Self { getSelf :: a }
                       BinaryExpansion, Finite)
 
 deriving newtype instance FromConstant c a => FromConstant c (Self a)
+
+deriving newtype instance Semiring a => Semiring (Self a)
 
 deriving newtype instance Ring a => Ring (Self a)
 

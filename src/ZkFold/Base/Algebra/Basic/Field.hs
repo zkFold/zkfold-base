@@ -10,11 +10,12 @@ module ZkFold.Base.Algebra.Basic.Field (
     Ext3(..)
     ) where
 
-import           Data.Aeson                        (ToJSON (..), FromJSON (..))
-import           Prelude                           hiding (Num(..), Fractional(..), length, (^))
-import qualified Prelude                           as Haskell
-import           System.Random                     (Random (..))
-import           Test.QuickCheck                   hiding (scale)
+import           Data.Aeson                                 (FromJSON (..), ToJSON (..))
+import           Numeric.Natural                            (Natural)
+import           Prelude                                    hiding (Fractional (..), Num (..), length, (^))
+import qualified Prelude                                    as Haskell
+import           System.Random                              (Random (..))
+import           Test.QuickCheck                            hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
@@ -24,11 +25,14 @@ import           ZkFold.Base.Data.ByteString
 
 newtype Zp p = Zp Integer
 
-fromZp :: Zp p -> Integer
-fromZp (Zp a) = a
+fromZp :: Zp p -> Natural
+fromZp (Zp a) = fromIntegral a
+
+residue :: forall p . Finite p => Integer -> Integer
+residue = (`mod` fromIntegral (order @p))
 
 toZp :: forall p . Finite p => Integer -> Zp p
-toZp a = Zp $ a `mod` order @p
+toZp = Zp . residue @p
 
 instance Finite p => Finite (Zp p) where
     order = order @p
@@ -36,37 +40,43 @@ instance Finite p => Finite (Zp p) where
 instance Prime p => Prime (Zp p)
 
 instance Finite p => Eq (Zp p) where
-    Zp a == Zp b = (a - b) `mod` (order @(Zp p)) == 0
+    Zp a == Zp b = residue @p (a - b) == 0
 
 instance Finite p => Ord (Zp p) where
-    Zp a <= Zp b = (a `mod` (order @(Zp p))) <= (b `mod` (order @(Zp p)))
+    Zp a <= Zp b = residue @p a <= residue @p b
 
 instance Finite p => AdditiveSemigroup (Zp p) where
-    Zp a + Zp b = Zp $ (a + b) `mod` (order @(Zp p))
+    Zp a + Zp b = toZp (a + b)
 
 instance Finite p => AdditiveMonoid (Zp p) where
     zero = Zp 0
 
 instance Finite p => AdditiveGroup (Zp p) where
-    negate (Zp a) = Zp $ negate a `mod` (order @(Zp p))
-    Zp a - Zp b   = Zp $ (a - b) `mod` (order @(Zp p))
+    negate (Zp a) = toZp (negate a)
+    Zp a - Zp b   = toZp (a - b)
 
 instance Finite p => MultiplicativeSemigroup (Zp p) where
-    Zp a * Zp b = Zp $ (a * b) `mod` (order @(Zp p))
+    Zp a * Zp b = toZp (a * b)
 
 instance Finite p => MultiplicativeMonoid (Zp p) where
     one = Zp 1
 
 instance Prime p => MultiplicativeGroup (Zp p) where
-    invert (Zp a) = Zp $ snd (f (a, 1) (order @(Zp p), 0)) `mod` (order @(Zp p))
+    invert (Zp a) = toZp $ snd (f (a, 1) (p, 0))
       where
+        p = fromIntegral (order @(Zp p))
         f (x, y) (x', y')
             | x' == 0   = (x, y)
             | otherwise = f (x', y') (x - q * x', y - q * y')
             where q = x `div` x'
 
 instance Finite p => FromConstant Integer (Zp p) where
-    fromConstant = toZp @p
+    fromConstant = toZp
+
+instance Finite p => FromConstant Natural (Zp p) where
+    fromConstant = toZp . fromConstant
+
+instance Finite p => Semiring (Zp p)
 
 instance Finite p => Ring (Zp p)
 
@@ -74,7 +84,7 @@ instance Prime p => BinaryExpansion (Zp p) where
     binaryExpansion (Zp a) = map Zp $ binaryExpansion a
 
 instance Finite p => Haskell.Num (Zp p) where
-    fromInteger = toZp @p
+    fromInteger = toZp
     (+)         = (+)
     (-)         = (-)
     (*)         = (*)
@@ -103,7 +113,7 @@ instance FromByteString (Zp p) where
     fromByteString = fmap Zp . fromByteString
 
 instance Finite p => Arbitrary (Zp p) where
-    arbitrary = toZp <$> chooseInteger (0, order @(Zp p) - 1)
+    arbitrary = toZp <$> chooseInteger (0, fromIntegral (order @(Zp p)) - 1)
 
 instance Finite p => Random (Zp p) where
     randomR (Zp a, Zp b) g = (Zp r, g')
@@ -112,7 +122,7 @@ instance Finite p => Random (Zp p) where
 
     random g = (Zp r, g')
       where
-        (r, g') = randomR (0, order @(Zp p) - 1) g
+        (r, g') = randomR (0, fromIntegral (order @(Zp p)) - 1) g
 
 ----------------------------- Field Extensions --------------------------------
 
@@ -154,6 +164,8 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) 
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
+
+instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext2 f e)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext2 f e)
 
@@ -200,6 +212,8 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) 
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero
+
+instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext3 f e)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext3 f e)
 

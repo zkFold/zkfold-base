@@ -1,42 +1,44 @@
 module ZkFold.Prelude where
 
-import           Data.Aeson           (ToJSON, encode, FromJSON, decode)
-import           Data.ByteString.Lazy (writeFile, readFile)
+import           Data.Aeson           (FromJSON, ToJSON, decode, encode)
+import           Data.ByteString.Lazy (readFile, writeFile)
 import           Data.List            (genericIndex)
 import           Data.Map             (Map, lookup)
-import           Prelude              hiding ((!!), take, drop, lookup, replicate, writeFile, readFile)
+import           GHC.Num              (Natural, integerToNatural)
+import           Prelude              hiding (drop, lookup, readFile, replicate, take, writeFile, (!!))
+import           Test.QuickCheck      (Gen, chooseInteger)
 
-length :: Foldable t => t a -> Integer
+length :: Foldable t => t a -> Natural
 length = foldl (\c _ -> c + 1) 0
 
-take :: Integer -> [a] -> [a]
-take 0 _ = []
+take :: Natural -> [a] -> [a]
+take 0 _      = []
 take n (x:xs) = x : take (n - 1) xs
-take _ [] = error "ZkFold.Prelude.take: empty list"
+take _ []     = error "ZkFold.Prelude.take: empty list"
 
-drop :: Integer -> [a] -> [a]
-drop 0 xs = xs
+drop :: Natural -> [a] -> [a]
+drop 0 xs     = xs
 drop n (_:xs) = drop (n - 1) xs
-drop _ [] = error "ZkFold.Prelude.drop: empty list"
+drop _ []     = error "ZkFold.Prelude.drop: empty list"
 
-splitAt :: Integer -> [a] -> ([a], [a])
+splitAt :: Natural -> [a] -> ([a], [a])
 splitAt n xs = (take n xs, drop n xs)
 
-replicate :: Integer -> a -> [a]
+replicate :: Natural -> a -> [a]
 replicate n x
-    | n <= 0    = []
+    | n == 0    = []
     | otherwise = x : replicate (n - 1) x
 
-replicateA :: Applicative f => Integer -> f a -> f [a]
+replicateA :: Applicative f => Natural -> f a -> f [a]
 replicateA n fx = sequenceA (replicate n fx)
 
 zipWithDefault :: (a -> b -> c) -> a -> b -> [a] -> [b] -> [c]
-zipWithDefault _ _ _ [] [] = []
-zipWithDefault f x _ [] bs = map (f x) bs
-zipWithDefault f _ y as [] = map (`f` y) as
+zipWithDefault _ _ _ [] []         = []
+zipWithDefault f x _ [] bs         = map (f x) bs
+zipWithDefault f _ y as []         = map (`f` y) as
 zipWithDefault f x y (a:as) (b:bs) = f a b : zipWithDefault f x y as bs
 
-elemIndex :: Eq a => a -> [a] -> Maybe Integer
+elemIndex :: Eq a => a -> [a] -> Maybe Natural
 elemIndex x = go 0
     where
         go _ [] = Nothing
@@ -44,7 +46,7 @@ elemIndex x = go 0
             | x == y    = Just i
             | otherwise = go (i + 1) ys
 
-(!!) :: [a] -> Integer -> a
+(!!) :: [a] -> Natural -> a
 (!!) = genericIndex
 
 (!) :: Ord k => Map k a -> k -> a
@@ -64,3 +66,6 @@ readFileJSON file = do
 
 assert :: Show a => Bool -> a -> x -> x
 assert statement obj x = if statement then x else error $ show obj
+
+chooseNatural :: (Natural, Natural) -> Gen Natural
+chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (fromIntegral lo, fromIntegral hi)
