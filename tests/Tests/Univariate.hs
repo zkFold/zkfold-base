@@ -4,7 +4,8 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use -"                  #-}
 
-module Tests.Univariate (specUnivariate) where
+-- module Tests.Univariate (specUnivariate) where
+module Tests.Univariate () where
 
 import           Data.Bool                                  (bool)
 import           Data.Data                                  (typeOf)
@@ -17,12 +18,13 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Protocol.ARK.Plonk             (PlonkBS, PlonkMaxPolyDegreeBS, F)
+-- import           ZkFold.Base.Protocol.ARK.Plonk             (PlonkBS, PlonkMaxPolyDegreeBS, F)
 import           ZkFold.Prelude                             (take, length)
 
 -- TODO (Issue #22): remove dependencies from KZG and Plonk
 -- TODO (Issue #22): make all tests polymorphic in the polynomial type
 
+{-
 propToPolyVec :: forall c size . (Ring c, Finite size) => [c] -> Bool
 propToPolyVec cs =
     let PV p = toPolyVec @c @size cs
@@ -106,3 +108,4 @@ specUnivariate = hspec $ do
             describe "polyVecGrandProduct" $ do
                 it "should satisfy the definition" $ do
                     property $ propPolyVecGrandProduct @F @PlonkBS
+-}

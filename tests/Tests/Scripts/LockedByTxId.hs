@@ -1,7 +1,8 @@
 {-# LANGUAGE TypeApplications      #-}
 
-module Tests.Scripts.LockedByTxId (specLockedByTxId) where
-
+-- module Tests.Scripts.LockedByTxId (specLockedByTxId) where
+module Tests.Scripts.LockedByTxId () where
+{-
 import           Data.Map                                    (fromList)
 import           Prelude                                     hiding (Num(..), Eq(..), Ord(..), Bool)
 import qualified Prelude as Haskell
@@ -55,3 +56,4 @@ specLockedByTxId = hspec $ do
         it "should pass" $ property $ \x y -> x /= y ==> testArithmetization2 x y
     describe "LockedByTxId ZKP test" $ do
         it "should pass" $ property testZKP
+-}

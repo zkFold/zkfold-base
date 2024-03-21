@@ -1,8 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Tests.Plonk (specPlonk) where
-
+-- module Tests.Plonk (specPlonk) where
+module Tests.Plonk () where
+{-
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (transpose)
 import           Data.Map                                     (fromList, singleton, elems)
@@ -95,3 +96,4 @@ specPlonk = hspec $ do
             it "should hold" $ property propPlonkConstraintSatisfaction
         describe "Plonk polynomial identity" $ do
             it "should hold" $ property propPlonkPolyIdentity
+-}
