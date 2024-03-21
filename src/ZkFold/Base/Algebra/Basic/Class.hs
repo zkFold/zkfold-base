@@ -146,7 +146,9 @@ instance AdditiveMonoid Natural where
     zero = 0
 
 instance AdditiveGroup Natural where
+    -- | @negate x@ is defined only if $(x = 0$), so this is not a lawful instance.
     negate = Haskell.negate
+    -- | @x - y@ is defined only if $(x \ge y$), so this is not a lawful instance.
     (-) = (Haskell.-)
 
 instance MultiplicativeSemigroup Natural where
@@ -186,6 +188,7 @@ instance Semiring Integer
 instance Ring Integer
 
 instance BinaryExpansion Integer where
+    -- | @binaryExpansion x@ is defined only if $(x \ge 0$), so this is not a lawful instance.
     binaryExpansion = map fromConstant . binaryExpansion . naturalFromInteger
 
 --------------------------------------------------------------------------------

@@ -44,6 +44,7 @@ lt :: Poly c -> c
 lt (P cs) = last cs
 
 deg :: Poly c -> Integer
+-- | Degree of zero polynomial is `-1`
 deg (P cs) = fromIntegral (length cs) - 1
 
 scaleP :: Ring c => c -> Natural -> Poly c -> Poly c
@@ -56,6 +57,7 @@ qr a b = go a b zero
             where
                 c = lt x / lt y
                 n = fromIntegral (deg x - deg y)
+                -- ^ if `deg x < deg y`, `n` is not evaluated, so this would not error out
                 x' = x - scaleP c n y
                 q' = q + scaleP c n one
 

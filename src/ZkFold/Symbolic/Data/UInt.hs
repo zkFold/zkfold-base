@@ -58,16 +58,24 @@ toNatural (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
     where base = 2 ^ registerSize @p @n
 
 instance (Finite p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
+    -- | This operation is defined only if $(x + y < 2^n$), so this is not a
+    -- lawful instance.
     x + y = fromConstant $ toNatural x + toNatural y
 
 instance (Finite p, KnownNat n) => AdditiveMonoid (UInt n (Zp p)) where
     zero = fromConstant (0 :: Natural)
 
 instance (Finite p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
+    -- | This operation is defined only if $(x \ge y$), so this is not a lawful
+    -- instance.
     x - y = fromConstant $ toNatural x - toNatural y
+    -- | @negate x@ is defined only if $(x = 0$), so this is not a lawful
+    -- instance.
     negate = fromConstant . negate . toNatural
 
 instance (Finite p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
+    -- | This operation is defined only if $(x \cdot y < 2^n$), so this is not a
+    -- lawful instance.
     x * y = fromConstant $ toNatural x * toNatural y
 
 instance (Finite p, KnownNat n) => MultiplicativeMonoid (UInt n (Zp p)) where

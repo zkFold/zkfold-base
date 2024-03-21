@@ -118,8 +118,9 @@ instance Arithmetic a => MonadBlueprint Natural a (State (ArithmeticCircuit a)) 
         -> State (ArithmeticCircuit a) Natural
     newConstrained new witness = do
         let ws = sources witness
-            -- | We need a throwaway variable to feed into `new`
+            -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
             x = maximum (Set.mapMonotonic (+1) ws <> Set.singleton 0)
+            -- | `s` is meant to be a set of variables used in a witness not present in a constraint.
             s = ws `Set.difference` sources (`new` x)
         i <- addVariable =<< newVariableWithSource (Set.toList s) (new var)
         constraint (`new` i)
