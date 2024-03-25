@@ -3,12 +3,9 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
-import           Data.Bifunctor (first)
-import           Data.Bool      (bool)
 import           GHC.Natural    (Natural, naturalFromInteger)
 import           Prelude        hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
 import qualified Prelude        as Haskell
-import           System.Random  (RandomGen, mkStdGen, uniformR)
 
 import           ZkFold.Prelude (length, replicate)
 
@@ -64,8 +61,12 @@ class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semi
 
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
 
+data Characteristic = Infinite | Finite Natural
+
 -- NOTE: by convention, division by zero returns zero.
-type Field a = (Ring a, MultiplicativeGroup a)
+class (Ring a, MultiplicativeGroup a) => Field a where 
+    rootOfUnity :: Natural -> Maybe a
+    rootOfUnity = const Nothing
 
 class Finite a where
     order :: Natural
@@ -123,6 +124,7 @@ multiExp a = foldl (\x y -> x * (a ^ y)) one
 
 ------------------------------- Roots of unity ---------------------------------
 
+    {--
 -- | Returns a primitive root of unity of order 2^l.
 rootOfUnity :: forall a . (PrimeField a, Eq a) => Natural -> a
 rootOfUnity l
@@ -137,7 +139,23 @@ rootOfUnity l
                 x' = x ^ ((order @a - 1) `div` n)
             in bool (rootOfUnity' g') x' (x' ^ (n `div` 2) /= one)
 
+--}
 --------------------------------------------------------------------------------
+
+instance AdditiveSemigroup Int where
+    (+) = (Haskell.+)
+
+instance AdditiveMonoid Int where
+    zero = 0
+
+instance AdditiveGroup Int where
+    negate = Haskell.negate
+
+instance MultiplicativeSemigroup Int where
+    (*) = (Haskell.*)
+
+instance MultiplicativeMonoid Int where
+    one = 1
 
 instance AdditiveSemigroup Natural where
     (+) = (Haskell.+)

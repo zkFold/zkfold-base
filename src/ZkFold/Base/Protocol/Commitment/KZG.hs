@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists  #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators    #-}
 
@@ -7,6 +8,7 @@ import           Control.Monad                              (replicateM)
 import           Data.ByteString                            (ByteString, empty)
 import           Data.Kind                                  (Type)
 import           Data.Map.Strict                            (Map, fromList, insert, keys, toList, (!))
+import qualified Data.Vector                                as V
 import           Prelude                                    hiding (Num (..), length, sum, (/), (^))
 import           Test.QuickCheck                            (Arbitrary (..), chooseInt)
 
@@ -15,7 +17,6 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString                (FromByteString, ToByteString)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                             (length)
 
 newtype KZG c1 c2 t f d = KZG f
     deriving (Show, Eq, Arbitrary)
@@ -24,30 +25,30 @@ newtype KZG c1 c2 t f d = KZG f
 instance Finite d => Finite (KZG c1 c2 t f d) where
     order = order @d
 
-newtype WitnessKZG c1 c2 t f d = WitnessKZG { runWitness :: Map f [PolyVec f (KZG c1 c2 t f d)] }
+newtype WitnessKZG c1 c2 t f d = WitnessKZG { runWitness :: Map f (V.Vector (PolyVec f (KZG c1 c2 t f d))) }
 instance (EllipticCurve c1, f ~ ScalarField c1) => Show (WitnessKZG c1 c2 t f d) where
     show (WitnessKZG w) = "WitnessKZG " <> show w
 instance (EllipticCurve c1, f ~ ScalarField c1, Finite d) => Arbitrary (WitnessKZG c1 c2 t f d) where
     arbitrary = do
         n <- chooseInt (1, 3)
         m <- chooseInt (1, 5)
-        WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> replicateM m arbitrary)
+        WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> (V.fromList <$> replicateM m arbitrary))
 
 -- TODO (Issue #18): check list lengths
 instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ ScalarField c2,
         Pairing c1 c2 t, ToByteString f, FromByteString f, Finite d, KZG c1 c2 t f d ~ kzg)
         => NonInteractiveProof (KZG c1 c2 t f d) where
     type Transcript (KZG c1 c2 t f d)   = ByteString
-    type Setup (KZG c1 c2 t f d)        = ([Point c1], Point c2, Point c2)
+    type Setup (KZG c1 c2 t f d)        = (V.Vector (Point c1), Point c2, Point c2)
     type Witness (KZG c1 c2 t f d)      = WitnessKZG c1 c2 t f d
-    type Input (KZG c1 c2 t f d)        = Map f ([Point c1], [f])
+    type Input (KZG c1 c2 t f d)        = Map f (V.Vector (Point c1), V.Vector f)
     type Proof (KZG c1 c2 t f d)        = Map f (Point c1)
 
     setup :: kzg -> Setup kzg
     setup (KZG x) =
         let d  = order @kzg
-            xs = map (x^) [0..d-1]
-            gs = map (`mul` gen) xs
+            xs = V.fromList $ map (x^) [0..d-1]
+            gs = fmap (`mul` gen) xs
         in (gs, gen, x `mul` gen)
 
     prove :: Setup kzg
@@ -56,18 +57,18 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ S
     prove (gs, _, _) (WitnessKZG w) = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
             proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
-                     -> (f, [PolyVec f kzg])
+                     -> (f, V.Vector (PolyVec f kzg))
                      -> (Transcript kzg, (Input kzg, Proof kzg))
             proveOne (ts, (iMap, pMap)) (z, fs) = (ts'', (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
-                    cms  = map (com gs) fs
-                    fzs  = map (`evalPolyVec` z) fs
+                    cms  = fmap (com gs) fs
+                    fzs  = fmap (`evalPolyVec` z) fs
 
-                    (gamma, ts') = flip challenges (length cms) $ ts
+                    (gamma, ts') = flip challenges (fromIntegral $ V.length cms) $ ts
                         `transcript` z
                         `transcript` fzs
                         `transcript` cms
-                    h            = sum $ zipWith scalePV gamma  $ map (`provePolyVecEval` z) fs
+                    h            = sum $ V.zipWith scalePV (V.fromList gamma) $ fmap (`provePolyVecEval` z) fs
                     ts''         = if ts == empty then ts' else snd $ challenge @(Transcript kzg) @f ts'
 
     verify :: Setup kzg -> Input kzg -> Proof kzg -> Bool
@@ -86,14 +87,15 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ S
                     (cms, fzs) = iMap ! z
                     w          = pMap ! z
 
-                    (gamma, ts') = flip challenges (length cms) $ ts
+                    (gamma', ts') = flip challenges (fromIntegral $ V.length cms) $ ts
                         `transcript` z
                         `transcript` fzs
                         `transcript` cms
+                    gamma = V.fromList gamma'
                     (r, ts'')    = if ts == empty then (one, ts') else challenge ts'
 
-                    v0' = r `mul` sum (zipWith mul gamma cms)
-                        - r `mul` (gs `com` toPolyVec @f @kzg [sum $ zipWith (*) gamma fzs])
+                    v0' = r `mul` sum (V.zipWith mul gamma cms)
+                        - r `mul` (gs `com` toPolyVec @f @kzg [V.sum $ V.zipWith (*) gamma fzs])
                         + (r * z) `mul` w
                     v1' = r `mul` w
 
@@ -102,5 +104,5 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ S
 provePolyVecEval :: forall size f . (Finite size, FiniteField f, Eq f) => PolyVec f size -> f -> PolyVec f size
 provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) / toPolyVec [negate z, one]
 
-com :: (EllipticCurve curve, f ~ ScalarField curve) => [Point curve] -> PolyVec f size -> Point curve
-com gs f = sum $ zipWith mul (fromPolyVec f) gs
+com :: (EllipticCurve curve, f ~ ScalarField curve) => V.Vector (Point curve) -> PolyVec f size -> Point curve
+com gs f = sum $ V.zipWith mul (fromPolyVec f) gs

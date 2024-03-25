@@ -3,6 +3,7 @@ module ZkFold.Base.Data.ByteString where
 import           Data.ByteString (ByteString, cons, uncons, empty)
 import           Data.Map        (Map, toList)
 import           Data.Word       (Word8)
+import qualified Data.Vector as V
 import           Prelude
 
 -- This module is currently used for transcripts in non-interactive proof protocols.
@@ -29,6 +30,9 @@ instance (ToByteString a, ToByteString b) => ToByteString (a, b) where
 
 instance ToByteString a => ToByteString [a] where
     toByteString = foldMap toByteString
+
+instance ToByteString a => ToByteString (V.Vector a) where
+    toByteString = V.foldMap toByteString
 
 instance (ToByteString k, ToByteString a) => ToByteString (Map k a) where
     toByteString = toByteString . toList

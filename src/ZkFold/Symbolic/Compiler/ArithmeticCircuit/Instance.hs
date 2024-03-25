@@ -73,6 +73,8 @@ instance Arithmetic a => Semiring (ArithmeticCircuit a)
 
 instance Arithmetic a => Ring (ArithmeticCircuit a)
 
+instance Arithmetic a => Field (ArithmeticCircuit a)
+
 instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
     binaryExpansion r = circuits $ runCircuit r >>= expansion (numberOfBits @a)
     fromBinary bits = circuit $ Haskell.traverse runCircuit bits >>= horner

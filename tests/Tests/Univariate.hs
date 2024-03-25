@@ -2,13 +2,16 @@
 {-# LANGUAGE TypeApplications    #-}
 
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# HLINT ignore "Use -"                  #-}
 
 module Tests.Univariate (specUnivariate) where
 
 import           Data.Bool                                  (bool)
 import           Data.Data                                  (typeOf)
-import           Data.List                                  (sort, (\\))
+import           Data.List                                  ((\\))
+import qualified Data.Vector                                as V
+import qualified Data.Vector.Algorithms.Intro               as VA
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Fractional (..), Num (..), drop, length, take, (!!), (^))
 import           Prelude                                    (abs)
@@ -25,13 +28,13 @@ import           ZkFold.Prelude                             (length, take)
 
 propToPolyVec :: forall c size . (Ring c, Finite size) => [c] -> Bool
 propToPolyVec cs =
-    let PV p = toPolyVec @c @size cs
+    let PV p = toPolyVec @c @size $ V.fromList cs
     in length p == order @size
 
 propCastPolyVec :: forall c size size' . (Ring c, Finite size, Finite size', Eq c) => [c] -> Bool
 propCastPolyVec cs =
     let n = min (order @size) (order @size')
-        cs' = bool cs (take n cs) (length cs > n)
+        cs' = V.fromList $ bool cs (take n cs) (length cs > n)
         PV p' = castPolyVec @c @size @size' (toPolyVec @c @size cs')
     in length p' == order @size'
 
@@ -43,14 +46,14 @@ propPolyVecDivision p q =
 
 propPolyVecZero :: Natural -> Bool
 propPolyVecZero i =
-    let omega = rootOfUnity 5 :: F
+    let Just omega = rootOfUnity 5 :: Maybe F
         p = polyVecZero @F @PlonkBS @PlonkMaxPolyDegreeBS
         x = omega^abs i
     in p `evalPolyVec` x == zero
 
 propPolyVecLagrange :: Natural -> Bool
 propPolyVecLagrange i =
-    let omega = rootOfUnity 5 :: F
+    let Just omega = rootOfUnity 5 :: Maybe F
         p = polyVecLagrange @F @PlonkBS @PlonkMaxPolyDegreeBS i omega
     in p `evalPolyVec` (omega^i) == one &&
         all ((== zero) . (p `evalPolyVec`) . (omega^)) ([1 .. order @PlonkBS] \\ [i])
@@ -58,10 +61,10 @@ propPolyVecLagrange i =
 propPolyVecGrandProduct :: (Field c, Finite size, Ord c) => PolyVec c size -> c -> c -> Bool
 propPolyVecGrandProduct p beta gamma =
     let PV cs = p
-        cs' = sort cs
+        cs' = V.modify VA.sort cs
         p' = PV cs'
         PV zs  = polyVecGrandProduct zero p p' beta gamma
-    in last zs * (beta * last cs + gamma) == (beta * last cs' + gamma)
+    in V.last zs * (beta * V.last cs + gamma) == (beta * V.last cs' + gamma)
 
 specUnivariate :: IO ()
 specUnivariate = hspec $ do

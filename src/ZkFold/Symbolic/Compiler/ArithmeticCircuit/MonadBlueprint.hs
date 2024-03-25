@@ -187,6 +187,8 @@ instance Ord i => Semiring (Sources a i)
 
 instance Ord i => Ring (Sources a i)
 
+instance Ord i => Field (Sources a i)
+
 instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where
   binaryExpansion = replicate (numberOfBits @a)
 

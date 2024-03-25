@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists      #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -6,6 +7,7 @@ module ZkFold.Base.Protocol.ARK.Plonk where
 import           Data.ByteString                             (ByteString)
 import           Data.Map                                    (Map, elems, singleton)
 import qualified Data.Map                                    as Map
+import qualified Data.Vector                                 as V
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     hiding (Num (..), drop, length, replicate, sum, take, (!!), (/), (^))
 import           Test.QuickCheck                             (Arbitrary (..))
@@ -19,7 +21,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate  hiding (qr)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams, toPlonkArithmetization)
 import           ZkFold.Base.Protocol.Commitment.KZG         (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                              (drop, take, (!))
+import           ZkFold.Prelude                              ((!))
 import           ZkFold.Symbolic.Compiler
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
@@ -94,43 +96,43 @@ instance Arbitrary WitnessInputPlonk where
 -- TODO (Issue #18): make the code safer, check list lengths (?)
 instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) => NonInteractiveProof (Plonk t) where
     type Transcript (Plonk t)   = t
-    type Setup (Plonk t)        = (([F], [G1], G2, G2, F, F, F),
+    type Setup (Plonk t)        = ((V.Vector F, V.Vector G1, G2, G2, F, F, F),
         (PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t,
         PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t),
         (G1, G1, G1, G1, G1,
         G1, G1, G1),
         WitnessMapPlonk t, (PolyVec F (Plonk t), PolyVec F (Plonk t), PolyVec F (Plonk t)))
     type Witness (Plonk t)      = (WitnessInputPlonk, ProverSecretPlonk)
-    type Input (Plonk t)        = [F]
+    type Input (Plonk t)        = V.Vector F
     type Proof (Plonk t)        = (G1, G1, G1, G1, G1, G1, G1, G1, G1, F, F, F, F, F, F)
 
     setup :: Plonk t -> Setup (Plonk t)
     setup (Plonk omega k1 k2 inputs ac x) =
         let wmap = acWitness $ mapVarArithmeticCircuit ac
             (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization inputs ac
-            wPub = map negate $ elems inputs
+            wPub = V.fromList $ map negate $ elems inputs
 
             d = order @(Plonk t) + 6
-            xs = map (x^) [0..d-1]
-            gs = map (`mul` gen) xs
+            xs = V.fromList $ map (x^) [0..d-1]
+            gs = fmap (`mul` gen) xs
             h0 = gen
             h1 = x `mul` gen
 
 
             s = fromPermutation @(PlonkPermutationSize t) $ fromCycles $
-                    mkIndexPartition $ map fromZp $ fromPolyVec a ++ fromPolyVec b ++ fromPolyVec c
+                    mkIndexPartition $ fmap fromZp $ fromPolyVec a V.++ fromPolyVec b V.++ fromPolyVec c
             f i = case (i-1) `div` order @(Plonk t) of
                 0 -> omega^i
                 1 -> k1 * (omega^i)
                 2 -> k2 * (omega^i)
                 _ -> error "setup: invalid index"
-            s' = map f s
-            sigma1 = toPolyVec $ take (order @(Plonk t)) s'
-            sigma2 = toPolyVec $ take (order @(Plonk t)) $ drop (order @(Plonk t)) s'
-            sigma3 = toPolyVec $ take (order @(Plonk t)) $ drop (2 * order @(Plonk t)) s'
-            w1 i    = toPolyVec $ map ((wmap i !) . fromZp) (fromPolyVec a)
-            w2 i    = toPolyVec $ map ((wmap i !) . fromZp) (fromPolyVec b)
-            w3 i    = toPolyVec $ map ((wmap i !) . fromZp) (fromPolyVec c)
+            s' = V.fromList $ map f s
+            sigma1 = toPolyVec $ V.take (fromIntegral $ order @(Plonk t)) s'
+            sigma2 = toPolyVec $ V.take (fromIntegral $ order @(Plonk t)) $ V.drop (fromIntegral $ order @(Plonk t)) s'
+            sigma3 = toPolyVec $ V.take (fromIntegral $ order @(Plonk t)) $ V.drop (fromIntegral $ 2 * order @(Plonk t)) s'
+            w1 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec a)
+            w2 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec b)
+            w3 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec c)
             wmap' i = (w1 i, w2 i, w3 i)
 
             qmE     = polyVecInLagrangeBasis @F @(Plonk t) @(PlonkMaxPolyDegree t) omega qm
@@ -170,14 +172,14 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
                 `transcript` cmC
             (gamma, ts') = challenge ts
 
-            omegas  = toPolyVec $ map (omega ^) [1 .. n]
-            omegas' =  map (omega ^) [0 :: Integer .. ]
+            omegas  = toPolyVec . V.fromList $ map (omega ^) [1 .. n]
+            omegas' =  V.fromList $ map (omega ^) [0 :: Integer .. ]
             PV zs1 = polyVecGrandProduct w1 omegas sigma1s beta gamma
             PV zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) sigma2s beta gamma
             PV zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) sigma3s beta gamma
-            gp = PV $ zipWith (*) (zipWith (*) zs1 zs2) zs3
+            gp = PV $ V.zipWith (*) (V.zipWith (*) zs1 zs2) zs3
             z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @F @(Plonk t) @(PlonkMaxPolyDegree t) omega gp
-            zo = toPolyVec $ zipWith (*) (fromPolyVec z) omegas'
+            zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
             cmZ = gs `com` z
 
             (alpha, ts'') = challenge $ ts' `transcript` cmZ :: (F, Transcript (Plonk t))
@@ -194,9 +196,9 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
             t4 = (z - one) * polyVecLagrange @F @(Plonk t) @(PlonkMaxPolyDegree t) 1 omega
             t = (t1 + scalePV alpha (t2 - t3) + scalePV (alpha * alpha) t4) / zH
 
-            t_lo'  = toPolyVec $ take n $ fromPolyVec t
-            t_mid' = toPolyVec $ take n $ drop n $ fromPolyVec t
-            t_hi'  = toPolyVec $ drop (2*n) $ fromPolyVec t
+            t_lo'  = toPolyVec $ V.take (fromIntegral n) $ fromPolyVec t
+            t_mid' = toPolyVec $ V.take (fromIntegral n) $ V.drop (fromIntegral n) $ fromPolyVec t
+            t_hi'  = toPolyVec $ V.drop (fromIntegral $ 2*n) $ fromPolyVec t
             t_lo   = t_lo' + scalePV b10 (polyVecZero @F @(Plonk t) @(PlonkMaxPolyDegree t) + one)
             t_mid  = t_mid' + scalePV b11 (polyVecZero @F @(Plonk t) @(PlonkMaxPolyDegree t) + one) - scalePV b10 one
             t_hi   = t_hi' - scalePV b11 one
@@ -340,7 +342,7 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
                 + v * v * v * v * s1_xi
                 + v * v * v * v * v * s2_xi
                 + u * z_xi
-                ) `mul` head gs
+                ) `mul` V.head gs
 
             p1 = pairing (xi `mul` proof1 + (u * xi * omega) `mul` proof2 + f - e) h0
             p2 = pairing (proof1 + u `mul` proof2) h1
