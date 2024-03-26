@@ -8,7 +8,7 @@ import           Examples.Fibonacci   (exampleFibonacci)
 import           Examples.LEQ         (exampleLEQ)
 import           Examples.MiMCHash    (exampleMiMC)
 import           Examples.ReverseList (exampleReverseList)
-import           Examples.UInt        (exampleUIntAdd, exampleUIntMul)
+import           Examples.UInt        (exampleUIntAdd, exampleUIntMul, exampleUIntStrictAdd, exampleUIntStrictMul)
 import           Prelude
 import           System.Directory     (createDirectoryIfMissing)
 
@@ -26,3 +26,7 @@ main = do
     exampleUIntAdd @500
     exampleUIntMul @32
     exampleUIntMul @500
+    exampleUIntStrictAdd @32
+    exampleUIntStrictAdd @500
+    exampleUIntStrictMul @32
+    exampleUIntStrictMul @500

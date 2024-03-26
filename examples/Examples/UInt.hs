@@ -1,7 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Examples.UInt (exampleUIntAdd, exampleUIntMul) where
+module Examples.UInt (
+    exampleUIntAdd,
+    exampleUIntMul,
+    exampleUIntStrictAdd,
+    exampleUIntStrictMul
+  ) where
 
 import           Data.Data                                   (Proxy (Proxy))
 import           Data.Function                               (($))
@@ -15,7 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
-import           ZkFold.Symbolic.Data.UInt                   (UInt)
+import           ZkFold.Symbolic.Data.UInt
 
 exampleUIntAdd :: forall n . KnownNat n => IO ()
 exampleUIntAdd = makeExample @n "+" "add" (+)
@@ -23,11 +28,19 @@ exampleUIntAdd = makeExample @n "+" "add" (+)
 exampleUIntMul :: forall n . KnownNat n => IO ()
 exampleUIntMul = makeExample @n "*" "mul" (*)
 
-makeExample ::
-    forall n . KnownNat n => String -> String ->
-    (forall a . (AdditiveMonoid (UInt n a), MultiplicativeMonoid (UInt n a)) => UInt n a -> UInt n a -> UInt n a) -> IO ()
+exampleUIntStrictAdd :: forall n . KnownNat n => IO ()
+exampleUIntStrictAdd = makeExample @n "strictAdd" "strict_add" strictAdd
+
+exampleUIntStrictMul :: forall n . KnownNat n => IO ()
+exampleUIntStrictMul = makeExample @n "strictMul" "strict_mul" strictMul
+
+type Binary a = a -> a -> a
+
+type UBinary n = Binary (UInt n (ArithmeticCircuit (Zp BLS12_381_Scalar)))
+
+makeExample :: forall n . KnownNat n => String -> String -> UBinary n -> IO ()
 makeExample shortName name op = do
     let n = show $ natVal (Proxy @n)
     putStrLn $ "\nExample: (" ++ shortName ++ ") operation on UInt" ++ n
     let file = "compiled_scripts/uint" ++ n ++ "_" ++ name ++ ".json"
-    compileIO @(Zp BLS12_381_Scalar) file (op @(ArithmeticCircuit (Zp BLS12_381_Scalar)))
+    compileIO @(Zp BLS12_381_Scalar) file op
