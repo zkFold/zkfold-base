@@ -63,6 +63,7 @@ common options
       StandaloneDeriving,
       StandaloneKindSignatures,
       TupleSections,
+      TypeApplications,
       TypeFamilies,
       ViewPatterns
 
@@ -129,6 +130,7 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
       ZkFold.Symbolic.Compiler.Arithmetizable
       ZkFold.Symbolic.Data.Bool
+      ZkFold.Symbolic.Data.Char
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Eq
