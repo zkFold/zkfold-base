@@ -16,6 +16,7 @@ import           Data.Maybe                      (fromJust)
 import qualified Data.Vector                     as V
 import           Numeric.Natural                 (Natural)
 import           Prelude                         hiding (Num (..), drop, length, (!!))
+import qualified Prelude                         as P
 import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -60,7 +61,7 @@ applyCycle c (Permutation perm) = Permutation $ fmap f perm
     where
         f :: Natural -> Natural
         f i = case i `V.elemIndex` c of
-            Just j  -> c V.! ((j + 1) `mod` V.length c)
+            Just j  -> c V.! ((j P.+ 1) `mod` V.length c)
             Nothing -> i
 
 fromCycles :: Finite n => IndexPartition a -> Permutation n

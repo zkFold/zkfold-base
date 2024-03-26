@@ -61,12 +61,11 @@ class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semi
 
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
 
-data Characteristic = Infinite | Finite Natural
-
 -- NOTE: by convention, division by zero returns zero.
 class (Ring a, MultiplicativeGroup a) => Field a where 
     rootOfUnity :: Natural -> Maybe a
-    rootOfUnity = const Nothing
+    rootOfUnity 0 = Just one 
+    rootOfUnity _ = Nothing
 
 class Finite a where
     order :: Natural
@@ -121,41 +120,6 @@ instance (MultiplicativeMonoid a, Eq b, BinaryExpansion b) => Exponent a b where
 
 multiExp :: (Exponent a b, Foldable t) => a -> t b -> a
 multiExp a = foldl (\x y -> x * (a ^ y)) one
-
-------------------------------- Roots of unity ---------------------------------
-
-    {--
--- | Returns a primitive root of unity of order 2^l.
-rootOfUnity :: forall a . (PrimeField a, Eq a) => Natural -> a
-rootOfUnity l
-    | l == 0                      = error "rootOfUnity: l should be positive!"
-    | (order @a - 1) `mod` n /= 0 = error $ "rootOfUnity: 2^" ++ show l ++ " should divide (p-1)!"
-    | otherwise = rootOfUnity' (mkStdGen 0)
-    where
-        n = 2 ^ l
-        rootOfUnity' :: RandomGen g => g -> a
-        rootOfUnity' g =
-            let (x, g') = first fromConstant $ uniformR (1, order @a - 1) g
-                x' = x ^ ((order @a - 1) `div` n)
-            in bool (rootOfUnity' g') x' (x' ^ (n `div` 2) /= one)
-
---}
---------------------------------------------------------------------------------
-
-instance AdditiveSemigroup Int where
-    (+) = (Haskell.+)
-
-instance AdditiveMonoid Int where
-    zero = 0
-
-instance AdditiveGroup Int where
-    negate = Haskell.negate
-
-instance MultiplicativeSemigroup Int where
-    (*) = (Haskell.*)
-
-instance MultiplicativeMonoid Int where
-    one = 1
 
 instance AdditiveSemigroup Natural where
     (+) = (Haskell.+)

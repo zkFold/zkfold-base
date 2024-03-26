@@ -15,8 +15,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 --
 genericDft
     :: forall a
-     . Field a
-    => Eq a
+     . Ring a
     => Integer
     -> a
     -> V.Vector a
@@ -25,18 +24,20 @@ genericDft 0 _ v  = v
 genericDft n wn v = V.create $ do
     result <- VM.new (2 P.^ n)
     wRef <- ST.newSTRef one
-    forM_ [0 .. halfLen - 1] $ \k -> do
+    forM_ [0 .. halfLen P.- 1] $ \k -> do
         w <- ST.readSTRef wRef
-        VM.write result k             $ a0Hat `V.unsafeIndex` k + w * a1Hat `V.unsafeIndex` k
-        VM.write result (k + halfLen) $ a0Hat `V.unsafeIndex` k - w * a1Hat `V.unsafeIndex` k
+        VM.write result k               $ a0Hat `V.unsafeIndex` k + w * a1Hat `V.unsafeIndex` k
+        VM.write result (k P.+ halfLen) $ a0Hat `V.unsafeIndex` k - w * a1Hat `V.unsafeIndex` k
         ST.modifySTRef wRef (*wn)
     pure result
   where
     a0 = V.ifilter (\i _ -> i `mod` 2 == 0) v
     a1 = V.ifilter (\i _ -> i `mod` 2 == 1) v
 
-    a0Hat = genericDft (n - 1) (wn * wn) a0
-    a1Hat = genericDft (n - 1) (wn * wn) a1
+    wn2 = wn * wn
 
-    halfLen = 2 P.^ (n - 1)
+    a0Hat = genericDft (n P.- 1) wn2 a0
+    a1Hat = genericDft (n P.- 1) wn2 a1
+
+    halfLen = 2 P.^ (n P.- 1)
 

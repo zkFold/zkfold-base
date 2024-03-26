@@ -10,6 +10,7 @@ import qualified Data.Map                                    as Map
 import qualified Data.Vector                                 as V
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     hiding (Num (..), drop, length, replicate, sum, take, (!!), (/), (^))
+import qualified Prelude                                     as P
 import           Test.QuickCheck                             (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -172,8 +173,8 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
                 `transcript` cmC
             (gamma, ts') = challenge ts
 
-            omegas  = toPolyVec . V.fromList $ map (omega ^) [1 .. n]
-            omegas' =  V.fromList $ map (omega ^) [0 :: Integer .. ]
+            omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
+            omegas' =  V.iterateN (V.length (fromPolyVec z) P.+ 1) (* omega) one
             PV zs1 = polyVecGrandProduct w1 omegas sigma1s beta gamma
             PV zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) sigma2s beta gamma
             PV zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) sigma3s beta gamma

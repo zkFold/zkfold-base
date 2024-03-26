@@ -73,7 +73,8 @@ instance Arithmetic a => Semiring (ArithmeticCircuit a)
 
 instance Arithmetic a => Ring (ArithmeticCircuit a)
 
-instance Arithmetic a => Field (ArithmeticCircuit a)
+instance Arithmetic a => Field (ArithmeticCircuit a) where
+    rootOfUnity n = embed <$> rootOfUnity n
 
 instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
     binaryExpansion r = circuits $ runCircuit r >>= expansion (numberOfBits @a)

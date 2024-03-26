@@ -87,7 +87,7 @@ instance Finite p => Semiring (Zp p)
 
 instance Finite p => Ring (Zp p)
 
-instance (Prime p, Finite p) => Field (Zp p) where
+instance Prime p => Field (Zp p) where
     rootOfUnity l
       | l == 0                      = Nothing
       | (order @p - 1) `mod` n /= 0 = Nothing
@@ -184,6 +184,7 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) 
             P v   -> Ext2 (v V.! 0) (v V.! 1)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext2 f e) where
+    rootOfUnity n = (\r -> Ext2 r zero) <$> rootOfUnity n
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
@@ -234,6 +235,7 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) 
             P v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where
+    rootOfUnity n = (\r -> Ext3 r zero zero) <$> rootOfUnity n
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero

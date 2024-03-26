@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Algebra.Polynomials.Univariate where
 
@@ -30,8 +29,8 @@ instance (Ring c, Eq c) => AdditiveSemigroup (Poly c) where
       where
         len = max (V.length l) (V.length r)
 
-        lPadded = l V.++ V.replicate (len - V.length l) zero
-        rPadded = r V.++ V.replicate (len - V.length r) zero
+        lPadded = l V.++ V.replicate (len P.- V.length l) zero
+        rPadded = r V.++ V.replicate (len P.- V.length r) zero
 
 instance (Ring c, Eq c) => AdditiveMonoid (Poly c) where
     zero = P V.empty
@@ -43,10 +42,18 @@ instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
     -- | If it is possible to calculate a primitive root of unity in the field, proceed with FFT multiplication.
     -- Otherwise default to Karatsuba multiplication for polynomials of degree higher than 64 or use naive multiplication otherwise.
     -- 64 is a threshold determined by benchmarking.
-    P l * P r
-      | V.null l = P V.empty
-      | V.null r = P V.empty
-      | otherwise = removeZeros $ P $
+    P l * P r = removeZeros $ P $ mulAdaptive l r
+
+padVector :: forall a . Ring a => V.Vector a -> Int -> V.Vector a
+padVector v l
+  | V.length v == l = v
+  | otherwise = v V.++ (V.replicate (l P.- V.length v) zero)
+
+mulAdaptive :: forall c . Field c => V.Vector c -> V.Vector c -> V.Vector c
+mulAdaptive l r 
+      | V.null l = V.empty
+      | V.null r = V.empty
+      | otherwise =
           case (maybeW2n, len <= 64) of
             (Nothing, False) -> mulKaratsuba lPaddedKaratsuba rPaddedKaratsuba
             (Nothing, True)  -> mulVector l r
@@ -62,20 +69,20 @@ instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
             padKaratsuba = 2 P.^ p
 
             padDft :: Int
-            padDft = 2 * padKaratsuba
+            padDft = 2 P.* padKaratsuba
 
             lPaddedKaratsuba, rPaddedKaratsuba :: V.Vector c
-            lPaddedKaratsuba = l V.++ V.replicate (padKaratsuba - V.length l) zero
-            rPaddedKaratsuba = r V.++ V.replicate (padKaratsuba - V.length r) zero
+            lPaddedKaratsuba = padVector l padKaratsuba 
+            rPaddedKaratsuba = padVector r padKaratsuba 
 
             lPaddedDft, rPaddedDft :: V.Vector c
-            lPaddedDft = l V.++ V.replicate (padDft - V.length l) zero
-            rPaddedDft = r V.++ V.replicate (padDft - V.length r) zero
+            lPaddedDft = padVector l padDft
+            rPaddedDft = padVector r padDft
 
             maybeW2n :: Maybe c
-            maybeW2n = rootOfUnity $ fromIntegral (p + 1)
+            maybeW2n = rootOfUnity $ fromIntegral (p P.+ 1)
 
-mulDft :: forall c . (Field c, Eq c) => Integer -> c -> V.Vector c -> V.Vector c -> V.Vector c
+mulDft :: forall c . Field c => Integer -> c -> V.Vector c -> V.Vector c -> V.Vector c
 mulDft p w2n lPadded rPadded = c
   where
     pad :: Int
@@ -113,30 +120,34 @@ mulKaratsuba v1 v2
 
     (d, c) = V.splitAt n v2
 
+    partLen :: Int
+    partLen = len P.- 1 
+
+
     ac, bd :: V.Vector a
-    ac = mulKaratsuba a c
-    bd = mulKaratsuba b d
+    ac = padVector (mulAdaptive a c) partLen
+    bd = padVector (mulAdaptive b d) partLen
 
     apb, cpd :: V.Vector a
     apb = V.zipWith (+) a b
     cpd = V.zipWith (+) c d
 
     abcd :: V.Vector a
-    abcd = mulKaratsuba apb cpd
+    abcd = mulAdaptive apb cpd
 
     mid :: V.Vector a
-    mid = V.zipWith3 (\x y z -> x - y - z) abcd ac bd
+    mid = V.zipWith3 (\x y z -> x - y - z) (padVector abcd partLen) (padVector ac partLen) (padVector bd partLen)
 
     result :: V.Vector a
-    result = V.generate (2 * len - 1) ix2v
+    result = V.generate (2 P.* len P.- 1) ix2v
 
     ix2v :: Int -> a
     ix2v ix
       | ix < n = bd `V.unsafeIndex` ix
-      | ix < 2 * n - 1 = bd `V.unsafeIndex` ix + mid `V.unsafeIndex` (ix - n)
-      | ix == 2 * n - 1 = mid `V.unsafeIndex` (n - 1)
-      | ix < 3 * n - 1 = mid `V.unsafeIndex` (ix - n) + ac `V.unsafeIndex` (ix - 2 * n)
-      | otherwise = ac `V.unsafeIndex` (ix - 2 * n)
+      | ix < 2 P.* n P.- 1 = bd `V.unsafeIndex` ix + mid `V.unsafeIndex` (ix P.- n)
+      | ix == 2 P.* n P.- 1 = mid `V.unsafeIndex` (n P.- 1)
+      | ix < 3 P.* n P.- 1 = mid `V.unsafeIndex` (ix P.- n) + ac `V.unsafeIndex` (ix P.- 2 P.* n)
+      | otherwise = ac `V.unsafeIndex` (ix P.- 2 P.* n)
 
 mulVector :: forall a. Field a => V.Vector a -> V.Vector a -> V.Vector a
 mulVector v1 v2 = result
@@ -144,18 +155,18 @@ mulVector v1 v2 = result
     len1 = V.length v1
     len2 = V.length v2
 
-    result = V.generate (len1 + len2 - 1) ix2v
+    result = V.generate (len1 P.+ len2 P.- 1) ix2v
 
     ix2v :: Int -> a
     ix2v ix = ix2v' start1 start2 zero
       where
-        start1 = min ix (len1 - 1)
-        start2 = max 0 (ix - len1 + 1)
+        start1 = min ix (len1 P.- 1)
+        start2 = max 0 (ix P.- len1 P.+ 1)
 
     ix2v' :: Int -> Int -> a -> a
     ix2v' (-1) _ accum                = accum
     ix2v' _ ((== len2) -> True) accum = accum
-    ix2v' i j accum                   = ix2v' (i - 1) (j + 1) (accum + v1 `V.unsafeIndex` i * v2 `V.unsafeIndex` j)
+    ix2v' i j accum                   = ix2v' (i P.- 1) (j P.+ 1) (accum + v1 `V.unsafeIndex` i * v2 `V.unsafeIndex` j)
 
 instance (Field c, Eq c) => MultiplicativeMonoid (Poly c) where
     one = P $ V.singleton one
@@ -283,18 +294,18 @@ polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
 removeZeros :: (Ring c, Eq c) => Poly c -> Poly c
 removeZeros (P cs)
   | V.null cs = P cs
-  | otherwise = P $ V.take (1 + traverseZeros startIx) cs
+  | otherwise = P $ V.take (1 P.+ traverseZeros startIx) cs
     where
         startIx :: Int
-        startIx = V.length cs - 1
+        startIx = V.length cs P.- 1
 
         traverseZeros :: Int -> Int
         traverseZeros 0
           | V.head cs == zero = -1
           | otherwise = 0
         traverseZeros n
-          | cs `V.unsafeIndex` n == zero = traverseZeros (n - 1)
+          | cs `V.unsafeIndex` n == zero = traverseZeros (n P.- 1)
           | otherwise = n
 
 addZeros :: forall c size . (Ring c, Finite size) => V.Vector c -> V.Vector c
-addZeros cs = cs V.++ V.replicate (fromIntegral (order @size) - V.length cs) zero
+addZeros cs = cs V.++ V.replicate (fromIntegral (order @size) P.- V.length cs) zero
