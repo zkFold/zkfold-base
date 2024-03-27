@@ -35,6 +35,8 @@ deriving newtype instance Semiring a => Semiring (Self a)
 
 deriving newtype instance Ring a => Ring (Self a)
 
+deriving newtype instance Field a => Field (Self a)
+
 instance Ring a => Scale (Self a) a where
     scale a (Self b) = Self (a * b)
 

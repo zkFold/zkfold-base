@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Base.Algebra.Basic.Field (
@@ -10,11 +11,16 @@ module ZkFold.Base.Algebra.Basic.Field (
     Ext3(..)
     ) where
 
+import           Control.DeepSeq                            (NFData (..))
 import           Data.Aeson                                 (FromJSON (..), ToJSON (..))
+import           Data.Bifunctor                             (first)
+import           Data.Bool                                  (bool)
+import qualified Data.Vector                                as V
+import           GHC.Generics                               (Generic)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude                                    as Haskell
-import           System.Random                              (Random (..))
+import           System.Random                              (Random (..), RandomGen, mkStdGen, uniformR)
 import           Test.QuickCheck                            hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -24,6 +30,7 @@ import           ZkFold.Base.Data.ByteString
 ------------------------------ Prime Fields -----------------------------------
 
 newtype Zp p = Zp Integer
+    deriving (Generic, NFData)
 
 fromZp :: Zp p -> Natural
 fromZp (Zp a) = fromIntegral a
@@ -79,6 +86,20 @@ instance Finite p => FromConstant Natural (Zp p) where
 instance Finite p => Semiring (Zp p)
 
 instance Finite p => Ring (Zp p)
+
+instance Prime p => Field (Zp p) where
+    rootOfUnity l
+      | l == 0                      = Nothing
+      | (order @p - 1) `mod` n /= 0 = Nothing
+      | otherwise = Just $ rootOfUnity' (mkStdGen 0)
+        where
+          n = 2 ^ l
+          rootOfUnity' :: RandomGen g => g -> Zp p
+          rootOfUnity' g =
+              let (x, g') = first fromConstant $ uniformR (1, order @p - 1) g
+                  x' = x ^ ((order @p - 1) `div` n)
+              in bool (rootOfUnity' g') x' (x' ^ (n `div` 2) /= one)
+
 
 instance Prime p => BinaryExpansion (Zp p) where
     binaryExpansion (Zp a) = map Zp $ binaryExpansion a
@@ -147,9 +168,9 @@ instance Field f => AdditiveGroup (Ext2 f e) where
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext2 f e) where
     Ext2 a b * Ext2 c d = case snd $ qr (toPoly [a, b] * toPoly [c, d]) (irreduciblePoly @f @e) of
-            P (x:y:_) -> Ext2 x y
-            P [x]     -> Ext2 x zero
-            P []      -> Ext2 zero zero
+            P []  -> Ext2 zero zero
+            P [x] -> Ext2 x zero
+            P v   -> Ext2 (v V.! 0) (v V.! 1)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext2 f e) where
     one = Ext2 one zero
@@ -158,9 +179,12 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) 
     invert (Ext2 a b) =
         let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @f @e)
         in case scaleP (one / lt g) 0 s of
-            P (x:y:_) -> Ext2 x y
-            P [x]     -> Ext2 x zero
-            P []      -> Ext2 zero zero
+            P []  -> Ext2 zero zero
+            P [x] -> Ext2 x zero
+            P v   -> Ext2 (v V.! 0) (v V.! 1)
+
+instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext2 f e) where
+    rootOfUnity n = (\r -> Ext2 r zero) <$> rootOfUnity n
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
@@ -193,10 +217,10 @@ instance Field f => AdditiveGroup (Ext3 f e) where
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext3 f e) where
     Ext3 a b c * Ext3 d e f = case snd $ qr (toPoly [a, b, c] * toPoly [d, e, f]) (irreduciblePoly @f @e) of
-            P (x:y:z:_) -> Ext3 x y z
-            P [x, y]    -> Ext3 x y zero
-            P [x]       -> Ext3 x zero zero
-            P []        -> Ext3 zero zero zero
+            P []     -> Ext3 zero zero zero
+            P [x]    -> Ext3 x zero zero
+            P [x, y] -> Ext3 x y zero
+            P v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext3 f e) where
     one = Ext3 one zero zero
@@ -205,10 +229,13 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) 
     invert (Ext3 a b c) =
         let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @f @e)
         in case scaleP (one / lt g) 0 s of
-            P (x:y:z:_) -> Ext3 x y z
-            P [x, y]    -> Ext3 x y zero
-            P [x]       -> Ext3 x zero zero
-            P []        -> Ext3 zero zero zero
+            P []     -> Ext3 zero zero zero
+            P [x]    -> Ext3 x zero zero
+            P [x, y] -> Ext3 x y zero
+            P v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
+
+instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where
+    rootOfUnity n = (\r -> Ext3 r zero zero) <$> rootOfUnity n
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero

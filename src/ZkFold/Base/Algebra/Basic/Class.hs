@@ -3,12 +3,9 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
-import           Data.Bifunctor (first)
-import           Data.Bool      (bool)
 import           GHC.Natural    (Natural, naturalFromInteger)
 import           Prelude        hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
 import qualified Prelude        as Haskell
-import           System.Random  (RandomGen, mkStdGen, uniformR)
 
 import           ZkFold.Prelude (length, replicate)
 
@@ -65,7 +62,10 @@ class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semi
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
 
 -- NOTE: by convention, division by zero returns zero.
-type Field a = (Ring a, MultiplicativeGroup a)
+class (Ring a, MultiplicativeGroup a) => Field a where 
+    rootOfUnity :: Natural -> Maybe a
+    rootOfUnity 0 = Just one 
+    rootOfUnity _ = Nothing
 
 class Finite a where
     order :: Natural
@@ -120,24 +120,6 @@ instance (MultiplicativeMonoid a, Eq b, BinaryExpansion b) => Exponent a b where
 
 multiExp :: (Exponent a b, Foldable t) => a -> t b -> a
 multiExp a = foldl (\x y -> x * (a ^ y)) one
-
-------------------------------- Roots of unity ---------------------------------
-
--- | Returns a primitive root of unity of order 2^l.
-rootOfUnity :: forall a . (PrimeField a, Eq a) => Natural -> a
-rootOfUnity l
-    | l == 0                      = error "rootOfUnity: l should be positive!"
-    | (order @a - 1) `mod` n /= 0 = error $ "rootOfUnity: 2^" ++ show l ++ " should divide (p-1)!"
-    | otherwise = rootOfUnity' (mkStdGen 0)
-    where
-        n = 2 ^ l
-        rootOfUnity' :: RandomGen g => g -> a
-        rootOfUnity' g =
-            let (x, g') = first fromConstant $ uniformR (1, order @a - 1) g
-                x' = x ^ ((order @a - 1) `div` n)
-            in bool (rootOfUnity' g') x' (x' ^ (n `div` 2) /= one)
-
---------------------------------------------------------------------------------
 
 instance AdditiveSemigroup Natural where
     (+) = (Haskell.+)

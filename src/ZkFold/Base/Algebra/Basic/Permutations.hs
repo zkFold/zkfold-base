@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists  #-}
 {-# LANGUAGE TypeApplications #-}
 
 module ZkFold.Base.Algebra.Basic.Permutations (
@@ -12,25 +13,27 @@ module ZkFold.Base.Algebra.Basic.Permutations (
 
 import           Data.Map                        (Map, elems, empty, singleton, union)
 import           Data.Maybe                      (fromJust)
+import qualified Data.Vector                     as V
 import           Numeric.Natural                 (Natural)
 import           Prelude                         hiding (Num (..), drop, length, (!!))
+import qualified Prelude                         as P
 import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector         (Vector (..), fromVector, toVector)
-import           ZkFold.Prelude                  (chooseNatural, drop, elemIndex, length, (!!))
+import           ZkFold.Prelude                  (chooseNatural, drop, length, (!!))
 
 -- TODO (Issue #18): make the code safer
 
 ------------------------------ Index sets and partitions -------------------------------------
 
-type IndexSet = [Natural]
+type IndexSet = V.Vector Natural
 type IndexPartition a = Map a IndexSet
 
-mkIndexPartition :: Ord a => [a] -> IndexPartition a
+mkIndexPartition :: Ord a => V.Vector a -> IndexPartition a
 mkIndexPartition vs =
-    let f i = singleton i $ map snd $ filter (\(v, _) -> v == i) $ zip vs [1 .. length vs]
-    in foldl union empty $ map f vs
+    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [1 .. length vs]
+    in V.foldl union empty $ fmap f vs
 
 ------------------------------------- Permutations -------------------------------------------
 
@@ -57,12 +60,12 @@ applyCycle :: IndexSet -> Permutation n -> Permutation n
 applyCycle c (Permutation perm) = Permutation $ fmap f perm
     where
         f :: Natural -> Natural
-        f i = case i `elemIndex` c of
-            Just j  -> c !! ((j + 1) `mod` length c)
+        f i = case i `V.elemIndex` c of
+            Just j  -> c V.! ((j P.+ 1) `mod` V.length c)
             Nothing -> i
 
 fromCycles :: Finite n => IndexPartition a -> Permutation n
 fromCycles p =
-    let n = length $ concat $ elems p
+    let n = fromIntegral $ V.length $ V.concat $ elems p
     in foldr applyCycle (Permutation $ fromJust $ toVector [1 .. n]) $ elems p
 

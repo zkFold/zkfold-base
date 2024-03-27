@@ -2,6 +2,8 @@ index-state: 2023-10-29T16:11:26Z
 
 packages: .
 
+optimization: 2
+
 -- We never, ever, want this.
 write-ghc-environment-files: never
 

@@ -1,18 +1,20 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module Tests.Pairing (specPairing) where
 
-import           Data.Typeable                               (typeOf, Typeable)
-import           Prelude                                     hiding (Num(..), Fractional(..), (^), length)
+import           Data.Typeable                              (Typeable, typeOf)
+import qualified Data.Vector                                as V
+import           Prelude                                    hiding (Fractional (..), Num (..), length, (^))
 import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, scalePV, evalPolyVec, toPolyVec, vec2poly, deg)
-import           ZkFold.Base.Protocol.Commitment.KZG         (com)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, deg, evalPolyVec, scalePV, toPolyVec, vec2poly)
+import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 
 data TestPairing
 instance Finite TestPairing where
@@ -24,8 +26,8 @@ propVerificationKZG x p z =
     let n  = deg $ vec2poly p
 
         -- G1
-        gs = map ((`mul` gen) . (x^)) [0 .. n]
-        g0 = head gs :: Point c1
+        gs = V.fromList $ map ((`mul` gen) . (x^)) [0 .. n]
+        g0 = V.head gs :: Point c1
 
         -- G2
         h0 = gen :: Point c2

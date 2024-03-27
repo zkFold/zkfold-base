@@ -12,6 +12,7 @@ import           Data.Maybe                                   (mapMaybe)
 import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 import           System.Random                                (RandomGen, mkStdGen, uniformR)
+import qualified Data.Vector as V
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
@@ -33,7 +34,9 @@ type SomePolynomialF = SomePolynomial F
 getParams :: Natural -> (F, F, F)
 getParams l = findK' $ mkStdGen 0
     where
-        omega = rootOfUnity l
+        omega = case rootOfUnity l of
+                  Just o -> o
+                  _ -> error "impossible"
         hGroup = map (omega^) [1 :: Integer .. 2^l-1]
         hGroup' k = map (k*) hGroup
 
@@ -45,8 +48,8 @@ getParams l = findK' $ mkStdGen 0
                 all (`notElem` hGroup) (hGroup' k1)
                 && all (`notElem` hGroup' k1) (hGroup' k2)
 
-toPlonkConstaint :: SomePolynomialF -> (F, F, F, F, F, F, F, F)
-toPlonkConstaint p@(P ms) =
+toPlonkConstraint :: SomePolynomialF -> (F, F, F, F, F, F, F, F)
+toPlonkConstraint p@(P ms) =
     let xs    = nubOrd $ variables p
         i     = order @F
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
@@ -107,7 +110,7 @@ toPlonkArithmetization inputs ac =
         inputs' = mapVarWitness vars inputs
         system  = addPublicInputs inputs' $ elems $ acSystem ac'
 
-    in case map toPolyVec $ transpose $ map (f . toPlonkConstaint . removeConstantVariable) system of
+    in case map (toPolyVec . V.fromList) $ transpose $ map (f . toPlonkConstraint . removeConstantVariable) system of
             [ql, qr, qo, qm, qc, a, b, c] -> (ql, qr, qo, qm, qc, a, b, c)
             _                             -> error "toPlonkArithmetization: something went wrong"
 

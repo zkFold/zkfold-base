@@ -5,22 +5,22 @@ module Tests.Plonk (specPlonk) where
 
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (transpose)
-import           Data.Map                                     (fromList, singleton, elems)
-import           Prelude                                      hiding (Num(..), Fractional(..), length, take, drop, replicate)
+import           Data.Map                                     (elems, fromList, singleton)
+import qualified Data.Vector                                  as V
+import           Prelude                                      hiding (Fractional (..), Num (..), drop, length, replicate, take)
 import           Test.Hspec
 import           Test.QuickCheck
+import           Tests.NonInteractiveProof                    (NonInteractiveProofTestData (..))
 
-import           Tests.NonInteractiveProof                    (NonInteractiveProofTestData(..))
-
-import           ZkFold.Base.Algebra.Basic.Class              (AdditiveSemigroup (..), AdditiveGroup (..), MultiplicativeSemigroup (..), Finite (..), zero, negate)
+import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..), Finite (..), MultiplicativeSemigroup (..), negate, zero)
 import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
-import           ZkFold.Base.Algebra.Basic.Scale              (Self(..))
+import           ZkFold.Base.Algebra.Basic.Scale              (Self (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Base.Algebra.Polynomials.Univariate   (toPolyVec, polyVecInLagrangeBasis, fromPolyVec, polyVecZero, polyVecLinear, evalPolyVec)
+import           ZkFold.Base.Algebra.Polynomials.Univariate   (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis, polyVecLinear, polyVecZero, toPolyVec)
 import           ZkFold.Base.Protocol.ARK.Plonk
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkConstaint, toPlonkArithmetization)
-import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof(..))
-import           ZkFold.Prelude                               ((!), take, replicate)
+import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkArithmetization, toPlonkConstraint)
+import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof (..))
+import           ZkFold.Prelude                               (replicate, take, (!))
 import           ZkFold.Symbolic.Compiler
 
 propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
@@ -28,7 +28,7 @@ propPlonkConstraintConversion x (x1, x2, x3) =
     let p   = fromPlonkConstraint x
         xs  = nubOrd $ variables p
         v   = Self . (fromList [(head xs, x1), (xs !! 1, x2), (xs !! 2, x3)] !)
-        p'  = fromPlonkConstraint $ toPlonkConstaint p
+        p'  = fromPlonkConstraint $ toPlonkConstraint p
         xs' = nubOrd $ variables p'
         v'  = Self . (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
     in v `evalPolynomial` p == v' `evalPolynomial` p'
@@ -40,16 +40,16 @@ propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ w) =
         l = 1
 
         (WitnessInputPlonk wInput, _) = w
-        w1'     = map ((wmap wInput !) . fromZp) (fromPolyVec a)
-        w2'     = map ((wmap wInput !) . fromZp) (fromPolyVec b)
-        w3'     = map ((wmap wInput !) . fromZp) (fromPolyVec c)
+        w1'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec a)
+        w2'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec b)
+        w3'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec c)
         wPub    = take l (map negate $ elems inputs) ++ replicate (order @PlonkBS - l) zero
 
-        ql' = fromPolyVec ql
-        qr' = fromPolyVec qr
-        qo' = fromPolyVec qo
-        qm' = fromPolyVec qm
-        qc' = fromPolyVec qc
+        ql' = V.toList $ fromPolyVec ql
+        qr' = V.toList $ fromPolyVec qr
+        qo' = V.toList $ fromPolyVec qo
+        qm' = V.toList $ fromPolyVec qm
+        qc' = V.toList $ fromPolyVec qc
 
         f [qlX, qrX, qoX, qmX, qcX, w1X, w2X, w3X, wPubX] =
             qlX * w1X + qrX * w2X + qoX * w3X + qmX * w1X * w2X + qcX + wPubX

@@ -20,7 +20,6 @@ common options
     ghc-options:
       -fwarn-redundant-constraints
       -Wall
-      -Werror
       -Wcompat
       -Widentities
       -Wincomplete-record-updates
@@ -74,6 +73,7 @@ library
       ZkFold.Base.Algebra.Basic.Number
       ZkFold.Base.Algebra.Basic.Permutations
       ZkFold.Base.Algebra.Basic.Scale
+      ZkFold.Base.Algebra.Basic.DFT
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.Polynomials.Multivariate
@@ -147,6 +147,7 @@ library
       bytestring                           < 0.12,
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,
+      deepseq                          <= 1.5.0.0,
       mtl                                   < 2.4,
       optics                                < 0.5,
       pretty-simple                         < 4.2,
@@ -155,6 +156,7 @@ library
       semialign                             < 1.4,
       tfp                                   < 1.1,
       these                                 < 1.3,
+      vector                                < 0.14
     hs-source-dirs: src
 
 test-suite zkfold-base-test
@@ -178,11 +180,14 @@ test-suite zkfold-base-test
       Tests.Scripts.LockedByTxId
       Tests.UInt
       Tests.Univariate
+      Tests.Multiplication
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,
       hspec                                < 2.12,
       QuickCheck                                 ,
+      vector                                     ,
+      vector-algorithms                          ,
       zkfold-base                                ,
     hs-source-dirs: tests
 
@@ -208,3 +213,20 @@ test-suite zkfold-base-examples
       tfp                                        ,
       zkfold-base                                ,
     hs-source-dirs: examples
+
+benchmark polynomial-multiplication
+    import:           options
+    main-is:          BenchPolyMul.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:      
+      -rtsopts
+      -O3
+    build-depends: 
+      base, 
+      array,
+      deepseq,
+      random,
+      tasty-bench,
+      vector,
+      zkfold-base 

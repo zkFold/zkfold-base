@@ -15,6 +15,7 @@ import           Tests.Plonk                                 (specPlonk)
 import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.UInt                                  (specUInt)
 import           Tests.Univariate                            (specUnivariate)
+import           Tests.Multiplication                        (specMultiplication)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
@@ -44,6 +45,7 @@ main = do
     specAdditiveGroup @(Point BLS12_381_G2)
     specPairing @BLS12_381_G1 @BLS12_381_G2
     specUnivariate
+    specMultiplication
 
     specNonInteractiveProof @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) N32)
     specPlonk
