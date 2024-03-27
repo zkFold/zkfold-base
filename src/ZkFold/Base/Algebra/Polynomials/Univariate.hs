@@ -55,9 +55,9 @@ mulAdaptive l r
       | V.null r = V.empty
       | otherwise =
           case (maybeW2n, len <= 64) of
-            (Nothing, False) -> mulKaratsuba lPaddedKaratsuba rPaddedKaratsuba
-            (Nothing, True)  -> mulVector l r
+            (_, True)        -> mulVector l r
             (Just w2n, _)    -> mulDft (p + 1) w2n lPaddedDft rPaddedDft
+            (Nothing, False) -> mulKaratsuba lPaddedKaratsuba rPaddedKaratsuba
         where
             len :: Int
             len = max (V.length l) (V.length r)

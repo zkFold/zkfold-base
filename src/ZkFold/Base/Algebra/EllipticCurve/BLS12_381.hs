@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE OverloadedLists  #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
