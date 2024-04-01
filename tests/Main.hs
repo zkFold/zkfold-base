@@ -15,6 +15,7 @@ import           Tests.Permutations                          (specPermutations)
 import           Tests.Plonk                                 (PlonkBS, specPlonk)
 import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.UInt                                  (specUInt)
+import           Tests.ByteString (specByteString)
 import           Tests.Univariate                            (specUnivariate)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -27,6 +28,9 @@ main = do
     specArithmeticCircuit @(Zp BLS12_381_Scalar)
     specUInt @BLS12_381_Scalar @32
     specUInt @BLS12_381_Scalar @500
+
+    specByteString @BLS12_381_Scalar @32
+    specByteString @BLS12_381_Scalar @500
 
     specLockedByTxId
 

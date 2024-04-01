@@ -15,6 +15,11 @@ description:
   This package contains the base library for the ZkFold project. It includes zkFold Symbolic compiler and a number of zero knowledge proof protocols.
   The compiler translates a subset of Haskell into arithmetic circuits, which can be used to generate zero knowledge proofs.
 
+Flag Pedantic
+    Description: Enable pedantic build with -Werror
+    Manual: True
+    Default: False
+
 common options
     default-language: Haskell2010
     ghc-options:
@@ -28,6 +33,9 @@ common options
       -Wpartial-fields
       -Wredundant-constraints
       -O2
+    if flag(pedantic)
+      ghc-options:
+        -Werror
     default-extensions:
       BangPatterns,
       BinaryLiterals,
@@ -130,6 +138,8 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
       ZkFold.Symbolic.Compiler.Arithmetizable
       ZkFold.Symbolic.Data.Bool
+      ZkFold.Symbolic.Data.ByteString
+      ZkFold.Symbolic.Data.Combinators
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Eq
@@ -171,9 +181,11 @@ test-suite zkfold-base-test
       Tests.Arithmetization.Test1
       Tests.Arithmetization.Test2
       Tests.Arithmetization.Test3
+      Tests.ByteString
       Tests.Field
       Tests.GroebnerBasis
       Tests.Group
+      Tests.Multiplication
       Tests.NonInteractiveProof
       Tests.Pairing
       Tests.Permutations
@@ -181,7 +193,6 @@ test-suite zkfold-base-test
       Tests.Scripts.LockedByTxId
       Tests.UInt
       Tests.Univariate
-      Tests.Multiplication
     build-depends:
       base                          >= 4.9 && < 5,
       bytestring                                 ,

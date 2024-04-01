@@ -5,22 +5,19 @@ module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
     StrictNum(..),
     UInt(..),
-    toNatural
+    toConstant
 ) where
 
 import           Control.Applicative                                    ((<*>))
 import           Control.Monad.State                                    (StateT (..))
-import           Data.Foldable                                          (find, foldr, foldrM, for_)
+import           Data.Foldable                                          (foldr, foldrM, for_)
 import           Data.Functor                                           ((<$>))
 import           Data.List                                              (map, unfoldr, zip, zipWith)
 import           Data.Map                                               (fromList, (!))
-import           Data.Maybe                                             (fromMaybe)
-import           Data.Proxy                                             (Proxy (..))
-import           Data.Ratio                                             ((%))
 import           Data.Traversable                                       (for, traverse)
 import           Data.Tuple                                             (swap)
 import           GHC.Natural                                            (naturalFromInteger)
-import           GHC.TypeNats                                           (KnownNat, Natural, natVal)
+import           GHC.TypeNats                                           (KnownNat, Natural)
 import           Prelude                                                (Integer, error, flip, otherwise, return, ($), (++), (.), (>>=))
 import qualified Prelude                                                as Haskell
 import           Test.QuickCheck                                        (Arbitrary (..), chooseInteger)
@@ -30,6 +27,7 @@ import           ZkFold.Base.Algebra.Basic.Field                        (Zp, fro
 import           ZkFold.Prelude                                         (length, replicate, replicateA, splitAt)
 import           ZkFold.Symbolic.Compiler                               hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, splitExpansion)
+import           ZkFold.Symbolic.Data.Combinators
 
 -- TODO (Issue #18): hide this constructor
 data UInt (n :: Natural) a = UInt ![a] !a
@@ -60,22 +58,22 @@ cast n =
 
 --------------------------------------------------------------------------------
 
-toNatural :: forall p n . (KnownNat p, KnownNat n) => UInt n (Zp p) -> Natural
-toNatural (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
-    where base = 2 ^ registerSize @(Zp p) @n
+instance (Finite p, KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
+    toConstant (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
+        where base = 2 ^ registerSize @p @n
 
-instance (KnownNat p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
-    x + y = fromConstant $ toNatural x + toNatural y
+instance (Finite p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
+    x + y = fromConstant $ toConstant x + (toConstant @_ @Natural) y
 
 instance (KnownNat p, KnownNat n) => AdditiveMonoid (UInt n (Zp p)) where
     zero = fromConstant (0 :: Natural)
 
-instance (KnownNat p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
-    x - y = fromConstant $ toNatural x + 2 ^ getNatural @n - toNatural y
-    negate x = fromConstant $ 2 ^ getNatural @n - toNatural x
+instance (Finite p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
+    x - y = fromConstant $ toConstant x + 2 ^ getNatural @n - (toConstant @_ @Natural) y
+    negate x = fromConstant $ 2 ^ getNatural @n - (toConstant @_ @Natural)x
 
-instance (KnownNat p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
-    x * y = fromConstant $ toNatural x * toNatural y
+instance (Finite p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
+    x * y = fromConstant $ toConstant x * (toConstant @_ @Natural) y
 
 instance (KnownNat p, KnownNat n) => MultiplicativeMonoid (UInt n (Zp p)) where
     one = fromConstant (1 :: Natural)
@@ -237,10 +235,10 @@ class StrictNum a where
     strictSub :: a -> a -> a
     strictMul :: a -> a -> a
 
-instance (KnownNat p, KnownNat n) => StrictNum (UInt n (Zp p)) where
-    strictAdd x y = strictConv $ toNatural x + toNatural y
-    strictSub x y = strictConv $ toNatural x - toNatural y
-    strictMul x y = strictConv $ toNatural x * toNatural y
+instance (Finite p, KnownNat n) => StrictNum (UInt n (Zp p)) where
+    strictAdd x y = strictConv $ toConstant x + (toConstant @_ @Natural) y
+    strictSub x y = strictConv $ toConstant x - (toConstant @_ @Natural) y
+    strictMul x y = strictConv $ toConstant x * (toConstant @_ @Natural) y
 
 instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) where
     strictAdd (UInt [] x) (UInt [] y) = UInt [] $ circuit $ do
@@ -354,29 +352,3 @@ fullAdded xk yk c = do
     j <- runCircuit yk
     newAssigned (\v -> v i + v j + v c)
 
---------------------------------------------------------------------------------
-
-maxOverflow :: forall a n . (Finite a, KnownNat n) => Natural
-maxOverflow = registerSize @a @n + Haskell.ceiling (log2 $ numberOfRegisters @a @n)
-
-highRegisterSize :: forall a n . (Finite a, KnownNat n) => Natural
-highRegisterSize = getNatural @n - registerSize @a @n * (numberOfRegisters @a @n - 1)
-
-registerSize :: forall a n . (Finite a, KnownNat n) => Natural
-registerSize = Haskell.ceiling (getNatural @n % numberOfRegisters @a @n)
-
-numberOfRegisters :: forall a n . (Finite a, KnownNat n) => Natural
-numberOfRegisters = fromMaybe (error "too many bits, field is not big enough")
-    $ find (\c -> c * maxRegisterSize c Haskell.>= getNatural @n) [1 .. maxRegisterCount]
-    where
-        maxRegisterCount = 2 ^ bitLimit
-        bitLimit = Haskell.floor $ log2 (order @a)
-        maxRegisterSize regCount =
-            let maxAdded = Haskell.ceiling $ log2 regCount
-             in Haskell.floor $ (bitLimit - maxAdded) % (2 :: Integer)
-
-log2 :: Natural -> Haskell.Double
-log2 = Haskell.logBase 2 . Haskell.fromIntegral
-
-getNatural :: forall n . KnownNat n => Natural
-getNatural = natVal (Proxy :: Proxy n)
