@@ -16,12 +16,8 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, deg, evalPolyVec, scalePV, toPolyVec, vec2poly)
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 
-data TestPairing
-instance Finite TestPairing where
-    order = 32
-
 propVerificationKZG :: forall c1 c2 t f . (Pairing c1 c2 t, f ~ ScalarField c1, f ~ ScalarField c2)
-    =>f -> PolyVec f TestPairing -> f -> Bool
+    => f -> PolyVec f 32 -> f -> Bool
 propVerificationKZG x p z =
     let n  = deg $ vec2poly p
 

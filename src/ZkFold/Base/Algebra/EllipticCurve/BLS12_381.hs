@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedLists  #-}
 {-# LANGUAGE TypeApplications #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
 import           Data.Bits                                  (shiftR)
@@ -10,19 +12,16 @@ import           Prelude                                    hiding (Num (..), (/
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 
 -------------------------------- Introducing Fields ----------------------------------
 
-data BLS12_381_Scalar
-instance Finite BLS12_381_Scalar where
-    order = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+type BLS12_381_Scalar = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 instance Prime BLS12_381_Scalar
 
-data BLS12_381_Base
-instance Finite BLS12_381_Base where
-    order = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
+type BLS12_381_Base = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
 instance Prime BLS12_381_Base
 
 type Fr = Zp BLS12_381_Scalar

@@ -2,12 +2,12 @@ module ZkFold.Symbolic.Data.Conditional (
     Conditional (..)
 ) where
 
-import           Prelude                         hiding (Num(..), Bool, (/))
-import qualified Prelude                         as Haskell
+import           Prelude                          hiding (Bool, Num (..), (/))
+import qualified Prelude                          as Haskell
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Symbolic.Data.Bool       (BoolType (..), Bool (..))
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Number (Prime)
+import           ZkFold.Symbolic.Data.Bool        (Bool (..), BoolType (..))
 
 class BoolType b => Conditional b a where
     bool :: a -> a -> b -> a

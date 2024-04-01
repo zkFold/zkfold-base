@@ -3,11 +3,14 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
-import           GHC.Natural    (Natural, naturalFromInteger)
-import           Prelude        hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
-import qualified Prelude        as Haskell
+import           Data.Kind                        (Type)
+import           GHC.Natural                      (Natural, naturalFromInteger)
+import           GHC.TypeNats                     (KnownNat)
+import           Prelude                          hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
+import qualified Prelude                          as Haskell
 
-import           ZkFold.Prelude (length, replicate)
+import           ZkFold.Base.Algebra.Basic.Number (Prime, value)
+import           ZkFold.Prelude                   (length, replicate)
 
 infixl 7 *, /
 infixl 6 +, -
@@ -62,18 +65,19 @@ class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semi
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
 
 -- NOTE: by convention, division by zero returns zero.
-class (Ring a, MultiplicativeGroup a) => Field a where 
+class (Ring a, MultiplicativeGroup a) => Field a where
     rootOfUnity :: Natural -> Maybe a
-    rootOfUnity 0 = Just one 
+    rootOfUnity 0 = Just one
     rootOfUnity _ = Nothing
 
-class Finite a where
-    order :: Natural
+class KnownNat (Order a) => Finite (a :: Type) where
+    type Order a :: Natural
+
+order :: forall a . Finite a => Natural
+order = value @(Order a)
 
 numberOfBits :: forall a . Finite a => Natural
 numberOfBits = ceiling $ logBase @Double 2 $ Haskell.fromIntegral $ order @a
-
-class Finite a => Prime a
 
 type FiniteAdditiveGroup a = (Finite a, AdditiveGroup a)
 
@@ -81,7 +85,7 @@ type FiniteMultiplicativeGroup a = (Finite a, MultiplicativeGroup a)
 
 type FiniteField a = (Finite a, Field a)
 
-type PrimeField a = (Prime a, FiniteField a)
+type PrimeField a = (FiniteField a, Prime (Order a))
 
 --------------------------------------------------------------------------------
 

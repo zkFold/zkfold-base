@@ -1,12 +1,12 @@
 module ZkFold.Base.Protocol.ARK.Protostar.Gate where
 
-import           Data.Kind                                       (Type)
 import           Data.Zip                                        (zipWith)
 import           Numeric.Natural                                 (Natural)
 import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
+import           ZkFold.Base.Algebra.Basic.Number                (KnownNat)
 import           ZkFold.Base.Algebra.Basic.Scale                 (scale')
 import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, evalPolynomial', subs, substitutePolynomial, var)
 import           ZkFold.Base.Data.Matrix                         (Matrix (..), outer, sum1, transpose)
@@ -15,9 +15,9 @@ import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProt
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler.Arithmetizable         (Arithmetic)
 
-data ProtostarGate (m :: Type) (n :: Type) (c :: Type) (d :: Type)
+data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
 
-instance (Arithmetic f, Finite m, Finite n, Finite c) => SpecialSoundProtocol f (ProtostarGate m n c d) where
+instance (Arithmetic f, KnownNat m, KnownNat n, KnownNat c) => SpecialSoundProtocol f (ProtostarGate m n c d) where
     type Witness f (ProtostarGate m n c d)       = Vector n (Vector c f)
     -- ^ [(a_j, w_j)]_{j=1}^n where [w_j]_{j=1}^n is from the paper together and [a_j]_{j=1}^n are their absolute indices
     type Input f (ProtostarGate m n c d)         = (Matrix m n f, Vector m (PolynomialProtostar f c d))

@@ -25,6 +25,7 @@ import           Prelude                                          hiding (Num (.
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                  (Zp)
+import           ZkFold.Base.Algebra.Basic.Number                 (Prime)
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate     as Poly
 import           ZkFold.Prelude                                   ((!!))
 import           ZkFold.Symbolic.Compiler

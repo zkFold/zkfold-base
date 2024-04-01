@@ -1,29 +1,28 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.ARK.Protostar.Lookup where
 
-import           Data.Kind                                       (Type)
 import           Data.Map                                        (fromList, mapWithKey)
 import           Data.These                                      (These (..))
 import           Data.Zip
 import           Numeric.Natural                                 (Natural)
 import           Prelude                                         hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/), (^))
-import           Type.Data.Num.Unary                             (Succ, (:+:))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                (N2)
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial)
 import           ZkFold.Base.Data.Sparse.Vector                  (SVector (..))
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
-data ProtostarLookup (l :: Type) (sizeT :: Type)
+data ProtostarLookup (l :: Natural) (sizeT :: Natural)
 
 data ProtostarLookupParams f sizeT = ProtostarLookupParams (Zp sizeT -> f) (f -> [Zp sizeT])
 
-instance (Arithmetic f, Finite sizeT) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
+instance (Arithmetic f, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
     type Witness f (ProtostarLookup l sizeT)         = Vector l f
     -- ^ w in the paper
     type Input f (ProtostarLookup l sizeT)           = ProtostarLookupParams f sizeT
@@ -32,8 +31,8 @@ instance (Arithmetic f, Finite sizeT) => SpecialSoundProtocol f (ProtostarLookup
     -- ^ (w, m) or (h, g) in the paper
     type VerifierMessage t (ProtostarLookup l sizeT) = t
 
-    type Dimension (ProtostarLookup l sizeT)         = Succ (l :+: sizeT)
-    type Degree (ProtostarLookup l sizeT)            = N2
+    type Dimension (ProtostarLookup l sizeT)         = l + sizeT + 1
+    type Degree (ProtostarLookup l sizeT)            = 2
 
     rounds :: ProtostarLookup l sizeT -> Natural
     rounds _ = 2

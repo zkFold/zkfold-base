@@ -7,7 +7,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Data.Aeson                                                hiding (Bool)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map, null, splitAt, take)
-import           Prelude                                                   (const, error, map, mempty, pure, return, show, zipWith, ($), (++), (<$>), (<*>), (>>=))
+import           Data.Zip                                                  (zipWith)
+import           Prelude                                                   (const, error, mempty, pure, return, show, ($), (++), (<$>), (<*>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (..))
@@ -33,7 +34,7 @@ instance Arithmetic a => Arithmetizable a (ArithmeticCircuit a) where
     typeSize = 1
 
 instance FiniteField a => Finite (ArithmeticCircuit a) where
-    order = order @a
+    type Order (ArithmeticCircuit a) = Order a
 
 instance Arithmetic a => AdditiveSemigroup (ArithmeticCircuit a) where
     r1 + r2 = circuit $ do
@@ -82,16 +83,11 @@ instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
 
 instance Arithmetic a => Arithmetizable a (Bool (ArithmeticCircuit a)) where
     arithmetize (Bool b) = arithmetize b
-
-    restore [r] = Bool $ restore [r]
-    restore _   = error "SymbolicBool: invalid number of values"
-
+    restore = Bool Haskell.. restore
     typeSize = 1
 
-instance (Arithmetizable a x, Field x) => DiscreteField (Bool (ArithmeticCircuit a)) x where
-    isZero x = case circuits (arithmetize x) of
-      [] -> true
-      xs -> Bool $ product1 (map isZeroC xs)
+instance Arithmetic a => DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) where
+    isZero x = Bool (isZeroC x)
 
 instance Arithmetic a => Eq (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) where
     x == y = isZero (x - y)

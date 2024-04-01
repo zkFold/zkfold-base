@@ -9,13 +9,14 @@ import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (find, permutations, sort, transpose)
 import           Data.Map                                     (Map, delete, elems, empty, fromList, toList)
 import           Data.Maybe                                   (mapMaybe)
+import qualified Data.Vector                                  as V
 import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 import           System.Random                                (RandomGen, mkStdGen, uniformR)
-import qualified Data.Vector as V
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
+import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (M (..), P (..), SomePolynomial, polynomial, variables)
@@ -36,7 +37,7 @@ getParams l = findK' $ mkStdGen 0
     where
         omega = case rootOfUnity l of
                   Just o -> o
-                  _ -> error "impossible"
+                  _      -> error "impossible"
         hGroup = map (omega^) [1 :: Integer .. 2^l-1]
         hGroup' k = map (k*) hGroup
 
@@ -101,7 +102,7 @@ removeConstantVariable :: SomePolynomialF -> SomePolynomialF
 removeConstantVariable (P ms) =
     polynomial . map (\(c, M as) -> (c, M (0 `delete` as))) $ ms
 
-toPlonkArithmetization :: forall a . Finite a => Map Natural F -> ArithmeticCircuit F
+toPlonkArithmetization :: forall a . KnownNat a => Map Natural F -> ArithmeticCircuit F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
 toPlonkArithmetization inputs ac =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]

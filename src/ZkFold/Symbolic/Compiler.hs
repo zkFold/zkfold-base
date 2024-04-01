@@ -10,7 +10,7 @@ module ZkFold.Symbolic.Compiler (
 
 import           Control.Monad.State                        (execState)
 import           Data.Aeson                                 (ToJSON)
-import           Prelude                                    (IO, Show (..), FilePath, ($), (++), putStrLn, mempty)
+import           Prelude                                    (FilePath, IO, Show (..), mempty, putStrLn, ($), (++))
 
 import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit

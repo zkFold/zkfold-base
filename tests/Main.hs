@@ -8,6 +8,7 @@ import           Tests.Arithmetization                       (specArithmetizatio
 import           Tests.Field                                 (specField)
 import           Tests.GroebnerBasis                         (specGroebner)
 import           Tests.Group                                 (specAdditiveGroup)
+import           Tests.Multiplication                        (specMultiplication)
 import           Tests.NonInteractiveProof                   (specNonInteractiveProof)
 import           Tests.Pairing                               (specPairing)
 import           Tests.Permutations                          (specPermutations)
@@ -15,10 +16,8 @@ import           Tests.Plonk                                 (specPlonk)
 import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.UInt                                  (specUInt)
 import           Tests.Univariate                            (specUnivariate)
-import           Tests.Multiplication                        (specMultiplication)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Protocol.ARK.Plonk              (PlonkBS)
@@ -47,7 +46,7 @@ main = do
     specUnivariate
     specMultiplication
 
-    specNonInteractiveProof @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) N32)
+    specNonInteractiveProof @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) 32)
     specPlonk
     specNonInteractiveProof @PlonkBS
 

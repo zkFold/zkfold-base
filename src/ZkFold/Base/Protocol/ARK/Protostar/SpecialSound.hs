@@ -17,9 +17,9 @@ class Arithmetic f => SpecialSoundProtocol f a where
       type ProverMessage t a
       type VerifierMessage t a
 
-      type Dimension a
+      type Dimension a :: Natural
       -- ^ l in the paper
-      type Degree a
+      type Degree a :: Natural
       -- ^ d in the paper
 
       rounds :: a -> Natural

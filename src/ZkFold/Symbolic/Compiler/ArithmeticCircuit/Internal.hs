@@ -81,7 +81,7 @@ instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
 
 -- | A finite field of a large order.
 -- It is used in the compiler for generating new variable indices.
-type VarField = BLS12_381_Scalar
+type VarField = Zp BLS12_381_Scalar
 
 type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a)
 
@@ -89,8 +89,8 @@ type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a)
 toVar :: forall a . Arithmetic a => [Natural] -> Constraint a -> Natural
 toVar srcs c = fromBinary $ castBits $ binaryExpansion ex
     where
-        r  = toZp 903489679376934896793395274328947923579382759823 :: Zp VarField
-        g  = toZp 89175291725091202781479751781509570912743212325 :: Zp VarField
+        r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
+        g  = toZp 89175291725091202781479751781509570912743212325 :: VarField
         v  = BinScale @a . (+ r) . fromConstant
         x  = g ^ runBinScale (v `evalPolynomial` c)
         ex = foldr (\p y -> x ^ p + y) x srcs

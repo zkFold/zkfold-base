@@ -11,17 +11,18 @@ module ZkFold.Base.Algebra.Basic.Permutations (
     fromCycles
 ) where
 
-import           Data.Map                        (Map, elems, empty, singleton, union)
-import           Data.Maybe                      (fromJust)
-import qualified Data.Vector                     as V
-import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), drop, length, (!!))
-import qualified Prelude                         as P
-import           Test.QuickCheck                 (Arbitrary (..))
+import           Data.Map                         (Map, elems, empty, singleton, union)
+import           Data.Maybe                       (fromJust)
+import qualified Data.Vector                      as V
+import           Numeric.Natural                  (Natural)
+import           Prelude                          hiding (Num (..), drop, length, (!!))
+import qualified Prelude                          as P
+import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector         (Vector (..), fromVector, toVector)
-import           ZkFold.Prelude                  (chooseNatural, drop, length, (!!))
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector          (Vector (..), fromVector, toVector)
+import           ZkFold.Prelude                   (chooseNatural, drop, length, (!!))
 
 -- TODO (Issue #18): make the code safer
 
@@ -40,7 +41,7 @@ mkIndexPartition vs =
 newtype Permutation n = Permutation (Vector n Natural)
     deriving (Show, Eq)
 
-instance Finite n => Arbitrary (Permutation n) where
+instance KnownNat n => Arbitrary (Permutation n) where
     arbitrary =
         let f as [] = return as
             f as bs = do
@@ -48,7 +49,7 @@ instance Finite n => Arbitrary (Permutation n) where
                 let as' = (bs !! i) : as
                     bs' = drop i bs
                 f as' bs'
-        in Permutation . Vector <$> f [] [1..order @n]
+        in Permutation . Vector <$> f [] [1..value @n]
 
 fromPermutation :: Permutation n -> [Natural]
 fromPermutation (Permutation perm) = fromVector perm
@@ -64,7 +65,7 @@ applyCycle c (Permutation perm) = Permutation $ fmap f perm
             Just j  -> c V.! ((j P.+ 1) `mod` V.length c)
             Nothing -> i
 
-fromCycles :: Finite n => IndexPartition a -> Permutation n
+fromCycles :: KnownNat n => IndexPartition a -> Permutation n
 fromCycles p =
     let n = fromIntegral $ V.length $ V.concat $ elems p
     in foldr applyCycle (Permutation $ fromJust $ toVector [1 .. n]) $ elems p

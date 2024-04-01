@@ -10,6 +10,7 @@ import qualified Prelude                                                as Haske
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
+import           ZkFold.Base.Algebra.Basic.Number                       (Prime)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (boolCheckC, plusMultC)
 import           ZkFold.Symbolic.Data.Bool                              (Bool (..), BoolType (..))

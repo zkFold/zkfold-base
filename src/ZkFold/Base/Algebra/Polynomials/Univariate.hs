@@ -1,16 +1,17 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Base.Algebra.Polynomials.Univariate where
 
-import qualified Data.Vector                     as V
-import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
-import qualified Prelude                         as P
-import           Test.QuickCheck                 (Arbitrary (..), chooseInt)
+import qualified Data.Vector                      as V
+import           Numeric.Natural                  (Natural)
+import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
+import qualified Prelude                          as P
+import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.DFT   (genericDft)
+import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
+import           ZkFold.Base.Algebra.Basic.Number
 
 -------------------------------- Arbitrary degree polynomials --------------------------------
 
@@ -47,10 +48,10 @@ instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
 padVector :: forall a . Ring a => V.Vector a -> Int -> V.Vector a
 padVector v l
   | V.length v == l = v
-  | otherwise = v V.++ (V.replicate (l P.- V.length v) zero)
+  | otherwise = v V.++ V.replicate (l P.- V.length v) zero
 
 mulAdaptive :: forall c . Field c => V.Vector c -> V.Vector c -> V.Vector c
-mulAdaptive l r 
+mulAdaptive l r
       | V.null l = V.empty
       | V.null r = V.empty
       | otherwise =
@@ -63,7 +64,7 @@ mulAdaptive l r
             len = max (V.length l) (V.length r)
 
             p :: Integer
-            p   = (ceiling @Double $ logBase 2 (fromIntegral len))
+            p = ceiling @Double $ logBase 2 (fromIntegral len)
 
             padKaratsuba :: Int
             padKaratsuba = 2 P.^ p
@@ -72,8 +73,8 @@ mulAdaptive l r
             padDft = 2 P.* padKaratsuba
 
             lPaddedKaratsuba, rPaddedKaratsuba :: V.Vector c
-            lPaddedKaratsuba = padVector l padKaratsuba 
-            rPaddedKaratsuba = padVector r padKaratsuba 
+            lPaddedKaratsuba = padVector l padKaratsuba
+            rPaddedKaratsuba = padVector r padKaratsuba
 
             lPaddedDft, rPaddedDft :: V.Vector c
             lPaddedDft = padVector l padDft
@@ -102,7 +103,7 @@ mulDft p w2n lPadded rPadded = c
     cImage = V.zipWith (*) v1Image v2Image
 
     c :: V.Vector c
-    c = fmap (* nInv) $ genericDft p w2nInv cImage
+    c = (* nInv) <$> genericDft p w2nInv cImage
 
 mulKaratsuba :: forall a. Field a => V.Vector a -> V.Vector a -> V.Vector a
 mulKaratsuba v1 v2
@@ -121,7 +122,7 @@ mulKaratsuba v1 v2
     (d, c) = V.splitAt n v2
 
     partLen :: Int
-    partLen = len P.- 1 
+    partLen = len P.- 1
 
 
     ac, bd :: V.Vector a
@@ -206,16 +207,16 @@ eea a b = go (a, one) (b, zero)
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
 -- TODO (Issue #17): hide constructor
-newtype PolyVec c size = PV (V.Vector c)
+newtype PolyVec c (size :: Natural) = PV (V.Vector c)
     deriving (Eq, Show)
 
-toPolyVec :: forall c size . (Ring c, Finite size) => V.Vector c -> PolyVec c size
-toPolyVec = PV . V.take (fromIntegral (order @size)) . addZeros @c @size
+toPolyVec :: forall c size . (Ring c, KnownNat size) => V.Vector c -> PolyVec c size
+toPolyVec = PV . V.take (fromIntegral (value @size)) . addZeros @c @size
 
 fromPolyVec :: PolyVec c size -> V.Vector c
 fromPolyVec (PV cs) = cs
 
-poly2vec :: forall c size . (Ring c, Finite size) => Poly c -> PolyVec c size
+poly2vec :: forall c size . (Ring c, KnownNat size) => Poly c -> PolyVec c size
 poly2vec (P cs) = toPolyVec cs
 
 vec2poly :: (Ring c, Eq c) => PolyVec c size -> Poly c
@@ -224,34 +225,34 @@ vec2poly (PV cs) = removeZeros $ P cs
 instance Ring c => AdditiveSemigroup (PolyVec c size) where
     PV l + PV r = PV $ V.zipWith (+) l r
 
-instance (Ring c, Finite size) => AdditiveMonoid (PolyVec c size) where
-    zero = PV $ V.replicate (fromIntegral (order @size)) zero
+instance (Ring c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
+    zero = PV $ V.replicate (fromIntegral (value @size)) zero
 
-instance (Ring c, Finite size) => AdditiveGroup (PolyVec c size) where
+instance (Ring c, KnownNat size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ fmap negate cs
 
 -- TODO (Issue #18): check for overflow
-instance (Field c, Finite size, Eq c) => MultiplicativeSemigroup (PolyVec c size) where
+instance (Field c, KnownNat size, Eq c) => MultiplicativeSemigroup (PolyVec c size) where
     l * r = poly2vec $ vec2poly l * vec2poly r
 
-instance (Field c, Finite size, Eq c) => MultiplicativeMonoid (PolyVec c size) where
-    one = PV $ V.singleton one V.++ V.replicate (fromIntegral (order @size - 1)) zero
+instance (Field c, KnownNat size, Eq c) => MultiplicativeMonoid (PolyVec c size) where
+    one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size - 1)) zero
 
-instance (Field c, Finite size, Eq c) => MultiplicativeGroup (PolyVec c size) where
+instance (Field c, KnownNat size, Eq c) => MultiplicativeGroup (PolyVec c size) where
     invert = undefined
 
     l / r = poly2vec $ fst $ qr (vec2poly l) (vec2poly r)
 
-instance (Ring c, Arbitrary c, Finite size) => Arbitrary (PolyVec c size) where
-    arbitrary = toPolyVec <$> V.replicateM (fromIntegral $ order @size) arbitrary
+instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
+    arbitrary = toPolyVec <$> V.replicateM (fromIntegral $ value @size) arbitrary
 
 -- p(x) = a0 + a1 * x
-polyVecLinear :: forall c size . (Ring c, Finite size) => c -> c -> PolyVec c size
-polyVecLinear a0 a1 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ order @size - 2) zero
+polyVecLinear :: forall c size . (Ring c, KnownNat size) => c -> c -> PolyVec c size
+polyVecLinear a0 a1 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ value @size - 2) zero
 
 -- p(x) = a0 + a1 * x + a2 * x^2
-polyVecQuadratic :: forall c size . (Ring c, Finite size) => c -> c -> c -> PolyVec c size
-polyVecQuadratic a0 a1 a2 = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ order @size - 3) zero
+polyVecQuadratic :: forall c size . (Ring c, KnownNat size) => c -> c -> c -> PolyVec c size
+polyVecQuadratic a0 a1 a2 = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ value @size - 3) zero
 
 scalePV :: Ring c => c -> PolyVec c size -> PolyVec c size
 scalePV c (PV as) = PV $ fmap (*c) as
@@ -259,34 +260,34 @@ scalePV c (PV as) = PV $ fmap (*c) as
 evalPolyVec :: Ring c => PolyVec c size -> c -> c
 evalPolyVec (PV cs) x = sum $ V.zipWith (*) cs $ fmap (x^) (V.generate (V.length cs) (fromIntegral @_ @Integer))
 
-castPolyVec :: forall c size size' . (Ring c, Finite size, Finite size', Eq c) => PolyVec c size -> PolyVec c size'
+castPolyVec :: forall c size size' . (Ring c, KnownNat size, KnownNat size', Eq c) => PolyVec c size -> PolyVec c size'
 castPolyVec (PV cs)
-    | order @size <= order @size'                             = toPolyVec cs
-    | all (== zero) (V.drop (fromIntegral (order @size')) cs) = toPolyVec cs
+    | value @size <= value @size'                             = toPolyVec cs
+    | all (== zero) (V.drop (fromIntegral (value @size')) cs) = toPolyVec cs
     | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
 
 -- p(x) = x^n - 1
-polyVecZero :: forall c size size' . (Field c, Finite size, Finite size', Eq c) => PolyVec c size'
-polyVecZero = poly2vec $ scaleP one (order @size) one - one
+polyVecZero :: forall c size size' . (Field c, KnownNat size, KnownNat size', Eq c) => PolyVec c size'
+polyVecZero = poly2vec $ scaleP one (value @size) one - one
 
 -- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
-polyVecLagrange :: forall c size size' . (Field c, Eq c, Finite size, Finite size') =>
+polyVecLagrange :: forall c size size' . (Field c, Eq c, KnownNat size, KnownNat size') =>
     Natural -> c -> PolyVec c size'
-polyVecLagrange i omega = scalePV (omega^i / fromConstant (order @size)) $ (polyVecZero @c @size @size' - one) / polyVecLinear (negate $ omega^i) one
+polyVecLagrange i omega = scalePV (omega^i / fromConstant (value @size)) $ (polyVecZero @c @size @size' - one) / polyVecLinear (negate $ omega^i) one
 
 -- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
-polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, Finite size, Finite size') =>
+polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, KnownNat size, KnownNat size') =>
     c -> PolyVec c size -> PolyVec c size'
 polyVecInLagrangeBasis omega (PV cs) =
     let ls = fmap (\i -> polyVecLagrange @c @size @size' i omega) (V.generate (V.length cs) (fromIntegral . succ))
     in sum $ V.zipWith scalePV cs ls
 
-polyVecGrandProduct :: forall c size . (Field c, Finite size) =>
+polyVecGrandProduct :: forall c size . (Field c, KnownNat size) =>
     PolyVec c size -> PolyVec c size -> PolyVec c size -> c -> c -> PolyVec c size
 polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
     let ps = fmap (+ gamma) (V.zipWith (+) as (fmap (* beta) bs))
         qs = fmap (+ gamma) (V.zipWith (+) as (fmap (* beta) sigmas))
-        zs = fmap (product . flip V.take (V.zipWith (/) ps qs)) (V.generate (fromIntegral (order @size)) id)
+        zs = fmap (product . flip V.take (V.zipWith (/) ps qs)) (V.generate (fromIntegral (value @size)) id)
     in PV zs
 
 -------------------------------- Helper functions --------------------------------
@@ -307,5 +308,5 @@ removeZeros (P cs)
           | cs `V.unsafeIndex` n == zero = traverseZeros (n P.- 1)
           | otherwise = n
 
-addZeros :: forall c size . (Ring c, Finite size) => V.Vector c -> V.Vector c
-addZeros cs = cs V.++ V.replicate (fromIntegral (order @size) P.- V.length cs) zero
+addZeros :: forall c size . (Ring c, KnownNat size) => V.Vector c -> V.Vector c
+addZeros cs = cs V.++ V.replicate (fromIntegral (value @size) P.- V.length cs) zero

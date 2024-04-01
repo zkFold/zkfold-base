@@ -52,6 +52,7 @@ common options
       MultiWayIf,
       NamedFieldPuns,
       NoImplicitPrelude,
+      NoStarIsType,
       NumericUnderscores,
       OverloadedStrings,
       OverloadedLabels,

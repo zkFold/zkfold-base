@@ -60,34 +60,34 @@ cast n =
 
 --------------------------------------------------------------------------------
 
-toNatural :: forall p n . (Finite p, KnownNat n) => UInt n (Zp p) -> Natural
+toNatural :: forall p n . (KnownNat p, KnownNat n) => UInt n (Zp p) -> Natural
 toNatural (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
-    where base = 2 ^ registerSize @p @n
+    where base = 2 ^ registerSize @(Zp p) @n
 
-instance (Finite p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
     x + y = fromConstant $ toNatural x + toNatural y
 
-instance (Finite p, KnownNat n) => AdditiveMonoid (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => AdditiveMonoid (UInt n (Zp p)) where
     zero = fromConstant (0 :: Natural)
 
-instance (Finite p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
     x - y = fromConstant $ toNatural x + 2 ^ getNatural @n - toNatural y
     negate x = fromConstant $ 2 ^ getNatural @n - toNatural x
 
-instance (Finite p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
     x * y = fromConstant $ toNatural x * toNatural y
 
-instance (Finite p, KnownNat n) => MultiplicativeMonoid (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => MultiplicativeMonoid (UInt n (Zp p)) where
     one = fromConstant (1 :: Natural)
 
-instance (Finite p, KnownNat n) => Semiring (UInt n (Zp p))
+instance (KnownNat p, KnownNat n) => Semiring (UInt n (Zp p))
 
-instance (Finite p, KnownNat n) => Ring (UInt n (Zp p))
+instance (KnownNat p, KnownNat n) => Ring (UInt n (Zp p))
 
-instance (Finite p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
     arbitrary = UInt
-        <$> replicateA (numberOfRegisters @p @n - 1) (toss $ registerSize @p @n)
-        <*> toss (highRegisterSize @p @n)
+        <$> replicateA (numberOfRegisters @(Zp p) @n - 1) (toss $ registerSize @(Zp p) @n)
+        <*> toss (highRegisterSize @(Zp p) @n)
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 --------------------------------------------------------------------------------
@@ -237,7 +237,7 @@ class StrictNum a where
     strictSub :: a -> a -> a
     strictMul :: a -> a -> a
 
-instance (Finite p, KnownNat n) => StrictNum (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => StrictNum (UInt n (Zp p)) where
     strictAdd x y = strictConv $ toNatural x + toNatural y
     strictSub x y = strictConv $ toNatural x - toNatural y
     strictMul x y = strictConv $ toNatural x * toNatural y

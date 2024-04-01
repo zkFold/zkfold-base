@@ -13,6 +13,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
     circuits
 ) where
 
+import           Control.Monad.Identity                              (Identity (..))
 import           Control.Monad.State                                 (State, gets, modify, runState)
 import           Data.Functor                                        (($>))
 import           Data.Map                                            ((!))
@@ -133,13 +134,13 @@ circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> Arithme
 -- ^ Builds a circuit from blueprint. A blueprint is a function which, given an
 -- arbitrary type of variables @i@ and a monad @m@ supporting the 'MonadBlueprint'
 -- API, computes the output variable of a future circuit.
-circuit b = let (o, r) = runState b mempty in r { acOutput = o }
+circuit b = runIdentity $ circuits (Identity <$> b)
 
-circuits :: Arithmetic a => (forall i m . MonadBlueprint i a m => m [i]) -> [ArithmeticCircuit a]
--- ^ Builds a list of circuits from one blueprint. A blueprint is a function
+circuits :: (Arithmetic a, Functor f) => (forall i m . MonadBlueprint i a m => m (f i)) -> f (ArithmeticCircuit a)
+-- ^ Builds a collection of circuits from one blueprint. A blueprint is a function
 -- which, given an arbitrary type of variables @i@ and a monad @m@ supporting the
--- 'MonadBlueprint' API, computes the list of output variables of future circuits.
-circuits b = let (os, r) = runState b mempty in [ r { acOutput = o } | o <- os ]
+-- 'MonadBlueprint' API, computes the collection of output variables of future circuits.
+circuits b = let (os, r) = runState b mempty in (\o -> r { acOutput = o }) <$> os
 
 instance (FiniteField a, Haskell.Eq a) => Eq (Bool (Self a)) (Self a) where
     Self x == Self y = Bool . Self $ bool zero one (x Haskell.== y)
@@ -169,7 +170,7 @@ instance (Semiring a, Ord i) => Scale (Sources a i) a where
   scale = const id
 
 instance Finite a => Finite (Sources a i) where
-  order = order @a
+  type Order (Sources a i) = Order a
 
 instance Ord i => MultiplicativeSemigroup (Sources a i) where
   (*) = (<>)
