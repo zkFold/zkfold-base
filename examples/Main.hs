@@ -2,6 +2,7 @@
 
 module Main where
 
+import           Examples.ByteString  (exampleByteStringAnd, exampleByteStringOr)
 import           Examples.Conditional (exampleConditional)
 import           Examples.Eq          (exampleEq)
 import           Examples.Fibonacci   (exampleFibonacci)
@@ -30,3 +31,7 @@ main = do
     exampleUIntStrictAdd @500
     exampleUIntStrictMul @32
     exampleUIntStrictMul @500
+    exampleByteStringAnd @32
+    exampleByteStringAnd @500
+    exampleByteStringOr @32
+    exampleByteStringOr @500

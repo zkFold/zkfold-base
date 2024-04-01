@@ -210,6 +210,7 @@ test-suite zkfold-base-examples
     ghc-options: -rtsopts
     main-is: Main.hs
     other-modules:
+      Examples.ByteString
       Examples.Conditional
       Examples.Eq
       Examples.Fibonacci
