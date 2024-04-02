@@ -52,6 +52,7 @@ common options
       MultiWayIf,
       NamedFieldPuns,
       NoImplicitPrelude,
+      NoStarIsType,
       NumericUnderscores,
       OverloadedStrings,
       OverloadedLabels,
@@ -183,6 +184,7 @@ test-suite zkfold-base-test
       Tests.Multiplication
     build-depends:
       base                          >= 4.9 && < 5,
+      bytestring                                 ,
       containers                                 ,
       hspec                                < 2.12,
       QuickCheck                                 ,

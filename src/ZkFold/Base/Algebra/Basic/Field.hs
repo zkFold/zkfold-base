@@ -1,6 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE OverloadedLists     #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE OverloadedLists      #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Algebra.Basic.Field (
     IrreduciblePoly(..),
@@ -24,48 +26,47 @@ import           System.Random                              (Random (..), Random
 import           Test.QuickCheck                            hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString
 
 ------------------------------ Prime Fields -----------------------------------
 
-newtype Zp p = Zp Integer
+newtype Zp (p :: Natural) = Zp Integer
     deriving (Generic, NFData)
 
 fromZp :: Zp p -> Natural
 fromZp (Zp a) = fromIntegral a
 
-residue :: forall p . Finite p => Integer -> Integer
-residue = (`mod` fromIntegral (order @p))
+residue :: forall p . KnownNat p => Integer -> Integer
+residue = (`mod` fromIntegral (value @p))
 
-toZp :: forall p . Finite p => Integer -> Zp p
+toZp :: forall p . KnownNat p => Integer -> Zp p
 toZp = Zp . residue @p
 
-instance Finite p => Finite (Zp p) where
-    order = order @p
+instance KnownNat p => Finite (Zp p) where
+    type Order (Zp p) = p
 
-instance Prime p => Prime (Zp p)
-
-instance Finite p => Eq (Zp p) where
+instance KnownNat p => Eq (Zp p) where
     Zp a == Zp b = residue @p (a - b) == 0
 
-instance Finite p => Ord (Zp p) where
+instance KnownNat p => Ord (Zp p) where
     Zp a <= Zp b = residue @p a <= residue @p b
 
-instance Finite p => AdditiveSemigroup (Zp p) where
+instance KnownNat p => AdditiveSemigroup (Zp p) where
     Zp a + Zp b = toZp (a + b)
 
-instance Finite p => AdditiveMonoid (Zp p) where
+instance KnownNat p => AdditiveMonoid (Zp p) where
     zero = Zp 0
 
-instance Finite p => AdditiveGroup (Zp p) where
+instance KnownNat p => AdditiveGroup (Zp p) where
     negate (Zp a) = toZp (negate a)
     Zp a - Zp b   = toZp (a - b)
 
-instance Finite p => MultiplicativeSemigroup (Zp p) where
+instance KnownNat p => MultiplicativeSemigroup (Zp p) where
     Zp a * Zp b = toZp (a * b)
 
-instance Finite p => MultiplicativeMonoid (Zp p) where
+instance KnownNat p => MultiplicativeMonoid (Zp p) where
     one = Zp 1
 
 instance Prime p => MultiplicativeGroup (Zp p) where
@@ -77,34 +78,34 @@ instance Prime p => MultiplicativeGroup (Zp p) where
             | otherwise = f (x', y') (x - q * x', y - q * y')
             where q = x `div` x'
 
-instance Finite p => FromConstant Integer (Zp p) where
+instance KnownNat p => FromConstant Integer (Zp p) where
     fromConstant = toZp
 
-instance Finite p => FromConstant Natural (Zp p) where
+instance KnownNat p => FromConstant Natural (Zp p) where
     fromConstant = toZp . fromConstant
 
-instance Finite p => Semiring (Zp p)
+instance KnownNat p => Semiring (Zp p)
 
-instance Finite p => Ring (Zp p)
+instance KnownNat p => Ring (Zp p)
 
 instance Prime p => Field (Zp p) where
     rootOfUnity l
       | l == 0                      = Nothing
-      | (order @p - 1) `mod` n /= 0 = Nothing
+      | (value @p - 1) `mod` n /= 0 = Nothing
       | otherwise = Just $ rootOfUnity' (mkStdGen 0)
         where
           n = 2 ^ l
           rootOfUnity' :: RandomGen g => g -> Zp p
           rootOfUnity' g =
-              let (x, g') = first fromConstant $ uniformR (1, order @p - 1) g
-                  x' = x ^ ((order @p - 1) `div` n)
+              let (x, g') = first fromConstant $ uniformR (1, value @p - 1) g
+                  x' = x ^ ((value @p - 1) `div` n)
               in bool (rootOfUnity' g') x' (x' ^ (n `div` 2) /= one)
 
 
 instance Prime p => BinaryExpansion (Zp p) where
     binaryExpansion (Zp a) = map Zp $ binaryExpansion a
 
-instance Finite p => Haskell.Num (Zp p) where
+instance KnownNat p => Haskell.Num (Zp p) where
     fromInteger = toZp
     (+)         = (+)
     (-)         = (-)
@@ -133,10 +134,10 @@ instance ToByteString (Zp p) where
 instance FromByteString (Zp p) where
     fromByteString = fmap Zp . fromByteString
 
-instance Finite p => Arbitrary (Zp p) where
+instance KnownNat p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, fromIntegral (order @(Zp p)) - 1)
 
-instance Finite p => Random (Zp p) where
+instance KnownNat p => Random (Zp p) where
     randomR (Zp a, Zp b) g = (Zp r, g')
       where
         (r, g') = randomR (a, b) g
@@ -153,8 +154,8 @@ class IrreduciblePoly f e | e -> f where
 data Ext2 f e = Ext2 f f
     deriving (Eq, Show)
 
-instance Finite f => Finite (Ext2 f e) where
-    order = order @f * order @f
+instance KnownNat (Order (Ext2 f e)) => Finite (Ext2 f e) where
+    type Order (Ext2 f e) = Order f ^ 2
 
 instance Field f => AdditiveSemigroup (Ext2 f e) where
     Ext2 a b + Ext2 c d = Ext2 (a + c) (b + d)
@@ -202,8 +203,8 @@ instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext2 f 
 data Ext3 f e = Ext3 f f f
     deriving (Eq, Show)
 
-instance Finite f => Finite (Ext3 f e) where
-    order = order @f * order @f * order @f
+instance KnownNat (Order (Ext3 f e)) => Finite (Ext3 f e) where
+    type Order (Ext3 f e) = Order f ^ 3
 
 instance Field f => AdditiveSemigroup (Ext3 f e) where
     Ext3 a b c + Ext3 d e f = Ext3 (a + d) (b + e) (c + f)

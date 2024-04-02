@@ -9,13 +9,8 @@ import           Prelude                                hiding (Fractional (..),
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Permutations
 import           ZkFold.Base.Data.Vector                (fromVector)
-
-data TestSize
-instance Finite TestSize where
-    order = 100
 
 specPermutations :: IO ()
 specPermutations = hspec $ do
@@ -26,7 +21,6 @@ specPermutations = hspec $ do
         describe "Function: fromCycles" $ do
             it "should preserve the elements" $ property $
                 \v ->
-                    let ts = mkIndexPartition @Integer $ V.fromList $ fromVector @TestSize v
-                        p = fromPermutation @TestSize $ fromCycles $ ts
+                    let ts = mkIndexPartition @Integer $ V.fromList $ fromVector @100 v
+                        p = fromPermutation @100 $ fromCycles ts
                     in sort p == sort (V.toList $ V.concat $ elems ts)
-

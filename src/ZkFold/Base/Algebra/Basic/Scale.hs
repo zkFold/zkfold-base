@@ -27,7 +27,7 @@ newtype Self a = Self { getSelf :: a }
     deriving (Eq)
     deriving newtype (AdditiveSemigroup, AdditiveMonoid, AdditiveGroup,
                       MultiplicativeSemigroup, MultiplicativeMonoid, MultiplicativeGroup,
-                      BinaryExpansion, Finite)
+                      BinaryExpansion)
 
 deriving newtype instance FromConstant c a => FromConstant c (Self a)
 
@@ -36,6 +36,8 @@ deriving newtype instance Semiring a => Semiring (Self a)
 deriving newtype instance Ring a => Ring (Self a)
 
 deriving newtype instance Field a => Field (Self a)
+
+deriving newtype instance Finite a => Finite (Self a)
 
 instance Ring a => Scale (Self a) a where
     scale a (Self b) = Self (a * b)

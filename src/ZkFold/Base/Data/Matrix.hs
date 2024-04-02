@@ -2,16 +2,17 @@
 
 module ZkFold.Base.Data.Matrix where
 
-import           Data.Bifunctor                  (first)
-import qualified Data.List                       as List
-import           Data.Maybe                      (fromJust)
+import           Data.Bifunctor                   (first)
+import qualified Data.List                        as List
+import           Data.Maybe                       (fromJust)
 import           Data.These
-import           Data.Zip                        (Semialign (..), Zip (..))
-import           Prelude                         hiding (Num(..), sum, length, zip, zipWith)
-import           System.Random                   (Random (..))
-import           Test.QuickCheck                 (Arbitrary (..))
+import           Data.Zip                         (Semialign (..), Zip (..))
+import           Prelude                          hiding (Num (..), length, sum, zip, zipWith)
+import           System.Random                    (Random (..))
+import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 
 -- TODO: implement a proper matrix algebra
@@ -20,7 +21,7 @@ import           ZkFold.Base.Data.Vector
 newtype Matrix m n a = Matrix (Vector m (Vector n a))
     deriving (Show, Eq)
 
-toMatrix :: forall m n a . (Finite m, Finite n) => [[a]] -> Maybe (Matrix m n a)
+toMatrix :: forall m n a . (KnownNat m, KnownNat n) => [[a]] -> Maybe (Matrix m n a)
 toMatrix as = do
     as' <- mapM (toVector @n) as
     Matrix <$> toVector @m as'
@@ -28,7 +29,7 @@ toMatrix as = do
 fromMatrix :: forall m n a . Matrix m n a -> [[a]]
 fromMatrix (Matrix as) = map fromVector $ fromVector as
 
-transpose :: forall m n a . (Finite m, Finite n) => Matrix m n a -> Matrix n m a
+transpose :: forall m n a . (KnownNat m, KnownNat n) => Matrix m n a -> Matrix n m a
 transpose m = fromJust $ toMatrix @n @m $ List.transpose $ fromMatrix m
 
 outer :: forall m n a b c. (a -> b -> c) -> Vector m a -> Vector n b -> Matrix m n c
@@ -41,14 +42,14 @@ outer f a b = Matrix $ fmap (\x -> fmap (f x) b) a
 sum1 :: (Semiring a) => Matrix m n a -> Vector n a
 sum1 (Matrix as) = Vector (sum <$> fromVector as)
 
-sum2 :: (Finite m, Finite n, Semiring a) => Matrix m n a -> Vector m a
+sum2 :: (KnownNat m, KnownNat n, Semiring a) => Matrix m n a -> Vector m a
 sum2 (Matrix as) = sum1 $ transpose $ Matrix as
 
 matrixDotProduct :: forall m n a . Semiring a => Matrix m n a -> Matrix m n a -> a
 matrixDotProduct a b = let Matrix m = a .* b in sum $ fmap sum m
 
 -- -- | Matrix multiplication
-(.*.) :: (Finite n, Finite k, Semiring a) => Matrix m n a -> Matrix n k a -> Matrix m k a
+(.*.) :: (KnownNat n, KnownNat k, Semiring a) => Matrix m n a -> Matrix n k a -> Matrix m k a
 a .*. b =
     let Matrix a' = a
         Matrix b' = transpose b
@@ -57,7 +58,7 @@ a .*. b =
 instance Functor (Matrix m n) where
     fmap f (Matrix as) = Matrix $ fmap (fmap f) as
 
-instance (Finite m, Finite n) => Applicative (Matrix m n) where
+instance (KnownNat m, KnownNat n) => Applicative (Matrix m n) where
     pure a = Matrix $ pure $ pure a
 
     (Matrix fs) <*> (Matrix as) = Matrix $ zipWith (<*>) fs as
@@ -72,20 +73,20 @@ instance Zip (Matrix m n) where
 
     zipWith f (Matrix as) (Matrix bs) = Matrix $ zipWith (zipWith f) as bs
 
-instance (Arbitrary a, Finite m, Finite n) => Arbitrary (Matrix m n a) where
+instance (Arbitrary a, KnownNat m, KnownNat n) => Arbitrary (Matrix m n a) where
     arbitrary = Matrix <$> arbitrary
 
-instance (Random a, Finite m, Finite n) => Random (Matrix m n a) where
+instance (Random a, KnownNat m, KnownNat n) => Random (Matrix m n a) where
     random g =
         let as = foldl (\(as', g') _ ->
                 let (a, g'') = random g'
                 in (as' ++ [a], g''))
-                ([], g) [1..order @m]
+                ([], g) [1..value @m]
         in first (Matrix . Vector) as
 
     randomR (Matrix xs, Matrix ys) g =
         let as = fst $ foldl (\((as', g'), (xs', ys')) _ ->
                 let (a, g'') = randomR (head xs', head ys') g'
                 in ((as' ++ [a], g''), (tail xs', tail ys')))
-                (([], g), (fromVector xs, fromVector ys)) [1..order @m]
+                (([], g), (fromVector xs, fromVector ys)) [1..value @m]
         in first (Matrix . Vector) as

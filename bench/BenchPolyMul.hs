@@ -18,26 +18,18 @@ import           Test.Tasty.Bench
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number            (Prime)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Prelude                              (zipWithDefault)
 
 deriving instance Generic (Poly c)
 deriving instance (Generic c, NFData c) => NFData (Poly c)
-deriving instance Generic BLS12_381_Scalar
-deriving instance NFData BLS12_381_Scalar
-
-deriving instance Generic BLS12_381_Base
-deriving instance NFData BLS12_381_Base
 
 -- | Only for testing DFT with smaller numbers which can be easily calculated by hand for cross-check.
 -- DFT of a polynomial of length n requires calculating primitive roots of unity of order n.
 -- Choosing 17 allows us to calculate DFT of polynomials of length up to 256 and 16 as all these numbers divide 257 - 1.
-data P257
-    deriving (Generic, NFData)
-instance Finite P257 where
-    order = 257
-instance Prime P257
+instance Prime 257
 
 -- | Generate random polynomials of given size
 --
@@ -74,9 +66,9 @@ main = do
       putStrLn $ "Karatsuba\t" <> show (ref == p1 `benchKaratsuba` p2)
       putStrLn $ "Vector\t\t"  <> show (ref == p1 `benchVec` p2)
       putStrLn $ "DFT\t\t"     <> show (ref == p1 `benchDft` p2)
-  defaultMain $ 
+  defaultMain
       [ bgroup "Field with roots of unity"           $ flip fmap sizes $ \s -> benchOps @BLS12_381_Scalar s ops
-      , bgroup "Field with roots of unity up to 256" $ flip fmap sizes $ \s -> benchOps @P257 s $ tail ops
+      , bgroup "Field with roots of unity up to 256" $ flip fmap sizes $ \s -> benchOps @257 s $ tail ops
       , bgroup "Field without roots of unity"        $ flip fmap sizes $ \s -> benchOps @BLS12_381_Base s $ tail ops
       ]
 

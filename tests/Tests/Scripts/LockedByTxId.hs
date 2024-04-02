@@ -1,22 +1,23 @@
-{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
 import           Data.Map                                    (fromList)
-import           Prelude                                     hiding (Num(..), Eq(..), Ord(..), Bool)
-import qualified Prelude as Haskell
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..))
+import qualified Prelude                                     as Haskell
 import           Test.Hspec
 import           Test.QuickCheck
+import           Tests.Plonk                                 (PlonkBS)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk(..), PlonkBS, WitnessInputPlonk (..), ProverSecretPlonk)
+import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), ProverSecretPlonk, WitnessInputPlonk (..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof(..))
+import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Cardano.Types.Tx            (TxId (..))
 import           ZkFold.Symbolic.Compiler                    hiding (input)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Eq                     (Eq(..))
+import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => TxId a' -> TxId a -> () -> Bool a

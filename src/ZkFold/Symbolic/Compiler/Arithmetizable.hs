@@ -15,7 +15,8 @@ import           Numeric.Natural                                           (Natu
 import           Prelude                                                   hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector                                   hiding (concat)
 import           ZkFold.Prelude                                            (drop, length, replicateA, splitAt, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
@@ -30,7 +31,7 @@ class Arithmetic a => Arithmetizable a x where
     -- | Restores `x` from outputs from the circuits' outputs.
     restore :: [ArithmeticCircuit a] -> x
 
-    -- | Returns the number of finite field elements needed to desscribe `x`.
+    -- | Returns the number of finite field elements needed to describe `x`.
     typeSize :: Natural
 
 -- A wrapper for `Arithmetizable` types.
@@ -74,16 +75,16 @@ instance (Arithmetizable a x, Arithmetizable a y, Arithmetizable a z) => Arithme
 
     typeSize = typeSize @a @x + typeSize @a @y + typeSize @a @z
 
-instance (Arithmetizable a x, Finite n) => Arithmetizable a (Vector n x) where
+instance (Arithmetizable a x, KnownNat n) => Arithmetizable a (Vector n x) where
     arithmetize (Vector xs) = concat <$> mapM arithmetize xs
 
     restore rs
         | length rs /= typeSize @a @(Vector n x) = error "restore: wrong number of arguments"
-        | otherwise = f rs <$> Vector [0 .. order @n - 1]
+        | otherwise = f rs <$> Vector [0 .. value @n - 1]
         where
             f as = restore @a @x . take (typeSize @a @x) . flip drop as . ((typeSize @a @x) *)
 
-    typeSize = typeSize @a @x * (order @n)
+    typeSize = typeSize @a @x * value @n
 
 instance (Arithmetizable a x, Arithmetizable a f) => Arithmetizable a (x -> f) where
     arithmetize f = do

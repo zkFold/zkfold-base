@@ -1,8 +1,13 @@
 cradle:
   cabal:
-    - path: "src"
-      component: "zkfold-base:lib:zkfold-base"
-    - path: "tests"
+    - path: "./src"
+      component: "lib:zkfold-base"
+
+    - path: "./tests"
       component: "zkfold-base:test:zkfold-base-test"
-    - path: "examples"
+
+    - path: "./examples"
       component: "zkfold-base:test:zkfold-base-examples"
+
+    - path: "./bench/BenchPolyMul.hs"
+      component: "zkfold-base:bench:polynomial-multiplication"

@@ -3,25 +3,26 @@
 
 module Tests.UInt (specUInt) where
 
-import           Control.Applicative             ((<*>))
-import           Control.Monad                   (return)
-import           Data.Data                       (Proxy (..))
-import           Data.Function                   (($))
-import           Data.Functor                    ((<$>))
-import           Data.List                       (map, (++))
-import           GHC.TypeNats                    (KnownNat, natVal)
-import           Numeric.Natural                 (Natural)
-import           Prelude                         (div, show)
-import qualified Prelude                         as Haskell
-import           System.IO                       (IO)
-import           Test.Hspec                      (describe, hspec)
-import           Test.QuickCheck                 (Gen, Property, (===))
-import           Tests.ArithmeticCircuit         (eval', it)
+import           Control.Applicative              ((<*>))
+import           Control.Monad                    (return)
+import           Data.Data                        (Proxy (..))
+import           Data.Function                    (($))
+import           Data.Functor                     ((<$>))
+import           Data.List                        (map, (++))
+import           GHC.TypeNats                     (KnownNat, natVal)
+import           Numeric.Natural                  (Natural)
+import           Prelude                          (div, show)
+import qualified Prelude                          as Haskell
+import           System.IO                        (IO)
+import           Test.Hspec                       (describe, hspec)
+import           Test.QuickCheck                  (Gen, Property, (===))
+import           Tests.ArithmeticCircuit          (eval', it)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Prelude                  (chooseNatural)
-import           ZkFold.Symbolic.Compiler        (ArithmeticCircuit)
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Number (Prime)
+import           ZkFold.Prelude                   (chooseNatural)
+import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.UInt
 
 toss :: Natural -> Gen Natural

@@ -1,12 +1,13 @@
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial.Class where
 
-import           Data.Map                          (Map, fromListWith)
-import qualified Data.Map                          as Map
-import           Prelude                           hiding (Num(..), (/), replicate)
+import           Data.Map                         (Map, fromListWith)
+import qualified Data.Map                         as Map
+import           Prelude                          hiding (Num (..), replicate, (/))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector           (Vector, fromVector, toVector)
-import           ZkFold.Prelude                    (replicate)
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
+import           ZkFold.Base.Data.Vector          (Vector, fromVector, toVector)
+import           ZkFold.Prelude                   (replicate)
 
 type Variable i = Ord i
 
@@ -31,7 +32,7 @@ class Monomial i j => ToMonomial i j m where
 instance Monomial i j => ToMonomial i j (Map i j) where
     toMonomial   = Just . Map.filter (/= zero)
 
-instance (Monomial i j, Integral j, Finite d) => ToMonomial i j (Vector d (i, Bool)) where
+instance (Monomial i j, Integral j, KnownNat d) => ToMonomial i j (Vector d (i, Bool)) where
     toMonomial m =
         let v = foldl (\acc (i, j) -> acc ++ replicate (fromIntegral j) (i, True)) [] $ Map.toList m
         in toVector v

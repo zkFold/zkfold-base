@@ -3,13 +3,14 @@ module ZkFold.Symbolic.Data.Eq (
     elem
 ) where
 
-import           Data.Bool                                              (bool)
-import           Prelude                                                hiding (Bool, Eq (..), Num (..), any, elem, not, product, (/), (/=), (==))
-import qualified Prelude                                                as Haskell
+import           Data.Bool                        (bool)
+import           Prelude                          hiding (Bool, Eq (..), Num (..), any, elem, not, product, (/), (/=), (==))
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
-import           ZkFold.Symbolic.Data.Bool                              (Bool (..), BoolType (..), any)
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Number (Prime)
+import           ZkFold.Symbolic.Data.Bool        (Bool (..), BoolType (..), any)
 
 class BoolType b => Eq b a where
     (==) :: a -> a -> b
