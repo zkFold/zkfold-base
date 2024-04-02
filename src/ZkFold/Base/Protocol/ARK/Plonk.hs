@@ -5,7 +5,6 @@
 
 module ZkFold.Base.Protocol.ARK.Plonk where
 
-import           Data.ByteString                             (ByteString)
 import           Data.Map                                    (Map, elems, singleton)
 import qualified Data.Map                                    as Map
 import qualified Data.Vector                                 as V
@@ -45,16 +44,10 @@ instance Arbitrary (Plonk d t) where
         ac <- arbitrary
         Plonk omega k1 k2 (singleton (acOutput ac) 15) ac <$> arbitrary
 
--- TODO (Issue #25): We should have several options for size of the polynomials. Most code should be generic in this parameter.
-type PlonkSizeBS = 32
-type PlonkBS = Plonk PlonkSizeBS ByteString
-
 type PlonkPermutationSize d = 3 * d
 
 -- TODO (Issue #25): check that the extended polynomials are of the right size
 type PlonkMaxPolyDegree d = 4 * d + 7
-
-type PlonkMaxPolyDegreeBS = PlonkMaxPolyDegree PlonkSizeBS
 
 type PolyPlonkExtended d = PolyVec F (PlonkMaxPolyDegree d)
 

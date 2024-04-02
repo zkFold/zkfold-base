@@ -17,11 +17,12 @@ import           Prelude                                    hiding (Fractional (
 import           Prelude                                    (abs)
 import           Test.Hspec
 import           Test.QuickCheck
+import           Tests.Plonk                                (PlonkMaxPolyDegreeBS, PlonkSizeBS)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Protocol.ARK.Plonk             (F, PlonkMaxPolyDegreeBS, PlonkSizeBS)
+import           ZkFold.Base.Protocol.ARK.Plonk             (F)
 import           ZkFold.Prelude                             (length, take)
 
 -- TODO (Issue #22): remove dependencies from KZG and Plonk

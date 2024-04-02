@@ -1,8 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Tests.Plonk (specPlonk) where
+module Tests.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
 
+import           Data.ByteString                              (ByteString)
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (transpose)
 import           Data.Map                                     (elems, fromList, singleton)
@@ -23,6 +24,10 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstrai
 import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof (..))
 import           ZkFold.Prelude                               (replicate, take, (!))
 import           ZkFold.Symbolic.Compiler
+
+type PlonkSizeBS = 32
+type PlonkBS = Plonk PlonkSizeBS ByteString
+type PlonkMaxPolyDegreeBS = PlonkMaxPolyDegree PlonkSizeBS
 
 propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
 propPlonkConstraintConversion x (x1, x2, x3) =
