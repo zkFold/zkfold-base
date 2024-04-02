@@ -37,29 +37,26 @@ type G2 = Point BLS12_381_G2
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
-data Plonk t = Plonk F F F (Map Natural F) (ArithmeticCircuit F) F
+data Plonk (d :: Natural) t = Plonk F F F (Map Natural F) (ArithmeticCircuit F) F
     deriving (Show)
-instance Arbitrary (Plonk t) where
+instance Arbitrary (Plonk d t) where
     arbitrary = do
         let (omega, k1, k2) = getParams 5
         ac <- arbitrary
         Plonk omega k1 k2 (singleton (acOutput ac) 15) ac <$> arbitrary
 
-type PlonkBS = Plonk ByteString
-
 -- TODO (Issue #25): We should have several options for size of the polynomials. Most code should be generic in this parameter.
-type family PlonkSize t :: Natural
+type PlonkSizeBS = 32
+type PlonkBS = Plonk PlonkSizeBS ByteString
 
-type instance PlonkSize t = 32
-type PlonkSizeBS = PlonkSize ByteString
-
-type PlonkPermutationSize t = 3 * PlonkSize t
+type PlonkPermutationSize d = 3 * d
 
 -- TODO (Issue #25): check that the extended polynomials are of the right size
-type PlonkMaxPolyDegree t = 4 * PlonkSize t + 7
-type PlonkMaxPolyDegreeBS = PlonkMaxPolyDegree ByteString
+type PlonkMaxPolyDegree d = 4 * d + 7
 
-type PolyPlonkExtended t = PolyVec F (PlonkMaxPolyDegree t)
+type PlonkMaxPolyDegreeBS = PlonkMaxPolyDegree PlonkSizeBS
+
+type PolyPlonkExtended d = PolyVec F (PlonkMaxPolyDegree d)
 
 data ParamsPlonk = ParamsPlonk F F F (Map Natural F) (ArithmeticCircuit F)
     deriving (Show)
@@ -77,9 +74,9 @@ instance Arbitrary ProverSecretPlonk where
         arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
         <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
-newtype WitnessMapPlonk t = WitnessMap (Map.Map Natural F -> (PolyVec F (PlonkSize t), PolyVec F (PlonkSize t), PolyVec F (PlonkSize t)))
+newtype WitnessMapPlonk d = WitnessMap (Map.Map Natural F -> (PolyVec F d, PolyVec F d, PolyVec F d))
 -- TODO (Issue #25): make a proper implementation of Show
-instance Show (WitnessMapPlonk t) where
+instance Show (WitnessMapPlonk d) where
     show _ = "WitnessMap"
 
 newtype WitnessInputPlonk = WitnessInputPlonk (Map.Map Natural F)
@@ -93,69 +90,75 @@ instance Arbitrary WitnessInputPlonk where
         return $ WitnessInputPlonk $ Map.fromList [(1, x), (2, 15/x)]
 
 -- TODO (Issue #18): make the code safer, check list lengths (?)
-instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) => NonInteractiveProof (Plonk t) where
-    type Transcript (Plonk t)   = t
-    type Setup (Plonk t)        = ((V.Vector F, V.Vector G1, G2, G2, F, F, F),
-        (PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t,
-        PolyPlonkExtended t, PolyPlonkExtended t, PolyPlonkExtended t),
+instance forall d t .
+        (KnownNat d,
+         KnownNat (PlonkPermutationSize d),
+         KnownNat (PlonkMaxPolyDegree d),
+         ToTranscript t F,
+         ToTranscript t G1,
+         FromTranscript t F) => NonInteractiveProof (Plonk d t) where
+    type Transcript (Plonk d t)   = t
+    type Setup (Plonk d t)        = ((V.Vector F, V.Vector G1, G2, G2, F, F, F),
+        (PolyPlonkExtended d, PolyPlonkExtended d, PolyPlonkExtended d, PolyPlonkExtended d, PolyPlonkExtended d,
+        PolyPlonkExtended d, PolyPlonkExtended d, PolyPlonkExtended d),
         (G1, G1, G1, G1, G1,
         G1, G1, G1),
-        WitnessMapPlonk t, (PolyVec F (PlonkSize t), PolyVec F (PlonkSize t), PolyVec F (PlonkSize t)))
-    type Witness (Plonk t)      = (WitnessInputPlonk, ProverSecretPlonk)
-    type Input (Plonk t)        = V.Vector F
-    type Proof (Plonk t)        = (G1, G1, G1, G1, G1, G1, G1, G1, G1, F, F, F, F, F, F)
+        WitnessMapPlonk d, (PolyVec F d, PolyVec F d, PolyVec F d))
+    type Witness (Plonk d t)      = (WitnessInputPlonk, ProverSecretPlonk)
+    type Input (Plonk d t)        = V.Vector F
+    type Proof (Plonk d t)        = (G1, G1, G1, G1, G1, G1, G1, G1, G1, F, F, F, F, F, F)
 
-    setup :: Plonk t -> Setup (Plonk t)
+    setup :: Plonk d t -> Setup (Plonk d t)
     setup (Plonk omega k1 k2 inputs ac x) =
         let wmap = acWitness $ mapVarArithmeticCircuit ac
             (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization inputs ac
             wPub = V.fromList $ map negate $ elems inputs
 
-            d = value @(PlonkSize t) + 6
+            d = value @d + 6
             xs = V.fromList $ map (x^) [0..d-1]
             gs = fmap (`mul` gen) xs
             h0 = gen
             h1 = x `mul` gen
 
 
-            s = fromPermutation @(PlonkPermutationSize t) $ fromCycles $
+            s = fromPermutation @(PlonkPermutationSize d) $ fromCycles $
                     mkIndexPartition $ fmap fromZp $ fromPolyVec a V.++ fromPolyVec b V.++ fromPolyVec c
-            f i = case (i-1) `div` value @(PlonkSize t) of
+            f i = case (i-1) `div` value @d of
                 0 -> omega^i
                 1 -> k1 * (omega^i)
                 2 -> k2 * (omega^i)
                 _ -> error "setup: invalid index"
             s' = V.fromList $ map f s
-            sigma1 = toPolyVec $ V.take (fromIntegral $ value @(PlonkSize t)) s'
-            sigma2 = toPolyVec $ V.take (fromIntegral $ value @(PlonkSize t)) $ V.drop (fromIntegral $ value @(PlonkSize t)) s'
-            sigma3 = toPolyVec $ V.take (fromIntegral $ value @(PlonkSize t)) $ V.drop (fromIntegral $ 2 * value @(PlonkSize t)) s'
+            sigma1 = toPolyVec $ V.take (fromIntegral $ value @d) s'
+            sigma2 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ value @d) s'
+            sigma3 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ 2 * value @d) s'
             w1 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec a)
             w2 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec b)
             w3 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec c)
             wmap' i = (w1 i, w2 i, w3 i)
 
-            qmE     = polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega qm
-            qlE     = polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega ql
-            qrE     = polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega qr
-            qoE     = polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega qo
-            qcE     = polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega qc
-            sigma1E = polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega sigma1
-            sigma2E = polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega sigma2
-            sigma3E = polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega sigma3
+            qmE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qm
+            qlE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega ql
+            qrE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qr
+            qoE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qo
+            qcE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qc
+            sigma1E = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega sigma1
+            sigma2E = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega sigma2
+            sigma3E = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega sigma3
         in ((wPub, gs, h0, h1, omega, k1, k2), (qlE, qrE, qoE, qmE, qcE, sigma1E, sigma2E, sigma3E),
             (gs `com` qlE, gs `com` qrE, gs `com` qoE, gs `com` qmE, gs `com` qcE,
             gs `com` sigma1E, gs `com` sigma2E, gs `com` sigma3E), WitnessMap wmap', (sigma1, sigma2, sigma3))
 
-    prove :: Setup (Plonk t) -> Witness (Plonk t) -> (Input (Plonk t), Proof (Plonk t))
+    prove :: Setup (Plonk d t) -> Witness (Plonk d t) -> (Input (Plonk d t), Proof (Plonk d t))
     prove ((wPub, gs, _, _, omega, k1, k2), (ql, qr, qo, qm, qc, sigma1, sigma2, sigma3), _, WitnessMap wmap, (sigma1s, sigma2s, sigma3s))
         (WitnessInputPlonk wInput, ProverSecretPlonk b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)
             = (wPub, (cmA, cmB, cmC, cmZ, cmT1, cmT2, cmT3, proof1, proof2, a_xi, b_xi, c_xi, s1_xi, s2_xi, z_xi))
         where
-            n = value @(PlonkSize t)
-            zH = polyVecZero @F @(PlonkSize t) @(PlonkMaxPolyDegree t)
+            n = value @d
+            zH = polyVecZero @F @d @(PlonkMaxPolyDegree d)
 
             (w1, w2, w3) = wmap wInput
-            pubPoly = polyVecInLagrangeBasis omega $ toPolyVec @F @(PlonkSize t) wPub
+            pubPoly = polyVecInLagrangeBasis omega $ toPolyVec @F @d wPub
 
             a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega w1
             b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega w2
@@ -177,11 +180,11 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
             PV zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) sigma2s beta gamma
             PV zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) sigma3s beta gamma
             gp = PV $ V.zipWith (*) (V.zipWith (*) zs1 zs2) zs3
-            z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega gp
+            z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega gp
             zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
             cmZ = gs `com` z
 
-            (alpha, ts'') = challenge $ ts' `transcript` cmZ :: (F, Transcript (Plonk t))
+            (alpha, ts'') = challenge $ ts' `transcript` cmZ :: (F, Transcript (Plonk d t))
 
             t1  = a * b * qm + a * ql + b * qr + c * qo + pubPoly + qc
             t2  = (a + polyVecLinear gamma beta)
@@ -192,14 +195,14 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
                 * (b + scalePV beta sigma2 + scalePV gamma one)
                 * (c + scalePV beta sigma3 + scalePV gamma one)
                 * zo
-            t4 = (z - one) * polyVecLagrange @F @(PlonkSize t) @(PlonkMaxPolyDegree t) 1 omega
+            t4 = (z - one) * polyVecLagrange @F @d @(PlonkMaxPolyDegree d) 1 omega
             t = (t1 + scalePV alpha (t2 - t3) + scalePV (alpha * alpha) t4) / zH
 
             t_lo'  = toPolyVec $ V.take (fromIntegral n) $ fromPolyVec t
             t_mid' = toPolyVec $ V.take (fromIntegral n) $ V.drop (fromIntegral n) $ fromPolyVec t
             t_hi'  = toPolyVec $ V.drop (fromIntegral $ 2*n) $ fromPolyVec t
-            t_lo   = t_lo' + scalePV b10 (polyVecZero @F @(PlonkSize t) @(PlonkMaxPolyDegree t) + one)
-            t_mid  = t_mid' + scalePV b11 (polyVecZero @F @(PlonkSize t) @(PlonkMaxPolyDegree t) + one) - scalePV b10 one
+            t_lo   = t_lo' + scalePV b10 (polyVecZero @F @d @(PlonkMaxPolyDegree d) + one)
+            t_mid  = t_mid' + scalePV b11 (polyVecZero @F @d @(PlonkMaxPolyDegree d) + one) - scalePV b10 one
             t_hi   = t_hi' - scalePV b11 one
             cmT1   = gs `com` t_lo
             cmT2   = gs `com` t_mid
@@ -225,7 +228,7 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
                 `transcript` s2_xi
                 `transcript` z_xi
 
-            lagrange1_xi = polyVecLagrange @F @(PlonkSize t) @(PlonkMaxPolyDegree t) 1 omega `evalPolyVec` xi
+            lagrange1_xi = polyVecLagrange @F @d @(PlonkMaxPolyDegree d) 1 omega `evalPolyVec` xi
             zH_xi = zH `evalPolyVec` xi
             r   = scalePV (a_xi * b_xi) qm
                 + scalePV a_xi ql
@@ -259,18 +262,18 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
             proof1 = gs `com` proof1Poly
             proof2 = gs `com` proof2Poly
 
-    verify :: Setup (Plonk t) -> Input (Plonk t) -> Proof (Plonk t) -> Bool
+    verify :: Setup (Plonk d t) -> Input (Plonk d t) -> Proof (Plonk d t) -> Bool
     verify
         ((_, gs, h0, h1, omega, k1, k2), _, (cmQl, cmQr, cmQo, cmQm, cmQc, cmS1, cmS2, cmS3), _, _)
         ws
         (cmA, cmB, cmC, cmZ, cmT1, cmT2, cmT3, proof1, proof2, a_xi, b_xi, c_xi, s1_xi, s2_xi, z_xi) = p1 == p2
         where
-            n = value @(PlonkSize t)
+            n = value @d
 
             (beta, ts) = challenge $ mempty
                 `transcript` cmA
                 `transcript` cmB
-                `transcript` cmC :: (F, Transcript (Plonk t))
+                `transcript` cmC :: (F, Transcript (Plonk d t))
             (gamma, ts') = challenge ts
 
             (alpha, ts'') = challenge $ ts' `transcript` cmZ
@@ -292,9 +295,9 @@ instance forall t . (ToTranscript t F, ToTranscript t G1, FromTranscript t F) =>
                 `transcript` proof1
                 `transcript` proof2
 
-            zH_xi        = polyVecZero @F @(PlonkSize t) @(PlonkMaxPolyDegree t) `evalPolyVec` xi
-            lagrange1_xi = polyVecLagrange @F @(PlonkSize t) @(PlonkMaxPolyDegree t) 1 omega `evalPolyVec` xi
-            pubPoly_xi   = polyVecInLagrangeBasis @F @(PlonkSize t) @(PlonkMaxPolyDegree t) omega (toPolyVec ws) `evalPolyVec` xi
+            zH_xi        = polyVecZero @F @d @(PlonkMaxPolyDegree d) `evalPolyVec` xi
+            lagrange1_xi = polyVecLagrange @F @d @(PlonkMaxPolyDegree d) 1 omega `evalPolyVec` xi
+            pubPoly_xi   = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega (toPolyVec ws) `evalPolyVec` xi
 
             r0 =
                   pubPoly_xi
