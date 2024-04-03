@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Cardano.Types.Tx where
 
@@ -68,14 +69,65 @@ data Input datum a = Input
     , txiRedeemer :: a
     } deriving Eq
 
-data Output datum a = Output
+instance (Arithmetizable a x, Arithmetizable a (UInt 32 x), Arithmetizable a (datum x))
+    => Arithmetizable a (Input datum x) where
+
+    arithmetize (Input o v d r) =
+        (\o' v' d' r' -> o' <> v' <> d' <> r')
+            <$> arithmetize o
+            <*> arithmetize v
+            <*> arithmetize d
+            <*> arithmetize r
+
+    restore i = flip evalState i $ Input
+        <$> do restore <$> do state . splitAt $ typeSize @a @(OutputRef x)
+        <*> do restore <$> do state . splitAt $ typeSize @a @x
+        <*> do restore <$> do state . splitAt $ typeSize @a @(datum x)
+        <*> do restore <$> do state . splitAt $ typeSize @a @x
+
+    typeSize = typeSize @a @(OutputRef x)
+             + typeSize @a @x
+             + typeSize @a @(datum x)
+             + typeSize @a @x
+
+data Output a = Output
     { txoAddress :: Address a
     , txoValue :: UInt 64 a
     -- TODO: replace with `Bytes x` or `DatumHash x`
     , txoDatumHash :: a
     } deriving Eq
 
+instance (Arithmetizable a x, Arithmetizable a (UInt 64 x)) => Arithmetizable a (Output x) where
+
+    arithmetize (Output o v d) =
+        (\o' v' d' -> o' <> v' <> d')
+            <$> arithmetize o
+            <*> arithmetize v
+            <*> arithmetize d
+
+    restore o = flip evalState o $ Output
+        <$> do restore <$> do state . splitAt $ typeSize @a @(Address x)
+        <*> do restore <$> do state . splitAt $ typeSize @a @(UInt 64 x)
+        <*> do restore <$> do state . splitAt $ typeSize @a @x
+
+    typeSize = typeSize @a @(Address x)
+             + typeSize @a @(UInt 64 x)
+             + typeSize @a @x
+
 data OutputRef a = OutputRef
     { txoId :: TxId a
     , txoIndex :: UInt 32 a
     } deriving Eq
+
+instance (Arithmetizable a (UInt 32 x), Arithmetizable a x) => Arithmetizable a (OutputRef x) where
+
+    arithmetize (OutputRef txid index) = (<>)
+        <$> arithmetize txid
+        <*> arithmetize index
+
+    restore outputRef = flip evalState outputRef $ OutputRef
+        <$> do restore <$> do state . splitAt $ typeSize @a @(TxId x)
+        <*> do restore <$> do state . splitAt $ typeSize @a @(UInt 32 x)
+
+    typeSize = typeSize @a @(TxId x)
+             + typeSize @a @(UInt 32 x)
