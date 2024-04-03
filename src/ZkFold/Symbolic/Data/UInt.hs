@@ -126,7 +126,7 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
     UInt [] x - UInt [] y = UInt [] $ circuit $ do
         i <- runCircuit x
         j <- runCircuit y
-        z0 <- newAssigned (\v -> v i - v j + ((one + one) ^ registerSize @a @n) `scale` one)
+        z0 <- newAssigned (\v -> v i - v j + fromConstant (2 ^ registerSize @a @n :: Natural))
         (z, _) <- splitExpansion (highRegisterSize @a @n) 1 z0
         return z
 
@@ -138,12 +138,12 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
             solve = do
                 i <- runCircuit x
                 j <- runCircuit y
-                s <- newAssigned (\v -> v i - v j + (t + one) `scale` one)
+                s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
                 (k, b0) <- splitExpansion (registerSize @a @n) 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub xs ys)
                 i' <- runCircuit z
                 j' <- runCircuit w
-                s'0 <- newAssigned (\v -> v i' - v j' + v b + t `scale` one)
+                s'0 <- newAssigned (\v -> v i' - v j' + v b + fromConstant t)
                 (s', _) <- splitExpansion (highRegisterSize @a @n) 1 s'0
                 return (s' : k : zs)
 
@@ -151,7 +151,7 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
             fullSub xk yk b = do
                 i <- runCircuit xk
                 j <- runCircuit yk
-                s <- newAssigned (\v -> v i - v j + v b + t `scale` one)
+                s <- newAssigned (\v -> v i - v j + v b + fromConstant t)
                 splitExpansion (registerSize @a @n) 1 s
 
          in case circuits solve of
@@ -275,7 +275,7 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
             solve = do
                 i <- runCircuit x
                 j <- runCircuit y
-                s <- newAssigned (\v -> v i - v j + (t + one) `scale` one)
+                s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
                 (k, b0) <- splitExpansion (registerSize @a @n) 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub xs ys)
                 i' <- runCircuit z
@@ -288,7 +288,7 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
             fullSub xk yk b = do
                 i <- runCircuit xk
                 j <- runCircuit yk
-                s <- newAssigned (\v -> v i - v j + v b + t `scale` one)
+                s <- newAssigned (\v -> v i - v j + v b + fromConstant t)
                 splitExpansion (registerSize @a @n) 1 s
 
          in case circuits solve of

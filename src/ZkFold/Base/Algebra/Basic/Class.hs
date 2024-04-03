@@ -70,6 +70,8 @@ class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semi
 
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
 
+type Algebra b a = (Ring a, FromConstant b a)
+
 -- NOTE: by convention, division by zero returns zero.
 class (Ring a, MultiplicativeGroup a) => Field a where
     rootOfUnity :: Natural -> Maybe a
@@ -114,8 +116,6 @@ castBits (x:xs)
 
 class (AdditiveMonoid a, Semiring b) => Scale a b | a -> b where
     scale :: b -> a -> a
-
-type Algebra a b = (Ring a, Scale a b)
 
 class (MultiplicativeMonoid a, Semiring b) => Exponent a b where
     (^) :: a -> b -> a

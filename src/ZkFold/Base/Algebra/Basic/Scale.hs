@@ -22,25 +22,3 @@ instance (AdditiveMonoid a, Eq b, BinaryExpansion b) => Scale (BinScale b a) b w
           | x == zero = zero
           | x == one  = y
           | otherwise = error "scale: This should never happen."
-
-newtype Self a = Self { getSelf :: a }
-    deriving (Eq)
-    deriving newtype (AdditiveSemigroup, AdditiveMonoid, AdditiveGroup,
-                      MultiplicativeSemigroup, MultiplicativeMonoid, MultiplicativeGroup,
-                      BinaryExpansion)
-
-deriving newtype instance FromConstant c a => FromConstant c (Self a)
-
-deriving newtype instance Semiring a => Semiring (Self a)
-
-deriving newtype instance Ring a => Ring (Self a)
-
-deriving newtype instance Field a => Field (Self a)
-
-deriving newtype instance Finite a => Finite (Self a)
-
-instance Ring a => Scale (Self a) a where
-    scale a (Self b) = Self (a * b)
-
-scale' :: Ring a => a -> a -> a
-scale' a b = getSelf $ scale a (Self b)

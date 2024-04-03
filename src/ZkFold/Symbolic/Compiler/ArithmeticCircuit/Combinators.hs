@@ -31,7 +31,7 @@ boolCheckC r = circuit $ do
     newAssigned (\x -> x i * (x i - one))
 
 embed :: Arithmetic a => a -> ArithmeticCircuit a
-embed x = circuit $ newAssigned $ const (x `scale` one)
+embed x = circuit $ newAssigned $ const (fromConstant x)
 
 expansion :: MonadBlueprint i a m => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
@@ -50,7 +50,7 @@ splitExpansion n1 n2 k = do
     let (lo, hi) = splitAt n1 bits
     l <- horner lo
     h <- horner hi
-    constraint (\x -> x k - x l - scale ((one + one) ^ n1) (x h))
+    constraint (\x -> x k - x l - fromConstant (2 ^ n1 :: Natural) * x h)
     return (l, h)
 
 bitsOf :: MonadBlueprint i a m => Natural -> i -> m [i]
@@ -82,7 +82,7 @@ runInvert r = do
     k <- newConstrained (\x k -> x i * x k + x j - one) (invert . ($ i))
     return (j, k)
     where
-      isZero :: forall a b . WitnessField a b => a -> a
+      isZero :: forall a . (Ring a, Eq (Bool a) a, Conditional (Bool a) a) => a -> a
       isZero x = bool @(Bool a) zero one (x == zero)
 
 plusMultC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a

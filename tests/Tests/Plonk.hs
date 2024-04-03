@@ -16,7 +16,6 @@ import           Tests.NonInteractiveProof                    (NonInteractivePro
 import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..), MultiplicativeSemigroup (..), negate, zero)
 import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (value)
-import           ZkFold.Base.Algebra.Basic.Scale              (Self (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis, polyVecLinear, polyVecZero, toPolyVec)
 import           ZkFold.Base.Protocol.ARK.Plonk
@@ -33,10 +32,10 @@ propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
 propPlonkConstraintConversion x (x1, x2, x3) =
     let p   = fromPlonkConstraint x
         xs  = nubOrd $ variables p
-        v   = Self . (fromList [(head xs, x1), (xs !! 1, x2), (xs !! 2, x3)] !)
+        v   = (fromList [(head xs, x1), (xs !! 1, x2), (xs !! 2, x3)] !)
         p'  = fromPlonkConstraint $ toPlonkConstraint p
         xs' = nubOrd $ variables p'
-        v'  = Self . (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
+        v'  = (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
     in v `evalPolynomial` p == v' `evalPolynomial` p'
 
 propPlonkConstraintSatisfaction :: PlonkBS -> NonInteractiveProofTestData PlonkBS -> Bool
