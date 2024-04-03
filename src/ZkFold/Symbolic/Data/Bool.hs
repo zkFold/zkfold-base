@@ -50,11 +50,11 @@ instance FiniteField x => BoolType (Bool x) where
 
     (||) (Bool b1) (Bool b2) = Bool $ b1 + b2 - b1 * b2
 
-all :: BoolType b => (x -> b) -> [x] -> b
+all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true
 
-all1 :: BoolType b => (x -> b) -> [x] -> b
-all1 f = foldr1 (&&) . map f
+all1 :: (BoolType b, Functor t, Foldable t) => (x -> b) -> t x -> b
+all1 f = foldr1 (&&) . fmap f
 
-any :: BoolType b => (x -> b) -> [x] -> b
+any :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 any f = foldr ((||) . f) false
