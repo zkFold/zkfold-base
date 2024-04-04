@@ -14,17 +14,17 @@ import           GHC.TypeNats                                (KnownNat, natVal)
 import           System.IO                                   (IO, putStrLn)
 import           Text.Show                                   (show)
 
-import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 
 exampleByteStringAnd :: forall n . KnownNat n => IO ()
-exampleByteStringAnd = makeExample @n "*" "and" (*)
+exampleByteStringAnd = makeExample @n "*" "and" (&&)
 
 exampleByteStringOr :: forall n . KnownNat n => IO ()
-exampleByteStringOr = makeExample @n "+" "or" (+)
+exampleByteStringOr = makeExample @n "+" "or" (||)
 
 type Binary a = a -> a -> a
 
