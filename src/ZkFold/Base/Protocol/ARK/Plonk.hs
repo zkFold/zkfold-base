@@ -38,6 +38,7 @@ type G2 = Point BLS12_381_G2
 -}
 data Plonk (d :: Natural) t = Plonk F F F (Map Natural F) (ArithmeticCircuit F) F
     deriving (Show)
+-- TODO (Issue #25): make a proper implementation of Arbitrary
 instance Arbitrary (Plonk d t) where
     arbitrary = do
         let (omega, k1, k2) = getParams 5
@@ -50,15 +51,6 @@ type PlonkPermutationSize d = 3 * d
 type PlonkMaxPolyDegree d = 4 * d + 7
 
 type PolyPlonkExtended d = PolyVec F (PlonkMaxPolyDegree d)
-
-data ParamsPlonk = ParamsPlonk F F F (Map Natural F) (ArithmeticCircuit F)
-    deriving (Show)
--- TODO (Issue #25): make a proper implementation of Arbitrary
-instance Arbitrary ParamsPlonk where
-    arbitrary = do
-        let (omega, k1, k2) = getParams 5
-        ac <- arbitrary
-        return $ ParamsPlonk omega k1 k2 (singleton (acOutput ac) 15) ac
 
 data ProverSecretPlonk = ProverSecretPlonk F F F F F F F F F F F
     deriving (Show)

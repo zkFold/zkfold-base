@@ -39,8 +39,8 @@ propPlonkConstraintConversion x (x1, x2, x3) =
         v'  = Self . (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
     in v `evalPolynomial` p == v' `evalPolynomial` p'
 
-propPlonkConstraintSatisfaction :: ParamsPlonk -> NonInteractiveProofTestData PlonkBS -> Bool
-propPlonkConstraintSatisfaction (ParamsPlonk _ _ _ inputs ac) (TestData _ w) =
+propPlonkConstraintSatisfaction :: PlonkBS -> NonInteractiveProofTestData PlonkBS -> Bool
+propPlonkConstraintSatisfaction (Plonk _ _ _ inputs ac _) (TestData _ w) =
     let wmap = acWitness $ mapVarArithmeticCircuit ac
         (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkSizeBS (singleton (acOutput ac) 15) ac
         l = 1
