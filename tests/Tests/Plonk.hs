@@ -45,7 +45,7 @@ propPlonkConstraintSatisfaction (Plonk _ _ _ inputs ac _) (TestData _ w) =
         (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkSizeBS (singleton (acOutput ac) 15) ac
         l = 1
 
-        (WitnessInputPlonk wInput, _) = w
+        (PlonkWitnessInput wInput, _) = w
         w1'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec a)
         w2'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec b)
         w3'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec c)
@@ -68,9 +68,9 @@ propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @F @PlonkSizeBS @PlonkMaxPolyDegreeBS
 
         s = setup @PlonkBS plonk
-        ((wPub, _, _, _, omega, _, _), (qlE, qrE, qoE, qmE, qcE, _, _, _), _, WitnessMap wmap, _) = s
-        (WitnessInputPlonk wInput, ps) = w
-        ProverSecretPlonk b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
+        (PlonkSetupParams {..}, _, PlonkCircuitPolynomials qlE qrE qoE qmE qcE _ _ _, _, PlonkInput wPub, PlonkWitnessMap wmap) = s
+        (PlonkWitnessInput wInput, ps) = w
+        PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
         (w1, w2, w3) = wmap wInput
         pubPoly = polyVecInLagrangeBasis @F @PlonkSizeBS @PlonkMaxPolyDegreeBS omega $ toPolyVec @F @PlonkSizeBS wPub
 

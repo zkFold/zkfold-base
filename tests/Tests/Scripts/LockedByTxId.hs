@@ -11,7 +11,7 @@ import           Tests.Plonk                                 (PlonkBS)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), ProverSecretPlonk, WitnessInputPlonk (..))
+import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput(..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Cardano.Types.Tx            (TxId (..))
@@ -35,7 +35,7 @@ testArithmetization2 targetId txId =
         b       = Bool $ acValue (applyArgs ac [txId])
     in b == false
 
-testZKP :: Fr -> ProverSecretPlonk -> Fr -> Haskell.Bool
+testZKP :: Fr -> PlonkProverSecret -> Fr -> Haskell.Bool
 testZKP x ps targetId =
     let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId)) :: Bool (ArithmeticCircuit Fr)
 
@@ -43,7 +43,7 @@ testZKP x ps targetId =
         inputs  = fromList [(1, targetId), (acOutput ac, 1)]
         plonk   = Plonk omega k1 k2 inputs ac x
         s       = setup @PlonkBS plonk
-        w       = (WitnessInputPlonk inputs, ps)
+        w       = (PlonkWitnessInput inputs, ps)
         (input, proof) = prove @PlonkBS s w
 
     in verify @PlonkBS s input proof

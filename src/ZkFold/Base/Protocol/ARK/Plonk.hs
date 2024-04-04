@@ -50,29 +50,76 @@ type PlonkPermutationSize d = 3 * d
 -- TODO (Issue #25): check that the extended polynomials are of the right size
 type PlonkMaxPolyDegree d = 4 * d + 7
 
-type PolyPlonkExtended d = PolyVec F (PlonkMaxPolyDegree d)
+type PlonkPolyExtended d = PolyVec F (PlonkMaxPolyDegree d)
 
-data ProverSecretPlonk = ProverSecretPlonk F F F F F F F F F F F
+data PlonkSetupParams = PlonkSetupParams {
+        omega :: F,
+        k1    :: F,
+        k2    :: F,
+        gs    :: (V.Vector G1),
+        h0    :: G2,
+        h1    :: G2
+    }
     deriving (Show)
-instance Arbitrary ProverSecretPlonk where
-    arbitrary = ProverSecretPlonk <$>
+
+data PlonkCircuitPolynomials d = PlonkCircuitPolynomials {
+        ql     :: PlonkPolyExtended d,
+        qr     :: PlonkPolyExtended d,
+        qo     :: PlonkPolyExtended d,
+        qm     :: PlonkPolyExtended d,
+        qc     :: PlonkPolyExtended d,
+        sigma1 :: PlonkPolyExtended d,
+        sigma2 :: PlonkPolyExtended d,
+        sigma3 :: PlonkPolyExtended d
+    }
+    deriving (Show)
+
+data PlonkCircuitCommitments = PlonkCircuitCommitments {
+        cmQl :: G1,
+        cmQr :: G1,
+        cmQo :: G1,
+        cmQm :: G1,
+        cmQc :: G1,
+        cmS1 :: G1,
+        cmS2 :: G1,
+        cmS3 :: G1
+    }
+    deriving (Show)
+
+data PlonkPermutation d = PlonkPermutation {
+        s1 :: PolyVec F d,
+        s2 :: PolyVec F d,
+        s3 :: PolyVec F d
+    }
+    deriving (Show)
+
+newtype PlonkWitnessMap d = PlonkWitnessMap (Map.Map Natural F -> (PolyVec F d, PolyVec F d, PolyVec F d))
+-- TODO (Issue #25): make a proper implementation of Show
+instance Show (PlonkWitnessMap d) where
+    show _ = "PlonkWitnessMap"
+
+newtype PlonkWitnessInput = PlonkWitnessInput (Map.Map Natural F)
+-- TODO (Issue #25): make a proper implementation of Show
+instance Show PlonkWitnessInput where
+    show _ = "PlonkWitnessInput"
+-- TODO (Issue #25): make a proper implementation of Arbitrary
+instance Arbitrary PlonkWitnessInput where
+    arbitrary = do
+        x <- arbitrary
+        return $ PlonkWitnessInput $ Map.fromList [(1, x), (2, 15/x)]
+
+data PlonkProverSecret = PlonkProverSecret F F F F F F F F F F F
+    deriving (Show)
+instance Arbitrary PlonkProverSecret where
+    arbitrary = PlonkProverSecret <$>
         arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
         <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
-newtype WitnessMapPlonk d = WitnessMap (Map.Map Natural F -> (PolyVec F d, PolyVec F d, PolyVec F d))
--- TODO (Issue #25): make a proper implementation of Show
-instance Show (WitnessMapPlonk d) where
-    show _ = "WitnessMap"
+newtype PlonkInput = PlonkInput (V.Vector F)
+    deriving (Show)
 
-newtype WitnessInputPlonk = WitnessInputPlonk (Map.Map Natural F)
--- TODO (Issue #25): make a proper implementation of Show
-instance Show WitnessInputPlonk where
-    show _ = "WitnessInput"
--- TODO (Issue #25): make a proper implementation of Arbitrary
-instance Arbitrary WitnessInputPlonk where
-    arbitrary = do
-        x <- arbitrary
-        return $ WitnessInputPlonk $ Map.fromList [(1, x), (2, 15/x)]
+data PlonkProof = PlonkProof G1 G1 G1 G1 G1 G1 G1 G1 G1 F F F F F F
+    deriving (Show)
 
 -- TODO (Issue #18): make the code safer, check list lengths (?)
 instance forall d t .
@@ -83,20 +130,16 @@ instance forall d t .
          ToTranscript t G1,
          FromTranscript t F) => NonInteractiveProof (Plonk d t) where
     type Transcript (Plonk d t)   = t
-    type Setup (Plonk d t)        = ((V.Vector F, V.Vector G1, G2, G2, F, F, F),
-        (PolyPlonkExtended d, PolyPlonkExtended d, PolyPlonkExtended d, PolyPlonkExtended d, PolyPlonkExtended d,
-        PolyPlonkExtended d, PolyPlonkExtended d, PolyPlonkExtended d),
-        (G1, G1, G1, G1, G1,
-        G1, G1, G1),
-        WitnessMapPlonk d, (PolyVec F d, PolyVec F d, PolyVec F d))
-    type Witness (Plonk d t)      = (WitnessInputPlonk, ProverSecretPlonk)
-    type Input (Plonk d t)        = V.Vector F
-    type Proof (Plonk d t)        = (G1, G1, G1, G1, G1, G1, G1, G1, G1, F, F, F, F, F, F)
+    type Setup (Plonk d t)        = (PlonkSetupParams, PlonkPermutation d, PlonkCircuitPolynomials d, PlonkCircuitCommitments,
+        PlonkInput, PlonkWitnessMap d)
+    type Witness (Plonk d t)      = (PlonkWitnessInput, PlonkProverSecret)
+    type Input (Plonk d t)        = PlonkInput
+    type Proof (Plonk d t)        = PlonkProof
 
     setup :: Plonk d t -> Setup (Plonk d t)
     setup (Plonk omega k1 k2 inputs ac x) =
         let wmap = acWitness $ mapVarArithmeticCircuit ac
-            (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization inputs ac
+            (qlAC, qrAC, qoAC, qmAC, qcAC, a, b, c) = toPlonkArithmetization inputs ac
             wPub = V.fromList $ map negate $ elems inputs
 
             d = value @d + 6
@@ -104,7 +147,6 @@ instance forall d t .
             gs = fmap (`mul` gen) xs
             h0 = gen
             h1 = x `mul` gen
-
 
             s = fromPermutation @(PlonkPermutationSize d) $ fromCycles $
                     mkIndexPartition $ fmap fromZp $ fromPolyVec a V.++ fromPolyVec b V.++ fromPolyVec c
@@ -114,30 +156,38 @@ instance forall d t .
                 2 -> k2 * (omega^i)
                 _ -> error "setup: invalid index"
             s' = V.fromList $ map f s
-            sigma1 = toPolyVec $ V.take (fromIntegral $ value @d) s'
-            sigma2 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ value @d) s'
-            sigma3 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ 2 * value @d) s'
+            s1 = toPolyVec $ V.take (fromIntegral $ value @d) s'
+            s2 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ value @d) s'
+            s3 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ 2 * value @d) s'
             w1 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec a)
             w2 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec b)
             w3 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec c)
             wmap' i = (w1 i, w2 i, w3 i)
 
-            qmE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qm
-            qlE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega ql
-            qrE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qr
-            qoE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qo
-            qcE     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qc
-            sigma1E = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega sigma1
-            sigma2E = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega sigma2
-            sigma3E = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega sigma3
-        in ((wPub, gs, h0, h1, omega, k1, k2), (qlE, qrE, qoE, qmE, qcE, sigma1E, sigma2E, sigma3E),
-            (gs `com` qlE, gs `com` qrE, gs `com` qoE, gs `com` qmE, gs `com` qcE,
-            gs `com` sigma1E, gs `com` sigma2E, gs `com` sigma3E), WitnessMap wmap', (sigma1, sigma2, sigma3))
+            qm     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qmAC
+            ql     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qlAC
+            qr     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qrAC
+            qo     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qoAC
+            qc     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qcAC
+            sigma1 = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega s1
+            sigma2 = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega s2
+            sigma3 = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega s3
+
+            cmQl = gs `com` ql
+            cmQr = gs `com` qr
+            cmQo = gs `com` qo
+            cmQm = gs `com` qm
+            cmQc = gs `com` qc
+            cmS1 = gs `com` sigma1
+            cmS2 = gs `com` sigma2
+            cmS3 = gs `com` sigma3
+        in (PlonkSetupParams {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkCircuitCommitments {..},
+            PlonkInput wPub, PlonkWitnessMap wmap')
 
     prove :: Setup (Plonk d t) -> Witness (Plonk d t) -> (Input (Plonk d t), Proof (Plonk d t))
-    prove ((wPub, gs, _, _, omega, k1, k2), (ql, qr, qo, qm, qc, sigma1, sigma2, sigma3), _, WitnessMap wmap, (sigma1s, sigma2s, sigma3s))
-        (WitnessInputPlonk wInput, ProverSecretPlonk b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)
-            = (wPub, (cmA, cmB, cmC, cmZ, cmT1, cmT2, cmT3, proof1, proof2, a_xi, b_xi, c_xi, s1_xi, s2_xi, z_xi))
+    prove (PlonkSetupParams {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, _, PlonkInput wPub, PlonkWitnessMap wmap)
+        (PlonkWitnessInput wInput, PlonkProverSecret b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)
+            = (PlonkInput wPub, PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi)
         where
             n = value @d
             zH = polyVecZero @F @d @(PlonkMaxPolyDegree d)
@@ -161,9 +211,9 @@ instance forall d t .
 
             omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
             omegas' =  V.iterateN (V.length (fromPolyVec z) P.+ 1) (* omega) one
-            PV zs1 = polyVecGrandProduct w1 omegas sigma1s beta gamma
-            PV zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) sigma2s beta gamma
-            PV zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) sigma3s beta gamma
+            PV zs1 = polyVecGrandProduct w1 omegas s1 beta gamma
+            PV zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) s2 beta gamma
+            PV zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) s3 beta gamma
             gp = PV $ V.zipWith (*) (V.zipWith (*) zs1 zs2) zs3
             z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega gp
             zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
@@ -249,9 +299,9 @@ instance forall d t .
 
     verify :: Setup (Plonk d t) -> Input (Plonk d t) -> Proof (Plonk d t) -> Bool
     verify
-        ((_, gs, h0, h1, omega, k1, k2), _, (cmQl, cmQr, cmQo, cmQm, cmQc, cmS1, cmS2, cmS3), _, _)
-        ws
-        (cmA, cmB, cmC, cmZ, cmT1, cmT2, cmT3, proof1, proof2, a_xi, b_xi, c_xi, s1_xi, s2_xi, z_xi) = p1 == p2
+        (PlonkSetupParams {..}, _, _, PlonkCircuitCommitments {..}, _, _)
+        (PlonkInput ws)
+        (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi) = p1 == p2
         where
             n = value @d
 
