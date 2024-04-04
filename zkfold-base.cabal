@@ -71,6 +71,7 @@ common options
       StandaloneDeriving,
       StandaloneKindSignatures,
       TupleSections,
+      TypeApplications,
       TypeFamilies,
       ViewPatterns
 
