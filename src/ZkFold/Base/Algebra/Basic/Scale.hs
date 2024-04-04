@@ -15,7 +15,7 @@ deriving newtype instance Semiring a => Semiring (BinScale b a)
 
 deriving newtype instance Ring a => Ring (BinScale b a)
 
-instance (AdditiveMonoid a, Eq b, BinaryExpansion b) => Scale (BinScale b a) b where
+instance (AdditiveMonoid a, Eq b, BinaryExpansion b) => Scale b (BinScale b a) where
     scale n a = sum $ zipWith f (binaryExpansion n) (iterate (\x -> x + x) a)
       where
         f x y

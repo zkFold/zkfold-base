@@ -79,5 +79,5 @@ instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) 
 
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Ring (P c i j m p)
 
-instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Scale (P c i j m p) c where
+instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Scale c (P c i j m p) where
     scale c (P p) = P $ map (first (*c)) p

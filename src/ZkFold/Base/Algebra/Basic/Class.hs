@@ -114,7 +114,7 @@ castBits (x:xs)
     | x == one  = one  : castBits xs
     | otherwise = error "castBits: impossible bit value"
 
-class (AdditiveMonoid a, Semiring b) => Scale a b | a -> b where
+class (Semiring b, AdditiveMonoid a) => Scale b a where
     scale :: b -> a -> a
 
 class (MultiplicativeMonoid a, Semiring b) => Exponent a b where
