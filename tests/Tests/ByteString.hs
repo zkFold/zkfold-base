@@ -3,33 +3,34 @@
 
 module Tests.ByteString (specByteString) where
 
-import           Control.Applicative             ((<*>))
-import           Control.Monad                   (return)
-import           Data.Data                       (Proxy (..))
-import           Data.Function                   (($))
-import           Data.Functor                    ((<$>))
-import           Data.List                       (map, (++))
-import           GHC.TypeNats                    (KnownNat, natVal)
-import           Numeric.Natural                 (Natural)
-import           Prelude                         (show)
-import qualified Prelude                         as Haskell
-import           System.IO                       (IO)
-import           Test.Hspec                      (describe, hspec)
-import           Test.QuickCheck                 (Gen, Property, (===))
-import           Tests.ArithmeticCircuit         (eval', it)
+import           Control.Applicative              ((<*>))
+import           Control.Monad                    (return)
+import           Data.Data                        (Proxy (..))
+import           Data.Function                    (($))
+import           Data.Functor                     ((<$>))
+import           Data.List                        (map, (++))
+import           GHC.TypeNats                     (KnownNat, natVal)
+import           Numeric.Natural                  (Natural)
+import           Prelude                          (show)
+import qualified Prelude                          as Haskell
+import           System.IO                        (IO)
+import           Test.Hspec                       (describe, hspec)
+import           Test.QuickCheck                  (Gen, Property, (===))
+import           Tests.ArithmeticCircuit          (eval', it)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import           ZkFold.Prelude                  (chooseNatural)
-import           ZkFold.Symbolic.Compiler        (ArithmeticCircuit)
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Number (Prime)
+import           ZkFold.Prelude                   (chooseNatural)
+import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.UInt       (UInt (..))
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
 value :: forall a n . ByteString n (ArithmeticCircuit a) -> ByteString n a
-value (ByteString (UInt xs x)) = ByteString $ UInt (map eval' xs) (eval' x)
+value (ByteString x xs) = ByteString (eval' x) (map eval' xs)
 
 type Binary a = a -> a -> a
 
@@ -71,15 +72,14 @@ specByteString = hspec $ do
         it "AC embeds Integer" $ do
             x <- toss m
             return $ value @(Zp p) @n (fromConstant x) === fromConstant x
-        it "applies bitwise OR correctly" $ isHom @n @p (+) (+) <$> toss m <*> toss m
-        it "has zero" $ value @(Zp p) @n zero === zero
-        it "obeys left additive neutrality" $ isLeftNeutral @n @p (+) (+) zero zero <$> toss m
-        it "obeys right additive neutrality" $ isRightNeutral @n @p (+) (+) zero zero <$> toss m
-        it "negates correctly" $ do
+        it "applies bitwise OR correctly" $ isHom @n @p (||) (||) <$> toss m <*> toss m
+        it "has false" $ value @(Zp p) @n false === false
+        it "obeys left additive neutrality" $ isLeftNeutral @n @p (||) (||) false false <$> toss m
+        it "obeys right additive neutrality" $ isRightNeutral @n @p (||) (||) false false <$> toss m
+        it "applies bitwise not correctly" $ do
             x <- toss m
-            return $ value @(Zp p) @n (negate (fromConstant x)) === negate (fromConstant x)
-        it "subtracts correctly" $ isHom @n @p (-) (-) <$> toss m <*> toss m
-        it "Applies bitwise AND correctly" $ isHom @n @p (*) (*) <$> toss m <*> toss m
-        it "has one" $ value @(Zp p) @n one === one
-        it "obeys left multiplicative neutrality" $ isLeftNeutral @n @p (*) (*) one one <$> toss m
-        it "obeys right multiplicative neutrality" $ isRightNeutral @n @p (*) (*) one one <$> toss m
+            return $ value @(Zp p) @n (not (fromConstant x)) === not (fromConstant x)
+        it "Applies bitwise AND correctly" $ isHom @n @p (&&) (&&) <$> toss m <*> toss m
+        it "has true" $ value @(Zp p) @n true === true
+        it "obeys left multiplicative neutrality" $ isLeftNeutral @n @p (&&) (&&) true true <$> toss m
+        it "obeys right multiplicative neutrality" $ isRightNeutral @n @p (&&) (&&) true true <$> toss m

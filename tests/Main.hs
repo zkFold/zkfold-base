@@ -5,6 +5,7 @@ module Main where
 import           Prelude                                     hiding (Bool, Fractional (..), Num (..), drop, length, replicate, take, (==))
 import           Tests.ArithmeticCircuit                     (specArithmeticCircuit)
 import           Tests.Arithmetization                       (specArithmetization)
+import           Tests.ByteString                            (specByteString)
 import           Tests.Field                                 (specField)
 import           Tests.GroebnerBasis                         (specGroebner)
 import           Tests.Group                                 (specAdditiveGroup)
@@ -15,7 +16,6 @@ import           Tests.Permutations                          (specPermutations)
 import           Tests.Plonk                                 (PlonkBS, specPlonk)
 import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.UInt                                  (specUInt)
-import           Tests.ByteString (specByteString)
 import           Tests.Univariate                            (specUnivariate)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -31,6 +31,7 @@ main = do
 
     specByteString @BLS12_381_Scalar @32
     specByteString @BLS12_381_Scalar @500
+    specByteString @BLS12_381_Scalar @508 -- Twice the number of bits encoded by BLS12_381_Scalar.
 
     specLockedByTxId
 

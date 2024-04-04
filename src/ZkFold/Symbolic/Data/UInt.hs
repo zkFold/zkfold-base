@@ -58,21 +58,21 @@ cast n =
 
 --------------------------------------------------------------------------------
 
-instance (Finite p, KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
+instance (KnownNat p, KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
     toConstant (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
-        where base = 2 ^ registerSize @p @n
+        where base = 2 ^ registerSize @(Zp p) @n
 
-instance (Finite p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
     x + y = fromConstant $ toConstant x + (toConstant @_ @Natural) y
 
 instance (KnownNat p, KnownNat n) => AdditiveMonoid (UInt n (Zp p)) where
     zero = fromConstant (0 :: Natural)
 
-instance (Finite p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
     x - y = fromConstant $ toConstant x + 2 ^ getNatural @n - (toConstant @_ @Natural) y
     negate x = fromConstant $ 2 ^ getNatural @n - (toConstant @_ @Natural)x
 
-instance (Finite p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
     x * y = fromConstant $ toConstant x * (toConstant @_ @Natural) y
 
 instance (KnownNat p, KnownNat n) => MultiplicativeMonoid (UInt n (Zp p)) where
@@ -235,7 +235,7 @@ class StrictNum a where
     strictSub :: a -> a -> a
     strictMul :: a -> a -> a
 
-instance (Finite p, KnownNat n) => StrictNum (UInt n (Zp p)) where
+instance (KnownNat p, KnownNat n) => StrictNum (UInt n (Zp p)) where
     strictAdd x y = strictConv $ toConstant x + (toConstant @_ @Natural) y
     strictSub x y = strictConv $ toConstant x - (toConstant @_ @Natural) y
     strictMul x y = strictConv $ toConstant x * (toConstant @_ @Natural) y
