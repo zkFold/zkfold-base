@@ -14,10 +14,11 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Cardano.Types.Address
 import           ZkFold.Prelude                        (length, splitAt)
 
-data Transaction inputs outputs datum x = Transaction
+data Transaction inputs rinputs outputs datum x = Transaction
     { txId :: TxId x
     , txFee :: UInt 64 x
     , txForge :: UInt 64 x
+    , txReferenceInputs :: Vector rinputs (Input datum x)
     , txInputs :: Vector inputs (Input datum x)
     , txOutputs :: Vector outputs (Output x)
     , txValidityInterval :: (UTCTime x, UTCTime x)
@@ -25,35 +26,40 @@ data Transaction inputs outputs datum x = Transaction
     } deriving Eq
 
 instance
-    ( Finite inputs, Finite outputs
+    ( Finite inputs
+    , Finite rinputs
+    , Finite outputs
     , Arithmetizable a x
     , Arithmetizable a (datum x)
     , Arithmetizable a (UInt 11 x)
     , Arithmetizable a (UInt 32 x)
     , Arithmetizable a (UInt 64 x)
-    ) => Arithmetizable a (Transaction inputs outputs datum x) where
+    ) => Arithmetizable a (Transaction inputs rinputs outputs datum x) where
 
-    arithmetize (Transaction tid inputs outputs fee forge vr) =
-        (\i fee' forge' is os vr' -> i <> fee' <> forge' <> is <> os <> vr')
+    arithmetize (Transaction tid inputs rinputs outputs fee forge vr) =
+        (\i fee' forge' is ris os vr' -> i <> fee' <> forge' <> is <> ris <> os <> vr')
             <$> arithmetize tid
             <*> arithmetize fee
             <*> arithmetize forge
             <*> arithmetize inputs
+            <*> arithmetize rinputs
             <*> arithmetize outputs
             <*> arithmetize vr
 
     restore address =
-        if length address == typeSize @a @(Transaction inputs outputs datum x)
+        if length address == typeSize @a @(Transaction inputs rinputs outputs datum x)
         then flip evalState address $ Transaction
             <$> do restore <$> do state . splitAt $ typeSize @a @(TxId x)
             <*> do restore <$> do state . splitAt $ typeSize @a @(UInt 64 x)
             <*> do restore <$> do state . splitAt $ typeSize @a @(UInt 64 x)
             <*> do restore <$> do state . splitAt $ typeSize @a @(Vector inputs (Input datum x))
+            <*> do restore <$> do state . splitAt $ typeSize @a @(Vector rinputs (Input datum x))
             <*> do restore <$> do state . splitAt $ typeSize @a @(Vector outputs (Output x))
             <*> do restore <$> do state . splitAt $ typeSize @a @(UTCTime x, UTCTime x)
         else error "restore Transaction: wrong number of arguments"
 
     typeSize = typeSize @a @(TxId x)
+             + typeSize @a @(Vector rinputs (Input datum x))
              + typeSize @a @(Vector inputs (Input datum x))
              + typeSize @a @(Vector outputs (Output x))
 
