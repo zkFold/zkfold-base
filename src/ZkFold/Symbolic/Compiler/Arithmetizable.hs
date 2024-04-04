@@ -80,7 +80,7 @@ instance (Arithmetizable a x, KnownNat n) => Arithmetizable a (Vector n x) where
 
     restore rs
         | length rs /= typeSize @a @(Vector n x) = error "restore: wrong number of arguments"
-        | otherwise = f rs <$> Vector [0 .. value @n - 1]
+        | otherwise = f rs <$> Vector [0 .. value @n -! 1]
         where
             f as = restore @a @x . take (typeSize @a @x) . flip drop as . ((typeSize @a @x) *)
 

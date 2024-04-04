@@ -8,7 +8,7 @@ import           Data.Maybe                      (fromMaybe)
 import           Data.Proxy                      (Proxy (..))
 import           Data.Ratio                      ((%))
 import           GHC.TypeNats                    (KnownNat, Natural, natVal)
-import           Prelude                         (Integer, div, error, mod, ($), (.))
+import           Prelude                         (div, error, mod, ($), (.))
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -17,7 +17,7 @@ maxOverflow :: forall a n . (Finite a, KnownNat n) => Natural
 maxOverflow = registerSize @a @n + Haskell.ceiling (log2 $ numberOfRegisters @a @n)
 
 highRegisterSize :: forall a n . (Finite a, KnownNat n) => Natural
-highRegisterSize = getNatural @n - registerSize @a @n * (numberOfRegisters @a @n - 1)
+highRegisterSize = getNatural @n -! registerSize @a @n * (numberOfRegisters @a @n -! 1)
 
 registerSize :: forall a n . (Finite a, KnownNat n) => Natural
 registerSize = Haskell.ceiling (getNatural @n % numberOfRegisters @a @n)
@@ -30,7 +30,7 @@ numberOfRegisters = fromMaybe (error "too many bits, field is not big enough")
         bitLimit = Haskell.floor $ log2 (order @a)
         maxRegisterSize regCount =
             let maxAdded = Haskell.ceiling $ log2 regCount
-             in Haskell.floor $ (bitLimit - maxAdded) % (2 :: Integer)
+             in Haskell.floor $ (bitLimit -! maxAdded) % 2
 
 log2 :: Natural -> Haskell.Double
 log2 = Haskell.logBase 2 . Haskell.fromIntegral
@@ -60,5 +60,5 @@ highRegisterBits = case getNatural @n `mod` maxBitsPerFieldElement @p of
 -- assuming that each register storest the largest possible number of bits.
 --
 minNumberOfRegisters :: forall p n. (Finite p, KnownNat n) => Natural
-minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n - 1) `div` maxBitsPerRegister @p @n
+minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` maxBitsPerRegister @p @n
 

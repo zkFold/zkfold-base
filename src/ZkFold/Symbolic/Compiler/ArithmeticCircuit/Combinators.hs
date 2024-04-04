@@ -50,13 +50,13 @@ splitExpansion n1 n2 k = do
     let (lo, hi) = splitAt n1 bits
     l <- horner lo
     h <- horner hi
-    constraint (\x -> x k - x l - fromConstant (2 ^ n1 :: Natural) * x h)
+    constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
 
 bitsOf :: MonadBlueprint i a m => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
-bitsOf n k = for [0 .. n - 1] $ \j ->
+bitsOf n k = for [0 .. n -! 1] $ \j ->
     newConstrained (\x i -> x i * (x i - one)) ((!! j) . repr . ($ k))
     where
         repr :: forall b . (BinaryExpansion b, Finite b) => b -> [b]

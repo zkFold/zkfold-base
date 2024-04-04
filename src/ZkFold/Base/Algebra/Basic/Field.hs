@@ -56,8 +56,14 @@ instance KnownNat p => Ord (Zp p) where
 instance KnownNat p => AdditiveSemigroup (Zp p) where
     Zp a + Zp b = toZp (a + b)
 
+instance KnownNat p => Scale Natural (Zp p) where
+    scale c (Zp a) = toZp (scale c a)
+
 instance KnownNat p => AdditiveMonoid (Zp p) where
     zero = Zp 0
+
+instance KnownNat p => Scale Integer (Zp p) where
+    scale c (Zp a) = toZp (scale c a)
 
 instance KnownNat p => AdditiveGroup (Zp p) where
     negate (Zp a) = toZp (negate a)
@@ -66,8 +72,14 @@ instance KnownNat p => AdditiveGroup (Zp p) where
 instance KnownNat p => MultiplicativeSemigroup (Zp p) where
     Zp a * Zp b = toZp (a * b)
 
+instance KnownNat p => Exponent Natural (Zp p) where
+    (^) = natPow
+
 instance KnownNat p => MultiplicativeMonoid (Zp p) where
     one = Zp 1
+
+instance Prime p => Exponent Integer (Zp p) where
+    a ^ n = intPow a (n `mod` fromConstant (value @p) - 1)
 
 instance Prime p => MultiplicativeGroup (Zp p) where
     invert (Zp a) = toZp $ snd (f (a, 1) (p, 0))
@@ -78,32 +90,31 @@ instance Prime p => MultiplicativeGroup (Zp p) where
             | otherwise = f (x', y') (x - q * x', y - q * y')
             where q = x `div` x'
 
-instance KnownNat p => FromConstant Integer (Zp p) where
-    fromConstant = toZp
-
 instance KnownNat p => FromConstant Natural (Zp p) where
     fromConstant = toZp . fromConstant
 
 instance KnownNat p => Semiring (Zp p)
 
+instance KnownNat p => FromConstant Integer (Zp p) where
+    fromConstant = toZp
+
 instance KnownNat p => Ring (Zp p)
 
 instance Prime p => Field (Zp p) where
     rootOfUnity l
-      | l == 0                      = Nothing
-      | (value @p - 1) `mod` n /= 0 = Nothing
+      | l == 0                       = Nothing
+      | (value @p -! 1) `mod` n /= 0 = Nothing
       | otherwise = Just $ rootOfUnity' (mkStdGen 0)
         where
           n = 2 ^ l
           rootOfUnity' :: RandomGen g => g -> Zp p
           rootOfUnity' g =
-              let (x, g') = first fromConstant $ uniformR (1, value @p - 1) g
-                  x' = x ^ ((value @p - 1) `div` n)
+              let (x, g') = first fromConstant $ uniformR (1, value @p -! 1) g
+                  x' = x ^ ((value @p -! 1) `div` n)
               in bool (rootOfUnity' g') x' (x' ^ (n `div` 2) /= one)
 
-
 instance Prime p => BinaryExpansion (Zp p) where
-    binaryExpansion (Zp a) = map Zp $ binaryExpansion a
+    binaryExpansion = map (Zp . fromConstant) . binaryExpansion . fromZp
 
 instance KnownNat p => Haskell.Num (Zp p) where
     fromInteger = toZp
@@ -146,6 +157,9 @@ instance KnownNat p => Random (Zp p) where
       where
         (r, g') = randomR (0, fromIntegral (order @(Zp p)) - 1) g
 
+instance (KnownNat p, MultiplicativeMonoid a) => Exponent (Zp p) a where
+    a ^ n = a ^ fromZp n
+
 ----------------------------- Field Extensions --------------------------------
 
 class IrreduciblePoly f e | e -> f where
@@ -160,6 +174,9 @@ instance KnownNat (Order (Ext2 f e)) => Finite (Ext2 f e) where
 instance Field f => AdditiveSemigroup (Ext2 f e) where
     Ext2 a b + Ext2 c d = Ext2 (a + c) (b + d)
 
+instance Scale c f => Scale c (Ext2 f e) where
+    scale c (Ext2 a b) = Ext2 (scale c a) (scale c b)
+
 instance Field f => AdditiveMonoid (Ext2 f e) where
     zero = Ext2 zero zero
 
@@ -173,8 +190,14 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext2 f
             P [x] -> Ext2 x zero
             P v   -> Ext2 (v V.! 0) (v V.! 1)
 
+instance MultiplicativeMonoid (Ext2 f e) => Exponent Natural (Ext2 f e) where
+    (^) = natPow
+
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext2 f e) where
     one = Ext2 one zero
+
+instance MultiplicativeGroup (Ext2 f e) => Exponent Integer (Ext2 f e) where
+    (^) = intPow
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) where
     invert (Ext2 a b) =
@@ -209,6 +232,9 @@ instance KnownNat (Order (Ext3 f e)) => Finite (Ext3 f e) where
 instance Field f => AdditiveSemigroup (Ext3 f e) where
     Ext3 a b c + Ext3 d e f = Ext3 (a + d) (b + e) (c + f)
 
+instance Scale c f => Scale c (Ext3 f e) where
+    scale c' (Ext3 a b c) = Ext3 (scale c' a) (scale c' b) (scale c' c)
+
 instance Field f => AdditiveMonoid (Ext3 f e) where
     zero = Ext3 zero zero zero
 
@@ -223,8 +249,14 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext3 f
             P [x, y] -> Ext3 x y zero
             P v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
+instance MultiplicativeMonoid (Ext3 f e) => Exponent Natural (Ext3 f e) where
+    (^) = natPow
+
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext3 f e) where
     one = Ext3 one zero zero
+
+instance MultiplicativeGroup (Ext3 f e) => Exponent Integer (Ext3 f e) where
+    (^) = intPow
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) where
     invert (Ext3 a b c) =

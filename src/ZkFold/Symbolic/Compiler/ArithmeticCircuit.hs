@@ -98,13 +98,13 @@ acPrint r = do
 
 ---------------------------------- Testing -------------------------------------
 
-checkClosedCircuit :: (Arithmetic a, FromConstant a a, Show a) => ArithmeticCircuit a -> Property
+checkClosedCircuit :: (Arithmetic a, FromConstant a a, Scale a a, Show a) => ArithmeticCircuit a -> Property
 checkClosedCircuit r = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem r) ]
     where
         w = acWitness r empty
         testPoly p = evalPolynomial (w !) p === zero
 
-checkCircuit :: (Arbitrary a, Arithmetic a, FromConstant a a, Show a) => ArithmeticCircuit a -> Property
+checkCircuit :: (Arbitrary a, Arithmetic a, FromConstant a a, Scale a a, Show a) => ArithmeticCircuit a -> Property
 checkCircuit r = conjoin [ property (testPoly p) | p <- elems (acSystem r) ]
     where
         testPoly p = do

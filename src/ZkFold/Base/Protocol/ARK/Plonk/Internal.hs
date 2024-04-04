@@ -38,13 +38,13 @@ getParams l = findK' $ mkStdGen 0
         omega = case rootOfUnity l of
                   Just o -> o
                   _      -> error "impossible"
-        hGroup = map (omega^) [1 :: Integer .. 2^l-1]
+        hGroup = map (omega^) [1 .. 2^l-!1]
         hGroup' k = map (k*) hGroup
 
         findK' :: RandomGen g => g -> (F, F, F)
         findK' g =
-            let (k1, g') = first fromConstant $ uniformR (1, order @F - 1) g
-                (k2, g'') = first fromConstant $ uniformR (1, order @F - 1) g'
+            let (k1, g') = first fromConstant $ uniformR (1, order @F -! 1) g
+                (k2, g'') = first fromConstant $ uniformR (1, order @F -! 1) g'
             in bool (findK' g'') (omega, k1, k2) $
                 all (`notElem` hGroup) (hGroup' k1)
                 && all (`notElem` hGroup' k1) (hGroup' k2)

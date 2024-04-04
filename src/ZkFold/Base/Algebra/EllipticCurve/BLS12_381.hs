@@ -157,7 +157,7 @@ miller' p q r (i:iters) result =
 pairingBLS :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> BLS12_381_GT
 pairingBLS Inf _ = zero
 pairingBLS _ Inf = zero
-pairingBLS p q   = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Integer) - 1) `div` (order @(ScalarField BLS12_381_G1))) one
+pairingBLS p q   = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Natural) -! 1) `div` (order @(ScalarField BLS12_381_G1))) one
 
 -- Used for the final exponentiation; opportunity for further perf optimization
 pow' :: (Field a) => a -> Natural -> a -> a

@@ -44,7 +44,7 @@ propPolyVecDivision :: forall c size . (Field c, KnownNat size, Eq c) => PolyVec
 propPolyVecDivision p q =
     let d1 = deg $ vec2poly p
         d2 = deg $ vec2poly q
-    in (p * q) / q == p || (d1 + d2 > fromIntegral (value @size) - 1)
+    in (p * q) `polyVecDiv` q == p || (d1 + d2 > fromIntegral (value @size) - 1)
 
 propPolyVecZero :: Natural -> Bool
 propPolyVecZero i =
@@ -104,7 +104,7 @@ specUnivariate = hspec $ do
                     property $ \(p :: PolyVec F PlonkSizeBS) q -> q /= zero ==> propPolyVecDivision p q
             describe "polyVecZero" $ do
                 it "should satisfy the definition" $ do
-                    all propPolyVecZero [0 .. value @PlonkMaxPolyDegreeBS - 1] `shouldBe` True
+                    all propPolyVecZero [0 .. value @PlonkMaxPolyDegreeBS -! 1] `shouldBe` True
             describe "Lagrange polynomial" $ do
                 it "should satisfy the definition" $ do
                     all propPolyVecLagrange [1 .. value @PlonkSizeBS] `shouldBe` True

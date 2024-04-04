@@ -29,7 +29,6 @@ import           ZkFold.Symbolic.Data.Combinators
 data ByteString (n :: Natural) a = ByteString !a ![a]
     deriving (Haskell.Show, Haskell.Eq)
 
-
 instance (KnownNat p, KnownNat n) => ToConstant (ByteString n (Zp p)) Natural where
   toConstant (ByteString x xs) = Haskell.foldl (\y p -> fromZp p + base * y) 0 (x:xs)
     where base = 2 ^ maxBitsPerRegister @(Zp p) @n
@@ -43,7 +42,7 @@ instance (FromConstant Natural a, Finite a, KnownNat n) => FromConstant Natural 
 
         dm :: (Natural, Natural) -> Maybe (a, (Natural, Natural))
         dm (_, 0) = Nothing
-        dm (b, r) = let (d, m) = b `divMod` base in Just (fromConstant m, (d, r - 1))
+        dm (b, r) = let (d, m) = b `divMod` base in Just (fromConstant m, (d, r -! 1))
 
 instance (FromConstant Natural a, Finite a, KnownNat n) => FromConstant Integer (ByteString n a) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
@@ -51,7 +50,7 @@ instance (FromConstant Natural a, Finite a, KnownNat n) => FromConstant Integer 
 instance (KnownNat p, KnownNat n) => Arbitrary (ByteString n (Zp p)) where
     arbitrary = ByteString
         <$> toss (highRegisterBits @(Zp p) @n)
-        <*> replicateA (minNumberOfRegisters @(Zp p) @n - 1) (toss $ maxBitsPerRegister @(Zp p) @n)
+        <*> replicateA (minNumberOfRegisters @(Zp p) @n -! 1) (toss $ maxBitsPerRegister @(Zp p) @n)
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 
@@ -65,10 +64,10 @@ instance (KnownNat p, KnownNat n) => BoolType (ByteString n (Zp p)) where
 
     -- | bitwise not.
     -- @Data.Bits.complement@ is undefined for @Natural@, we have to flip bits manually.
-    not = fromConstant @Natural . (nextPow2 -) . toConstant
+    not = fromConstant @Natural . (nextPow2 -!) . toConstant
       where
         nextPow2 :: Natural
-        nextPow2 = (2 ^ natVal (Proxy @n)) - 1
+        nextPow2 = (2 ^ natVal (Proxy @n)) -! 1
 
     -- | Bitwise or
     x || y = fromConstant @Natural $ toConstant x .|. toConstant y
@@ -122,7 +121,7 @@ binOp (ByteString x xs) (ByteString y ys) cons =
                      True  -> highRegisterBits @a @n
 
 instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit a)) where
-    false = ByteString zero (replicate (minNumberOfRegisters @a @n - 1) zero)
+    false = ByteString zero (replicate (minNumberOfRegisters @a @n -! 1) zero)
 
     true = not false
 

@@ -6,13 +6,14 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (
     P(..)
 ) where
 
-import           Data.Aeson                        (FromJSON, ToJSON)
-import           Data.Bifunctor                    (Bifunctor(..))
-import           Data.List                         (intercalate, foldl')
-import           Data.Map                          (Map, empty)
-import           GHC.Generics                      (Generic)
-import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
-import           Test.QuickCheck                   (Arbitrary (..))
+import           Data.Aeson                                                    (FromJSON, ToJSON)
+import           Data.Bifunctor                                                (Bifunctor (..))
+import           Data.List                                                     (foldl', intercalate)
+import           Data.Map                                                      (Map, empty)
+import           GHC.Generics                                                  (Generic)
+import           Numeric.Natural                                               (Natural)
+import           Prelude                                                       hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
+import           Test.QuickCheck                                               (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
@@ -59,6 +60,9 @@ instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)])
                 | ml > mr   = (cl, ml) : go ls ((cr, mr):rs)
                 | otherwise = (cr, mr) : go ((cl, ml):ls) rs
 
+instance (Scale c' c, m ~ Map i j, p ~ [(c, M i j m)]) => Scale c' (P c i j m p) where
+    scale c' (P p) = P $ map (first (scale c')) p
+
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => AdditiveMonoid (P c i j m p) where
     zero = P []
 
@@ -69,6 +73,9 @@ instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) 
     P l * r = foldl' (+) (P []) $ map (f r) l
         where f (P p) (c, m) = P $ map (bimap (* c) (* m)) p
 
+instance MultiplicativeMonoid (P c i j m p) => Exponent Natural (P c i j m p) where
+    (^) = natPow
+
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => MultiplicativeMonoid (P c i j m p) where
     one = P [(one, M empty)]
 
@@ -78,6 +85,3 @@ instance forall c c' i j m p . (FromConstant c' c, m ~ Map i j, p ~ [(c, M i j m
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Semiring (P c i j m p)
 
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Ring (P c i j m p)
-
-instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Scale c (P c i j m p) where
-    scale c (P p) = P $ map (first (*c)) p

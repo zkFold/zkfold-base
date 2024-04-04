@@ -8,7 +8,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 import           Data.Aeson                                                hiding (Bool)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map, null, splitAt, take)
 import           Data.Zip                                                  (zipWith)
-import           Prelude                                                   (const, error, mempty, pure, return, show, ($), (++), (<$>), (<*>), (>>=))
+import           Numeric.Natural                                           (Natural)
+import           Prelude                                                   (Integer, const, error, mempty, pure, return, show, ($), (++), (<$>), (<*>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (..))
@@ -42,6 +43,11 @@ instance Arithmetic a => AdditiveSemigroup (ArithmeticCircuit a) where
         j <- runCircuit r2
         newAssigned (\x -> x i + x j)
 
+instance (Arithmetic a, Scale c a) => Scale c (ArithmeticCircuit a) where
+    scale c r = circuit $ do
+        i <- runCircuit r
+        newAssigned (\x -> (c `scale` one :: a) `scale` x i)
+
 instance Arithmetic a => AdditiveMonoid (ArithmeticCircuit a) where
     zero = circuit $ newAssigned (const zero)
 
@@ -60,6 +66,12 @@ instance Arithmetic a => MultiplicativeSemigroup (ArithmeticCircuit a) where
         i <- runCircuit r1
         j <- runCircuit r2
         newAssigned (\x -> x i * x j)
+
+instance Arithmetic a => Exponent Natural (ArithmeticCircuit a) where
+    (^) = natPow
+
+instance Arithmetic a => Exponent Integer (ArithmeticCircuit a) where
+    (^) = intPow
 
 instance Arithmetic a => MultiplicativeMonoid (ArithmeticCircuit a) where
     one = mempty

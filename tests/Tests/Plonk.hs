@@ -13,7 +13,7 @@ import           Test.Hspec
 import           Test.QuickCheck
 import           Tests.NonInteractiveProof                    (NonInteractiveProofTestData (..))
 
-import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..), MultiplicativeSemigroup (..), negate, zero)
+import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..), MultiplicativeSemigroup (..), negate, zero, (-!))
 import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (value)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
@@ -48,7 +48,7 @@ propPlonkConstraintSatisfaction (Plonk _ _ _ inputs ac _) (TestData _ w) =
         w1'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec a)
         w2'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec b)
         w3'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec c)
-        wPub    = take l (map negate $ elems inputs) ++ replicate (value @PlonkSizeBS - l) zero
+        wPub    = take l (map negate $ elems inputs) ++ replicate (value @PlonkSizeBS -! l) zero
 
         ql' = V.toList $ fromPolyVec ql
         qr' = V.toList $ fromPolyVec qr
@@ -89,7 +89,7 @@ propPlonkPolyIdentity (TestData plonk w) =
                 pubX = pubPoly `evalPolyVec` x
             in qlX * aX + qrX * bX + qoX * cX + qmX * aX * bX + qcX + pubX
 
-    in all ((== zero) . f . (omega^)) [0 .. value @PlonkSizeBS - 1]
+    in all ((== zero) . f . (omega^)) [0 .. value @PlonkSizeBS -! 1]
 
 specPlonk :: IO ()
 specPlonk = hspec $ do

@@ -82,7 +82,6 @@ library
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.Basic.Number
       ZkFold.Base.Algebra.Basic.Permutations
-      ZkFold.Base.Algebra.Basic.Scale
       ZkFold.Base.Algebra.Basic.DFT
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Class

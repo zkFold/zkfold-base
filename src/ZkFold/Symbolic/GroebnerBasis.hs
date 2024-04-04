@@ -42,7 +42,7 @@ boundVariables p ps = foldr (makeBound . findVar) p $ zip [0..] ps
             where
                 M _ as = lt h
                 i = minimum $ keys as
-                s = if k > 0 then makeSPoly (ps !! (k-1)) h else zero
+                s = if k > 0 then makeSPoly (ps !! (k-!1)) h else zero
                 s' = P [M one (singleton i (variable 2))] - P [M one (singleton i (variable 1))]
                 v = bool (Bound 1 k) (Boolean k) $ zeroP $ s `reduce` s'
 
@@ -94,7 +94,7 @@ makeTheorem r = (boundVariables p0 ps, --systemReduce $
                         convert'' :: (Natural, Natural) -> Maybe (Natural, Variable p)
                         convert'' (j, i) =
                             let ind = mapVars j
-                            in if ind > 0 then Just (ind, Free i) else Nothing
+                            in if ind > 0 then Just (ind, Free (fromConstant i)) else Nothing
 
 groebnerStepMax :: Integer
 groebnerStepMax = 200

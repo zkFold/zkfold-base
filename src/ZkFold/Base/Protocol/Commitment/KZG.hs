@@ -46,7 +46,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ S
     setup :: kzg -> Setup kzg
     setup (KZG x) =
         let d  = value @d
-            xs = V.fromList $ map (x^) [0..d-1]
+            xs = V.fromList $ map (x^) [0..d-!1]
             gs = fmap (`mul` gen) xs
         in (gs, gen, x `mul` gen)
 
@@ -101,7 +101,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ S
 ------------------------------------ Helper functions ------------------------------------
 
 provePolyVecEval :: forall size f . (KnownNat size, FiniteField f, Eq f) => PolyVec f size -> f -> PolyVec f size
-provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) / toPolyVec [negate z, one]
+provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) `polyVecDiv` toPolyVec [negate z, one]
 
 com :: (EllipticCurve curve, f ~ ScalarField curve) => V.Vector (Point curve) -> PolyVec f size -> Point curve
 com gs f = sum $ V.zipWith mul (fromPolyVec f) gs

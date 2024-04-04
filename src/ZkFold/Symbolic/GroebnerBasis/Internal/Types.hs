@@ -3,10 +3,10 @@ module ZkFold.Symbolic.GroebnerBasis.Internal.Types where
 import           Data.List                       (foldl', intercalate)
 import           Data.Map                        (Map, differenceWith, empty, intersectionWith, isSubmapOfBy, keys, toList, unionWith)
 import qualified Data.Map                        as Map
+import           Numeric.Natural                 (Natural)
 import           Prelude                         hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
 
-import           ZkFold.Base.Algebra.Basic.Class hiding (scale)
-import Numeric.Natural (Natural)
+import           ZkFold.Base.Algebra.Basic.Class
 
 data VarType = VarTypeFree | VarTypeBound | VarTypeBoolean deriving (Eq)
 instance Show VarType where
@@ -14,7 +14,7 @@ instance Show VarType where
     show VarTypeBound   = "Bound"
     show VarTypeBoolean = "Boolean"
 
-data Var c a = Free a | Bound a Natural | Boolean Natural
+data Var c a = Free a | Bound a Natural | Boolean Natural deriving (Functor)
 instance (Show a, MultiplicativeMonoid a) => Show (Var c a) where
     show = show . getPower
 instance (Eq a, MultiplicativeMonoid a) => Eq (Var c a) where
@@ -42,8 +42,8 @@ getPoly (Bound _ p) = p
 getPoly (Boolean p) = p
 getPoly _           = error "getPoly: VarType mismatch"
 
-data Monom c a = M c (Map Natural (Var c a)) deriving (Eq)
-newtype Polynom c a = P [Monom c a] deriving (Eq)
+data Monom c a = M c (Map Natural (Var c a)) deriving (Eq, Functor)
+newtype Polynom c a = P [Monom c a] deriving (Eq, Functor)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
         => Show (Monom c a) where
@@ -74,6 +74,12 @@ instance (AdditiveMonoid c, Eq c, Ord a, MultiplicativeMonoid a) => Ord (Monom c
 instance (AdditiveMonoid c, Eq c, Ord a, MultiplicativeMonoid a) => Ord (Polynom c a) where
     compare (P l) (P r) = compare l r
 
+instance Scale c' c => Scale c' (Monom c a) where
+    scale c' (M c as) = M (scale c' c) as
+
+instance Scale c' c => Scale c' (Polynom c a) where
+    scale c (P as) = P $ map (scale c) as
+
 instance (Eq c, FiniteField c, Ord a, MultiplicativeMonoid a) => AdditiveSemigroup (Polynom c a) where
     P l + P r = addPoly (P l) (P r)
 
@@ -81,11 +87,14 @@ instance (Eq c, FiniteField c, Ord a, MultiplicativeMonoid a) => AdditiveMonoid 
     zero = P []
 
 instance (Eq c, FiniteField c, Ord a, MultiplicativeMonoid a) => AdditiveGroup (Polynom c a) where
-    negate (P as) = P $ map (scale (negate one)) as
-    P l - P r     = addPoly (P l) (negate $ P r)
+    negate = scale (-1 :: Integer)
+    P l - P r = addPoly (P l) (negate $ P r)
 
 instance (Eq c, FiniteField c, Ord a, AdditiveGroup a, MultiplicativeMonoid a) => MultiplicativeSemigroup (Polynom c a) where
     P l * P r = mulM (P l) (P r)
+
+instance MultiplicativeMonoid (Polynom c a) => Exponent Natural (Polynom c a) where
+    (^) = natPow
 
 instance (Eq c, FiniteField c, Ord a, AdditiveGroup a, MultiplicativeMonoid a) => MultiplicativeMonoid (Polynom c a) where
     one = P [M one empty]
@@ -128,9 +137,6 @@ subPower (Boolean p) (Boolean q)
 subPower (Free x) (Free y)       = Just $ Free (x - y)
 subPower _ _                     = error "subPower: VarType mismatch"
 
-scale :: FiniteField c => c -> Monom c a -> Monom c a
-scale c' (M c as) = M (c*c') as
-
 similarM :: (Eq a, MultiplicativeMonoid a) => Monom c a -> Monom c a -> Bool
 similarM (M _ asl) (M _ asr) = asl == asr
 
@@ -151,11 +157,11 @@ addPoly (P l) (P r) = P $ go l r
             | a > b     = a : go as (b:bs)
             | otherwise = b : go (a:as) bs
 
-mulMono :: (FiniteField c, AdditiveGroup a) => Monom c a -> Monom c a -> Monom c a
+mulMono :: (FiniteField c, AdditiveMonoid a) => Monom c a -> Monom c a -> Monom c a
 mulMono (M cl asl) (M cr asr) = M (cl*cr) (unionWith addPower asl asr)
 
-mulPM :: (FiniteField c, AdditiveGroup a) => Polynom c a -> Monom c a -> Polynom c a
-mulPM(P as) m = P $ map (mulMono m) as
+mulPM :: (FiniteField c, AdditiveMonoid a) => Polynom c a -> Monom c a -> Polynom c a
+mulPM (P as) m = P $ map (mulMono m) as
 
 mulM :: (Eq c, FiniteField c, Ord a, AdditiveGroup a, MultiplicativeMonoid a) => Polynom c a -> Polynom c a -> Polynom c a
 mulM (P ml) r = foldl' addPoly (P []) $ map (mulPM r) ml
@@ -163,7 +169,7 @@ mulM (P ml) r = foldl' addPoly (P []) $ map (mulPM r) ml
 dividable :: (Ord a, MultiplicativeMonoid a) => Monom c a -> Monom c a -> Bool
 dividable (M _ al) (M _ ar) = isSubmapOfBy (<=) ar al
 
-divideM :: (FiniteField c, Eq a, AdditiveGroup a, MultiplicativeMonoid a) => Monom c a -> Monom c a -> Monom c a
+divideM :: (FiniteField c, Eq a, Ring a) => Monom c a -> Monom c a -> Monom c a
 divideM (M cl al) (M cr ar) = M (cl/cr) (Map.filter (not . oneV) $ differenceWith subPower al ar)
 
 lcmM :: (FiniteField c, Ord a, MultiplicativeMonoid a) => Monom c a -> Monom c a -> Monom c a

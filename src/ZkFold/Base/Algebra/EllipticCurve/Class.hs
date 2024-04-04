@@ -1,15 +1,14 @@
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators    #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
 import           Data.Functor                    ((<&>))
+import           Numeric.Natural                 (Natural)
 import           Prelude                         hiding (Num (..), sum, (/), (^))
 import qualified Prelude                         as Haskell
 import           Test.QuickCheck                 hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Scale (BinScale (..))
 import           ZkFold.Base.Data.ByteString     (ToByteString (..))
 
 type family BaseField curve
@@ -43,21 +42,27 @@ instance EllipticCurve curve => Eq (Point curve) where
 instance EllipticCurve curve => AdditiveSemigroup (Point curve) where
     (+) = add
 
+instance EllipticCurve curve => Scale Natural (Point curve) where
+    scale = natScale
+
 instance EllipticCurve curve => AdditiveMonoid (Point curve) where
     zero = Inf
+
+instance EllipticCurve curve => Scale Integer (Point curve) where
+    scale = intScale
 
 instance EllipticCurve curve => AdditiveGroup (Point curve) where
     negate = pointNegate
 
 instance EllipticCurve curve => ToByteString (Point curve) where
-    toByteString Inf = toByteString (0 :: Integer)
+    toByteString Inf         = toByteString (0 :: Integer)
     toByteString (Point x y) = toByteString (1 :: Integer) <> toByteString x <> toByteString y
 
 instance EllipticCurve curve => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)
 
 class (EllipticCurve curve1, EllipticCurve curve2, ScalarField curve1 ~ ScalarField curve2,
-        Eq t, MultiplicativeGroup t) => Pairing curve1 curve2 t | curve1 curve2 -> t where
+        Eq t, MultiplicativeGroup t, Exponent (ScalarField curve1) t) => Pairing curve1 curve2 t | curve1 curve2 -> t where
     pairing :: Point curve1 -> Point curve2 -> t
 
 pointAdd :: EllipticCurve curve => Point curve -> Point curve -> Point curve
@@ -89,4 +94,4 @@ pointNegate Inf         = Inf
 pointNegate (Point x y) = Point x (negate y)
 
 pointMul :: forall curve . EllipticCurve curve => ScalarField curve -> Point curve -> Point curve
-pointMul n p = runBinScale $ n `scale` BinScale @(ScalarField curve) p
+pointMul = natScale . fromBinary . castBits . binaryExpansion
