@@ -60,6 +60,12 @@ class FromConstant a b where
 instance FromConstant a a where
     fromConstant = id
 
+class ToConstant a b where
+    toConstant :: a -> b
+
+instance ToConstant a a where
+    toConstant = id
+
 class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semiring a
 
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a

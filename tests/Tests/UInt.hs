@@ -45,9 +45,9 @@ specUInt = hspec $ do
     describe ("UInt" ++ show n ++ " specification") $ do
         it "Zp embeds Integer" $ do
             x <- toss m
-            return $ toNatural @p @n (fromConstant x) === x
+            return $ toConstant @(UInt n (Zp p)) @Natural (fromConstant x) === x
         it "Integer embeds Zp" $ \(x :: UInt n (Zp p)) ->
-            fromConstant (toNatural x) === x
+            fromConstant (toConstant @_ @Natural x) === x
         it "AC embeds Integer" $ do
             x <- toss m
             return $ value @(Zp p) @n (fromConstant x) === fromConstant x
