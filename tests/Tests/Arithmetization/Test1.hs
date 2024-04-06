@@ -22,7 +22,7 @@ testFunc x y =
     let c  = fromConstant @I @a
         g1 = x ^ (2 :: Natural) + c 3 * x + c 5
         g2 = c 4 * x ^ (3 :: Natural)
-        g3 = c 2 / x
+        g3 = c 2 // x
     in (g3 == y :: Bool a) ? g1 $ g2
 
 testResult :: forall a . (Symbolic a, Haskell.Eq a) => ArithmeticCircuit a -> a -> a -> Haskell.Bool

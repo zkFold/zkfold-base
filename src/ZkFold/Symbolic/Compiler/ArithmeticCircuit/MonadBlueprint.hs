@@ -180,6 +180,7 @@ instance Ord i => Semiring (Sources a i)
 instance Ord i => Ring (Sources a i)
 
 instance Ord i => Field (Sources a i) where
+    finv = id
     rootOfUnity _ = Just (Sources mempty)
 
 instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where

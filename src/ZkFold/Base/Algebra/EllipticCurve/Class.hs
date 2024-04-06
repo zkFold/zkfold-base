@@ -72,7 +72,7 @@ pointAdd (Point x1 y1) (Point x2 y2)
   | x1 == x2  = Inf
   | otherwise = Point x3 y3
   where
-    slope  = (y1 - y2) / (x1 - x2)
+    slope  = (y1 - y2) // (x1 - x2)
     x3 = slope * slope - x1 - x2
     y3 = slope * (x1 - x3) - y1
 
@@ -80,7 +80,7 @@ pointDouble :: EllipticCurve curve => Point curve -> Point curve
 pointDouble Inf = Inf
 pointDouble (Point x y) = Point x' y'
   where
-    slope = (x * x + x * x + x * x) / (y + y)
+    slope = (x * x + x * x + x * x) // (y + y)
     x' = slope * slope - x - x
     y' = slope * (x - x') - y
 

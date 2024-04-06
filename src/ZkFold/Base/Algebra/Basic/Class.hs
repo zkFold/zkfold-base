@@ -1,5 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Algebra.Basic.Class where
 
@@ -151,25 +154,19 @@ computes the same results on all inputs.
 class (MultiplicativeMonoid a, Exponent Integer a) => MultiplicativeGroup a where
     {-# MINIMAL (invert | (/)) #-}
 
-    -- | Division in a group.
-    --
-    -- If @x@ is invertible, the following should hold:
+    -- | Division in a group. The following should hold:
     --
     -- [Division] @x / x == one@
     -- [Cancellation] @(y / x) * x == y@
-    --
-    -- In addition, @x / y == x * invert y@ should always hold.
+    -- [Agreement] @x / y == x * invert y@
     (/) :: a -> a -> a
     x / y = x * invert y
 
-    -- | Inverse in a group.
-    --
-    -- If @x@ is invertible, the following should hold:
+    -- | Inverse in a group. The following should hold:
     --
     -- [Left inverse] @invert x * x == one@
     -- [Right inverse] @x * invert x == one@
-    --
-    -- In addition, @invert x == one / x@ should always hold.
+    -- [Agreement] @invert x == one / x@
     invert :: a -> a
     invert x = one / x
 
@@ -271,18 +268,50 @@ need to defer the resolution of these constraints until @a@ is specified.
 -}
 type Algebra b a = (Ring a, Scale b a, FromConstant b a)
 
-{- | Class of fields.
+{- | Class of fields. As a ring, each field is commutative, that is:
 
-NOTE: by convention, division by zero returns zero.
-NOTE: every element is either zero or is invertible.
+[Commutativity] @x * y == y * x@
 
-[Division by zero] @x / zero == zero@
-[Inverse of zero] @invert zero == zero@
+While exponentiation by an integer is specified in a constraint, a default
+implementation is provided as an @'intPowF'@ function. You can provide a faster
+alternative yourself, but do not forget to check that your implementation
+computes the same results on all inputs.
 -}
-class (Ring a, MultiplicativeGroup a) => Field a where
+class (Ring a, Exponent Integer a) => Field a where
+    {-# MINIMAL (finv | (//)) #-}
+
+    -- | Division in a field. The following should hold:
+    --
+    -- [Division] If @x /= 0@, @x // x == one@
+    -- [Div by 0] @x // zero == zero@
+    -- [Agreement] @x // y == x * finv y@
+    (//) :: a -> a -> a
+    x // y = x * finv y
+
+    -- | Inverse in a field. The following should hold:
+    --
+    -- [Inverse] If @x /= 0@, @x * inverse x == one@
+    -- [Inv of 0] @inverse zero == zero@
+    -- [Agreement] @finv x == one // x@
+    finv :: a -> a
+    finv x = one // x
+
+    -- | @rootOfUnity n@ is an element of a characteristic @2^n@, that is,
+    --
+    -- [Root of 0] @rootOfUnity 0 == Just one@
+    -- [Root property] If @rootOfUnity n == Just x@, @x ^ (2 ^ n) == one@
+    -- [Smallest root] If @rootOfUnity n == Just x@ and @m < n@, @x ^ (2 ^ m) /= one@
+    -- [All roots] If @rootOfUnity n == Just x@ and @m < n@, @rootOfUnity m /= Nothing@
     rootOfUnity :: Natural -> Maybe a
     rootOfUnity 0 = Just one
     rootOfUnity _ = Nothing
+
+intPowF :: Field a => a -> Integer -> a
+-- | A default implementation for integer exponentiation. Uses only natural
+-- exponentiation and @'finv'@ so doesn't loop via an @'Exponent' Integer a@
+-- instance.
+intPowF a n | n < 0     = finv a ^ naturalFromInteger (-n)
+            | otherwise = a ^ naturalFromInteger n
 
 {- | Class of finite structures. @Order a@ should be the actual number of
 elements in the type, identified up to the associated equality relation.
@@ -329,6 +358,22 @@ castBits (x:xs)
     | x == zero = zero : castBits xs
     | x == one  = one  : castBits xs
     | otherwise = error "castBits: impossible bit value"
+
+--------------------------------------------------------------------------------
+
+-- | A multiplicative subgroup of nonzero elements of a field.
+-- TODO: hide constructor
+newtype NonZero a = NonZero a
+    deriving newtype (MultiplicativeSemigroup, MultiplicativeMonoid)
+
+deriving newtype instance Exponent b a => Exponent b (NonZero a)
+
+instance Field a => MultiplicativeGroup (NonZero a) where
+    invert (NonZero x) = NonZero (finv x)
+    NonZero x / NonZero y = NonZero (x // y)
+
+instance KnownNat (Order (NonZero a)) => Finite (NonZero a) where
+    type Order (NonZero a) = Order a - 1
 
 --------------------------------------------------------------------------------
 

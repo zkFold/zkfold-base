@@ -106,7 +106,7 @@ instance Show PlonkWitnessInput where
 instance Arbitrary PlonkWitnessInput where
     arbitrary = do
         x <- arbitrary
-        return $ PlonkWitnessInput $ Map.fromList [(1, x), (2, 15/x)]
+        return $ PlonkWitnessInput $ Map.fromList [(1, x), (2, 15//x)]
 
 data PlonkProverSecret = PlonkProverSecret F F F F F F F F F F F
     deriving (Show)

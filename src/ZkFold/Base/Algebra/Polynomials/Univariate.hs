@@ -93,10 +93,10 @@ mulDft p w2n lPadded rPadded = c
     pad = 2 P.^ p
 
     w2nInv :: c
-    w2nInv = one / w2n
+    w2nInv = one // w2n
 
     nInv :: c
-    nInv = one / fromConstant (fromIntegral @_ @Natural pad)
+    nInv = one // fromConstant (fromIntegral @_ @Natural pad)
 
     v1Image, v2Image :: V.Vector c
     v1Image = genericDft p w2n lPadded
@@ -196,7 +196,7 @@ qr a b = go a b zero
     where
         go x y q = if deg x < deg y then (q, x) else go x' y q'
             where
-                c = lt x / lt y
+                c = lt x // lt y
                 n = fromIntegral (deg x - deg y)
                 -- ^ if `deg x < deg y`, `n` is not evaluated, so this would not error out
                 x' = x - scaleP c n y
@@ -280,7 +280,7 @@ polyVecZero = poly2vec $ scaleP one (value @size) one - one
 -- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
 polyVecLagrange :: forall c size size' . (Field c, Eq c, KnownNat size, KnownNat size') =>
     Natural -> c -> PolyVec c size'
-polyVecLagrange i omega = scalePV (omega^i / fromConstant (value @size)) $ (polyVecZero @c @size @size' - one) `polyVecDiv` polyVecLinear (negate $ omega^i) one
+polyVecLagrange i omega = scalePV (omega^i // fromConstant (value @size)) $ (polyVecZero @c @size @size' - one) `polyVecDiv` polyVecLinear (negate $ omega^i) one
 
 -- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
 polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, KnownNat size, KnownNat size') =>
@@ -294,7 +294,7 @@ polyVecGrandProduct :: forall c size . (Field c, KnownNat size) =>
 polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
     let ps = fmap (+ gamma) (V.zipWith (+) as (fmap (* beta) bs))
         qs = fmap (+ gamma) (V.zipWith (+) as (fmap (* beta) sigmas))
-        zs = fmap (product . flip V.take (V.zipWith (/) ps qs)) (V.generate (fromIntegral (value @size)) id)
+        zs = fmap (product . flip V.take (V.zipWith (//) ps qs)) (V.generate (fromIntegral (value @size)) id)
     in PV zs
 
 polyVecDiv :: forall c size . (Field c, KnownNat size, Eq c) =>

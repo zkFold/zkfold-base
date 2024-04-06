@@ -1,8 +1,8 @@
+{-# LANGUAGE DerivingVia      #-}
 {-# LANGUAGE OverloadedLists  #-}
 {-# LANGUAGE TypeApplications #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
@@ -97,7 +97,9 @@ instance EllipticCurve BLS12_381_G2 where
 -- of order @'BLS12_381_Scalar'@.
 newtype BLS12_381_GT = BLS12_381_GT Fq12
     deriving newtype (Eq, MultiplicativeSemigroup, Exponent Natural,
-        MultiplicativeMonoid, Exponent Integer, MultiplicativeGroup)
+        MultiplicativeMonoid, Exponent Integer)
+
+deriving via (NonZero Fq12) instance MultiplicativeGroup BLS12_381_GT
 
 instance Finite BLS12_381_GT where
     type Order BLS12_381_GT = BLS12_381_Scalar
@@ -112,8 +114,8 @@ untwist :: Point BLS12_381_G2 -> (Fq12, Fq12)
 untwist (Point x1 y1) = (wideX, wideY)
   where
     root = Ext3 zero one zero
-    wideX = Ext2 zero (Ext3 zero zero x1) / Ext2 zero root
-    wideY = Ext2 zero (Ext3 zero zero y1) / Ext2 root zero
+    wideX = Ext2 zero (Ext3 zero zero x1) // Ext2 zero root
+    wideY = Ext2 zero (Ext3 zero zero y1) // Ext2 root zero
 untwist Inf = error "untwist: point at infinity"
 
 -- Used in miller loop for computing line functions l_r,r and v_2r
@@ -121,7 +123,7 @@ doubleEval :: Point BLS12_381_G2 -> Point BLS12_381_G1 -> Fq12
 doubleEval r (Point px py) = fromConstant py - (fromConstant px * slope) - v
   where
     (rx, ry) = untwist r
-    slope = (rx * rx + rx * rx + rx * rx) / (ry + ry)
+    slope = (rx * rx + rx * rx + rx * rx) // (ry + ry)
     v = ry - slope * rx
 doubleEval _ Inf = error "doubleEval: point at infinity"
 
@@ -139,8 +141,8 @@ addEval _ _ Inf = error "addEval: point at infinity"
 addEval' :: (Fq12, Fq12) -> (Fq12, Fq12) -> Point BLS12_381_G1 -> Fq12
 addEval' (rx, ry) (qx, qy) (Point px py) = fromConstant py - (fromConstant px * slope) - v
   where
-    slope = (qy - ry) / (qx - rx)
-    v = ((qy * rx) - (ry * qx)) / (rx - qx)
+    slope = (qy - ry) // (qx - rx)
+    v = ((qy * rx) - (ry * qx)) // (rx - qx)
 addEval' _ _ Inf = error "addEval': point at infinity"
 
 -- Classic Miller loop for Ate pairing

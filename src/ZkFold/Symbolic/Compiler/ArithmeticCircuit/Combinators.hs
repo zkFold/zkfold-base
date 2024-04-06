@@ -79,7 +79,7 @@ runInvert :: MonadBlueprint i a m => ArithmeticCircuit a -> m (i, i)
 runInvert r = do
     i <- runCircuit r
     j <- newConstrained (\x j -> x i * x j) (isZero . ($ i))
-    k <- newConstrained (\x k -> x i * x k + x j - one) (invert . ($ i))
+    k <- newConstrained (\x k -> x i * x k + x j - one) (finv . ($ i))
     return (j, k)
     where
       isZero :: forall a . (Ring a, Eq (Bool a) a, Conditional (Bool a) a) => a -> a

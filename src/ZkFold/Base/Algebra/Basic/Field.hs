@@ -78,18 +78,6 @@ instance KnownNat p => Exponent Natural (Zp p) where
 instance KnownNat p => MultiplicativeMonoid (Zp p) where
     one = Zp 1
 
-instance Prime p => Exponent Integer (Zp p) where
-    a ^ n = intPow a (n `mod` fromConstant (value @p) - 1)
-
-instance Prime p => MultiplicativeGroup (Zp p) where
-    invert (Zp a) = toZp $ snd (f (a, 1) (p, 0))
-      where
-        p = fromIntegral (order @(Zp p))
-        f (x, y) (x', y')
-            | x' == 0   = (x, y)
-            | otherwise = f (x', y') (x - q * x', y - q * y')
-            where q = x `div` x'
-
 instance KnownNat p => FromConstant Natural (Zp p) where
     fromConstant = toZp . fromConstant
 
@@ -100,7 +88,18 @@ instance KnownNat p => FromConstant Integer (Zp p) where
 
 instance KnownNat p => Ring (Zp p)
 
+instance Prime p => Exponent Integer (Zp p) where
+    a ^ n = intPowF a (n `mod` fromConstant (value @p) - 1)
+
 instance Prime p => Field (Zp p) where
+    finv (Zp a) = toZp $ snd (f (a, 1) (p, 0))
+      where
+        p = fromIntegral (order @(Zp p))
+        f (x, y) (x', y')
+            | x' == 0   = (x, y)
+            | otherwise = f (x', y') (x - q * x', y - q * y')
+            where q = x `div` x'
+
     rootOfUnity l
       | l == 0                       = Nothing
       | (value @p -! 1) `mod` n /= 0 = Nothing
@@ -127,8 +126,8 @@ instance KnownNat p => Haskell.Num (Zp p) where
 
 instance Prime p => Haskell.Fractional (Zp p) where
     fromRational = error "`fromRational` is not implemented for `Zp p`"
-    recip        = invert
-    (/)          = (/)
+    recip        = finv
+    (/)          = (//)
 
 instance Show (Zp p) where
     show (Zp a) = show a
@@ -158,11 +157,11 @@ instance KnownNat p => Random (Zp p) where
         (r, g') = randomR (0, fromIntegral (order @(Zp p)) - 1) g
 
 -- | Exponentiation by an element of a finite field is well-defined (and lawful)
--- if and only if the base is a finite multiplicative monoid of a matching order.
+-- if and only if the base is a finite multiplicative group of a matching order.
 --
 -- Note that left distributivity is satisfied, meaning
 -- @a ^ (m + n) = (a ^ m) * (a ^ n)@.
-instance (KnownNat p, MultiplicativeMonoid a, Order a ~ p) => Exponent (Zp p) a where
+instance (KnownNat p, MultiplicativeGroup a, Order a ~ p) => Exponent (Zp p) a where
     a ^ n = a ^ fromZp n
 
 ----------------------------- Field Extensions --------------------------------
@@ -201,18 +200,17 @@ instance MultiplicativeMonoid (Ext2 f e) => Exponent Natural (Ext2 f e) where
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext2 f e) where
     one = Ext2 one zero
 
-instance MultiplicativeGroup (Ext2 f e) => Exponent Integer (Ext2 f e) where
-    (^) = intPow
+instance Field (Ext2 f e) => Exponent Integer (Ext2 f e) where
+    (^) = intPowF
 
-instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext2 f e) where
-    invert (Ext2 a b) =
+instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext2 f e) where
+    finv (Ext2 a b) =
         let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @f @e)
-        in case scaleP (one / lt g) 0 s of
+        in case scaleP (one // lt g) 0 s of
             P []  -> Ext2 zero zero
             P [x] -> Ext2 x zero
             P v   -> Ext2 (v V.! 0) (v V.! 1)
 
-instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext2 f e) where
     rootOfUnity n = (\r -> Ext2 r zero) <$> rootOfUnity n
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
@@ -260,19 +258,18 @@ instance MultiplicativeMonoid (Ext3 f e) => Exponent Natural (Ext3 f e) where
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext3 f e) where
     one = Ext3 one zero zero
 
-instance MultiplicativeGroup (Ext3 f e) => Exponent Integer (Ext3 f e) where
-    (^) = intPow
+instance Field (Ext3 f e) => Exponent Integer (Ext3 f e) where
+    (^) = intPowF
 
-instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeGroup (Ext3 f e) where
-    invert (Ext3 a b c) =
+instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where
+    finv (Ext3 a b c) =
         let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @f @e)
-        in case scaleP (one / lt g) 0 s of
+        in case scaleP (one // lt g) 0 s of
             P []     -> Ext3 zero zero zero
             P [x]    -> Ext3 x zero zero
             P [x, y] -> Ext3 x y zero
             P v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
-instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where
     rootOfUnity n = (\r -> Ext3 r zero zero) <$> rootOfUnity n
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where

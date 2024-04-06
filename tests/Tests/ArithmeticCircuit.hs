@@ -43,8 +43,8 @@ specArithmeticCircuit = hspec $ do
         it "negates correctly" $ correctHom1 @a negate
         it "multiplies correctly" $ correctHom2 @a (*)
         it "has one" $ correctHom0 @a one
-        it "inverts nonzero correctly" $ correctHom1 @a invert
-        it "inverts zero correctly" $ correctHom0 @a (invert zero)
+        it "inverts nonzero correctly" $ correctHom1 @a finv
+        it "inverts zero correctly" $ correctHom0 @a (finv zero)
         it "checks isZero(nonzero)" $ \(x :: a) ->
           let Bool (r :: ArithmeticCircuit a) = isZero (embed x)
            in checkClosedCircuit r .&&. eval' r === bool zero one (x Haskell.== zero)

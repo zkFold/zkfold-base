@@ -170,7 +170,7 @@ dividable :: (Ord a, MultiplicativeMonoid a) => Monom c a -> Monom c a -> Bool
 dividable (M _ al) (M _ ar) = isSubmapOfBy (<=) ar al
 
 divideM :: (FiniteField c, Eq a, Ring a) => Monom c a -> Monom c a -> Monom c a
-divideM (M cl al) (M cr ar) = M (cl/cr) (Map.filter (not . oneV) $ differenceWith subPower al ar)
+divideM (M cl al) (M cr ar) = M (cl//cr) (Map.filter (not . oneV) $ differenceWith subPower al ar)
 
 lcmM :: (FiniteField c, Ord a, MultiplicativeMonoid a) => Monom c a -> Monom c a -> Monom c a
 lcmM (M cl al) (M cr ar) = M (cl*cr) (unionWith max al ar)

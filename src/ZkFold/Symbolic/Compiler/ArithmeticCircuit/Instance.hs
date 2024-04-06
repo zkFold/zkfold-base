@@ -70,14 +70,8 @@ instance Arithmetic a => MultiplicativeSemigroup (ArithmeticCircuit a) where
 instance Arithmetic a => Exponent Natural (ArithmeticCircuit a) where
     (^) = natPow
 
-instance Arithmetic a => Exponent Integer (ArithmeticCircuit a) where
-    (^) = intPow
-
 instance Arithmetic a => MultiplicativeMonoid (ArithmeticCircuit a) where
     one = mempty
-
-instance Arithmetic a => MultiplicativeGroup (ArithmeticCircuit a) where
-    invert = invertC
 
 instance (Arithmetic a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
     fromConstant c = embed (fromConstant c)
@@ -86,7 +80,11 @@ instance Arithmetic a => Semiring (ArithmeticCircuit a)
 
 instance Arithmetic a => Ring (ArithmeticCircuit a)
 
+instance Arithmetic a => Exponent Integer (ArithmeticCircuit a) where
+    (^) = intPowF
+
 instance Arithmetic a => Field (ArithmeticCircuit a) where
+    finv = invertC
     rootOfUnity n = embed <$> rootOfUnity n
 
 instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
