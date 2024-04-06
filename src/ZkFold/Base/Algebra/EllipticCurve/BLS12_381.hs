@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
@@ -92,15 +93,22 @@ instance EllipticCurve BLS12_381_G2 where
 
 --------------------------------------- Pairing ---------------------------------------
 
-type BLS12_381_GT = Fq12
+-- | An image of a pairing is a cyclic multiplicative subgroup of @'Fq12'@
+-- of order @'BLS12_381_Scalar'@.
+newtype BLS12_381_GT = BLS12_381_GT Fq12
+    deriving newtype (Eq, MultiplicativeSemigroup, Exponent Natural,
+        MultiplicativeMonoid, Exponent Integer, MultiplicativeGroup)
+
+instance Finite BLS12_381_GT where
+    type Order BLS12_381_GT = BLS12_381_Scalar
 
 instance Pairing BLS12_381_G1 BLS12_381_G2 BLS12_381_GT where
-    pairing = pairingBLS
+    pairing a b = BLS12_381_GT (pairingBLS a b)
 
 -- Adapted from https://github.com/nccgroup/pairing-bls12381/blob/master/Crypto/Pairing_bls12381.hs
 
 -- Untwist point on E2 for pairing calculation
-untwist :: Point BLS12_381_G2 -> (BLS12_381_GT, BLS12_381_GT)
+untwist :: Point BLS12_381_G2 -> (Fq12, Fq12)
 untwist (Point x1 y1) = (wideX, wideY)
   where
     root = Ext3 zero one zero
@@ -109,7 +117,7 @@ untwist (Point x1 y1) = (wideX, wideY)
 untwist Inf = error "untwist: point at infinity"
 
 -- Used in miller loop for computing line functions l_r,r and v_2r
-doubleEval :: Point BLS12_381_G2 -> Point BLS12_381_G1 -> BLS12_381_GT
+doubleEval :: Point BLS12_381_G2 -> Point BLS12_381_G1 -> Fq12
 doubleEval r (Point px py) = fromConstant py - (fromConstant px * slope) - v
   where
     (rx, ry) = untwist r
@@ -118,7 +126,7 @@ doubleEval r (Point px py) = fromConstant py - (fromConstant px * slope) - v
 doubleEval _ Inf = error "doubleEval: point at infinity"
 
 -- Used in miller loop for computer line function l_r,p and v_r+p
-addEval :: Point BLS12_381_G2 -> Point BLS12_381_G2 -> Point BLS12_381_G1 -> BLS12_381_GT
+addEval :: Point BLS12_381_G2 -> Point BLS12_381_G2 -> Point BLS12_381_G1 -> Fq12
 addEval r q p@(Point px _) = if (rx == qx) && (ry + qy == zero)
                 then fromConstant px - rx
                 else addEval' (rx, ry) (qx, qy) p
@@ -128,7 +136,7 @@ addEval r q p@(Point px _) = if (rx == qx) && (ry + qy == zero)
 addEval _ _ Inf = error "addEval: point at infinity"
 
 -- Helper function for addEval
-addEval' :: (BLS12_381_GT, BLS12_381_GT) -> (BLS12_381_GT, BLS12_381_GT) -> Point BLS12_381_G1 -> BLS12_381_GT
+addEval' :: (Fq12, Fq12) -> (Fq12, Fq12) -> Point BLS12_381_G1 -> Fq12
 addEval' (rx, ry) (qx, qy) (Point px py) = fromConstant py - (fromConstant px * slope) - v
   where
     slope = (qy - ry) / (qx - rx)
@@ -136,7 +144,7 @@ addEval' (rx, ry) (qx, qy) (Point px py) = fromConstant py - (fromConstant px * 
 addEval' _ _ Inf = error "addEval': point at infinity"
 
 -- Classic Miller loop for Ate pairing
-miller :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> BLS12_381_GT
+miller :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> Fq12
 miller p q = miller' p q q iterations one
   where
     iterations = tail $ reverse $  -- list of true/false per bits of operand
@@ -144,7 +152,7 @@ miller p q = miller' p q q iterations one
                      else Just(odd b, shiftR b 1)) 0xd201000000010000
 
 -- Double and add loop helper for Miller (iterative)
-miller' :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> Point BLS12_381_G2 -> [Bool] -> BLS12_381_GT -> BLS12_381_GT
+miller' :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> Point BLS12_381_G2 -> [Bool] -> Fq12 -> Fq12
 miller' _ _ _ [] result = result
 miller' p q r (i:iters) result =
   if i then miller' p q (pointAdd doubleR q) iters (accum * addEval doubleR q p)
@@ -154,13 +162,13 @@ miller' p q r (i:iters) result =
     doubleR = pointDouble r
 
 -- | Pairing calculation for a valid point in G1 and another valid point in G2.
-pairingBLS :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> BLS12_381_GT
+pairingBLS :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> Fq12
 pairingBLS Inf _ = zero
 pairingBLS _ Inf = zero
 pairingBLS p q   = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Natural) -! 1) `div` (order @(ScalarField BLS12_381_G1))) one
 
 -- Used for the final exponentiation; opportunity for further perf optimization
-pow' :: (Field a) => a -> Natural -> a -> a
+pow' :: MultiplicativeSemigroup a => a -> Natural -> a -> a
 pow' a0 e result
   | e <= 1    = a0
   | even e    = accum2

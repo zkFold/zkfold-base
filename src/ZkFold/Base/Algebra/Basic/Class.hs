@@ -65,8 +65,8 @@ class MultiplicativeSemigroup b => Exponent b a where
     -- [Right identity] @a ^ one == a@
     --
     -- NOTE, however, that even if exponents form a semigroup, left
-    -- distributivity (that @a ^ (m + n) == (a ^ m) * (a ^ n)@) is not required:
-    -- otherwise instances for finite fields as exponents could not be made
+    -- distributivity (that @a ^ (m + n) == (a ^ m) * (a ^ n)@) is desirable but
+    -- not required: otherwise instance for Bool as exponent could not be made
     -- lawful.
     (^) :: a -> b -> a
 
@@ -274,6 +274,7 @@ type Algebra b a = (Ring a, Scale b a, FromConstant b a)
 {- | Class of fields.
 
 NOTE: by convention, division by zero returns zero.
+NOTE: every element is either zero or is invertible.
 
 [Division by zero] @x / zero == zero@
 [Inverse of zero] @invert zero == zero@

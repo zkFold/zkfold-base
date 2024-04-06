@@ -157,7 +157,12 @@ instance KnownNat p => Random (Zp p) where
       where
         (r, g') = randomR (0, fromIntegral (order @(Zp p)) - 1) g
 
-instance (KnownNat p, MultiplicativeMonoid a) => Exponent (Zp p) a where
+-- | Exponentiation by an element of a finite field is well-defined (and lawful)
+-- if and only if the base is a finite multiplicative monoid of a matching order.
+--
+-- Note that left distributivity is satisfied, meaning
+-- @a ^ (m + n) = (a ^ m) * (a ^ n)@.
+instance (KnownNat p, MultiplicativeMonoid a, Order a ~ p) => Exponent (Zp p) a where
     a ^ n = a ^ fromZp n
 
 ----------------------------- Field Extensions --------------------------------
