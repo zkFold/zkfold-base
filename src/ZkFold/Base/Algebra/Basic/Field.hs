@@ -89,7 +89,8 @@ instance KnownNat p => FromConstant Integer (Zp p) where
 instance KnownNat p => Ring (Zp p)
 
 instance Prime p => Exponent Integer (Zp p) where
-    a ^ n = intPowF a (n `mod` fromConstant (value @p) - 1)
+    -- | By Fermat's little theorem
+    a ^ n = intPowF a (n `mod` (fromConstant (value @p) - 1))
 
 instance Prime p => Field (Zp p) where
     finv (Zp a) = toZp $ snd (f (a, 1) (p, 0))
