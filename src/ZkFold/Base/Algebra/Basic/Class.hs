@@ -229,7 +229,7 @@ class (AdditiveMonoid a, Scale Integer a) => AdditiveGroup a where
     -- | Inverse in an abelian group. The following should hold:
     --
     -- [Negative] @x + negate x == zero@
-    -- [Agreement] @invert x == zero - x@
+    -- [Agreement] @negate x == zero - x@
     negate :: a -> a
     negate x = zero - x
 
