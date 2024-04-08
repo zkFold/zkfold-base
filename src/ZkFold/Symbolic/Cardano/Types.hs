@@ -31,6 +31,9 @@ deriving instance
 txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input datum a)
 txInputs (Transaction (_, (is, _))) = is
 
+txOutputs :: Transaction inputs rinputs outputs tokens datum a -> Vector outputs (Output tokens a)
+txOutputs (Transaction (_, (_, (os, _)))) = os
+
 newtype TxId a = TxId a
     deriving (Eq, Arithmetizable i)
 
@@ -53,6 +56,9 @@ deriving instance
 
 newtype Output tokens a = Output (Address a, (Value tokens a, a))
     deriving Eq
+
+txoDatumHash :: Output tokens a -> a
+txoDatumHash (Output (_, (_, dh))) = dh
 
 deriving instance
     (Finite tokens, Arithmetizable i a, Arithmetizable i (UInt 64 a))
