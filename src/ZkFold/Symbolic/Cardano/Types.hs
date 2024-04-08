@@ -28,6 +28,9 @@ deriving instance
     , Arithmetizable i (UInt 64 a)
     ) => Arithmetizable i (Transaction inputs rinputs outputs tokens datum a)
 
+txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input datum a)
+txInputs (Transaction (_, (is, _))) = is
+
 newtype TxId a = TxId a
     deriving (Eq, Arithmetizable i)
 
@@ -40,6 +43,9 @@ deriving instance
 
 newtype Input datum a = Input (OutputRef a, (a, datum a))
     deriving Eq
+
+txiDatum :: Input datum a -> datum a
+txiDatum (Input (_, (_, datum))) = datum
 
 deriving instance
     (Arithmetizable i a, Arithmetizable i (UInt 32 a), Arithmetizable i (datum a))
