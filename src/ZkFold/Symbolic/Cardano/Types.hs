@@ -23,7 +23,6 @@ deriving instance
     , KnownNat outputs
     , KnownNat tokens
     , Arithmetizable i a
-    , Arithmetizable i (datum a)
     , Arithmetizable i (UInt 11 a)
     , Arithmetizable i (UInt 32 a)
     , Arithmetizable i (UInt 64 a)
@@ -55,8 +54,8 @@ deriving instance
 newtype Input datum tokens a = Input (OutputRef a, Output datum tokens a)
     deriving Eq
 
-txiDatumHash :: Input tokens datum a -> a
-txiDatumHash (Input (_, (Output (_, (_, datum))))) = datum
+txiDatumHash :: Input tokens datum a -> ByteString 256 a
+txiDatumHash (Input (_, txo))= txoDatumHash txo
 
 deriving instance
     ( KnownNat tokens
@@ -66,13 +65,12 @@ deriving instance
     , Arithmetizable i (ByteString 4 a)
     , Arithmetizable i (ByteString 224 a)
     , Arithmetizable i (ByteString 256 a)
-    -- , Arithmetizable i (datum a)
     ) => Arithmetizable i (Input datum tokens a)
 
-newtype Output datum tokens a = Output (Address a, (Value tokens a, a))
+newtype Output datum tokens a = Output (Address a, (Value tokens a, ByteString 256 a))
     deriving Eq
 
-txoDatumHash :: Output datum tokens a -> a
+txoDatumHash :: Output datum tokens a -> ByteString 256 a
 txoDatumHash (Output (_, (_, dh))) = dh
 
 deriving instance
