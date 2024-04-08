@@ -11,9 +11,9 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Compiler
 
 newtype Transaction inputs rinputs outputs tokens datum a = Transaction
-    ( Vector rinputs (Input datum a)
-    , (Vector inputs (Input datum a)
-    , (Vector outputs (Output tokens a)
+    ( Vector rinputs (Input datum tokens a)
+    , (Vector inputs (Input datum tokens a)
+    , (Vector outputs (Output datum tokens a)
     , (UTCTime a, UTCTime a)
     ))) deriving Eq
 
@@ -32,10 +32,10 @@ deriving instance
     , Arithmetizable i (ByteString 256 a)
     ) => Arithmetizable i (Transaction inputs rinputs outputs tokens datum a)
 
-txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input datum a)
+txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input datum tokens a)
 txInputs (Transaction (_, (is, _))) = is
 
-txOutputs :: Transaction inputs rinputs outputs tokens datum a -> Vector outputs (Output tokens a)
+txOutputs :: Transaction inputs rinputs outputs tokens datum a -> Vector outputs (Output datum tokens a)
 txOutputs (Transaction (_, (_, (os, _)))) = os
 
 newtype TxId a = TxId a
@@ -52,20 +52,27 @@ deriving instance
     , Arithmetizable i (ByteString 256 a)
     ) => Arithmetizable i (Value n a)
 
-newtype Input datum a = Input (OutputRef a, (a, datum a))
+newtype Input datum tokens a = Input (OutputRef a, Output datum tokens a)
     deriving Eq
 
-txiDatum :: Input datum a -> datum a
-txiDatum (Input (_, (_, datum))) = datum
+txiDatumHash :: Input tokens datum a -> a
+txiDatumHash (Input (_, (Output (_, (_, datum))))) = datum
 
 deriving instance
-    (Arithmetizable i a, Arithmetizable i (UInt 32 a), Arithmetizable i (datum a))
-    => Arithmetizable i (Input datum a)
+    ( KnownNat tokens
+    , Arithmetizable i a
+    , Arithmetizable i (UInt 32 a)
+    , Arithmetizable i (UInt 64 a)
+    , Arithmetizable i (ByteString 4 a)
+    , Arithmetizable i (ByteString 224 a)
+    , Arithmetizable i (ByteString 256 a)
+    -- , Arithmetizable i (datum a)
+    ) => Arithmetizable i (Input datum tokens a)
 
-newtype Output tokens a = Output (Address a, (Value tokens a, a))
+newtype Output datum tokens a = Output (Address a, (Value tokens a, a))
     deriving Eq
 
-txoDatumHash :: Output tokens a -> a
+txoDatumHash :: Output datum tokens a -> a
 txoDatumHash (Output (_, (_, dh))) = dh
 
 deriving instance
@@ -75,7 +82,7 @@ deriving instance
     , Arithmetizable i (ByteString 4 a)
     , Arithmetizable i (ByteString 224 a)
     , Arithmetizable i (ByteString 256 a)
-    ) => Arithmetizable i (Output tokens a)
+    ) => Arithmetizable i (Output datum tokens a)
 
 newtype OutputRef a = OutputRef (TxId a, UInt 32 a)
     deriving Eq
