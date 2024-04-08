@@ -11,10 +11,10 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Prelude                        (length, splitAt)
 
-data Transaction inputs rinputs outputs datum x = Transaction
+data Transaction inputs rinputs outputs tokens datum x = Transaction
     { txReferenceInputs :: Vector rinputs (Input datum x)
     , txInputs :: Vector inputs (Input datum x)
-    , txOutputs :: Vector outputs (Output x)
+    , txOutputs :: Vector outputs (Output tokens x)
     , txValidityInterval :: (UTCTime x, UTCTime x)
     } deriving Eq
 
@@ -22,12 +22,13 @@ instance
     ( Finite inputs
     , Finite rinputs
     , Finite outputs
+    , Finite tokens
     , Arithmetizable a x
     , Arithmetizable a (datum x)
     , Arithmetizable a (UInt 11 x)
     , Arithmetizable a (UInt 32 x)
     , Arithmetizable a (UInt 64 x)
-    ) => Arithmetizable a (Transaction inputs rinputs outputs datum x) where
+    ) => Arithmetizable a (Transaction inputs rinputs outputs tokens datum x) where
 
     arithmetize (Transaction inputs rinputs outputs vr) =
         (\is ris os vr' -> is <> ris <> os <> vr')
@@ -39,12 +40,12 @@ instance
     restore address = flip evalState address $ Transaction
         <$> do restore <$> do state . splitAt $ typeSize @a @(Vector inputs (Input datum x))
         <*> do restore <$> do state . splitAt $ typeSize @a @(Vector rinputs (Input datum x))
-        <*> do restore <$> do state . splitAt $ typeSize @a @(Vector outputs (Output x))
+        <*> do restore <$> do state . splitAt $ typeSize @a @(Vector outputs (Output tokens x))
         <*> do restore <$> do state . splitAt $ typeSize @a @(UTCTime x, UTCTime x)
 
     typeSize = typeSize @a @(Vector inputs (Input datum x))
              + typeSize @a @(Vector rinputs (Input datum x))
-             + typeSize @a @(Vector outputs (Output x))
+             + typeSize @a @(Vector outputs (Output tokens x))
              + typeSize @a @(UTCTime x, UTCTime x)
 
 newtype TxId x = TxId x
@@ -59,6 +60,13 @@ instance Arithmetizable a x => Arithmetizable a (TxId x) where
         | otherwise = error "restore TxId: wrong number of arguments"
 
     typeSize = typeSize @a @x
+
+newtype Value n a = Value (Vector n ({- Bytes a-} a, ({- Bytes a -} a, UInt 64 a)))
+    deriving Eq
+
+deriving instance
+    (Finite n, Arithmetizable i a, Arithmetizable i (UInt 64 a))
+    => Arithmetizable i (Value n a)
 
 data Input datum a = Input
     { txiOutputRef :: OutputRef a
@@ -90,14 +98,15 @@ instance (Arithmetizable a x, Arithmetizable a (UInt 32 x), Arithmetizable a (da
              + typeSize @a @(datum x)
              + typeSize @a @x
 
-data Output a = Output
+data Output tokens a = Output
     { txoAddress :: Address a
-    , txoValue :: UInt 64 a
+    -- , txoValue :: UInt 64 a
+    , txiValue :: Value tokens a
     -- TODO: replace with `Bytes x` or `DatumHash x`
     , txoDatumHash :: a
     } deriving Eq
 
-instance (Arithmetizable a x, Arithmetizable a (UInt 64 x)) => Arithmetizable a (Output x) where
+instance (Finite tokens, Arithmetizable a x, Arithmetizable a (UInt 64 x)) => Arithmetizable a (Output tokens x) where
 
     arithmetize (Output o v d) =
         (\o' v' d' -> o' <> v' <> d')
