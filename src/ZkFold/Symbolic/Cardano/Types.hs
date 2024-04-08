@@ -27,10 +27,9 @@ deriving instance
     , Arithmetizable i (UInt 11 a)
     , Arithmetizable i (UInt 32 a)
     , Arithmetizable i (UInt 64 a)
-    , Arithmetizable i (ByteString 3 a)
-    , Arithmetizable i (ByteString 8 a)
-    , Arithmetizable i (ByteString 15 a)
-    , Arithmetizable i (ByteString 28 a)
+    , Arithmetizable i (ByteString 4 a)
+    , Arithmetizable i (ByteString 224 a)
+    , Arithmetizable i (ByteString 256 a)
     ) => Arithmetizable i (Transaction inputs rinputs outputs tokens datum a)
 
 txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input datum a)
@@ -42,15 +41,15 @@ txOutputs (Transaction (_, (_, (os, _)))) = os
 newtype TxId a = TxId a
     deriving (Eq, Arithmetizable i)
 
-newtype Value n a = Value (Vector n (ByteString 8 a, (ByteString 15 a, UInt 64 a)))
+newtype Value n a = Value (Vector n (ByteString 224 a, (ByteString 256 a, UInt 64 a)))
     deriving Eq
 
 deriving instance
     ( KnownNat n
     , Arithmetizable i a
     , Arithmetizable i (UInt 64 a)
-    , Arithmetizable i (ByteString 8 a)
-    , Arithmetizable i (ByteString 15 a)
+    , Arithmetizable i (ByteString 224 a)
+    , Arithmetizable i (ByteString 256 a)
     ) => Arithmetizable i (Value n a)
 
 newtype Input datum a = Input (OutputRef a, (a, datum a))
@@ -73,10 +72,9 @@ deriving instance
     ( KnownNat tokens
     , Arithmetizable i a
     , Arithmetizable i (UInt 64 a)
-    , Arithmetizable i (ByteString 3 a)
-    , Arithmetizable i (ByteString 8 a)
-    , Arithmetizable i (ByteString 15 a)
-    , Arithmetizable i (ByteString 28 a)
+    , Arithmetizable i (ByteString 4 a)
+    , Arithmetizable i (ByteString 224 a)
+    , Arithmetizable i (ByteString 256 a)
     ) => Arithmetizable i (Output tokens a)
 
 newtype OutputRef a = OutputRef (TxId a, UInt 32 a)
@@ -86,12 +84,12 @@ deriving instance
     (Arithmetizable i a, Arithmetizable i (UInt 32 a))
     => Arithmetizable i (OutputRef a)
 
-newtype Address a = Address (ByteString 3 a, (ByteString 28 a, ByteString 28 a))
+newtype Address a = Address (ByteString 4 a, (ByteString 224 a, ByteString 224 a))
     deriving Eq
 
 deriving instance
-    ( Arithmetizable i (ByteString 3 a)
-    , Arithmetizable i (ByteString 28 a)
+    ( Arithmetizable i (ByteString 4 a)
+    , Arithmetizable i (ByteString 224 a)
     ) => Arithmetizable i (Address a)
 
 newtype DatumHash datum a = DatumHash a
