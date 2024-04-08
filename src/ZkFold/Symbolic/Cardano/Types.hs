@@ -5,7 +5,8 @@ import           Prelude                        hiding ((*), (+), length, splitA
 
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Data.UTCTime
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Compiler
 
@@ -17,15 +18,19 @@ newtype Transaction inputs rinputs outputs tokens datum a = Transaction
     ))) deriving Eq
 
 deriving instance
-    ( Finite inputs
-    , Finite rinputs
-    , Finite outputs
-    , Finite tokens
+    ( KnownNat inputs
+    , KnownNat rinputs
+    , KnownNat outputs
+    , KnownNat tokens
     , Arithmetizable i a
     , Arithmetizable i (datum a)
     , Arithmetizable i (UInt 11 a)
     , Arithmetizable i (UInt 32 a)
     , Arithmetizable i (UInt 64 a)
+    , Arithmetizable i (ByteString 3 a)
+    , Arithmetizable i (ByteString 8 a)
+    , Arithmetizable i (ByteString 15 a)
+    , Arithmetizable i (ByteString 28 a)
     ) => Arithmetizable i (Transaction inputs rinputs outputs tokens datum a)
 
 txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input datum a)
@@ -37,12 +42,16 @@ txOutputs (Transaction (_, (_, (os, _)))) = os
 newtype TxId a = TxId a
     deriving (Eq, Arithmetizable i)
 
-newtype Value n a = Value (Vector n ({- Bytes a-} a, ({- Bytes a -} a, UInt 64 a)))
+newtype Value n a = Value (Vector n (ByteString 8 a, (ByteString 15 a, UInt 64 a)))
     deriving Eq
 
 deriving instance
-    (Finite n, Arithmetizable i a, Arithmetizable i (UInt 64 a))
-    => Arithmetizable i (Value n a)
+    ( KnownNat n
+    , Arithmetizable i a
+    , Arithmetizable i (UInt 64 a)
+    , Arithmetizable i (ByteString 8 a)
+    , Arithmetizable i (ByteString 15 a)
+    ) => Arithmetizable i (Value n a)
 
 newtype Input datum a = Input (OutputRef a, (a, datum a))
     deriving Eq
@@ -61,8 +70,14 @@ txoDatumHash :: Output tokens a -> a
 txoDatumHash (Output (_, (_, dh))) = dh
 
 deriving instance
-    (Finite tokens, Arithmetizable i a, Arithmetizable i (UInt 64 a))
-    => Arithmetizable i (Output tokens a)
+    ( KnownNat tokens
+    , Arithmetizable i a
+    , Arithmetizable i (UInt 64 a)
+    , Arithmetizable i (ByteString 3 a)
+    , Arithmetizable i (ByteString 8 a)
+    , Arithmetizable i (ByteString 15 a)
+    , Arithmetizable i (ByteString 28 a)
+    ) => Arithmetizable i (Output tokens a)
 
 newtype OutputRef a = OutputRef (TxId a, UInt 32 a)
     deriving Eq
@@ -71,8 +86,13 @@ deriving instance
     (Arithmetizable i a, Arithmetizable i (UInt 32 a))
     => Arithmetizable i (OutputRef a)
 
-newtype Address a = Address ({- Bytes a-} a, ({- Bytes a-} a, {- Bytes a-} a))
-    deriving (Eq, Arithmetizable i)
+newtype Address a = Address (ByteString 3 a, (ByteString 28 a, ByteString 28 a))
+    deriving Eq
+
+deriving instance
+    ( Arithmetizable i (ByteString 3 a)
+    , Arithmetizable i (ByteString 28 a)
+    ) => Arithmetizable i (Address a)
 
 newtype DatumHash datum a = DatumHash a
     deriving (Eq, Arithmetizable i)
