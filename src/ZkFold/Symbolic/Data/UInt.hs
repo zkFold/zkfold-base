@@ -43,7 +43,7 @@ instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n, Multip
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n, MultiplicativeSemigroup (UInt n a)) => Scale Integer (UInt n a)
 
-instance MultiplicativeMonoid (UInt n a) => Exponent Natural (UInt n a) where
+instance MultiplicativeMonoid (UInt n a) => Exponent (UInt n a) Natural where
     (^) = natPow
 
 cast :: forall a n . (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Natural -> (UInt n a, [a])

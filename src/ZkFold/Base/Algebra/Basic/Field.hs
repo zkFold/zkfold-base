@@ -72,7 +72,7 @@ instance KnownNat p => AdditiveGroup (Zp p) where
 instance KnownNat p => MultiplicativeSemigroup (Zp p) where
     Zp a * Zp b = toZp (a * b)
 
-instance KnownNat p => Exponent Natural (Zp p) where
+instance KnownNat p => Exponent (Zp p) Natural where
     (^) = natPow
 
 instance KnownNat p => MultiplicativeMonoid (Zp p) where
@@ -88,7 +88,7 @@ instance KnownNat p => FromConstant Integer (Zp p) where
 
 instance KnownNat p => Ring (Zp p)
 
-instance Prime p => Exponent Integer (Zp p) where
+instance Prime p => Exponent (Zp p) Integer where
     -- | By Fermat's little theorem
     a ^ n = intPowF a (n `mod` (fromConstant (value @p) - 1))
 
@@ -162,7 +162,7 @@ instance KnownNat p => Random (Zp p) where
 --
 -- Note that left distributivity is satisfied, meaning
 -- @a ^ (m + n) = (a ^ m) * (a ^ n)@.
-instance (KnownNat p, MultiplicativeGroup a, Order a ~ p) => Exponent (Zp p) a where
+instance (KnownNat p, MultiplicativeGroup a, Order a ~ p) => Exponent a (Zp p) where
     a ^ n = a ^ fromZp n
 
 ----------------------------- Field Extensions --------------------------------
@@ -195,13 +195,13 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext2 f
             P [x] -> Ext2 x zero
             P v   -> Ext2 (v V.! 0) (v V.! 1)
 
-instance MultiplicativeMonoid (Ext2 f e) => Exponent Natural (Ext2 f e) where
+instance MultiplicativeMonoid (Ext2 f e) => Exponent (Ext2 f e) Natural where
     (^) = natPow
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext2 f e) where
     one = Ext2 one zero
 
-instance Field (Ext2 f e) => Exponent Integer (Ext2 f e) where
+instance Field (Ext2 f e) => Exponent (Ext2 f e) Integer where
     (^) = intPowF
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext2 f e) where
@@ -253,13 +253,13 @@ instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext3 f
             P [x, y] -> Ext3 x y zero
             P v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
-instance MultiplicativeMonoid (Ext3 f e) => Exponent Natural (Ext3 f e) where
+instance MultiplicativeMonoid (Ext3 f e) => Exponent (Ext3 f e) Natural where
     (^) = natPow
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext3 f e) where
     one = Ext3 one zero zero
 
-instance Field (Ext3 f e) => Exponent Integer (Ext3 f e) where
+instance Field (Ext3 f e) => Exponent (Ext3 f e) Integer where
     (^) = intPowF
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where

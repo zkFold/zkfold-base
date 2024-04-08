@@ -62,7 +62,7 @@ instance EllipticCurve curve => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)
 
 class (EllipticCurve curve1, EllipticCurve curve2, ScalarField curve1 ~ ScalarField curve2,
-        Eq t, MultiplicativeGroup t, Exponent (ScalarField curve1) t) => Pairing curve1 curve2 t | curve1 curve2 -> t where
+        Eq t, MultiplicativeGroup t, Exponent t (ScalarField curve1)) => Pairing curve1 curve2 t | curve1 curve2 -> t where
     pairing :: Point curve1 -> Point curve2 -> t
 
 pointAdd :: EllipticCurve curve => Point curve -> Point curve -> Point curve

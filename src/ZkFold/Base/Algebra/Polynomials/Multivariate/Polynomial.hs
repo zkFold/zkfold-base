@@ -73,7 +73,7 @@ instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) 
     P l * r = foldl' (+) (P []) $ map (f r) l
         where f (P p) (c, m) = P $ map (bimap (* c) (* m)) p
 
-instance MultiplicativeMonoid (P c i j m p) => Exponent Natural (P c i j m p) where
+instance MultiplicativeMonoid (P c i j m p) => Exponent (P c i j m p) Natural where
     (^) = natPow
 
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => MultiplicativeMonoid (P c i j m p) where

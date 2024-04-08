@@ -93,7 +93,7 @@ instance (Eq c, FiniteField c, Ord a, MultiplicativeMonoid a) => AdditiveGroup (
 instance (Eq c, FiniteField c, Ord a, AdditiveGroup a, MultiplicativeMonoid a) => MultiplicativeSemigroup (Polynom c a) where
     P l * P r = mulM (P l) (P r)
 
-instance MultiplicativeMonoid (Polynom c a) => Exponent Natural (Polynom c a) where
+instance MultiplicativeMonoid (Polynom c a) => Exponent (Polynom c a) Natural where
     (^) = natPow
 
 instance (Eq c, FiniteField c, Ord a, AdditiveGroup a, MultiplicativeMonoid a) => MultiplicativeMonoid (Polynom c a) where

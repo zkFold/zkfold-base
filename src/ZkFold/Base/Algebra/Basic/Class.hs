@@ -58,7 +58,7 @@ product1 = foldl1 (*)
 {- | A class for semigroup (and monoid) actions on types where exponential
 notation is the most natural (including an exponentiation itself).
 -}
-class MultiplicativeSemigroup b => Exponent b a where
+class MultiplicativeSemigroup b => Exponent a b where
     -- | A right semigroup action on a type. The following should hold:
     --
     -- [Compatibility] @a ^ (m * n) == (a ^ m) ^ n@
@@ -90,7 +90,7 @@ distribute over @('*')@:
 
 [Right distributivity] @(a * b) ^ n == (a ^ n) * (b ^ n)@
 -}
-class (MultiplicativeSemigroup a, Exponent Natural a) => MultiplicativeMonoid a where
+class (MultiplicativeSemigroup a, Exponent a Natural) => MultiplicativeMonoid a where
     -- | An identity with respect to multiplication:
     --
     -- [Left identity] @one * x == x@
@@ -109,7 +109,7 @@ natPow a n = product $ zipWith f (binaryExpansion n) (iterate (\x -> x * x) a)
 product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
 product = foldl (*) one
 
-multiExp :: (MultiplicativeMonoid a, Exponent b a, Foldable t) => a -> t b -> a
+multiExp :: (MultiplicativeMonoid a, Exponent a b, Foldable t) => a -> t b -> a
 multiExp a = foldl (\x y -> x * (a ^ y)) one
 
 {- | A class for monoid actions where multiplicative notation is the most
@@ -151,7 +151,7 @@ implementation is provided as an @'intPow'@ function. You can provide a faster
 alternative yourself, but do not forget to check that your implementation
 computes the same results on all inputs.
 -}
-class (MultiplicativeMonoid a, Exponent Integer a) => MultiplicativeGroup a where
+class (MultiplicativeMonoid a, Exponent a Integer) => MultiplicativeGroup a where
     {-# MINIMAL (invert | (/)) #-}
 
     -- | Division in a group. The following should hold:
@@ -277,7 +277,7 @@ implementation is provided as an @'intPowF'@ function. You can provide a faster
 alternative yourself, but do not forget to check that your implementation
 computes the same results on all inputs.
 -}
-class (Ring a, Exponent Integer a) => Field a where
+class (Ring a, Exponent a Integer) => Field a where
     {-# MINIMAL (finv | (//)) #-}
 
     -- | Division in a field. The following should hold:
@@ -366,7 +366,8 @@ castBits (x:xs)
 newtype NonZero a = NonZero a
     deriving newtype (MultiplicativeSemigroup, MultiplicativeMonoid)
 
-deriving newtype instance Exponent b a => Exponent b (NonZero a)
+instance Exponent a b => Exponent (NonZero a) b where
+    NonZero a ^ b = NonZero (a ^ b)
 
 instance Field a => MultiplicativeGroup (NonZero a) where
     invert (NonZero x) = NonZero (finv x)
@@ -406,7 +407,7 @@ instance BinaryExpansion Natural where
 instance MultiplicativeSemigroup Integer where
     (*) = (Haskell.*)
 
-instance Exponent Natural Integer where
+instance Exponent Integer Natural where
     (^) = (Haskell.^)
 
 instance MultiplicativeMonoid Integer where
@@ -435,7 +436,7 @@ instance Ring Integer
 instance MultiplicativeSemigroup Bool where
     (*) = (&&)
 
-instance (Semiring a, Eq a) => Exponent a Bool where
+instance (Semiring a, Eq a) => Exponent Bool a where
     x ^ p | p == zero = one
           | otherwise = x
 
@@ -475,7 +476,7 @@ instance BinaryExpansion Bool where
     fromBinary [x] = x
     fromBinary _   = error "fromBits: This should never happen."
 
-instance MultiplicativeMonoid a => Exponent Bool a where
+instance MultiplicativeMonoid a => Exponent a Bool where
     _ ^ False = one
     x ^ True  = x
 
@@ -484,7 +485,7 @@ instance MultiplicativeMonoid a => Exponent Bool a where
 instance MultiplicativeSemigroup a => MultiplicativeSemigroup [a] where
     (*) = zipWith (*)
 
-instance Exponent b a => Exponent b [a] where
+instance Exponent a b => Exponent [a] b where
     x ^ p = map (^ p) x
 
 instance MultiplicativeMonoid a => MultiplicativeMonoid [a] where
@@ -517,7 +518,7 @@ instance Ring a => Ring [a]
 instance MultiplicativeSemigroup a => MultiplicativeSemigroup (p -> a) where
     p1 * p2 = \x -> p1 x * p2 x
 
-instance Exponent b a => Exponent b (p -> a) where
+instance Exponent a b => Exponent (p -> a) b where
     f ^ p = \x -> f x ^ p
 
 instance MultiplicativeMonoid a => MultiplicativeMonoid (p -> a) where

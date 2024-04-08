@@ -46,10 +46,10 @@ polynomial = sum . map (\m -> P [m]) . fromJust . toPolynomial
 var :: Polynomial c i j => i -> P c i j (Map i j) [(c, M i j (Map i j))]
 var x = polynomial [(one, monomial (singleton x one))]
 
-evalMonomial :: forall i j m b . (FromMonomial i j m, MultiplicativeMonoid b, Exponent j b) => (i -> b) -> M i j m -> b
+evalMonomial :: forall i j m b . (FromMonomial i j m, MultiplicativeMonoid b, Exponent b j) => (i -> b) -> M i j m -> b
 evalMonomial f (M m) = product (map (\(i, j) -> f i ^ j) (toList $ fromMonomial @i @j m))
 
-evalPolynomial :: forall c i j m p b . (FromMonomial i j m, FromPolynomial c i j m p, Algebra c b, Exponent j b)
+evalPolynomial :: forall c i j m p b . (FromMonomial i j m, FromPolynomial c i j m p, Algebra c b, Exponent b j)
     => (i -> b) -> P c i j m p -> b
 evalPolynomial f (P p) = sum $ map (\(c, m) -> scale c (evalMonomial f m)) (fromPolynomial @c @i @j @m @p p)
 

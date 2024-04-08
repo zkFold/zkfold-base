@@ -46,13 +46,13 @@ instance Arbitrary m => Arbitrary (M i j m) where
 instance Monomial i j => MultiplicativeSemigroup (M i j (Map i j)) where
     M l * M r = M $ Map.filter (/= zero) $ unionWith (+) (fromMonomial @i @j l) (fromMonomial @i @j r)
 
-instance Monomial i j => Exponent Natural (M i j (Map i j)) where
+instance Monomial i j => Exponent (M i j (Map i j)) Natural where
     (^) = natPow
 
 instance Monomial i j => MultiplicativeMonoid (M i j (Map i j)) where
     one = M empty
 
-instance (Monomial i j, Ring j) => Exponent Integer (M i j (Map i j)) where
+instance (Monomial i j, Ring j) => Exponent (M i j (Map i j)) Integer where
     (^) = intPow
 
 instance (Monomial i j, Ring j) => MultiplicativeGroup (M i j (Map i j)) where

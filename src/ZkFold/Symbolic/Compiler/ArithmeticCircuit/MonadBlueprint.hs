@@ -145,7 +145,7 @@ sources = runSources . ($ Sources @a . Set.singleton)
 
 newtype Sources a i = Sources { runSources :: Set i } deriving newtype (Semigroup, Monoid)
 
-instance MultiplicativeSemigroup c => Exponent c (Sources a i) where
+instance MultiplicativeSemigroup c => Exponent (Sources a i) c where
   (^) = const
 
 instance MultiplicativeMonoid c => Scale c (Sources a i) where

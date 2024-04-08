@@ -67,7 +67,7 @@ instance Arithmetic a => MultiplicativeSemigroup (ArithmeticCircuit a) where
         j <- runCircuit r2
         newAssigned (\x -> x i * x j)
 
-instance Arithmetic a => Exponent Natural (ArithmeticCircuit a) where
+instance Arithmetic a => Exponent (ArithmeticCircuit a) Natural where
     (^) = natPow
 
 instance Arithmetic a => MultiplicativeMonoid (ArithmeticCircuit a) where
@@ -80,7 +80,7 @@ instance Arithmetic a => Semiring (ArithmeticCircuit a)
 
 instance Arithmetic a => Ring (ArithmeticCircuit a)
 
-instance Arithmetic a => Exponent Integer (ArithmeticCircuit a) where
+instance Arithmetic a => Exponent (ArithmeticCircuit a) Integer where
     (^) = intPowF
 
 instance Arithmetic a => Field (ArithmeticCircuit a) where

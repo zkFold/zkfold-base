@@ -96,8 +96,13 @@ instance EllipticCurve BLS12_381_G2 where
 -- | An image of a pairing is a cyclic multiplicative subgroup of @'Fq12'@
 -- of order @'BLS12_381_Scalar'@.
 newtype BLS12_381_GT = BLS12_381_GT Fq12
-    deriving newtype (Eq, MultiplicativeSemigroup, Exponent Natural,
-        MultiplicativeMonoid, Exponent Integer)
+    deriving newtype (Eq, MultiplicativeSemigroup, MultiplicativeMonoid)
+
+instance Exponent BLS12_381_GT Natural where
+    BLS12_381_GT a ^ p = BLS12_381_GT (a ^ p)
+
+instance Exponent BLS12_381_GT Integer where
+    BLS12_381_GT a ^ p = BLS12_381_GT (a ^ p)
 
 deriving via (NonZero Fq12) instance MultiplicativeGroup BLS12_381_GT
 

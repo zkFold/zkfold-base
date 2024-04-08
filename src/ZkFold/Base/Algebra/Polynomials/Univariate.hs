@@ -172,7 +172,7 @@ mulVector v1 v2 = result
     ix2v' _ ((== len2) -> True) accum = accum
     ix2v' i j accum                   = ix2v' (i P.- 1) (j P.+ 1) (accum + v1 `V.unsafeIndex` i * v2 `V.unsafeIndex` j)
 
-instance (Field c, Eq c) => Exponent Natural (Poly c) where
+instance (Field c, Eq c) => Exponent (Poly c) Natural where
     (^) = natPow
 
 instance (Field c, Eq c) => MultiplicativeMonoid (Poly c) where
@@ -240,7 +240,7 @@ instance (Ring c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
 instance (Ring c, KnownNat size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ fmap negate cs
 
-instance (Field c, KnownNat size, Eq c) => Exponent Natural (PolyVec c size) where
+instance (Field c, KnownNat size, Eq c) => Exponent (PolyVec c size) Natural where
     (^) = natPow
 
 -- TODO (Issue #18): check for overflow
