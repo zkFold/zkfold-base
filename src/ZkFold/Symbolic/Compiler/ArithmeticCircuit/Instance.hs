@@ -97,7 +97,7 @@ instance Arithmetizable a x => Conditional (Bool (ArithmeticCircuit a)) x where
     bool brFalse brTrue (Bool b) =
         let f' = circuits (arithmetize brFalse)
             t' = circuits (arithmetize brTrue)
-        in restore $ zipWith (\f t -> b * t + (one - b) * f) f' t'
+        in restore $ zipWith (\f t -> b * (t - f) + f) f' t'
 
 -- TODO: make a proper implementation of Arbitrary
 instance Arithmetic a => Arbitrary (ArithmeticCircuit a) where
