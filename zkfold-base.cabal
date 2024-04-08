@@ -119,11 +119,6 @@ library
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Prelude
       ZkFold.Symbolic.Cardano.Types
-      ZkFold.Symbolic.Cardano.Types.Address
-      ZkFold.Symbolic.Cardano.Types.Script
-      ZkFold.Symbolic.Cardano.Types.Tx
-      ZkFold.Symbolic.Cardano.Types.TxOut
-      ZkFold.Symbolic.Cardano.Types.Value
       ZkFold.Symbolic.Cardano.UPLC
       ZkFold.Symbolic.Cardano.UPLC.Builtins
       ZkFold.Symbolic.Cardano.UPLC.Inference
