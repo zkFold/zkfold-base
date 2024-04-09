@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  on-main-update:
+  build-test:
 
     runs-on: ubuntu-latest
 
@@ -40,8 +40,8 @@ jobs:
         cabal new-build all
         cabal new-test all
 
-  ormolu:
-    needs: on-main-update
+  lint:
+    needs: build-test
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
