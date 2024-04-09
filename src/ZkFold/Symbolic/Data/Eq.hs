@@ -25,5 +25,5 @@ instance (Prime p, Haskell.Eq x) => Eq (Bool (Zp p)) x where
     x == y = Bool $ bool zero one (x Haskell.== y)
     x /= y = Bool $ bool zero one (x Haskell./= y)
 
-elem :: Eq b a => a -> [a] -> b
+elem :: (Eq b a, Foldable t) => a -> t a -> b
 elem x = any (== x)

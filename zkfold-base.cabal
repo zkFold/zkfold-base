@@ -71,6 +71,7 @@ common options
       StandaloneDeriving,
       StandaloneKindSignatures,
       TupleSections,
+      TypeApplications,
       TypeFamilies,
       ViewPatterns
 
@@ -118,11 +119,6 @@ library
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Prelude
       ZkFold.Symbolic.Cardano.Types
-      ZkFold.Symbolic.Cardano.Types.Address
-      ZkFold.Symbolic.Cardano.Types.Script
-      ZkFold.Symbolic.Cardano.Types.Tx
-      ZkFold.Symbolic.Cardano.Types.TxOut
-      ZkFold.Symbolic.Cardano.Types.Value
       ZkFold.Symbolic.Cardano.UPLC
       ZkFold.Symbolic.Cardano.UPLC.Builtins
       ZkFold.Symbolic.Cardano.UPLC.Inference
@@ -146,6 +142,7 @@ library
       ZkFold.Symbolic.Data.Eq.Structural
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.UInt
+      ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.GroebnerBasis
       ZkFold.Symbolic.GroebnerBasis.Internal
       ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
