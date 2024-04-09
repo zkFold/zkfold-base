@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Data.Eq (
 ) where
 
 import           Data.Bool                 (bool)
+import           Data.Foldable             (Foldable)
 import qualified Prelude                   as Haskell
 
 import           ZkFold.Symbolic.Data.Bool (BoolType (..), any)
