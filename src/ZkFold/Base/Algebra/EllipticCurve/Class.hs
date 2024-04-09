@@ -59,11 +59,9 @@ instance EllipticCurve curve => Binary (Point curve) where
       if n == 0
         then return Inf
         else if n == 1 then do
-            x <- get
-            y <- get
-            return (Point x y)
+            Point <$> get <*> get
             else fail $
-              "Binary (Point curve) get: expected flag bit 0 or 1 but saw "
+              "Binary (Point curve) get: expected flag byte 0 or 1 but saw "
               <> show n
 
 instance EllipticCurve curve => Arbitrary (Point curve) where
