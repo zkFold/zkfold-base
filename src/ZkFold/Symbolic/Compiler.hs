@@ -1,20 +1,20 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Symbolic.Compiler (
-    module ZkFold.Symbolic.Compiler.Arithmetizable,
+module ZkFold.Symbolic.Compiler
+  ( module ZkFold.Symbolic.Compiler.Arithmetizable,
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
     compile,
-    compileIO
-) where
+    compileIO,
+  )
+where
 
-import           Control.Monad.State                        (execState)
-import           Data.Aeson                                 (ToJSON)
-import           Prelude                                    (FilePath, IO, Show (..), mempty, putStrLn, ($), (++))
-
-import           ZkFold.Prelude                             (writeFileJSON)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Compiler.Arithmetizable
+import Control.Monad.State (execState)
+import Data.Aeson (ToJSON)
+import ZkFold.Prelude (writeFileJSON)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import ZkFold.Symbolic.Compiler.Arithmetizable
+import Prelude (FilePath, IO, Show (..), mempty, putStrLn, ($), (++))
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -29,17 +29,17 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 -}
 
 -- | Compiles function `f` into an arithmetic circuit.
-compile :: forall a f y . (Arithmetizable a f, Arithmetizable a y) => f -> y
+compile :: forall a f y. (Arithmetizable a f, Arithmetizable a y) => f -> y
 compile f = restore @a $ circuits (arithmetize f)
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
-compileIO :: forall a f . (ToJSON a, Arithmetizable a f) => FilePath -> f -> IO ()
+compileIO :: forall a f. (ToJSON a, Arithmetizable a f) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
-    let ac = execState (arithmetize f) mempty :: ArithmeticCircuit a
+  let ac = execState (arithmetize f) mempty :: ArithmeticCircuit a
 
-    putStrLn "\nCompiling the script...\n"
+  putStrLn "\nCompiling the script...\n"
 
-    putStrLn $ "Number of constraints: " ++ show (acSizeN ac)
-    putStrLn $ "Number of variables: " ++ show (acSizeM ac)
-    writeFileJSON scriptFile ac
-    putStrLn $ "Script saved: " ++ scriptFile
+  putStrLn $ "Number of constraints: " ++ show (acSizeN ac)
+  putStrLn $ "Number of variables: " ++ show (acSizeM ac)
+  writeFileJSON scriptFile ac
+  putStrLn $ "Script saved: " ++ scriptFile
