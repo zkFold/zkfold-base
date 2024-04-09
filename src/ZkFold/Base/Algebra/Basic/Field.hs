@@ -19,6 +19,7 @@ import           Data.Bifunctor                             (first)
 import           Data.Bool                                  (bool)
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Generic)
+import           GHC.TypeLits                               (Symbol)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude                                    as Haskell
@@ -167,10 +168,10 @@ instance (KnownNat p, MultiplicativeGroup a, Order a ~ p) => Exponent a (Zp p) w
 
 ----------------------------- Field Extensions --------------------------------
 
-class IrreduciblePoly f e | e -> f where
+class IrreduciblePoly f (e :: Symbol) | e -> f where
     irreduciblePoly :: Poly f
 
-data Ext2 f e = Ext2 f f
+data Ext2 f (e :: Symbol) = Ext2 f f
     deriving (Eq, Show)
 
 instance KnownNat (Order (Ext2 f e)) => Finite (Ext2 f e) where
@@ -227,7 +228,7 @@ instance ToByteString f => ToByteString (Ext2 f e) where
 instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext2 f e) where
     arbitrary = Ext2 <$> arbitrary <*> arbitrary
 
-data Ext3 f e = Ext3 f f f
+data Ext3 f (e :: Symbol) = Ext3 f f f
     deriving (Eq, Show)
 
 instance KnownNat (Order (Ext3 f e)) => Finite (Ext3 f e) where
@@ -237,7 +238,7 @@ instance Field f => AdditiveSemigroup (Ext3 f e) where
     Ext3 a b c + Ext3 d e f = Ext3 (a + d) (b + e) (c + f)
 
 instance Scale c f => Scale c (Ext3 f e) where
-    scale c' (Ext3 a b c) = Ext3 (scale c' a) (scale c' b) (scale c' c)
+    scale c (Ext3 d e f) = Ext3 (scale c d) (scale c e) (scale c f)
 
 instance Field f => AdditiveMonoid (Ext3 f e) where
     zero = Ext3 zero zero zero

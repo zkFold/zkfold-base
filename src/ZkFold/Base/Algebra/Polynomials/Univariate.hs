@@ -17,7 +17,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 
 -- TODO (Issue #17): hide constructor
 newtype Poly c = P (V.Vector c)
-    deriving (Eq, Show)
+    deriving (Eq, Show, Functor)
 
 toPoly :: (Ring c, Eq c) => V.Vector c -> Poly c
 toPoly = removeZeros . P
@@ -32,9 +32,6 @@ instance (Ring c, Eq c) => AdditiveSemigroup (Poly c) where
 
         lPadded = l V.++ V.replicate (len P.- V.length l) zero
         rPadded = r V.++ V.replicate (len P.- V.length r) zero
-
-instance Scale c' c => Scale c' (Poly c) where
-    scale c' (P v) = P $ V.map (scale c') v
 
 instance (Ring c, Eq c) => AdditiveMonoid (Poly c) where
     zero = P V.empty
@@ -229,7 +226,7 @@ vec2poly :: (Ring c, Eq c) => PolyVec c size -> Poly c
 vec2poly (PV cs) = removeZeros $ P cs
 
 instance Scale c' c => Scale c' (PolyVec c size) where
-    scale c' (PV p) = PV $ V.map (scale c') p
+    scale c (PV p) = PV (scale c p)
 
 instance Ring c => AdditiveSemigroup (PolyVec c size) where
     PV l + PV r = PV $ V.zipWith (+) l r

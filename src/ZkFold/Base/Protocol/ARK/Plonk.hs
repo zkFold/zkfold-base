@@ -56,7 +56,7 @@ data PlonkSetupParams = PlonkSetupParams {
         omega :: F,
         k1    :: F,
         k2    :: F,
-        gs    :: (V.Vector G1),
+        gs    :: V.Vector G1,
         h0    :: G2,
         h1    :: G2
     }

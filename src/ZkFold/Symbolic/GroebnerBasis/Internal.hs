@@ -11,7 +11,7 @@ import           ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Types
 
 makeSPoly :: (Eq c, FiniteField c, Ord a, Ring a) =>
-             Polynom c a -> Polynom c a -> Polynom c a
+             Polynom a c -> Polynom a c -> Polynom a c
 makeSPoly l r = if null as then zero else addPoly l' r'
     where M _ as = gcdM (lt l) (lt r)
           l'  = mulPM l ra
@@ -20,21 +20,21 @@ makeSPoly l r = if null as then zero else addPoly l' r'
           ra  = divideM lcm (lt l)
           la  = scale (-1 :: Integer) $ divideM lcm (lt r)
 
-varNumber :: Polynom c a -> Natural
+varNumber :: Polynom a c -> Natural
 varNumber (P [])         = 0
 varNumber (P (M _ as:_)) = length as
 
-varIsMissing :: Natural -> Polynom c a -> Bool
+varIsMissing :: Natural -> Polynom a c -> Bool
 varIsMissing i (P ms) = all (\(M _ as) -> notMember (i -! 1) as) ms
 
-checkVarUnique :: Natural -> [Polynom c a] -> Bool
+checkVarUnique :: Natural -> [Polynom a c] -> Bool
 checkVarUnique i fs = length (filter not $ map (varIsMissing i) fs) == 1
 
-checkLTSimple :: Polynom c a -> Bool
+checkLTSimple :: Polynom a c -> Bool
 checkLTSimple (P [])         = True
 checkLTSimple (P (M _ as:_)) = length as <= 1
 
-trimSystem :: (Eq c, Ord a, AdditiveMonoid a) => Polynom c a -> [Polynom c a] -> [Polynom c a]
+trimSystem :: (Eq c, Ord a, AdditiveMonoid a) => Polynom a c -> [Polynom a c] -> [Polynom a c]
 trimSystem h fs = filter (\f -> lv f >= lv h) $
         go (varNumber h)
     where
@@ -44,7 +44,7 @@ trimSystem h fs = filter (\f -> lv f >= lv h) $
             else go (i -! 1)
 
 addSPolyStep :: (Eq c, FiniteField c, Ord a, Ring a) =>
-            [Polynom c a] -> [Polynom c a] -> [Polynom c a] -> [Polynom c a]
+            [Polynom a c] -> [Polynom a c] -> [Polynom a c] -> [Polynom a c]
 addSPolyStep [] _ rs = rs
 addSPolyStep _ [] rs = rs
 addSPolyStep (p:ps) (q:qs) rs
@@ -56,7 +56,7 @@ addSPolyStep (p:ps) (q:qs) rs
             rs' = filter (not . zeroP) $ map (`fullReduceMany` [s]) rs
 
 groebnerStep :: (Eq c, FiniteField c, Ord a, Ring a) =>
-                Polynom c a -> [Polynom c a] -> (Polynom c a, [Polynom c a])
+                Polynom a c -> [Polynom a c] -> (Polynom a c, [Polynom a c])
 groebnerStep h fs
     | zeroP h   = (h, fs)
     | otherwise =

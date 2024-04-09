@@ -28,12 +28,12 @@ instance Prime BLS12_381_Base
 type Fr = Zp BLS12_381_Scalar
 type Fq = Zp BLS12_381_Base
 
-data IP1
+type IP1 = "IP1"
 instance IrreduciblePoly Fq IP1 where
     irreduciblePoly = toPoly [1, 0, 1]
 type Fq2 = Ext2 Fq IP1
 
-data IP2
+type IP2 = "IP2"
 instance IrreduciblePoly Fq2 IP2 where
     irreduciblePoly =
         let e = Ext2
@@ -42,7 +42,7 @@ instance IrreduciblePoly Fq2 IP2 where
         in toPoly [negate e, zero, zero, one]
 type Fq6 = Ext3 Fq2 IP2
 
-data IP3
+type IP3 = "IP3"
 instance IrreduciblePoly Fq6 IP3 where
     irreduciblePoly =
         let e = Ext3 zero (negate one) zero

@@ -144,6 +144,9 @@ class MultiplicativeMonoid b => Scale b a where
 
 instance MultiplicativeMonoid a => Scale a a
 
+instance {-# OVERLAPPABLE #-} (Scale b a, Functor f) => Scale b (f a) where
+    scale = fmap . scale
+
 {- | A class of groups in a multiplicative notation.
 
 While exponentiation by an integer is specified in a constraint, a default
@@ -497,9 +500,6 @@ instance MultiplicativeGroup a => MultiplicativeGroup [a] where
 instance AdditiveSemigroup a => AdditiveSemigroup [a] where
     (+) = zipWith (+)
 
-instance Scale b a => Scale b [a] where
-    scale = map . scale
-
 instance AdditiveMonoid a => AdditiveMonoid [a] where
     zero = repeat zero
 
@@ -529,9 +529,6 @@ instance MultiplicativeGroup a => MultiplicativeGroup (p -> a) where
 
 instance AdditiveSemigroup a => AdditiveSemigroup (p -> a) where
     p1 + p2 = \x -> p1 x + p2 x
-
-instance Scale b a => Scale b (p -> a) where
-    scale c p = scale c . p
 
 instance AdditiveMonoid a => AdditiveMonoid (p -> a) where
     zero = const zero
