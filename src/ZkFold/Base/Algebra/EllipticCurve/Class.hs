@@ -3,6 +3,9 @@
 
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
+import           Data.Binary                     (Binary (..))
+import           Data.Binary.Get                 (getWord8)
+import           Data.Binary.Put                 (putWord8)
 import           Data.Functor                    ((<&>))
 import           Prelude                         hiding (Num (..), sum, (/), (^))
 import qualified Prelude                         as Haskell
@@ -10,7 +13,6 @@ import           Test.QuickCheck                 hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Scale (BinScale (..))
-import           ZkFold.Base.Data.ByteString     (ToByteString (..))
 
 type family BaseField curve
 
@@ -18,7 +20,7 @@ type family ScalarField curve
 
 data Point curve = Point (BaseField curve) (BaseField curve) | Inf
 
-class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curve), ToByteString (BaseField curve),
+class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curve), Binary (BaseField curve),
       Haskell.Show (ScalarField curve), Haskell.Num (ScalarField curve), Haskell.Ord (ScalarField curve),
       PrimeField (ScalarField curve), Eq (ScalarField curve), BinaryExpansion (ScalarField curve), Arbitrary (ScalarField curve)
     ) => EllipticCurve curve where
@@ -49,9 +51,20 @@ instance EllipticCurve curve => AdditiveMonoid (Point curve) where
 instance EllipticCurve curve => AdditiveGroup (Point curve) where
     negate = pointNegate
 
-instance EllipticCurve curve => ToByteString (Point curve) where
-    toByteString Inf = toByteString (0 :: Integer)
-    toByteString (Point x y) = toByteString (1 :: Integer) <> toByteString x <> toByteString y
+instance EllipticCurve curve => Binary (Point curve) where
+    put Inf = putWord8 0
+    put (Point x y) = putWord8 1 <> put x <> put y
+    get = do
+      n <- getWord8
+      if n == 0
+        then return Inf
+        else if n == 1 then do
+            x <- get
+            y <- get
+            return (Point x y)
+            else fail $
+              "Binary (Point curve) get: expected flag bit 0 or 1 but saw "
+              <> show n
 
 instance EllipticCurve curve => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)

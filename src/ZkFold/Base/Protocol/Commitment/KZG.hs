@@ -5,10 +5,12 @@
 module ZkFold.Base.Protocol.Commitment.KZG where
 
 import           Control.Monad                              (replicateM)
+import           Data.Binary                                (Binary)
 import           Data.ByteString                            (ByteString, empty)
 import           Data.Kind                                  (Type)
 import           Data.Map.Strict                            (Map, fromList, insert, keys, toList, (!))
 import qualified Data.Vector                                as V
+import           Data.Vector.Binary                         ()
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), length, sum, (/), (^))
 import           Test.QuickCheck                            (Arbitrary (..), chooseInt)
@@ -17,7 +19,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Data.ByteString                (FromByteString, ToByteString)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 
 -- | `d` is the degree of polynomials in the protocol
@@ -35,7 +36,7 @@ instance (EllipticCurve c1, f ~ ScalarField c1, KnownNat d) => Arbitrary (Witnes
 
 -- TODO (Issue #18): check list lengths
 instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ ScalarField c2,
-        Pairing c1 c2 t, ToByteString f, FromByteString f, KnownNat d, KZG c1 c2 t f d ~ kzg)
+        Pairing c1 c2 t, Binary f, KnownNat d, KZG c1 c2 t f d ~ kzg)
         => NonInteractiveProof (KZG c1 c2 t f d) where
     type Transcript (KZG c1 c2 t f d)   = ByteString
     type Setup (KZG c1 c2 t f d)        = (V.Vector (Point c1), Point c2, Point c2)

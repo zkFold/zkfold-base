@@ -4,6 +4,7 @@
 module ZkFold.Base.Data.Vector where
 
 import           Data.Bifunctor                   (first)
+import           Data.Binary                      (Binary)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           Numeric.Natural                  (Natural)
@@ -13,11 +14,11 @@ import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.ByteString      (ToByteString (..))
 import           ZkFold.Prelude                   (length, replicate)
 
 newtype Vector (size :: Natural) a = Vector [a]
     deriving (Show, Eq, Functor, Foldable, Traversable)
+    deriving newtype Binary
 
 toVector :: forall size a . KnownNat size => [a] -> Maybe (Vector size a)
 toVector as
@@ -32,9 +33,6 @@ vectorDotProduct (Vector as) (Vector bs) = sum $ zipWith (*) as bs
 
 concat :: Vector m (Vector n a) -> Vector (m * n) a
 concat = Vector . concatMap fromVector
-
-instance ToByteString a => ToByteString (Vector n a) where
-    toByteString = toByteString . fromVector
 
 instance KnownNat size => Applicative (Vector size) where
     pure a = Vector $ replicate (value @size) a

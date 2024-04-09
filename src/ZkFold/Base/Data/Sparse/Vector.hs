@@ -1,6 +1,7 @@
 module ZkFold.Base.Data.Sparse.Vector where
 
-import           Data.Map                         (Map, empty, filter)
+import           Data.Binary
+import           Data.Map                         (Map, empty, filter, fromList, toList)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           Prelude                          hiding (Num (..), filter, length, sum, zip, zipWith, (/))
@@ -9,13 +10,13 @@ import           Test.QuickCheck                  (Arbitrary (..))
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field  (Zp)
 import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
-import           ZkFold.Base.Data.ByteString      (ToByteString (..))
 
 newtype SVector size a = SVector { fromSVector :: Map (Zp size) a }
     deriving (Show, Eq)
 
-instance ToByteString a => ToByteString (SVector n a) where
-    toByteString = toByteString . fromSVector
+instance (KnownNat n, Binary a) => Binary (SVector n a) where
+  put = put . toList . fromSVector
+  get = SVector . fromList <$> get
 
 instance Foldable (SVector size) where
     foldr f z (SVector as) = foldr f z as

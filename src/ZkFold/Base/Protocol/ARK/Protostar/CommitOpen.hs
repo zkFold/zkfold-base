@@ -4,16 +4,18 @@ module ZkFold.Base.Protocol.ARK.Protostar.CommitOpen where
 
 import           Prelude                                         hiding (length)
 
-import           ZkFold.Base.Data.ByteString                     (ToByteString(..))
+import           Data.Binary                                     (Binary (..))
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
 import           ZkFold.Prelude                                  (length)
 
 data CommitOpen f c a = CommitOpen (ProverMessage f a -> c) a
 
 data CommitOpenProverMessage t c a = Commit c | Open [ProverMessage t a]
-instance ToByteString c => ToByteString (CommitOpenProverMessage t c a) where
-      toByteString (Commit c) = toByteString c
-      toByteString _          = mempty
+-- TODO: Fix improper Binary instance
+instance Binary c => Binary (CommitOpenProverMessage t c a) where
+      put (Commit c) = put c
+      put _ = mempty
+      get = Commit <$> get
 
 instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen f c a) where
       type Witness f (CommitOpen f c a)         = (Witness f a, [ProverMessage f a])

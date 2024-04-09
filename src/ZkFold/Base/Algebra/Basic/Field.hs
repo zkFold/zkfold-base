@@ -16,6 +16,7 @@ module ZkFold.Base.Algebra.Basic.Field (
 import           Control.DeepSeq                            (NFData (..))
 import           Data.Aeson                                 (FromJSON (..), ToJSON (..))
 import           Data.Bifunctor                             (first)
+import           Data.Binary                                (Binary (..))
 import           Data.Bool                                  (bool)
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Generic)
@@ -28,12 +29,12 @@ import           Test.QuickCheck                            hiding (scale)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Data.ByteString
 
 ------------------------------ Prime Fields -----------------------------------
 
 newtype Zp (p :: Natural) = Zp Integer
     deriving (Generic, NFData)
+    deriving newtype Binary
 
 fromZp :: Zp p -> Natural
 fromZp (Zp a) = fromIntegral a
@@ -128,12 +129,6 @@ instance ToJSON (Zp p) where
 instance FromJSON (Zp p) where
     parseJSON = fmap Zp . parseJSON
 
-instance ToByteString (Zp p) where
-    toByteString (Zp a) = toByteString a
-
-instance FromByteString (Zp p) where
-    fromByteString = fmap Zp . fromByteString
-
 instance KnownNat p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, fromIntegral (order @(Zp p)) - 1)
 
@@ -194,8 +189,9 @@ instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext2 f e)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext2 f e)
 
-instance ToByteString f => ToByteString (Ext2 f e) where
-    toByteString (Ext2 a b) = toByteString a <> toByteString b
+instance Binary f => Binary (Ext2 f e) where
+  put (Ext2 a b) = put a <> put b
+  get = Ext2 <$> get <*> get
 
 instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext2 f e) where
     arbitrary = Ext2 <$> arbitrary <*> arbitrary
@@ -245,8 +241,9 @@ instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext3 f e)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext3 f e)
 
-instance ToByteString f => ToByteString (Ext3 f e) where
-    toByteString (Ext3 a b c) = toByteString a <> toByteString b <> toByteString c
+instance Binary f => Binary (Ext3 f e) where
+  put (Ext3 a b c) = put a <> put b <> put c
+  get = Ext3 <$> get <*> get <*> get
 
 instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext3 f e) where
     arbitrary = Ext3 <$> arbitrary <*> arbitrary <*> arbitrary
