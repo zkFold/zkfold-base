@@ -55,14 +55,14 @@ instance EllipticCurve curve => Binary (Point curve) where
     put Inf = putWord8 0
     put (Point x y) = putWord8 1 <> put x <> put y
     get = do
-      n <- getWord8
-      if n == 0
+      flag <- getWord8
+      if flag == 0
         then return Inf
-        else if n == 1 then do
+        else if flag == 1 then do
             Point <$> get <*> get
             else fail $
               "Binary (Point curve) get: expected flag byte 0 or 1 but saw "
-              <> show n
+              <> show flag
 
 instance EllipticCurve curve => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)

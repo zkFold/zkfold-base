@@ -12,10 +12,17 @@ data CommitOpen f c a = CommitOpen (ProverMessage f a -> c) a
 
 data CommitOpenProverMessage t c a = Commit c | Open [ProverMessage t a]
 -- TODO: Fix improper Binary instance
-instance Binary c => Binary (CommitOpenProverMessage t c a) where
-      put (Commit c) = put c
-      put _ = mempty
-      get = Commit <$> get
+instance (Binary c, Binary (ProverMessage t a))
+  => Binary (CommitOpenProverMessage t c a) where
+      put (Commit c) = putWord8 0 <> put c
+      put (Open p) = putWord8 1 <> put p
+      get = do
+        flag <- getWord8
+        if flag == 0 then Commit <$> get
+        else if flag == 1 then Open <$> get
+        else fail $
+              "Binary (CommitOpenProverMessage t c a) get: expected flag byte 0 or 1 but saw "
+              <> show flag
 
 instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen f c a) where
       type Witness f (CommitOpen f c a)         = (Witness f a, [ProverMessage f a])
