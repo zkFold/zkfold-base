@@ -13,4 +13,5 @@ toByteString = Lazy.toStrict . runPut . put
 fromByteString :: Binary a => Strict.ByteString -> Maybe a
 fromByteString x = case runGetOrFail get (Lazy.fromStrict x) of
   Left _ -> Nothing
-  Right (_, _, a) -> Just a
+  Right (leftover, _, a) ->
+    if Lazy.null leftover then Just a else Nothing
