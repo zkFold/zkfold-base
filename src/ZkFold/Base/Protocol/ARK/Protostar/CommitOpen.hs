@@ -11,7 +11,6 @@ import           ZkFold.Prelude                                  (length)
 data CommitOpen f c a = CommitOpen (ProverMessage f a -> c) a
 
 data CommitOpenProverMessage t c a = Commit c | Open [ProverMessage t a]
--- TODO: Fix improper Binary instance
 instance (Binary c, Binary (ProverMessage t a))
   => Binary (CommitOpenProverMessage t c a) where
       put (Commit c) = putWord8 0 <> put c
