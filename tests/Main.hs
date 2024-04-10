@@ -25,12 +25,12 @@ import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 
 main :: IO ()
 main = do
-    specArithmeticCircuit @(Zp BLS12_381_Scalar)
-    specUInt @BLS12_381_Scalar @32
-    specUInt @BLS12_381_Scalar @500
+--    specArithmeticCircuit @(Zp BLS12_381_Scalar)
+--    specUInt @BLS12_381_Scalar @32
+--    specUInt @BLS12_381_Scalar @500
 
     specByteString @BLS12_381_Scalar @32
-    specByteString @BLS12_381_Scalar @500
+    specByteString @BLS12_381_Scalar @512
     specByteString @BLS12_381_Scalar @508 -- Twice the number of bits encoded by BLS12_381_Scalar.
 
     specLockedByTxId
