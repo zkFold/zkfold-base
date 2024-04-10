@@ -7,8 +7,7 @@ import           Prelude                                         hiding (Num (..
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                (KnownNat)
-import           ZkFold.Base.Algebra.Basic.Scale                 (scale')
-import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, evalPolynomial', subs, substitutePolynomial, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, evalPolynomial, subs, var)
 import           ZkFold.Base.Data.Matrix                         (Matrix (..), outer, sum1, transpose)
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProtostar)
@@ -45,7 +44,7 @@ instance (Arithmetic f, KnownNat m, KnownNat n, KnownNat c) => SpecialSoundProto
               -> Vector (Dimension (ProtostarGate m n c d)) (SomePolynomial f)
     verifier' _ (s, g) [(w, _)] =
       let w' = fmap ((var .) . subs) w :: Vector n (Zp c -> SomePolynomial f)
-          z  = transpose $ outer substitutePolynomial w' g
+          z  = transpose $ outer evalPolynomial w' g
       in sum1 $ zipWith scale s z
     verifier' _ _ _ = error "Invalid transcript"
 
@@ -55,7 +54,7 @@ instance (Arithmetic f, KnownNat m, KnownNat n, KnownNat c) => SpecialSoundProto
              -> Bool
     verifier _ (s, g) [(w, _)] =
       let w' = fmap subs w :: Vector n (Zp c -> f)
-          z  = transpose $ outer evalPolynomial' w' g
-      in all (== zero) $ sum1 $ zipWith scale' s z
+          z  = transpose $ outer evalPolynomial w' g
+      in all (== zero) $ sum1 $ zipWith (*) s z
     verifier _ _ _ = error "Invalid transcript"
 

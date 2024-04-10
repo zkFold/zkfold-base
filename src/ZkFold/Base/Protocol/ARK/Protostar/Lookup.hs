@@ -46,8 +46,8 @@ instance (Arithmetic f, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLook
         let m      = sum (SVector . fromList . (`zip` repeat one) . invT <$> w)
         in (w, m)
     prover _ _ (ProtostarLookupParams t _) [((w, m), r)] =
-        let h      = fmap (\w_i -> one / (w_i + r)) w
-            g      = SVector $ mapWithKey (\i m_i -> m_i / (t i + r)) $ fromSVector m
+        let h      = fmap (\w_i -> one // (w_i + r)) w
+            g      = SVector $ mapWithKey (\i m_i -> m_i // (t i + r)) $ fromSVector m
         in (h, g)
     prover _ _ _ _ = error "Invalid transcript"
 

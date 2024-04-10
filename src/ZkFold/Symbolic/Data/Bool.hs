@@ -39,7 +39,7 @@ newtype Bool x = Bool x
 instance (Field x, Eq x) => Show (Bool x) where
     show (Bool x) = if x == one then "True" else "False"
 
-instance FiniteField x => BoolType (Bool x) where
+instance Field x => BoolType (Bool x) where
     true = Bool one
 
     false = Bool zero

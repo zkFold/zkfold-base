@@ -13,7 +13,7 @@ import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, deg, evalPolyVec, scalePV, toPolyVec, vec2poly)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, deg, evalPolyVec, scalePV, toPolyVec, vec2poly, polyVecDiv)
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 
 propVerificationKZG :: forall c1 c2 t f . (Pairing c1 c2 t, f ~ ScalarField c1, f ~ ScalarField c2)
@@ -31,14 +31,14 @@ propVerificationKZG x p z =
 
         -- Proving a polynomial evaluation
         pz = p `evalPolyVec` z
-        h  = (p - scalePV pz one) / toPolyVec [negate z, one]
+        h  = (p - scalePV pz one) `polyVecDiv` toPolyVec [negate z, one]
         w  = gs `com` h
         v0 = gs `com` p - (pz `mul` g0) + z `mul` w
 
         -- Verification
     in pairing v0 h0 == pairing w h1
 
-specPairing :: forall c1 c2 t f . (Typeable c1, Typeable c2, Typeable t, Pairing c1 c2 t, f ~ ScalarField c1, Exponent t f) => IO ()
+specPairing :: forall c1 c2 t f . (Typeable c1, Typeable c2, Typeable t, Pairing c1 c2 t, f ~ ScalarField c1) => IO ()
 specPairing = hspec $ do
     describe "Elliptic curve pairing specification" $ do
         describe ("Type: " ++ show (typeOf (pairing @c1 @c2))) $ do

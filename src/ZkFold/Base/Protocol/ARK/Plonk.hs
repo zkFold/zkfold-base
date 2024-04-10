@@ -56,7 +56,7 @@ data PlonkSetupParams = PlonkSetupParams {
         omega :: F,
         k1    :: F,
         k2    :: F,
-        gs    :: (V.Vector G1),
+        gs    :: V.Vector G1,
         h0    :: G2,
         h1    :: G2
     }
@@ -106,7 +106,7 @@ instance Show PlonkWitnessInput where
 instance Arbitrary PlonkWitnessInput where
     arbitrary = do
         x <- arbitrary
-        return $ PlonkWitnessInput $ Map.fromList [(1, x), (2, 15/x)]
+        return $ PlonkWitnessInput $ Map.fromList [(1, x), (2, 15//x)]
 
 data PlonkProverSecret = PlonkProverSecret F F F F F F F F F F F
     deriving (Show)
@@ -143,14 +143,14 @@ instance forall d t .
             wPub = V.fromList $ map negate $ elems inputs
 
             d = value @d + 6
-            xs = V.fromList $ map (x^) [0..d-1]
+            xs = V.fromList $ map (x^) [0..d-!1]
             gs = fmap (`mul` gen) xs
             h0 = gen
             h1 = x `mul` gen
 
             s = fromPermutation @(PlonkPermutationSize d) $ fromCycles $
                     mkIndexPartition $ fmap fromZp $ fromPolyVec a V.++ fromPolyVec b V.++ fromPolyVec c
-            f i = case (i-1) `div` value @d of
+            f i = case (i-!1) `div` value @d of
                 0 -> omega^i
                 1 -> k1 * (omega^i)
                 2 -> k2 * (omega^i)
@@ -231,7 +231,7 @@ instance forall d t .
                 * (c + scalePV beta sigma3 + scalePV gamma one)
                 * zo
             t4 = (z - one) * polyVecLagrange @F @d @(PlonkMaxPolyDegree d) 1 omega
-            t = (t1 + scalePV alpha (t2 - t3) + scalePV (alpha * alpha) t4) / zH
+            t = (t1 + scalePV alpha (t2 - t3) + scalePV (alpha * alpha) t4) `polyVecDiv` zH
 
             t_lo'  = toPolyVec $ V.take (fromIntegral n) $ fromPolyVec t
             t_mid' = toPolyVec $ V.take (fromIntegral n) $ V.drop (fromIntegral n) $ fromPolyVec t
@@ -292,8 +292,8 @@ instance forall d t .
                     + scalePV (v * v * v) (c - scalePV c_xi one)
                     + scalePV (v * v * v * v) (sigma1 - scalePV s1_xi one)
                     + scalePV (v * v * v * v * v) (sigma2 - scalePV s2_xi one)
-                ) / polyVecLinear (negate xi) one
-            proof2Poly = (z - scalePV z_xi one) / toPolyVec [negate (xi * omega), one]
+                ) `polyVecDiv` polyVecLinear (negate xi) one
+            proof2Poly = (z - scalePV z_xi one) `polyVecDiv` toPolyVec [negate (xi * omega), one]
             proof1 = gs `com` proof1Poly
             proof2 = gs `com` proof2Poly
 

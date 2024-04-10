@@ -8,7 +8,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 import           Data.Aeson                                                hiding (Bool)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map, null, splitAt, take)
 import           Data.Zip                                                  (zipWith)
-import           Prelude                                                   (const, error, mempty, pure, return, show, ($), (++), (<$>), (<*>), (>>=))
+import           Numeric.Natural                                           (Natural)
+import           Prelude                                                   (Integer, const, error, mempty, pure, return, show, ($), (++), (<$>), (<*>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (..))
@@ -42,6 +43,11 @@ instance Arithmetic a => AdditiveSemigroup (ArithmeticCircuit a) where
         j <- runCircuit r2
         newAssigned (\x -> x i + x j)
 
+instance (Arithmetic a, Scale c a) => Scale c (ArithmeticCircuit a) where
+    scale c r = circuit $ do
+        i <- runCircuit r
+        newAssigned (\x -> (c `scale` one :: a) `scale` x i)
+
 instance Arithmetic a => AdditiveMonoid (ArithmeticCircuit a) where
     zero = circuit $ newAssigned (const zero)
 
@@ -61,11 +67,11 @@ instance Arithmetic a => MultiplicativeSemigroup (ArithmeticCircuit a) where
         j <- runCircuit r2
         newAssigned (\x -> x i * x j)
 
+instance Arithmetic a => Exponent (ArithmeticCircuit a) Natural where
+    (^) = natPow
+
 instance Arithmetic a => MultiplicativeMonoid (ArithmeticCircuit a) where
     one = mempty
-
-instance Arithmetic a => MultiplicativeGroup (ArithmeticCircuit a) where
-    invert = invertC
 
 instance (Arithmetic a, FromConstant b a) => FromConstant b (ArithmeticCircuit a) where
     fromConstant c = embed (fromConstant c)
@@ -74,7 +80,11 @@ instance Arithmetic a => Semiring (ArithmeticCircuit a)
 
 instance Arithmetic a => Ring (ArithmeticCircuit a)
 
+instance Arithmetic a => Exponent (ArithmeticCircuit a) Integer where
+    (^) = intPowF
+
 instance Arithmetic a => Field (ArithmeticCircuit a) where
+    finv = invertC
     rootOfUnity n = embed <$> rootOfUnity n
 
 instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where

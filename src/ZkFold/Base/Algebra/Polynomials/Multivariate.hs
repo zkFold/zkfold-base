@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
 
 module ZkFold.Base.Algebra.Polynomials.Multivariate (
     module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial,
@@ -8,15 +7,15 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate (
     module ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution,
     SomeMonomial,
     SomePolynomial,
+    mapCoeffs,
     monomial,
     polynomial,
     evalPolynomial,
-    evalPolynomial',
-    substitutePolynomial,
     var,
     variables
     ) where
 
+import           Data.Bifunctor                                            (first)
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Map                                                  (Map, keys, singleton, toList)
 import           Data.Maybe                                                (fromJust)
@@ -24,7 +23,6 @@ import           Numeric.Natural                                           (Natu
 import           Prelude                                                   hiding (Num (..), length, product, replicate, sum, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Scale                           (Self (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Set
@@ -48,20 +46,16 @@ polynomial = sum . map (\m -> P [m]) . fromJust . toPolynomial
 var :: Polynomial c i j => i -> P c i j (Map i j) [(c, M i j (Map i j))]
 var x = polynomial [(one, monomial (singleton x one))]
 
-evalMonomial :: forall i j m b . (FromMonomial i j m, Exponent b j) => (i -> b) -> M i j m -> b
+evalMonomial :: forall i j m b . (FromMonomial i j m, MultiplicativeMonoid b, Exponent b j) => (i -> b) -> M i j m -> b
 evalMonomial f (M m) = product (map (\(i, j) -> f i ^ j) (toList $ fromMonomial @i @j m))
 
-evalPolynomial :: forall c i j m p b . (FromMonomial i j m, FromPolynomial c i j m p, Algebra b c, Exponent b j)
+evalPolynomial :: forall c i j m p b . (FromMonomial i j m, FromPolynomial c i j m p, Algebra c b, Exponent b j)
     => (i -> b) -> P c i j m p -> b
 evalPolynomial f (P p) = sum $ map (\(c, m) -> scale c (evalMonomial f m)) (fromPolynomial @c @i @j @m @p p)
 
-evalPolynomial' :: forall c i j m p . (FromMonomial i j m, FromPolynomial c i j m p, BinaryExpansion j)
-    => (i -> c) -> P c i j m p -> c
-evalPolynomial' f = getSelf . evalPolynomial (Self . f)
-
-substitutePolynomial :: forall c i i' j j' m m' p p' . (BinaryExpansion j, FromMonomial i j m, FromPolynomial c i j m p, FromPolynomial c i' j' m' p', m' ~ Map i' j', p' ~ [(c, M i' j' m')])
-    => (i -> P c i' j' m' p') -> P c i j m p -> P c i' j' m' p'
-substitutePolynomial = evalPolynomial
-
 variables :: forall c i j m p . (FromMonomial i j m, FromPolynomial c i j m p) => P c i j m p -> [i]
 variables (P p) = nubOrd $ concatMap (\(_, M m) -> keys (fromMonomial @i @j @m m)) $ fromPolynomial @c @i @j @m @p p
+
+mapCoeffs :: forall c c' i j m p p' . (FromPolynomial c i j m p, ToPolynomial c' i j m p')
+    => (c -> c') -> P c i j m p -> P c' i j m p'
+mapCoeffs f (P p) = P . fromJust . toPolynomial $ map (first f) (fromPolynomial @c @i @j @m p)

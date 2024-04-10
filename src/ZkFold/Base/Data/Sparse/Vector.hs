@@ -1,9 +1,9 @@
 module ZkFold.Base.Data.Sparse.Vector where
 
-import           Data.Map                         (Map, empty, filter)
+import           Data.Map                         (Map, empty, filter, map)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
-import           Prelude                          hiding (Num (..), filter, length, sum, zip, zipWith, (/))
+import           Prelude                          hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
 import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -44,6 +44,9 @@ instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveSemigroup (SVector s
 
 (.+) :: (KnownNat size, AdditiveMonoid a, Eq a) => SVector size a -> SVector size a -> SVector size a
 (.+) = (+)
+
+instance Scale c a => Scale c (SVector size a) where
+    scale c (SVector as) = SVector (map (scale c) as)
 
 instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveMonoid (SVector size a) where
     zero = SVector empty

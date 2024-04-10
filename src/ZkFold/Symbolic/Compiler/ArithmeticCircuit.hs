@@ -35,7 +35,7 @@ import           Test.QuickCheck                                     (Arbitrary,
 import           Text.Pretty.Simple                                  (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalPolynomial')
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalPolynomial)
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint, apply, eval, forceZero)
@@ -98,16 +98,16 @@ acPrint r = do
 
 ---------------------------------- Testing -------------------------------------
 
-checkClosedCircuit :: (Arithmetic a, Show a) => ArithmeticCircuit a -> Property
+checkClosedCircuit :: (Arithmetic a, FromConstant a a, Scale a a, Show a) => ArithmeticCircuit a -> Property
 checkClosedCircuit r = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem r) ]
     where
         w = acWitness r empty
-        testPoly p = evalPolynomial' (w !) p === zero
+        testPoly p = evalPolynomial (w !) p === zero
 
-checkCircuit :: (Arbitrary a, Arithmetic a, Show a) => ArithmeticCircuit a -> Property
+checkCircuit :: (Arbitrary a, Arithmetic a, FromConstant a a, Scale a a, Show a) => ArithmeticCircuit a -> Property
 checkCircuit r = conjoin [ property (testPoly p) | p <- elems (acSystem r) ]
     where
         testPoly p = do
             ins <- vector . fromIntegral $ length (acInput r)
             let w = acWitness r . fromList $ zip (acInput r) ins
-            return $ evalPolynomial' (w !) p === zero
+            return $ evalPolynomial (w !) p === zero

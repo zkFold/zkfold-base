@@ -1,6 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
@@ -29,10 +27,9 @@ import qualified Prelude                                      as Haskell
 import           System.Random                                (StdGen, mkStdGen, uniform, uniformR)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field              (Zp, toZp)
-import           ZkFold.Base.Algebra.Basic.Scale              (BinScale (..))
+import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, evalPolynomial, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, evalPolynomial, mapCoeffs, var)
 import           ZkFold.Prelude                               (drop, length)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
@@ -83,21 +80,24 @@ instance (FiniteField a, Eq a) => Monoid (ArithmeticCircuit a) where
 -- It is used in the compiler for generating new variable indices.
 type VarField = Zp BLS12_381_Scalar
 
+toField :: Arithmetic a => a -> VarField
+toField = toZp . fromConstant . fromBinary @Natural . castBits . binaryExpansion
+
 type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a)
 
 -- TODO: Remove the hardcoded constant.
 toVar :: forall a . Arithmetic a => [Natural] -> Constraint a -> Natural
-toVar srcs c = fromBinary $ castBits $ binaryExpansion ex
+toVar srcs c = fromZp ex
     where
         r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: VarField
-        v  = BinScale @a . (+ r) . fromConstant
-        x  = g ^ runBinScale (v `evalPolynomial` c)
+        v  = (+ r) . fromConstant
+        x  = g ^ fromZp (v `evalPolynomial` (mapCoeffs toField c :: SomePolynomial VarField))
         ex = foldr (\p y -> x ^ p + y) x srcs
 
 newVariableWithSource :: Arithmetic a => [Natural] -> (Natural -> Constraint a) -> State (ArithmeticCircuit a) Natural
 newVariableWithSource srcs con = toVar srcs . con . fst <$> do
-    zoom #acRNG $ get >>= traverse put . uniformR (0, order @VarField - 1)
+    zoom #acRNG $ get >>= traverse put . uniformR (0, order @VarField -! 1)
 
 addVariable :: Natural -> State (ArithmeticCircuit a) Natural
 addVariable x = do

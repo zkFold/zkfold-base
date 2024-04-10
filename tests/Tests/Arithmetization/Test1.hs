@@ -3,7 +3,8 @@
 
 module Tests.Arithmetization.Test1 (specArithmetization1) where
 
-import           Prelude                          hiding (Num(..), Eq(..), Bool, (^), (>), (/), (||), not, replicate)
+import           Numeric.Natural                  (Natural)
+import           Prelude                          hiding (Bool, Eq (..), Num (..), not, replicate, (/), (>), (^), (||))
 import qualified Prelude                          as Haskell
 import           Test.Hspec
 import           Test.QuickCheck
@@ -11,7 +12,7 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
-import           ZkFold.Symbolic.Data.Conditional (Conditional(..))
+import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq          (Eq (..))
 import           ZkFold.Symbolic.Types            (I, Symbolic)
 
@@ -19,9 +20,9 @@ import           ZkFold.Symbolic.Types            (I, Symbolic)
 testFunc :: forall a . Symbolic a => a -> a -> a
 testFunc x y =
     let c  = fromConstant @I @a
-        g1 = x ^ (2 :: I) + c 3 * x + c 5
-        g2 = c 4 * x ^ (3 :: I)
-        g3 = c 2 / x
+        g1 = x ^ (2 :: Natural) + c 3 * x + c 5
+        g2 = c 4 * x ^ (3 :: Natural)
+        g3 = c 2 // x
     in (g3 == y :: Bool a) ? g1 $ g2
 
 testResult :: forall a . (Symbolic a, Haskell.Eq a) => ArithmeticCircuit a -> a -> a -> Haskell.Bool

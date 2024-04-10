@@ -5,13 +5,14 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial (
         M(..)
 ) where
 
-import           Data.Aeson                        (FromJSON, ToJSON)
-import           Data.List                         (intercalate)
-import           Data.Map                          (Map, toList, unionWith, differenceWith, empty)
-import qualified Data.Map                          as Map
-import           GHC.Generics                      (Generic)
-import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
-import           Test.QuickCheck                   (Arbitrary (..))
+import           Data.Aeson                                                  (FromJSON, ToJSON)
+import           Data.List                                                   (intercalate)
+import           Data.Map                                                    (Map, differenceWith, empty, toList, unionWith)
+import qualified Data.Map                                                    as Map
+import           GHC.Generics                                                (Generic)
+import           Numeric.Natural                                             (Natural)
+import           Prelude                                                     hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
+import           Test.QuickCheck                                             (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial.Class
@@ -45,8 +46,14 @@ instance Arbitrary m => Arbitrary (M i j m) where
 instance Monomial i j => MultiplicativeSemigroup (M i j (Map i j)) where
     M l * M r = M $ Map.filter (/= zero) $ unionWith (+) (fromMonomial @i @j l) (fromMonomial @i @j r)
 
+instance Monomial i j => Exponent (M i j (Map i j)) Natural where
+    (^) = natPow
+
 instance Monomial i j => MultiplicativeMonoid (M i j (Map i j)) where
     one = M empty
+
+instance (Monomial i j, Ring j) => Exponent (M i j (Map i j)) Integer where
+    (^) = intPow
 
 instance (Monomial i j, Ring j) => MultiplicativeGroup (M i j (Map i j)) where
     invert (M m) = M $ Map.map negate $ fromMonomial @i @j m

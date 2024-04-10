@@ -17,9 +17,9 @@ import           ZkFold.Symbolic.Types                       (Symbolic)
 -- | MiMC hash function
 mimcHash :: forall a . Symbolic a => Natural -> a -> a -> a -> a
 mimcHash nRounds k xL xR =
-    let c  = mimcConstants !! (nRounds-1)
-        t5 = (xL + k + c) ^ (5 :: Integer)
-    in bool (xR + t5) (mimcHash (nRounds-1) k (xR + t5) xL) (nRounds > 1)
+    let c  = mimcConstants !! (nRounds-!1)
+        t5 = (xL + k + c) ^ (5 :: Natural)
+    in bool (xR + t5) (mimcHash (nRounds-!1) k (xR + t5) xL) (nRounds > 1)
 
 exampleMiMC :: IO ()
 exampleMiMC = do

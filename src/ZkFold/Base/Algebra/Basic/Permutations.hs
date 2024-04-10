@@ -45,7 +45,7 @@ instance KnownNat n => Arbitrary (Permutation n) where
     arbitrary =
         let f as [] = return as
             f as bs = do
-                i <- chooseNatural (0, length bs - 1)
+                i <- chooseNatural (0, length bs -! 1)
                 let as' = (bs !! i) : as
                     bs' = drop i bs
                 f as' bs'

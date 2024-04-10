@@ -39,21 +39,28 @@ instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Fro
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Integer (UInt n a) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
+instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n, MultiplicativeSemigroup (UInt n a)) => Scale Natural (UInt n a)
+
+instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n, MultiplicativeSemigroup (UInt n a)) => Scale Integer (UInt n a)
+
+instance MultiplicativeMonoid (UInt n a) => Exponent (UInt n a) Natural where
+    (^) = natPow
+
 cast :: forall a n . (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Natural -> (UInt n a, [a])
 cast n =
     let base = 2 ^ registerSize @a @n
         registers = map fromConstant $ flip unfoldr n $ \case
             0 -> Haskell.Nothing
             x -> Haskell.Just (swap $ x `Haskell.divMod` base)
-        r = numberOfRegisters @a @n - 1
+        r = numberOfRegisters @a @n -! 1
      in case greedySplitAt r registers of
         (lo, hi:rest) -> (UInt lo hi, rest)
-        (lo, [])      -> (UInt (lo ++ replicate (r - length lo) zero) zero, [])
+        (lo, [])      -> (UInt (lo ++ replicate (r -! length lo) zero) zero, [])
     where
         greedySplitAt 0 xs = ([], xs)
         greedySplitAt _ [] = ([], [])
         greedySplitAt m (x : xs) =
-            let (ys, zs) = greedySplitAt (m - 1) xs
+            let (ys, zs) = greedySplitAt (m -! 1) xs
              in (x : ys, zs)
 
 --------------------------------------------------------------------------------
@@ -63,17 +70,17 @@ instance (KnownNat p, KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
         where base = 2 ^ registerSize @(Zp p) @n
 
 instance (KnownNat p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
-    x + y = fromConstant $ toConstant x + (toConstant @_ @Natural) y
+    x + y = fromConstant $ toConstant x + toConstant @_ @Natural y
 
 instance (KnownNat p, KnownNat n) => AdditiveMonoid (UInt n (Zp p)) where
     zero = fromConstant (0 :: Natural)
 
 instance (KnownNat p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
-    x - y = fromConstant $ toConstant x + 2 ^ getNatural @n - (toConstant @_ @Natural) y
-    negate x = fromConstant $ 2 ^ getNatural @n - (toConstant @_ @Natural)x
+    x - y = fromConstant $ toConstant x + 2 ^ getNatural @n -! toConstant y
+    negate x = fromConstant $ 2 ^ getNatural @n -! toConstant x
 
 instance (KnownNat p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
-    x * y = fromConstant $ toConstant x * (toConstant @_ @Natural) y
+    x * y = fromConstant $ toConstant x * toConstant @_ @Natural y
 
 instance (KnownNat p, KnownNat n) => MultiplicativeMonoid (UInt n (Zp p)) where
     one = fromConstant (1 :: Natural)
@@ -84,7 +91,7 @@ instance (KnownNat p, KnownNat n) => Ring (UInt n (Zp p))
 
 instance (KnownNat p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
     arbitrary = UInt
-        <$> replicateA (numberOfRegisters @(Zp p) @n - 1) (toss $ registerSize @(Zp p) @n)
+        <$> replicateA (numberOfRegisters @(Zp p) @n -! 1) (toss $ registerSize @(Zp p) @n)
         <*> toss (highRegisterSize @(Zp p) @n)
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
@@ -93,7 +100,7 @@ instance (KnownNat p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
 instance (Arithmetic a, KnownNat n) => Arithmetizable a (UInt n (ArithmeticCircuit a)) where
     arithmetize (UInt as a) = for (as ++ [a]) runCircuit
 
-    restore as = case splitAt (numberOfRegisters @a @n - 1) as of
+    restore as = case splitAt (numberOfRegisters @a @n -! 1) as of
         (lo, [hi]) -> UInt lo hi
         (_, _)     -> error "UInt: invalid number of values"
 
@@ -120,13 +127,13 @@ instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (UInt n (ArithmeticCirc
     UInt _ _ + UInt _ _ = error "UInt: unreachable"
 
 instance (Arithmetic a, KnownNat n) => AdditiveMonoid (UInt n (ArithmeticCircuit a)) where
-    zero = UInt (replicate (numberOfRegisters @a @n - 1) zero) zero
+    zero = UInt (replicate (numberOfRegisters @a @n -! 1) zero) zero
 
 instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit a)) where
     UInt [] x - UInt [] y = UInt [] $ circuit $ do
         i <- runCircuit x
         j <- runCircuit y
-        z0 <- newAssigned (\v -> v i - v j + ((one + one) ^ registerSize @a @n) `scale` one)
+        z0 <- newAssigned (\v -> v i - v j + fromConstant (2 ^ registerSize @a @n :: Natural))
         (z, _) <- splitExpansion (highRegisterSize @a @n) 1 z0
         return z
 
@@ -138,12 +145,12 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
             solve = do
                 i <- runCircuit x
                 j <- runCircuit y
-                s <- newAssigned (\v -> v i - v j + (t + one) `scale` one)
+                s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
                 (k, b0) <- splitExpansion (registerSize @a @n) 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub xs ys)
                 i' <- runCircuit z
                 j' <- runCircuit w
-                s'0 <- newAssigned (\v -> v i' - v j' + v b + t `scale` one)
+                s'0 <- newAssigned (\v -> v i' - v j' + v b + fromConstant t)
                 (s', _) <- splitExpansion (highRegisterSize @a @n) 1 s'0
                 return (s' : k : zs)
 
@@ -151,7 +158,7 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
             fullSub xk yk b = do
                 i <- runCircuit xk
                 j <- runCircuit yk
-                s <- newAssigned (\v -> v i - v j + v b + t `scale` one)
+                s <- newAssigned (\v -> v i - v j + v b + fromConstant t)
                 splitExpansion (registerSize @a @n) 1 s
 
          in case circuits solve of
@@ -163,8 +170,8 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
     negate (UInt [] x) = UInt [] (negateN (2 ^ highRegisterSize @a @n) x)
     negate (UInt (x : xs) x') =
         let y = negateN (2 ^ registerSize @a @n) x
-            ys = map (negateN $ 2 ^ registerSize @a @n - 1) xs
-            y' = negateN (2 ^ highRegisterSize @a @n - 1) x'
+            ys = map (negateN $ 2 ^ registerSize @a @n -! 1) xs
+            y' = negateN (2 ^ highRegisterSize @a @n -! 1) x'
          in UInt (y : ys) y'
 
 negateN :: Arithmetic a => Natural -> ArithmeticCircuit a -> ArithmeticCircuit a
@@ -192,9 +199,9 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (Arithmet
                 -- single addend for lower register
                 q <- newAssigned (\v -> v i * v j)
                 -- multiple addends for middle registers
-                qs <- for [1 .. r - 2] $ \k ->
+                qs <- for [1 .. r -! 2] $ \k ->
                     for [0 .. k] $ \l ->
-                        newAssigned (\v -> v (cs ! l) * v (ds ! (k - l)))
+                        newAssigned (\v -> v (cs ! l) * v (ds ! (k -! l)))
                 -- lower register
                 (p, c) <- splitExpansion (registerSize @a @n) (registerSize @a @n) q
                 -- middle registers
@@ -202,7 +209,7 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (Arithmet
                     s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
                     splitExpansion (registerSize @a @n) (maxOverflow @a @n) s
                 -- high register
-                p'0 <- foldrM (\k l -> newAssigned (\v -> v l + v (cs ! k) * v (ds ! (r - 1 - k)))) c' [0 .. r - 1]
+                p'0 <- foldrM (\k l -> newAssigned (\v -> v l + v (cs ! k) * v (ds ! (r -! 1 -! k)))) c' [0 .. r -! 1]
                 (p', _) <- splitExpansion (highRegisterSize @a @n) (maxOverflow @a @n) p'0
                 return (p' : p : ps)
 
@@ -214,7 +221,7 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (Arithmet
 
 instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (UInt n (ArithmeticCircuit a)) where
     one | numberOfRegisters @a @n Haskell.== 1 = UInt [] one
-        | otherwise = UInt (one : replicate (numberOfRegisters @a @n - 2) zero) zero
+        | otherwise = UInt (one : replicate (numberOfRegisters @a @n -! 2) zero) zero
 
 instance (Arithmetic a, KnownNat n) => Semiring (UInt n (ArithmeticCircuit a))
 
@@ -236,9 +243,9 @@ class StrictNum a where
     strictMul :: a -> a -> a
 
 instance (KnownNat p, KnownNat n) => StrictNum (UInt n (Zp p)) where
-    strictAdd x y = strictConv $ toConstant x + (toConstant @_ @Natural) y
-    strictSub x y = strictConv $ toConstant x - (toConstant @_ @Natural) y
-    strictMul x y = strictConv $ toConstant x * (toConstant @_ @Natural) y
+    strictAdd x y = strictConv $ toConstant x + toConstant @_ @Natural y
+    strictSub x y = strictConv $ toConstant x -! toConstant y
+    strictMul x y = strictConv $ toConstant x * toConstant @_ @Natural y
 
 instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) where
     strictAdd (UInt [] x) (UInt [] y) = UInt [] $ circuit $ do
@@ -275,7 +282,7 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
             solve = do
                 i <- runCircuit x
                 j <- runCircuit y
-                s <- newAssigned (\v -> v i - v j + (t + one) `scale` one)
+                s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
                 (k, b0) <- splitExpansion (registerSize @a @n) 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub xs ys)
                 i' <- runCircuit z
@@ -288,7 +295,7 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
             fullSub xk yk b = do
                 i <- runCircuit xk
                 j <- runCircuit yk
-                s <- newAssigned (\v -> v i - v j + v b + t `scale` one)
+                s <- newAssigned (\v -> v i - v j + v b + fromConstant t)
                 splitExpansion (registerSize @a @n) 1 s
 
          in case circuits solve of
@@ -317,9 +324,9 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                 -- single addend for lower register
                 q <- newAssigned (\v -> v i * v j)
                 -- multiple addends for middle registers
-                qs <- for [1 .. r - 2] $ \k ->
+                qs <- for [1 .. r -! 2] $ \k ->
                     for [0 .. k] $ \l ->
-                        newAssigned (\v -> v (cs ! l) * v (ds ! (k - l)))
+                        newAssigned (\v -> v (cs ! l) * v (ds ! (k -! l)))
                 -- lower register
                 (p, c) <- splitExpansion (registerSize @a @n) (registerSize @a @n) q
                 -- middle registers
@@ -327,12 +334,12 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                     s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
                     splitExpansion (registerSize @a @n) (maxOverflow @a @n) s
                 -- high register
-                p' <- foldrM (\k l -> newAssigned (\v -> v l + v (cs ! k) * v (ds ! (r - 1 - k)))) c' [0 .. r - 1]
+                p' <- foldrM (\k l -> newAssigned (\v -> v l + v (cs ! k) * v (ds ! (r -! 1 -! k)))) c' [0 .. r -! 1]
                 _ <- expansion (highRegisterSize @a @n) p'
                 -- all addends higher should be zero
-                for_ [r .. r * 2 - 2] $ \k ->
-                    for_ [k - r + 1 .. r - 1] $ \l ->
-                        constraint (\v -> v (cs ! l) * v (ds ! (k - l)))
+                for_ [r .. r * 2 -! 2] $ \k ->
+                    for_ [k -! r + 1 .. r -! 1] $ \l ->
+                        constraint (\v -> v (cs ! l) * v (ds ! (k -! l)))
                 return (p' : p : ps)
 
          in case circuits solve of

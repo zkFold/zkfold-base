@@ -17,7 +17,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 
 -- TODO (Issue #17): hide constructor
 newtype Poly c = P (V.Vector c)
-    deriving (Eq, Show)
+    deriving (Eq, Show, Functor)
 
 toPoly :: (Ring c, Eq c) => V.Vector c -> Poly c
 toPoly = removeZeros . P
@@ -90,10 +90,10 @@ mulDft p w2n lPadded rPadded = c
     pad = 2 P.^ p
 
     w2nInv :: c
-    w2nInv = one / w2n
+    w2nInv = one // w2n
 
     nInv :: c
-    nInv = one / fromConstant (fromIntegral @_ @Natural pad)
+    nInv = one // fromConstant (fromIntegral @_ @Natural pad)
 
     v1Image, v2Image :: V.Vector c
     v1Image = genericDft p w2n lPadded
@@ -169,6 +169,9 @@ mulVector v1 v2 = result
     ix2v' _ ((== len2) -> True) accum = accum
     ix2v' i j accum                   = ix2v' (i P.- 1) (j P.+ 1) (accum + v1 `V.unsafeIndex` i * v2 `V.unsafeIndex` j)
 
+instance (Field c, Eq c) => Exponent (Poly c) Natural where
+    (^) = natPow
+
 instance (Field c, Eq c) => MultiplicativeMonoid (Poly c) where
     one = P $ V.singleton one
 
@@ -190,7 +193,7 @@ qr a b = go a b zero
     where
         go x y q = if deg x < deg y then (q, x) else go x' y q'
             where
-                c = lt x / lt y
+                c = lt x // lt y
                 n = fromIntegral (deg x - deg y)
                 -- ^ if `deg x < deg y`, `n` is not evaluated, so this would not error out
                 x' = x - scaleP c n y
@@ -222,6 +225,9 @@ poly2vec (P cs) = toPolyVec cs
 vec2poly :: (Ring c, Eq c) => PolyVec c size -> Poly c
 vec2poly (PV cs) = removeZeros $ P cs
 
+instance Scale c' c => Scale c' (PolyVec c size) where
+    scale c (PV p) = PV (scale c p)
+
 instance Ring c => AdditiveSemigroup (PolyVec c size) where
     PV l + PV r = PV $ V.zipWith (+) l r
 
@@ -231,34 +237,32 @@ instance (Ring c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
 instance (Ring c, KnownNat size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ fmap negate cs
 
+instance (Field c, KnownNat size, Eq c) => Exponent (PolyVec c size) Natural where
+    (^) = natPow
+
 -- TODO (Issue #18): check for overflow
 instance (Field c, KnownNat size, Eq c) => MultiplicativeSemigroup (PolyVec c size) where
     l * r = poly2vec $ vec2poly l * vec2poly r
 
 instance (Field c, KnownNat size, Eq c) => MultiplicativeMonoid (PolyVec c size) where
-    one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size - 1)) zero
-
-instance (Field c, KnownNat size, Eq c) => MultiplicativeGroup (PolyVec c size) where
-    invert = undefined
-
-    l / r = poly2vec $ fst $ qr (vec2poly l) (vec2poly r)
+    one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
 
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec <$> V.replicateM (fromIntegral $ value @size) arbitrary
 
 -- p(x) = a0 + a1 * x
 polyVecLinear :: forall c size . (Ring c, KnownNat size) => c -> c -> PolyVec c size
-polyVecLinear a0 a1 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ value @size - 2) zero
+polyVecLinear a0 a1 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ value @size -! 2) zero
 
 -- p(x) = a0 + a1 * x + a2 * x^2
 polyVecQuadratic :: forall c size . (Ring c, KnownNat size) => c -> c -> c -> PolyVec c size
-polyVecQuadratic a0 a1 a2 = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ value @size - 3) zero
+polyVecQuadratic a0 a1 a2 = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ value @size -! 3) zero
 
 scalePV :: Ring c => c -> PolyVec c size -> PolyVec c size
 scalePV c (PV as) = PV $ fmap (*c) as
 
 evalPolyVec :: Ring c => PolyVec c size -> c -> c
-evalPolyVec (PV cs) x = sum $ V.zipWith (*) cs $ fmap (x^) (V.generate (V.length cs) (fromIntegral @_ @Integer))
+evalPolyVec (PV cs) x = sum $ V.zipWith (*) cs $ fmap (x^) (V.generate (V.length cs) (fromIntegral @_ @Natural))
 
 castPolyVec :: forall c size size' . (Ring c, KnownNat size, KnownNat size', Eq c) => PolyVec c size -> PolyVec c size'
 castPolyVec (PV cs)
@@ -273,7 +277,7 @@ polyVecZero = poly2vec $ scaleP one (value @size) one - one
 -- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
 polyVecLagrange :: forall c size size' . (Field c, Eq c, KnownNat size, KnownNat size') =>
     Natural -> c -> PolyVec c size'
-polyVecLagrange i omega = scalePV (omega^i / fromConstant (value @size)) $ (polyVecZero @c @size @size' - one) / polyVecLinear (negate $ omega^i) one
+polyVecLagrange i omega = scalePV (omega^i // fromConstant (value @size)) $ (polyVecZero @c @size @size' - one) `polyVecDiv` polyVecLinear (negate $ omega^i) one
 
 -- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
 polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, KnownNat size, KnownNat size') =>
@@ -287,8 +291,12 @@ polyVecGrandProduct :: forall c size . (Field c, KnownNat size) =>
 polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
     let ps = fmap (+ gamma) (V.zipWith (+) as (fmap (* beta) bs))
         qs = fmap (+ gamma) (V.zipWith (+) as (fmap (* beta) sigmas))
-        zs = fmap (product . flip V.take (V.zipWith (/) ps qs)) (V.generate (fromIntegral (value @size)) id)
+        zs = fmap (product . flip V.take (V.zipWith (//) ps qs)) (V.generate (fromIntegral (value @size)) id)
     in PV zs
+
+polyVecDiv :: forall c size . (Field c, KnownNat size, Eq c) =>
+    PolyVec c size -> PolyVec c size -> PolyVec c size
+polyVecDiv l r = poly2vec $ fst $ qr (vec2poly l) (vec2poly r)
 
 -------------------------------- Helper functions --------------------------------
 

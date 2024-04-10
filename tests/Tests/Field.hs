@@ -33,6 +33,6 @@ specField = hspec $ do
                 it "should satisfy multiplicative identity" $ do
                     property $ \(a :: a) -> a * one == a
                 it "should satisfy multiplicative inverse" $ do
-                    property $ \(a :: a) -> a /= zero ==> a * invert a == one
+                    property $ \(a :: a) -> a /= zero ==> a * finv a == one
                 it "should satisfy distributivity" $ do
                     property $ \(a :: a) b c -> a * (b + c) == a * b + a * c

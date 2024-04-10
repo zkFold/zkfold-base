@@ -22,19 +22,19 @@ import           ZkFold.Symbolic.Data.Eq
 eval' :: ArithmeticCircuit a -> a
 eval' = flip eval empty
 
-correctHom0 :: forall a . (Arithmetic a, Show a) => (forall b . Field b => b) -> Property
+correctHom0 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = f in withMaxSuccess 1 $ checkClosedCircuit r .&&. eval' r === f @a
 
-correctHom1 :: forall a . (Arithmetic a, Show a) => (forall b . Field b => b -> b) -> a -> Property
+correctHom1 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b -> b) -> a -> Property
 correctHom1 f x = let r = f (embed x) in checkClosedCircuit r .&&. eval' r === f x
 
-correctHom2 :: forall a . (Arithmetic a, Show a) => (forall b . Field b => b -> b -> b) -> a -> a -> Property
+correctHom2 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b -> b -> b) -> a -> a -> Property
 correctHom2 f x y = let r = f (embed x) (embed y) in checkClosedCircuit r .&&. eval' r === f x y
 
 it :: Testable prop => String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
 
-specArithmeticCircuit :: forall a . (Arbitrary a, Arithmetic a, Show a) => IO ()
+specArithmeticCircuit :: forall a . (Arbitrary a, Arithmetic a, FromConstant a a, Scale a a, Show a) => IO ()
 specArithmeticCircuit = hspec $ do
     describe "ArithmeticCircuit specification" $ do
         it "embeds constants" $ correctHom1 @a id
@@ -43,8 +43,8 @@ specArithmeticCircuit = hspec $ do
         it "negates correctly" $ correctHom1 @a negate
         it "multiplies correctly" $ correctHom2 @a (*)
         it "has one" $ correctHom0 @a one
-        it "inverts nonzero correctly" $ correctHom1 @a invert
-        it "inverts zero correctly" $ correctHom0 @a (invert zero)
+        it "inverts nonzero correctly" $ correctHom1 @a finv
+        it "inverts zero correctly" $ correctHom0 @a (finv zero)
         it "checks isZero(nonzero)" $ \(x :: a) ->
           let Bool (r :: ArithmeticCircuit a) = isZero (embed x)
            in checkClosedCircuit r .&&. eval' r === bool zero one (x Haskell.== zero)
