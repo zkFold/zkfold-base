@@ -46,6 +46,15 @@ instance (Arithmetic a) => Arithmetizable a () where
 
   typeSize = 0
 
+instance (Arithmetizable a x) => Arithmetizable a (Maybe x) where
+  arithmetize Nothing = return []
+  arithmetize (Just a) = (:) <$> input <*> arithmetize a
+
+  restore [] = Nothing
+  restore (_ : rs) = Just (restore rs)
+
+  typeSize = typeSize @a @x
+
 instance (Arithmetizable a x, Arithmetizable a y) => Arithmetizable a (x, y) where
   arithmetize (a, b) = do
     x <- arithmetize a
