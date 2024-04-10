@@ -77,6 +77,40 @@ testWords = it ("divides a bytestring of length " <> show (value @n) <> " into w
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
 
+testTruncate
+    :: forall n m p
+    .  KnownNat n
+    => Prime p
+    => KnownNat m
+    => Truncate (ByteString n (ArithmeticCircuit (Zp p))) (ByteString m (ArithmeticCircuit (Zp p)))
+    => Truncate (ByteString n (Zp p)) (ByteString m (Zp p))
+    => Spec
+testTruncate = it ("truncates a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do
+    x <- toss m
+    let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p))
+        zpBS = fromConstant x :: ByteString n (Zp p)
+    return (eval (truncate arithBS :: ByteString m (ArithmeticCircuit (Zp p))) === truncate zpBS)
+    where
+        n = Haskell.toInteger $ value @n
+        m = 2 Haskell.^ n -! 1
+
+testGrow
+    :: forall n m p
+    .  KnownNat n
+    => Prime p
+    => KnownNat m
+    => Grow (ByteString n (ArithmeticCircuit (Zp p))) (ByteString m (ArithmeticCircuit (Zp p)))
+    => Grow (ByteString n (Zp p)) (ByteString m (Zp p))
+    => Spec
+testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do
+    x <- toss m
+    let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p))
+        zpBS = fromConstant x :: ByteString n (Zp p)
+    return (eval (grow arithBS :: ByteString m (ArithmeticCircuit (Zp p))) === grow zpBS)
+    where
+        n = Haskell.toInteger $ value @n
+        m = 2 Haskell.^ n -! 1
+
 specByteString
     :: forall p n
     .  Prime p
@@ -84,11 +118,22 @@ specByteString
     => 1 <= n
     => 2 <= n
     => 4 <= n
+    => 8 <= n
+    => 16 <= n
+    => 32 <= n
+    => n <= n + 1
+    => n <= n + 10
+    => n <= n + 128
+    => n <= n + n
     => Mod n 1 ~ 0
     => Mod n 2 ~ 0
     => Mod n 4 ~ 0
     => Mod n n ~ 0
     => KnownNat (3 * n)
+    => KnownNat (n + 1)
+    => KnownNat (n + 10)
+    => KnownNat (n + 128)
+    => KnownNat (n + n)
     => IO ()
 specByteString = hspec $ do
     let n = Haskell.fromIntegral $ value @n
@@ -137,3 +182,13 @@ specByteString = hspec $ do
             let ac = append $ fromConstant @Natural @(ByteString n (ArithmeticCircuit (Zp p))) <$> [x, y, z]
                 zp = append $ fromConstant @Natural @(ByteString n (Zp p)) <$> [x, y, z]
             return $ eval @(Zp p) @(3 * n) ac === zp
+        testTruncate @n @1 @p
+        testTruncate @n @4 @p
+        testTruncate @n @8 @p
+        testTruncate @n @16 @p
+        testTruncate @n @32 @p
+        testTruncate @n @n @p
+        testGrow @n @(n + 1) @p
+        testGrow @n @(n + 10) @p
+        testGrow @n @(n + 128) @p
+        testGrow @n @(n + n) @p
