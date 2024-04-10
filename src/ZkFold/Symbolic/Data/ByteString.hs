@@ -10,6 +10,7 @@ module ZkFold.Symbolic.Data.ByteString
     , ToWords (..)
     , Append (..)
     , Truncate (..)
+    , Grow (..)
     ) where
 
 import           Control.Monad                                             (forM, mapM, replicateM, zipWithM)
@@ -38,16 +39,6 @@ import           ZkFold.Symbolic.Data.Combinators
 
 data ByteString (n :: Natural) a = ByteString !a ![a]
     deriving (Haskell.Show, Haskell.Eq)
-
-{- | A data type representing a bit string with the number of bits unknown at compile time.
-data SomeBits a
-    = SomeBits
-        { bitsStored :: !Natural
-        , highReg    :: !a
-        , lowRegs    :: ![a]
-        }
-    deriving (Haskell.Show, Haskell.Eq)
-    -}
 
 class ShiftBits a where
     {-# MINIMAL (shiftBits | (shiftBitsL, shiftBitsR)), (rotateBits | (rotateBitsL, rotateBitsR)) #-}
@@ -82,6 +73,9 @@ class Append a b where
 
 class Truncate a b where
     truncate :: a -> b
+
+class Grow a b where
+    grow :: a -> b
 
 instance (Finite a, ToConstant a Natural, KnownNat n) => ToConstant (ByteString n a) Natural where
   toConstant (ByteString x xs) = Haskell.foldl (\y p -> toConstant p + base * y) 0 (x:xs)
@@ -225,6 +219,15 @@ instance
         where
             diff :: Haskell.Int
             diff = Haskell.fromIntegral $ getNatural @m Haskell.- getNatural @n
+
+instance
+  ( KnownNat m
+  , KnownNat n
+  , m <= n
+  , KnownNat p
+  ) => Grow (ByteString m (Zp p)) (ByteString n (Zp p)) where
+
+    grow = fromConstant @Natural . toConstant
 
 --------------------------------------------------------------------------------
 
@@ -459,3 +462,24 @@ instance
         solve = do
             bits <- take (Haskell.fromIntegral $ getNatural @n) <$> toBits @m @a x xs
             fromBits @n @a $ bits
+
+instance
+  ( KnownNat m
+  , KnownNat n
+  , m <= n
+  , Arithmetic a
+  ) => Grow (ByteString m (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
+
+    grow (ByteString x xs) =
+        case circuits solve of
+          []     -> error "truncate :: Unreachable"
+          (r:rs) -> ByteString r rs
+      where
+        solve :: forall i m'. MonadBlueprint i a m' => m' [i]
+        solve = do
+            bits <- toBits @m @a x xs
+            zeros <- replicateM diff $ newAssigned (Haskell.const zero)
+            fromBits @n @a $ zeros <> bits
+
+        diff :: Haskell.Int
+        diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @m

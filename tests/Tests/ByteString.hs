@@ -1,6 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Tests.ByteString (specByteString) where
@@ -10,12 +10,12 @@ import           Control.Monad                    (return)
 import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
 import           Data.List                        (map, (++))
-import           GHC.TypeNats                     (KnownNat, natVal, Mod, type (<=))
+import           GHC.TypeNats                     (KnownNat, Mod, natVal, type (*), type (<=))
 import           Numeric.Natural                  (Natural)
-import           Prelude                          (show, (<>), type (~))
+import           Prelude                          (show, type (~), (<>))
 import qualified Prelude                          as Haskell
 import           System.IO                        (IO)
-import           Test.Hspec                       (describe, hspec, Spec)
+import           Test.Hspec                       (Spec, describe, hspec)
 import           Test.QuickCheck                  (Gen, Property, chooseInteger, (===))
 import           Tests.ArithmeticCircuit          (eval', it)
 
@@ -60,9 +60,9 @@ isLeftNeutral
     -> Property
 isLeftNeutral f g n1 n2 x = eval (n2 `g` fromConstant x) === n1 `f` fromConstant x
 
-testWords 
+testWords
     :: forall n wordSize p
-    .  KnownNat n 
+    .  KnownNat n
     => Prime p
     => KnownNat wordSize
     => ToWords (ByteString n (ArithmeticCircuit (Zp p))) (ByteString wordSize (ArithmeticCircuit (Zp p)))
@@ -77,7 +77,19 @@ testWords = it ("divides a bytestring of length " <> show (value @n) <> " into w
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
 
-specByteString :: forall p n . (Prime p, KnownNat n, 1 <= n, 2 <= n, 4 <= n, Mod n 1 ~ 0, Mod n 2 ~ 0, Mod n 4 ~ 0, Mod n n ~ 0) => IO ()
+specByteString
+    :: forall p n
+    .  Prime p
+    => KnownNat n
+    => 1 <= n
+    => 2 <= n
+    => 4 <= n
+    => Mod n 1 ~ 0
+    => Mod n 2 ~ 0
+    => Mod n 4 ~ 0
+    => Mod n n ~ 0
+    => KnownNat (3 * n)
+    => IO ()
 specByteString = hspec $ do
     let n = Haskell.fromIntegral $ value @n
         m = 2 Haskell.^ n -! 1
@@ -108,19 +120,20 @@ specByteString = hspec $ do
         it "obeys right multiplicative neutrality" $ isRightNeutral @n @p (&&) (&&) true true <$> toss m
         it "performs bit shifts correctly" $ do
             shift <- chooseInteger (-3 * n, 3 * n)
-            x <- toss m 
+            x <- toss m
             return $ eval @(Zp p) @n (shiftBits (fromConstant x) shift) === (shiftBits (fromConstant x) shift)
         it "performs bit rotations correctly" $ do
             shift <- chooseInteger (-3 * n, 3 * n)
             x <- toss m
             return $ eval @(Zp p) @n (rotateBits (fromConstant x) shift) === (rotateBits (fromConstant x) shift)
-        testWords @n @1 @p 
+        testWords @n @1 @p
         testWords @n @2 @p
         testWords @n @4 @p
         testWords @n @n @p
-            {--
         it "appends bytestrings correctly" $ do
             x <- toss m
             y <- toss m
-            return $ eval @(Zp p) @n ((fromConstant x) shift) === (rotateBits (fromConstant x) shift)
-            --}
+            z <- toss m
+            let ac = append $ fromConstant @Natural @(ByteString n (ArithmeticCircuit (Zp p))) <$> [x, y, z]
+                zp = append $ fromConstant @Natural @(ByteString n (Zp p)) <$> [x, y, z]
+            return $ eval @(Zp p) @(3 * n) ac === zp

@@ -6,12 +6,15 @@
 module ZkFold.Symbolic.Algorithms.Hash.SHA2 (sha2) where
 
 import           Control.Monad                                  (forM_)
+import           Data.Proxy                                     (Proxy (..))
 import qualified Data.STRef                                     as ST
+import           Data.Type.Bool                                 (If)
 import qualified Data.Vector                                    as V
 import qualified Data.Vector.Mutable                            as VM
 import           GHC.TypeLits                                   (Symbol)
-import           GHC.TypeNats                                   (Div, Natural, type (*), type (+), type (-))
-import           Prelude                                        (Int, id, pure, undefined, zip, ($), (>>=))
+import           GHC.TypeNats                                   (Div, KnownNat (..), Natural, natVal, type (*),
+                                                                 type (+), type (-), type (<=?))
+import           Prelude                                        (Int, id, pure, zip, ($), (>>=))
 import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -19,8 +22,8 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  sha384InitialHashes, sha512InitialHashes,
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (Append (..), ByteString (..), ShiftBits (..),
-                                                                 ToWords (..), Truncate (..))
+import           ZkFold.Symbolic.Data.ByteString                (Append (..), ByteString (..), Grow (..),
+                                                                 ShiftBits (..), ToWords (..), Truncate (..))
 
 class AlgorithmSetup (algorithm :: Symbol) a where
     type WordSize algorithm :: Natural
@@ -93,18 +96,55 @@ instance (Finite a, FromConstant Natural a, Truncate (ByteString 512 a) (ByteStr
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-sha2Pad :: forall (padTo :: Natural) (k :: Natural) a . ByteString k a -> ByteString (padTo * Div (padTo + k - 1) padTo) a
-sha2Pad = undefined
+type family NextMultiple (n :: Natural) (divisor :: Natural) :: Natural where
+    NextMultiple n divisor = divisor * Div (n + divisor - 1) divisor
+
+type family PaddedLength (msg :: Natural) (block :: Natural) :: Natural where
+    PaddedLength msg block = If (NextMultiple msg block - msg <=? 64) (block + NextMultiple msg block) (NextMultiple msg block)
+
+sha2Pad
+    :: forall (padTo :: Natural) (k :: Natural) a
+    .  KnownNat padTo
+    => KnownNat k
+    => KnownNat (PaddedLength k padTo)
+    => Finite a
+    => FromConstant Natural a
+    => ShiftBits (ByteString (PaddedLength k padTo) a)
+    => AdditiveSemigroup (ByteString (PaddedLength k padTo) a)
+    => Grow (ByteString k a) (ByteString (PaddedLength k padTo) a)
+    => ByteString k a -> ByteString (PaddedLength k padTo) a
+sha2Pad bs = grown + fromConstant padValue
+    where
+        l :: Natural
+        l = natVal $ Proxy @k
+
+        diff :: Natural
+        diff = (natVal $ Proxy @(PaddedLength k padTo)) -! (natVal $ Proxy @k)
+
+        padValue :: Natural
+        padValue = 2 P.^ (diff -! 1) P.+ l
+
+        grown :: ByteString (PaddedLength k padTo) a
+        grown = grow bs `shiftBitsL` diff
+
 
 sha2
     :: forall algorithm element k
     .  AlgorithmSetup algorithm element
+    => KnownNat k
+    => Finite element
+    => FromConstant Natural element
+    => KnownNat (ChunkSize algorithm)
+    => KnownNat (PaddedLength k (ChunkSize algorithm))
     => AdditiveSemigroup (ByteString (WordSize algorithm) element)
     => BoolType (ByteString (WordSize algorithm) element)
     => ShiftBits (ByteString (WordSize algorithm) element)
+    => ShiftBits (ByteString (PaddedLength k (ChunkSize algorithm)) element)
+    => Grow (ByteString k element) (ByteString (PaddedLength k (ChunkSize algorithm)) element)
+    => AdditiveSemigroup (ByteString (PaddedLength k (ChunkSize algorithm)) element)
     => ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
     => Append (ByteString (WordSize algorithm) element) (ByteString (8 * WordSize algorithm) element)
-    => ToWords (ByteString (ChunkSize algorithm * Div ((ChunkSize algorithm + k) - 1) (ChunkSize algorithm)) element) (ByteString (ChunkSize algorithm) element)
+    => ToWords (ByteString (PaddedLength k (ChunkSize algorithm)) element) (ByteString (ChunkSize algorithm) element)
     => ByteString k element -> ByteString (ResultSize algorithm) element
 sha2 messageBits = truncateResult @algorithm @element $ append $ V.toList hashParts
     where
