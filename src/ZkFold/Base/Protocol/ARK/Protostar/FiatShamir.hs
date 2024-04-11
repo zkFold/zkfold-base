@@ -6,11 +6,11 @@ module ZkFold.Base.Protocol.ARK.Protostar.FiatShamir where
 import           Data.ByteString                                 (ByteString)
 import           Prelude                                         hiding (length)
 
-import           ZkFold.Base.Data.ByteString                     (ToByteString (..), FromByteString)
+import           ZkFold.Base.Data.ByteString                     (FromByteString, ToByteString (..))
 import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
 import qualified ZkFold.Base.Protocol.ARK.Protostar.SpecialSound as SpS
-import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractiveProof(..), ToTranscript (..), challenge)
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractiveProof (..), ToTranscript (..), challenge)
 
 data FiatShamir f a = FiatShamir a (SpS.Input f a)
 
@@ -35,7 +35,7 @@ instance (SpS.SpecialSoundProtocol f a, Eq c, ToByteString (SpS.Input f a), From
       prove fs@(FiatShamir a ip) w =
             let (ms, ts) = opening a w ip (fsChallenge fs)
             in ((ip, commits ts), ms)
-      
+
       verify fs@(FiatShamir a _) (ip, cs) ms =
             let ts' = foldl (\acc c -> acc ++ [(c, fsChallenge fs acc c)]) [] $ map Commit cs
                 ts  = ts' ++ [(Open ms, fsChallenge fs ts' $ Open ms)]

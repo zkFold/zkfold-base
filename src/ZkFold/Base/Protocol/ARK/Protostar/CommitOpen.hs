@@ -1,11 +1,11 @@
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ZkFold.Base.Protocol.ARK.Protostar.CommitOpen where
 
 import           Prelude                                         hiding (length)
 
-import           ZkFold.Base.Data.ByteString                     (ToByteString(..))
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
+import           ZkFold.Base.Data.ByteString                     (ToByteString (..))
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Prelude                                  (length)
 
 data CommitOpen f c a = CommitOpen (ProverMessage f a -> c) a
