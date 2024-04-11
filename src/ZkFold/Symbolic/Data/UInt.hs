@@ -148,17 +148,15 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
                 s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
                 (k, b0) <- splitExpansion (registerSize @a @n) 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub xs ys)
-                i' <- runCircuit z
-                j' <- runCircuit w
-                s'0 <- newAssigned (\v -> v i' - v j' + v b + fromConstant t)
+                d <- runCircuit (z - w)
+                s'0 <- newAssigned (\v -> v d + v b + fromConstant t)
                 (s', _) <- splitExpansion (highRegisterSize @a @n) 1 s'0
                 return (s' : k : zs)
 
             fullSub :: MonadBlueprint i a m => ArithmeticCircuit a -> ArithmeticCircuit a -> i -> m (i, i)
             fullSub xk yk b = do
-                i <- runCircuit xk
-                j <- runCircuit yk
-                s <- newAssigned (\v -> v i - v j + v b + fromConstant t)
+                d <- runCircuit (xk - yk)
+                s <- newAssigned (\v -> v d + v b + fromConstant t)
                 splitExpansion (registerSize @a @n) 1 s
 
          in case circuits solve of
@@ -209,7 +207,9 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (Arithmet
                     s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
                     splitExpansion (registerSize @a @n) (maxOverflow @a @n) s
                 -- high register
-                p'0 <- foldrM (\k l -> newAssigned (\v -> v l + v (cs ! k) * v (ds ! (r -! 1 -! k)))) c' [0 .. r -! 1]
+                p'0 <- foldrM (\k l -> do
+                    k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
+                    newAssigned (\v -> v k' + v l)) c' [0 .. r -! 1]
                 (p', _) <- splitExpansion (highRegisterSize @a @n) (maxOverflow @a @n) p'0
                 return (p' : p : ps)
 
@@ -285,17 +285,15 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                 s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
                 (k, b0) <- splitExpansion (registerSize @a @n) 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub xs ys)
-                i' <- runCircuit z
-                j' <- runCircuit w
-                s' <- newAssigned (\v -> v i' - v j' + v b - one)
+                k' <- runCircuit (z - w)
+                s' <- newAssigned (\v -> v k' + v b - one)
                 _ <- expansion (highRegisterSize @a @n) s'
                 return (s' : k : zs)
 
             fullSub :: MonadBlueprint i a m => ArithmeticCircuit a -> ArithmeticCircuit a -> i -> m (i, i)
             fullSub xk yk b = do
-                i <- runCircuit xk
-                j <- runCircuit yk
-                s <- newAssigned (\v -> v i - v j + v b + fromConstant t)
+                k <- runCircuit (xk - yk)
+                s <- newAssigned (\v -> v k + v b + fromConstant t)
                 splitExpansion (registerSize @a @n) 1 s
 
          in case circuits solve of
@@ -334,7 +332,9 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                     s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
                     splitExpansion (registerSize @a @n) (maxOverflow @a @n) s
                 -- high register
-                p' <- foldrM (\k l -> newAssigned (\v -> v l + v (cs ! k) * v (ds ! (r -! 1 -! k)))) c' [0 .. r -! 1]
+                p' <- foldrM (\k l -> do
+                    k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
+                    newAssigned (\v -> v l + v k')) c' [0 .. r -! 1]
                 _ <- expansion (highRegisterSize @a @n) p'
                 -- all addends higher should be zero
                 for_ [r .. r * 2 -! 2] $ \k ->
@@ -357,5 +357,5 @@ fullAdded :: MonadBlueprint i a m => ArithmeticCircuit a -> ArithmeticCircuit a 
 fullAdded xk yk c = do
     i <- runCircuit xk
     j <- runCircuit yk
-    newAssigned (\v -> v i + v j + v c)
-
+    k <- newAssigned (\v -> v i + v j)
+    newAssigned (\v -> v k + v c)
