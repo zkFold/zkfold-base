@@ -6,7 +6,7 @@ module ZkFold.Symbolic.Data.Bool (
     any
 ) where
 
-import           Prelude                         hiding (Num(..), Bool, (/), (&&), (||), not, all, any)
+import           Prelude                         hiding (Bool, Num (..), all, any, not, (&&), (/), (||))
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class

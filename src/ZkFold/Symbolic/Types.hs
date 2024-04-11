@@ -2,7 +2,7 @@ module ZkFold.Symbolic.Types (Symbolic, I) where
 
 import           Prelude                          (Integer)
 
-import           ZkFold.Base.Algebra.Basic.Class  (FiniteField, FromConstant, BinaryExpansion)
+import           ZkFold.Base.Algebra.Basic.Class  (BinaryExpansion, FiniteField, FromConstant)
 import           ZkFold.Symbolic.Data.Bool        (Bool)
 import           ZkFold.Symbolic.Data.Conditional (Conditional)
 import           ZkFold.Symbolic.Data.Eq          (Eq)

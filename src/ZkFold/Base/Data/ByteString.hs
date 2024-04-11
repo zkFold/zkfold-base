@@ -1,9 +1,9 @@
 module ZkFold.Base.Data.ByteString where
 
-import           Data.ByteString (ByteString, cons, uncons, empty)
+import           Data.ByteString (ByteString, cons, empty, uncons)
 import           Data.Map        (Map, toList)
+import qualified Data.Vector     as V
 import           Data.Word       (Word8)
-import qualified Data.Vector as V
 import           Prelude
 
 -- This module is currently used for transcripts in non-interactive proof protocols.

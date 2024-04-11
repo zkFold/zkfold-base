@@ -1,15 +1,15 @@
-{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Tests.Arithmetization.Test2 (specArithmetization2) where
 
-import           Prelude                                     hiding (Num(..), Eq(..), Bool, (^), (/), (||), not, replicate)
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), not, replicate, (/), (^), (||))
 import           Test.Hspec
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool                   (BoolType(..), Bool (..))
+import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
-import           ZkFold.Symbolic.GroebnerBasis               (verify, makeTheorem)
+import           ZkFold.Symbolic.GroebnerBasis               (makeTheorem, verify)
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 -- A true statement.

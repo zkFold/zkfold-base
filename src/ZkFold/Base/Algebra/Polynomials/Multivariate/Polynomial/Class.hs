@@ -1,6 +1,6 @@
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial.Class where
 
-import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
+import           Prelude                                               hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
