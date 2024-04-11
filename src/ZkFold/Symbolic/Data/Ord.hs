@@ -12,7 +12,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                       (Prime)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (boolCheckC, plusMultC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (boolCheckC)
 import           ZkFold.Symbolic.Data.Bool                              (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Conditional                       (Conditional (..))
 import           ZkFold.Symbolic.Data.DiscreteField                     (DiscreteField (..))
@@ -89,33 +89,31 @@ getBitsBE x = concatMap (reverse . binaryExpansion) $ circuits $ arithmetize x
 
 circuitGE :: Arithmetic a => [ArithmeticCircuit a] -> [ArithmeticCircuit a] -> Bool (ArithmeticCircuit a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
-circuitGE xs ys = bitCheckGE dorAnd boolCheckC (zipWith (-) xs ys)
+circuitGE xs ys = bitCheckGE dor boolCheckC (zipWith (-) xs ys)
 
 circuitGT :: Arithmetic a => [ArithmeticCircuit a] -> [ArithmeticCircuit a] -> Bool (ArithmeticCircuit a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
-circuitGT xs ys = bitCheckGT dorAnd (zipWith (-) xs ys)
+circuitGT xs ys = bitCheckGT dor (zipWith (-) xs ys)
 
-dorAnd ::
+dor ::
   Arithmetic a =>
   Bool (ArithmeticCircuit a) ->
   Bool (ArithmeticCircuit a) ->
-  Bool (ArithmeticCircuit a) ->
   Bool (ArithmeticCircuit a)
--- ^ @dorAnd a b c@ is a schema which computes @a || b && c@ given @a && b@ is
--- false.
-dorAnd (Bool a) (Bool b) (Bool c) = Bool (plusMultC a b c)
+-- ^ @dorAnd a b@ is a schema which computes @a || b@ given @a && b@ is false.
+dor (Bool a) (Bool b) = Bool (a + b)
 
-bitCheckGE :: DiscreteField b x => (b -> b -> b -> b) -> (x -> x) -> [x] -> b
--- ^ @bitCheckGE plm bc ds@ checks if @ds@ contains delta lexicographically
--- greater than or equal to 0, given @plm a b c = a || b && c@ when @a && b@ is
--- false and @bc d = d (d - 1)@.
-bitCheckGE _   _  []     = true
-bitCheckGE _   bc [d]    = isZero (bc d)
-bitCheckGE plm bc (d:ds) = plm (isZero $ d - one) (isZero d) (bitCheckGE plm bc ds)
+bitCheckGE :: DiscreteField b x => (b -> b -> b) -> (x -> x) -> [x] -> b
+-- ^ @bitCheckGE pl bc ds@ checks if @ds@ contains delta lexicographically
+-- greater than or equal to 0, given @pl a b = a || b@ when @a && b@ is false
+-- and @bc d = d (d - 1)@.
+bitCheckGE _  _  []     = true
+bitCheckGE _  bc [d]    = isZero (bc d)
+bitCheckGE pl bc (d:ds) = pl (isZero $ d - one) (isZero d && bitCheckGE pl bc ds)
 
-bitCheckGT :: DiscreteField b x => (b -> b -> b -> b) -> [x] -> b
--- ^ @bitCheckGT plm ds@ checks if @ds@ contains delta lexicographically greater
--- than 0, given @plm a b c = a || b && c@ when @a && b@ is false.
-bitCheckGT _   []     = false
-bitCheckGT _   [d]    = isZero (d - one)
-bitCheckGT plm (d:ds) = plm (isZero $ d - one) (isZero d) (bitCheckGT plm ds)
+bitCheckGT :: DiscreteField b x => (b -> b -> b) -> [x] -> b
+-- ^ @bitCheckGT pl ds@ checks if @ds@ contains delta lexicographically greater
+-- than 0, given @pl a b = a || b@ when @a && b@ is false.
+bitCheckGT _  []     = false
+bitCheckGT _  [d]    = isZero (d - one)
+bitCheckGT pl (d:ds) = pl (isZero $ d - one) (isZero d && bitCheckGT pl ds)

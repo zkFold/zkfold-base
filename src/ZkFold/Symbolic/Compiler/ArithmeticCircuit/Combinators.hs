@@ -8,7 +8,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     horner,
     isZeroC,
     invertC,
-    plusMultC,
 ) where
 
 import           Data.Foldable                                             (foldlM)
@@ -84,11 +83,3 @@ runInvert r = do
     where
       isZero :: forall a . (Ring a, Eq (Bool a) a, Conditional (Bool a) a) => a -> a
       isZero x = bool @(Bool a) zero one (x == zero)
-
-plusMultC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a -> ArithmeticCircuit a
--- ^ @plusMult a b c@ computes @a + b * c@ in one PLONK constraint.
-plusMultC a b c = circuit $ do
-    i <- runCircuit a
-    j <- runCircuit b
-    k <- runCircuit c
-    newAssigned (\x -> x i + x j * x k)
