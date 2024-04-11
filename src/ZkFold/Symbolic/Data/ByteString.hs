@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -13,12 +14,14 @@ module ZkFold.Symbolic.Data.ByteString
     , Extend (..)
     ) where
 
+import           Control.DeepSeq                                           (NFData)
 import           Control.Monad                                             (forM, mapM, replicateM, zipWithM)
 import           Data.Bits                                                 as B
 import           Data.List                                                 (foldl, reverse, splitAt, unfoldr)
 import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (Maybe (..))
 import           Data.Proxy                                                (Proxy (..))
+import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (KnownNat, Mod, Natural, natVal, type (<=))
 import           Prelude                                                   (Bool (..), Integer, divMod, drop, error,
@@ -42,7 +45,7 @@ import           ZkFold.Symbolic.Data.Combinators
 -- Bit layout is Big-endian. @a@ is the higher register defined separately as it may store less bits than the lower registers.
 --
 data ByteString (n :: Natural) a = ByteString !a ![a]
-    deriving (Haskell.Show, Haskell.Eq)
+    deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
 
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.

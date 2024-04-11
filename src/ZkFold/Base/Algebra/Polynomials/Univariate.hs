@@ -1,5 +1,7 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes          #-}
+{-# LANGUAGE DeriveAnyClass               #-}
+{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications             #-}
 
 module ZkFold.Base.Algebra.Polynomials.Univariate
     ( toPoly
@@ -35,27 +37,25 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , mulPolyNaive
     ) where
 
-import           GHC.Generics
 import           Control.DeepSeq                  (NFData (..))
 import qualified Data.Vector                      as V
+import           GHC.Generics                     (Generic)
 import           Numeric.Natural                  (Natural)
-import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
+import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/),
+                                                   (^))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 
-import           ZkFold.Prelude                   (zipWithDefault)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Prelude                   (zipWithDefault)
 
 -------------------------------- Arbitrary degree polynomials --------------------------------
 
 -- TODO (Issue #17): hide constructor
 newtype Poly c = P (V.Vector c)
-    deriving (Eq, Show, Functor)
-
-deriving instance Generic (Poly c)
-deriving instance (NFData c) => NFData (Poly c)
+    deriving (Eq, Show, Functor, Generic, NFData)
 
 toPoly :: (Ring c, Eq c) => V.Vector c -> Poly c
 toPoly = removeZeros . P
@@ -249,7 +249,7 @@ eea a b = go (a, one) (b, zero)
 
 -- TODO (Issue #17): hide constructor
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic, NFData)
 
 toPolyVec :: forall c size . (Ring c, KnownNat size) => V.Vector c -> PolyVec c size
 toPolyVec = PV . V.take (fromIntegral (value @size)) . addZeros @c @size

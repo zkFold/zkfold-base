@@ -10,6 +10,8 @@ maintainer:         info@zkfold.io
 license:            MIT
 license-file:       LICENSE
 build-type:         Simple
+Data-Files:
+    tests/data/shabittestvectors/*.rsp
 
 description:
   This package contains the base library for the ZkFold project. It includes zkFold Symbolic compiler and a number of zero knowledge proof protocols.
@@ -122,10 +124,10 @@ library
       ZkFold.Symbolic.Cardano.UPLC.Inference.Internal
       ZkFold.Symbolic.Cardano.UPLC.Term
       ZkFold.Symbolic.Cardano.UPLC.Type
-      ZkFold.Symbolic.Algorithms.Hash
       ZkFold.Symbolic.Algorithms.Hash.SHA2
       ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants
       ZkFold.Symbolic.Algorithms.Hash.MiMC
+      ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Compiler.ArithmeticCircuit
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
@@ -220,7 +222,6 @@ test-suite zkfold-base-examples
       Examples.Fibonacci
       Examples.LEQ
       Examples.MiMCHash
-      Examples.MiMC.Constants
       Examples.ReverseList
       Examples.UInt
     build-depends:

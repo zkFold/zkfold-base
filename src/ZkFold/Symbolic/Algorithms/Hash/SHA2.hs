@@ -6,6 +6,7 @@
 
 module ZkFold.Symbolic.Algorithms.Hash.SHA2 (AlgorithmSetup (..), SHA2, sha2, SHA2N, sha2Natural) where
 
+import           Control.DeepSeq                                (NFData, force)
 import           Control.Monad                                  (forM_)
 import           Data.Bits                                      (shiftL)
 import           Data.Proxy                                     (Proxy (..))
@@ -144,6 +145,7 @@ type SHA2 algorithm element k =
    ( AlgorithmSetup algorithm element
    , KnownNat k
    , Finite element
+   , NFData element
    , FromConstant Natural element
    , KnownNat (ChunkSize algorithm)
    , KnownNat (WordSize algorithm)
@@ -223,6 +225,7 @@ instance (KnownNat n, Finite a, FromConstant Natural a) => ToWords Natural (Byte
 type SHA2N algorithm element =
    ( AlgorithmSetup algorithm element
    , Finite element
+   , NFData element
    , FromConstant Natural element
    , KnownNat (ChunkSize algorithm)
    , KnownNat (WordSize algorithm)
@@ -268,9 +271,13 @@ sha2Natural numBits messageBits = sha2Blocks @algorithm @element chunks
 
 -- | Internal loop of the SHA2 family algorithms.
 --
+-- A note on @force@: it is really necessary, otherwise the algorithm keeps piling up thunks. 
+-- Even 16 GB of RAM is not enough.
+--
 sha2Blocks
     :: forall algorithm element
     .  AlgorithmSetup algorithm element
+    => NFData element
     => AdditiveSemigroup (ByteString (WordSize algorithm) element)
     => BoolType (ByteString (WordSize algorithm) element)
     => ShiftBits (ByteString (WordSize algorithm) element)
@@ -297,8 +304,8 @@ sha2Blocks chunks = truncateResult @algorithm @element $ concat $ V.toList hashP
                     !w7  <- messageSchedule `VM.read` (ix P.- 7)
                     !w2  <- messageSchedule `VM.read` (ix P.- 2)
                     let (sh0, sh1, sh2, sh3, sh4, sh5) = sigmaShifts @algorithm @element
-                        s0  = (w15 `rotateBitsR` sh0) `xor` (w15 `rotateBitsR` sh1) `xor` (w15 `shiftBitsR` sh2)
-                        s1  = (w2 `rotateBitsR` sh3) `xor` (w2 `rotateBitsR` sh4) `xor` (w2 `shiftBitsR` sh5)
+                        s0  = force $ (w15 `rotateBitsR` sh0) `xor` (w15 `rotateBitsR` sh1) `xor` (w15 `shiftBitsR` sh2)
+                        s1  = force $ (w2 `rotateBitsR` sh3) `xor` (w2 `rotateBitsR` sh4) `xor` (w2 `shiftBitsR` sh5)
                     VM.write messageSchedule ix $! w16 + s0 + w7 + s1
 
                 !aRef <- hn `VM.read` 0 >>= ST.newSTRef
@@ -324,12 +331,12 @@ sha2Blocks chunks = truncateResult @algorithm @element $ concat $ V.toList hashP
                     wi <- messageSchedule `VM.read` ix
 
                     let (sh0, sh1, sh2, sh3, sh4, sh5) = sumShifts @algorithm @element
-                        s1 = (e `rotateBitsR` sh3) `xor` (e `rotateBitsR` sh4) `xor` (e `rotateBitsR` sh5)
-                        ch = (e && f) `xor` (not e && g)
-                        temp1 = h + s1 + ch + ki + wi
-                        s0 = (a `rotateBitsR` sh0) `xor` (a `rotateBitsR` sh1) `xor` (a `rotateBitsR` sh2)
-                        maj = (a && b) `xor` (a && c) `xor` (b && c)
-                        temp2 = s0 + maj
+                        s1    = force $ (e `rotateBitsR` sh3) `xor` (e `rotateBitsR` sh4) `xor` (e `rotateBitsR` sh5)
+                        ch    = force $ (e && f) `xor` (not e && g)
+                        temp1 = force $ h + s1 + ch + ki + wi
+                        s0    = force $ (a `rotateBitsR` sh0) `xor` (a `rotateBitsR` sh1) `xor` (a `rotateBitsR` sh2)
+                        maj   = force $ (a && b) `xor` (a && c) `xor` (b && c)
+                        temp2 = force $ s0 + maj
 
                     ST.writeSTRef hRef g
                     ST.writeSTRef gRef f

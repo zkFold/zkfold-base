@@ -1,5 +1,7 @@
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE DeriveAnyClass               #-}
+{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications             #-}
+{-# LANGUAGE TypeOperators                #-}
 
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
     ( P(..)
@@ -8,15 +10,17 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
     , ToPolynomial(..)
     ) where
 
-import           Data.Aeson                        (FromJSON, ToJSON)
-import           Data.Functor                      ((<&>))
-import           Data.Bifunctor                    (Bifunctor(..))
-import           Data.List                         (intercalate, foldl')
-import           Data.Map                          (Map, empty)
-import           Numeric.Natural                   (Natural)
-import           GHC.Generics                      (Generic)
-import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
-import           Test.QuickCheck                   (Arbitrary (..))
+import           Control.DeepSeq                                       (NFData)
+import           Data.Aeson                                            (FromJSON, ToJSON)
+import           Data.Bifunctor                                        (Bifunctor (..))
+import           Data.Functor                                          ((<&>))
+import           Data.List                                             (foldl', intercalate)
+import           Data.Map.Strict                                       (Map, empty)
+import           GHC.Generics                                          (Generic)
+import           Numeric.Natural                                       (Natural)
+import           Prelude                                               hiding (Num (..), drop, lcm, length, sum, take,
+                                                                        (!!), (/))
+import           Test.QuickCheck                                       (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
@@ -41,7 +45,7 @@ instance (Polynomial c i j) => ToPolynomial c i j m [(c, M i j m)] where
 
 -- | Polynomial type
 newtype P c i j m p = P p
-    deriving (Generic, FromJSON, ToJSON)
+    deriving (Generic, NFData, FromJSON, ToJSON)
 
 instance (Show c, Show i, Show j, FromPolynomial c i j m p, FromMonomial i j m) => Show (P c i j m p) where
     show (P p) = intercalate " + "
