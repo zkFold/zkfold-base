@@ -46,7 +46,7 @@ jobs:
 
     - name: Run stylish-haskell
       run: |
-        stylish-haskell --inplace .
+        find . -name '*.hs' | xargs -0 stylish-haskell -i
 
     - name: Commit stylish-haskell changes
       uses: stefanzweifel/git-auto-commit-action@v4
