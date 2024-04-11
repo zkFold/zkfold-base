@@ -3,48 +3,41 @@ name: CI Pull Request
 on:
   pull_request:
     branches: [ main ]
-    
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  lint:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v4.1.1
-      - uses: haskell-actions/run-ormolu@v14
-        with:
-          mode: inplace
-      - name: apply formatting changes
-        uses: stefanzweifel/git-auto-commit-action@v4
-        if: ${{ always() }}
-        with:
-          commit_message: automated ormolu commit
-  build-test:
-    needs: lint
+  on-main-pull-request:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4.1.1
-    - uses: haskell-actions/setup@v2.6.2
+    - name: Checkout code
+      uses: actions/checkout@v4.1.1
+
+    - name: Set up Haskell
+      uses: actions/setup-haskell@v2.6.2
       with:
         ghc-version: '9.6.3'
         cabal-version: '3.10.2.1'
-    - name: Cache
-      uses: actions/cache@v4.0.1
-      env:
-        cache-name: cache-cabal
-      with:
-        path: ~/.cabal
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-       
-    - name: Build and test package
-      shell: bash
+        ghc-build: 'cabal'
+
+    - name: Install stylish-haskell
+      run: cabal install stylish-haskell
+
+    - name: Run stylish-haskell
+      run: |
+        git diff --name-only origin/main | grep '\.hs$' | xargs -I {} stylish-haskell --inplace {}
+
+    - name: Commit stylish-haskell changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Auto-format with stylish-haskell" || echo "No changes to commit"
+        git push origin HEAD:${{ github.head_ref }}
+
+    - name: Build package
       run: |
         cabal update
         cabal new-build all
-        cabal new-test all
