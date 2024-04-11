@@ -10,7 +10,7 @@ import           Control.Monad                    (return)
 import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
 import           Data.List                        (map, (++))
-import           GHC.TypeNats                     (KnownNat, Mod, natVal, type (*), type (<=))
+import           GHC.TypeNats                     (Mod, type (<=))
 import           Numeric.Natural                  (Natural)
 import           Prelude                          (show, type (~), (<>))
 import qualified Prelude                          as Haskell
@@ -99,18 +99,20 @@ testGrow
     .  KnownNat n
     => Prime p
     => KnownNat m
-    => Grow (ByteString n (ArithmeticCircuit (Zp p))) (ByteString m (ArithmeticCircuit (Zp p)))
-    => Grow (ByteString n (Zp p)) (ByteString m (Zp p))
+    => Extend (ByteString n (ArithmeticCircuit (Zp p))) (ByteString m (ArithmeticCircuit (Zp p)))
+    => Extend (ByteString n (Zp p)) (ByteString m (Zp p))
     => Spec
 testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do
     x <- toss m
     let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p))
-        zpBS = fromConstant x :: ByteString n (Zp p)
-    return (eval (grow arithBS :: ByteString m (ArithmeticCircuit (Zp p))) === grow zpBS)
+        zpBS    = fromConstant x :: ByteString n (Zp p)
+    return (eval (extend arithBS :: ByteString m (ArithmeticCircuit (Zp p))) === extend zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
 
+-- | For some reason, Haskell can't infer obvious type relations such as n <= n + 1...
+--
 specByteString
     :: forall p n
     .  Prime p
@@ -125,10 +127,12 @@ specByteString
     => n <= n + 10
     => n <= n + 128
     => n <= n + n
+    => n <= 3 * n
     => Mod n 1 ~ 0
     => Mod n 2 ~ 0
     => Mod n 4 ~ 0
     => Mod n n ~ 0
+    => Mod (3 * n) n ~ 0
     => KnownNat (3 * n)
     => KnownNat (n + 1)
     => KnownNat (n + 10)
@@ -175,12 +179,12 @@ specByteString = hspec $ do
         testWords @n @2 @p
         testWords @n @4 @p
         testWords @n @n @p
-        it "appends bytestrings correctly" $ do
+        it "concatenates bytestrings correctly" $ do
             x <- toss m
             y <- toss m
             z <- toss m
-            let ac = append $ fromConstant @Natural @(ByteString n (ArithmeticCircuit (Zp p))) <$> [x, y, z]
-                zp = append $ fromConstant @Natural @(ByteString n (Zp p)) <$> [x, y, z]
+            let ac = concat $ fromConstant @Natural @(ByteString n (ArithmeticCircuit (Zp p))) <$> [x, y, z]
+                zp = concat $ fromConstant @Natural @(ByteString n (Zp p)) <$> [x, y, z]
             return $ eval @(Zp p) @(3 * n) ac === zp
         testTruncate @n @1 @p
         testTruncate @n @4 @p

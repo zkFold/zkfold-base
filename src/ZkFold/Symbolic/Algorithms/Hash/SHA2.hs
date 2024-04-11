@@ -2,38 +2,60 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module ZkFold.Symbolic.Algorithms.Hash.SHA2 (sha2) where
+module ZkFold.Symbolic.Algorithms.Hash.SHA2 (AlgorithmSetup (..), SHA2, sha2, SHA2N, sha2Natural) where
 
 import           Control.Monad                                  (forM_)
+import           Data.Bits                                      (shiftL)
 import           Data.Proxy                                     (Proxy (..))
 import qualified Data.STRef                                     as ST
 import           Data.Type.Bool                                 (If)
 import qualified Data.Vector                                    as V
 import qualified Data.Vector.Mutable                            as VM
 import           GHC.TypeLits                                   (Symbol)
-import           GHC.TypeNats                                   (Div, KnownNat (..), Natural, natVal, type (*),
-                                                                 type (+), type (-), type (<=?))
-import           Prelude                                        (Int, id, pure, zip, ($), (>>=))
+import           GHC.TypeNats                                   (Div, Natural, natVal, type (<=?))
+import           Prelude                                        (Int, div, id, mod, pure, zip, ($!), ($), (.), (>>=))
 import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHashes, sha256InitialHashes,
                                                                  sha384InitialHashes, sha512InitialHashes,
+                                                                 sha512_224InitialHashes, sha512_256InitialHashes,
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (Append (..), ByteString (..), Grow (..),
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), Concat (..), Extend (..),
                                                                  ShiftBits (..), ToWords (..), Truncate (..))
 
+-- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
+-- This class links these varying parts with the appropriate algorithm.
+--
 class AlgorithmSetup (algorithm :: Symbol) a where
     type WordSize algorithm :: Natural
+    -- ^ The length of words the algorithm operates internally, in bits.
+
     type ChunkSize algorithm :: Natural
+    -- ^ Hashing algorithms from SHA2 family require splitting the input message into blocks.
+    -- This type describes the size of these blocks, in bits.
+
     type ResultSize algorithm :: Natural
+    -- ^ The length of the resulting hash, in bits.
+
     initialHashes :: V.Vector (ByteString (WordSize algorithm) a)
+    -- ^ Initial hash values which will be mixed with the message bits.
+
     roundConstants :: V.Vector (ByteString (WordSize algorithm) a)
+    -- ^ Constants used in the internal loop, one per each round.
+
     truncateResult :: ByteString (8 * WordSize algorithm) a -> ByteString (ResultSize algorithm) a
+    -- ^ A function to postprocess the hash. For example, SHA224 requires dropping the last 32 bits of a SHA256 hash.
+
     sigmaShifts :: (Natural, Natural, Natural, Natural, Natural, Natural)
+    -- ^ Round rotation values for Sigma in the internal loop.
+
     sumShifts :: (Natural, Natural, Natural, Natural, Natural, Natural)
+    -- ^ Round rotation values for Sum in the internal loop.
 
 instance (Finite a, FromConstant Natural a) => AlgorithmSetup "SHA256" a where
     type WordSize "SHA256" = 32
@@ -80,7 +102,7 @@ instance (Finite a, FromConstant Natural a, Truncate (ByteString 512 a) (ByteStr
     type WordSize "SHA512/224" = 64
     type ChunkSize "SHA512/224" = 1024
     type ResultSize "SHA512/224" = 224
-    initialHashes = sha512InitialHashes
+    initialHashes = sha512_224InitialHashes
     roundConstants = word64RoundConstants
     truncateResult = truncate
     sigmaShifts = (1, 8, 7, 19, 61, 6)
@@ -90,75 +112,179 @@ instance (Finite a, FromConstant Natural a, Truncate (ByteString 512 a) (ByteStr
     type WordSize "SHA512/256" = 64
     type ChunkSize "SHA512/256" = 1024
     type ResultSize "SHA512/256" = 256
-    initialHashes = sha512InitialHashes
+    initialHashes = sha512_256InitialHashes
     roundConstants = word64RoundConstants
     truncateResult = truncate
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
+-- | On type level, determine the smallest multiple of @divisor@ not less than @n@.
+--
 type family NextMultiple (n :: Natural) (divisor :: Natural) :: Natural where
     NextMultiple n divisor = divisor * Div (n + divisor - 1) divisor
 
-type family PaddedLength (msg :: Natural) (block :: Natural) :: Natural where
-    PaddedLength msg block = If (NextMultiple msg block - msg <=? 64) (block + NextMultiple msg block) (NextMultiple msg block)
+{- | On type level, determine the length of the message after padding.
+    Padding algorithm is described below:
 
+    1. begin with the original message of length L bits
+    2. append a single '1' bit
+    3. append K '0' bits, where K is the minimum number >= 0 such that (L + 1 + K + 64) is a multiple of 512
+    4. append L as a 64-bit big-endian integer, making the total post-processed length a multiple of 512 bits
+
+    such that the bits in the message are: <original message of length L> 1 <K zeros> <L as 64 bit integer>
+
+    For SHA384, SHA512 and SHA512/t, replace 512 with 1024 and 64 with 128.
+-}
+type family PaddedLength (msg :: Natural) (block :: Natural) (lenBits :: Natural) :: Natural where
+    PaddedLength msg block lenBits = If (NextMultiple msg block - msg <=? lenBits) (block + NextMultiple msg block) (NextMultiple msg block)
+
+-- | Constraints required for a type-safe SHA2
+--
+type SHA2 algorithm element k =
+   ( AlgorithmSetup algorithm element
+   , KnownNat k
+   , Finite element
+   , FromConstant Natural element
+   , KnownNat (ChunkSize algorithm)
+   , KnownNat (WordSize algorithm)
+   , KnownNat (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))
+   , AdditiveSemigroup (ByteString (WordSize algorithm) element)
+   , BoolType (ByteString (WordSize algorithm) element)
+   , ShiftBits (ByteString (WordSize algorithm) element)
+   , ShiftBits (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) element)
+   , Extend (ByteString k element) (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) element)
+   , AdditiveSemigroup (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) element)
+   , ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
+   , Concat (ByteString (WordSize algorithm) element) (ByteString (8 * WordSize algorithm) element)
+   , ToWords (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) element) (ByteString (ChunkSize algorithm) element)
+   )
+
+-- | A generalised version of SHA2. It is agnostic of the ByteString base field.
+-- Sample usage:
+--
+-- >>> bs = fromConstant (42 :: Natural) :: ByteString 8 (Zp BLS12_381_Scalar)
+-- >>> hash = sha2 @"SHA256" bs
+--
+sha2
+    :: forall (algorithm :: Symbol) element k
+    .  SHA2 algorithm element k
+    => ByteString k element -> ByteString (ResultSize algorithm) element
+sha2 messageBits = sha2Blocks @algorithm @element chunks
+    where
+        paddedMessage :: ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) element
+        paddedMessage = sha2Pad @(ChunkSize algorithm) @(2 * WordSize algorithm) messageBits
+
+        chunks :: [ByteString (ChunkSize algorithm) element]
+        chunks = toWords paddedMessage
+
+-- | Pad the input bytestring according to the rules described in @PaddedLength@
 sha2Pad
-    :: forall (padTo :: Natural) (k :: Natural) a
-    .  KnownNat padTo
-    => KnownNat k
-    => KnownNat (PaddedLength k padTo)
-    => Finite a
-    => FromConstant Natural a
-    => ShiftBits (ByteString (PaddedLength k padTo) a)
-    => AdditiveSemigroup (ByteString (PaddedLength k padTo) a)
-    => Grow (ByteString k a) (ByteString (PaddedLength k padTo) a)
-    => ByteString k a -> ByteString (PaddedLength k padTo) a
+    :: forall (padTo :: Natural) (lenBits :: Natural) (k :: Natural) element
+    .  KnownNat k
+    => KnownNat (PaddedLength k padTo lenBits)
+    => Finite element
+    => FromConstant Natural element
+    => ShiftBits (ByteString (PaddedLength k padTo lenBits) element)
+    => AdditiveSemigroup (ByteString (PaddedLength k padTo lenBits) element)
+    => Extend (ByteString k element) (ByteString (PaddedLength k padTo lenBits) element)
+    => ByteString k element -> ByteString (PaddedLength k padTo lenBits) element
 sha2Pad bs = grown + fromConstant padValue
     where
         l :: Natural
         l = natVal $ Proxy @k
 
         diff :: Natural
-        diff = (natVal $ Proxy @(PaddedLength k padTo)) -! (natVal $ Proxy @k)
+        diff = (natVal $ Proxy @(PaddedLength k padTo lenBits)) -! (natVal $ Proxy @k)
 
         padValue :: Natural
         padValue = 2 P.^ (diff -! 1) P.+ l
 
-        grown :: ByteString (PaddedLength k padTo) a
-        grown = grow bs `shiftBitsL` diff
+        grown :: ByteString (PaddedLength k padTo lenBits) element
+        grown = extend bs `shiftBitsL` diff
 
 
-sha2
-    :: forall algorithm element k
-    .  AlgorithmSetup algorithm element
-    => KnownNat k
-    => Finite element
-    => FromConstant Natural element
-    => KnownNat (ChunkSize algorithm)
-    => KnownNat (PaddedLength k (ChunkSize algorithm))
-    => AdditiveSemigroup (ByteString (WordSize algorithm) element)
-    => BoolType (ByteString (WordSize algorithm) element)
-    => ShiftBits (ByteString (WordSize algorithm) element)
-    => ShiftBits (ByteString (PaddedLength k (ChunkSize algorithm)) element)
-    => Grow (ByteString k element) (ByteString (PaddedLength k (ChunkSize algorithm)) element)
-    => AdditiveSemigroup (ByteString (PaddedLength k (ChunkSize algorithm)) element)
-    => ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
-    => Append (ByteString (WordSize algorithm) element) (ByteString (8 * WordSize algorithm) element)
-    => ToWords (ByteString (PaddedLength k (ChunkSize algorithm)) element) (ByteString (ChunkSize algorithm) element)
-    => ByteString k element -> ByteString (ResultSize algorithm) element
-sha2 messageBits = truncateResult @algorithm @element $ append $ V.toList hashParts
+-- | This allows us to calculate hash of a bytestring represented by a Natural number.
+-- This is only useful for testing when the length of the test string is unknown at compile time.
+-- This should not be exposed to users (and they probably won't find it useful anyway).
+--
+instance (KnownNat n, Finite a, FromConstant Natural a) => ToWords Natural (ByteString n a) where
+    toWords = P.reverse . toWords'
+        where
+            toWords' :: Natural -> [ByteString n a]
+            toWords' 0 = []
+            toWords' n = fromConstant (n `mod` base) : toWords' (n `div` base)
+
+            base :: Natural
+            base = 2 P.^ (value @n)
+
+
+-- | Constraints required for a SHA2 of a Natural number.
+--
+type SHA2N algorithm element =
+   ( AlgorithmSetup algorithm element
+   , Finite element
+   , FromConstant Natural element
+   , KnownNat (ChunkSize algorithm)
+   , KnownNat (WordSize algorithm)
+   , AdditiveSemigroup (ByteString (WordSize algorithm) element)
+   , BoolType (ByteString (WordSize algorithm) element)
+   , ShiftBits (ByteString (WordSize algorithm) element)
+   , ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
+   , Concat (ByteString (WordSize algorithm) element) (ByteString (8 * WordSize algorithm) element)
+   )
+
+
+-- | Same as @sha2@ but accepts a Natural number and length of message in bits instead of a ByteString.
+-- Only used for testing.
+--
+sha2Natural
+    :: forall (algorithm :: Symbol) element
+    .  SHA2N algorithm element
+    => Natural -> Natural -> ByteString (ResultSize algorithm) element
+sha2Natural numBits messageBits = sha2Blocks @algorithm @element chunks
     where
-        paddedMessage = sha2Pad @(ChunkSize algorithm) messageBits
+        paddedMessage :: Natural
+        paddedMessage = (messageBits `shiftL` diff) P.+ (1 `shiftL` (diff P.- 1)) P.+ numBits
+
+        chunkSize :: Natural
+        chunkSize = value @(ChunkSize algorithm)
+
+        wordSize :: Natural
+        wordSize = value @(WordSize algorithm)
+
+        closestDivisor :: Natural
+        closestDivisor = ((numBits P.+ chunkSize -! 1) `div` chunkSize) P.* chunkSize
+
+        paddedLength :: Natural
+        paddedLength
+          | closestDivisor -! numBits P.<= (2 * wordSize) = closestDivisor P.+ chunkSize
+          | P.otherwise = closestDivisor
+
+        diff :: P.Int
+        diff = P.fromIntegral $ paddedLength -! numBits
 
         chunks :: [ByteString (ChunkSize algorithm) element]
         chunks = toWords paddedMessage
 
+-- | Internal loop of the SHA2 family algorithms.
+--
+sha2Blocks
+    :: forall algorithm element
+    .  AlgorithmSetup algorithm element
+    => AdditiveSemigroup (ByteString (WordSize algorithm) element)
+    => BoolType (ByteString (WordSize algorithm) element)
+    => ShiftBits (ByteString (WordSize algorithm) element)
+    => ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
+    => Concat (ByteString (WordSize algorithm) element) (ByteString (8 * WordSize algorithm) element)
+    => [ByteString (ChunkSize algorithm) element] -> ByteString (ResultSize algorithm) element
+sha2Blocks chunks = truncateResult @algorithm @element $ concat $ V.toList hashParts
+    where
         rounds :: Int
         rounds = V.length $ roundConstants @algorithm @element
 
         hashParts :: V.Vector (ByteString (WordSize algorithm) element)
         hashParts = V.create $ do
-            hn <- V.thaw $ initialHashes @algorithm @element
+            !hn <- V.thaw $ initialHashes @algorithm @element
 
             forM_ chunks $ \chunk -> do
                 let words = toWords @(ByteString (ChunkSize algorithm) element) @(ByteString (WordSize algorithm) element) chunk
@@ -166,33 +292,33 @@ sha2 messageBits = truncateResult @algorithm @element $ append $ V.toList hashPa
                 forM_ (zip [0..] words) $ \(ix, w) -> VM.write messageSchedule ix w
 
                 forM_ [16 .. rounds P.- 1] $ \ix -> do
-                    w16 <- messageSchedule `VM.read` (ix P.- 16)
-                    w15 <- messageSchedule `VM.read` (ix P.- 15)
-                    w7  <- messageSchedule `VM.read` (ix P.- 7)
-                    w2  <- messageSchedule `VM.read` (ix P.- 2)
+                    !w16 <- messageSchedule `VM.read` (ix P.- 16)
+                    !w15 <- messageSchedule `VM.read` (ix P.- 15)
+                    !w7  <- messageSchedule `VM.read` (ix P.- 7)
+                    !w2  <- messageSchedule `VM.read` (ix P.- 2)
                     let (sh0, sh1, sh2, sh3, sh4, sh5) = sigmaShifts @algorithm @element
                         s0  = (w15 `rotateBitsR` sh0) `xor` (w15 `rotateBitsR` sh1) `xor` (w15 `shiftBitsR` sh2)
-                        s1  = (w2 `rotateBitsR` sh3) `xor` (w15 `rotateBitsR` sh4) `xor` (w15 `shiftBitsR` sh5)
-                    VM.write messageSchedule ix $ w16 + s0 + w7 + s1
+                        s1  = (w2 `rotateBitsR` sh3) `xor` (w2 `rotateBitsR` sh4) `xor` (w2 `shiftBitsR` sh5)
+                    VM.write messageSchedule ix $! w16 + s0 + w7 + s1
 
-                aRef <- hn `VM.read` 0 >>= ST.newSTRef
-                bRef <- hn `VM.read` 1 >>= ST.newSTRef
-                cRef <- hn `VM.read` 2 >>= ST.newSTRef
-                dRef <- hn `VM.read` 3 >>= ST.newSTRef
-                eRef <- hn `VM.read` 4 >>= ST.newSTRef
-                fRef <- hn `VM.read` 5 >>= ST.newSTRef
-                gRef <- hn `VM.read` 6 >>= ST.newSTRef
-                hRef <- hn `VM.read` 7 >>= ST.newSTRef
+                !aRef <- hn `VM.read` 0 >>= ST.newSTRef
+                !bRef <- hn `VM.read` 1 >>= ST.newSTRef
+                !cRef <- hn `VM.read` 2 >>= ST.newSTRef
+                !dRef <- hn `VM.read` 3 >>= ST.newSTRef
+                !eRef <- hn `VM.read` 4 >>= ST.newSTRef
+                !fRef <- hn `VM.read` 5 >>= ST.newSTRef
+                !gRef <- hn `VM.read` 6 >>= ST.newSTRef
+                !hRef <- hn `VM.read` 7 >>= ST.newSTRef
 
                 forM_ [0 .. rounds P.- 1] $ \ix -> do
-                    a <- ST.readSTRef aRef
-                    b <- ST.readSTRef bRef
-                    c <- ST.readSTRef cRef
-                    d <- ST.readSTRef dRef
-                    e <- ST.readSTRef eRef
-                    f <- ST.readSTRef fRef
-                    g <- ST.readSTRef gRef
-                    h <- ST.readSTRef hRef
+                    !a <- ST.readSTRef aRef
+                    !b <- ST.readSTRef bRef
+                    !c <- ST.readSTRef cRef
+                    !d <- ST.readSTRef dRef
+                    !e <- ST.readSTRef eRef
+                    !f <- ST.readSTRef fRef
+                    !g <- ST.readSTRef gRef
+                    !h <- ST.readSTRef hRef
 
                     let ki = roundConstants @algorithm V.! ix
                     wi <- messageSchedule `VM.read` ix
@@ -214,14 +340,14 @@ sha2 messageBits = truncateResult @algorithm @element $ append $ V.toList hashPa
                     ST.writeSTRef bRef a
                     ST.writeSTRef aRef $ temp1 + temp2
 
-                a <- ST.readSTRef aRef
-                b <- ST.readSTRef bRef
-                c <- ST.readSTRef cRef
-                d <- ST.readSTRef dRef
-                e <- ST.readSTRef eRef
-                f <- ST.readSTRef fRef
-                g <- ST.readSTRef gRef
-                h <- ST.readSTRef hRef
+                !a <- ST.readSTRef aRef
+                !b <- ST.readSTRef bRef
+                !c <- ST.readSTRef cRef
+                !d <- ST.readSTRef dRef
+                !e <- ST.readSTRef eRef
+                !f <- ST.readSTRef fRef
+                !g <- ST.readSTRef gRef
+                !h <- ST.readSTRef hRef
 
                 VM.modify hn (+a) 0
                 VM.modify hn (+b) 1
