@@ -1,25 +1,19 @@
-module ZkFold.Symbolic.Data.Conditional
-  ( Conditional (..),
-  )
-where
+module ZkFold.Symbolic.Data.Conditional (
+    Conditional (..)
+) where
 
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Base.Algebra.Basic.Number (Prime)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..))
-import Prelude hiding (Bool, Num (..), (/))
-import qualified Prelude as Haskell
+import           Prelude                   hiding (Bool, Num (..), (/))
 
-class (BoolType b) => Conditional b a where
-  bool :: a -> a -> b -> a
+import           ZkFold.Symbolic.Data.Bool (BoolType (..))
 
-  gif :: b -> a -> a -> a
-  gif b x y = bool y x b
+class BoolType b => Conditional b a where
+    bool :: a -> a -> b -> a
 
-  (?) :: b -> a -> a -> a
-  (?) = gif
+    gif :: b -> a -> a -> a
+    gif b x y = bool y x b
 
-instance Conditional Haskell.Bool a where
-  bool f t b = if b then t else f
+    (?) :: b -> a -> a -> a
+    (?) = gif
 
-instance (Prime p) => Conditional (Bool (Zp p)) x where
-  bool f t b = if b == true then t else f
+instance {-# OVERLAPPABLE #-} (BoolType b, Eq b) => Conditional b x where
+    bool f t b = if b == true then t else f
