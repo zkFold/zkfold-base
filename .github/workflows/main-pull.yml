@@ -33,14 +33,6 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
-    - name: Cache GHC
-      uses: actions/cache@v2
-      with:
-        path: ~/.ghcup
-        key: ${{ runner.os }}-ghcup-${{ hashFiles('**/*.cabal') }}
-        restore-keys: |
-          ${{ runner.os }}-ghcup-
-
     - name: Install stylish-haskell
       run: cabal install stylish-haskell
 
