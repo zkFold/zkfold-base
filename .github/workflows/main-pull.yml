@@ -41,12 +41,12 @@ jobs:
         git diff --name-only origin/main | grep '\.hs$' | xargs -I {} stylish-haskell --inplace {}
 
     - name: Commit stylish-haskell changes
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .
-        git commit -m "Auto-format with stylish-haskell" || echo "No changes to commit"
-        git push origin HEAD:${{ github.head_ref }}
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: Auto-format with stylish-haskell
+        commit_user_name: GitHub Action
+        commit_user_email: action@github.com
+        branch: ${{ github.head_ref }}
 
     - name: Build package
       run: |
