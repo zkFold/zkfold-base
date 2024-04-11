@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Symbolic.Compiler
   ( module ZkFold.Symbolic.Compiler.Arithmetizable,
@@ -9,12 +9,13 @@ module ZkFold.Symbolic.Compiler
   )
 where
 
-import Control.Monad.State (execState)
-import Data.Aeson (ToJSON)
-import ZkFold.Prelude (writeFileJSON)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import ZkFold.Symbolic.Compiler.Arithmetizable
-import Prelude (FilePath, IO, Show (..), mempty, putStrLn, ($), (++))
+import           Control.Monad.State                        (execState)
+import           Data.Aeson                                 (ToJSON)
+import           Prelude                                    (FilePath, IO, Show (..), mempty, putStrLn, ($), (++))
+
+import           ZkFold.Prelude                             (writeFileJSON)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import           ZkFold.Symbolic.Compiler.Arithmetizable
 
 {-
     ZkFold Symbolic compiler module dependency order:

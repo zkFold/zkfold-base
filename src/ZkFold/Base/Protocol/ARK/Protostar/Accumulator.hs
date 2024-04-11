@@ -2,15 +2,16 @@
 
 module ZkFold.Base.Protocol.ARK.Protostar.Accumulator where
 
-import ZkFold.Base.Algebra.Basic.Class
-import Prelude hiding (length)
+import           Prelude                         hiding (length)
+
+import           ZkFold.Base.Algebra.Basic.Class
 
 data AccumulatorInstance f c = AccumulatorInstance
   { accPublicInput :: f,
-    accCommits :: [c],
-    accChallenges :: [f],
-    accError :: c,
-    accMu :: f
+    accCommits     :: [c],
+    accChallenges  :: [f],
+    accError       :: c,
+    accMu          :: f
   }
 
 newtype AccumulatorWitness m = AccumulatorWitness {accMessages :: [m]}
@@ -19,7 +20,7 @@ data Accumulator f c m = Accumulator (AccumulatorInstance f c) (AccumulatorWitne
 
 data NARKInstance f c = NARKInstance
   { narkPublicInput :: f,
-    narkCommits :: [c]
+    narkCommits     :: [c]
   }
 
 newtype NARKWitness m = NARKWitness {narkMessages :: [m]}
@@ -30,7 +31,7 @@ toAccumulatorInstance :: (FiniteField f, AdditiveGroup c) => (f -> c -> f) -> NA
 toAccumulatorInstance oracle (NARKInstance i cs) =
   let r0 = oracle i zero
       f acc@(r : _) c = oracle r c : acc
-      f [] _ = error "Invalid accumulator instance"
+      f [] _          = error "Invalid accumulator instance"
       rs = init $ reverse $ foldl f [r0] cs
    in AccumulatorInstance i cs rs zero one
 

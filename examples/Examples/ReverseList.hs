@@ -1,13 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Examples.ReverseList (exampleReverseList) where
 
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import ZkFold.Base.Data.Vector
-import ZkFold.Symbolic.Compiler
-import Prelude
+import           Prelude
+
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Data.Vector
+import           ZkFold.Symbolic.Compiler
 
 -- | Reverses the order of elements in a vector
 reverseList :: forall t n. Vector n t -> Vector n t

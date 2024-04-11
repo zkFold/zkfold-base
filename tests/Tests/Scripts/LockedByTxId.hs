@@ -2,22 +2,23 @@
 
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
-import Data.Map (fromList)
-import Test.Hspec
-import Test.QuickCheck
-import Tests.Plonk (PlonkBS)
-import ZkFold.Base.Algebra.Basic.Class (FromConstant (..))
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import ZkFold.Base.Protocol.ARK.Plonk (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..))
-import ZkFold.Base.Protocol.ARK.Plonk.Internal (getParams)
-import ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
-import ZkFold.Symbolic.Cardano.Types (TxId (..))
-import ZkFold.Symbolic.Compiler hiding (input)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..))
-import ZkFold.Symbolic.Data.Eq (Eq (..))
-import ZkFold.Symbolic.Types (Symbolic)
-import Prelude hiding (Bool, Eq (..), Num (..), Ord (..))
-import qualified Prelude as Haskell
+import           Data.Map                                    (fromList)
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..))
+import qualified Prelude                                     as Haskell
+import           Test.Hspec
+import           Test.QuickCheck
+import           Tests.Plonk                                 (PlonkBS)
+
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
+import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..))
+import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
+import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
+import           ZkFold.Symbolic.Cardano.Types               (TxId (..))
+import           ZkFold.Symbolic.Compiler                    hiding (input)
+import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
+import           ZkFold.Symbolic.Types                       (Symbolic)
 
 lockedByTxId :: forall a a'. (Symbolic a, FromConstant a' a) => TxId a' -> TxId a -> () -> Bool a
 lockedByTxId (TxId targetId) (TxId txId) _ = txId == fromConstant targetId

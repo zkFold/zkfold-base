@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Examples.UInt
   ( exampleUIntAdd,
@@ -9,18 +9,19 @@ module Examples.UInt
   )
 where
 
-import Data.Data (Proxy (Proxy))
-import Data.Function (($))
-import Data.List ((++))
-import Data.String (String)
-import GHC.TypeNats (KnownNat, natVal)
-import System.IO (IO, putStrLn)
-import Text.Show (show)
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import ZkFold.Symbolic.Compiler (ArithmeticCircuit, compileIO)
-import ZkFold.Symbolic.Data.UInt
+import           Data.Data                                   (Proxy (Proxy))
+import           Data.Function                               (($))
+import           Data.List                                   ((++))
+import           Data.String                                 (String)
+import           GHC.TypeNats                                (KnownNat, natVal)
+import           System.IO                                   (IO, putStrLn)
+import           Text.Show                                   (show)
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
+import           ZkFold.Symbolic.Data.UInt
 
 exampleUIntAdd :: forall n. (KnownNat n) => IO ()
 exampleUIntAdd = makeExample @n "+" "add" (+)

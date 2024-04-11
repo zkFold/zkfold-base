@@ -2,25 +2,26 @@
 
 module Main where
 
-import Tests.ArithmeticCircuit (specArithmeticCircuit)
-import Tests.Arithmetization (specArithmetization)
-import Tests.ByteString (specByteString)
-import Tests.Field (specField)
-import Tests.GroebnerBasis (specGroebner)
-import Tests.Group (specAdditiveGroup)
-import Tests.Multiplication (specMultiplication)
-import Tests.NonInteractiveProof (specNonInteractiveProof)
-import Tests.Pairing (specPairing)
-import Tests.Permutations (specPermutations)
-import Tests.Plonk (PlonkBS, specPlonk)
-import Tests.Scripts.LockedByTxId (specLockedByTxId)
-import Tests.UInt (specUInt)
-import Tests.Univariate (specUnivariate)
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import ZkFold.Base.Algebra.EllipticCurve.Class
-import ZkFold.Base.Protocol.Commitment.KZG (KZG)
-import Prelude hiding (Bool, Fractional (..), Num (..), drop, length, replicate, take, (==))
+import           Prelude                                     hiding (Bool, Fractional (..), Num (..), drop, length, replicate, take, (==))
+import           Tests.ArithmeticCircuit                     (specArithmeticCircuit)
+import           Tests.Arithmetization                       (specArithmetization)
+import           Tests.ByteString                            (specByteString)
+import           Tests.Field                                 (specField)
+import           Tests.GroebnerBasis                         (specGroebner)
+import           Tests.Group                                 (specAdditiveGroup)
+import           Tests.Multiplication                        (specMultiplication)
+import           Tests.NonInteractiveProof                   (specNonInteractiveProof)
+import           Tests.Pairing                               (specPairing)
+import           Tests.Permutations                          (specPermutations)
+import           Tests.Plonk                                 (PlonkBS, specPlonk)
+import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
+import           Tests.UInt                                  (specUInt)
+import           Tests.Univariate                            (specUnivariate)
+
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 
 main :: IO ()
 main = do

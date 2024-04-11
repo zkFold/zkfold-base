@@ -1,13 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Symbolic.Cardano.UPLC.Builtins where
 
-import Data.Typeable (Proxy (..), Typeable)
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Symbolic.Cardano.UPLC.Type
-import ZkFold.Symbolic.Compiler
-import Prelude (($))
+import           Data.Typeable                     (Proxy (..), Typeable)
+import           Prelude                           (($))
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Cardano.UPLC.Type
+import           ZkFold.Symbolic.Compiler
 
 -- TODO: Add the actual builtins available on-chain in Plutus V3
 

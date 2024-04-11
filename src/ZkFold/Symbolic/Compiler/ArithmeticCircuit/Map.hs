@@ -6,21 +6,22 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
   )
 where
 
-import Data.Bifunctor (Bifunctor (..))
-import Data.Containers.ListUtils (nubOrd)
-import Data.List (sort)
-import Data.Map hiding (drop, foldl, foldr, map, null, splitAt, take)
-import Numeric.Natural (Natural)
-import ZkFold.Base.Algebra.Polynomials.Multivariate
-import ZkFold.Prelude (elemIndex)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint, ConstraintMonomial)
-import Prelude hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
+import           Data.Bifunctor                                      (Bifunctor (..))
+import           Data.Containers.ListUtils                           (nubOrd)
+import           Data.List                                           (sort)
+import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt, take)
+import           Numeric.Natural                                     (Natural)
+import           Prelude                                             hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
+
+import           ZkFold.Base.Algebra.Polynomials.Multivariate
+import           ZkFold.Prelude                                      (elemIndex)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint, ConstraintMonomial)
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
 mapVar :: [Natural] -> Natural -> Natural
 mapVar vars x = case x `elemIndex` vars of
-  Just i -> i
+  Just i  -> i
   Nothing -> error "mapVar: something went wrong"
 
 mapVarMonomial :: [Natural] -> ConstraintMonomial -> ConstraintMonomial

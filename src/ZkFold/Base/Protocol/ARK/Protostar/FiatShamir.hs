@@ -1,15 +1,16 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.ARK.Protostar.FiatShamir where
 
-import Data.ByteString (ByteString)
-import ZkFold.Base.Data.ByteString (FromByteString, ToByteString (..))
-import ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
-import ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           Data.ByteString                                 (ByteString)
+import           Prelude                                         hiding (length)
+
+import           ZkFold.Base.Data.ByteString                     (FromByteString, ToByteString (..))
+import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
 import qualified ZkFold.Base.Protocol.ARK.Protostar.SpecialSound as SpS
-import ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..), ToTranscript (..), challenge)
-import Prelude hiding (length)
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractiveProof (..), ToTranscript (..), challenge)
 
 data FiatShamir f a = FiatShamir a (SpS.Input f a)
 

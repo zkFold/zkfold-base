@@ -2,14 +2,15 @@
 
 module Tests.Permutations (specPermutations) where
 
-import Data.List (sort)
-import Data.Map (elems)
-import qualified Data.Vector as V
-import Test.Hspec
-import Test.QuickCheck
-import ZkFold.Base.Algebra.Basic.Permutations
-import ZkFold.Base.Data.Vector (fromVector)
-import Prelude hiding (Fractional (..), Num (..), length)
+import           Data.List                              (sort)
+import           Data.Map                               (elems)
+import qualified Data.Vector                            as V
+import           Prelude                                hiding (Fractional (..), Num (..), length)
+import           Test.Hspec
+import           Test.QuickCheck
+
+import           ZkFold.Base.Algebra.Basic.Permutations
+import           ZkFold.Base.Data.Vector                (fromVector)
 
 specPermutations :: IO ()
 specPermutations = hspec $ do

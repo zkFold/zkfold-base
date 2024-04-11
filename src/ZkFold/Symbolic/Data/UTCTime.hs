@@ -1,11 +1,12 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.UTCTime where
 
-import ZkFold.Symbolic.Compiler.Arithmetizable
-import ZkFold.Symbolic.Data.UInt
-import Prelude
+import           Prelude
+
+import           ZkFold.Symbolic.Compiler.Arithmetizable
+import           ZkFold.Symbolic.Data.UInt
 
 newtype UTCTime a = UTCTime (UInt 11 a)
   deriving (Eq)

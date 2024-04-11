@@ -2,10 +2,11 @@
 
 module ZkFold.Symbolic.Cardano.UPLC.Term where
 
-import Data.Maybe (fromJust)
-import Data.Typeable (Typeable, cast, typeOf)
-import ZkFold.Symbolic.Compiler (Arithmetizable)
-import Prelude
+import           Data.Maybe               (fromJust)
+import           Data.Typeable            (Typeable, cast, typeOf)
+import           Prelude
+
+import           ZkFold.Symbolic.Compiler (Arithmetizable)
 
 -- Based on the November 2022 UPLC spec
 data Term name fun a where

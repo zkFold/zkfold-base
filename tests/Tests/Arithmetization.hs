@@ -1,17 +1,18 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Tests.Arithmetization (specArithmetization) where
 
-import Data.Map (fromList)
-import Test.Hspec
-import Test.QuickCheck
-import Tests.Arithmetization.Test1 (specArithmetization1)
-import Tests.Arithmetization.Test2 (specArithmetization2)
-import Tests.Arithmetization.Test3 (specArithmetization3)
-import ZkFold.Symbolic.Compiler
-import ZkFold.Symbolic.Types (Symbolic)
-import Prelude
+import           Data.Map                    (fromList)
+import           Prelude
+import           Test.Hspec
+import           Test.QuickCheck
+import           Tests.Arithmetization.Test1 (specArithmetization1)
+import           Tests.Arithmetization.Test2 (specArithmetization2)
+import           Tests.Arithmetization.Test3 (specArithmetization3)
+
+import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Types       (Symbolic)
 
 propCircuitInvariance :: (Arithmetic a) => (ArithmeticCircuit a, a, a) -> Bool
 propCircuitInvariance (ac, x, y) =

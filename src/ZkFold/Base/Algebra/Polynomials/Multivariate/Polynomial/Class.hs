@@ -1,8 +1,9 @@
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial.Class where
 
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
-import Prelude hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
+import           Prelude                                               hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 
 -- | A class for polynomials.
 -- `c` is the coefficient type,

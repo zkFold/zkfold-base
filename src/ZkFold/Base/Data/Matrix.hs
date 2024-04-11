@@ -2,17 +2,18 @@
 
 module ZkFold.Base.Data.Matrix where
 
-import Data.Bifunctor (first)
-import qualified Data.List as List
-import Data.Maybe (fromJust)
-import Data.These
-import Data.Zip (Semialign (..), Zip (..))
-import System.Random (Random (..))
-import Test.QuickCheck (Arbitrary (..))
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Number
-import ZkFold.Base.Data.Vector
-import Prelude hiding (Num (..), length, sum, zip, zipWith)
+import           Data.Bifunctor                   (first)
+import qualified Data.List                        as List
+import           Data.Maybe                       (fromJust)
+import           Data.These
+import           Data.Zip                         (Semialign (..), Zip (..))
+import           Prelude                          hiding (Num (..), length, sum, zip, zipWith)
+import           System.Random                    (Random (..))
+import           Test.QuickCheck                  (Arbitrary (..))
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector
 
 -- TODO: implement a proper matrix algebra
 -- Could be useful for speeding up the proof computations

@@ -1,11 +1,12 @@
 module ZkFold.Base.Data.Sparse.Matrix where
 
-import Data.Map (Map)
-import Data.Zip (Semialign (..), Zip (..))
-import Test.QuickCheck (Arbitrary (..))
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Base.Algebra.Basic.Number (KnownNat)
-import Prelude hiding (length, sum, zip, zipWith, (*))
+import           Data.Map                         (Map)
+import           Data.Zip                         (Semialign (..), Zip (..))
+import           Prelude                          hiding (length, sum, zip, zipWith, (*))
+import           Test.QuickCheck                  (Arbitrary (..))
+
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
 
 newtype SMatrix m n a = SMatrix {fromSMatrix :: Map (Zp m, Zp n) a}
   deriving (Show, Eq)

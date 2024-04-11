@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Examples.ByteString
   ( exampleByteStringAnd,
@@ -7,18 +7,19 @@ module Examples.ByteString
   )
 where
 
-import Data.Data (Proxy (Proxy))
-import Data.Function (($))
-import Data.List ((++))
-import Data.String (String)
-import GHC.TypeNats (KnownNat, natVal)
-import System.IO (IO, putStrLn)
-import Text.Show (show)
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import ZkFold.Symbolic.Compiler (ArithmeticCircuit, compileIO)
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.ByteString
+import           Data.Data                                   (Proxy (Proxy))
+import           Data.Function                               (($))
+import           Data.List                                   ((++))
+import           Data.String                                 (String)
+import           GHC.TypeNats                                (KnownNat, natVal)
+import           System.IO                                   (IO, putStrLn)
+import           Text.Show                                   (show)
+
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.ByteString
 
 exampleByteStringAnd :: forall n. (KnownNat n) => IO ()
 exampleByteStringAnd = makeExample @n "*" "and" (&&)

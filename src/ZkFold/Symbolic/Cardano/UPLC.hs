@@ -1,18 +1,19 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Cardano.UPLC where
 
-import Data.Kind (Type)
-import Data.Maybe (fromJust)
-import Data.Typeable (Proxy (..), Typeable, cast)
-import ZkFold.Symbolic.Cardano.UPLC.Builtins
-import ZkFold.Symbolic.Cardano.UPLC.Inference
-import ZkFold.Symbolic.Cardano.UPLC.Term
-import ZkFold.Symbolic.Cardano.UPLC.Type
-import ZkFold.Symbolic.Compiler (Arithmetic, Arithmetizable (..), SomeArithmetizable (..))
-import Prelude (Eq (..), error, otherwise, snd, ($))
+import           Data.Kind                              (Type)
+import           Data.Maybe                             (fromJust)
+import           Data.Typeable                          (Proxy (..), Typeable, cast)
+import           Prelude                                (Eq (..), error, otherwise, snd, ($))
+
+import           ZkFold.Symbolic.Cardano.UPLC.Builtins
+import           ZkFold.Symbolic.Cardano.UPLC.Inference
+import           ZkFold.Symbolic.Cardano.UPLC.Term
+import           ZkFold.Symbolic.Cardano.UPLC.Type
+import           ZkFold.Symbolic.Compiler               (Arithmetic, Arithmetizable (..), SomeArithmetizable (..))
 
 -- TODO: we need to figure out what to do with error terms
 

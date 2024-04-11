@@ -1,14 +1,15 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof where
 
-import Crypto.Hash.SHA256 (hash)
-import Data.ByteString (ByteString, cons)
-import Data.Maybe (fromJust)
-import Numeric.Natural (Natural)
-import ZkFold.Base.Data.ByteString (FromByteString (..), ToByteString (..))
-import Prelude
+import           Crypto.Hash.SHA256          (hash)
+import           Data.ByteString             (ByteString, cons)
+import           Data.Maybe                  (fromJust)
+import           Numeric.Natural             (Natural)
+import           Prelude
+
+import           ZkFold.Base.Data.ByteString (FromByteString (..), ToByteString (..))
 
 class (Monoid t) => ToTranscript t a where
   toTranscript :: a -> t

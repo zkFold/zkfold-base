@@ -1,13 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.ARK.Protostar.AccumulatorScheme where
 
-import ZkFold.Base.Protocol.ARK.Protostar.Accumulator
-import ZkFold.Base.Protocol.ARK.Protostar.CommitOpen (CommitOpen (..))
-import ZkFold.Base.Protocol.ARK.Protostar.FiatShamir (FiatShamir (..))
-import ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (Input, ProverMessage)
-import Prelude hiding (length)
+import           Prelude                                         hiding (length)
+
+import           ZkFold.Base.Protocol.ARK.Protostar.Accumulator
+import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen   (CommitOpen (..))
+import           ZkFold.Base.Protocol.ARK.Protostar.FiatShamir   (FiatShamir (..))
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (Input, ProverMessage)
 
 class AccumulatorScheme f c m a where
   commit :: a -> m -> c

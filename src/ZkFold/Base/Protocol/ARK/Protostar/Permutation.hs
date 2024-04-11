@@ -1,14 +1,15 @@
 module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
-import Data.Zip (Zip (..))
-import Numeric.Natural (Natural)
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Permutations (Permutation, applyPermutation)
-import ZkFold.Base.Algebra.Polynomials.Multivariate (SomePolynomial, var)
-import ZkFold.Base.Data.Vector (Vector)
-import ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
-import ZkFold.Symbolic.Compiler (Arithmetic)
-import Prelude hiding (Num (..), zipWith, (!!), (^))
+import           Data.Zip                                        (Zip (..))
+import           Numeric.Natural                                 (Natural)
+import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, var)
+import           ZkFold.Base.Data.Vector                         (Vector)
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
 
@@ -54,4 +55,4 @@ instance (Arithmetic f) => SpecialSoundProtocol f (ProtostarPermutation n) where
     SpecialSoundTranscript f (ProtostarPermutation n) ->
     Bool
   verifier _ sigma [(w, _)] = applyPermutation sigma w == w
-  verifier _ _ _ = error "Invalid transcript"
+  verifier _ _ _            = error "Invalid transcript"

@@ -1,10 +1,11 @@
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Set where
 
-import Data.Map (Map)
-import ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
-import ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
-import ZkFold.Base.Data.Vector (Vector)
-import Prelude hiding (Num (..), length, product, replicate, sum, (!!), (^))
+import           Data.Map                                                (Map)
+import           Prelude                                                 hiding (Num (..), length, product, replicate, sum, (!!), (^))
+
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
+import           ZkFold.Base.Data.Vector                                 (Vector)
 
 ----------------------------- Monomial representations ------------------------------
 

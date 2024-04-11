@@ -2,13 +2,14 @@
 
 module Tests.GroebnerBasis (specGroebner) where
 
-import Data.Map (fromList)
-import Test.Hspec
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Number (Prime)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import ZkFold.Symbolic.GroebnerBasis
-import Prelude hiding (Eq (..), Num (..), (/), (^))
+import           Data.Map                                    (fromList)
+import           Prelude                                     hiding (Eq (..), Num (..), (/), (^))
+import           Test.Hspec
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number            (Prime)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Symbolic.GroebnerBasis
 
 testPoly :: (Prime p) => [Polynomial p]
 testPoly =

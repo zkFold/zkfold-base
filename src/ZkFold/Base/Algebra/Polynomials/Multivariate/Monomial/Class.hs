@@ -1,12 +1,13 @@
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial.Class where
 
-import Data.Map (Map, fromListWith)
-import qualified Data.Map as Map
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Number (KnownNat)
-import ZkFold.Base.Data.Vector (Vector, fromVector, toVector)
-import ZkFold.Prelude (replicate)
-import Prelude hiding (Num (..), replicate, (/))
+import           Data.Map                         (Map, fromListWith)
+import qualified Data.Map                         as Map
+import           Prelude                          hiding (Num (..), replicate, (/))
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
+import           ZkFold.Base.Data.Vector          (Vector, fromVector, toVector)
+import           ZkFold.Prelude                   (replicate)
 
 type Variable i = Ord i
 

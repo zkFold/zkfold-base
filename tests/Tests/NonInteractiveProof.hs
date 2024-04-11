@@ -1,14 +1,15 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Tests.NonInteractiveProof (NonInteractiveProofTestData (..), specNonInteractiveProof) where
 
-import Data.Typeable (Proxy (..), Typeable, typeRep)
-import Test.Hspec
-import Test.QuickCheck
-import ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
-import Prelude hiding (Fractional (..), Num (..), length)
+import           Data.Typeable                            (Proxy (..), Typeable, typeRep)
+import           Prelude                                  hiding (Fractional (..), Num (..), length)
+import           Test.Hspec
+import           Test.QuickCheck
+
+import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 

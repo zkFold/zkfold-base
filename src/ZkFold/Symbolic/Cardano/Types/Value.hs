@@ -2,11 +2,12 @@
 
 module ZkFold.Symbolic.Cardano.Types.Value where
 
-import Numeric.Natural (Natural)
-import ZkFold.Base.Algebra.Basic.Number (KnownNat)
-import ZkFold.Base.Data.Vector (Vector (Vector))
-import ZkFold.Symbolic.Compiler
-import ZkFold.Symbolic.Data.UInt (UInt)
+import           Numeric.Natural                  (Natural)
+
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
+import           ZkFold.Base.Data.Vector          (Vector (Vector))
+import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.UInt        (UInt)
 
 newtype Value (size :: Natural) a = Value [(a, a, UInt 32 a)]
 

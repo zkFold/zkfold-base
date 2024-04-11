@@ -1,15 +1,16 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Symbolic.Cardano.UPLC.Inference where
 
-import Data.Maybe (fromMaybe, maybeToList)
-import Data.Typeable (Proxy (..))
-import ZkFold.Symbolic.Cardano.UPLC.Builtins
-import ZkFold.Symbolic.Cardano.UPLC.Inference.Internal
-import ZkFold.Symbolic.Cardano.UPLC.Term
-import ZkFold.Symbolic.Cardano.UPLC.Type
-import Prelude
+import           Data.Maybe                                      (fromMaybe, maybeToList)
+import           Data.Typeable                                   (Proxy (..))
+import           Prelude
+
+import           ZkFold.Symbolic.Cardano.UPLC.Builtins
+import           ZkFold.Symbolic.Cardano.UPLC.Inference.Internal
+import           ZkFold.Symbolic.Cardano.UPLC.Term
+import           ZkFold.Symbolic.Cardano.UPLC.Type
 
 -- TODO: Variable names must be unique for this to work!
 -- TODO: Properly infer polymorphic type instantiations
@@ -29,7 +30,7 @@ inferType (Apply f x, t2) types =
   let t1 = fromMaybe NoType $ findTermType x types
       t = case fromMaybe NoType $ findTermType f types of
         SomeFunction _ t2' -> t2'
-        _ -> NoType
+        _                  -> NoType
    in updateTypeList types [(f, SomeFunction t1 t2), (Apply f x, t)]
 inferType (Force x, t) types =
   updateTypeList types [(x, t)]
@@ -56,6 +57,6 @@ inferTypes term = head $ go (makeTypeList term)
 
 -- To obtain an arithmetizable term, we need all types to be concrete.
 inferSuccess :: forall name fun a. (Eq name, Eq fun) => SomeType a -> Bool
-inferSuccess (SomeData _) = True
+inferSuccess (SomeData _)         = True
 inferSuccess (SomeFunction t1 t2) = inferSuccess @name @fun t1 && inferSuccess @name @fun t2
-inferSuccess _ = False
+inferSuccess _                    = False

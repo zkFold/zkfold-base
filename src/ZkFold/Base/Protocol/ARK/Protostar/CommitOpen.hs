@@ -2,10 +2,11 @@
 
 module ZkFold.Base.Protocol.ARK.Protostar.CommitOpen where
 
-import ZkFold.Base.Data.ByteString (ToByteString (..))
-import ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
-import ZkFold.Prelude (length)
-import Prelude hiding (length)
+import           Prelude                                         hiding (length)
+
+import           ZkFold.Base.Data.ByteString                     (ToByteString (..))
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Prelude                                  (length)
 
 data CommitOpen f c a = CommitOpen (ProverMessage f a -> c) a
 
@@ -13,7 +14,7 @@ data CommitOpenProverMessage t c a = Commit c | Open [ProverMessage t a]
 
 instance (ToByteString c) => ToByteString (CommitOpenProverMessage t c a) where
   toByteString (Commit c) = toByteString c
-  toByteString _ = mempty
+  toByteString _          = mempty
 
 instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen f c a) where
   type Witness f (CommitOpen f c a) = (Witness f a, [ProverMessage f a])
@@ -37,14 +38,14 @@ instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen 
   verifier (CommitOpen cm a) i ((Open ms, _) : ts) = map cm ms == map f ts && verifier @f a i (zip ms $ map snd ts)
     where
       f (Commit c, _) = c
-      f _ = error "Invalid message"
+      f _             = error "Invalid message"
   verifier _ _ _ = error "Invalid transcript"
 
 commits :: SpecialSoundTranscript t (CommitOpen f c a) -> [c]
 commits = map f
   where
     f (Commit c, _) = c
-    f _ = error "Invalid message"
+    f _             = error "Invalid message"
 
 opening ::
   forall f a c.

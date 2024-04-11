@@ -2,13 +2,14 @@
 
 module ZkFold.Symbolic.Cardano.Types where
 
-import ZkFold.Base.Algebra.Basic.Number
-import ZkFold.Base.Data.Vector
-import ZkFold.Symbolic.Compiler
-import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.UInt
-import ZkFold.Symbolic.Data.UTCTime
-import Prelude hiding (length, splitAt, (*), (+))
+import           Prelude                          hiding (length, splitAt, (*), (+))
+
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector
+import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Data.UTCTime
 
 newtype Transaction inputs rinputs outputs tokens datum a
   = Transaction

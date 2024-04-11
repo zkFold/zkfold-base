@@ -1,26 +1,27 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DeriveAnyClass               #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables          #-}
+{-# LANGUAGE TypeApplications             #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Main where
 
-import Control.DeepSeq (NFData (..), force)
-import Control.Exception (evaluate)
-import Control.Monad (forM_, replicateM)
-import qualified Data.Vector as V
-import GHC.Generics
-import System.Random (randomIO)
-import Test.Tasty.Bench
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Field
-import ZkFold.Base.Algebra.Basic.Number (Prime)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import ZkFold.Base.Algebra.Polynomials.Univariate
-import ZkFold.Prelude (zipWithDefault)
-import Prelude hiding (sum, (*), (+), (-), (/), (^))
-import qualified Prelude as P
+import           Control.DeepSeq                             (NFData (..), force)
+import           Control.Exception                           (evaluate)
+import           Control.Monad                               (forM_, replicateM)
+import qualified Data.Vector                                 as V
+import           GHC.Generics
+import           Prelude                                     hiding (sum, (*), (+), (-), (/), (^))
+import qualified Prelude                                     as P
+import           System.Random                               (randomIO)
+import           Test.Tasty.Bench
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number            (Prime)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.Polynomials.Univariate
+import           ZkFold.Prelude                              (zipWithDefault)
 
 deriving instance Generic (Poly c)
 
@@ -99,7 +100,7 @@ benchDft (P v1) (P v2) = removeZeros $ P result
     w2n :: a
     w2n = case rootOfUnity $ fromIntegral p of
       Just a -> a
-      _ -> undefined
+      _      -> undefined
 
     pad = 2 P.^ p
 
@@ -108,5 +109,5 @@ benchDft (P v1) (P v2) = removeZeros $ P result
 benchNaive :: (Eq a, Field a) => Poly a -> Poly a -> Poly a
 benchNaive (P v1) (P v2) = removeZeros $ P $ V.fromList $ go (V.toList v1) (V.toList v2)
   where
-    go [] _ = []
+    go [] _        = []
     go (x : xs) ys = zipWithDefault (+) zero zero (map (x *) ys) (zero : go xs ys)

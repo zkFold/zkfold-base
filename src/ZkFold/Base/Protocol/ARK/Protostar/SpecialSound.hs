@@ -2,11 +2,12 @@
 
 module ZkFold.Base.Protocol.ARK.Protostar.SpecialSound where
 
-import Numeric.Natural (Natural)
-import ZkFold.Base.Algebra.Polynomials.Multivariate (SomePolynomial)
-import ZkFold.Base.Data.Vector (Vector)
-import ZkFold.Symbolic.Compiler.Arithmetizable (Arithmetic)
-import Prelude hiding (length)
+import           Numeric.Natural                              (Natural)
+import           Prelude                                      hiding (length)
+
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomePolynomial)
+import           ZkFold.Base.Data.Vector                      (Vector)
+import           ZkFold.Symbolic.Compiler.Arithmetizable      (Arithmetic)
 
 type SpecialSoundTranscript t a = [(ProverMessage t a, VerifierMessage t a)]
 

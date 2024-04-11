@@ -2,13 +2,14 @@
 
 module Examples.Eq (exampleEq) where
 
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import ZkFold.Symbolic.Compiler
-import ZkFold.Symbolic.Data.Bool (Bool (..))
-import ZkFold.Symbolic.Data.Eq (Eq (..))
-import ZkFold.Symbolic.Types (Symbolic)
-import Prelude hiding (Bool, Eq (..), Num (..), Ord (..), any, not, (!!), (/), (^), (||))
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), any, not, (!!), (/), (^), (||))
+
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
+import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
+import           ZkFold.Symbolic.Types                       (Symbolic)
 
 -- | (==) operation
 eq :: forall a. (Symbolic a) => a -> a -> Bool a
