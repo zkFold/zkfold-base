@@ -9,7 +9,7 @@ import qualified Prelude                         as Haskell
 import           Test.QuickCheck                 hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString     (ToByteString (..))
+import           ZkFold.Base.Data.ByteString
 
 type family BaseField curve
 
@@ -17,7 +17,7 @@ type family ScalarField curve
 
 data Point curve = Point (BaseField curve) (BaseField curve) | Inf
 
-class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curve), ToByteString (BaseField curve),
+class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curve), Binary (BaseField curve),
       Haskell.Show (ScalarField curve), Haskell.Num (ScalarField curve), Haskell.Ord (ScalarField curve),
       PrimeField (ScalarField curve), Eq (ScalarField curve), BinaryExpansion (ScalarField curve), Arbitrary (ScalarField curve)
     ) => EllipticCurve curve where
@@ -54,9 +54,18 @@ instance EllipticCurve curve => Scale Integer (Point curve) where
 instance EllipticCurve curve => AdditiveGroup (Point curve) where
     negate = pointNegate
 
-instance EllipticCurve curve => ToByteString (Point curve) where
-    toByteString Inf         = toByteString (0 :: Integer)
-    toByteString (Point x y) = toByteString (1 :: Integer) <> toByteString x <> toByteString y
+instance EllipticCurve curve => Binary (Point curve) where
+    -- TODO: Point Compression
+    -- When we know the equation of an elliptic curve, y^2 = x^3 + a * x + b
+    -- then we only need to retain a flag sign byte,
+    -- and the x-value to reconstruct the y-value of a point.
+    put Inf         = putWord8 0
+    put (Point x y) = putWord8 1 <> put x <> put y
+    get = do
+        flag <- getWord8
+        if flag == 0 then return Inf
+        else if flag == 1 then Point <$> get <*> get
+        else fail ("Binary (Point curve): unexpected flag " <> show flag)
 
 instance EllipticCurve curve => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)
