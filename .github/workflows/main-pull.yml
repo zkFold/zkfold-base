@@ -1,0 +1,54 @@
+name: CI Pull Request
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  on-main-pull-request:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.1
+
+    - name: Set up Haskell
+      uses: haskell-actions/setup@v2.6.2
+      with:
+        ghc-version: '9.6.3'
+        cabal-version: '3.10.2.1'
+
+    - name: Cache Cabal
+      uses: actions/cache@v4.0.1
+      env:
+        cache-name: cache-cabal
+      with:
+        path: ~/.cabal
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install stylish-haskell
+      run: cabal install stylish-haskell
+
+    - name: Run stylish-haskell
+      run: |
+        find . -name '*.hs' -exec sh -c 'for file do stylish-haskell --inplace "$file"; done' sh {} +
+
+    - name: Commit stylish-haskell changes
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: Auto-format with stylish-haskell
+        commit_user_name: GitHub Action
+        commit_user_email: action@github.com
+        branch: ${{ github.head_ref }}
+
+    - name: Build package
+      run: |
+        cabal update
+        cabal new-build all

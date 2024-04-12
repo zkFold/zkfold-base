@@ -5,16 +5,16 @@
 
 module ZkFold.Symbolic.Cardano.UPLC where
 
-import           Data.Kind                               (Type)
-import           Data.Maybe                              (fromJust)
-import           Data.Typeable                           (Typeable, Proxy(..), cast)
-import           Prelude                                 (Eq (..), ($), error, snd, otherwise)
+import           Data.Kind                              (Type)
+import           Data.Maybe                             (fromJust)
+import           Data.Typeable                          (Proxy (..), Typeable, cast)
+import           Prelude                                (Eq (..), error, otherwise, snd, ($))
 
 import           ZkFold.Symbolic.Cardano.UPLC.Builtins
 import           ZkFold.Symbolic.Cardano.UPLC.Inference
 import           ZkFold.Symbolic.Cardano.UPLC.Term
 import           ZkFold.Symbolic.Cardano.UPLC.Type
-import           ZkFold.Symbolic.Compiler                (Arithmetic, Arithmetizable (..), SomeArithmetizable (..))
+import           ZkFold.Symbolic.Compiler               (Arithmetic, Arithmetizable (..), SomeArithmetizable (..))
 
 -- TODO: we need to figure out what to do with error terms
 
@@ -32,7 +32,7 @@ instance forall name fun (a :: Type) . (Eq name, Typeable name, Typeable fun, Eq
         | otherwise = fromUPLC @name @fun xs (Var y)
     fromUPLC args term@(LamAbs x f) =
         case snd $ inferTypes @name @fun term of
-            SomeFunction t1 t2 -> 
+            SomeFunction t1 t2 ->
                 let t1' = functionToData t1
                     t2' = functionToData t2
                 in case (t1', t2') of

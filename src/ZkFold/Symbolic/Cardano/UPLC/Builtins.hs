@@ -3,8 +3,8 @@
 
 module ZkFold.Symbolic.Cardano.UPLC.Builtins where
 
-import           Data.Typeable                         (Typeable, Proxy (..))
-import           Prelude                               (($))
+import           Data.Typeable                     (Proxy (..), Typeable)
+import           Prelude                           (($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Cardano.UPLC.Type

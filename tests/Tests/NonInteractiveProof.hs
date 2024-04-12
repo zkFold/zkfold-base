@@ -5,11 +5,11 @@
 module Tests.NonInteractiveProof (NonInteractiveProofTestData(..), specNonInteractiveProof) where
 
 import           Data.Typeable                            (Proxy (..), Typeable, typeRep)
-import           Prelude                                  hiding (Num(..), Fractional(..), length)
+import           Prelude                                  hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof(..))
+import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 instance (Show a, Show (Setup a), Show (Witness a)) => Show (NonInteractiveProofTestData a) where

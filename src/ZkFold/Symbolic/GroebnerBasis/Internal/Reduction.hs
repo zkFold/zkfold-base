@@ -1,7 +1,7 @@
 module ZkFold.Symbolic.GroebnerBasis.Internal.Reduction where
 
-import           Data.Bool                        (bool)
-import           Prelude                          hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
+import           Data.Bool                                    (bool)
+import           Prelude                                      hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Types

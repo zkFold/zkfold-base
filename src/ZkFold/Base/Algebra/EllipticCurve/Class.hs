@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
