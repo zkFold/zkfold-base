@@ -9,12 +9,12 @@ import           Data.Maybe                  (fromJust)
 import           Numeric.Natural             (Natural)
 import           Prelude
 
-import           ZkFold.Base.Data.ByteString (FromByteString (..), ToByteString (..))
+import           ZkFold.Base.Data.ByteString
 
 class Monoid t => ToTranscript t a where
     toTranscript :: a -> t
 
-instance ToByteString a => ToTranscript ByteString a where
+instance Binary a => ToTranscript ByteString a where
     toTranscript = toByteString
 
 transcript :: ToTranscript t a => t -> a -> t
@@ -24,7 +24,7 @@ class Monoid t => FromTranscript t a where
     newTranscript  :: t -> t
     fromTranscript :: t -> a
 
-instance FromByteString a => FromTranscript ByteString a where
+instance Binary a => FromTranscript ByteString a where
     newTranscript  = cons 0
     fromTranscript = fromJust . fromByteString . hash
 

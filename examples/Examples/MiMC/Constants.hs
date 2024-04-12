@@ -7,7 +7,7 @@ import           Data.Maybe                      (fromJust)
 import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class (FromConstant (..))
-import           ZkFold.Base.Data.ByteString     (FromByteString (..), ToByteString (..))
+import           ZkFold.Base.Data.ByteString     (Binary (..))
 import           ZkFold.Symbolic.Types           (I)
 
 mimcSeed :: Integer

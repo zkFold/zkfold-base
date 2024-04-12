@@ -6,7 +6,7 @@ module ZkFold.Base.Protocol.ARK.Protostar.FiatShamir where
 import           Data.ByteString                                 (ByteString)
 import           Prelude                                         hiding (length)
 
-import           ZkFold.Base.Data.ByteString                     (FromByteString, ToByteString (..))
+import           ZkFold.Base.Data.ByteString                     (Binary (..))
 import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
 import qualified ZkFold.Base.Protocol.ARK.Protostar.SpecialSound as SpS
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
@@ -14,16 +14,16 @@ import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractive
 
 data FiatShamir f a = FiatShamir a (SpS.Input f a)
 
-fsChallenge :: forall f a c . (ToByteString (SpS.Input f a), FromByteString (VerifierMessage f a),
-      ToByteString c, ToByteString (VerifierMessage f a)) => FiatShamir f (CommitOpen f c a)
+fsChallenge :: forall f a c . (Binary (SpS.Input f a), Binary (VerifierMessage f a),
+      Binary c, Binary (VerifierMessage f a)) => FiatShamir f (CommitOpen f c a)
       -> SpecialSoundTranscript f (CommitOpen f c a) -> ProverMessage f (CommitOpen f c a) -> VerifierMessage f a
 fsChallenge (FiatShamir _ ip) []           c =
       let r0 = fst $ challenge @ByteString $ toTranscript ip :: VerifierMessage f a
       in fst $ challenge @ByteString $ toTranscript r0 <> toTranscript c
 fsChallenge _                 ((_, r) : _) c = fst $ challenge @ByteString $ toTranscript r <> toTranscript c
 
-instance (SpS.SpecialSoundProtocol f a, Eq c, ToByteString (SpS.Input f a), FromByteString (VerifierMessage f a),
-            ToByteString c, ToByteString (VerifierMessage f a)) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) where
+instance (SpS.SpecialSoundProtocol f a, Eq c, Binary (SpS.Input f a), Binary (VerifierMessage f a),
+            Binary c, Binary (VerifierMessage f a)) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) where
       type Transcript (FiatShamir f (CommitOpen f c a)) = ByteString
       type Setup (FiatShamir f (CommitOpen f c a))      = FiatShamir f (CommitOpen f c a)
       type Witness (FiatShamir f (CommitOpen f c a))    = SpS.Witness f a
