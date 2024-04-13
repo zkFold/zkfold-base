@@ -14,8 +14,8 @@ import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractive
 
 data FiatShamir f a = FiatShamir a (SpS.Input f a)
 
-fsChallenge :: forall f a c . (Binary (SpS.Input f a), Binary (VerifierMessage f a),
-      Binary c, Binary (VerifierMessage f a)) => FiatShamir f (CommitOpen f c a)
+fsChallenge :: forall f a c . (Binary (SpS.Input f a), Binary (VerifierMessage f a))
+      => FiatShamir f (CommitOpen f c a)
       -> SpecialSoundTranscript f (CommitOpen f c a) -> ProverMessage f (CommitOpen f c a) -> VerifierMessage f a
 fsChallenge (FiatShamir _ ip) []           c =
       let r0 = fst $ challenge @ByteString $ toTranscript ip :: VerifierMessage f a
