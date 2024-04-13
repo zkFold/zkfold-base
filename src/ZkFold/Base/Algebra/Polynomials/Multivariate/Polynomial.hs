@@ -13,6 +13,7 @@ import           Data.Functor                      ((<&>))
 import           Data.Bifunctor                    (Bifunctor(..))
 import           Data.List                         (intercalate, foldl')
 import           Data.Map                          (Map, empty)
+import           Numeric.Natural                   (Natural)
 import           GHC.Generics                      (Generic)
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 import           Test.QuickCheck                   (Arbitrary (..))
@@ -77,14 +78,10 @@ instance (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => AdditiveSemigrou
                 | ml > mr   = (cl, ml) : go ls ((cr, mr):rs)
                 | otherwise = (cr, mr) : go ((cl, ml):ls) rs
 
-<<<<<<< HEAD
 instance (Scale c' c, m ~ Map i j, p ~ [(c, M i j m)]) => Scale c' (P c i j m p) where
     scale c' (P p) = P $ map (first (scale c')) p
 
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => AdditiveMonoid (P c i j m p) where
-=======
-instance (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => AdditiveMonoid (P c i j m p) where
->>>>>>> 5de0359 (Remove `Monomial.Class`/`Polynomial.Class` modules)
     zero = P []
 
 instance (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => AdditiveGroup (P c i j m p) where
@@ -94,14 +91,10 @@ instance (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => MultiplicativeSe
     P l * r = foldl' (+) (P []) $ map (f r) l
         where f (P p) (c, m) = P $ map (bimap (* c) (* m)) p
 
-<<<<<<< HEAD
 instance MultiplicativeMonoid (P c i j m p) => Exponent (P c i j m p) Natural where
     (^) = natPow
 
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => MultiplicativeMonoid (P c i j m p) where
-=======
-instance (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => MultiplicativeMonoid (P c i j m p) where
->>>>>>> 5de0359 (Remove `Monomial.Class`/`Polynomial.Class` modules)
     one = P [(one, M empty)]
 
 instance (FromConstant c' c, m ~ Map i j, p ~ [(c, M i j m)]) => FromConstant c' (P c i j m p) where
@@ -109,11 +102,4 @@ instance (FromConstant c' c, m ~ Map i j, p ~ [(c, M i j m)]) => FromConstant c'
 
 instance (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Semiring (P c i j m p)
 
-<<<<<<< HEAD
 instance forall c i j m p . (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Ring (P c i j m p)
-=======
-instance (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Ring (P c i j m p)
-
-instance (Polynomial c i j, m ~ Map i j, p ~ [(c, M i j m)]) => Scale (P c i j m p) c where
-    scale c (P p) = P $ map (first (*c)) p
->>>>>>> 5de0359 (Remove `Monomial.Class`/`Polynomial.Class` modules)

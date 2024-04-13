@@ -20,6 +20,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , evalPolyVec
     , scalePV
     , polyVecZero
+    , polyVecDiv
     , polyVecLinear
     , polyVecLagrange
     , polyVecGrandProduct

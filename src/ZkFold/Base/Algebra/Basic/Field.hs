@@ -266,19 +266,11 @@ instance Field (Ext3 f e) => Exponent (Ext3 f e) Integer where
 instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where
     finv (Ext3 a b c) =
         let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @f @e)
-<<<<<<< HEAD
-        in case scaleP (one // lt g) 0 s of
-            P []     -> Ext3 zero zero zero
-            P [x]    -> Ext3 x zero zero
-            P [x, y] -> Ext3 x y zero
-            P v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
-=======
-        in case fromPoly $ scaleP (one / lt g) 0 s of
+        in case fromPoly $ scaleP (one // lt g) 0 s of
             []     -> Ext3 zero zero zero
             [x]    -> Ext3 x zero zero
             [x, y] -> Ext3 x y zero
             v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
->>>>>>> 60f8d34 (Hide `P`/`PV` constructors for polymonials)
 
     rootOfUnity n = (\r -> Ext3 r zero zero) <$> rootOfUnity n
 

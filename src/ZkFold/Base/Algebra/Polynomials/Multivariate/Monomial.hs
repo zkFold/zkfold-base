@@ -12,6 +12,7 @@ import           Data.Aeson                        (FromJSON, ToJSON)
 import           Data.List                         (intercalate)
 import           Data.Map                          (Map, toList, unionWith, differenceWith, empty, fromListWith)
 import qualified Data.Map                          as Map
+import           Numeric.Natural                   (Natural)
 import           GHC.Generics                      (Generic)
 import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
 import           Test.QuickCheck                   (Arbitrary (..))
