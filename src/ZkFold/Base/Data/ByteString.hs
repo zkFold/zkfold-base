@@ -28,7 +28,7 @@ fromByteString x = case runGetOrFail get (Lazy.fromStrict x) of
   Right (leftover, _, a) ->
     if Lazy.null leftover then Just a else Nothing
 
--- Little-endian encoding for unsigned integers
+-- Little-endian encoding for unsigned & unsized integers
 -- un little, deux little, trois little endians
 newtype LittleEndian = LittleEndian {unLittleEndian :: Natural}
   deriving stock (Read, Show)
