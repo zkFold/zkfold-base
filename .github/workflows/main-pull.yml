@@ -34,7 +34,7 @@ jobs:
           ${{ runner.os }}-
 
     - name: Install stylish-haskell
-      run: cabal install stylish-haskell
+      run: cabal install stylish-haskell --overwrite-policy=always
 
     - name: Run stylish-haskell
       run: |

@@ -29,4 +29,3 @@ exampleMiMC = do
     putStrLn "\nExample: MiMC hash function\n"
 
     compileIO @(Zp BLS12_381_Scalar) file (mimcHash @(ArithmeticCircuit (Zp BLS12_381_Scalar)) nRounds zero)
-
