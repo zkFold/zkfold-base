@@ -9,14 +9,14 @@ module ZkFold.Base.Data.ByteString
   , LittleEndian (..)
   ) where
 
-import           Control.Applicative                         (many)
+import           Control.Applicative  (many)
 import           Data.Binary
 import           Data.Binary.Get
 import           Data.Binary.Put
 import qualified Data.ByteString      as Strict
 import qualified Data.ByteString.Lazy as Lazy
-import           Data.Foldable                               (foldl')
-import           Numeric.Natural                             (Natural)
+import           Data.Foldable        (foldl')
+import           Numeric.Natural      (Natural)
 import           Prelude
 
 toByteString :: Binary a => a -> Strict.ByteString
