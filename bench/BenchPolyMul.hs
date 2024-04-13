@@ -41,11 +41,11 @@ sizes :: [Int]
 sizes = [1, 2, 3] <> (((4 :: Int) P.^) <$> [1..5 :: Int]) <> ((( 2 :: Int) P.^) <$> [11..13 :: Int])
 
 ops :: (Eq a, Field a) => [(String, Poly a -> Poly a -> Poly a)]
-ops = [ ("DFT multiplication", benchDft)
+ops = [ ("DFT multiplication", mulPolyDft)
       , ("Adaptive multiplication", (*))
       , ("Karatsuba multiplication", mulPolyKaratsuba)
       , ("Vector multiplication", mulPoly)
-      , ("Naive multiplication", benchNaive)
+      , ("Naive multiplication", mulPolyNaive)
       ]
 
 benchOps :: Prime a => Int -> [(String, Poly (Zp a) -> Poly (Zp a) -> Poly (Zp a))] -> Benchmark
@@ -58,10 +58,10 @@ main = do
   forM_ sizes $ \s -> do
       (p1, p2) <- polynomials @BLS12_381_Scalar s
       putStrLn $ "Size " <> show s
-      let ref = p1 `benchNaive` p2
+      let ref = p1 `mulPolyNaive` p2
       putStrLn $ "Karatsuba\t" <> show (ref == p1 `mulPolyKaratsuba` p2)
       putStrLn $ "Vector\t\t"  <> show (ref == p1 `mulPoly` p2)
-      putStrLn $ "DFT\t\t"     <> show (ref == p1 `benchDft` p2)
+      putStrLn $ "DFT\t\t"     <> show (ref == p1 `mulPolyDft` p2)
   defaultMain
       [ bgroup "Field with roots of unity"           $ flip fmap sizes $ \s -> benchOps @BLS12_381_Scalar s ops
       , bgroup "Field with roots of unity up to 256" $ flip fmap sizes $ \s -> benchOps @257 s $ tail ops
