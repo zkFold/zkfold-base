@@ -82,7 +82,7 @@ class ShiftBits a where
 
 
 -- | Describes types which can be split into words of equal size.
--- Parameters have from be of different types as ByteString store their lengths on type level and hence after splitting they chagne types.
+-- Parameters have to be of different types as ByteString store their lengths on type level and hence after splitting they chagne types.
 --
 class ToWords a b where
     toWords :: a -> [b]
@@ -100,7 +100,7 @@ class Truncate a b where
     truncate :: a -> b
 
 
--- | Describes types that can increase their capacity by adding zero bits from the beginning (i.e. before the higher register).
+-- | Describes types that can increase their capacity by adding zero bits to the beginning (i.e. before the higher register).
 --
 class Extend a b where
     extend :: a -> b
@@ -112,7 +112,7 @@ instance (Finite a, ToConstant a Natural, KnownNat n) => ToConstant (ByteString 
 
 instance (FromConstant Natural a, Finite a, KnownNat n) => FromConstant Natural (ByteString n a) where
 
-    -- | Pack a ByteString as tightly as possible, allocating the largest possible number of bits from each register.
+    -- | Pack a ByteString as tightly as possible, allocating the largest possible number of bits to each register.
     -- @fromConstant@ discards bits after @n@.
     -- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
     --
@@ -158,10 +158,10 @@ instance (KnownNat p, KnownNat n) => Arbitrary (ByteString n (Zp p)) where
 instance (KnownNat p, KnownNat n) => ShiftBits (ByteString n (Zp p)) where
     shiftBits b s = fromConstant $ shift (toConstant @_ @Natural b) (Haskell.fromIntegral s) `Haskell.mod` (2 Haskell.^ (getNatural @n))
 
-    -- | @Data.Bits.rotate@ works exactly as @Data.Bits.shift@ for @Natural@, we have from rotate bits manually.
+    -- | @Data.Bits.rotate@ works exactly as @Data.Bits.shift@ for @Natural@, we have to rotate bits manually.
     rotateBitsL b s
       | s == 0 = b
-       -- Rotations by k * n + p bits where n is the length of the ByteString are equivalent from rotations by p bits.
+       -- Rotations by k * n + p bits where n is the length of the ByteString are equivalent to rotations by p bits.
       | s >= (getNatural @n) = rotateBitsL b (s `Haskell.mod` (getNatural @n))
       | otherwise = fromConstant $ d + m
         where
@@ -176,7 +176,7 @@ instance (KnownNat p, KnownNat n) => ShiftBits (ByteString n (Zp p)) where
 
     rotateBitsR b s
       | s == 0 = b
-       -- Rotations by k * n + p bits where n is the length of the ByteString are equivalent from rotations by p bits.
+       -- Rotations by k * n + p bits where n is the length of the ByteString are equivalent to rotations by p bits.
       | s >= (getNatural @n) = rotateBitsR b (s `Haskell.mod` (getNatural @n))
       | otherwise = fromConstant $ d + m
         where
@@ -200,7 +200,7 @@ instance (KnownNat p, KnownNat n) => BoolType (ByteString n (Zp p)) where
     true = not false
 
     -- | bitwise not.
-    -- @Data.Bits.complement@ is undefined for @Natural@, we have from flip bits manually.
+    -- @Data.Bits.complement@ is undefined for @Natural@, we have to flip bits manually.
     not = fromConstant @Natural . (nextPow2 -!) . toConstant
       where
         nextPow2 :: Natural
@@ -247,7 +247,7 @@ instance
         natWords = unfoldr (toBase (2 Haskell.^ wordSize)) asNat <> Haskell.repeat (fromConstant @Natural 0)
 
 -- | Unfortunately, Haskell does not support dependent types yet,
--- so we have no possibility from infer the exact type of the result
+-- so we have no possibility to infer the exact type of the result
 -- (the list can contain an arbitrary number of words).
 -- We can only impose some restrictions on @n@ and @m@.
 --
@@ -291,7 +291,7 @@ instance
 
 --------------------------------------------------------------------------------
 
--- | Convert an @ArithmeticCircuit@ from bits and return their corresponding variables.
+-- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 --
 toBits
     :: forall a
@@ -417,7 +417,7 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
 
 
 -- | A generic bitwise operation on two ByteStrings.
--- TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit from 0 or 1.
+-- TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit to 0 or 1.
 --
 bitwiseOperation
     :: forall a n
