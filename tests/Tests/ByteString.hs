@@ -26,8 +26,8 @@ import           ZkFold.Prelude                   (chooseNatural)
 import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Data.Combinators (Iso (..))
+import           ZkFold.Symbolic.Data.UInt
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -161,12 +161,12 @@ specByteString = hspec $ do
             let acX :: ByteString n (ArithmeticCircuit (Zp p)) = fromConstant x
                 acY :: ByteString n (ArithmeticCircuit (Zp p)) = fromConstant y
 
-                acSum :: ByteString n (ArithmeticCircuit (Zp p)) = from $ from acX + (from acY :: UInt n (ArithmeticCircuit (Zp p))) 
+                acSum :: ByteString n (ArithmeticCircuit (Zp p)) = from $ from acX + (from acY :: UInt n (ArithmeticCircuit (Zp p)))
 
                 zpSum :: ByteString n (Zp p) = fromConstant $ x + y
 
-            
-            return $ eval acSum === zpSum 
+
+            return $ eval acSum === zpSum
         it "applies bitwise OR correctly" $ isHom @n @p (||) (||) <$> toss m <*> toss m
         it "applies bitwise XOR correctly" $ isHom @n @p xor xor <$> toss m <*> toss m
         it "has false" $ eval @(Zp p) @n false === false

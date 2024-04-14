@@ -3,7 +3,8 @@ module ZkFold.Symbolic.GroebnerBasis.Internal where
 import           Data.List                                        (sortBy)
 import           Data.Map                                         (notMember)
 import           Numeric.Natural                                  (Natural)
-import           Prelude                                          hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
+import           Prelude                                          hiding (Num (..), drop, lcm, length, sum, take, (!!),
+                                                                   (/))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                                   (length)

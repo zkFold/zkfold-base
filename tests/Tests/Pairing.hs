@@ -13,7 +13,8 @@ import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, deg, evalPolyVec, polyVecDiv, scalePV, toPolyVec, vec2poly)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, deg, evalPolyVec, polyVecDiv, scalePV, toPolyVec,
+                                                             vec2poly)
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 
 propVerificationKZG :: forall c1 c2 t f . (Pairing c1 c2 t, f ~ ScalarField c1, f ~ ScalarField c2)

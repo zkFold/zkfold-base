@@ -2,7 +2,8 @@
 
 module Examples.LEQ (exampleLEQ) where
 
-import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), any, not, (!!), (/), (^), (||))
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), any, not, (!!),
+                                                              (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)

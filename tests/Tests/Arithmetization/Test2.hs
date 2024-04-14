@@ -2,7 +2,8 @@
 
 module Tests.Arithmetization.Test2 (specArithmetization2) where
 
-import           Prelude                                     hiding (Bool, Eq (..), Num (..), not, replicate, (/), (^), (||))
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), not, replicate, (/), (^),
+                                                              (||))
 import           Test.Hspec
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)

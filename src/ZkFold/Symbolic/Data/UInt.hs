@@ -18,7 +18,8 @@ import           Data.Traversable                                       (for, tr
 import           Data.Tuple                                             (swap)
 import           GHC.Natural                                            (naturalFromInteger)
 import           GHC.TypeNats                                           (KnownNat, Natural)
-import           Prelude                                                (Integer, error, flip, otherwise, return, ($), (++), (.), (>>=))
+import           Prelude                                                (Integer, error, flip, otherwise, return, ($),
+                                                                         (++), (.), (>>=))
 import qualified Prelude                                                as Haskell
 import           Test.QuickCheck                                        (Arbitrary (..), chooseInteger)
 

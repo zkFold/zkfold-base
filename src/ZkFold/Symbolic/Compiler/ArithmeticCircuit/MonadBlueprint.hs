@@ -20,7 +20,8 @@ import           Data.Map                                            ((!))
 import           Data.Set                                            (Set)
 import qualified Data.Set                                            as Set
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Bool (..), Eq (..), replicate, (*), (+), (-))
+import           Prelude                                             hiding (Bool (..), Eq (..), replicate, (*), (+),
+                                                                      (-))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)

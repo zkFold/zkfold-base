@@ -13,7 +13,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
 import           Data.Foldable                                             (foldlM)
 import           Data.Traversable                                          (for)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   hiding (Bool, Eq (..), negate, splitAt, (!!), (*), (+), (-), (^))
+import           Prelude                                                   hiding (Bool, Eq (..), negate, splitAt, (!!),
+                                                                            (*), (+), (-), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                                            (splitAt, (!!))

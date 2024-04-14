@@ -1,7 +1,8 @@
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution where
 
 import           Data.Map                                              (Map, lookup)
-import           Prelude                                               hiding (Num (..), length, lookup, product, replicate, sum, (!!), (^))
+import           Prelude                                               hiding (Num (..), length, lookup, product,
+                                                                        replicate, sum, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Field                       (Zp, fromZp)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial

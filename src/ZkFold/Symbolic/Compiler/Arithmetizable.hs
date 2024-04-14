@@ -12,7 +12,8 @@ module ZkFold.Symbolic.Compiler.Arithmetizable (
 
 import           Data.Typeable                                             (Typeable)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
+import           Prelude                                                   hiding (Num (..), drop, length, product,
+                                                                            splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number

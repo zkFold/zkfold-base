@@ -1,7 +1,8 @@
 module ZkFold.Symbolic.GroebnerBasis.Internal.Types where
 
 import           Data.List                       (foldl', intercalate)
-import           Data.Map                        (Map, differenceWith, empty, intersectionWith, isSubmapOfBy, keys, toList, unionWith)
+import           Data.Map                        (Map, differenceWith, empty, intersectionWith, isSubmapOfBy, keys,
+                                                  toList, unionWith)
 import qualified Data.Map                        as Map
 import           Numeric.Natural                 (Natural)
 import           Prelude                         hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
