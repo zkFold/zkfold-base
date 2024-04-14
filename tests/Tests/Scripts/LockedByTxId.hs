@@ -15,7 +15,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkP
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Cardano.Types               (TxId (..))
-import           ZkFold.Symbolic.Compiler                    hiding (input)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
