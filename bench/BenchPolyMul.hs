@@ -6,11 +6,10 @@
 
 module Main where
 
-import           Control.DeepSeq                             (NFData (..), force)
+import           Control.DeepSeq                             (force)
 import           Control.Exception                           (evaluate)
 import           Control.Monad                               (forM_, replicateM)
 import qualified Data.Vector                                 as V
-import           GHC.Generics
 import           Prelude                                     hiding (sum, (*), (+), (-), (/), (^))
 import qualified Prelude                                     as P
 import           System.Random                               (randomIO)
@@ -22,9 +21,6 @@ import           ZkFold.Base.Algebra.Basic.Number            (Prime)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Prelude                              (zipWithDefault)
-
-deriving instance Generic (Poly c)
-deriving instance (Generic c, NFData c) => NFData (Poly c)
 
 -- | Only for testing DFT with smaller numbers which can be easily calculated by hand for cross-check.
 -- DFT of a polynomial of length n requires calculating primitive roots of unity of order n.
@@ -45,11 +41,11 @@ sizes :: [Int]
 sizes = [1, 2, 3] <> (((4 :: Int) P.^) <$> [1..5 :: Int]) <> ((( 2 :: Int) P.^) <$> [11..13 :: Int])
 
 ops :: (Eq a, Field a) => [(String, Poly a -> Poly a -> Poly a)]
-ops = [ ("DFT multiplication", benchDft)
+ops = [ ("DFT multiplication", mulPolyDft)
       , ("Adaptive multiplication", (*))
-      , ("Karatsuba multiplication", benchKaratsuba)
-      , ("Vector multiplication", benchVec)
-      , ("Naive multiplication", benchNaive)
+      , ("Karatsuba multiplication", mulPolyKaratsuba)
+      , ("Vector multiplication", mulPoly)
+      , ("Naive multiplication", mulPolyNaive)
       ]
 
 benchOps :: Prime a => Int -> [(String, Poly (Zp a) -> Poly (Zp a) -> Poly (Zp a))] -> Benchmark
@@ -62,53 +58,12 @@ main = do
   forM_ sizes $ \s -> do
       (p1, p2) <- polynomials @BLS12_381_Scalar s
       putStrLn $ "Size " <> show s
-      let ref = p1 `benchNaive` p2
-      putStrLn $ "Karatsuba\t" <> show (ref == p1 `benchKaratsuba` p2)
-      putStrLn $ "Vector\t\t"  <> show (ref == p1 `benchVec` p2)
-      putStrLn $ "DFT\t\t"     <> show (ref == p1 `benchDft` p2)
+      let ref = p1 `mulPolyNaive` p2
+      putStrLn $ "Karatsuba\t" <> show (ref == p1 `mulPolyKaratsuba` p2)
+      putStrLn $ "Vector\t\t"  <> show (ref == p1 `mulPoly` p2)
+      putStrLn $ "DFT\t\t"     <> show (ref == p1 `mulPolyDft` p2)
   defaultMain
       [ bgroup "Field with roots of unity"           $ flip fmap sizes $ \s -> benchOps @BLS12_381_Scalar s ops
       , bgroup "Field with roots of unity up to 256" $ flip fmap sizes $ \s -> benchOps @257 s $ tail ops
       , bgroup "Field without roots of unity"        $ flip fmap sizes $ \s -> benchOps @BLS12_381_Base s $ tail ops
       ]
-
--- | Naive vector multiplication, O(n^2)
---
-benchVec :: forall a. Field a => Poly a -> Poly a -> Poly a
-benchVec (P v1) (P v2) = P (mulVector v1 v2)
-
--- | Adaptation of Karatsuba's algorithm. O(n^log_2(3))
---
-benchKaratsuba :: forall a. (Field a, Eq a) => Poly a -> Poly a -> Poly a
-benchKaratsuba (P v1) (P v2) = removeZeros $ P result
-  where
-    l = max (V.length v1) (V.length v2)
-    p = ceiling @Double @Integer $ logBase 2 (fromIntegral l)
-
-    pad = 2 P.^ p
-
-    result = mulKaratsuba (v1 V.++ V.replicate (pad P.- V.length v1) zero) (v2 V.++ V.replicate (pad P.- V.length v2) zero)
-
--- DFT multiplication of vectors. O(nlogn)
---
-benchDft :: forall a . (Field a, Eq a) => Poly a -> Poly a -> Poly a
-benchDft (P v1) (P v2) = removeZeros $ P result
-  where
-    l = max (V.length v1) (V.length v2)
-    p = (ceiling @Double $ logBase 2 (fromIntegral l)) P.+ 1
-
-    w2n :: a
-    w2n = case rootOfUnity $ fromIntegral p of
-            Just a -> a
-            _      -> undefined
-
-    pad = 2 P.^ p
-
-    result = mulDft @a p w2n (v1 V.++ V.replicate (pad P.- V.length v1) zero) (v2 V.++ V.replicate (pad P.- V.length v2) zero)
-
-
-benchNaive :: (Eq a, Field a) => Poly a -> Poly a -> Poly a
-benchNaive (P v1) (P v2) = removeZeros $ P $ V.fromList $ go (V.toList v1) (V.toList v2)
-    where
-        go [] _      = []
-        go (x:xs) ys = zipWithDefault (+) zero zero (map (x *) ys) (zero : go xs ys)

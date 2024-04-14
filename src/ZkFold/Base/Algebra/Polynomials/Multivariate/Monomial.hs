@@ -1,21 +1,49 @@
 {-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial (
-        module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial.Class,
-        M(..)
-) where
+module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
+    ( M(..)
+    , Monomial
+    , FromMonomial(..)
+    , ToMonomial(..)
+    , Variable
+    ) where
 
-import           Data.Aeson                                                  (FromJSON, ToJSON)
-import           Data.List                                                   (intercalate)
-import           Data.Map                                                    (Map, differenceWith, empty, toList, unionWith)
-import qualified Data.Map                                                    as Map
-import           GHC.Generics                                                (Generic)
-import           Numeric.Natural                                             (Natural)
-import           Prelude                                                     hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
-import           Test.QuickCheck                                             (Arbitrary (..))
+import           Data.Aeson                        (FromJSON, ToJSON)
+import           Data.List                         (intercalate)
+import           Data.Map                          (Map, toList, unionWith, differenceWith, empty, fromListWith)
+import qualified Data.Map                          as Map
+import           Numeric.Natural                   (Natural)
+import           GHC.Generics                      (Generic)
+import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
+import           Test.QuickCheck                   (Arbitrary (..))
 
+import           ZkFold.Base.Data.Vector
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial.Class
+import           ZkFold.Base.Algebra.Basic.Number
+
+type Variable i = Ord i
+
+type Monomial i j = (Variable i, Ord j, Semiring j)
+
+class Monomial i j => FromMonomial i j m where
+    fromMonomial :: m -> Map i j
+
+instance Monomial i j => FromMonomial i j (Map i j) where
+    fromMonomial = id
+
+instance Monomial i Bool => FromMonomial i Bool (Vector d (i, Bool)) where
+    fromMonomial v = fromListWith (+) $ map (\(i, _) -> (i, one)) $ filter snd $ fromVector v
+
+class Monomial i j => ToMonomial i j m where
+    toMonomial   :: Map i j -> Maybe m
+
+instance Monomial i j => ToMonomial i j (Map i j) where
+    toMonomial   = Just . Map.filter (/= zero)
+
+instance (Monomial i j, Integral j, KnownNat d) => ToMonomial i j (Vector d (i, Bool)) where
+    toMonomial m =
+        let v = foldl (\acc (i, j) -> acc ++ replicate (fromIntegral j) (i, True)) [] $ Map.toList m
+        in toVector v
 
 -- | Monomial type
 newtype M i j m = M m
