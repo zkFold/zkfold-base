@@ -25,9 +25,9 @@ import           GHC.Generics                                              (Gene
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (KnownNat, Mod, Natural, natVal, type (<=))
 import           Prelude                                                   (Bool (..), Integer, divMod, drop, error,
-                                                                            fmap, head, length, otherwise, pure, tail,
-                                                                            take, type (~), ($), (.), (<$>), (<), (<*>),
-                                                                            (<>), (==), (>=))
+                                                                            fmap, head, length, null, otherwise, pure,
+                                                                            tail, take, type (~), ($), (.), (<$>), (<),
+                                                                            (<*>), (<>), (==), (>=))
 import qualified Prelude                                                   as Haskell
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
@@ -39,6 +39,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expa
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (ClosedPoly)
 import           ZkFold.Symbolic.Data.Bool                                 (BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.UInt
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers.
@@ -81,7 +82,7 @@ class ShiftBits a where
 
 
 -- | Describes types which can be split into words of equal size.
--- Parameters have to be of different types as ByteString store their lengths on type level and hence after splitting they chage types.
+-- Parameters have from be of different types as ByteString store their lengths on type level and hence after splitting they chagne types.
 --
 class ToWords a b where
     toWords :: a -> [b]
@@ -99,11 +100,10 @@ class Truncate a b where
     truncate :: a -> b
 
 
--- | Describes types that can increase their capacity by adding zero bits to the beginning (i.e. before the higher register).
+-- | Describes types that can increase their capacity by adding zero bits from the beginning (i.e. before the higher register).
 --
 class Extend a b where
     extend :: a -> b
-
 
 instance (Finite a, ToConstant a Natural, KnownNat n) => ToConstant (ByteString n a) Natural where
     toConstant (ByteString x xs) = Haskell.foldl (\y p -> toConstant p + base * y) 0 (x:xs)
@@ -112,7 +112,7 @@ instance (Finite a, ToConstant a Natural, KnownNat n) => ToConstant (ByteString 
 
 instance (FromConstant Natural a, Finite a, KnownNat n) => FromConstant Natural (ByteString n a) where
 
-    -- | Pack a ByteString as tightly as possible, allocating the largest possible number of bits to each register.
+    -- | Pack a ByteString as tightly as possible, allocating the largest possible number of bits from each register.
     -- @fromConstant@ discards bits after @n@.
     -- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
     --
@@ -134,28 +134,34 @@ toBase base b = let (d, m) = b `divMod` base in Just (fromConstant m, d)
 
 
 instance (FromConstant Natural a, Finite a, KnownNat n) => FromConstant Integer (ByteString n a) where
-    fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 Haskell.^ getNatural @n))
+    fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
+
+
+instance (KnownNat p, KnownNat n) => Iso (ByteString n (Zp p)) (UInt n (Zp p)) where
+    from bs@(ByteString r rs)
+      | null rs && ((highRegisterSize @(Zp p) @n) >= (getNatural @n)) = UInt [] r
+      | otherwise = fromConstant @Natural . toConstant $ bs
+
+instance (KnownNat p, KnownNat n) => Iso (UInt n (Zp p)) (ByteString n (Zp p)) where
+    from ui@(UInt rs r)
+      | null rs = ByteString r rs -- A ByteString's high register always has at least the same capacity as UInt's
+      | otherwise = fromConstant @Natural . toConstant $ ui
 
 
 instance (KnownNat p, KnownNat n) => Arbitrary (ByteString n (Zp p)) where
     arbitrary = ByteString
         <$> toss (highRegisterBits @(Zp p) @n)
         <*> replicateA (minNumberOfRegisters @(Zp p) @n -! 1) (toss $ maxBitsPerRegister @(Zp p) @n)
-        where toss b = fromConstant <$> chooseInteger (0, 2 Haskell.^ b - 1)
-
-
--- | TODO: This implementation duplicates that of UInt. Can we merge them somehow?
-instance (KnownNat p, KnownNat n) => AdditiveSemigroup (ByteString n (Zp p)) where
-    x + y = fromConstant $ toConstant x + (toConstant @_ @Natural) y
+        where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 
 instance (KnownNat p, KnownNat n) => ShiftBits (ByteString n (Zp p)) where
     shiftBits b s = fromConstant $ shift (toConstant @_ @Natural b) (Haskell.fromIntegral s) `Haskell.mod` (2 Haskell.^ (getNatural @n))
 
-    -- | @Data.Bits.rotate@ works exactly as @Data.Bits.shift@ for @Natural@, we have to rotate bits manually.
+    -- | @Data.Bits.rotate@ works exactly as @Data.Bits.shift@ for @Natural@, we have from rotate bits manually.
     rotateBitsL b s
       | s == 0 = b
-       -- Rotations by k * n + p bits where n is the length of the ByteString are equivalent to rotations by p bits.
+       -- Rotations by k * n + p bits where n is the length of the ByteString are equivalent from rotations by p bits.
       | s >= (getNatural @n) = rotateBitsL b (s `Haskell.mod` (getNatural @n))
       | otherwise = fromConstant $ d + m
         where
@@ -170,7 +176,7 @@ instance (KnownNat p, KnownNat n) => ShiftBits (ByteString n (Zp p)) where
 
     rotateBitsR b s
       | s == 0 = b
-       -- Rotations by k * n + p bits where n is the length of the ByteString are equivalent to rotations by p bits.
+       -- Rotations by k * n + p bits where n is the length of the ByteString are equivalent from rotations by p bits.
       | s >= (getNatural @n) = rotateBitsR b (s `Haskell.mod` (getNatural @n))
       | otherwise = fromConstant $ d + m
         where
@@ -190,11 +196,11 @@ instance (KnownNat p, KnownNat n) => ShiftBits (ByteString n (Zp p)) where
 instance (KnownNat p, KnownNat n) => BoolType (ByteString n (Zp p)) where
     false = fromConstant (0 :: Natural)
 
-    -- | A ByteString with all bits set to 1 is the unity for bitwise and.
+    -- | A ByteString with all bits set from 1 is the unity for bitwise and.
     true = not false
 
     -- | bitwise not.
-    -- @Data.Bits.complement@ is undefined for @Natural@, we have to flip bits manually.
+    -- @Data.Bits.complement@ is undefined for @Natural@, we have from flip bits manually.
     not = fromConstant @Natural . (nextPow2 -!) . toConstant
       where
         nextPow2 :: Natural
@@ -241,7 +247,7 @@ instance
         natWords = unfoldr (toBase (2 Haskell.^ wordSize)) asNat <> Haskell.repeat (fromConstant @Natural 0)
 
 -- | Unfortunately, Haskell does not support dependent types yet,
--- so we have no possibility to infer the exact type of the result
+-- so we have no possibility from infer the exact type of the result
 -- (the list can contain an arbitrary number of words).
 -- We can only impose some restrictions on @n@ and @m@.
 --
@@ -285,21 +291,21 @@ instance
 
 --------------------------------------------------------------------------------
 
--- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
+-- | Convert an @ArithmeticCircuit@ from bits and return their corresponding variables.
 --
 toBits
-    :: forall n a
-    .  Arithmetic a
-    => KnownNat n
-    => ArithmeticCircuit a
+    :: forall a
+    .  ArithmeticCircuit a
     -> [ArithmeticCircuit a]
+    -> Natural
+    -> Natural
     -> (forall i m. MonadBlueprint i a m => m [i])
-toBits hi lo = do
+toBits hi lo hiBits loBits = do
     lows <- mapM runCircuit lo
     high <- runCircuit hi
 
-    bitsLow  <- Haskell.concatMap Haskell.reverse <$> mapM (expansion (maxBitsPerRegister @a @n)) lows
-    bitsHigh <- Haskell.reverse <$> expansion (highRegisterBits @a @n) high
+    bitsLow  <- Haskell.concatMap Haskell.reverse <$> mapM (expansion loBits) lows
+    bitsHigh <- Haskell.reverse <$> expansion hiBits high
 
     pure $ bitsHigh <> bitsLow
 
@@ -307,13 +313,13 @@ toBits hi lo = do
 -- | The inverse of @toBits@.
 --
 fromBits
-    :: forall n a
-    .  Arithmetic a
-    => KnownNat n
-    => (forall i m. MonadBlueprint i a m => [i] -> m [i])
-fromBits bits = do
-    let (bitsHighNew, bitsLowNew) = splitAt (Haskell.fromIntegral $ highRegisterBits @a @n) bits
-    let lowVarsNew = chunksOf (Haskell.fromIntegral $ maxBitsPerRegister @a @n) bitsLowNew
+    :: forall a
+    .  Natural
+    -> Natural
+    -> (forall i m. MonadBlueprint i a m => [i] -> m [i])
+fromBits hiBits loBits bits = do
+    let (bitsHighNew, bitsLowNew) = splitAt (Haskell.fromIntegral hiBits) bits
+    let lowVarsNew = chunksOf (Haskell.fromIntegral loBits) bitsLowNew
 
     lowsNew <- mapM (horner . Haskell.reverse) lowVarsNew
     highNew <- horner . Haskell.reverse $  bitsHighNew
@@ -327,42 +333,35 @@ instance (Arithmetic a, KnownNat n) => Arithmetizable a (ByteString n (Arithmeti
 
     restore as
       | Haskell.fromIntegral (length as) == minNumberOfRegisters @a @n = ByteString (head as) (tail as)
-      | otherwise = error "UInt: invalid number of values"
+      | otherwise = error "ByteString: invalid number of values"
 
     typeSize = minNumberOfRegisters @a @n
 
 
--- TODO: I really don't like that summation is implemented here and in UInt. Can we do something about it?
--- Converting ByteStrings to UInt and back will flood the circuit with new constraints because of different bit layouts in these types.
---
-instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (ByteString n (ArithmeticCircuit a)) where
-    ByteString x xs + ByteString y ys =
-      case circuits solve of
-          []     -> error "ByteString: unreachable"
-          (r:rs) -> ByteString r rs
+instance (Arithmetic a, KnownNat n) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a)) where
+    from (ByteString r rs)
+      | null rs && ((highRegisterSize @a @n) >= (getNatural @n)) = UInt [] r
+      | otherwise = case circuits solve of
+                      (x:xs) -> UInt (Haskell.reverse xs) x
+                      _      -> error "Iso ByteString UInt : unreachable"
         where
-            solve :: MonadBlueprint i a m => m [i]
+            solve :: forall i m. MonadBlueprint i a m => m [i]
             solve = do
-                bitsL <- Haskell.reverse <$> toBits @n @a x xs
-                bitsR <- Haskell.reverse <$> toBits @n @a y ys
-                c <- newAssigned (Haskell.const zero)
-                bitsSum <- zipWithCarryM sum3 c bitsL bitsR
-                fromBits @n @a $ Haskell.reverse bitsSum
+                bsBits <- toBits r rs (highRegisterBits @a @n) (maxBitsPerRegister @a @n)
+                fromBits (highRegisterSize @a @n) (registerSize @a @n) bsBits
 
-            sum3 :: MonadBlueprint i a m => i -> i -> i -> m (i, i)
-            sum3 a b c = do
-                r' <- newAssigned $ \p -> p a + p b - p a * p b - p a * p b
-                r  <- newAssigned $ \p -> p r' + p c - p r' * p c - p r' * p c -- Result bit
-                c' <- newAssigned $ \p -> p a * p b + p r' * p c               -- Carry bit
-                pure (r, c')
+instance (Arithmetic a, KnownNat n) => Iso (UInt n (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
+    from (UInt rs r)
+      | null rs = ByteString r rs -- A ByteString's high register always has at least the same capacity as UInt's
+      | otherwise = case circuits solve of
+                      (x:xs) -> ByteString x xs
+                      _      -> error "Iso ByteString UInt : unreachable"
+        where
+            solve :: forall i m. MonadBlueprint i a m => m [i]
+            solve = do
+                bsBits <- toBits r (Haskell.reverse rs) (highRegisterSize @a @n) (registerSize @a @n)
+                fromBits (highRegisterBits @a @n) (maxBitsPerRegister @a @n) bsBits
 
-
-            zipWithCarryM :: MonadBlueprint i a m => (i -> i -> i -> m (i, i)) -> i -> [i] -> [i] -> m [i]
-            zipWithCarryM _ _ [] _ = pure []
-            zipWithCarryM _ _ _ [] = pure []
-            zipWithCarryM f c (a:as) (b:bs) = do
-                (r, c') <- f c a b
-                (r:) <$> zipWithCarryM f c' as bs
 
 -- | Perform some operation on a list of bits.
 --
@@ -374,11 +373,11 @@ moveBits
     -> [ArithmeticCircuit a]
     -> (forall i m. MonadBlueprint i a m => ([i] -> [i]) -> m [i])
 moveBits hi lo processList = do
-    bits <- toBits @n @a hi lo
+    bits <- toBits @a hi lo (highRegisterBits @a @n) (maxBitsPerRegister @a @n)
 
     let newBits = processList bits
 
-    fromBits @n @a newBits
+    fromBits @a (highRegisterBits @a @n) (maxBitsPerRegister @a @n) newBits
 
 
 instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircuit a)) where
@@ -418,7 +417,7 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
 
 
 -- | A generic bitwise operation on two ByteStrings.
--- TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit to 0 or 1.
+-- TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit from 0 or 1.
 --
 bitwiseOperation
     :: forall a n
@@ -478,7 +477,6 @@ instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit
 instance
   ( KnownNat wordSize
   , KnownNat n
-  , wordSize <= n
   , 1 <= wordSize
   , 1 <= n
   , Mod n wordSize ~ 0
@@ -493,28 +491,27 @@ instance
 
         solve :: forall i m. MonadBlueprint i a m => m [i]
         solve = do
-            bits <- toBits @n @a x xs
+            bits <- toBits @a x xs (highRegisterBits @a @n) (maxBitsPerRegister @a @n)
             let words = chunksOf (Haskell.fromIntegral $ getNatural @wordSize) bits
-            wordsBits <- mapM (fromBits @wordSize @a) words
+            wordsBits <- mapM (fromBits @a (highRegisterBits @a @wordSize) (maxBitsPerRegister @a @wordSize)) words
             pure $ Haskell.concat wordsBits
 
 instance
   ( KnownNat m
   , KnownNat n
-  , m <= n
   , Mod n m ~ 0
   , Arithmetic a
   ) => Concat (ByteString m (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
 
     concat bs =
         case circuits solve of
-          []     -> error "<+> :: Unreachable"
+          []     -> error "concat :: Unreachable"
           (r:rs) -> ByteString r rs
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do
-            bits <- mapM (\(ByteString x xs) -> toBits @m @a x xs) bs
-            fromBits @n @a $ Haskell.concat bits
+            bits <- mapM (\(ByteString x xs) -> toBits @a x xs (highRegisterBits @a @m) (maxBitsPerRegister @a @m)) bs
+            fromBits @a (highRegisterBits @a @n) (maxBitsPerRegister @a @n) $ Haskell.concat bits
 
 instance
   ( KnownNat m
@@ -530,8 +527,8 @@ instance
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do
-            bits <- take (Haskell.fromIntegral $ getNatural @n) <$> toBits @m @a x xs
-            fromBits @n @a $ bits
+            bits <- take (Haskell.fromIntegral $ getNatural @n) <$> toBits @a x xs (highRegisterBits @a @m) (maxBitsPerRegister @a @m)
+            fromBits @a (highRegisterBits @a @n) (maxBitsPerRegister @a @n) $ bits
 
 instance
   ( KnownNat m
@@ -547,9 +544,9 @@ instance
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do
-            bits <- toBits @m @a x xs
+            bits <- toBits @a x xs (highRegisterBits @a @m) (maxBitsPerRegister @a @m)
             zeros <- replicateM diff $ newAssigned (Haskell.const zero)
-            fromBits @n @a $ zeros <> bits
+            fromBits @a (highRegisterBits @a @n) (maxBitsPerRegister @a @n) $ zeros <> bits
 
         diff :: Haskell.Int
         diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @m
