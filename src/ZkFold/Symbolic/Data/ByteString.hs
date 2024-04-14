@@ -196,7 +196,7 @@ instance (KnownNat p, KnownNat n) => ShiftBits (ByteString n (Zp p)) where
 instance (KnownNat p, KnownNat n) => BoolType (ByteString n (Zp p)) where
     false = fromConstant (0 :: Natural)
 
-    -- | A ByteString with all bits set from 1 is the unity for bitwise and.
+    -- | A ByteString with all bits set to 1 is the unity for bitwise and.
     true = not false
 
     -- | bitwise not.
