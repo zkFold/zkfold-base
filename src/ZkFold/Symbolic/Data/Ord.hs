@@ -63,13 +63,13 @@ newtype Lexicographical a = Lexicographical a
 -- ^ A newtype wrapper for easy definition of Ord instances
 -- (though not necessarily a most effective one)
 
-deriving newtype instance Arithmetizable a x => Arithmetizable a (Lexicographical x)
+deriving newtype instance SymbolicData a x => SymbolicData a (Lexicographical x)
 
 deriving via (Lexicographical (ArithmeticCircuit a))
     instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a)
 
--- | Every @Arithmetizable@ type can be compared lexicographically.
-instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x) where
+-- | Every @SymbolicData@ type can be compared lexicographically.
+instance SymbolicData a x => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -82,10 +82,10 @@ instance Arithmetizable a x => Ord (Bool (ArithmeticCircuit a)) (Lexicographical
 
     min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
-getBitsBE :: Arithmetizable a x => x -> [ArithmeticCircuit a]
+getBitsBE :: SymbolicData a x => x -> [ArithmeticCircuit a]
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = concatMap (reverse . binaryExpansion) $ circuits $ arithmetize x
+getBitsBE x = concatMap (reverse . binaryExpansion) $ pieces x
 
 circuitGE :: Arithmetic a => [ArithmeticCircuit a] -> [ArithmeticCircuit a] -> Bool (ArithmeticCircuit a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.

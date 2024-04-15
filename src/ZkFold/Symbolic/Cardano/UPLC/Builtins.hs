@@ -8,7 +8,7 @@ import           Prelude                           (($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Cardano.UPLC.Type
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Compiler          (Arithmetic, ArithmeticCircuit, SomeArithmetizable (..))
 
 -- TODO: Add the actual builtins available on-chain in Plutus V3
 
@@ -24,13 +24,13 @@ data BuiltinFunctions =
 -- TODO: use shortcuts to make these definitions more readable
 instance forall a . (Arithmetic a, Typeable a) => PlutusBuiltinFunction a BuiltinFunctions where
     builtinFunctionType AddField =
-          SomeFunction (SomeData $ Proxy @(ArithmeticCircuit a))
-        $ SomeFunction (SomeData $ Proxy @(ArithmeticCircuit a))
-        $ SomeData $ Proxy @(ArithmeticCircuit a)
+          SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a))
+        $ SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a))
+        $ SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a)
     builtinFunctionType MulField =
-        SomeFunction (SomeData $ Proxy @(ArithmeticCircuit a))
-        $ SomeFunction (SomeData $ Proxy @(ArithmeticCircuit a))
-        $ SomeData $ Proxy @(ArithmeticCircuit a)
+        SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a))
+        $ SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a))
+        $ SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a)
 
     builtinFunctionRep AddField = SomeArithmetizable $ \(x :: ArithmeticCircuit a) (y :: ArithmeticCircuit a) -> x + y
     builtinFunctionRep MulField = SomeArithmetizable $ \(x :: ArithmeticCircuit a) (y :: ArithmeticCircuit a) -> x * y

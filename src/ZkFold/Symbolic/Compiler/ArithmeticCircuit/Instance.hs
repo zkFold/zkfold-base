@@ -20,7 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, expansion, horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
-import           ZkFold.Symbolic.Compiler.Arithmetizable                   (Arithmetizable (..))
+import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
@@ -28,8 +28,8 @@ import           ZkFold.Symbolic.Data.Eq
 
 ------------------------------------- Instances -------------------------------------
 
-instance Arithmetic a => Arithmetizable a (ArithmeticCircuit a) where
-    arithmetize r = pure <$> runCircuit r
+instance Arithmetic a => SymbolicData a (ArithmeticCircuit a) where
+    pieces r = [r]
 
     restore [r] = r
     restore _   = error "restore ArithmeticCircuit: wrong number of arguments"
@@ -93,8 +93,8 @@ instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
     binaryExpansion r = circuits $ runCircuit r >>= expansion (numberOfBits @a)
     fromBinary bits = circuit $ Haskell.traverse runCircuit bits >>= horner
 
-instance Arithmetic a => Arithmetizable a (Bool (ArithmeticCircuit a)) where
-    arithmetize (Bool b) = arithmetize b
+instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a)) where
+    pieces (Bool b) = pieces b
     restore = Bool Haskell.. restore
     typeSize = 1
 
@@ -105,10 +105,10 @@ instance Arithmetic a => Eq (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) w
     x == y = isZero (x - y)
     x /= y = not $ isZero (x - y)
 
-instance Arithmetizable a x => Conditional (Bool (ArithmeticCircuit a)) x where
+instance SymbolicData a x => Conditional (Bool (ArithmeticCircuit a)) x where
     bool brFalse brTrue (Bool b) =
-        let f' = circuits (arithmetize brFalse)
-            t' = circuits (arithmetize brTrue)
+        let f' = pieces brFalse
+            t' = pieces brTrue
         in restore $ zipWith (\f t -> b * (t - f) + f) f' t'
 
 -- TODO: make a proper implementation of Arbitrary
