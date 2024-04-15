@@ -9,32 +9,53 @@ permissions:
 
 jobs:
   on-main-pull-request:
+
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        cabal: ["3.10.2.1"]
+        ghc: ["9.6.3"]
+
+    env:
+      CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4.1.1
+      with:
+        fetch-depth: 0
+
+    - name: Set tracked file modification times to last commit
+      run: |
+        rev=HEAD
+        for f in $(git ls-tree -r -t --full-name --name-only "$rev") ; do
+            touch -d $(git log --pretty=format:%cI -1 "$rev" -- "$f") "$f";
+        done
 
     - name: Set up Haskell
       uses: haskell-actions/setup@v2.6.2
       with:
-        ghc-version: '9.6.3'
-        cabal-version: '3.10.2.1'
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+
+    - run: cabal v2-update
+    - run: cabal v2-freeze $CONFIG
 
     - name: Cache Cabal
       uses: actions/cache@v4.0.1
       env:
         cache-name: cache-cabal
       with:
-        path: ~/.cabal
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
+        path: |
+          ~/.cabal/store
+          dist-newstyle
+        key: ${{ runner.os }}-cabal-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
         restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
+          ${{ runner.os }}-cabal-${{ matrix.ghc }}
 
     - name: Install stylish-haskell
-      run: cabal install stylish-haskell
+      run: cabal v2-install $CONFIG stylish-haskell
 
     - name: Run stylish-haskell
       run: |
@@ -50,5 +71,16 @@ jobs:
 
     - name: Build package
       run: |
-        cabal update
-        cabal new-build all
+        cabal v2-build all $CONFIG
+
+    # - name: Test package
+    #   run: |
+    #     cabal v2-test $CONFIG
+
+    # - name: Document package
+    #   run: |
+    #     cabal v2-haddock $CONFIG
+
+    # - name: Prepare package for publishing
+    #   run: |
+    #     cabal v2-haddock $CONFIG
