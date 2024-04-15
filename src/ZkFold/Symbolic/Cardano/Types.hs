@@ -1,4 +1,3 @@
-{-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types where
 
 import           Prelude                          hiding (length, splitAt, (*), (+))
@@ -18,18 +17,12 @@ newtype Transaction inputs rinputs outputs tokens datum a = Transaction
     ))) deriving Eq
 
 deriving instance
-    ( KnownNat inputs
+    ( Arithmetic a
+    , KnownNat inputs
     , KnownNat rinputs
     , KnownNat outputs
     , KnownNat tokens
-    , Arithmetizable i a
-    , Arithmetizable i (UInt 11 a)
-    , Arithmetizable i (UInt 32 a)
-    , Arithmetizable i (UInt 64 a)
-    , Arithmetizable i (ByteString 4 a)
-    , Arithmetizable i (ByteString 224 a)
-    , Arithmetizable i (ByteString 256 a)
-    ) => Arithmetizable i (Transaction inputs rinputs outputs tokens datum a)
+    ) => SymbolicData a (Transaction inputs rinputs outputs tokens datum (ArithmeticCircuit a))
 
 txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input datum tokens a)
 txInputs (Transaction (_, (is, _))) = is
@@ -38,18 +31,14 @@ txOutputs :: Transaction inputs rinputs outputs tokens datum a -> Vector outputs
 txOutputs (Transaction (_, (_, (os, _)))) = os
 
 newtype TxId a = TxId a
-    deriving (Eq, Arithmetizable i)
+    deriving Eq
+
+deriving instance Arithmetic a => SymbolicData a (TxId (ArithmeticCircuit a))
 
 newtype Value n a = Value (Vector n (ByteString 224 a, (ByteString 256 a, UInt 64 a)))
     deriving Eq
 
-deriving instance
-    ( KnownNat n
-    , Arithmetizable i a
-    , Arithmetizable i (UInt 64 a)
-    , Arithmetizable i (ByteString 224 a)
-    , Arithmetizable i (ByteString 256 a)
-    ) => Arithmetizable i (Value n a)
+deriving instance (Arithmetic a, KnownNat n) => SymbolicData a (Value n (ArithmeticCircuit a))
 
 newtype Input datum tokens a = Input (OutputRef a, Output datum tokens a)
     deriving Eq
@@ -57,15 +46,7 @@ newtype Input datum tokens a = Input (OutputRef a, Output datum tokens a)
 txiDatumHash :: Input tokens datum a -> ByteString 256 a
 txiDatumHash (Input (_, txo))= txoDatumHash txo
 
-deriving instance
-    ( KnownNat tokens
-    , Arithmetizable i a
-    , Arithmetizable i (UInt 32 a)
-    , Arithmetizable i (UInt 64 a)
-    , Arithmetizable i (ByteString 4 a)
-    , Arithmetizable i (ByteString 224 a)
-    , Arithmetizable i (ByteString 256 a)
-    ) => Arithmetizable i (Input datum tokens a)
+deriving instance (Arithmetic a, KnownNat tokens) => SymbolicData a (Input datum tokens (ArithmeticCircuit a))
 
 newtype Output datum tokens a = Output (Address a, (Value tokens a, ByteString 256 a))
     deriving Eq
@@ -73,32 +54,20 @@ newtype Output datum tokens a = Output (Address a, (Value tokens a, ByteString 2
 txoDatumHash :: Output datum tokens a -> ByteString 256 a
 txoDatumHash (Output (_, (_, dh))) = dh
 
-deriving instance
-    ( KnownNat tokens
-    , Arithmetizable i a
-    , Arithmetizable i (UInt 64 a)
-    , Arithmetizable i (ByteString 4 a)
-    , Arithmetizable i (ByteString 224 a)
-    , Arithmetizable i (ByteString 256 a)
-    ) => Arithmetizable i (Output datum tokens a)
+deriving instance (Arithmetic a, KnownNat tokens) => SymbolicData a (Output datum tokens (ArithmeticCircuit a))
 
 newtype OutputRef a = OutputRef (TxId a, UInt 32 a)
     deriving Eq
 
-deriving instance
-    (Arithmetizable i a, Arithmetizable i (UInt 32 a))
-    => Arithmetizable i (OutputRef a)
+deriving instance Arithmetic a => SymbolicData a (OutputRef (ArithmeticCircuit a))
 
 newtype Address a = Address (ByteString 4 a, (ByteString 224 a, ByteString 224 a))
     deriving Eq
 
-deriving instance
-    ( Arithmetizable i (ByteString 4 a)
-    , Arithmetizable i (ByteString 224 a)
-    ) => Arithmetizable i (Address a)
+deriving instance Arithmetic a => SymbolicData a (Address (ArithmeticCircuit a))
 
 newtype DatumHash datum a = DatumHash a
-    deriving (Eq, Arithmetizable i)
+    deriving (Eq, SymbolicData i)
 
 newtype ScriptHash a = ScriptHash a
-    deriving (Eq, Arithmetizable i)
+    deriving (Eq, SymbolicData i)

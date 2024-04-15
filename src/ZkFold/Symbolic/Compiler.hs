@@ -8,12 +8,14 @@ module ZkFold.Symbolic.Compiler (
     compileIO
 ) where
 
-import           Control.Monad.State                        (execState)
-import           Data.Aeson                                 (ToJSON)
-import           Prelude                                    (FilePath, IO, Show (..), mempty, putStrLn, ($), (++))
+import           Data.Aeson                                                (ToJSON)
+import           Data.Foldable                                             (fold)
+import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, ($),
+                                                                            (++))
 
-import           ZkFold.Prelude                             (writeFileJSON)
+import           ZkFold.Prelude                                            (replicateA, writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Compiler.Arithmetizable
 
 {-
@@ -28,14 +30,18 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
     8. ZkFold.Symbolic.Compiler
 -}
 
+-- | Arithmetizes an argument by feeding an appropriate amount of inputs.
+solder :: forall a f . Arithmetizable a f => f -> [ArithmeticCircuit a]
+solder f = arithmetize f $ circuits $ replicateA (inputSize @a @f) input
+
 -- | Compiles function `f` into an arithmetic circuit.
-compile :: forall a f y . (Arithmetizable a f, Arithmetizable a y) => f -> y
-compile f = restore @a $ circuits (arithmetize f)
+compile :: forall a f y . (Arithmetizable a f, SymbolicData a y) => f -> y
+compile f = restore @a (solder f)
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO :: forall a f . (ToJSON a, Arithmetizable a f) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
-    let ac = execState (arithmetize f) mempty :: ArithmeticCircuit a
+    let ac = fold (solder f) :: ArithmeticCircuit a
 
     putStrLn "\nCompiling the script...\n"
 
