@@ -360,6 +360,9 @@ removeZeros (P cs)
 addZeros :: forall c size . (Ring c, KnownNat size) => V.Vector c -> V.Vector c
 addZeros cs = cs V.++ V.replicate (fromIntegral (value @size) P.- V.length cs) zero
 
+
+-- ** THE CODE BELOW IS ONLY USED FOR BENCHMARKING MULTIPLICATION **
+
 -- | Naive vector multiplication, O(n^2)
 --
 mulPoly :: forall a. Field a => Poly a -> Poly a -> Poly a
@@ -367,8 +370,8 @@ mulPoly (P v1) (P v2) = P $ mulVector v1 v2
 
 -- | Adaptation of Karatsuba's algorithm. O(n^log_2(3))
 --
-mulPolyKaratsuba :: Field a => Poly a -> Poly a -> Poly a
-mulPolyKaratsuba (P v1) (P v2) = P result
+mulPolyKaratsuba :: (Eq a, Field a) => Poly a -> Poly a -> Poly a
+mulPolyKaratsuba (P v1) (P v2) = removeZeros $ P result
   where
     l = max (V.length v1) (V.length v2)
     p = ceiling @Double @Integer $ logBase 2 (fromIntegral l)
@@ -381,8 +384,8 @@ mulPolyKaratsuba (P v1) (P v2) = P result
 
 -- DFT multiplication of vectors. O(nlogn)
 --
-mulPolyDft :: forall a . Field a => Poly a -> Poly a -> Poly a
-mulPolyDft (P v1) (P v2) = P result
+mulPolyDft :: forall a . (Eq a, Field a) => Poly a -> Poly a -> Poly a
+mulPolyDft (P v1) (P v2) = removeZeros $ P result
   where
     l = max (V.length v1) (V.length v2)
     p = (ceiling @Double $ logBase 2 (fromIntegral l)) P.+ 1
