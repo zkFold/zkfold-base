@@ -35,7 +35,7 @@ data UInt (n :: Natural) a = UInt ![a] !a
     deriving (Haskell.Show, Haskell.Eq)
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
-    fromConstant = Haskell.fst . cast @a @n
+    fromConstant = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n))
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Integer (UInt n a) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
