@@ -6,10 +6,12 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Data.Aeson                                                hiding (Bool)
-import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map, null, splitAt, take)
+import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map,
+                                                                            null, splitAt, take)
 import           Data.Zip                                                  (zipWith)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, const, error, mempty, pure, return, show, ($), (++), (<$>), (<*>), (>>=))
+import           Prelude                                                   (Integer, const, error, mempty, pure, return,
+                                                                            show, ($), (++), (<$>), (<*>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (..))

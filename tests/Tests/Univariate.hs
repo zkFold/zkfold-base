@@ -13,7 +13,8 @@ import           Data.List                                  ((\\))
 import qualified Data.Vector                                as V
 import qualified Data.Vector.Algorithms.Intro               as VA
 import           Numeric.Natural                            (Natural)
-import           Prelude                                    hiding (Fractional (..), Num (..), drop, length, take, (!!), (^))
+import           Prelude                                    hiding (Fractional (..), Num (..), drop, length, take, (!!),
+                                                             (^))
 import           Prelude                                    (abs)
 import           Test.Hspec
 import           Test.QuickCheck
@@ -30,15 +31,15 @@ import           ZkFold.Prelude                             (length, take)
 
 propToPolyVec :: forall c size . (Ring c, KnownNat size) => [c] -> Bool
 propToPolyVec cs =
-    let PV p = toPolyVec @c @size $ V.fromList cs
-    in length p == value @size
+    let p = toPolyVec @c @size $ V.fromList cs
+    in length (fromPolyVec p) == value @size
 
 propCastPolyVec :: forall c size size' . (Ring c, KnownNat size, KnownNat size', Eq c) => [c] -> Bool
 propCastPolyVec cs =
     let n = min (value @size) (value @size')
         cs' = V.fromList $ bool cs (take n cs) (length cs > n)
-        PV p' = castPolyVec @c @size @size' (toPolyVec @c @size cs')
-    in length p' == value @size'
+        p' = castPolyVec @c @size @size' (toPolyVec @c @size cs')
+    in length (fromPolyVec p') == value @size'
 
 propPolyVecDivision :: forall c size . (Field c, KnownNat size, Eq c) => PolyVec c size -> PolyVec c size -> Bool
 propPolyVecDivision p q =
@@ -60,13 +61,12 @@ propPolyVecLagrange i =
     in p `evalPolyVec` (omega^i) == one &&
         all ((== zero) . (p `evalPolyVec`) . (omega^)) ([1 .. value @PlonkSizeBS] \\ [i])
 
-propPolyVecGrandProduct :: (Field c, KnownNat size, Ord c) => PolyVec c size -> c -> c -> Bool
+propPolyVecGrandProduct :: forall c size . (Field c, KnownNat size, Ord c) => PolyVec c size -> c -> c -> Bool
 propPolyVecGrandProduct p beta gamma =
-    let PV cs = p
-        cs' = V.modify VA.sort cs
-        p' = PV cs'
-        PV zs  = polyVecGrandProduct zero p p' beta gamma
-    in V.last zs * (beta * V.last cs + gamma) == (beta * V.last cs' + gamma)
+    let p' = rewrapPolyVec (V.modify VA.sort) p in
+    let zs = polyVecGrandProduct zero p p' beta gamma in
+    V.last (fromPolyVec zs) * (beta * V.last (fromPolyVec p) + gamma)
+        == (beta * V.last (fromPolyVec p') + gamma)
 
 specUnivariate :: IO ()
 specUnivariate = hspec $ do

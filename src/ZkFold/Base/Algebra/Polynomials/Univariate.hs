@@ -1,23 +1,61 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes          #-}
+{-# LANGUAGE DeriveAnyClass               #-}
+{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications             #-}
 
-module ZkFold.Base.Algebra.Polynomials.Univariate where
+module ZkFold.Base.Algebra.Polynomials.Univariate
+    ( toPoly
+    , fromPoly
+    , Poly
+    , removeZeros
+    , scaleP
+    , qr
+    , eea
+    , lt
+    , deg
+    , vec2poly
+    , PolyVec
+    , fromPolyVec
+    , toPolyVec
+    , rewrapPolyVec
+    , castPolyVec
+    , evalPolyVec
+    , scalePV
+    , polyVecZero
+    , polyVecDiv
+    , polyVecLinear
+    , polyVecLagrange
+    , polyVecGrandProduct
+    , polyVecInLagrangeBasis
+    , polyVecQuadratic
+    , mulVector
+    , mulDft
+    , mulKaratsuba
+    , mulPoly
+    , mulPolyKaratsuba
+    , mulPolyDft
+    , mulPolyNaive
+    ) where
 
+import           Control.DeepSeq                  (NFData (..))
 import qualified Data.Vector                      as V
+import           GHC.Generics                     (Generic)
 import           Numeric.Natural                  (Natural)
-import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
+import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/),
+                                                   (^))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Prelude                   (zipWithDefault)
 
 -------------------------------- Arbitrary degree polynomials --------------------------------
 
 -- TODO (Issue #17): hide constructor
 newtype Poly c = P (V.Vector c)
-    deriving (Eq, Show, Functor)
+    deriving (Eq, Show, Functor, Generic, NFData)
 
 toPoly :: (Ring c, Eq c) => V.Vector c -> Poly c
 toPoly = removeZeros . P
@@ -211,13 +249,16 @@ eea a b = go (a, one) (b, zero)
 
 -- TODO (Issue #17): hide constructor
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic, NFData)
 
 toPolyVec :: forall c size . (Ring c, KnownNat size) => V.Vector c -> PolyVec c size
 toPolyVec = PV . V.take (fromIntegral (value @size)) . addZeros @c @size
 
 fromPolyVec :: PolyVec c size -> V.Vector c
 fromPolyVec (PV cs) = cs
+
+rewrapPolyVec :: (V.Vector c -> V.Vector c) -> PolyVec c size -> PolyVec c size
+rewrapPolyVec f (PV x) = PV (f x)
 
 poly2vec :: forall c size . (Ring c, KnownNat size) => Poly c -> PolyVec c size
 poly2vec (P cs) = toPolyVec cs
@@ -318,3 +359,50 @@ removeZeros (P cs)
 
 addZeros :: forall c size . (Ring c, KnownNat size) => V.Vector c -> V.Vector c
 addZeros cs = cs V.++ V.replicate (fromIntegral (value @size) P.- V.length cs) zero
+
+
+-- ** THE CODE BELOW IS ONLY USED FOR BENCHMARKING MULTIPLICATION **
+
+-- | Naive vector multiplication, O(n^2)
+--
+mulPoly :: forall a. Field a => Poly a -> Poly a -> Poly a
+mulPoly (P v1) (P v2) = P $ mulVector v1 v2
+
+-- | Adaptation of Karatsuba's algorithm. O(n^log_2(3))
+--
+mulPolyKaratsuba :: (Eq a, Field a) => Poly a -> Poly a -> Poly a
+mulPolyKaratsuba (P v1) (P v2) = removeZeros $ P result
+  where
+    l = max (V.length v1) (V.length v2)
+    p = ceiling @Double @Integer $ logBase 2 (fromIntegral l)
+
+    pad = 2 P.^ p
+
+    result = mulKaratsuba
+        (v1 V.++ V.replicate (pad P.- V.length v1) zero)
+        (v2 V.++ V.replicate (pad P.- V.length v2) zero)
+
+-- DFT multiplication of vectors. O(nlogn)
+--
+mulPolyDft :: forall a . (Eq a, Field a) => Poly a -> Poly a -> Poly a
+mulPolyDft (P v1) (P v2) = removeZeros $ P result
+  where
+    l = max (V.length v1) (V.length v2)
+    p = (ceiling @Double $ logBase 2 (fromIntegral l)) P.+ 1
+
+    w2n :: a
+    w2n = case rootOfUnity $ fromIntegral p of
+            Just a -> a
+            _      -> undefined
+
+    pad = 2 P.^ p
+
+    result = mulDft @a p w2n
+        (v1 V.++ V.replicate (pad P.- V.length v1) zero)
+        (v2 V.++ V.replicate (pad P.- V.length v2) zero)
+
+mulPolyNaive :: Field a => Poly a -> Poly a -> Poly a
+mulPolyNaive (P v1) (P v2) = P $ V.fromList $ go (V.toList v1) (V.toList v2)
+    where
+        go [] _      = []
+        go (x:xs) ys = zipWithDefault (+) zero zero (map (x *) ys) (zero : go xs ys)

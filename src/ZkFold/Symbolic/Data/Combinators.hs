@@ -1,5 +1,7 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE UndecidableInstances    #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module ZkFold.Symbolic.Data.Combinators where
 
@@ -12,6 +14,12 @@ import           Prelude                         (div, error, mod, ($), (.))
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+
+-- | A class for isomorphic types.
+-- The @Iso b a@ context ensures that transformations in both directions are defined
+--
+class Iso b a => Iso a b where
+    from :: a -> b
 
 maxOverflow :: forall a n . (Finite a, KnownNat n) => Natural
 maxOverflow = registerSize @a @n + Haskell.ceiling (log2 $ numberOfRegisters @a @n)

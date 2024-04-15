@@ -46,6 +46,9 @@ residue = (`mod` fromIntegral (value @p))
 toZp :: forall p . KnownNat p => Integer -> Zp p
 toZp = Zp . residue @p
 
+instance ToConstant (Zp p) Natural where
+    toConstant = fromZp
+
 instance KnownNat p => Finite (Zp p) where
     type Order (Zp p) = p
 
@@ -188,10 +191,10 @@ instance Field f => AdditiveGroup (Ext2 f e) where
     Ext2 a b - Ext2 c d = Ext2 (a - c) (b - d)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext2 f e) where
-    Ext2 a b * Ext2 c d = case snd $ qr (toPoly [a, b] * toPoly [c, d]) (irreduciblePoly @f @e) of
-            P []  -> Ext2 zero zero
-            P [x] -> Ext2 x zero
-            P v   -> Ext2 (v V.! 0) (v V.! 1)
+    Ext2 a b * Ext2 c d = case fromPoly . snd $ qr (toPoly [a, b] * toPoly [c, d]) (irreduciblePoly @f @e) of
+            []  -> Ext2 zero zero
+            [x] -> Ext2 x zero
+            v   -> Ext2 (v V.! 0) (v V.! 1)
 
 instance MultiplicativeMonoid (Ext2 f e) => Exponent (Ext2 f e) Natural where
     (^) = natPow
@@ -205,10 +208,10 @@ instance Field (Ext2 f e) => Exponent (Ext2 f e) Integer where
 instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext2 f e) where
     finv (Ext2 a b) =
         let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @f @e)
-        in case scaleP (one // lt g) 0 s of
-            P []  -> Ext2 zero zero
-            P [x] -> Ext2 x zero
-            P v   -> Ext2 (v V.! 0) (v V.! 1)
+        in case fromPoly $ scaleP (one // lt g) 0 s of
+            []  -> Ext2 zero zero
+            [x] -> Ext2 x zero
+            v   -> Ext2 (v V.! 0) (v V.! 1)
 
     rootOfUnity n = (\r -> Ext2 r zero) <$> rootOfUnity n
 
@@ -246,11 +249,11 @@ instance Field f => AdditiveGroup (Ext3 f e) where
     Ext3 a b c - Ext3 d e f = Ext3 (a - d) (b - e) (c - f)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext3 f e) where
-    Ext3 a b c * Ext3 d e f = case snd $ qr (toPoly [a, b, c] * toPoly [d, e, f]) (irreduciblePoly @f @e) of
-            P []     -> Ext3 zero zero zero
-            P [x]    -> Ext3 x zero zero
-            P [x, y] -> Ext3 x y zero
-            P v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
+    Ext3 a b c * Ext3 d e f = case fromPoly . snd $ qr (toPoly [a, b, c] * toPoly [d, e, f]) (irreduciblePoly @f @e) of
+            []     -> Ext3 zero zero zero
+            [x]    -> Ext3 x zero zero
+            [x, y] -> Ext3 x y zero
+            v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
 instance MultiplicativeMonoid (Ext3 f e) => Exponent (Ext3 f e) Natural where
     (^) = natPow
@@ -264,11 +267,11 @@ instance Field (Ext3 f e) => Exponent (Ext3 f e) Integer where
 instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where
     finv (Ext3 a b c) =
         let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @f @e)
-        in case scaleP (one // lt g) 0 s of
-            P []     -> Ext3 zero zero zero
-            P [x]    -> Ext3 x zero zero
-            P [x, y] -> Ext3 x y zero
-            P v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
+        in case fromPoly $ scaleP (one // lt g) 0 s of
+            []     -> Ext3 zero zero zero
+            [x]    -> Ext3 x zero zero
+            [x, y] -> Ext3 x y zero
+            v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
     rootOfUnity n = (\r -> Ext3 r zero zero) <$> rootOfUnity n
 

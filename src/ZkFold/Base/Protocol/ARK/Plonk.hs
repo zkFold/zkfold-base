@@ -9,7 +9,8 @@ import           Data.Map                                    (Map, elems, single
 import qualified Data.Map                                    as Map
 import qualified Data.Vector                                 as V
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     hiding (Num (..), drop, length, replicate, sum, take, (!!), (/), (^))
+import           Prelude                                     hiding (Num (..), drop, length, replicate, sum, take, (!!),
+                                                              (/), (^))
 import qualified Prelude                                     as P
 import           Test.QuickCheck                             (Arbitrary (..))
 
@@ -211,10 +212,10 @@ instance forall d t .
 
             omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
             omegas' =  V.iterateN (V.length (fromPolyVec z) P.+ 1) (* omega) one
-            PV zs1 = polyVecGrandProduct w1 omegas s1 beta gamma
-            PV zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) s2 beta gamma
-            PV zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) s3 beta gamma
-            gp = PV $ V.zipWith (*) (V.zipWith (*) zs1 zs2) zs3
+            zs1 = polyVecGrandProduct w1 omegas s1 beta gamma
+            zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) s2 beta gamma
+            zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) s3 beta gamma
+            gp = rewrapPolyVec (V.zipWith (*) (V.zipWith (*) (fromPolyVec zs1) (fromPolyVec zs2))) zs3
             z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega gp
             zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
             cmZ = gs `com` z

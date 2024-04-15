@@ -10,7 +10,8 @@ import           ZkFold.Base.Data.ByteString                     (Binary (..))
 import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
 import qualified ZkFold.Base.Protocol.ARK.Protostar.SpecialSound as SpS
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
-import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractiveProof (..), ToTranscript (..), challenge)
+import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractiveProof (..), ToTranscript (..),
+                                                                  challenge)
 
 data FiatShamir f a = FiatShamir a (SpS.Input f a)
 

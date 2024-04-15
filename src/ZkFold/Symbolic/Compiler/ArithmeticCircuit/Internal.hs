@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass   #-}
 {-# LANGUAGE TypeApplications #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
@@ -16,20 +17,23 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         forceZero
     ) where
 
+import           Control.DeepSeq                              (NFData)
 import           Control.Monad.State                          (MonadState (..), State, modify)
 import           Data.List                                    (nub)
-import           Data.Map                                     hiding (drop, foldl, foldr, map, null, splitAt, take)
+import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
 import           GHC.Generics
 import           Numeric.Natural                              (Natural)
 import           Optics
-import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
+import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum,
+                                                               take, (!!), (^))
 import qualified Prelude                                      as Haskell
 import           System.Random                                (StdGen, mkStdGen, uniform, uniformR)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, evalPolynomial, mapCoeffs, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomeMonomial, SomePolynomial, evalPolynomial, mapCoeffs,
+                                                               var)
 import           ZkFold.Prelude                               (drop, length)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
@@ -46,7 +50,7 @@ data ArithmeticCircuit a = ArithmeticCircuit
         acVarOrder :: Map (Natural, Natural) Natural,
         -- ^ The order of variable assignments
         acRNG      :: StdGen
-    } deriving Generic
+    } deriving (Generic, NFData)
 
 ----------------------------------- Circuit monoid ----------------------------------
 

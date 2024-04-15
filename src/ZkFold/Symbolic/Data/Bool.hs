@@ -22,6 +22,8 @@ class BoolType b where
 
     (||)  :: b -> b -> b
 
+    xor  :: b -> b -> b
+
 instance BoolType Haskell.Bool where
     true  = True
 
@@ -32,6 +34,8 @@ instance BoolType Haskell.Bool where
     (&&)  = (Haskell.&&)
 
     (||)  = (Haskell.||)
+
+    xor = xor
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool x = Bool x
@@ -49,6 +53,8 @@ instance Field x => BoolType (Bool x) where
     (&&) (Bool b1) (Bool b2) = Bool $ b1 * b2
 
     (||) (Bool b1) (Bool b2) = Bool $ b1 + b2 - b1 * b2
+
+    xor (Bool b1) (Bool b2) = Bool $ b1 + b2 - (b1 * b2 + b1 * b2)
 
 all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true

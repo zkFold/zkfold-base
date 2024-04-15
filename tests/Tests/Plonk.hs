@@ -8,18 +8,22 @@ import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (transpose)
 import           Data.Map                                     (elems, fromList, singleton)
 import qualified Data.Vector                                  as V
-import           Prelude                                      hiding (Fractional (..), Num (..), drop, length, replicate, take)
+import           Prelude                                      hiding (Fractional (..), Num (..), drop, length,
+                                                               replicate, take)
 import           Test.Hspec
 import           Test.QuickCheck
 import           Tests.NonInteractiveProof                    (NonInteractiveProofTestData (..))
 
-import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..), MultiplicativeSemigroup (..), negate, zero, (-!))
+import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..),
+                                                               MultiplicativeSemigroup (..), negate, zero, (-!))
 import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (value)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Base.Algebra.Polynomials.Univariate   (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis, polyVecLinear, polyVecZero, toPolyVec)
+import           ZkFold.Base.Algebra.Polynomials.Univariate   (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
+                                                               polyVecLinear, polyVecZero, toPolyVec)
 import           ZkFold.Base.Protocol.ARK.Plonk
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkArithmetization, toPlonkConstraint)
+import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkArithmetization,
+                                                               toPlonkConstraint)
 import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof (..))
 import           ZkFold.Prelude                               (replicate, take, (!))
 import           ZkFold.Symbolic.Compiler
