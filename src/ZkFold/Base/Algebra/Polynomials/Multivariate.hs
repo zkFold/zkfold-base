@@ -17,10 +17,11 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate (
 
 import           Data.Bifunctor                                            (first)
 import           Data.Containers.ListUtils                                 (nubOrd)
-import           Data.Map                                                  (Map, keys, singleton, toList)
+import           Data.Map.Strict                                           (Map, keys, singleton, toList)
 import           Data.Maybe                                                (fromJust)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   hiding (Num (..), length, product, replicate, sum, (!!), (^))
+import           Prelude                                                   hiding (Num (..), length, product, replicate,
+                                                                            sum, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial

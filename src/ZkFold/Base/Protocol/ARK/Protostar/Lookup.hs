@@ -7,7 +7,8 @@ import           Data.Map                                        (fromList, mapW
 import           Data.These                                      (These (..))
 import           Data.Zip
 import           Numeric.Natural                                 (Natural)
-import           Prelude                                         hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/), (^))
+import           Prelude                                         hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/),
+                                                                  (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)

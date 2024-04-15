@@ -28,17 +28,21 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
     ) where
 
 import           Control.Monad.State                                 (execState)
-import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt, take)
+import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                      take)
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
-import           Test.QuickCheck                                     (Arbitrary, Property, conjoin, property, vector, withMaxSuccess, (===))
+import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
+                                                                      sum, take, (!!), (^))
+import           Test.QuickCheck                                     (Arbitrary, Property, conjoin, property, vector,
+                                                                      withMaxSuccess, (===))
 import           Text.Pretty.Simple                                  (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalPolynomial)
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint, apply, eval, forceZero)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
+                                                                      apply, eval, forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 
 --------------------------------- High-level functions --------------------------------

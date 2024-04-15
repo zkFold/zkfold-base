@@ -1,16 +1,18 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Examples.ByteString (
     exampleByteStringAnd,
-    exampleByteStringOr
+    exampleByteStringOr,
+    exampleByteStringExtend
   ) where
 
 import           Data.Data                                   (Proxy (Proxy))
 import           Data.Function                               (($))
 import           Data.List                                   ((++))
 import           Data.String                                 (String)
-import           GHC.TypeNats                                (KnownNat, natVal)
+import           GHC.TypeNats                                (KnownNat, natVal, type (<=))
 import           System.IO                                   (IO, putStrLn)
 import           Text.Show                                   (show)
 
@@ -25,6 +27,14 @@ exampleByteStringAnd = makeExample @n "*" "and" (&&)
 
 exampleByteStringOr :: forall n . KnownNat n => IO ()
 exampleByteStringOr = makeExample @n "+" "or" (||)
+
+exampleByteStringExtend :: forall n k . (KnownNat n, KnownNat k, n <= k) => IO ()
+exampleByteStringExtend = do
+    let n = show $ natVal (Proxy @n)
+    let k = show $ natVal (Proxy @k)
+    putStrLn $ "\nExample: Extending a bytestring of length " ++ n ++ " to length " ++ k
+    let file = "compiled_scripts/bytestring" ++ n ++ "_to_" ++ k ++ ".json"
+    compileIO @(Zp BLS12_381_Scalar) file $ extend @(ByteString n (ArithmeticCircuit (Zp BLS12_381_Scalar))) @(ByteString k (ArithmeticCircuit (Zp BLS12_381_Scalar)))
 
 type Binary a = a -> a -> a
 

@@ -18,7 +18,8 @@ module ZkFold.Symbolic.GroebnerBasis (
 
 import           Data.Bool                                        (bool)
 import           Data.List                                        (nub, sortBy)
-import           Data.Map                                         (Map, elems, empty, fromList, keys, mapWithKey, singleton, toList)
+import           Data.Map                                         (Map, elems, empty, fromList, keys, mapWithKey,
+                                                                   singleton, toList)
 import           Data.Maybe                                       (mapMaybe)
 import           Numeric.Natural                                  (Natural)
 import           Prelude                                          hiding (Num (..), length, replicate, (!!))

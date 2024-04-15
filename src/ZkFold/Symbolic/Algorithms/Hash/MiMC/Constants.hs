@@ -1,6 +1,4 @@
-{-# LANGUAGE TypeApplications #-}
-
-module Examples.MiMC.Constants (mimcConstants) where
+module ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants) where
 
 import           Crypto.Hash.SHA256              (hash)
 import           Data.Maybe                      (fromJust)
@@ -13,6 +11,9 @@ import           ZkFold.Symbolic.Types           (I)
 mimcSeed :: Integer
 mimcSeed = 42
 
+-- | The round constants ci are random elements of F_2n except for the first and
+--   last round constants which are equal to 0.
+--
 mimcConstants :: forall a . (FromConstant I a) => [a]
 mimcConstants =
   let cs = take 218 $ map (fromJust . fromByteString) $ iterate hash $ toByteString mimcSeed

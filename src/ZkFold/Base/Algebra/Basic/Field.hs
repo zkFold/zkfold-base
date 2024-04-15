@@ -45,6 +45,9 @@ residue = (`mod` fromIntegral (value @p))
 toZp :: forall p . KnownNat p => Integer -> Zp p
 toZp = Zp . residue @p
 
+instance ToConstant (Zp p) Natural where
+    toConstant = fromZp
+
 instance KnownNat p => Finite (Zp p) where
     type Order (Zp p) = p
 

@@ -20,11 +20,10 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number            (Prime)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Prelude                              (zipWithDefault)
 
 -- | Only for testing DFT with smaller numbers which can be easily calculated by hand for cross-check.
 -- DFT of a polynomial of length n requires calculating primitive roots of unity of order n.
--- Choosing 17 allows us to calculate DFT of polynomials of length up to 256 and 16 as all these numbers divide 257 - 1.
+-- Choosing 257 allows us to calculate DFT of polynomials of length up to 256 as all these numbers divide 257 - 1.
 instance Prime 257
 
 -- | Generate random polynomials of given size

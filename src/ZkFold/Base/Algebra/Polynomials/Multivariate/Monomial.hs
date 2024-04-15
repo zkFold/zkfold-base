@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DeriveAnyClass               #-}
+{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications             #-}
 
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
     ( M(..)
@@ -8,18 +10,19 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
     , Variable
     ) where
 
-import           Data.Aeson                        (FromJSON, ToJSON)
-import           Data.List                         (intercalate)
-import           Data.Map                          (Map, toList, unionWith, differenceWith, empty, fromListWith)
-import qualified Data.Map                          as Map
-import           Numeric.Natural                   (Natural)
-import           GHC.Generics                      (Generic)
-import           Prelude                           hiding (Num(..), (/), (!!), lcm, length, sum, take, drop)
-import           Test.QuickCheck                   (Arbitrary (..))
+import           Control.DeepSeq                  (NFData)
+import           Data.Aeson                       (FromJSON, ToJSON)
+import           Data.List                        (intercalate)
+import           Data.Map.Strict                  (Map, differenceWith, empty, toList, unionWith)
+import qualified Data.Map.Strict                  as Map
+import           GHC.Generics                     (Generic)
+import           Numeric.Natural                  (Natural)
+import           Prelude                          hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
+import           Test.QuickCheck                  (Arbitrary (..))
 
-import           ZkFold.Base.Data.Vector
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector
 
 type Variable i = Ord i
 
@@ -32,7 +35,7 @@ instance Monomial i j => FromMonomial i j (Map i j) where
     fromMonomial = id
 
 instance Monomial i Bool => FromMonomial i Bool (Vector d (i, Bool)) where
-    fromMonomial v = fromListWith (+) $ map (\(i, _) -> (i, one)) $ filter snd $ fromVector v
+    fromMonomial v = Map.fromListWith (+) $ map (\(i, _) -> (i, one)) $ filter snd $ fromVector v
 
 class Monomial i j => ToMonomial i j m where
     toMonomial   :: Map i j -> Maybe m
@@ -47,7 +50,7 @@ instance (Monomial i j, Integral j, KnownNat d) => ToMonomial i j (Vector d (i, 
 
 -- | Monomial type
 newtype M i j m = M m
-    deriving (Generic, FromJSON, ToJSON)
+    deriving (Generic, NFData, FromJSON, ToJSON)
 
 instance (Show i, Show j, FromMonomial i j m) => Show (M i j m) where
     show (M m) = intercalate "∙" (map showVar (toList $ fromMonomial @i @j @m m))

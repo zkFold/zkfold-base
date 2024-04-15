@@ -4,7 +4,8 @@
 
 module Tests.Arithmetization.Test3 (specArithmetization3) where
 
-import           Prelude                          hiding (Bool, Eq (..), Num (..), Ord (..), any, not, replicate, (/), (^), (||))
+import           Prelude                          hiding (Bool, Eq (..), Num (..), Ord (..), any, not, replicate, (/),
+                                                   (^), (||))
 import           Test.Hspec
 
 import           ZkFold.Base.Algebra.Basic.Field  (Zp)
