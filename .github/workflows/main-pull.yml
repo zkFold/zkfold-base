@@ -11,8 +11,6 @@ jobs:
   on-main-pull-request:
 
     strategy:
-      fail-fast: false
-
       matrix:
         os: [ubuntu-latest]
         cabal: [3.10.2.1]
