@@ -10,18 +10,18 @@ import           ZkFold.Symbolic.Data.Eq
 newtype Structural a = Structural a
 -- ^ A newtype wrapper for easy definition of Eq instances.
 
-instance Arithmetizable a x => Eq (Bool (ArithmeticCircuit a)) (Structural x) where
+instance SymbolicData a x => Eq (Bool (ArithmeticCircuit a)) (Structural x) where
     Structural x == Structural y =
-        let x' = circuits (arithmetize x) :: [ArithmeticCircuit a]
-            y' = circuits (arithmetize y)
+        let x' = pieces @a x
+            y' = pieces y
             zs = zipWith (==) x' y'
          in if null zs
               then true
               else all1 id zs
 
     Structural x /= Structural y =
-        let x' = circuits (arithmetize x) :: [ArithmeticCircuit a]
-            y' = circuits (arithmetize y)
+        let x' = pieces @a x
+            y' = pieces y
             zs = zipWith (==) x' y'
          in if null zs
               then false

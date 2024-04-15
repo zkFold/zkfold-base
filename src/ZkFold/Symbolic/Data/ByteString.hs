@@ -36,7 +36,7 @@ import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
 import           ZkFold.Prelude                                            (replicate, replicateA)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, horner)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (ClosedPoly)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.UInt
@@ -327,16 +327,14 @@ fromBits hiBits loBits bits = do
     pure $ highNew : lowsNew
 
 
-
-instance (Arithmetic a, KnownNat n) => Arithmetizable a (ByteString n (ArithmeticCircuit a)) where
-    arithmetize (ByteString a as) = forM (a:as) runCircuit
+instance (Arithmetic a, KnownNat n) => SymbolicData a (ByteString n (ArithmeticCircuit a)) where
+    pieces (ByteString a as) = a:as
 
     restore as
       | Haskell.fromIntegral (length as) == minNumberOfRegisters @a @n = ByteString (head as) (tail as)
       | otherwise = error "ByteString: invalid number of values"
 
     typeSize = minNumberOfRegisters @a @n
-
 
 instance (Arithmetic a, KnownNat n) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a)) where
     from (ByteString r rs)

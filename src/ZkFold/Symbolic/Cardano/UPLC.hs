@@ -14,13 +14,14 @@ import           ZkFold.Symbolic.Cardano.UPLC.Builtins
 import           ZkFold.Symbolic.Cardano.UPLC.Inference
 import           ZkFold.Symbolic.Cardano.UPLC.Term
 import           ZkFold.Symbolic.Cardano.UPLC.Type
-import           ZkFold.Symbolic.Compiler               (Arithmetic, Arithmetizable (..), SomeArithmetizable (..))
+import           ZkFold.Symbolic.Compiler               (Arithmetic, Arithmetizable (..), SomeArithmetizable (..),
+                                                         SymbolicData (..))
 
 -- TODO: we need to figure out what to do with error terms
 
 data ArgList name a where
     ArgListEmpty :: ArgList name a
-    ArgListCons  :: (Typeable t, Arithmetizable a t) => (name, t) -> ArgList name a -> ArgList name a
+    ArgListCons  :: (Typeable t, SymbolicData a t) => (name, t) -> ArgList name a -> ArgList name a
 
 class FromUPLC name fun a where
     fromUPLC :: ArgList name a -> Term name fun a -> SomeArithmetizable a
@@ -36,7 +37,11 @@ instance forall name fun (a :: Type) . (Eq name, Typeable name, Typeable fun, Eq
                 let t1' = functionToData t1
                     t2' = functionToData t2
                 in case (t1', t2') of
-                    (SomeData (_ :: Proxy t1), SomeData (_ :: Proxy t2)) ->
+                    (SomeSym (SomeData (_ :: Proxy t1)), SomeSym (SomeArith (_ :: Proxy t2))) ->
+                        SomeArithmetizable $ \(arg :: t1) ->
+                            case fromUPLC (ArgListCons (x, arg) args) f of
+                                SomeArithmetizable res -> fromJust $ cast @_ @t2 res
+                    (SomeSym (SomeData (_ :: Proxy t1)), SomeSym (SomeData (_ :: Proxy t2))) ->
                         SomeArithmetizable $ \(arg :: t1) ->
                             case fromUPLC (ArgListCons (x, arg) args) f of
                                 SomeArithmetizable res -> fromJust $ cast @_ @t2 res
@@ -48,7 +53,9 @@ instance forall name fun (a :: Type) . (Eq name, Typeable name, Typeable fun, Eq
                 let t1' = functionToData t1
                     t2' = functionToData t2
                 in case (t1', t2', fromUPLC args f, fromUPLC args x) of
-                    (SomeData (_ :: Proxy t1), SomeData (_ :: Proxy t2), SomeArithmetizable f', SomeArithmetizable x') ->
+                    (SomeSym (SomeData (_ :: Proxy t1)), SomeSym (SomeArith (_ :: Proxy t2)), SomeArithmetizable f', SomeArithmetizable x') ->
+                        SomeArithmetizable ((fromJust $ cast @_ @(t1 -> t2) f') (fromJust $ cast @_ @t1 x') :: t2)
+                    (SomeSym (SomeData (_ :: Proxy t1)), SomeSym (SomeData (_ :: Proxy t2)), SomeArithmetizable f', SomeArithmetizable x') ->
                         SomeArithmetizable ((fromJust $ cast @_ @(t1 -> t2) f') (fromJust $ cast @_ @t1 x') :: t2)
                     _ -> error "fromUPLC: Apply"
             _ -> error "fromUPLC: Apply"
@@ -63,6 +70,6 @@ instance forall name (a :: Type) . (Typeable name, Eq name, Eq BuiltinFunctions,
     arithmetize term = case fromUPLC @name @_ @a ArgListEmpty term of
         SomeArithmetizable t -> arithmetize t
 
-    restore = error "restore Term: not implemented"
+    inputSize = error "inputSize Term: not implemented"
 
-    typeSize = error "typeSize Term: not implemented"
+    outputSize = error "outputSize Term: not implemented"

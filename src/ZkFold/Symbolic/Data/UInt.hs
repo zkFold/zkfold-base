@@ -8,26 +8,27 @@ module ZkFold.Symbolic.Data.UInt (
     toConstant
 ) where
 
-import           Control.Applicative                                    ((<*>))
-import           Control.Monad.State                                    (StateT (..))
-import           Data.Foldable                                          (foldr, foldrM, for_)
-import           Data.Functor                                           ((<$>))
-import           Data.List                                              (map, unfoldr, zip, zipWith)
-import           Data.Map                                               (fromList, (!))
-import           Data.Traversable                                       (for, traverse)
-import           Data.Tuple                                             (swap)
-import           GHC.Natural                                            (naturalFromInteger)
-import           GHC.TypeNats                                           (KnownNat, Natural)
-import           Prelude                                                (Integer, error, flip, otherwise, return, ($),
-                                                                         (++), (.), (>>=))
-import qualified Prelude                                                as Haskell
-import           Test.QuickCheck                                        (Arbitrary (..), chooseInteger)
+import           Control.Applicative                                       ((<*>))
+import           Control.Monad.State                                       (StateT (..))
+import           Data.Foldable                                             (foldr, foldrM, for_)
+import           Data.Functor                                              ((<$>))
+import           Data.List                                                 (map, unfoldr, zip, zipWith)
+import           Data.Map                                                  (fromList, (!))
+import           Data.Traversable                                          (for, traverse)
+import           Data.Tuple                                                (swap)
+import           GHC.Natural                                               (naturalFromInteger)
+import           GHC.TypeNats                                              (KnownNat, Natural)
+import           Prelude                                                   (Integer, error, flip, otherwise, return,
+                                                                            ($), (++), (.), (>>=))
+import qualified Prelude                                                   as Haskell
+import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                        (Zp, fromZp)
-import           ZkFold.Prelude                                         (length, replicate, replicateA, splitAt)
-import           ZkFold.Symbolic.Compiler                               hiding (forceZero)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, splitExpansion)
+import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp)
+import           ZkFold.Prelude                                            (length, replicate, replicateA, splitAt)
+import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Combinators
 
 -- TODO (Issue #18): hide this constructor
@@ -98,8 +99,8 @@ instance (KnownNat p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
 
 --------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownNat n) => Arithmetizable a (UInt n (ArithmeticCircuit a)) where
-    arithmetize (UInt as a) = for (as ++ [a]) runCircuit
+instance (Arithmetic a, KnownNat n) => SymbolicData a (UInt n (ArithmeticCircuit a)) where
+    pieces (UInt as a) = as ++ [a]
 
     restore as = case splitAt (numberOfRegisters @a @n -! 1) as of
         (lo, [hi]) -> UInt lo hi
