@@ -37,6 +37,7 @@ jobs:
         cabal configure --enable-tests --enable-benchmarks --enable-documentation
     
     - name: Generate cache key
+      # Creates plan.json file
       run: |
         cabal build all --dry-run
 
