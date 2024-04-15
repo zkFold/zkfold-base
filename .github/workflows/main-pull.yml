@@ -89,9 +89,7 @@ jobs:
     #   run: cabal check
 
     # - name: Document package
-    #   run: |
-    #     cabal haddock all
+    #   run: cabal haddock all
 
     # - name: Prepare package for publishing
-    #   run: |
-    #     cabal sdist all
+    #   run: cabal sdist all
