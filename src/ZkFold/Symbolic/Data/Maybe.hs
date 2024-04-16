@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Data.Maybe (
 import           Data.Distributive
 import           Data.Functor.Adjunction
 import           Data.Functor.Rep
-import qualified Prelude                         as Haskell
+import qualified Prelude                            as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Data.Bool
@@ -49,7 +49,7 @@ instance Representable u => Representable (Maybe u) where
   tabulate g = Maybe
     (g Haskell.Nothing)
     (tabulate (g Haskell.. Haskell.Just))
-  index (Maybe h _) Haskell.Nothing = h
+  index (Maybe h _) Haskell.Nothing  = h
   index (Maybe _ t) (Haskell.Just x) = index t x
 
 data Maybe1 f a
@@ -64,4 +64,4 @@ data Maybe1 f a
 instance (Adjunction f u) => Adjunction (Maybe1 f) (Maybe u) where
   unit a = Maybe (Nothing1 a) (leftAdjunct Just1 a)
   counit (Nothing1 h) = headMaybe h
-  counit (Just1 t) = rightAdjunct tailMaybe t
+  counit (Just1 t)    = rightAdjunct tailMaybe t
