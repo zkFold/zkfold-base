@@ -27,9 +27,9 @@ nothing
   => Maybe u a
 nothing = Maybe zero (tabulate (Haskell.const zero))
 
-fromMaybe :: (Field a, Adjunction f u) => u a -> Maybe u a -> u a
+fromMaybe :: (Field a, Representable u) => u a -> Maybe u a -> u a
 fromMaybe a (Maybe h t) =
-  Haskell.fmap (\(a',t') -> (t' - a') * h + a') (zipR (a, t))
+  mzipWithRep (\a' t' -> (t' - a') * h + a') a t
 
 instance Distributive u => Distributive (Maybe u) where
   distribute fmu = Maybe
