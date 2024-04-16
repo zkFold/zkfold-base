@@ -25,6 +25,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Maybe
 
 ------------------------------------- Instances -------------------------------------
 
@@ -97,6 +98,13 @@ instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a)) where
     pieces (Bool b) = pieces b
     restore = Bool Haskell.. restore
     typeSize = 1
+
+instance (Arithmetic a, SymbolicData a (u (ArithmeticCircuit a)))
+  => SymbolicData a (Maybe u (ArithmeticCircuit a)) where
+    pieces (Maybe h t) = h : pieces t
+    restore [] = error "restore Maybe: wrong number of arguments"
+    restore (h:t) = Maybe h (restore t)
+    typeSize = 1 + typeSize @a @(u (ArithmeticCircuit a))
 
 instance Arithmetic a => DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) where
     isZero x = Bool (isZeroC x)

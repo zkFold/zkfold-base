@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Maybe (
-    Maybe, just, nothing, fromMaybe, isNothing, isJust
+    Maybe(..), just, nothing, fromMaybe, isNothing, isJust
 ) where
 
 import           Data.Distributive
