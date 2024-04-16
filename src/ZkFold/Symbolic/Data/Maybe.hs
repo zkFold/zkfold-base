@@ -63,5 +63,5 @@ data Maybe1 f a
 
 instance (Adjunction f u) => Adjunction (Maybe1 f) (Maybe u) where
   unit a = Maybe (Nothing1 a) (leftAdjunct Just1 a)
-  counit (Nothing1 a) = headMaybe a
+  counit (Nothing1 h) = headMaybe h
   counit (Just1 t) = rightAdjunct tailMaybe t
