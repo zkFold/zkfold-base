@@ -34,7 +34,7 @@ fromMaybe a (Maybe h t) =
   mzipWithRep (\a' t' -> (t' - a') * h + a') a t
 
 isNothing :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
-isNothing (Maybe flag _) = isZero flag
+isNothing (Maybe h _) = isZero h
 
 isJust :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
 isJust = not Haskell.. isNothing
