@@ -24,9 +24,7 @@ data Maybe u a = Maybe {headMaybe :: a, tailMaybe :: u a}
 just :: Field a => u a -> Maybe u a
 just = Maybe one
 
-nothing
-  :: forall a u. (Field a, Representable u)
-  => Maybe u a
+nothing :: (Field a, Representable u) => Maybe u a
 nothing = Maybe zero (tabulate (Haskell.const zero))
 
 fromMaybe :: (Field a, Representable u) => u a -> Maybe u a -> u a
