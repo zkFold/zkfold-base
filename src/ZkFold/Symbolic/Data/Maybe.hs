@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Data.Maybe (
 import           Data.Distributive
 import           Data.Functor.Adjunction
 import           Data.Functor.Rep
-import           Prelude ((.), (<$>))
+import           Prelude                            ((.), (<$>))
 import qualified Prelude                            as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
