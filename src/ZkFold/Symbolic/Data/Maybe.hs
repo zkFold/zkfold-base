@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Data.Maybe (
 import           Data.Distributive
 import           Data.Functor.Adjunction
 import           Data.Functor.Rep
+import           Prelude ((.), (<$>))
 import qualified Prelude                            as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -32,21 +33,21 @@ fromMaybe a (Maybe h t) =
   mzipWithRep (\a' t' -> (t' - a') * h + a') a t
 
 isNothing :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
-isNothing (Maybe h _) = isZero h
+isNothing = isZero . headMaybe
 
 isJust :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
-isJust = not Haskell.. isNothing
+isJust = not . isNothing
 
 instance Distributive u => Distributive (Maybe u) where
   distribute fmu = Maybe
-    (Haskell.fmap headMaybe fmu)
-    (distribute (Haskell.fmap tailMaybe fmu))
+    (headMaybe <$> fmu)
+    (distribute (tailMaybe <$> fmu))
 
 instance Representable u => Representable (Maybe u) where
   type Rep (Maybe u) = Haskell.Maybe (Rep u)
   tabulate g = Maybe
     (g Haskell.Nothing)
-    (tabulate (g Haskell.. Haskell.Just))
+    (tabulate (g . Haskell.Just))
   index (Maybe h _) Haskell.Nothing  = h
   index (Maybe _ t) (Haskell.Just x) = index t x
 
