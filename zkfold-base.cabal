@@ -49,6 +49,7 @@ common options
       DeriveFunctor,
       DeriveGeneric,
       DeriveTraversable,
+      DerivingStrategies,
       ExistentialQuantification,
       FlexibleContexts,
       FlexibleInstances,
@@ -74,6 +75,7 @@ common options
       StandaloneKindSignatures,
       TupleSections,
       TypeApplications,
+      TypeOperators,
       TypeFamilies,
       ViewPatterns
 
@@ -143,6 +145,7 @@ library
       ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.Eq.Structural
+      ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
@@ -154,12 +157,14 @@ library
       ZkFold.Symbolic.Types
     build-depends:
       base                          >= 4.9 && < 5,
+      adjunctions                           < 4.5,
       aeson                                 < 2.3,
       binary                               < 0.11,
       bytestring                           < 0.12,
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
+      distributive                          < 0.7,
       mtl                                   < 2.4,
       optics                                < 0.5,
       pretty-simple                         < 4.2,
