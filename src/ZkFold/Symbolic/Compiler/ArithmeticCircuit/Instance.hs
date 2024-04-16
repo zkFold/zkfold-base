@@ -102,7 +102,7 @@ instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a)) where
 instance (Arithmetic a, SymbolicData a (u (ArithmeticCircuit a)))
   => SymbolicData a (Maybe u (ArithmeticCircuit a)) where
     pieces (Maybe h t) = h : pieces t
-    restore [] = error "restore Maybe: wrong number of arguments"
+    restore []    = error "restore Maybe: wrong number of arguments"
     restore (h:t) = Maybe h (restore t)
     typeSize = 1 + typeSize @a @(u (ArithmeticCircuit a))
 
