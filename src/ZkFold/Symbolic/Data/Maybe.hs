@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Maybe (
-    Maybe, just, nothing, fromMaybe
+    Maybe, just, nothing, fromMaybe, isNothing, isJust
 ) where
 
 import           Data.Distributive
@@ -10,6 +10,8 @@ import           Data.Functor.Rep
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.DiscreteField
 
 data Maybe u a = Maybe {headMaybe :: a, tailMaybe :: u a}
   deriving stock
@@ -30,6 +32,12 @@ nothing = Maybe zero (tabulate (Haskell.const zero))
 fromMaybe :: (Field a, Representable u) => u a -> Maybe u a -> u a
 fromMaybe a (Maybe h t) =
   mzipWithRep (\a' t' -> (t' - a') * h + a') a t
+
+isNothing :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
+isNothing (Maybe flag _) = isZero flag
+
+isJust :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
+isJust = not Haskell.. isNothing
 
 instance Distributive u => Distributive (Maybe u) where
   distribute fmu = Maybe
