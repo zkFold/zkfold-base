@@ -49,7 +49,7 @@ instance Representable u => Representable (Maybe u) where
     (g Haskell.Nothing)
     (tabulate (g . Haskell.Just))
   index (Maybe h _) Haskell.Nothing  = h
-  index (Maybe _ t) (Haskell.Just x) = index t x
+  index (Maybe _ t) (Haskell.Just i) = index t i
 
 data Maybe1 f a
   = Nothing1 a
