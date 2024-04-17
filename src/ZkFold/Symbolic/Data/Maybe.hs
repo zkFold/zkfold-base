@@ -26,7 +26,7 @@ just :: Field a => u a -> Maybe u a
 just = Maybe one
 
 nothing :: (Field a, Representable u) => Maybe u a
-nothing = Maybe zero (tabulate (Haskell.const zero))
+nothing = Maybe zero (pureRep zero)
 
 fromMaybe :: (Field a, Representable u) => u a -> Maybe u a -> u a
 fromMaybe a (Maybe h t) =
