@@ -30,7 +30,7 @@ nothing = Maybe zero (pureRep zero)
 
 fromMaybe :: (Field a, Representable u) => u a -> Maybe u a -> u a
 fromMaybe a (Maybe h t) =
-  mzipWithRep (\a' t' -> (t' - a') * h + a') a t
+  liftR2 (\a' t' -> (t' - a') * h + a') a t
 
 isNothing :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
 isNothing = isZero . headMaybe
