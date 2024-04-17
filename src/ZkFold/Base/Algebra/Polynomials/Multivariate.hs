@@ -15,6 +15,7 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate (
     variables
     ) where
 
+import           Data.Functor                                              ((<&>))
 import           Data.Bifunctor                                            (first)
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Map.Strict                                           (Map, keys, singleton, toList)
@@ -47,16 +48,35 @@ polynomial = sum . map (\m -> P [m]) . toPolynomial
 var :: Polynomial c i j => i -> P c i j (Map i j) [(c, M i j (Map i j))]
 var x = polynomial [(one, monomial (singleton x one))]
 
-evalMonomial :: forall i j m b . (FromMonomial i j m, MultiplicativeMonoid b, Exponent b j) => (i -> b) -> M i j m -> b
-evalMonomial f (M m) = product (map (\(i, j) -> f i ^ j) (toList $ fromMonomial @i @j m))
+evalMonomial :: forall i j m b .
+    FromMonomial i j m =>
+    MultiplicativeMonoid b =>
+    Exponent b j =>
+    (i -> b) -> M i j m -> b
+evalMonomial f (M m) = product
+    $ toList (fromMonomial @i @j m)
+        <&> (\(i, j) -> f i ^ j)
 
-evalPolynomial :: forall c i j m p b . (FromMonomial i j m, FromPolynomial c i j m p, Algebra c b, Exponent b j)
-    => (i -> b) -> P c i j m p -> b
-evalPolynomial f (P p) = sum $ map (\(c, m) -> scale c (evalMonomial f m)) (fromPolynomial @c @i @j @m @p p)
+evalPolynomial :: forall c i j m p b .
+    FromMonomial i j m =>
+    FromPolynomial c i j m p =>
+    Algebra c b =>
+    Exponent b j =>
+    (i -> b) -> P c i j m p -> b
+evalPolynomial f (P p) = sum
+    $ fromPolynomial @c @i @j @m @p p
+        <&> (\(c, m) -> scale c $ evalMonomial f m)
 
-variables :: forall c i j m p . (Show i, FromMonomial i j m, FromPolynomial c i j m p) => P c i j m p -> [i]
-variables (P p) = nubOrd . concatMap (\(_, M m) -> keys (fromMonomial @i @j @m m)) $ fromPolynomial @c @i @j @m @p p
+variables :: forall c i j m p .
+    Show i =>
+    FromMonomial i j m =>
+    FromPolynomial c i j m p =>
+    P c i j m p -> [i]
+variables (P p) = nubOrd
+    . concatMap (\(_, M m) -> keys (fromMonomial @i @j @m m))
+    $ fromPolynomial @c @i @j @m @p p
 
 mapCoeffs :: forall c c' i j m p p' . (FromPolynomial c i j m p, ToPolynomial c' i j m p')
     => (c -> c') -> P c i j m p -> P c' i j m p'
-mapCoeffs f (P p) = P . toPolynomial $ map (first f) (fromPolynomial @c @i @j @m p)
+mapCoeffs f (P p) = P . toPolynomial
+    $ fromPolynomial @c @i @j @m p <&> first f
