@@ -38,10 +38,10 @@ instance Polynomial c i j => FromPolynomial c i j m [(c, M i j m)] where
     fromPolynomial = id
 
 class Polynomial c i j => ToPolynomial c i j m p where
-    toPolynomial   :: [(c, M i j m)] -> Maybe p
+    toPolynomial   :: [(c, M i j m)] -> p
 
 instance (Polynomial c i j) => ToPolynomial c i j m [(c, M i j m)] where
-    toPolynomial   = Just . filter (\(c, _) -> c /= zero)
+    toPolynomial   = filter (\(c, _) -> c /= zero)
 
 -- | Polynomial type
 newtype P c i j m p = P p
