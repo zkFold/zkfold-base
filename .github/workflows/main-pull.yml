@@ -22,6 +22,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4.1.1
 
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
     - name: Set up Haskell
       uses: haskell-actions/setup@v2.6.2
       id: setup
