@@ -1,19 +1,20 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Data.V where
-     
+
 import           Control.Monad.Trans.State        (runState, state)
 import           Data.Distributive
 import           Data.Functor.Rep
-import qualified Data.Vector as V
+import qualified Data.Vector                      as V
+import           Data.Vector.Binary               ()
 import           Numeric.Natural                  (Natural)
 import           Prelude
+import           System.Random                    (Random (..))
+import           Test.QuickCheck                  (Arbitrary (..))
+
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.ByteString      (Binary (..))
-import           Data.Vector.Binary               ()
-import           System.Random                    (Random (..))
-import           Test.QuickCheck                  (Arbitrary (..))
 
 newtype Vector (dim :: Natural) a = Vector { fromVector :: V.Vector a }
   deriving stock (Eq,Ord,Show,Read,Functor,Foldable,Traversable)
