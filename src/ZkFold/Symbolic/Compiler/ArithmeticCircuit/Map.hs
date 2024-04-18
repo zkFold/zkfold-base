@@ -21,20 +21,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
-mapVar :: [Natural] -> Natural -> Natural
-mapVar vars x = case x `elemIndex` vars of
-    Just i  -> i
-    Nothing -> error "mapVar: something went wrong"
-
-mapVarMonomial :: [Natural] -> ConstraintMonomial -> ConstraintMonomial
-mapVarMonomial vars (M as) = M $ mapKeys (mapVar vars) as
-
-mapVarPolynomial :: [Natural] -> Constraint c -> Constraint c
-mapVarPolynomial vars (P ms) = P $ map (second $ mapVarMonomial vars) ms
-
-mapVarPolynomials :: [Natural] -> [Constraint c] -> [Constraint c]
-mapVarPolynomials vars = map (mapVarPolynomial vars)
-
 mapVarWitness :: [Natural] -> (Map Natural a -> Map Natural a)
 mapVarWitness vars = mapKeys (mapVar vars)
 

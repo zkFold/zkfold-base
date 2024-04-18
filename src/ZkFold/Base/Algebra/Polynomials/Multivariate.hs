@@ -1,29 +1,34 @@
 {-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Base.Algebra.Polynomials.Multivariate (
-    module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial,
-    module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial,
-    module ZkFold.Base.Algebra.Polynomials.Multivariate.Set,
-    module ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution,
-    SomeMonomial,
-    SomePolynomial,
-    mapCoeffs,
-    monomial,
-    polynomial,
-    evalPolynomial,
-    var,
-    variables
+module ZkFold.Base.Algebra.Polynomials.Multivariate
+    ( module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
+    , module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
+    , module ZkFold.Base.Algebra.Polynomials.Multivariate.Set
+    , module ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
+    , SomeMonomial
+    , SomePolynomial
+    , mapCoeffs
+    , monomial
+    , polynomial
+    , evalPolynomial
+    , var
+    , variables
+    , mapVar
+    , mapVarMonomial
+    , mapVarPolynomial
+    , mapVarPolynomials
     ) where
 
 import           Data.Functor                                              ((<&>))
-import           Data.Bifunctor                                            (first)
+import           Data.Bifunctor                                            (first, second)
 import           Data.Containers.ListUtils                                 (nubOrd)
-import           Data.Map.Strict                                           (Map, keys, singleton, toList)
+import           Data.Map.Strict                                           (Map, keys, mapKeys, singleton, toList)
 import           Data.Maybe                                                (fromJust)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Num (..), length, product, replicate,
                                                                             sum, (!!), (^))
 
+import           ZkFold.Prelude                                            (elemIndex)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
@@ -82,3 +87,17 @@ mapCoeffs :: forall c c' i j m p p' .
 mapCoeffs f (P p) = P . toPolynomial
     $ fromPolynomial @c @i @j @m p
         <&> first f
+
+mapVarMonomial :: [Natural] -> SomeMonomial -> SomeMonomial
+mapVarMonomial vars (M as) = M $ mapKeys (mapVar vars) as
+
+mapVar :: [Natural] -> Natural -> Natural
+mapVar vars x = case x `elemIndex` vars of
+    Just i  -> i
+    Nothing -> error "mapVar: something went wrong"
+
+mapVarPolynomial :: [Natural] -> SomePolynomial c -> SomePolynomial c
+mapVarPolynomial vars (P ms) = P $ map (second $ mapVarMonomial vars) ms
+
+mapVarPolynomials :: [Natural] -> [SomePolynomial c] -> [SomePolynomial c]
+mapVarPolynomials vars = map (mapVarPolynomial vars)
