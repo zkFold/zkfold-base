@@ -7,7 +7,7 @@ import           Prelude                                         hiding (Num (..
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                (KnownNat)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, evalPolynomial, subs, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Polynomial', evalPolynomial, subs, var)
 import           ZkFold.Base.Data.Matrix                         (Matrix (..), outer, sum1, transpose)
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProtostar)
@@ -41,9 +41,9 @@ instance (Arithmetic f, KnownNat m, KnownNat n, KnownNat c) => SpecialSoundProto
     verifier' :: ProtostarGate m n c d
               -> Input f (ProtostarGate m n c d)
               -> SpecialSoundTranscript Natural (ProtostarGate m n c d)
-              -> Vector (Dimension (ProtostarGate m n c d)) (SomePolynomial f)
+              -> Vector (Dimension (ProtostarGate m n c d)) (Polynomial' f)
     verifier' _ (s, g) [(w, _)] =
-      let w' = fmap ((var .) . subs) w :: Vector n (Zp c -> SomePolynomial f)
+      let w' = fmap ((var .) . subs) w :: Vector n (Zp c -> Polynomial' f)
           z  = transpose $ outer evalPolynomial w' g
       in sum1 $ zipWith scale s z
     verifier' _ _ _ = error "Invalid transcript"

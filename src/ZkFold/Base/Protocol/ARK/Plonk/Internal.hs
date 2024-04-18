@@ -19,7 +19,7 @@ import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (M (..), P (..), SomePolynomial, polynomial, variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (M (..), P (..), Polynomial', polynomial, variables)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Prelude                               (length, take)
 import           ZkFold.Symbolic.Compiler
@@ -27,8 +27,6 @@ import           ZkFold.Symbolic.Compiler
 type F = ScalarField BLS12_381_G1
 type G1 = Point BLS12_381_G1
 type G2 = Point BLS12_381_G2
-
-type SomePolynomialF = SomePolynomial F
 
 -- TODO (Issue #15): safer code and better tests for this module
 
@@ -49,7 +47,7 @@ getParams l = findK' $ mkStdGen 0
                 all (`notElem` hGroup) (hGroup' k1)
                 && all (`notElem` hGroup' k1) (hGroup' k2)
 
-toPlonkConstraint :: SomePolynomialF -> (F, F, F, F, F, F, F, F)
+toPlonkConstraint :: Polynomial' F -> (F, F, F, F, F, F, F, F)
 toPlonkConstraint p@(P ms) =
     let xs    = variables p
         i     = order @F
@@ -82,7 +80,7 @@ toPlonkConstraint p@(P ms) =
 
     in head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (F, F, F, F, F, F, F, F) -> SomePolynomialF
+fromPlonkConstraint :: (F, F, F, F, F, F, F, F) -> Polynomial' F
 fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
     let xa = fromList [(fromZp a, 1)]
         xb = fromList [(fromZp b, 1)]
@@ -91,14 +89,14 @@ fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
 
     in polynomial [(ql, M xa), (qr, M xb), (qo, M xc), (qm, M xaxb), (qc, M empty)]
 
-addPublicInput :: Natural -> F -> [SomePolynomialF] -> [SomePolynomialF]
+addPublicInput :: Natural -> F -> [Polynomial' F] -> [Polynomial' F]
 addPublicInput i _ ps =
     polynomial [(one, M (fromList [(i, 1)]))] : ps
 
-addPublicInputs :: Map Natural F -> [SomePolynomialF] -> [SomePolynomialF]
+addPublicInputs :: Map Natural F -> [Polynomial' F] -> [Polynomial' F]
 addPublicInputs inputs ps = foldr (\(i, x) ps' -> addPublicInput i x ps') ps $ toList inputs
 
-removeConstantVariable :: SomePolynomialF -> SomePolynomialF
+removeConstantVariable :: Polynomial' F -> Polynomial' F
 removeConstantVariable (P ms) =
     polynomial . map (\(c, M as) -> (c, M (0 `delete` as))) $ ms
 

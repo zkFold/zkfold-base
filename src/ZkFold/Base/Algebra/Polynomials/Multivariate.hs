@@ -5,8 +5,8 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate
     , module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
     , module ZkFold.Base.Algebra.Polynomials.Multivariate.Set
     , module ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
-    , SomeMonomial
-    , SomePolynomial
+    , Monomial'
+    , Polynomial'
     , mapCoeffs
     , monomial
     , polynomial
@@ -36,10 +36,10 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Set
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
 
 -- | Most general type for a multivariate monomial
-type SomeMonomial = M Natural Natural (Map Natural Natural)
+type Monomial' = M Natural Natural (Map Natural Natural)
 
 -- | Most general type for a multivariate polynomial
-type SomePolynomial c = P c Natural Natural (Map Natural Natural) [(c, SomeMonomial)]
+type Polynomial' c = P c Natural Natural (Map Natural Natural) [(c, Monomial')]
 
 -- | Monomial constructor
 monomial :: Monomial i j => Map i j -> M i j (Map i j)
@@ -88,7 +88,7 @@ mapCoeffs f (P p) = P . toPolynomial
     $ fromPolynomial @c @i @j @m p
         <&> first f
 
-mapVarMonomial :: [Natural] -> SomeMonomial -> SomeMonomial
+mapVarMonomial :: [Natural] -> Monomial' -> Monomial'
 mapVarMonomial vars (M as) = M $ mapKeys (mapVar vars) as
 
 mapVar :: [Natural] -> Natural -> Natural
@@ -96,8 +96,8 @@ mapVar vars x = case x `elemIndex` vars of
     Just i  -> i
     Nothing -> error "mapVar: something went wrong"
 
-mapVarPolynomial :: [Natural] -> SomePolynomial c -> SomePolynomial c
+mapVarPolynomial :: [Natural] -> Polynomial' c -> Polynomial' c
 mapVarPolynomial vars (P ms) = P $ map (second $ mapVarMonomial vars) ms
 
-mapVarPolynomials :: [Natural] -> [SomePolynomial c] -> [SomePolynomial c]
+mapVarPolynomials :: [Natural] -> [Polynomial' c] -> [Polynomial' c]
 mapVarPolynomials vars = map (mapVarPolynomial vars)
