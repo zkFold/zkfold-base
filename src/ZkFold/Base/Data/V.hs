@@ -1,11 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
 module ZkFold.Base.Data.V where
 
 import           Data.Distributive
 import           Data.Functor.Rep
+import           Data.Maybe                       (fromMaybe)
 import qualified Data.Vector                      as V
 import           Data.Vector.Binary               ()
 import           GHC.Generics
@@ -28,11 +28,6 @@ toVector as
     | fromIntegral (V.length as) == value @dim = Just $ Vector as
     | otherwise                                 = Nothing
 
-indexN
-  :: forall n dim a. (KnownNat n, KnownNat dim, 0 <= n, n <= dim)
-  => Vector dim a -> a
-indexN v = index v (fromIntegral (value @n))
-
 instance Binary a => Binary (Vector n a) where
     put = put . fromVector
     get = Vector <$> get
@@ -46,8 +41,12 @@ instance KnownNat dim => Representable (Vector dim) where
   tabulate = Vector . V.generate (fromIntegral (value @dim))
   index (Vector xs) i = xs V.! i
 
-deriving via Representably (Vector dim) instance
-  (Field a, KnownNat dim) => VectorSpace a (Vector dim)
+instance (Field a, KnownNat dim)
+  => VectorSpace a (Vector dim) where
+    type Basis a (Vector dim) = Int
+    tabulateV = tabulate
+    -- safe index; out of bounds -> 0
+    indexV (Vector xs) i = fromMaybe zero (xs V.!? i)
 deriving via Representably (Vector dim) a instance
   (Field a, KnownNat dim) => AdditiveSemigroup (Vector dim a)
 deriving via Representably (Vector dim) a instance
@@ -70,6 +69,6 @@ deriving via Representably (Vector dim) a instance
 type Matrix m n = Vector m :.: Vector n
 
 transpose
-  :: forall m n a . (KnownNat m, KnownNat n)
-  => Matrix m n a -> Matrix n m a
+  :: (Functor vm, Distributive vn)
+  => (vm :.: vn) a -> (vn :.: vm) a
 transpose (Comp1 m) = Comp1 (distribute m)
