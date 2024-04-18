@@ -57,7 +57,9 @@ instance (FromPolynomial c i j m p, FromMonomial i j m) => Eq (P c i j m p) wher
 
 -- TODO: this assumes sorted monomials! Needs fixing.
 instance (FromPolynomial c i j m p, FromMonomial i j m) => Ord (P c i j m p) where
-    compare (P l) (P r) = compare (map snd $ fromPolynomial @c @i @j @m l) (map snd $ fromPolynomial @c @i @j @m r)
+    compare (P l) (P r) = compare
+        (snd <$> fromPolynomial @c @i @j @m l)
+        (snd <$> fromPolynomial @c @i @j @m r)
 
 instance Arbitrary p => Arbitrary (P c i j m p) where
     arbitrary = P <$> arbitrary

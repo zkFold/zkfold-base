@@ -34,7 +34,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
 type SomeMonomial = M Natural Natural (Map Natural Natural)
 
 -- | Most general type for a multivariate polynomial
-type SomePolynomial c = P c Natural Natural (Map Natural Natural) [(c, M Natural Natural (Map Natural Natural))]
+type SomePolynomial c = P c Natural Natural (Map Natural Natural) [(c, SomeMonomial)]
 
 -- | Monomial constructor
 monomial :: Monomial i j => Map i j -> M i j (Map i j)
@@ -57,7 +57,7 @@ evalMonomial f (M m) = product
     $ toList (fromMonomial @i @j m)
         <&> (\(i, j) -> f i ^ j)
 
-evalPolynomial :: forall c i j m p b .
+evalPolynomial :: forall p c i j m b .
     FromMonomial i j m =>
     FromPolynomial c i j m p =>
     Algebra c b =>
@@ -68,7 +68,6 @@ evalPolynomial f (P p) = sum
         <&> (\(c, m) -> scale c $ evalMonomial f m)
 
 variables :: forall c i j m p .
-    Show i =>
     FromMonomial i j m =>
     FromPolynomial c i j m p =>
     P c i j m p -> [i]
@@ -76,7 +75,10 @@ variables (P p) = nubOrd
     . concatMap (\(_, M m) -> keys (fromMonomial @i @j @m m))
     $ fromPolynomial @c @i @j @m @p p
 
-mapCoeffs :: forall c c' i j m p p' . (FromPolynomial c i j m p, ToPolynomial c' i j m p')
-    => (c -> c') -> P c i j m p -> P c' i j m p'
+mapCoeffs :: forall c c' i j m p p' .
+    FromPolynomial c i j m p =>
+    ToPolynomial c' i j m p' =>
+    (c -> c') -> P c i j m p -> P c' i j m p'
 mapCoeffs f (P p) = P . toPolynomial
-    $ fromPolynomial @c @i @j @m p <&> first f
+    $ fromPolynomial @c @i @j @m p
+        <&> first f

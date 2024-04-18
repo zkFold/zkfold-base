@@ -96,7 +96,7 @@ toVar srcs c = fromZp ex
         r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: VarField
         v  = (+ r) . fromConstant
-        x  = g ^ fromZp (v `evalPolynomial` (mapCoeffs toField c :: SomePolynomial VarField))
+        x  = g ^ fromZp (evalPolynomial @[(VarField, SomeMonomial)] v $ mapCoeffs toField c)
         ex = foldr (\p y -> x ^ p + y) x srcs
 
 newVariableWithSource :: Arithmetic a => [Natural] -> (Natural -> Constraint a) -> State (ArithmeticCircuit a) Natural

@@ -51,7 +51,7 @@ getParams l = findK' $ mkStdGen 0
 
 toPlonkConstraint :: SomePolynomialF -> (F, F, F, F, F, F, F, F)
 toPlonkConstraint p@(P ms) =
-    let xs    = nubOrd $ variables p
+    let xs    = variables p
         i     = order @F
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
             0 -> [i, i, i]
