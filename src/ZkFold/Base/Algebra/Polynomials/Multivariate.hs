@@ -19,21 +19,21 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate
     , mapVarPolynomials
     ) where
 
-import           Data.Functor                                              ((<&>))
 import           Data.Bifunctor                                            (first, second)
 import           Data.Containers.ListUtils                                 (nubOrd)
+import           Data.Functor                                              ((<&>))
 import           Data.Map.Strict                                           (Map, keys, mapKeys, singleton, toList)
 import           Data.Maybe                                                (fromJust)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Num (..), length, product, replicate,
                                                                             sum, (!!), (^))
 
-import           ZkFold.Prelude                                            (elemIndex)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Set
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
+import           ZkFold.Prelude                                            (elemIndex)
 
 -- | Most general type for a multivariate monomial
 type Monomial' = M Natural Natural (Map Natural Natural)
