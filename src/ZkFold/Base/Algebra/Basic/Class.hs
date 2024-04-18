@@ -6,7 +6,11 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
+import           Data.Functor.Rep
+import           Data.Functor.Identity            (Identity (..))
+import           Data.Void                        (Void)
 import           Data.Kind                        (Type)
+import           GHC.Generics                     (U1 (..), (:*:) (..), (:.:) (..))
 import           GHC.Natural                      (naturalFromInteger)
 import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
@@ -322,6 +326,18 @@ elements in the type, identified up to the associated equality relation.
 class KnownNat (Order a) => Finite (a :: Type) where
     type Order a :: Natural
 
+instance Finite Void where type Order Void = 0
+instance Finite () where type Order () = 1
+instance KnownNat (1 + Order a)
+  => Finite (Maybe a) where
+    type Order (Maybe a) = 1 + Order a
+instance KnownNat (Order a + Order b)
+  => Finite (Either a b) where
+    type Order (Either a b) = Order a + Order b
+instance KnownNat (Order a * Order b)
+  => Finite (a, b) where
+    type Order (a, b) = Order a * Order b
+
 order :: forall a . Finite a => Natural
 order = value @(Order a)
 
@@ -542,3 +558,131 @@ instance FromConstant b a => FromConstant b (p -> a) where
 instance Semiring a => Semiring (p -> a)
 
 instance Ring a => Ring (p -> a)
+
+--------------------------------------------------------------------------------
+
+{- | Class of vector spaces with a basis over a field. -}
+class
+  ( Field a
+  , AdditiveGroup (v a)
+  , Scale a (v a)
+  ) => VectorSpace a v where
+    type Basis a v :: Type
+    tabulateV :: (Basis a v -> a) -> v a
+    indexV :: v a -> Basis a v -> a
+
+-- basis vector e_i
+basisV :: (VectorSpace a v, Eq (Basis a v)) => Basis a v -> v a
+basisV i = tabulateV $ \j -> if i == j then one else zero
+
+-- dot product
+-- prop> v `dotV` basis i = indexV v i
+dotV :: (VectorSpace a v, Foldable v) => v a -> v a -> a
+v `dotV` w = sum (zipWithV (*) v w)
+
+zipWithV :: VectorSpace a v => (a -> a -> a) -> v a -> v a -> v a
+zipWithV f as bs = tabulateV $ \k ->
+  f (indexV as k) (indexV bs k)
+
+mapV :: VectorSpace a v => (a -> a) -> v a -> v a
+mapV f = tabulateV . fmap f . indexV
+
+pureV :: VectorSpace a v => a -> v a
+pureV = tabulateV . const
+
+type FinDimVectorSpace a v = (VectorSpace a v, Finite (Basis a v))
+
+dimV :: forall a v. FinDimVectorSpace a v => Natural
+dimV = order @(Basis a v)
+
+-- representable vector space
+newtype Representably v (a :: Type) = Representably
+  { runRepresentably :: v a }
+instance (Field a, Representable v)
+  => VectorSpace a (Representably v) where
+    type Basis a (Representably v) = Rep v
+    tabulateV = Representably . tabulate
+    indexV = index . runRepresentably
+instance (Representable v, AdditiveSemigroup a)
+  => AdditiveSemigroup (Representably v a) where
+    Representably a + Representably b =
+        Representably (mzipWithRep (+) a b)
+instance (Representable v, AdditiveMonoid a)
+  => AdditiveMonoid (Representably v a) where
+    zero = Representably (pureRep zero)
+instance (Representable v, AdditiveGroup a)
+  => AdditiveGroup (Representably v a) where
+    Representably a - Representably b =
+        Representably (mzipWithRep (-) a b)
+instance (Representable v, Scale b a)
+  => Scale b (Representably v a) where
+    scale b (Representably v) = Representably (fmapRep (scale b) v)
+
+-- zero dimensional vector space
+deriving via Representably U1 instance Field a => VectorSpace a U1
+deriving via Representably U1 a instance Field a => AdditiveSemigroup (U1 a)
+deriving via Representably U1 a instance Field a => AdditiveMonoid (U1 a)
+deriving via Representably U1 a instance Field a => AdditiveGroup (U1 a)
+deriving via Representably U1 a instance Field a => Scale Natural (U1 a)
+deriving via Representably U1 a instance Field a => Scale Integer (U1 a)
+deriving via Representably U1 a instance Field a => Scale a (U1 a)
+
+-- one dimensional vector space
+deriving via Representably Identity instance Field a => VectorSpace a Identity
+deriving via Representably Identity a instance Field a => AdditiveSemigroup (Identity a)
+deriving via Representably Identity a instance Field a => AdditiveMonoid (Identity a)
+deriving via Representably Identity a instance Field a => AdditiveGroup (Identity a)
+deriving via Representably Identity a instance Field a => Scale Natural (Identity a)
+deriving via Representably Identity a instance Field a => Scale Integer (Identity a)
+deriving via Representably Identity a instance Field a => Scale a (Identity a)
+
+-- direct sum of vector spaces
+instance (VectorSpace a v, VectorSpace a u)
+  => VectorSpace a (v :*: u) where
+    type Basis a (v :*: u) = Either (Basis a v) (Basis a u)
+    tabulateV f = tabulateV (f . Left) :*: tabulateV (f . Right)
+    indexV (a :*: _) (Left  i) = indexV a i
+    indexV (_ :*: b) (Right j) = indexV b j
+instance (VectorSpace a v, VectorSpace a u)
+  => AdditiveSemigroup ((v :*: u) a) where
+    (a0 :*: a1) + (b0 :*: b1) = (a0 + b0) :*: (a1 + b1)
+instance (VectorSpace a v, VectorSpace a u)
+  => AdditiveMonoid ((v :*: u) a) where
+    zero = zero :*: zero
+instance (VectorSpace a v, VectorSpace a u)
+  => AdditiveGroup ((v :*: u) a) where
+    (a0 :*: a1) - (b0 :*: b1) = (a0 - b0) :*: (a1 - b1)
+instance (VectorSpace a v, VectorSpace a u)
+  => Scale Natural ((v :*: u) a) where
+    scale n (a0 :*: a1) = (scale n a0) :*: (scale n a1)
+instance (VectorSpace a v, VectorSpace a u)
+  => Scale Integer ((v :*: u) a) where
+    scale n (a0 :*: a1) = (scale n a0) :*: (scale n a1)
+instance (VectorSpace a v, VectorSpace a u)
+  => Scale a ((v :*: u) a) where
+    scale n (a0 :*: a1) = (scale n a0) :*: (scale n a1)
+
+-- tensor product of vector spaces
+instance (Representable u, VectorSpace a v)
+  => VectorSpace a (u :.: v) where
+    type Basis a (u :.: v) = (Rep u, Basis a v)
+    tabulateV = Comp1 . tabulate . fmap tabulateV . curry
+    indexV (Comp1 fg) (i, j) = indexV (index fg i) j
+instance (Representable u, VectorSpace a v)
+  => AdditiveSemigroup ((u :.: v) a) where
+    Comp1 a + Comp1 b = Comp1 (mzipWithRep (zipWithV (+)) a b)
+instance (Representable u, VectorSpace a v)
+  => AdditiveMonoid ((u :.: v) a) where
+    zero = Comp1 (pureRep (pureV zero))
+instance (Representable u, VectorSpace a v)
+  => AdditiveGroup ((u :.: v) a) where
+    Comp1 a - Comp1 b = Comp1 (mzipWithRep (zipWithV (-)) a b)
+instance (Functor u, VectorSpace a v)
+  => Scale Natural ((u :.: v) a) where
+    scale b (Comp1 a) = Comp1 (fmap (mapV (scale b)) a)
+instance (Functor u, VectorSpace a v)
+  => Scale Integer ((u :.: v) a) where
+    scale b (Comp1 a) = Comp1 (fmap (mapV (scale b)) a)
+instance (Functor u, VectorSpace a v)
+  => Scale a ((u :.: v) a) where
+    scale b (Comp1 a) = Comp1 (fmap (mapV (scale b)) a)
