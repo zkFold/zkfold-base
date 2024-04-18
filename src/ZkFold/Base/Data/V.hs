@@ -8,7 +8,7 @@ import           Data.Distributive
 import           Data.Functor.Rep
 import qualified Data.Vector                      as V
 import           Data.Vector.Binary               ()
-import           Numeric.Natural                  (Natural)
+import           GHC.TypeNats
 import           Prelude
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
