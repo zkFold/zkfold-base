@@ -9,7 +9,6 @@ module ZkFold.Base.Algebra.Basic.Class where
 import           Data.Functor.Identity            (Identity (..))
 import           Data.Functor.Rep
 import           Data.Kind                        (Type)
-import           Data.Void                        (Void)
 import           GHC.Generics                     (U1 (..), (:*:) (..), (:.:) (..))
 import           GHC.Natural                      (naturalFromInteger)
 import           Numeric.Natural                  (Natural)

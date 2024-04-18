@@ -1,4 +1,5 @@
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes, UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
 module ZkFold.Base.Data.V where
      
@@ -6,7 +7,7 @@ import           Control.Monad.Trans.State        (runState, state)
 import           Data.Distributive
 import           Data.Functor.Rep
 import qualified Data.Vector as V
-import           Numeric.Natural                  (Natural)
+import           GHC.TypeNats
 import           Prelude
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -24,6 +25,11 @@ toVector
 toVector as
     | fromIntegral (V.length as) == value @dim = Just $ Vector as
     | otherwise                                 = Nothing
+
+indexN
+  :: forall n dim a. (KnownNat n, KnownNat dim, 0 <= n, n <= dim)
+  => Vector dim a -> a
+indexN v = index v (fromIntegral (value @n))
 
 instance Binary a => Binary (Vector n a) where
     put = put . fromVector
