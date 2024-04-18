@@ -326,18 +326,6 @@ elements in the type, identified up to the associated equality relation.
 class KnownNat (Order a) => Finite (a :: Type) where
     type Order a :: Natural
 
-instance Finite Void where type Order Void = 0
-instance Finite () where type Order () = 1
-instance KnownNat (1 + Order a)
-  => Finite (Maybe a) where
-    type Order (Maybe a) = 1 + Order a
-instance KnownNat (Order a + Order b)
-  => Finite (Either a b) where
-    type Order (Either a b) = Order a + Order b
-instance KnownNat (Order a * Order b)
-  => Finite (a, b) where
-    type Order (a, b) = Order a * Order b
-
 order :: forall a . Finite a => Natural
 order = value @(Order a)
 
@@ -589,11 +577,6 @@ mapV f = tabulateV . fmap f . indexV
 
 pureV :: VectorSpace a v => a -> v a
 pureV = tabulateV . const
-
-type FinDimVectorSpace a v = (VectorSpace a v, Finite (Basis a v))
-
-dimV :: forall a v. FinDimVectorSpace a v => Natural
-dimV = order @(Basis a v)
 
 -- representable vector space
 newtype Representably v (a :: Type) = Representably
