@@ -1,4 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes, UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
 module ZkFold.Base.Data.V where
