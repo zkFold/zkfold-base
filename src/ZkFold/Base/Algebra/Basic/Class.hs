@@ -6,6 +6,8 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
+import           Control.Arrow                    ((***))
+import           Control.Monad.State              (runState, state)
 import           Data.Functor.Identity            (Identity (..))
 import           Data.Functor.Rep
 import           Data.Kind                        (Type)
@@ -14,6 +16,8 @@ import           GHC.Natural                      (naturalFromInteger)
 import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
 import qualified Prelude                          as Haskell
+import           System.Random                    (Random (..))
+import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                   (length, replicate)
@@ -599,6 +603,32 @@ instance (Representable v, AdditiveGroup a)
 instance (Representable v, Scale b a)
   => Scale b (Representably v a) where
     scale b (Representably v) = Representably (fmapRep (scale b) v)
+
+instance Representable v => Functor (Representably v) where
+  fmap f = Representably . fmapRep f . runRepresentably
+
+instance Representable v => Applicative (Representably v) where
+  pure = Representably . pureRep
+  Representably f <*> Representably a = Representably (f `apRep` a)
+
+deriving newtype instance Foldable v => Foldable (Representably v)
+
+instance (Traversable v, Representable v) => Traversable (Representably v) where
+    traverse f (Representably v) = fmap Representably (traverse f v)
+
+instance (Representable v, Traversable v, Random a) => Random (Representably v a) where
+  random = runState (sequenceA (Representably (pureRep (state random))))
+  randomR
+    = runState
+    . fmap Representably
+    . sequenceA
+    . fmapRep (state . randomR)
+    . uncurry mzipRep
+    . (runRepresentably *** runRepresentably)
+
+instance (Arbitrary a, Representable v, Traversable v)
+  => Arbitrary (Representably v a) where
+    arbitrary = sequenceA (Representably (pureRep arbitrary))
 
 -- zero dimensional vector space
 deriving via Representably U1 instance Field a => VectorSpace a U1

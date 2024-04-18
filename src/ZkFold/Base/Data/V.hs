@@ -4,7 +4,6 @@
 
 module ZkFold.Base.Data.V where
 
-import           Control.Monad.Trans.State        (runState, state)
 import           Data.Distributive
 import           Data.Functor.Rep
 import qualified Data.Vector                      as V
@@ -60,18 +59,9 @@ deriving via Representably (Vector dim) a instance
   (Field a, KnownNat dim) => Scale Integer (Vector dim a)
 deriving via Representably (Vector dim) a instance
   (Field a, KnownNat dim) => Scale a (Vector dim a)
-
-instance KnownNat dim => Applicative (Vector dim) where
-  pure = pureRep
-  (<*>) = apRep
-
-instance (KnownNat n, Random a) => Random (Vector n a) where
-  random = runState (sequenceA (pureRep (state random)))
-  randomR
-    = runState
-    . sequenceA
-    . fmapRep (state . randomR)
-    . uncurry mzipRep
-
-instance (Arbitrary a, KnownNat dim) => Arbitrary (Vector dim a) where
-    arbitrary = sequenceA (pureRep arbitrary)
+deriving via Representably (Vector dim) instance
+  KnownNat dim => Applicative (Vector dim)
+deriving via Representably (Vector dim) a instance
+  (KnownNat dim, Random a) => Random (Vector dim a)
+deriving via Representably (Vector dim) a instance
+  (Arbitrary a, KnownNat dim) => Arbitrary (Vector dim a)
