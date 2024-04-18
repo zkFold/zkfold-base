@@ -89,11 +89,6 @@ jobs:
     - name: Build
       run: cabal build zkfold-base
 
-    - name: Build Rust FFI code
-      run: |
-        cd rust-ffi
-        cabal build zkfold
-
     # - name: Test
     #   run: cabal test all
 
