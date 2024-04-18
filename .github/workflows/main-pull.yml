@@ -82,6 +82,11 @@ jobs:
     - name: Build
       run: cabal build all
 
+    - name: Build Rust FFI code
+      run: |
+        cd rust-ffi
+        cabal build all
+
     # - name: Test
     #   run: cabal test all
 
