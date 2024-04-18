@@ -6,8 +6,8 @@
 
 module Tests.Field (specField) where
 
-import           Data.Data                        (Typeable, typeOf)
-import           Prelude                          hiding (Num(..), Fractional(..), length)
+import           Data.Data                       (Typeable, typeOf)
+import           Prelude                         hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -33,6 +33,6 @@ specField = hspec $ do
                 it "should satisfy multiplicative identity" $ do
                     property $ \(a :: a) -> a * one == a
                 it "should satisfy multiplicative inverse" $ do
-                    property $ \(a :: a) -> a /= zero ==> a * invert a == one
+                    property $ \(a :: a) -> a /= zero ==> a * finv a == one
                 it "should satisfy distributivity" $ do
                     property $ \(a :: a) b c -> a * (b + c) == a * b + a * c

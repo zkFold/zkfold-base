@@ -6,7 +6,7 @@ module ZkFold.Symbolic.Data.Bool (
     any
 ) where
 
-import           Prelude                         hiding (Num(..), Bool, (/), (&&), (||), not, all, any)
+import           Prelude                         hiding (Bool, Num (..), all, any, not, (&&), (/), (||))
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -22,6 +22,8 @@ class BoolType b where
 
     (||)  :: b -> b -> b
 
+    xor  :: b -> b -> b
+
 instance BoolType Haskell.Bool where
     true  = True
 
@@ -33,13 +35,15 @@ instance BoolType Haskell.Bool where
 
     (||)  = (Haskell.||)
 
+    xor = xor
+
 -- TODO (Issue #18): hide this constructor
 newtype Bool x = Bool x
     deriving (Eq)
 instance (Field x, Eq x) => Show (Bool x) where
     show (Bool x) = if x == one then "True" else "False"
 
-instance FiniteField x => BoolType (Bool x) where
+instance Field x => BoolType (Bool x) where
     true = Bool one
 
     false = Bool zero
@@ -50,11 +54,13 @@ instance FiniteField x => BoolType (Bool x) where
 
     (||) (Bool b1) (Bool b2) = Bool $ b1 + b2 - b1 * b2
 
-all :: BoolType b => (x -> b) -> [x] -> b
+    xor (Bool b1) (Bool b2) = Bool $ b1 + b2 - (b1 * b2 + b1 * b2)
+
+all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true
 
-all1 :: BoolType b => (x -> b) -> [x] -> b
-all1 f = foldr1 (&&) . map f
+all1 :: (BoolType b, Functor t, Foldable t) => (x -> b) -> t x -> b
+all1 f = foldr1 (&&) . fmap f
 
-any :: BoolType b => (x -> b) -> [x] -> b
+any :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 any f = foldr ((||) . f) false

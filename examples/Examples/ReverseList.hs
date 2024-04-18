@@ -3,10 +3,9 @@
 
 module Examples.ReverseList (exampleReverseList) where
 
-import           Prelude                                     
+import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Compiler
@@ -21,4 +20,5 @@ exampleReverseList = do
 
     putStrLn "\nExample: Reverse List function\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file (reverseList @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @N32)
+    compileIO @(Zp BLS12_381_Scalar) file (reverseList @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @32)
+

@@ -18,13 +18,15 @@ module ZkFold.Symbolic.GroebnerBasis (
 
 import           Data.Bool                                        (bool)
 import           Data.List                                        (nub, sortBy)
-import           Data.Map                                         (Map, elems, empty, fromList, keys, mapWithKey, singleton, toList)
+import           Data.Map                                         (Map, elems, empty, fromList, keys, mapWithKey,
+                                                                   singleton, toList)
 import           Data.Maybe                                       (mapMaybe)
 import           Numeric.Natural                                  (Natural)
 import           Prelude                                          hiding (Num (..), length, replicate, (!!))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                  (Zp)
+import           ZkFold.Base.Algebra.Basic.Number                 (Prime)
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate     as Poly
 import           ZkFold.Prelude                                   ((!!))
 import           ZkFold.Symbolic.Compiler
@@ -41,7 +43,7 @@ boundVariables p ps = foldr (makeBound . findVar) p $ zip [0..] ps
             where
                 M _ as = lt h
                 i = minimum $ keys as
-                s = if k > 0 then makeSPoly (ps !! (k-1)) h else zero
+                s = if k > 0 then makeSPoly (ps !! (k-!1)) h else zero
                 s' = P [M one (singleton i (variable 2))] - P [M one (singleton i (variable 1))]
                 v = bool (Bound 1 k) (Boolean k) $ zeroP $ s `reduce` s'
 
@@ -93,7 +95,7 @@ makeTheorem r = (boundVariables p0 ps, --systemReduce $
                         convert'' :: (Natural, Natural) -> Maybe (Natural, Variable p)
                         convert'' (j, i) =
                             let ind = mapVars j
-                            in if ind > 0 then Just (ind, Free i) else Nothing
+                            in if ind > 0 then Just (ind, Free (fromConstant i)) else Nothing
 
 groebnerStepMax :: Integer
 groebnerStepMax = 200

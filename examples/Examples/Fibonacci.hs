@@ -1,8 +1,8 @@
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Examples.Fibonacci (exampleFibonacci) where
 
-import           Prelude                         hiding (Num(..), Eq(..), Bool, (^), (/), (||), not, any)
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), any, not, (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)

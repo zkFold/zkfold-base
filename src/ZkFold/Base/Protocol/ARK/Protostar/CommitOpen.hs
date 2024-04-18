@@ -1,19 +1,25 @@
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.ARK.Protostar.CommitOpen where
 
 import           Prelude                                         hiding (length)
 
-import           ZkFold.Base.Data.ByteString                     (ToByteString(..))
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol(..), SpecialSoundTranscript)
+import           ZkFold.Base.Data.ByteString
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Prelude                                  (length)
 
 data CommitOpen f c a = CommitOpen (ProverMessage f a -> c) a
 
 data CommitOpenProverMessage t c a = Commit c | Open [ProverMessage t a]
-instance ToByteString c => ToByteString (CommitOpenProverMessage t c a) where
-      toByteString (Commit c) = toByteString c
-      toByteString _          = mempty
+instance (Binary c, Binary (ProverMessage t a)) => Binary (CommitOpenProverMessage t c a) where
+      put (Commit c)  = putWord8 0 <> put c
+      put (Open msgs) = putWord8 1 <> put msgs
+      get = do
+            flag <- getWord8
+            if flag == 0 then Commit <$> get
+            else if flag == 1 then Open <$> get
+            else fail ("Binary (CommitOpenProverMessage t c a): unexpected flag " <> show flag)
 
 instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen f c a) where
       type Witness f (CommitOpen f c a)         = (Witness f a, [ProverMessage f a])

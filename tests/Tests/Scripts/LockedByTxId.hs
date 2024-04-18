@@ -1,22 +1,23 @@
-{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
 import           Data.Map                                    (fromList)
-import           Prelude                                     hiding (Num(..), Eq(..), Ord(..), Bool)
-import qualified Prelude as Haskell
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..))
+import qualified Prelude                                     as Haskell
 import           Test.Hspec
 import           Test.QuickCheck
+import           Tests.Plonk                                 (PlonkBS)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk(..), PlonkBS, WitnessInputPlonk (..), ProverSecretPlonk)
+import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof(..))
-import           ZkFold.Symbolic.Cardano.Types.Tx            (TxId (..))
-import           ZkFold.Symbolic.Compiler                    hiding (input)
+import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
+import           ZkFold.Symbolic.Cardano.Types               (TxId (..))
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Eq                     (Eq(..))
+import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => TxId a' -> TxId a -> () -> Bool a
@@ -34,7 +35,7 @@ testArithmetization2 targetId txId =
         b       = Bool $ acValue (applyArgs ac [txId])
     in b == false
 
-testZKP :: Fr -> ProverSecretPlonk -> Fr -> Haskell.Bool
+testZKP :: Fr -> PlonkProverSecret -> Fr -> Haskell.Bool
 testZKP x ps targetId =
     let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId)) :: Bool (ArithmeticCircuit Fr)
 
@@ -42,7 +43,7 @@ testZKP x ps targetId =
         inputs  = fromList [(1, targetId), (acOutput ac, 1)]
         plonk   = Plonk omega k1 k2 inputs ac x
         s       = setup @PlonkBS plonk
-        w       = (WitnessInputPlonk inputs, ps)
+        w       = (PlonkWitnessInput inputs, ps)
         (input, proof) = prove @PlonkBS s w
 
     in verify @PlonkBS s input proof

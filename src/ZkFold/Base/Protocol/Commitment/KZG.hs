@@ -9,26 +9,26 @@ import           Data.ByteString                            (ByteString, empty)
 import           Data.Kind                                  (Type)
 import           Data.Map.Strict                            (Map, fromList, insert, keys, toList, (!))
 import qualified Data.Vector                                as V
+import           Data.Vector.Binary                         ()
+import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), length, sum, (/), (^))
 import           Test.QuickCheck                            (Arbitrary (..), chooseInt)
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Data.ByteString                (FromByteString, ToByteString)
+import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 
-newtype KZG c1 c2 t f d = KZG f
+-- | `d` is the degree of polynomials in the protocol
+newtype KZG c1 c2 t f (d :: Natural) = KZG f
     deriving (Show, Eq, Arbitrary)
 
--- The degree of polynomials in the protocol
-instance Finite d => Finite (KZG c1 c2 t f d) where
-    order = order @d
-
-newtype WitnessKZG c1 c2 t f d = WitnessKZG { runWitness :: Map f (V.Vector (PolyVec f (KZG c1 c2 t f d))) }
+newtype WitnessKZG c1 c2 t f d = WitnessKZG { runWitness :: Map f (V.Vector (PolyVec f d)) }
 instance (EllipticCurve c1, f ~ ScalarField c1) => Show (WitnessKZG c1 c2 t f d) where
     show (WitnessKZG w) = "WitnessKZG " <> show w
-instance (EllipticCurve c1, f ~ ScalarField c1, Finite d) => Arbitrary (WitnessKZG c1 c2 t f d) where
+instance (EllipticCurve c1, f ~ ScalarField c1, KnownNat d) => Arbitrary (WitnessKZG c1 c2 t f d) where
     arbitrary = do
         n <- chooseInt (1, 3)
         m <- chooseInt (1, 5)
@@ -36,7 +36,7 @@ instance (EllipticCurve c1, f ~ ScalarField c1, Finite d) => Arbitrary (WitnessK
 
 -- TODO (Issue #18): check list lengths
 instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ ScalarField c2,
-        Pairing c1 c2 t, ToByteString f, FromByteString f, Finite d, KZG c1 c2 t f d ~ kzg)
+        Pairing c1 c2 t, Binary f, KnownNat d, KZG c1 c2 t f d ~ kzg)
         => NonInteractiveProof (KZG c1 c2 t f d) where
     type Transcript (KZG c1 c2 t f d)   = ByteString
     type Setup (KZG c1 c2 t f d)        = (V.Vector (Point c1), Point c2, Point c2)
@@ -46,8 +46,8 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ S
 
     setup :: kzg -> Setup kzg
     setup (KZG x) =
-        let d  = order @kzg
-            xs = V.fromList $ map (x^) [0..d-1]
+        let d  = value @d
+            xs = V.fromList $ map (x^) [0..d-!1]
             gs = fmap (`mul` gen) xs
         in (gs, gen, x `mul` gen)
 
@@ -57,7 +57,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ S
     prove (gs, _, _) (WitnessKZG w) = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
             proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
-                     -> (f, V.Vector (PolyVec f kzg))
+                     -> (f, V.Vector (PolyVec f d))
                      -> (Transcript kzg, (Input kzg, Proof kzg))
             proveOne (ts, (iMap, pMap)) (z, fs) = (ts'', (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
@@ -95,14 +95,14 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ S
                     (r, ts'')    = if ts == empty then (one, ts') else challenge ts'
 
                     v0' = r `mul` sum (V.zipWith mul gamma cms)
-                        - r `mul` (gs `com` toPolyVec @f @kzg [V.sum $ V.zipWith (*) gamma fzs])
+                        - r `mul` (gs `com` toPolyVec @f @d [V.sum $ V.zipWith (*) gamma fzs])
                         + (r * z) `mul` w
                     v1' = r `mul` w
 
 ------------------------------------ Helper functions ------------------------------------
 
-provePolyVecEval :: forall size f . (Finite size, FiniteField f, Eq f) => PolyVec f size -> f -> PolyVec f size
-provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) / toPolyVec [negate z, one]
+provePolyVecEval :: forall size f . (KnownNat size, FiniteField f, Eq f) => PolyVec f size -> f -> PolyVec f size
+provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) `polyVecDiv` toPolyVec [negate z, one]
 
 com :: (EllipticCurve curve, f ~ ScalarField curve) => V.Vector (Point curve) -> PolyVec f size -> Point curve
 com gs f = sum $ V.zipWith mul (fromPolyVec f) gs

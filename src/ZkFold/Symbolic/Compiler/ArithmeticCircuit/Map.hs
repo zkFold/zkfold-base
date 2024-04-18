@@ -8,13 +8,16 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
 import           Data.Bifunctor                                      (Bifunctor (..))
 import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.List                                           (sort)
-import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt, take)
+import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                      take)
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, product, splitAt, sum, take, (!!), (^))
+import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
+                                                                      sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Prelude                                      (elemIndex)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint, ConstraintMonomial)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
+                                                                      ConstraintMonomial)
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 

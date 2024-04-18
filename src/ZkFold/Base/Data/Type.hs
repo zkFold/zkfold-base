@@ -2,7 +2,7 @@
 
 module ZkFold.Base.Data.Type where
 
-import           Prelude          hiding (length)
+import           Prelude hiding (length)
 
 type family (:++) (xs :: [k]) (ys :: [k]) :: [k] where
     '[]       :++ ys = ys

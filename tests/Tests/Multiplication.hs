@@ -14,12 +14,12 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (Poly (..), removeZeros)
+import           ZkFold.Base.Algebra.Polynomials.Univariate  (Poly, fromPoly, toPoly)
 import           ZkFold.Prelude
 
 
 naive :: (Eq a, Field a) => Poly a -> Poly a -> Poly a
-naive (P l) (P r) = removeZeros $ P $ V.fromList $ go (V.toList l) (V.toList r)
+naive l r = toPoly $ V.fromList $ go (V.toList (fromPoly l)) (V.toList (fromPoly r))
   where
       go [] _      = []
       go (x:xs) ys = zipWithDefault (+) zero zero (map (x *) ys) (zero : go xs ys)

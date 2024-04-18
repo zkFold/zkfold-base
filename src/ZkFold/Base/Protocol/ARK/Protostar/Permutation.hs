@@ -1,19 +1,17 @@
 module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
-import           Data.Kind                                       (Type)
 import           Data.Zip                                        (Zip (..))
 import           Numeric.Natural                                 (Natural)
 import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                (N1)
 import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, var)
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
-data ProtostarPermutation (n :: Type)
+data ProtostarPermutation (n :: Natural)
 
 instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
     type Witness f (ProtostarPermutation n)         = Vector n f
@@ -25,7 +23,7 @@ instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
     type VerifierMessage t (ProtostarPermutation n) = ()
 
     type Dimension (ProtostarPermutation n)         = n
-    type Degree (ProtostarPermutation n)            = N1
+    type Degree (ProtostarPermutation n)            = 1
 
     rounds :: ProtostarPermutation n -> Natural
     rounds _ = 1

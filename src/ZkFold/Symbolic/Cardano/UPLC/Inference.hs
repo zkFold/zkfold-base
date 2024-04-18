@@ -26,14 +26,14 @@ inferType (Apply f x, t2) types =
     let t1  = fromMaybe NoType $ findTermType x types
         t   = case fromMaybe NoType $ findTermType f types of
             SomeFunction _ t2' -> t2'
-            _                     -> NoType
+            _                  -> NoType
     in updateTypeList types [(f, SomeFunction t1 t2), (Apply f x, t)]
 inferType (Force x, t) types =
     updateTypeList types [(x, t)]
 inferType (Delay x, t) types =
     updateTypeList types [(x, t)]
 inferType (Constant (c :: c), _) types =
-    updateTypeList types [(Constant c, SomeData (Proxy :: Proxy c))]
+    updateTypeList types [(Constant c, SomeSym $ SomeData (Proxy :: Proxy c))]
 inferType (Builtin b, _) types =
     updateTypeList types [(Builtin b, builtinFunctionType b)]
 inferType (Error, _) types =
@@ -50,6 +50,6 @@ inferTypes term = head $ go (makeTypeList term)
 
 -- To obtain an arithmetizable term, we need all types to be concrete.
 inferSuccess :: forall name fun a . (Eq name, Eq fun) => SomeType a -> Bool
-inferSuccess (SomeData _) = True
+inferSuccess (SomeSym _)          = True
 inferSuccess (SomeFunction t1 t2) = inferSuccess @name @fun t1 && inferSuccess @name @fun t2
-inferSuccess _ = False
+inferSuccess _                    = False

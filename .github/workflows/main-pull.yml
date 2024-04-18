@@ -1,0 +1,95 @@
+name: CI Pull Request
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  on-main-pull-request:
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        cabal: [3.10.2.1]
+        ghc: [9.6.3]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.1
+
+    - name: Set up Haskell
+      uses: haskell-actions/setup@v2.6.2
+      id: setup
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+        cabal-update: true
+
+    - name: Configure Cabal
+      run: |
+        cabal configure --enable-tests --enable-benchmarks --enable-documentation
+    
+    - name: Generate cache key
+      # Creates plan.json file
+      run: |
+        cabal build all --dry-run
+
+    - name: Restore cached dependencies
+      uses: actions/cache/restore@v4.0.1
+      id: cache
+      env:
+        key: ${{ matrix.os }}-ghc-${{ matrix.ghc }}-cabal-${{ matrix.cabal }}
+      with:
+        path: ${{ steps.setup.outputs.cabal-store }}
+        key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+        restore-keys: ${{ env.key }}-
+
+    - name: Install stylish-haskell
+      run: |
+        cabal install stylish-haskell
+
+    - name: Lint Haskell
+      run: |
+        find . -name '*.hs' -exec sh -c 'for file do stylish-haskell --inplace "$file"; done' sh {} +
+
+    - name: Auto-commit lint
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: stylish-haskell auto-commit
+        commit_user_name: GitHub Action
+        commit_user_email: action@github.com
+        branch: ${{ github.head_ref }}
+
+    - name: Install dependencies
+      # If we had an exact cache hit, the dependencies will be up to date.
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: cabal build all --only-dependencies
+
+    # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
+    - name: Save cached dependencies
+      uses: actions/cache/save@v4.0.1
+      # If we had an exact cache hit, trying to save the cache would error because of key clash.
+      if: steps.cache.outputs.cache-hit != 'true'
+      with:
+        path: ${{ steps.setup.outputs.cabal-store }}
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+
+    - name: Build
+      run: cabal build all
+
+    # - name: Test
+    #   run: cabal test all
+
+    # - name: Check cabal file
+    #   run: cabal check
+
+    # - name: Document package
+    #   run: cabal haddock all
+
+    # - name: Prepare package for publishing
+    #   run: cabal sdist all

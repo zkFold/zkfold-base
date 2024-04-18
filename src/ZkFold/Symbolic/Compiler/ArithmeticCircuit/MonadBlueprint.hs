@@ -4,41 +4,41 @@
 {-# OPTIONS_GHC -Wno-orphans    #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
-    NewConstraint,
     ClosedPoly,
     MonadBlueprint (..),
+    NewConstraint,
     Witness,
     WitnessField,
     circuit,
     circuits
 ) where
 
+import           Control.Monad.Identity                              (Identity (..))
 import           Control.Monad.State                                 (State, gets, modify, runState)
 import           Data.Functor                                        (($>))
 import           Data.Map                                            ((!))
 import           Data.Set                                            (Set)
 import qualified Data.Set                                            as Set
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Bool (..), Eq (..), replicate, (*), (+), (-))
-import qualified Prelude                                             as Haskell
+import           Prelude                                             hiding (Bool (..), Eq (..), replicate, (*), (+),
+                                                                      (-))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Scale                     (Self (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
 import           ZkFold.Prelude                                      (replicate)
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal as I
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
-import           ZkFold.Symbolic.Data.Bool                           (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional                    (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
 
-type WitnessField x a = (Algebra x a, FiniteField x, BinaryExpansion x,
+type WitnessField a x = (Algebra a x, FiniteField x, BinaryExpansion x,
     Eq (Bool x) x, Conditional (Bool x) x, Conditional (Bool x) (Bool x))
 -- ^ DSL for constructing witnesses in an arithmetic circuit. @a@ is a base
 -- field; @x@ is a "field of witnesses over @a@" which you can safely assume to
 -- be identical to @a@ with internalized equality.
 
-type Witness i a = forall x . WitnessField x a => (i -> x) -> x
+type Witness i a = forall x . WitnessField a x => (i -> x) -> x
 -- ^ A type of witness builders. @i@ is a type of variables, @a@ is a base field.
 --
 -- A function is a witness builer if, given an arbitrary field of witnesses @x@
@@ -48,7 +48,7 @@ type Witness i a = forall x . WitnessField x a => (i -> x) -> x
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
 
-type NewConstraint i a = forall x . Algebra x a => (i -> x) -> i -> x
+type NewConstraint i a = forall x . Algebra a x => (i -> x) -> i -> x
 -- ^ A type of constraints for new variables. @i@ is a type of variables, @a@ is a base field.
 --
 -- A function is a constraint for a new variable if, given an arbitrary algebra
@@ -59,7 +59,7 @@ type NewConstraint i a = forall x . Algebra x a => (i -> x) -> i -> x
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
 
-type ClosedPoly i a = forall x . Algebra x a => (i -> x) -> x
+type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
 -- ^ A type of polynomial expressions. @i@ is a type of variables, @a@ is a base field.
 --
 -- A function is a polynomial expression if, given an arbitrary algebra @x@ over
@@ -117,14 +117,14 @@ instance Arithmetic a => MonadBlueprint Natural a (State (ArithmeticCircuit a)) 
         -> Witness Natural a
         -> State (ArithmeticCircuit a) Natural
     newConstrained new witness = do
-        let ws = sources witness
+        let ws = sources @a witness
             -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
             x = maximum (Set.mapMonotonic (+1) ws <> Set.singleton 0)
             -- | `s` is meant to be a set of variables used in a witness not present in a constraint.
-            s = ws `Set.difference` sources (`new` x)
+            s = ws `Set.difference` sources @a (`new` x)
         i <- addVariable =<< newVariableWithSource (Set.toList s) (new var)
         constraint (`new` i)
-        assignment (\m -> getSelf $ witness (Self . (m !)))
+        assignment (\m -> witness (m !))
         return i
 
     constraint p = I.constraint (p var)
@@ -133,28 +133,24 @@ circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> Arithme
 -- ^ Builds a circuit from blueprint. A blueprint is a function which, given an
 -- arbitrary type of variables @i@ and a monad @m@ supporting the 'MonadBlueprint'
 -- API, computes the output variable of a future circuit.
-circuit b = let (o, r) = runState b mempty in r { acOutput = o }
+circuit b = runIdentity $ circuits (Identity <$> b)
 
-circuits :: Arithmetic a => (forall i m . MonadBlueprint i a m => m [i]) -> [ArithmeticCircuit a]
--- ^ Builds a list of circuits from one blueprint. A blueprint is a function
+circuits :: (Arithmetic a, Functor f) => (forall i m . MonadBlueprint i a m => m (f i)) -> f (ArithmeticCircuit a)
+-- ^ Builds a collection of circuits from one blueprint. A blueprint is a function
 -- which, given an arbitrary type of variables @i@ and a monad @m@ supporting the
--- 'MonadBlueprint' API, computes the list of output variables of future circuits.
-circuits b = let (os, r) = runState b mempty in [ r { acOutput = o } | o <- os ]
+-- 'MonadBlueprint' API, computes the collection of output variables of future circuits.
+circuits b = let (os, r) = runState b mempty in (\o -> r { acOutput = o }) <$> os
 
-instance (FiniteField a, Haskell.Eq a) => Eq (Bool (Self a)) (Self a) where
-    Self x == Self y = Bool . Self $ bool zero one (x Haskell.== y)
-    Self x /= Self y = Bool . Self $ bool zero one (x Haskell./= y)
-
-instance (FiniteField a, Haskell.Eq a) => Conditional (Bool (Self a)) (Self a) where
-    bool x y b = if b Haskell.== true then y else x
-
-instance (FiniteField a, Haskell.Eq a) => Conditional (Bool (Self a)) (Bool (Self a)) where
-    bool x y b = if b Haskell.== true then y else x
-
-sources :: forall i a . (FiniteField a, Ord i) => Witness i a -> Set i
+sources :: forall a i . (FiniteField a, Ord i) => Witness i a -> Set i
 sources = runSources . ($ Sources @a . Set.singleton)
 
 newtype Sources a i = Sources { runSources :: Set i } deriving newtype (Semigroup, Monoid)
+
+instance MultiplicativeSemigroup c => Exponent (Sources a i) c where
+  (^) = const
+
+instance MultiplicativeMonoid c => Scale c (Sources a i) where
+  scale = const id
 
 instance Ord i => AdditiveSemigroup (Sources a i) where
   (+) = (<>)
@@ -165,11 +161,8 @@ instance Ord i => AdditiveMonoid (Sources a i) where
 instance Ord i => AdditiveGroup (Sources a i) where
   negate = id
 
-instance (Semiring a, Ord i) => Scale (Sources a i) a where
-  scale = const id
-
 instance Finite a => Finite (Sources a i) where
-  order = order @a
+  type Order (Sources a i) = Order a
 
 instance Ord i => MultiplicativeSemigroup (Sources a i) where
   (*) = (<>)
@@ -188,12 +181,13 @@ instance Ord i => Semiring (Sources a i)
 instance Ord i => Ring (Sources a i)
 
 instance Ord i => Field (Sources a i) where
+    finv = id
     rootOfUnity _ = Just (Sources mempty)
 
 instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where
   binaryExpansion = replicate (numberOfBits @a)
 
-instance (Finite a, Ord i) => Eq (Bool (Sources a i)) (Sources a i) where
+instance Ord i => Eq (Bool (Sources a i)) (Sources a i) where
   x == y = Bool (x <> y)
   x /= y = Bool (x <> y)
 
