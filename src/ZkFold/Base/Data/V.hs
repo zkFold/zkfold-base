@@ -8,6 +8,7 @@ import           Data.Distributive
 import           Data.Functor.Rep
 import qualified Data.Vector                      as V
 import           Data.Vector.Binary               ()
+import           GHC.Generics
 import           GHC.TypeNats
 import           Prelude
 import           System.Random                    (Random (..))
@@ -65,3 +66,10 @@ deriving via Representably (Vector dim) a instance
   (KnownNat dim, Random a) => Random (Vector dim a)
 deriving via Representably (Vector dim) a instance
   (Arbitrary a, KnownNat dim) => Arbitrary (Vector dim a)
+
+type Matrix m n = Vector m :.: Vector n
+
+transpose
+  :: forall m n a . (KnownNat m, KnownNat n)
+  => Matrix m n a -> Matrix n m a
+transpose (Comp1 m) = Comp1 (distribute m)
