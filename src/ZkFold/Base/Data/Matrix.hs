@@ -25,9 +25,9 @@ outer f a b = Comp1 (fmap (\x -> fmap (f x) b) a)
 
 -- | Hadamard (entry-wise) matrix product
 (.*)
-  :: (Representable m, VectorSpace a n)
+  :: (Representable m, Representable n, MultiplicativeSemigroup a)
   => Matrix m n a -> Matrix m n a -> Matrix m n a
-(.*) = zipWithV (*)
+(.*) = mzipWithRep (*)
 
 sum1
   :: (Foldable m, Representable n, AdditiveMonoid a)
@@ -35,20 +35,21 @@ sum1
 sum1 (Comp1 as) = foldl (mzipWithRep (+)) (pureRep zero) as
 
 sum2
-  :: (Representable m, Representable n, Foldable n, AdditiveMonoid a)
+  :: (Representable m, Distributive n, Foldable n, AdditiveMonoid a)
   => Matrix m n a -> m a
 sum2 (Comp1 as) = sum1 $ transpose $ Comp1 as
 
 matrixDotProduct
-  :: (Foldable m, Representable m, VectorSpace a n, Foldable n)
+  :: (Foldable m, Representable m, Foldable n, Representable n, Semiring a)
   => Matrix m n a -> Matrix m n a -> a
 matrixDotProduct a b = let Comp1 m = a .* b in sum $ fmap sum m
 
 -- | Matrix multiplication
 (.*.)
-  :: (VectorSpace a n, Distributive k, Functor m, Functor n, Foldable n)
+  :: (Functor m, Foldable n, Representable n, Distributive k, Semiring a)
   => Matrix m n a -> Matrix n k a -> Matrix m k a
 a .*. b =
     let Comp1 a' = a
         Comp1 b' = transpose b
-    in Comp1 $ fmap (\x -> fmap (dotV x) b') a'
+        x `dot` y = sum (mzipWithRep (*) x y)
+    in Comp1 $ fmap (\x -> fmap (x `dot`) b') a'
