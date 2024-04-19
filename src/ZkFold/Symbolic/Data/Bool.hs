@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveAnyClass, UndecidableInstances #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Bool (
     BoolType(..),
