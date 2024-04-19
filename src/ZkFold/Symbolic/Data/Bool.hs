@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass, UndecidableInstances #-}
+
 module ZkFold.Symbolic.Data.Bool (
     BoolType(..),
     Bool(..),
@@ -6,6 +8,10 @@ module ZkFold.Symbolic.Data.Bool (
     any
 ) where
 
+import           Data.Distributive               (Distributive (..))
+import           Data.Functor.Rep
+import           GHC.Generics                    (Generic1)
+import           Numeric.Natural                 (Natural)
 import           Prelude                         hiding (Bool, Num (..), all, any, not, (&&), (/), (||))
 import qualified Prelude                         as Haskell
 
@@ -39,7 +45,26 @@ instance BoolType Haskell.Bool where
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool x = Bool x
-    deriving (Eq)
+    deriving stock (Eq, Functor, Foldable, Traversable, Generic1)
+    deriving anyclass (Representable)
+instance Distributive Bool where
+    distribute = distributeRep
+    collect = collectRep
+deriving via Representably Bool instance
+  Field x => VectorSpace x Bool
+deriving via Representably Bool x instance
+  AdditiveSemigroup x => AdditiveSemigroup (Bool x)
+deriving via Representably Bool x instance
+  AdditiveMonoid x => AdditiveMonoid (Bool x)
+deriving via Representably Bool x instance
+  AdditiveGroup x => AdditiveGroup (Bool x)
+deriving via Representably Bool x instance
+  Scale Natural x => Scale Natural (Bool x)
+deriving via Representably Bool x instance
+  Scale Integer x => Scale Integer (Bool x)
+deriving via Representably Bool x instance
+  MultiplicativeMonoid x => Scale x (Bool x)
+
 instance (Field x, Eq x) => Show (Bool x) where
     show (Bool x) = if x == one then "True" else "False"
 
