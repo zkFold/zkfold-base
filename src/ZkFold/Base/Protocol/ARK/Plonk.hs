@@ -156,7 +156,7 @@ instance forall d t .
                 1 -> k1 * (omega^i)
                 2 -> k2 * (omega^i)
                 _ -> error "setup: invalid index"
-            s' = V.fromList $ map f s
+            s' = V.fromList $ map (f . fromIntegral) s
             s1 = toPolyVec $ V.take (fromIntegral $ value @d) s'
             s2 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ value @d) s'
             s3 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ 2 * value @d) s'

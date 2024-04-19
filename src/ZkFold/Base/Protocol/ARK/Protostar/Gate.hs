@@ -1,14 +1,14 @@
 module ZkFold.Base.Protocol.ARK.Protostar.Gate where
 
-import           Data.Zip                                        (zipWith)
+import           Data.Functor.Rep
 import           Numeric.Natural                                 (Natural)
-import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
+import           Prelude                                         hiding (Num (..), zipWith, (!!), (^), sum)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                (KnownNat)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, evalPolynomial, subs, var)
-import           ZkFold.Base.Data.Matrix                         (Matrix (..), outer, sum1, transpose)
+import           ZkFold.Base.Data.Matrix                         (Matrix, outer, sum1, transpose)
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProtostar)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
@@ -19,7 +19,7 @@ data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
 instance (Arithmetic f, KnownNat m, KnownNat n, KnownNat c) => SpecialSoundProtocol f (ProtostarGate m n c d) where
     type Witness f (ProtostarGate m n c d)       = Vector n (Vector c f)
     -- ^ [(a_j, w_j)]_{j=1}^n where [w_j]_{j=1}^n is from the paper together and [a_j]_{j=1}^n are their absolute indices
-    type Input f (ProtostarGate m n c d)         = (Matrix m n f, Vector m (PolynomialProtostar f c d))
+    type Input f (ProtostarGate m n c d)         = (Matrix (Vector m) (Vector n) f, Vector m (PolynomialProtostar f c d))
     -- ^ [s_{i, j}] and [G_i]_{i=1}^m in the paper
     type ProverMessage t (ProtostarGate m n c d)  = Vector n (Vector c t)
     -- ^ same as Witness
@@ -45,7 +45,7 @@ instance (Arithmetic f, KnownNat m, KnownNat n, KnownNat c) => SpecialSoundProto
     verifier' _ (s, g) [(w, _)] =
       let w' = fmap ((var .) . subs) w :: Vector n (Zp c -> SomePolynomial f)
           z  = transpose $ outer evalPolynomial w' g
-      in sum1 $ zipWith scale s z
+      in sum1 (mzipWithRep scale s z)
     verifier' _ _ _ = error "Invalid transcript"
 
     verifier :: ProtostarGate m n c d
@@ -55,6 +55,6 @@ instance (Arithmetic f, KnownNat m, KnownNat n, KnownNat c) => SpecialSoundProto
     verifier _ (s, g) [(w, _)] =
       let w' = fmap subs w :: Vector n (Zp c -> f)
           z  = transpose $ outer evalPolynomial w' g
-      in all (== zero) $ sum1 $ zipWith (*) s z
+      in all (== zero) $ sum1 $ mzipWithRep (*) s z
     verifier _ _ _ = error "Invalid transcript"
 

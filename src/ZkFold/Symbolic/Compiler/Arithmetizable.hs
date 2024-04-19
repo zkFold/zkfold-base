@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Compiler.Arithmetizable (
     ) where
 
 import           Data.Typeable                                       (Typeable)
+import qualified Data.Vector as V
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))
@@ -73,7 +74,7 @@ instance (SymbolicData a x, KnownNat n) => SymbolicData a (Vector n x) where
 
     restore rs
         | length rs /= typeSize @a @(Vector n x) = error "restore: wrong number of arguments"
-        | otherwise = f rs <$> Vector [0 .. value @n -! 1]
+        | otherwise = f rs <$> Vector (V.fromList [0 .. value @n -! 1])
         where
             f as = restore @a @x . take (typeSize @a @x) . flip drop as . ((typeSize @a @x) *)
 

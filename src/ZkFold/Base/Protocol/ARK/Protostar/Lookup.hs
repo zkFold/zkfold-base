@@ -3,6 +3,7 @@
 
 module ZkFold.Base.Protocol.ARK.Protostar.Lookup where
 
+import           Data.Functor.Rep                                (mzipWithRep)
 import           Data.Map                                        (fromList, mapWithKey)
 import           Data.These                                      (These (..))
 import           Data.Zip
@@ -23,7 +24,7 @@ data ProtostarLookup (l :: Natural) (sizeT :: Natural)
 
 data ProtostarLookupParams f sizeT = ProtostarLookupParams (Zp sizeT -> f) (f -> [Zp sizeT])
 
-instance (Arithmetic f, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
+instance (Arithmetic f, KnownNat sizeT, KnownNat l) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
     type Witness f (ProtostarLookup l sizeT)         = Vector l f
     -- ^ w in the paper
     type Input f (ProtostarLookup l sizeT)           = ProtostarLookupParams f sizeT
@@ -65,7 +66,7 @@ instance (Arithmetic f, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLook
              -> Bool
     verifier _ (ProtostarLookupParams t _) [((w, m), r), ((h, g), _)] =
         let c1 = sum h == sum g
-            c2 = all (== one) $ zipWith (*) h (fmap (+r) w)
+            c2 = all (== one) $ mzipWithRep (*) h (fmap (+r) w)
             g' = SVector $ mapWithKey (\i g_i -> g_i * (t i + r)) $ fromSVector m
             f  = \case
                 This _ -> False

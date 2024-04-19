@@ -14,7 +14,6 @@ module ZkFold.Base.Algebra.Basic.Permutations (
 import           Data.Map                         (Map, elems, empty, singleton, union)
 import           Data.Maybe                       (fromJust)
 import qualified Data.Vector                      as V
-import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (Num (..), drop, length, (!!))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..))
@@ -28,17 +27,17 @@ import           ZkFold.Prelude                   (chooseNatural, drop, length, 
 
 ------------------------------ Index sets and partitions -------------------------------------
 
-type IndexSet = V.Vector Natural
+type IndexSet = V.Vector Int
 type IndexPartition a = Map a IndexSet
 
 mkIndexPartition :: Ord a => V.Vector a -> IndexPartition a
 mkIndexPartition vs =
-    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [1 .. length vs]
+    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [1 .. V.length vs]
     in V.foldl union empty $ fmap f vs
 
 ------------------------------------- Permutations -------------------------------------------
 
-newtype Permutation n = Permutation (Vector n Natural)
+newtype Permutation n = Permutation (Vector n Int)
     deriving (Show, Eq)
 
 instance KnownNat n => Arbitrary (Permutation n) where
@@ -49,24 +48,24 @@ instance KnownNat n => Arbitrary (Permutation n) where
                 let as' = (bs !! i) : as
                     bs' = drop i bs
                 f as' bs'
-        in Permutation . Vector <$> f [] [1..value @n]
+        in Permutation . Vector . V.fromList <$> f [] [1..fromIntegral (value @n)]
 
-fromPermutation :: Permutation n -> [Natural]
+fromPermutation :: Permutation n -> [Int]
 fromPermutation (Permutation perm) = fromVector perm
 
 applyPermutation :: Permutation n -> Vector n a -> Vector n a
-applyPermutation (Permutation (Vector ps)) (Vector as) = Vector $ map (as !!) ps
+applyPermutation (Permutation (Vector ps)) (Vector as) = Vector $ V.map (as V.!) ps
 
 applyCycle :: IndexSet -> Permutation n -> Permutation n
 applyCycle c (Permutation perm) = Permutation $ fmap f perm
     where
-        f :: Natural -> Natural
+        f :: Int -> Int
         f i = case i `V.elemIndex` c of
             Just j  -> c V.! ((j P.+ 1) `mod` V.length c)
             Nothing -> i
 
 fromCycles :: KnownNat n => IndexPartition a -> Permutation n
 fromCycles p =
-    let n = fromIntegral $ V.length $ V.concat $ elems p
+    let n = V.length $ V.concat $ elems p
     in foldr applyCycle (Permutation $ fromJust $ toVector [1 .. n]) $ elems p
 

@@ -1,7 +1,7 @@
 module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
-import           Data.Zip                                        (Zip (..))
-import           Numeric.Natural                                 (Natural)
+import           Data.Functor.Rep
+import           GHC.TypeNats
 import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -13,7 +13,7 @@ import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
 
-instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
+instance (KnownNat n, Arithmetic f) => SpecialSoundProtocol f (ProtostarPermutation n) where
     type Witness f (ProtostarPermutation n)         = Vector n f
     -- ^ w in the paper
     type Input f (ProtostarPermutation n)           = Permutation n
@@ -39,7 +39,7 @@ instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
               -> Input f (ProtostarPermutation n)
               -> SpecialSoundTranscript Natural (ProtostarPermutation n)
               -> Vector (Dimension (ProtostarPermutation n)) (SomePolynomial f)
-    verifier' _ sigma [(w, _)] = zipWith (-) (applyPermutation sigma wX) wX
+    verifier' _ sigma [(w, _)] = mzipWithRep (-) (applyPermutation sigma wX) wX
       where wX = fmap var w
     verifier' _ _ _ = error "Invalid transcript"
 
