@@ -3,10 +3,10 @@
 
 module ZkFold.Base.Data.Vector where
 
-import           Data.Distributive (Distributive (..))
+import           Data.Distributive                (Distributive (..))
 import           Data.Functor.Rep
-import           Data.Maybe (fromMaybe)
-import qualified Data.Vector as V
+import           Data.Maybe                       (fromMaybe)
+import qualified Data.Vector                      as V
 import           Data.Vector.Binary               ()
 import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (length, replicate, sum, zip, zipWith, (*))

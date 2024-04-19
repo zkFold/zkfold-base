@@ -2,7 +2,7 @@ module ZkFold.Base.Protocol.ARK.Protostar.Gate where
 
 import           Data.Functor.Rep
 import           Numeric.Natural                                 (Natural)
-import           Prelude                                         hiding (Num (..), zipWith, (!!), (^), sum)
+import           Prelude                                         hiding (Num (..), sum, zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)

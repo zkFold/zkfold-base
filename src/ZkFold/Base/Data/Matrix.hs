@@ -2,12 +2,12 @@
 
 module ZkFold.Base.Data.Matrix where
 
-import Data.Distributive (Distributive(..))
-import Data.Functor.Rep
-import GHC.Generics ((:.:)(..))
-import Prelude hiding (sum, (*), (+))
+import           Data.Distributive               (Distributive (..))
+import           Data.Functor.Rep
+import           GHC.Generics                    ((:.:) (..))
+import           Prelude                         hiding (sum, (*), (+))
 
-import ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class
 
 -- TODO: implement a proper matrix algebra
 -- Could be useful for speeding up the proof computations
