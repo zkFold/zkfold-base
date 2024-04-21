@@ -2,16 +2,17 @@
 
 module Main where
 
-import           Examples.ByteString  (exampleByteStringAnd, exampleByteStringExtend, exampleByteStringOr)
-import           Examples.Conditional (exampleConditional)
-import           Examples.Eq          (exampleEq)
-import           Examples.Fibonacci   (exampleFibonacci)
-import           Examples.LEQ         (exampleLEQ)
-import           Examples.MiMCHash    (exampleMiMC)
-import           Examples.ReverseList (exampleReverseList)
-import           Examples.UInt        (exampleUIntAdd, exampleUIntMul, exampleUIntStrictAdd, exampleUIntStrictMul)
+import           Examples.BatchTransfer (exampleBatchTransfer)
+import           Examples.ByteString    (exampleByteStringAnd, exampleByteStringExtend, exampleByteStringOr)
+import           Examples.Conditional   (exampleConditional)
+import           Examples.Eq            (exampleEq)
+import           Examples.Fibonacci     (exampleFibonacci)
+import           Examples.LEQ           (exampleLEQ)
+import           Examples.MiMCHash      (exampleMiMC)
+import           Examples.ReverseList   (exampleReverseList)
+import           Examples.UInt          (exampleUIntAdd, exampleUIntMul, exampleUIntStrictAdd, exampleUIntStrictMul)
 import           Prelude
-import           System.Directory     (createDirectoryIfMissing)
+import           System.Directory       (createDirectoryIfMissing)
 
 main :: IO ()
 main = do
@@ -36,3 +37,5 @@ main = do
     exampleByteStringOr @32
     exampleByteStringOr @500
     exampleByteStringExtend @1 @512
+
+    exampleBatchTransfer
