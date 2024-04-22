@@ -5,7 +5,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         mapVarWitness
     ) where
 
-import           Data.Bifunctor                                      (Bifunctor (..))
 import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.List                                           (sort)
 import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
@@ -15,9 +14,7 @@ import           Prelude                                             hiding (Num
                                                                       sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Prelude                                      (elemIndex)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                      ConstraintMonomial)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 

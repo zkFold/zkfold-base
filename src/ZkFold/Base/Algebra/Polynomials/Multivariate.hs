@@ -2,9 +2,13 @@
 
 module ZkFold.Base.Algebra.Polynomials.Multivariate
     ( module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
-    , module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
     , module ZkFold.Base.Algebra.Polynomials.Multivariate.Set
     , module ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
+    , Monomial
+    , FromMonomial(..)
+    , ToMonomial(..)
+    , Variable
+    , unpackMonomial
     , Monomial'
     , Polynomial'
     , mapCoeffs
