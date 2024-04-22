@@ -8,7 +8,6 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
     , FromMonomial(..)
     , ToMonomial(..)
     , Variable
-    , unpackMonomial
     ) where
 
 import           Control.DeepSeq                  (NFData)
@@ -58,9 +57,6 @@ instance Ord i => IsList (M i j (Map i j)) where
     type Item (M i j (Map i j)) = (i, j)
     toList (M m) = toList m
     fromList m = M $ fromList m
-
-unpackMonomial :: M i j m -> m
-unpackMonomial (M x) = x
 
 instance (Show i, Show j, FromMonomial i j m) => Show (M i j m) where
     show (M m) = intercalate "∙" (map showVar (toList $ fromMonomial @i @j @m m))

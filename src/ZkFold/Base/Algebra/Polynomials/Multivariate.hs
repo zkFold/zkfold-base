@@ -7,11 +7,9 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate
     , FromMonomial(..)
     , ToMonomial(..)
     , Variable
-    , unpackMonomial
     , Polynomial
     , FromPolynomial(..)
     , ToPolynomial(..)
-    , unpackPolynomial
     , Monomial'
     , Polynomial'
     , mapCoeffs

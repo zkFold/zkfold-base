@@ -8,7 +8,6 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
     , Polynomial
     , FromPolynomial(..)
     , ToPolynomial(..)
-    , unpackPolynomial
     ) where
 
 import           Control.DeepSeq                                       (NFData)
@@ -51,11 +50,8 @@ newtype P c i j m p = P p
 
 instance IsList (P c i j (Map i j) [(c, M i j (Map i j))]) where
     type Item (P c i j (Map i j) [(c, M i j (Map i j))]) = (c, Map i j)
-    toList (P p) = second unpackMonomial <$> p
+    toList (P p) = second (\(M m) -> m) <$> p
     fromList p = P $ second M <$> p
-
-unpackPolynomial :: P c i j m p -> p
-unpackPolynomial (P p) = p
 
 instance (Show c, Show i, Show j, FromPolynomial c i j m p, FromMonomial i j m) => Show (P c i j m p) where
     show (P p) = intercalate " + "
