@@ -1,5 +1,5 @@
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE TypeApplications   #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeApplications     #-}
 
 {-# OPTIONS_GHC -Wno-orphans    #-}
 

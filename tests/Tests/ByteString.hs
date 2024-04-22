@@ -10,7 +10,7 @@ import           Control.Monad                    (return)
 import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
 import           Data.List                        (map, (++))
-import           GHC.TypeNats                     (Mod, type (<=))
+import           GHC.TypeNats                     (Mod)
 import           Numeric.Natural                  (Natural)
 import           Prelude                          (show, type (~), (<>))
 import qualified Prelude                          as Haskell
@@ -39,11 +39,11 @@ type Binary a = a -> a -> a
 
 type UBinary n a = Binary (ByteString n a)
 
-isHom :: (KnownNat n, Prime p) => UBinary n (Zp p) -> UBinary n (ArithmeticCircuit (Zp p)) -> Natural -> Natural -> Property
+isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n (Zp p) -> UBinary n (ArithmeticCircuit (Zp p)) -> Natural -> Natural -> Property
 isHom f g x y = eval (fromConstant x `g` fromConstant y) === fromConstant x `f` fromConstant y
 
 isRightNeutral
-    :: (KnownNat n, Prime p)
+    :: (KnownNat n, PrimeField (Zp p))
     => UBinary n (Zp p)
     -> UBinary n (ArithmeticCircuit (Zp p))
     -> ByteString n (Zp p)
@@ -53,7 +53,7 @@ isRightNeutral
 isRightNeutral f g n1 n2 x = eval (fromConstant x `g` n2) === fromConstant x `f` n1
 
 isLeftNeutral
-    :: (KnownNat n, Prime p)
+    :: (KnownNat n, PrimeField (Zp p))
     => UBinary n (Zp p)
     -> UBinary n (ArithmeticCircuit (Zp p))
     -> ByteString n (Zp p)
@@ -65,7 +65,7 @@ isLeftNeutral f g n1 n2 x = eval (n2 `g` fromConstant x) === n1 `f` fromConstant
 testWords
     :: forall n wordSize p
     .  KnownNat n
-    => Prime p
+    => PrimeField (Zp p)
     => KnownNat wordSize
     => ToWords (ByteString n (ArithmeticCircuit (Zp p))) (ByteString wordSize (ArithmeticCircuit (Zp p)))
     => ToWords (ByteString n (Zp p)) (ByteString wordSize (Zp p))
@@ -82,7 +82,7 @@ testWords = it ("divides a bytestring of length " <> show (value @n) <> " into w
 testTruncate
     :: forall n m p
     .  KnownNat n
-    => Prime p
+    => PrimeField (Zp p)
     => KnownNat m
     => Truncate (ByteString n (ArithmeticCircuit (Zp p))) (ByteString m (ArithmeticCircuit (Zp p)))
     => Truncate (ByteString n (Zp p)) (ByteString m (Zp p))
@@ -99,7 +99,7 @@ testTruncate = it ("truncates a bytestring of length " <> show (value @n) <> " t
 testGrow
     :: forall n m p
     .  KnownNat n
-    => Prime p
+    => PrimeField (Zp p)
     => KnownNat m
     => Extend (ByteString n (ArithmeticCircuit (Zp p))) (ByteString m (ArithmeticCircuit (Zp p)))
     => Extend (ByteString n (Zp p)) (ByteString m (Zp p))
@@ -117,7 +117,7 @@ testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to leng
 --
 specByteString
     :: forall p n
-    .  Prime p
+    .  PrimeField (Zp p)
     => KnownNat n
     => 1 <= n
     => 2 <= n

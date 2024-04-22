@@ -32,10 +32,10 @@ type Binary a = a -> a -> a
 
 type UBinary n a = Binary (UInt n a)
 
-isHom :: (KnownNat n, Prime p) => UBinary n (Zp p) -> UBinary n (ArithmeticCircuit (Zp p)) -> Natural -> Natural -> Property
+isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n (Zp p) -> UBinary n (ArithmeticCircuit (Zp p)) -> Natural -> Natural -> Property
 isHom f g x y = eval (fromConstant x `g` fromConstant y) === fromConstant x `f` fromConstant y
 
-specUInt :: forall p n . (Prime p, KnownNat n) => IO ()
+specUInt :: forall p n . (PrimeField (Zp p), KnownNat n) => IO ()
 specUInt = hspec $ do
     let n = value @n
         m = 2 ^ n -! 1
