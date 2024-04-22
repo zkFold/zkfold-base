@@ -28,7 +28,11 @@ class Hash a x where
     hash :: x -> a
 
 instance SymbolicData a x => Hash (ArithmeticCircuit a) x where
-    hash = foldr1 (mimcHash mimcConstants zero) . pieces
+    hash datum = case pieces datum of
+        [] -> zero
+        [x] -> mimcHash mimcConstants zero zero x
+        [xL, xR] -> mimcHash mimcConstants zero xL xR
+        (xL:xR:xZ) -> mimcHash (zero : xZ ++ [zero]) zero xL xR
 
 type Sig a = (StrictConv a (UInt 256 a),
     MultiplicativeSemigroup (UInt 256 a),
