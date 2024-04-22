@@ -28,7 +28,8 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate
 import           Data.Bifunctor                                            (first, second)
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Functor                                              ((<&>))
-import           Data.Map.Strict                                           (Map, keys, mapKeys, singleton, toList, delete)
+import           Data.Map.Strict                                           (Map, delete, keys, mapKeys, singleton,
+                                                                            toList)
 import           Data.Maybe                                                (fromJust)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Num (..), length, product, replicate,

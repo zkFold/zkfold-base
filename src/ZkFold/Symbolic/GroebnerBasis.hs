@@ -16,19 +16,17 @@ module ZkFold.Symbolic.GroebnerBasis (
     groebnerStepMax
     ) where
 
-import           GHC.IsList                                       (IsList (..))
 import           Data.Bool                                        (bool)
 import           Data.List                                        (nub, sortBy)
-import           Data.Map                                         (Map, elems, empty, keys, mapWithKey,
-                                                                   singleton)
+import           Data.Map                                         (Map, elems, empty, keys, mapWithKey, singleton)
 import           Data.Maybe                                       (mapMaybe)
+import           GHC.IsList                                       (IsList (..))
 import           Numeric.Natural                                  (Natural)
 import           Prelude                                          hiding (Num (..), length, replicate, (!!))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                  (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                 (Prime)
--- import           ZkFold.Base.Algebra.Polynomials.Multivariate     (Monomial')
 import           ZkFold.Prelude                                   ((!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.GroebnerBasis.Internal

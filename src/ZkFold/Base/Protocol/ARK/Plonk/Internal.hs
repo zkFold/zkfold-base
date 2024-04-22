@@ -1,9 +1,8 @@
+{-# LANGUAGE OverloadedLists  #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE OverloadedLists #-}
 
 module ZkFold.Base.Protocol.ARK.Plonk.Internal where
 
-import           GHC.IsList                                   (IsList (..))
 import           Control.Monad                                (guard)
 import           Data.Bifunctor                               (first)
 import           Data.Bool                                    (bool)
@@ -12,6 +11,7 @@ import           Data.List                                    (find, permutation
 import           Data.Map                                     (Map, elems, empty, foldrWithKey)
 import           Data.Maybe                                   (mapMaybe)
 import qualified Data.Vector                                  as V
+import           GHC.IsList                                   (IsList (..))
 import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 import           System.Random                                (RandomGen, mkStdGen, uniformR)
@@ -21,7 +21,8 @@ import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', polynomial, variables, removeConstantVariable, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', polynomial, removeConstantVariable, var,
+                                                               variables)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Prelude                               (length, take)
 import           ZkFold.Symbolic.Compiler
