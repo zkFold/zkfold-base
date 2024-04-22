@@ -1,14 +1,17 @@
 {-# LANGUAGE TypeApplications #-}
 
 module ZkFold.Base.Algebra.Polynomials.Multivariate
-    ( module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
-    , module ZkFold.Base.Algebra.Polynomials.Multivariate.Set
+    ( module ZkFold.Base.Algebra.Polynomials.Multivariate.Set
     , module ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
     , Monomial
     , FromMonomial(..)
     , ToMonomial(..)
     , Variable
     , unpackMonomial
+    , Polynomial
+    , FromPolynomial(..)
+    , ToPolynomial(..)
+    , unpackPolynomial
     , Monomial'
     , Polynomial'
     , mapCoeffs
