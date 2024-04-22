@@ -1,13 +1,15 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module ZkFold.Base.Protocol.ARK.Plonk.Internal where
 
+import           GHC.IsList                                   (IsList (..))
 import           Control.Monad                                (guard)
 import           Data.Bifunctor                               (first)
 import           Data.Bool                                    (bool)
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (find, permutations, sort, transpose)
-import           Data.Map                                     (Map, delete, elems, empty, fromList, toList)
+import           Data.Map                                     (Map, elems, empty, foldrWithKey)
 import           Data.Maybe                                   (mapMaybe)
 import qualified Data.Vector                                  as V
 import           Numeric.Natural                              (Natural)
@@ -19,7 +21,7 @@ import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (M (..), P (..), Polynomial', polynomial, variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Monomial', Polynomial', unpackPolynomial, polynomial, variables, removeConstantVariable, var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Prelude                               (length, take)
 import           ZkFold.Symbolic.Compiler
@@ -48,7 +50,7 @@ getParams l = findK' $ mkStdGen 0
                 && all (`notElem` hGroup' k1) (hGroup' k2)
 
 toPlonkConstraint :: Polynomial' F -> (F, F, F, F, F, F, F, F)
-toPlonkConstraint p@(P ms) =
+toPlonkConstraint p =
     let xs    = variables p
         i     = order @F
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
@@ -58,23 +60,23 @@ toPlonkConstraint p@(P ms) =
             _ -> xs ++ xs
 
         getCoef :: Map Natural Natural -> F
-        getCoef m = case find (\(_, M as) -> m == as) ms of
+        getCoef m = case find (\(_, as) -> m == as) (toList p) of
             Just (c, _) -> c
             _           -> zero
 
         getCoefs :: [Natural] -> Maybe (F, F, F, F, F, F, F, F)
         getCoefs [a, b, c] = do
-            let xa = fromList [(a, 1)]
-                xb = fromList [(b, 1)]
-                xc = fromList [(c, 1)]
-                xaxb = fromList [(a, 1), (b, 1)]
+            let xa = [(a, 1)]
+                xb = [(b, 1)]
+                xc = [(c, 1)]
+                xaxb = [(a, 1), (b, 1)]
 
-                ql = getCoef xa
-                qr = getCoef xb
-                qo = getCoef xc
-                qm = getCoef xaxb
-                qc = getCoef empty
-            guard $ p - polynomial [(ql, M xa), (qr, M xb), (qo, M xc), (qm, M xaxb), (qc, M empty)] == zero
+                ql = getCoef $ fromList xa
+                qr = getCoef $ fromList xb
+                qo = getCoef $ fromList xc
+                qm = getCoef $ fromList xaxb
+                qc = getCoef $ empty
+            guard $ p - polynomial [(ql, fromList xa), (qr, fromList xb), (qo, fromList xc), (qm, fromList xaxb), (qc, one)] == zero
             return (ql, qr, qo, qm, qc, fromConstant a, fromConstant b, fromConstant c)
         getCoefs _ = Nothing
 
@@ -82,23 +84,15 @@ toPlonkConstraint p@(P ms) =
 
 fromPlonkConstraint :: (F, F, F, F, F, F, F, F) -> Polynomial' F
 fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
-    let xa = fromList [(fromZp a, 1)]
-        xb = fromList [(fromZp b, 1)]
-        xc = fromList [(fromZp c, 1)]
-        xaxb = fromList [(fromZp a, 1), (fromZp b, 1)]
+    let xa = [(fromZp a, 1)]
+        xb = [(fromZp b, 1)]
+        xc = [(fromZp c, 1)]
+        xaxb = [(fromZp a, 1), (fromZp b, 1)]
 
-    in polynomial [(ql, M xa), (qr, M xb), (qo, M xc), (qm, M xaxb), (qc, M empty)]
+    in polynomial [(ql, xa), (qr, xb), (qo, xc), (qm, xaxb), (qc, one)]
 
 addPublicInput :: Natural -> F -> [Polynomial' F] -> [Polynomial' F]
-addPublicInput i _ ps =
-    polynomial [(one, M (fromList [(i, 1)]))] : ps
-
-addPublicInputs :: Map Natural F -> [Polynomial' F] -> [Polynomial' F]
-addPublicInputs inputs ps = foldr (\(i, x) ps' -> addPublicInput i x ps') ps $ toList inputs
-
-removeConstantVariable :: Polynomial' F -> Polynomial' F
-removeConstantVariable (P ms) =
-    polynomial . map (\(c, M as) -> (c, M (0 `delete` as))) $ ms
+addPublicInput i _ ps = var i : ps
 
 toPlonkArithmetization :: forall a . KnownNat a => Map Natural F -> ArithmeticCircuit F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
@@ -107,7 +101,7 @@ toPlonkArithmetization inputs ac =
         vars    = nubOrd $ sort $ 0 : concatMap variables (elems $ acSystem ac)
         ac'     = mapVarArithmeticCircuit ac
         inputs' = mapVarWitness vars inputs
-        system  = addPublicInputs inputs' $ elems $ acSystem ac'
+        system  = foldrWithKey addPublicInput (elems $ acSystem ac') inputs'
 
     in case map (toPolyVec . V.fromList) $ transpose $ map (f . toPlonkConstraint . removeConstantVariable) system of
             [ql, qr, qo, qm, qc, a, b, c] -> (ql, qr, qo, qm, qc, a, b, c)

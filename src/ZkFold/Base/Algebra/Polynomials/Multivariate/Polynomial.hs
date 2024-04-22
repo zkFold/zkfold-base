@@ -8,6 +8,7 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
     , Polynomial
     , FromPolynomial(..)
     , ToPolynomial(..)
+    , unpackPolynomial
     ) where
 
 import           Control.DeepSeq                                       (NFData)
@@ -17,6 +18,7 @@ import           Data.Functor                                          ((<&>))
 import           Data.List                                             (foldl', intercalate)
 import           Data.Map.Strict                                       (Map, empty)
 import           GHC.Generics                                          (Generic)
+import           GHC.IsList                                            (IsList (..))
 import           Numeric.Natural                                       (Natural)
 import           Prelude                                               hiding (Num (..), drop, lcm, length, sum, take,
                                                                         (!!), (/))
@@ -46,6 +48,14 @@ instance (Polynomial c i j) => ToPolynomial c i j m [(c, M i j m)] where
 -- | Polynomial type
 newtype P c i j m p = P p
     deriving (Generic, NFData, FromJSON, ToJSON)
+
+instance IsList (P c i j (Map i j) [(c, M i j (Map i j))]) where
+    type Item (P c i j (Map i j) [(c, M i j (Map i j))]) = (c, Map i j)
+    toList (P p) = second unpackMonomial <$> p
+    fromList p = P $ second M <$> p
+
+unpackPolynomial :: P c i j m p -> p
+unpackPolynomial (P p) = p
 
 instance (Show c, Show i, Show j, FromPolynomial c i j m p, FromMonomial i j m) => Show (P c i j m p) where
     show (P p) = intercalate " + "

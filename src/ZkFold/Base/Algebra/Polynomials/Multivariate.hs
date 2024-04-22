@@ -17,12 +17,13 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate
     , mapVarMonomial
     , mapVarPolynomial
     , mapVarPolynomials
+    , removeConstantVariable
     ) where
 
 import           Data.Bifunctor                                            (first, second)
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Functor                                              ((<&>))
-import           Data.Map.Strict                                           (Map, keys, mapKeys, singleton, toList)
+import           Data.Map.Strict                                           (Map, keys, mapKeys, singleton, toList, delete)
 import           Data.Maybe                                                (fromJust)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Num (..), length, product, replicate,
@@ -46,7 +47,10 @@ monomial :: Monomial i j => Map i j -> M i j (Map i j)
 monomial = M . fromJust . toMonomial
 
 -- | Polynomial constructor
-polynomial :: Polynomial c i j => [(c, M i j (Map i j))] -> P c i j (Map i j) [(c, M i j (Map i j))]
+polynomial ::
+    Polynomial c i j =>
+    [(c, M i j (Map i j))] ->
+    P c i j (Map i j) [(c, M i j (Map i j))]
 polynomial = sum . map (\m -> P [m]) . toPolynomial
 
 -- | @'var' i@ is a polynomial \(p(x) = x_i\)
@@ -97,7 +101,11 @@ mapVar vars x = case x `elemIndex` vars of
     Nothing -> error "mapVar: something went wrong"
 
 mapVarPolynomial :: [Natural] -> Polynomial' c -> Polynomial' c
-mapVarPolynomial vars (P ms) = P $ map (second $ mapVarMonomial vars) ms
+mapVarPolynomial vars (P ms) = P $ second (mapVarMonomial vars) <$> ms
 
 mapVarPolynomials :: [Natural] -> [Polynomial' c] -> [Polynomial' c]
 mapVarPolynomials vars = map (mapVarPolynomial vars)
+
+removeConstantVariable :: (Eq c, Field c) => Polynomial' c -> Polynomial' c
+removeConstantVariable (P ms) =
+    polynomial . map (\(c, M as) -> (c, M (0 `delete` as))) $ ms

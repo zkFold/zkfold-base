@@ -8,13 +8,15 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
     , FromMonomial(..)
     , ToMonomial(..)
     , Variable
+    , unpackMonomial
     ) where
 
 import           Control.DeepSeq                  (NFData)
 import           Data.Aeson                       (FromJSON, ToJSON)
 import           Data.List                        (intercalate)
-import           Data.Map.Strict                  (Map, differenceWith, empty, toList, unionWith)
+import           Data.Map.Strict                  (Map, differenceWith, empty, unionWith)
 import qualified Data.Map.Strict                  as Map
+import           GHC.IsList                       (IsList (..))
 import           GHC.Generics                     (Generic)
 import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
@@ -51,6 +53,14 @@ instance (Monomial i j, Integral j, KnownNat d) => ToMonomial i j (Vector d (i, 
 -- | Monomial type
 newtype M i j m = M m
     deriving (Generic, NFData, FromJSON, ToJSON)
+
+instance Ord i => IsList (M i j (Map i j)) where
+    type Item (M i j (Map i j)) = (i, j)
+    toList (M m) = toList m
+    fromList m = M $ fromList m
+
+unpackMonomial :: M i j m -> m
+unpackMonomial (M x) = x
 
 instance (Show i, Show j, FromMonomial i j m) => Show (M i j m) where
     show (M m) = intercalate "∙" (map showVar (toList $ fromMonomial @i @j @m m))
