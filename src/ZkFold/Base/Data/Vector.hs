@@ -35,6 +35,10 @@ fromVector = V.toList . toV
 concat :: Vector m (Vector n a) -> Vector (m * n) a
 concat = Vector . V.concatMap toV . toV
 
+-- | Reverses the order of elements in a vector
+reverseList :: forall t n . Vector n t -> Vector n t
+reverseList (Vector as) = Vector $ V.reverse as
+
 instance Binary a => Binary (Vector n a) where
     put = put . fromVector
     get = Vector <$> get

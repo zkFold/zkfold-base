@@ -9,7 +9,7 @@ import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
 import           Data.List                        (map, (++))
 import           Numeric.Natural                  (Natural)
-import           Prelude                          (div, show)
+import           Prelude                          (div, fmap, show)
 import           System.IO                        (IO)
 import           Test.Hspec                       (describe, hspec)
 import           Test.QuickCheck                  (Gen, Property, (===))
@@ -26,7 +26,7 @@ toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
 eval :: forall a n . UInt n (ArithmeticCircuit a) -> UInt n a
-eval (UInt xs x) = UInt (map eval' xs) (eval' x)
+eval (UInt xs x) = UInt (fmap eval' xs) (eval' x)
 
 type Binary a = a -> a -> a
 

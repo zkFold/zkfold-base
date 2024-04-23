@@ -46,8 +46,15 @@ import           ZkFold.Symbolic.Data.UInt
 -- Bit layout is Big-endian. @a@ is the higher register defined separately as it may store less bits than the lower registers.
 --
 data ByteString (n :: Natural) a = ByteString !a !(V.Vector a)
-    deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
-
+    deriving
+      ( Haskell.Show
+      , Haskell.Eq
+      , Haskell.Functor
+      , Haskell.Foldable
+      , Haskell.Traversable
+      , Generic
+      , NFData
+      )
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --

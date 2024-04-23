@@ -9,10 +9,9 @@ import           Control.Applicative              ((<*>))
 import           Control.Monad                    (return)
 import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
-import           Data.List                        (map, (++))
 import           GHC.TypeNats                     (Mod, type (<=))
 import           Numeric.Natural                  (Natural)
-import           Prelude                          (show, type (~), (<>))
+import           Prelude                          (show, type (~), (<>), fmap)
 import qualified Prelude                          as Haskell
 import           System.IO                        (IO)
 import           Test.Hspec                       (Spec, describe, hspec)
@@ -33,7 +32,7 @@ toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
 eval :: forall a n . ByteString n (ArithmeticCircuit a) -> ByteString n a
-eval (ByteString x xs) = ByteString (eval' x) (map eval' xs)
+eval (ByteString x xs) = ByteString (eval' x) (fmap eval' xs)
 
 type Binary a = a -> a -> a
 
@@ -144,7 +143,7 @@ specByteString
 specByteString = hspec $ do
     let n = Haskell.fromIntegral $ value @n
         m = 2 Haskell.^ n -! 1
-    describe ("ByteString" ++ show n ++ " specification") $ do
+    describe ("ByteString" <> show n <> " specification") $ do
 
         it "Zp embeds Integer" $ do
             x <- toss m
