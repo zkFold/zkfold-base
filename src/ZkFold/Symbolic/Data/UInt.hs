@@ -13,10 +13,10 @@ import           Control.Monad.State                                       (Stat
 import           Data.Foldable                                             (foldr, foldrM, for_)
 import           Data.Functor                                              ((<$>))
 import           Data.List                                                 (map, unfoldr, zip, zipWith)
-import qualified Data.Vector                                               as V
 import           Data.Map                                                  (fromList, (!))
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
+import qualified Data.Vector                                               as V
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (KnownNat, Natural)
 import           Prelude                                                   (Integer, error, flip, otherwise, return,

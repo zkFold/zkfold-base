@@ -19,9 +19,9 @@ import           Control.Monad                                             (forM
 import           Data.Bits                                                 as B
 import           Data.List                                                 (foldl, reverse, splitAt, unfoldr)
 import           Data.List.Split                                           (chunksOf)
-import qualified Data.Vector                                               as V
 import           Data.Maybe                                                (Maybe (..))
 import           Data.Proxy                                                (Proxy (..))
+import qualified Data.Vector                                               as V
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (KnownNat, Mod, Natural, natVal, type (<=))
