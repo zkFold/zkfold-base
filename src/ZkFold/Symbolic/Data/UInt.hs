@@ -13,26 +13,27 @@ import           Control.Monad.State                                       (Stat
 import           Data.Foldable                                             (foldr, foldrM, for_)
 import           Data.Functor                                              ((<$>))
 import           Data.List                                                 (map, unfoldr, zip, zipWith)
+import qualified Data.Vector                                               as V
 import           Data.Map                                                  (fromList, (!))
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (KnownNat, Natural)
 import           Prelude                                                   (Integer, error, flip, otherwise, return,
-                                                                            ($), (++), (.), (>>=))
+                                                                            ($), (.), (>>=))
 import qualified Prelude                                                   as Haskell
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp)
-import           ZkFold.Prelude                                            (length, replicate, replicateA, splitAt)
+import           ZkFold.Prelude                                            (length, splitAt)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Combinators
 
 -- TODO (Issue #18): hide this constructor
-data UInt (n :: Natural) a = UInt ![a] !a
+data UInt (n :: Natural) a = UInt !(V.Vector a) !a
     deriving (Haskell.Show, Haskell.Eq)
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
@@ -56,8 +57,8 @@ cast n =
             x -> Haskell.Just (swap $ x `Haskell.divMod` base)
         r = numberOfRegisters @a @n -! 1
      in case greedySplitAt r registers of
-        (lo, hi:rest) -> (UInt lo hi, rest)
-        (lo, [])      -> (UInt (lo ++ replicate (r -! length lo) zero) zero, [])
+        (lo, hi:rest) -> (UInt (V.fromList lo) hi, rest)
+        (lo, [])      -> (UInt (V.fromList lo Haskell.<> V.replicate (Haskell.fromIntegral (r -! length lo)) zero) zero, [])
     where
         greedySplitAt 0 xs = ([], xs)
         greedySplitAt _ [] = ([], [])
@@ -68,7 +69,7 @@ cast n =
 --------------------------------------------------------------------------------
 
 instance (KnownNat p, KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
-    toConstant (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
+    toConstant (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs `V.snoc` x)
         where base = 2 ^ registerSize @(Zp p) @n
 
 instance (KnownNat p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
@@ -93,53 +94,57 @@ instance (KnownNat p, KnownNat n) => Ring (UInt n (Zp p))
 
 instance (KnownNat p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
     arbitrary = UInt
-        <$> replicateA (numberOfRegisters @(Zp p) @n -! 1) (toss $ registerSize @(Zp p) @n)
+        <$> V.replicateM (Haskell.fromIntegral (numberOfRegisters @(Zp p) @n -! 1)) (toss $ registerSize @(Zp p) @n)
         <*> toss (highRegisterSize @(Zp p) @n)
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 --------------------------------------------------------------------------------
 
 instance (Arithmetic a, KnownNat n) => SymbolicData a (UInt n (ArithmeticCircuit a)) where
-    pieces (UInt as a) = as ++ [a]
+    pieces (UInt as a) = V.toList (as `V.snoc` a)
 
     restore as = case splitAt (numberOfRegisters @a @n -! 1) as of
-        (lo, [hi]) -> UInt lo hi
+        (lo, [hi]) -> UInt (V.fromList lo) hi
         (_, _)     -> error "UInt: invalid number of values"
 
     typeSize = numberOfRegisters @a @n
 
 instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (UInt n (ArithmeticCircuit a)) where
-    UInt [] x + UInt [] y = UInt [] $ circuit $ do
+    UInt vx x0 + UInt vy y0 = case (V.uncons vx, x0, V.uncons vy, y0) of
+
+      (Haskell.Nothing, x, Haskell.Nothing, y) -> UInt V.empty $ circuit $ do
         (z, _) <- runCircuit (x + y) >>= splitExpansion (highRegisterSize @a @n) 1
         return z
 
-    UInt (x : xs) z + UInt (y : ys) w =
+      (Haskell.Just (x,xs), z, Haskell.Just (y,ys), w) ->
         let solve :: MonadBlueprint i a m => m [i]
             solve = do
                 (i, j) <- runCircuit (x + y) >>= splitExpansion (registerSize @a @n) 1
                 (zs, c) <- flip runStateT j $ traverse StateT $
-                    zipWith (fullAdder $ registerSize @a @n) xs ys
+                    zipWith (fullAdder $ registerSize @a @n) (V.toList xs) (V.toList ys)
                 (k, _) <- fullAdder (highRegisterSize @a @n) z w c
                 return (k : i : zs)
 
          in case circuits solve of
-            (hi : lo) -> UInt lo hi
+            (hi : lo) -> UInt (V.fromList lo) hi
             []        -> error "UInt: unreachable"
 
-    UInt _ _ + UInt _ _ = error "UInt: unreachable"
+      _ -> error "UInt: unreachable"
 
 instance (Arithmetic a, KnownNat n) => AdditiveMonoid (UInt n (ArithmeticCircuit a)) where
-    zero = UInt (replicate (numberOfRegisters @a @n -! 1) zero) zero
+    zero = UInt (V.replicate (Haskell.fromIntegral (numberOfRegisters @a @n -! 1)) zero) zero
 
 instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit a)) where
-    UInt [] x - UInt [] y = UInt [] $ circuit $ do
+    UInt vx x0 - UInt vy y0 = case (V.uncons vx, x0, V.uncons vy, y0) of
+
+      (Haskell.Nothing, x, Haskell.Nothing, y) -> UInt V.empty $ circuit $ do
         i <- runCircuit x
         j <- runCircuit y
         z0 <- newAssigned (\v -> v i - v j + fromConstant (2 ^ registerSize @a @n :: Natural))
         (z, _) <- splitExpansion (highRegisterSize @a @n) 1 z0
         return z
 
-    UInt (x : xs) z - UInt (y : ys) w =
+      (Haskell.Just (x,xs), z, Haskell.Just (y,ys), w) ->
         let t :: a
             t = (one + one) ^ registerSize @a @n - one
 
@@ -149,7 +154,7 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
                 j <- runCircuit y
                 s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
                 (k, b0) <- splitExpansion (registerSize @a @n) 1 s
-                (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub xs ys)
+                (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub (V.toList xs) (V.toList ys))
                 d <- runCircuit (z - w)
                 s'0 <- newAssigned (\v -> v d + v b + fromConstant t)
                 (s', _) <- splitExpansion (highRegisterSize @a @n) 1 s'0
@@ -162,17 +167,18 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
                 splitExpansion (registerSize @a @n) 1 s
 
          in case circuits solve of
-            (hi : lo) -> UInt lo hi
+            (hi : lo) -> UInt (V.fromList lo) hi
             []        -> error "UInt: unreachable"
 
-    UInt _ _ - UInt _ _ = error "UInt: unreachable"
+      _ -> error "UInt: unreachable"
 
-    negate (UInt [] x) = UInt [] (negateN (2 ^ highRegisterSize @a @n) x)
-    negate (UInt (x : xs) x') =
+    negate (UInt vs x0) = case (V.uncons vs, x0) of
+      (Haskell.Nothing, x) -> UInt V.empty (negateN (2 ^ highRegisterSize @a @n) x)
+      (Haskell.Just (x,xs), x') ->
         let y = negateN (2 ^ registerSize @a @n) x
-            ys = map (negateN $ 2 ^ registerSize @a @n -! 1) xs
+            ys = V.map (negateN $ 2 ^ registerSize @a @n -! 1) xs
             y' = negateN (2 ^ highRegisterSize @a @n -! 1) x'
-         in UInt (y : ys) y'
+         in UInt (y `V.cons` ys) y'
 
 negateN :: Arithmetic a => Natural -> ArithmeticCircuit a -> ArithmeticCircuit a
 negateN n r = circuit $ do
@@ -180,11 +186,13 @@ negateN n r = circuit $ do
     newAssigned (\v -> fromConstant n - v i)
 
 instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (ArithmeticCircuit a)) where
-    UInt [] x * UInt [] y = UInt [] $ circuit $ do
+    UInt vx x0 * UInt vy y0 = case (V.uncons vx, x0, V.uncons vy, y0) of
+
+      (Haskell.Nothing, x, Haskell.Nothing, y) -> UInt V.empty $ circuit $ do
         (z, _) <- runCircuit (x * y) >>= splitExpansion (highRegisterSize @a @n) (maxOverflow @a @n)
         return z
 
-    UInt (x : xs) z * UInt (y : ys) w =
+      (Haskell.Just (x,xs), z, Haskell.Just (y,ys), w) ->
         let solve :: MonadBlueprint i a m => m [i]
             solve = do
                 i <- runCircuit x
@@ -193,8 +201,8 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (Arithmet
                 js <- for ys runCircuit
                 i' <- runCircuit z
                 j' <- runCircuit w
-                let cs = fromList $ zip [0..] (i : is ++ [i'])
-                    ds = fromList $ zip [0..] (j : js ++ [j'])
+                let cs = fromList $ zip [0..] (i : V.toList (is `V.snoc` i'))
+                    ds = fromList $ zip [0..] (j : V.toList (js `V.snoc` j'))
                     r  = numberOfRegisters @a @n
                 -- single addend for lower register
                 q <- newAssigned (\v -> v i * v j)
@@ -216,14 +224,14 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (Arithmet
                 return (p' : p : ps)
 
          in case circuits solve of
-            (hi : lo) -> UInt lo hi
+            (hi : lo) -> UInt (V.fromList lo) hi
             []        -> error "UInt: unreachable"
 
-    UInt _ _ * UInt _ _ = error "UInt: unreachable"
+      _ -> error "UInt: unreachable"
 
 instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (UInt n (ArithmeticCircuit a)) where
-    one | numberOfRegisters @a @n Haskell.== 1 = UInt [] one
-        | otherwise = UInt (one : replicate (numberOfRegisters @a @n -! 2) zero) zero
+    one | numberOfRegisters @a @n Haskell.== 1 = UInt V.empty one
+        | otherwise = UInt (one `V.cons` V.replicate (Haskell.fromIntegral (numberOfRegisters @a @n -! 2)) zero) zero
 
 instance (Arithmetic a, KnownNat n) => Semiring (UInt n (ArithmeticCircuit a))
 
@@ -250,33 +258,37 @@ instance (KnownNat p, KnownNat n) => StrictNum (UInt n (Zp p)) where
     strictMul x y = strictConv $ toConstant x * toConstant @_ @Natural y
 
 instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) where
-    strictAdd (UInt [] x) (UInt [] y) = UInt [] $ circuit $ do
+    strictAdd (UInt vx x0) (UInt vy y0) = case (V.uncons vx, x0, V.uncons vy, y0) of
+
+      (Haskell.Nothing, x, Haskell.Nothing, y) -> UInt V.empty $ circuit $ do
         z <- runCircuit (x + y)
         _ <- expansion (highRegisterSize @a @n) z
         return z
 
-    strictAdd (UInt (x : xs) z) (UInt (y : ys) w) =
+      (Haskell.Just (x,xs), z, Haskell.Just (y,ys), w) ->
         let solve :: MonadBlueprint i a m => m [i]
             solve = do
                 (i, j) <- runCircuit (x + y) >>= splitExpansion (registerSize @a @n) 1
                 (zs, c) <- flip runStateT j $ traverse StateT $
-                    zipWith (fullAdder $ registerSize @a @n) xs ys
+                    zipWith (fullAdder $ registerSize @a @n) (V.toList xs) (V.toList ys)
                 k <- fullAdded z w c
                 _ <- expansion (highRegisterSize @a @n) k
                 return (k : i : zs)
 
          in case circuits solve of
-            (hi : lo) -> UInt lo hi
+            (hi : lo) -> UInt (V.fromList lo) hi
             []        -> error "UInt: unreachable"
 
-    strictAdd (UInt _ _) (UInt _ _) = error "UInt: unreachable"
+      _ -> error "UInt: unreachable"
 
-    strictSub (UInt [] x) (UInt [] y) = UInt [] $ circuit $ do
+    strictSub (UInt vx x0) (UInt vy y0) = case (V.uncons vx, x0, V.uncons vy, y0) of
+
+      (Haskell.Nothing, x, Haskell.Nothing, y) -> UInt V.empty $ circuit $ do
         z <- runCircuit (x - y)
         _ <- expansion (highRegisterSize @a @n) z
         return z
 
-    strictSub (UInt (x : xs) z) (UInt (y : ys) w) =
+      (Haskell.Just (x,xs), z, Haskell.Just (y,ys), w) ->
         let t :: a
             t = (one + one) ^ registerSize @a @n - one
 
@@ -286,7 +298,7 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                 j <- runCircuit y
                 s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
                 (k, b0) <- splitExpansion (registerSize @a @n) 1 s
-                (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub xs ys)
+                (zs, b) <- flip runStateT b0 $ traverse StateT (zipWith fullSub (V.toList xs) (V.toList ys))
                 k' <- runCircuit (z - w)
                 s' <- newAssigned (\v -> v k' + v b - one)
                 _ <- expansion (highRegisterSize @a @n) s'
@@ -299,17 +311,19 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                 splitExpansion (registerSize @a @n) 1 s
 
          in case circuits solve of
-            (hi : lo) -> UInt lo hi
+            (hi : lo) -> UInt (V.fromList lo) hi
             []        -> error "UInt: unreachable"
 
-    strictSub (UInt _ _) (UInt _ _) = error "UInt: unreachable"
+      _ -> error "UInt: unreachable"
 
-    strictMul (UInt [] x) (UInt [] y) = UInt [] $ circuit $ do
+    strictMul (UInt vx x0) (UInt vy y0) = case (V.uncons vx, x0, V.uncons vy, y0) of
+
+      (Haskell.Nothing, x, Haskell.Nothing, y) -> UInt V.empty $ circuit $ do
         z <- runCircuit (x * y)
         _ <- expansion (highRegisterSize @a @n) z
         return z
 
-    strictMul (UInt (x : xs) z) (UInt (y : ys) w) =
+      (Haskell.Just (x,xs), z, Haskell.Just (y,ys), w) ->
         let solve :: MonadBlueprint i a m => m [i]
             solve = do
                 i <- runCircuit x
@@ -318,8 +332,8 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                 js <- for ys runCircuit
                 i' <- runCircuit z
                 j' <- runCircuit w
-                let cs = fromList $ zip [0..] (i : is ++ [i'])
-                    ds = fromList $ zip [0..] (j : js ++ [j'])
+                let cs = fromList $ zip [0..] (i : V.toList (is `V.snoc` i'))
+                    ds = fromList $ zip [0..] (j : V.toList (js `V.snoc` j'))
                     r  = numberOfRegisters @a @n
                 -- single addend for lower register
                 q <- newAssigned (\v -> v i * v j)
@@ -345,10 +359,10 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                 return (p' : p : ps)
 
          in case circuits solve of
-            (hi : lo) -> UInt lo hi
+            (hi : lo) -> UInt (V.fromList lo) hi
             []        -> error "UInt: unreachable"
 
-    strictMul (UInt _ _) (UInt _ _) = error "UInt: unreachable"
+      _ -> error "UInt: unreachable"
 
 --------------------------------------------------------------------------------
 

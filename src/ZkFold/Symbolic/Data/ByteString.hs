@@ -19,6 +19,7 @@ import           Control.Monad                                             (forM
 import           Data.Bits                                                 as B
 import           Data.List                                                 (foldl, reverse, splitAt, unfoldr)
 import           Data.List.Split                                           (chunksOf)
+import qualified Data.Vector                                               as V
 import           Data.Maybe                                                (Maybe (..))
 import           Data.Proxy                                                (Proxy (..))
 import           GHC.Generics                                              (Generic)
@@ -33,7 +34,6 @@ import           Test.QuickCheck                                           (Arbi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
-import           ZkFold.Prelude                                            (replicate, replicateA)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, horner)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
@@ -45,7 +45,7 @@ import           ZkFold.Symbolic.Data.UInt
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers.
 -- Bit layout is Big-endian. @a@ is the higher register defined separately as it may store less bits than the lower registers.
 --
-data ByteString (n :: Natural) a = ByteString !a ![a]
+data ByteString (n :: Natural) a = ByteString !a !(V.Vector a)
     deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
 
 
@@ -106,7 +106,7 @@ class Extend a b where
     extend :: a -> b
 
 instance (Finite a, ToConstant a Natural, KnownNat n) => ToConstant (ByteString n a) Natural where
-    toConstant (ByteString x xs) = Haskell.foldl (\y p -> toConstant p + base * y) 0 (x:xs)
+    toConstant (ByteString x xs) = Haskell.foldl (\y p -> toConstant p + base * y) 0 (x `V.cons` xs)
         where base = 2 Haskell.^ maxBitsPerRegister @a @n
 
 
@@ -118,7 +118,7 @@ instance (FromConstant Natural a, Finite a, KnownNat n) => FromConstant Natural 
     --
     fromConstant n = case reverse bits of
                         []     -> error "FromConstant: unreachable"
-                        (r:rs) -> ByteString r rs
+                        (r:rs) -> ByteString r (V.fromList rs)
         where
             base = 2 Haskell.^ maxBitsPerRegister @a @n
 
@@ -139,7 +139,7 @@ instance (FromConstant Natural a, Finite a, KnownNat n) => FromConstant Integer 
 
 instance (KnownNat p, KnownNat n) => Iso (ByteString n (Zp p)) (UInt n (Zp p)) where
     from bs@(ByteString r rs)
-      | null rs && ((highRegisterSize @(Zp p) @n) >= (getNatural @n)) = UInt [] r
+      | null rs && ((highRegisterSize @(Zp p) @n) >= (getNatural @n)) = UInt V.empty r
       | otherwise = fromConstant @Natural . toConstant $ bs
 
 instance (KnownNat p, KnownNat n) => Iso (UInt n (Zp p)) (ByteString n (Zp p)) where
@@ -151,7 +151,7 @@ instance (KnownNat p, KnownNat n) => Iso (UInt n (Zp p)) (ByteString n (Zp p)) w
 instance (KnownNat p, KnownNat n) => Arbitrary (ByteString n (Zp p)) where
     arbitrary = ByteString
         <$> toss (highRegisterBits @(Zp p) @n)
-        <*> replicateA (minNumberOfRegisters @(Zp p) @n -! 1) (toss $ maxBitsPerRegister @(Zp p) @n)
+        <*> V.replicateM (Haskell.fromIntegral (minNumberOfRegisters @(Zp p) @n -! 1)) (toss $ maxBitsPerRegister @(Zp p) @n)
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 
@@ -328,36 +328,36 @@ fromBits hiBits loBits bits = do
 
 
 instance (Arithmetic a, KnownNat n) => SymbolicData a (ByteString n (ArithmeticCircuit a)) where
-    pieces (ByteString a as) = a:as
+    pieces (ByteString a as) = a : V.toList as
 
     restore as
-      | Haskell.fromIntegral (length as) == minNumberOfRegisters @a @n = ByteString (head as) (tail as)
+      | Haskell.fromIntegral (length as) == minNumberOfRegisters @a @n = ByteString (head as) (V.fromList (tail as))
       | otherwise = error "ByteString: invalid number of values"
 
     typeSize = minNumberOfRegisters @a @n
 
 instance (Arithmetic a, KnownNat n) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a)) where
     from (ByteString r rs)
-      | null rs && ((highRegisterSize @a @n) >= (getNatural @n)) = UInt [] r
+      | null rs && ((highRegisterSize @a @n) >= (getNatural @n)) = UInt V.empty r
       | otherwise = case circuits solve of
-                      (x:xs) -> UInt (Haskell.reverse xs) x
+                      (x:xs) -> UInt (V.reverse (V.fromList xs)) x
                       _      -> error "Iso ByteString UInt : unreachable"
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
             solve = do
-                bsBits <- toBits r rs (highRegisterBits @a @n) (maxBitsPerRegister @a @n)
+                bsBits <- toBits r (V.toList rs) (highRegisterBits @a @n) (maxBitsPerRegister @a @n)
                 fromBits (highRegisterSize @a @n) (registerSize @a @n) bsBits
 
 instance (Arithmetic a, KnownNat n) => Iso (UInt n (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
     from (UInt rs r)
       | null rs = ByteString r rs -- A ByteString's high register always has at least the same capacity as UInt's
       | otherwise = case circuits solve of
-                      (x:xs) -> ByteString x xs
+                      (x:xs) -> ByteString x (V.fromList xs)
                       _      -> error "Iso ByteString UInt : unreachable"
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
             solve = do
-                bsBits <- toBits r (Haskell.reverse rs) (highRegisterSize @a @n) (registerSize @a @n)
+                bsBits <- toBits r (V.toList (V.reverse rs)) (highRegisterSize @a @n) (registerSize @a @n)
                 fromBits (highRegisterBits @a @n) (maxBitsPerRegister @a @n) bsBits
 
 
@@ -384,7 +384,7 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
       | otherwise = case circuits solve of
           []     -> error "ByteString: unreachable"
-          (r:rs) -> ByteString r rs
+          (r:rs) -> ByteString r (V.fromList rs)
       where
         solve :: forall i m. MonadBlueprint i a m => m [i]
         solve = do
@@ -394,7 +394,7 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
                     True  -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
                     False -> drop (Haskell.fromIntegral s) $ bits <> zeros
 
-            moveBits @n x xs shiftList
+            moveBits @n x (V.toList xs) shiftList
 
 
     rotateBits bs@(ByteString x xs) s
@@ -402,10 +402,10 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
       | (s < 0) || (s >= intN) = rotateBits bs (s `Haskell.mod` intN) -- Always perform a left rotation
       | otherwise = case circuits solve of
           []     -> error "ByteString: unreachable"
-          (r:rs) -> ByteString r rs
+          (r:rs) -> ByteString r (V.fromList rs)
       where
         solve :: forall i m. MonadBlueprint i a m => m [i]
-        solve = moveBits @n x xs rotateList
+        solve = moveBits @n x (V.toList xs) rotateList
 
         intN :: Integer
         intN = Haskell.fromIntegral (getNatural @n)
@@ -428,12 +428,12 @@ bitwiseOperation
 bitwiseOperation (ByteString x xs) (ByteString y ys) cons =
     case circuits solve of
       []     -> error "ByteString: unreachable"
-      (r:rs) -> ByteString r rs
+      (r:rs) -> ByteString r (V.fromList rs)
   where
     solve :: forall i m. MonadBlueprint i a m => m [i]
     solve = do
-        varsLeft  <- mapM runCircuit xs
-        varsRight <- mapM runCircuit ys
+        varsLeft  <- mapM runCircuit (V.toList xs)
+        varsRight <- mapM runCircuit (V.toList ys)
         highLeft  <- runCircuit x
         highRight <- runCircuit y
         lowerRegisters <- zipWithM (applyBitwise False) varsLeft varsRight
@@ -453,7 +453,7 @@ bitwiseOperation (ByteString x xs) (ByteString y ys) cons =
 
 
 instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit a)) where
-    false = ByteString zero (replicate (minNumberOfRegisters @a @n -! 1) zero)
+    false = ByteString zero (V.replicate (Haskell.fromIntegral (minNumberOfRegisters @a @n -! 1)) zero)
 
     true = not false
 
@@ -485,11 +485,11 @@ instance
       where
         bitsToBS :: [ArithmeticCircuit a] -> ByteString wordSize (ArithmeticCircuit a)
         bitsToBS []     = error "toWords.bitsToBS :: unreachable"
-        bitsToBS (r:rs) = ByteString r rs
+        bitsToBS (r:rs) = ByteString r (V.fromList rs)
 
         solve :: forall i m. MonadBlueprint i a m => m [i]
         solve = do
-            bits <- toBits @a x xs (highRegisterBits @a @n) (maxBitsPerRegister @a @n)
+            bits <- toBits @a x (V.toList xs) (highRegisterBits @a @n) (maxBitsPerRegister @a @n)
             let words = chunksOf (Haskell.fromIntegral $ getNatural @wordSize) bits
             wordsBits <- mapM (fromBits @a (highRegisterBits @a @wordSize) (maxBitsPerRegister @a @wordSize)) words
             pure $ Haskell.concat wordsBits
@@ -504,11 +504,11 @@ instance
     concat bs =
         case circuits solve of
           []     -> error "concat :: Unreachable"
-          (r:rs) -> ByteString r rs
+          (r:rs) -> ByteString r (V.fromList rs)
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do
-            bits <- mapM (\(ByteString x xs) -> toBits @a x xs (highRegisterBits @a @m) (maxBitsPerRegister @a @m)) bs
+            bits <- mapM (\(ByteString x xs) -> toBits @a x (V.toList xs) (highRegisterBits @a @m) (maxBitsPerRegister @a @m)) bs
             fromBits @a (highRegisterBits @a @n) (maxBitsPerRegister @a @n) $ Haskell.concat bits
 
 instance
@@ -521,11 +521,11 @@ instance
     truncate (ByteString x xs) =
         case circuits solve of
           []     -> error "truncate :: Unreachable"
-          (r:rs) -> ByteString r rs
+          (r:rs) -> ByteString r (V.fromList rs)
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do
-            bits <- take (Haskell.fromIntegral $ getNatural @n) <$> toBits @a x xs (highRegisterBits @a @m) (maxBitsPerRegister @a @m)
+            bits <- take (Haskell.fromIntegral $ getNatural @n) <$> toBits @a x (V.toList xs) (highRegisterBits @a @m) (maxBitsPerRegister @a @m)
             fromBits @a (highRegisterBits @a @n) (maxBitsPerRegister @a @n) $ bits
 
 instance
@@ -538,11 +538,11 @@ instance
     extend (ByteString x xs) =
         case circuits solve of
           []     -> error "truncate :: Unreachable"
-          (r:rs) -> ByteString r rs
+          (r:rs) -> ByteString r (V.fromList rs)
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do
-            bits <- toBits @a x xs (highRegisterBits @a @m) (maxBitsPerRegister @a @m)
+            bits <- toBits @a x (V.toList xs) (highRegisterBits @a @m) (maxBitsPerRegister @a @m)
             zeros <- replicateM diff $ newAssigned (Haskell.const zero)
             fromBits @a (highRegisterBits @a @n) (maxBitsPerRegister @a @n) $ zeros <> bits
 
