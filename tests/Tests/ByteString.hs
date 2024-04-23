@@ -11,7 +11,7 @@ import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
 import           GHC.TypeNats                     (Mod, type (<=))
 import           Numeric.Natural                  (Natural)
-import           Prelude                          (show, type (~), (<>), fmap)
+import           Prelude                          (fmap, show, type (~), (<>))
 import qualified Prelude                          as Haskell
 import           System.IO                        (IO)
 import           Test.Hspec                       (Spec, describe, hspec)
