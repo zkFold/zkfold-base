@@ -27,18 +27,18 @@ import           Data.Bifunctor                                            (firs
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Functor                                              ((<&>))
 import           Data.List                                                 (filter)
-import           Data.Map.Strict                                           (Map, filter, delete, keys, mapKeys, singleton,
-                                                                            toList, fromListWith)
+import           Data.Map.Strict                                           (Map, delete, filter, fromListWith, keys,
+                                                                            mapKeys, singleton, toList)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Num (..), length, product, replicate,
                                                                             sum, (!!), (^))
 
-import           ZkFold.Base.Data.Vector
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Set
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
+import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                                            (elemIndex)
 
 -- | Most general type for a multivariate monomial
