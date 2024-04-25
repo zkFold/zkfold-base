@@ -139,6 +139,7 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
       ZkFold.Symbolic.Compiler.Arithmetizable
+      ZkFold.Symbolic.Data.Algebra
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Combinators
