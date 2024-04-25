@@ -1,9 +1,10 @@
 module ZkFold.Symbolic.Data.Algebra where
 
-import Data.Functor.Identity (Identity (..))
-import Numeric.Natural (Natural)
-import Prelude (Integer)
-import qualified Prelude as Prelude
+import           Data.Functor.Identity           (Identity (..))
+import           Numeric.Natural                 (Natural)
+import           Prelude                         (Integer)
+import qualified Prelude                         as Prelude
+
 import qualified ZkFold.Base.Algebra.Basic.Class as Algebra
 
 class MultiplicativeSemigroup a u where
