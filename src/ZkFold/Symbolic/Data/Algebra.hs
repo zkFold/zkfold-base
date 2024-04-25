@@ -12,6 +12,15 @@ class MultiplicativeSemigroup a u where
 class MultiplicativeSemigroup a u => MultiplicativeMonoid a u where
   one :: u a
   (^) :: u a -> Natural -> u a
+  _ ^ 0 = one
+  x ^ 1 = x
+  x ^ n =
+    let
+      (nOver2, evenOrOdd) = n `Prelude.divMod` 2
+      sqrt = x ^ nOver2
+      parity = x ^ evenOrOdd
+    in
+      sqrt * sqrt * parity
 
 class AdditiveSemigroup a u where
   (+) :: u a -> u a -> u a
@@ -20,9 +29,7 @@ class AdditiveSemigroup a u => AdditiveMonoid a u where
   zero :: u a
   scaleNatural :: Natural -> u a -> u a
   scaleNatural n x = combineNatural [(n,x)]
-  -- | linear combination using double-and-add,
-  -- and assuming commutativity of (+),
-  -- log(n1 + .. + nk) complexity
+  -- | linear combination, assuming commutativity of (+)
   combineNatural :: [(Natural, u a)] -> u a
   combineNatural [] = zero
   combineNatural xs =
