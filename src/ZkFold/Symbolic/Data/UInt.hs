@@ -43,6 +43,24 @@ data UInt (n :: Natural) a = UInt !(V.Vector a) !a
       , Haskell.Traversable
       )
 
+instance Field a => VectorSpace a (UInt n) where
+    type Basis a (UInt n) = Haskell.Maybe Haskell.Int
+    indexV = Haskell.undefined
+    tabulateV = Haskell.undefined
+instance Field a => AdditiveSemigroup (UInt n a) where
+    (+) = zipWithV (+)
+instance Field a => AdditiveMonoid (UInt n a) where
+    zero = pureV zero
+instance Field a => AdditiveGroup (UInt n a) where
+    negate = mapV negate
+    (-) = zipWithV (-)
+instance Field a => Scale Natural (UInt n a) where
+    scale n = mapV (scale n)
+instance Field a => Scale Integer (UInt n a) where
+    scale n = mapV (scale n)
+instance Field a => Scale a (UInt n a) where
+    scale n = mapV (scale n)
+
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
     fromConstant = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n))
 
