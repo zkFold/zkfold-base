@@ -46,7 +46,7 @@ data UInt (n :: Natural) a = UInt !(V.Vector a) !a
 
 instance (FiniteField a, KnownNat n) => VectorSpace a (UInt n) where
     type Basis a (UInt n) = Maybe Haskell.Int
-    indexV (UInt _ a) Nothing = a
+    indexV (UInt _ a) Nothing   = a
     indexV (UInt v _) (Just ix) = fromMaybe zero (v V.!? ix)
     tabulateV f =
         let r = Haskell.fromIntegral (numberOfRegisters @a @n -! 1)
