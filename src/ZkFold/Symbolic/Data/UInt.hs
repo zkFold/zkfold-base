@@ -5,7 +5,7 @@ module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
     StrictNum(..),
     UInt(..),
-    toConstant
+    toNatural
 ) where
 
 import           Control.Applicative                                       ((<*>))
@@ -32,6 +32,8 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expa
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Combinators
 
+import qualified ZkFold.Symbolic.Data.Algebra as Alg
+
 -- TODO (Issue #18): hide this constructor
 data UInt (n :: Natural) a = UInt !(V.Vector a) !a
     deriving
@@ -47,13 +49,6 @@ instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Fro
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Integer (UInt n a) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
-
-instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n, MultiplicativeSemigroup (UInt n a)) => Scale Natural (UInt n a)
-
-instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n, MultiplicativeSemigroup (UInt n a)) => Scale Integer (UInt n a)
-
-instance MultiplicativeMonoid (UInt n a) => Exponent (UInt n a) Natural where
-    (^) = natPow
 
 cast :: forall a n . (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Natural -> (UInt n a, [a])
 cast n =
@@ -78,25 +73,24 @@ instance (KnownNat p, KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
     toConstant (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs `V.snoc` x)
         where base = 2 ^ registerSize @(Zp p) @n
 
-instance (KnownNat p, KnownNat n) => AdditiveSemigroup (UInt n (Zp p)) where
-    x + y = fromConstant $ toConstant x + toConstant @_ @Natural y
+toNatural :: ToConstant n Natural => n -> Natural
+toNatural = toConstant
 
-instance (KnownNat p, KnownNat n) => AdditiveMonoid (UInt n (Zp p)) where
-    zero = fromConstant (0 :: Natural)
+instance (KnownNat p, KnownNat n) => Alg.AdditiveSemigroup (Zp p) (UInt n) where
+    x + y = Alg.fromNatural $ toNatural x + toNatural y
 
-instance (KnownNat p, KnownNat n) => AdditiveGroup (UInt n (Zp p)) where
-    x - y = fromConstant $ toConstant x + 2 ^ getNatural @n -! toConstant y
-    negate x = fromConstant $ 2 ^ getNatural @n -! toConstant x
+instance (KnownNat p, KnownNat n) => Alg.AdditiveMonoid (Zp p) (UInt n) where
+    zero = Alg.fromNatural (0 :: Natural)
 
-instance (KnownNat p, KnownNat n) => MultiplicativeSemigroup (UInt n (Zp p)) where
-    x * y = fromConstant $ toConstant x * toConstant @_ @Natural y
+instance (KnownNat p, KnownNat n) => Alg.AdditiveGroup (Zp p) (UInt n) where
+    x - y = Alg.fromNatural $ toNatural x + 2 ^ getNatural @n -! toNatural y
+    negate x = Alg.fromNatural $ 2 ^ getNatural @n -! toNatural x
 
-instance (KnownNat p, KnownNat n) => MultiplicativeMonoid (UInt n (Zp p)) where
-    one = fromConstant (1 :: Natural)
+instance (KnownNat p, KnownNat n) => Alg.MultiplicativeSemigroup (Zp p) (UInt n) where
+    x * y = Alg.fromNatural $ toNatural x * toNatural y
 
-instance (KnownNat p, KnownNat n) => Semiring (UInt n (Zp p))
-
-instance (KnownNat p, KnownNat n) => Ring (UInt n (Zp p))
+instance (KnownNat p, KnownNat n) => Alg.MultiplicativeMonoid (Zp p) (UInt n) where
+    one = Alg.fromNatural 1
 
 instance (KnownNat p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
     arbitrary = UInt
@@ -115,7 +109,7 @@ instance (Arithmetic a, KnownNat n) => SymbolicData a (UInt n (ArithmeticCircuit
 
     typeSize = numberOfRegisters @a @n
 
-instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => Alg.AdditiveSemigroup (ArithmeticCircuit a) (UInt n) where
     UInt vx x0 + UInt vy y0 = case (V.uncons vx, x0, V.uncons vy, y0) of
 
       (Haskell.Nothing, x, Haskell.Nothing, y) -> UInt V.empty $ circuit $ do
@@ -137,10 +131,10 @@ instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (UInt n (ArithmeticCirc
 
       _ -> error "UInt: unreachable"
 
-instance (Arithmetic a, KnownNat n) => AdditiveMonoid (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => Alg.AdditiveMonoid (ArithmeticCircuit a) (UInt n) where
     zero = UInt (V.replicate (Haskell.fromIntegral (numberOfRegisters @a @n -! 1)) zero) zero
 
-instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => Alg.AdditiveGroup (ArithmeticCircuit a) (UInt n) where
     UInt vx x0 - UInt vy y0 = case (V.uncons vx, x0, V.uncons vy, y0) of
 
       (Haskell.Nothing, x, Haskell.Nothing, y) -> UInt V.empty $ circuit $ do
@@ -191,7 +185,7 @@ negateN n r = circuit $ do
     i <- runCircuit r
     newAssigned (\v -> fromConstant n - v i)
 
-instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => Alg.MultiplicativeSemigroup (ArithmeticCircuit a) (UInt n) where
     UInt vx x0 * UInt vy y0 = case (V.uncons vx, x0, V.uncons vy, y0) of
 
       (Haskell.Nothing, x, Haskell.Nothing, y) -> UInt V.empty $ circuit $ do
@@ -235,13 +229,9 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (Arithmet
 
       _ -> error "UInt: unreachable"
 
-instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => Alg.MultiplicativeMonoid (ArithmeticCircuit a) (UInt n) where
     one | numberOfRegisters @a @n Haskell.== 1 = UInt V.empty one
         | otherwise = UInt (one `V.cons` V.replicate (Haskell.fromIntegral (numberOfRegisters @a @n -! 2)) zero) zero
-
-instance (Arithmetic a, KnownNat n) => Semiring (UInt n (ArithmeticCircuit a))
-
-instance (Arithmetic a, KnownNat n) => Ring (UInt n (ArithmeticCircuit a))
 
 --------------------------------------------------------------------------------
 
@@ -259,9 +249,9 @@ class StrictNum a where
     strictMul :: a -> a -> a
 
 instance (KnownNat p, KnownNat n) => StrictNum (UInt n (Zp p)) where
-    strictAdd x y = strictConv $ toConstant x + toConstant @_ @Natural y
-    strictSub x y = strictConv $ toConstant x -! toConstant y
-    strictMul x y = strictConv $ toConstant x * toConstant @_ @Natural y
+    strictAdd x y = strictConv $ toNatural x + toNatural y
+    strictSub x y = strictConv $ toNatural x -! toNatural y
+    strictMul x y = strictConv $ toNatural x * toNatural y
 
 instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) where
     strictAdd (UInt vx x0) (UInt vy y0) = case (V.uncons vx, x0, V.uncons vy, y0) of

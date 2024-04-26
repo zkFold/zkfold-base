@@ -640,6 +640,8 @@ deriving via Representably U1 a instance Field a => Scale Integer (U1 a)
 deriving via Representably U1 a instance Field a => Scale a (U1 a)
 
 -- one dimensional vector space
+deriving newtype instance FromConstant Natural a => FromConstant Natural (Identity a)
+deriving newtype instance FromConstant Integer a => FromConstant Integer (Identity a)
 deriving via Representably Identity instance Field a => VectorSpace a Identity
 deriving via Representably Identity a instance Field a => AdditiveSemigroup (Identity a)
 deriving via Representably Identity a instance Field a => AdditiveMonoid (Identity a)

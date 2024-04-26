@@ -61,7 +61,7 @@ data ByteString (n :: Natural) a = ByteString !a !(V.Vector a)
 class ShiftBits a where
     {-# MINIMAL (shiftBits | (shiftBitsL, shiftBitsR)), (rotateBits | (rotateBitsL, rotateBitsR)) #-}
 
-    -- | shiftBits performs a left shift when its agrument is greater than zero and a right shift otherwise.
+    -- | shiftBits performs a left shift when its argument is greater than zero and a right shift otherwise.
     --
     shiftBits :: a -> Integer -> a
     shiftBits a s
@@ -152,7 +152,7 @@ instance (KnownNat p, KnownNat n) => Iso (ByteString n (Zp p)) (UInt n (Zp p)) w
 instance (KnownNat p, KnownNat n) => Iso (UInt n (Zp p)) (ByteString n (Zp p)) where
     from ui@(UInt rs r)
       | null rs = ByteString r rs -- A ByteString's high register always has at least the same capacity as UInt's
-      | otherwise = fromConstant @Natural . toConstant $ ui
+      | otherwise = fromConstant @Natural . toNatural $ ui
 
 
 instance (KnownNat p, KnownNat n) => Arbitrary (ByteString n (Zp p)) where

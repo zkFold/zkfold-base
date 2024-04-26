@@ -25,6 +25,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  sha384InitialHashes, sha512InitialHashes,
                                                                  sha512_224InitialHashes, sha512_256InitialHashes,
                                                                  word32RoundConstants, word64RoundConstants)
+import qualified ZkFold.Symbolic.Data.Algebra                   as Alg
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), Concat (..), Extend (..),
                                                                  ShiftBits (..), ToWords (..), Truncate (..))
@@ -154,7 +155,7 @@ type SHA2 algorithm element k =
    , KnownNat (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))
    , Iso (UInt (WordSize algorithm) element) (ByteString (WordSize algorithm) element)
    , Iso (ByteString (WordSize algorithm) element) (UInt (WordSize algorithm) element)
-   , AdditiveSemigroup (UInt (WordSize algorithm) element)
+   , Alg.AdditiveSemigroup element (UInt (WordSize algorithm))
    , BoolType (ByteString (WordSize algorithm) element)
    , ShiftBits (ByteString (WordSize algorithm) element)
    , ShiftBits (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) element)
@@ -236,7 +237,7 @@ type SHA2N algorithm element =
    , KnownNat (WordSize algorithm)
    , Iso (UInt (WordSize algorithm) element) (ByteString (WordSize algorithm) element)
    , Iso (ByteString (WordSize algorithm) element) (UInt (WordSize algorithm) element)
-   , AdditiveSemigroup (UInt (WordSize algorithm) element)
+   , Alg.AdditiveSemigroup element (UInt (WordSize algorithm))
    , BoolType (ByteString (WordSize algorithm) element)
    , ShiftBits (ByteString (WordSize algorithm) element)
    , ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
@@ -286,7 +287,7 @@ sha2Blocks
     .  AlgorithmSetup algorithm element
     => NFData element
     => Iso (ByteString (WordSize algorithm) element) (UInt (WordSize algorithm) element)
-    => AdditiveSemigroup (UInt (WordSize algorithm) element)
+    => Alg.AdditiveSemigroup element (UInt (WordSize algorithm))
     => BoolType (ByteString (WordSize algorithm) element)
     => ShiftBits (ByteString (WordSize algorithm) element)
     => ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
@@ -314,7 +315,7 @@ sha2Blocks chunks = truncateResult @algorithm @element $ concat $ V.toList hashP
                     let (sh0, sh1, sh2, sh3, sh4, sh5) = sigmaShifts @algorithm @element
                         s0  = force $ (w15 `rotateBitsR` sh0) `xor` (w15 `rotateBitsR` sh1) `xor` (w15 `shiftBitsR` sh2)
                         s1  = force $ (w2 `rotateBitsR` sh3) `xor` (w2 `rotateBitsR` sh4) `xor` (w2 `shiftBitsR` sh5)
-                    VM.write messageSchedule ix $! from (from w16 + from s0 + from w7 + from s1 :: UInt (WordSize algorithm) element)
+                    VM.write messageSchedule ix $! from (from w16 Alg.+ from s0 Alg.+ from w7 Alg.+ from s1 :: UInt (WordSize algorithm) element)
 
                 !aRef <- hn `VM.read` 0 >>= ST.newSTRef
                 !bRef <- hn `VM.read` 1 >>= ST.newSTRef
@@ -341,19 +342,19 @@ sha2Blocks chunks = truncateResult @algorithm @element $ concat $ V.toList hashP
                     let (sh0, sh1, sh2, sh3, sh4, sh5) = sumShifts @algorithm @element
                         s1    = force $ (e `rotateBitsR` sh3) `xor` (e `rotateBitsR` sh4) `xor` (e `rotateBitsR` sh5)
                         ch    = force $ (e && f) `xor` (not e && g)
-                        temp1 = force $ from (from h + from s1 + from ch + from ki + from wi :: UInt (WordSize algorithm) element) :: ByteString (WordSize algorithm) element
+                        temp1 = force $ from (from h Alg.+ from s1 Alg.+ from ch Alg.+ from ki Alg.+ from wi :: UInt (WordSize algorithm) element) :: ByteString (WordSize algorithm) element
                         s0    = force $ (a `rotateBitsR` sh0) `xor` (a `rotateBitsR` sh1) `xor` (a `rotateBitsR` sh2)
                         maj   = force $ (a && b) `xor` (a && c) `xor` (b && c)
-                        temp2 = force $ from (from s0 + from maj :: UInt (WordSize algorithm) element) :: ByteString (WordSize algorithm) element
+                        temp2 = force $ from (from s0 Alg.+ from maj :: UInt (WordSize algorithm) element) :: ByteString (WordSize algorithm) element
 
                     ST.writeSTRef hRef g
                     ST.writeSTRef gRef f
                     ST.writeSTRef fRef e
-                    ST.writeSTRef eRef $ from (from d + from temp1 :: UInt (WordSize algorithm) element)
+                    ST.writeSTRef eRef $ from (from d Alg.+ from temp1 :: UInt (WordSize algorithm) element)
                     ST.writeSTRef dRef c
                     ST.writeSTRef cRef b
                     ST.writeSTRef bRef a
-                    ST.writeSTRef aRef $ from (from temp1 + from temp2 :: UInt (WordSize algorithm) element)
+                    ST.writeSTRef aRef $ from (from temp1 Alg.+ from temp2 :: UInt (WordSize algorithm) element)
 
                 !a <- ST.readSTRef aRef
                 !b <- ST.readSTRef bRef
@@ -364,13 +365,13 @@ sha2Blocks chunks = truncateResult @algorithm @element $ concat $ V.toList hashP
                 !g <- ST.readSTRef gRef
                 !h <- ST.readSTRef hRef
 
-                VM.modify hn (\w -> from (from w + from a :: UInt (WordSize algorithm) element)) 0
-                VM.modify hn (\w -> from (from w + from b :: UInt (WordSize algorithm) element)) 1
-                VM.modify hn (\w -> from (from w + from c :: UInt (WordSize algorithm) element)) 2
-                VM.modify hn (\w -> from (from w + from d :: UInt (WordSize algorithm) element)) 3
-                VM.modify hn (\w -> from (from w + from e :: UInt (WordSize algorithm) element)) 4
-                VM.modify hn (\w -> from (from w + from f :: UInt (WordSize algorithm) element)) 5
-                VM.modify hn (\w -> from (from w + from g :: UInt (WordSize algorithm) element)) 6
-                VM.modify hn (\w -> from (from w + from h :: UInt (WordSize algorithm) element)) 7
+                VM.modify hn (\w -> from (from w Alg.+ from a :: UInt (WordSize algorithm) element)) 0
+                VM.modify hn (\w -> from (from w Alg.+ from b :: UInt (WordSize algorithm) element)) 1
+                VM.modify hn (\w -> from (from w Alg.+ from c :: UInt (WordSize algorithm) element)) 2
+                VM.modify hn (\w -> from (from w Alg.+ from d :: UInt (WordSize algorithm) element)) 3
+                VM.modify hn (\w -> from (from w Alg.+ from e :: UInt (WordSize algorithm) element)) 4
+                VM.modify hn (\w -> from (from w Alg.+ from f :: UInt (WordSize algorithm) element)) 5
+                VM.modify hn (\w -> from (from w Alg.+ from g :: UInt (WordSize algorithm) element)) 6
+                VM.modify hn (\w -> from (from w Alg.+ from h :: UInt (WordSize algorithm) element)) 7
 
             pure hn
