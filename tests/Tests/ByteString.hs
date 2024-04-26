@@ -23,8 +23,8 @@ import           ZkFold.Base.Algebra.Basic.Field  (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                   (chooseNatural)
 import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)
-import           ZkFold.Symbolic.Data.Bool
 import qualified ZkFold.Symbolic.Data.Algebra     as Sym
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators (Iso (..))
 import           ZkFold.Symbolic.Data.UInt

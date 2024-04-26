@@ -30,9 +30,8 @@ import           ZkFold.Prelude                                            (leng
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
+import qualified ZkFold.Symbolic.Data.Algebra                              as Alg
 import           ZkFold.Symbolic.Data.Combinators
-
-import qualified ZkFold.Symbolic.Data.Algebra as Alg
 
 -- TODO (Issue #18): hide this constructor
 data UInt (n :: Natural) a = UInt !(V.Vector a) !a
