@@ -27,20 +27,20 @@ import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 
 main :: IO ()
 main = do
-    -- specArithmeticCircuit @(Zp BLS12_381_Scalar)
-    -- specUInt @BLS12_381_Scalar @32
-    -- specUInt @BLS12_381_Scalar @500
+    specArithmeticCircuit @(Zp BLS12_381_Scalar)
+    specUInt @BLS12_381_Scalar @32
+    specUInt @BLS12_381_Scalar @500
 
-    -- specByteString @BLS12_381_Scalar @32
-    -- specByteString @BLS12_381_Scalar @512
-    -- specByteString @BLS12_381_Scalar @508 -- Twice the number of bits encoded by BLS12_381_Scalar.
+    specByteString @BLS12_381_Scalar @32
+    specByteString @BLS12_381_Scalar @512
+    specByteString @BLS12_381_Scalar @508 -- Twice the number of bits encoded by BLS12_381_Scalar.
 
-    -- specSHA2Natural @"SHA224" @(Zp BLS12_381_Scalar)
-    -- specSHA2Natural @"SHA256" @(Zp BLS12_381_Scalar)
-    -- specSHA2Natural @"SHA384" @(Zp BLS12_381_Scalar)
-    -- specSHA2Natural @"SHA512" @(Zp BLS12_381_Scalar)
-    -- specSHA2Natural @"SHA512/224" @(Zp BLS12_381_Scalar)
-    -- specSHA2Natural @"SHA512/256" @(Zp BLS12_381_Scalar)
+    specSHA2Natural @"SHA224" @(Zp BLS12_381_Scalar)
+    specSHA2Natural @"SHA256" @(Zp BLS12_381_Scalar)
+    specSHA2Natural @"SHA384" @(Zp BLS12_381_Scalar)
+    specSHA2Natural @"SHA512" @(Zp BLS12_381_Scalar)
+    specSHA2Natural @"SHA512/224" @(Zp BLS12_381_Scalar)
+    specSHA2Natural @"SHA512/256" @(Zp BLS12_381_Scalar)
 
 -- TODO: optimise and uncomment these tests
 --    specSHA2 @"SHA224"
@@ -52,23 +52,23 @@ main = do
 
     specLockedByTxId
 
-    -- specArithmetization @(Zp BLS12_381_Scalar)
-    -- specGroebner
+    specArithmetization @(Zp BLS12_381_Scalar)
+    specGroebner
 
-    -- specPermutations
-    -- specField @Fr
-    -- specField @Fq
-    -- specField @Fq2
-    -- specField @Fq6
-    -- specField @Fq12
-    -- specAdditiveGroup @(Point BLS12_381_G1)
-    -- specAdditiveGroup @(Point BLS12_381_G2)
-    -- specPairing @BLS12_381_G1 @BLS12_381_G2
-    -- specUnivariate
-    -- specMultiplication
+    specPermutations
+    specField @Fr
+    specField @Fq
+    specField @Fq2
+    specField @Fq6
+    specField @Fq12
+    specAdditiveGroup @(Point BLS12_381_G1)
+    specAdditiveGroup @(Point BLS12_381_G2)
+    specPairing @BLS12_381_G1 @BLS12_381_G2
+    specUnivariate
+    specMultiplication
 
-    -- specNonInteractiveProof @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) 32)
-    -- specPlonk
-    -- specNonInteractiveProof @PlonkBS
+    specNonInteractiveProof @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) 32)
+    specPlonk
+    specNonInteractiveProof @PlonkBS
 
     putStrLn "\nAll tests passed!"
