@@ -1,9 +1,9 @@
 module ZkFold.Symbolic.Data.Compare where
 
-import Numeric.Natural (Natural)
+import           Numeric.Natural                 (Natural)
 
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Symbolic.Types (Symbolic', SymbolicData')
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Types           (Symbolic', SymbolicData')
 
 newtype Bool a = Bool a
 
