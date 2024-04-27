@@ -2,7 +2,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Algebra.Basic.Prime (
-    Prime, KnownPrime, IsPrime, Divides
+    Prime, KnownPrime, IsPrime
 ) where
 
 import           Data.Kind
@@ -28,12 +28,14 @@ type family IsPrime p where
   IsPrime 3 = 'True
   IsPrime n = NotDivides n 2 (Sqrt n)
 
-type Divides dividend divisor = Mod dividend divisor <=? 0
+type family NotZero n where
+  NotZero 0 = 'False
+  NotZero n = 'True
 
 type family NotDivides dividend divisor0 divisor1 where
-  NotDivides dividend divisor divisor = Not (Divides dividend divisor)
+  NotDivides dividend divisor divisor = NotZero (Mod dividend divisor)
   NotDivides dividend divisor0 divisor1 =
-    Not (Divides dividend divisor0) && NotDivides dividend (divisor0 + 1) divisor1
+    NotZero (Mod dividend divisor0) && NotDivides dividend (divisor0 + 1) divisor1
 
 type family Sqrt n where
   Sqrt 0 = 0
