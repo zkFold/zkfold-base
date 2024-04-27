@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE DeriveAnyClass               #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables          #-}
@@ -24,7 +23,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate
 -- | Only for testing DFT with smaller numbers which can be easily calculated by hand for cross-check.
 -- DFT of a polynomial of length n requires calculating primitive roots of unity of order n.
 -- Choosing 257 allows us to calculate DFT of polynomials of length up to 256 as all these numbers divide 257 - 1.
-instance Prime 257
+type TestPrime = 257
 
 -- | Generate random polynomials of given size
 --
@@ -63,6 +62,6 @@ main = do
       putStrLn $ "DFT\t\t"     <> show (ref == p1 `mulPolyDft` p2)
   defaultMain
       [ bgroup "Field with roots of unity"           $ flip fmap sizes $ \s -> benchOps @BLS12_381_Scalar s ops
-      , bgroup "Field with roots of unity up to 256" $ flip fmap sizes $ \s -> benchOps @257 s $ tail ops
+      , bgroup "Field with roots of unity up to 256" $ flip fmap sizes $ \s -> benchOps @TestPrime s $ tail ops
       , bgroup "Field without roots of unity"        $ flip fmap sizes $ \s -> benchOps @BLS12_381_Base s $ tail ops
       ]

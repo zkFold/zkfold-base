@@ -5,8 +5,7 @@ module ZkFold.Base.Algebra.Basic.Number (KnownNat, Prime, value, type (*), type 
 
 import           Data.Data    (Proxy (Proxy))
 import           GHC.TypeNats (KnownNat, Natural, natVal, type (*), type (+), type (-), type (^))
-
-class KnownNat p => Prime p
+import           ZkFold.Base.Algebra.Basic.Prime (Prime)
 
 value :: forall n . KnownNat n => Natural
 value = natVal (Proxy @n)
