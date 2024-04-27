@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Algebra.Basic.Number (KnownNat, Prime, KnownPrime, IsPrime, value, type (*), type (+), type (-), type (^)) where
+module ZkFold.Base.Algebra.Basic.Number (KnownNat, Prime, KnownPrime, IsPrime, AtLeastSqrt, value, type (*), type (+), type (-), type (^)) where
 
 
 import           Data.Kind      (Constraint)
@@ -14,6 +14,7 @@ import           GHC.TypeLits   (ErrorMessage (..), TypeError)
 import           GHC.TypeNats
 import           Prelude        (Bool (..))
 
+-- Use orphan instances for large publicly verified primes
 class KnownNat p => Prime p
 
 value :: forall n . KnownNat n => Natural
@@ -33,17 +34,17 @@ type family IsPrime p where
   IsPrime 1 = 'False
   IsPrime 2 = 'True
   IsPrime 3 = 'True
-  IsPrime n = NotDivides n 2 (Sqrt n)
+  IsPrime n = NotDividesFromTo n 2 (AtLeastSqrt n)
 
 type family NotZero n where
   NotZero 0 = 'False
   NotZero n = 'True
 
-type family NotDivides dividend divisor0 divisor1 where
-  NotDivides dividend divisor divisor = NotZero (Mod dividend divisor)
-  NotDivides dividend divisor0 divisor1 =
-    NotZero (Mod dividend divisor0) && NotDivides dividend (divisor0 + 1) divisor1
+type family NotDividesFromTo dividend divisor0 divisor1 where
+  NotDividesFromTo dividend divisor divisor = NotZero (dividend `Mod` divisor)
+  NotDividesFromTo dividend divisor0 divisor1 =
+    NotZero (dividend `Mod` divisor0) && NotDividesFromTo dividend (divisor0 + 1) divisor1
 
-type family Sqrt n where
-  Sqrt 0 = 0
-  Sqrt n = 2 ^ (Log2 n `Div` 2)
+type family AtLeastSqrt n where
+  AtLeastSqrt 0 = 0
+  AtLeastSqrt n = 2 ^ (Log2 n `Div` 2 + 1)
