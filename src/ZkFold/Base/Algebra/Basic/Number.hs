@@ -17,10 +17,10 @@ import           Prelude        (Bool (..))
 value :: forall n . KnownNat n => Natural
 value = natVal' (proxy# @n)
 
-class KnownNat p => Prime p where
+class KnownNat p => Prime p
 
 -- Use this overlappable instance for small enough primes and testing
-instance {-# OVERLAPPABLE #-} (KnownNat p, KnownPrime p) => Prime p where
+instance {-# OVERLAPPABLE #-} (KnownNat p, KnownPrime p) => Prime p
 
 type family KnownPrime p where
   KnownPrime p = If (IsPrime p) (() :: Constraint) (TypeError (NotPrimeError p))
