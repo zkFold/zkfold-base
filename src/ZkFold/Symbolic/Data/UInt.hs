@@ -113,6 +113,10 @@ instance (KnownNat p, KnownNat n) => Alg.MultiplicativeSemigroup (Zp p) (UInt n)
 instance (KnownNat p, KnownNat n) => Alg.MultiplicativeMonoid (Zp p) (UInt n) where
     one = Alg.fromNatural 1
 
+instance (KnownNat p, KnownNat n) => Alg.Semiring (Zp p) (UInt n)
+
+instance (KnownNat p, KnownNat n) => Alg.Ring (Zp p) (UInt n)
+
 instance (KnownNat p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
     arbitrary = UInt
         <$> V.replicateM (Haskell.fromIntegral (numberOfRegisters @(Zp p) @n -! 1)) (toss $ registerSize @(Zp p) @n)

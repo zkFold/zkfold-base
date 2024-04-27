@@ -56,14 +56,15 @@ absPair n x =
     then (Prelude.fromIntegral n, x)
     else (Prelude.fromIntegral (Prelude.negate n), negate x)
 
-type Semiring a u = (MultiplicativeMonoid a u, AdditiveMonoid a u, Algebra.FromConstant Natural (u a))
-type Ring a u = (Semiring a u, AdditiveGroup a u, Algebra.FromConstant Integer (u a))
+class (MultiplicativeMonoid a u, AdditiveMonoid a u) => Semiring a u where
+  fromNatural :: Natural -> u a
+  default fromNatural :: Algebra.FromConstant Natural (u a) => Natural -> u a
+  fromNatural = Algebra.fromConstant
 
-fromNatural :: Algebra.FromConstant Natural a => Natural -> a
-fromNatural = Algebra.fromConstant
-
-fromInteger :: Algebra.FromConstant Integer a => Integer -> a
-fromInteger = Algebra.fromConstant
+class (Semiring a u, AdditiveGroup a u) => Ring a u where
+  fromInteger :: Integer -> u a
+  default fromInteger :: Algebra.FromConstant Integer (u a) => Integer -> u a
+  fromInteger = Algebra.fromConstant
 
 instance Algebra.MultiplicativeSemigroup a
   => MultiplicativeSemigroup a Identity where
