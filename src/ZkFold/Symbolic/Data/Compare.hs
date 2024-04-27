@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveAnyClass, UndecidableInstances #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Compare where
 
@@ -6,7 +7,7 @@ import           Data.Distributive               (Distributive (..))
 import           Data.Functor.Rep
 import           GHC.Generics                    (Generic1)
 import           Numeric.Natural                 (Natural)
-import           Prelude                         (Functor, Foldable (..), Traversable, Integer)
+import           Prelude                         (Foldable (..), Functor, Integer, Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Types           (Symbolic', SymbolicData')
