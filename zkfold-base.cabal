@@ -143,6 +143,7 @@ library
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Combinators
+      ZkFold.Symbolic.Data.Compare
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Eq

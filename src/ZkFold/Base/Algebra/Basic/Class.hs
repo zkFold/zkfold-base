@@ -8,6 +8,7 @@ module ZkFold.Base.Algebra.Basic.Class where
 
 import           Control.Arrow                    ((***))
 import           Control.Monad.State              (runState, state)
+import           Data.Bool                        (bool)
 import           Data.Functor.Identity            (Identity (..))
 import           Data.Functor.Rep
 import           Data.Kind                        (Type)
@@ -342,6 +343,53 @@ type FiniteMultiplicativeGroup a = (Finite a, MultiplicativeGroup a)
 type FiniteField a = (Finite a, Field a)
 
 type PrimeField a = (FiniteField a, Prime (Order a))
+
+class Field a => DiscreteField' a where
+    eq :: a -> a -> a
+    default eq :: Eq a => a -> a -> a
+    eq a b = bool zero one (a == b)
+
+    neq :: a -> a -> a
+    default neq :: Eq a => a -> a -> a
+    neq a b = bool zero one (a /= b)
+
+    isZ :: a -> a
+    isZ = eq zero
+
+    isn'tZ :: a -> a
+    isn'tZ = neq zero
+
+class DiscreteField' a => Trichotomy a where
+    trichotomy :: a -> a -> a
+    default trichotomy :: Ord a => a -> a -> a
+    trichotomy a b = case compare a b of
+        LT -> negate one
+        EQ -> zero
+        GT -> one
+
+    triLeq :: a -> a -> a
+    default triLeq :: Ord a => a -> a -> a
+    triLeq a b = bool zero one (a <= b)
+
+    triGeq :: a -> a -> a
+    default triGeq :: Ord a => a -> a -> a
+    triGeq a b = bool zero one (a >= b)
+
+    triLe :: a -> a -> a
+    default triLe :: Ord a => a -> a -> a
+    triLe a b = bool zero one (a < b)
+
+    triGe :: a -> a -> a
+    default triGe :: Ord a => a -> a -> a
+    triGe a b = bool zero one (a > b)
+
+    triMax :: a -> a -> a
+    default triMax :: Ord a => a -> a -> a
+    triMax = max
+
+    triMin :: a -> a -> a
+    default triMin :: Ord a => a -> a -> a
+    triMin = min
 
 --------------------------------------------------------------------------------
 
