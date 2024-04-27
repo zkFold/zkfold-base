@@ -345,19 +345,13 @@ type FiniteField a = (Finite a, Field a)
 type PrimeField a = (FiniteField a, Prime (Order a))
 
 class Field a => DiscreteField' a where
-    eq :: a -> a -> a
-    default eq :: Eq a => a -> a -> a
-    eq a b = bool zero one (a == b)
+    diEq :: a -> a -> a
+    default diEq :: Eq a => a -> a -> a
+    diEq a b = bool zero one (a == b)
 
-    neq :: a -> a -> a
-    default neq :: Eq a => a -> a -> a
-    neq a b = bool zero one (a /= b)
-
-    isZ :: a -> a
-    isZ = eq zero
-
-    isn'tZ :: a -> a
-    isn'tZ = neq zero
+    diNeq :: a -> a -> a
+    default diNeq :: Eq a => a -> a -> a
+    diNeq a b = bool zero one (a /= b)
 
 class DiscreteField' a => Trichotomy a where
     trichotomy :: a -> a -> a
@@ -677,6 +671,24 @@ instance (Representable v, Traversable v, Random a) => Random (Representably v a
 instance (Arbitrary a, Representable v, Traversable v)
   => Arbitrary (Representably v a) where
     arbitrary = sequenceA (Representably (pureRep arbitrary))
+
+-- Linearly via vector space
+newtype Linearly v (a :: Type) = Linearly
+  { runLinearly :: v a }
+instance VectorSpace a v
+  => AdditiveSemigroup (Linearly v a) where
+    Linearly a + Linearly b =
+        Linearly (zipWithV (+) a b)
+instance VectorSpace a v
+  => AdditiveMonoid (Linearly v a) where
+    zero = Linearly (pureV zero)
+instance VectorSpace a v
+  => AdditiveGroup (Linearly v a) where
+    Linearly a - Linearly b =
+        Linearly (zipWithV (-) a b)
+instance (Scale b a, VectorSpace a v)
+  => Scale b (Linearly v a) where
+    scale b (Linearly v) = Linearly (mapV (scale b) v)
 
 -- zero dimensional vector space
 deriving via Representably U1 instance Field a => VectorSpace a U1

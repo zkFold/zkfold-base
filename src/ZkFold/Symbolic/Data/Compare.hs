@@ -1,6 +1,7 @@
 module ZkFold.Symbolic.Data.Compare where
 
 import           Numeric.Natural                 (Natural)
+import           Prelude                         (Foldable (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Types           (Symbolic', SymbolicData')
@@ -35,6 +36,12 @@ ifThenElse b t f = bool f t b
 class Eq a u where
   (==) :: u a -> u a -> Bool a
   (/=) :: u a -> u a -> Bool a
+
+-- structural equality
+instance (DiscreteField' a, VectorSpace a u, Foldable u)
+  => Eq a (Linearly u) where
+    Linearly a == Linearly b = Bool (foldl (*) one (zipWithV diEq a b))
+    Linearly a /= Linearly b = Bool (one - foldl (*) one (zipWithV diEq a b))
 
 newtype Ordering a = Ordering a
 
