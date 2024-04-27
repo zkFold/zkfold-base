@@ -1,12 +1,31 @@
+{-# LANGUAGE DeriveAnyClass, UndecidableInstances #-}
+
 module ZkFold.Symbolic.Data.Compare where
 
+import           Data.Distributive               (Distributive (..))
+import           Data.Functor.Rep
+import           GHC.Generics                    (Generic1)
 import           Numeric.Natural                 (Natural)
-import           Prelude                         (Foldable (..))
+import           Prelude                         (Functor, Foldable (..), Traversable, Integer)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Types           (Symbolic', SymbolicData')
 
 newtype Bool a = Bool a
+  deriving stock (Generic1, Functor, Foldable, Traversable)
+  deriving anyclass Representable
+instance Distributive Bool where
+  distribute = distributeRep
+  collect = collectRep
+deriving via Representably Bool instance Field a => VectorSpace a Bool
+deriving via Representably Bool a instance Field a => AdditiveSemigroup (Bool a)
+deriving via Representably Bool a instance Field a => AdditiveMonoid (Bool a)
+deriving via Representably Bool a instance Field a => AdditiveGroup (Bool a)
+deriving via Representably Bool a instance Field a => Scale Natural (Bool a)
+deriving via Representably Bool a instance Field a => Scale Integer (Bool a)
+deriving via Representably Bool a instance Field a => Scale a (Bool a)
+deriving via Linearly Bool instance DiscreteField' a => Eq a Bool
+-- deriving via Linearly Bool instance Trichotomy a => Ord a Bool
 
 false :: Symbolic' a => Bool a
 false = Bool zero

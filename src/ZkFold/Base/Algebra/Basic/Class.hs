@@ -9,6 +9,7 @@ module ZkFold.Base.Algebra.Basic.Class where
 import           Control.Arrow                    ((***))
 import           Control.Monad.State              (runState, state)
 import           Data.Bool                        (bool)
+import           Data.Distributive
 import           Data.Functor.Identity            (Identity (..))
 import           Data.Functor.Rep
 import           Data.Kind                        (Type)
@@ -645,6 +646,10 @@ instance (Representable v, AdditiveGroup a)
 instance (Representable v, Scale b a)
   => Scale b (Representably v a) where
     scale b (Representably v) = Representably (fmapRep (scale b) v)
+
+instance Representable v => Distributive (Representably v) where
+  distribute = Representably . distribute . fmap runRepresentably
+  collect f = Representably . (collect (runRepresentably . f))
 
 instance Representable v => Functor (Representably v) where
   fmap f = Representably . fmapRep f . runRepresentably
