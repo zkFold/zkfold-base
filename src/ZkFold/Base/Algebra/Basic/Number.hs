@@ -1,18 +1,18 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE MagicHash           #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE MagicHash            #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Algebra.Basic.Number (KnownNat, Prime, value, type (*), type (+), type (-), type (^)) where
 
 
-import           Data.Kind                       (Constraint)
-import           Data.Type.Bool                  (If, type (&&))
-import           GHC.Exts                        (proxy#)
-import           GHC.TypeLits                    (TypeError, ErrorMessage (..))
+import           Data.Kind      (Constraint)
+import           Data.Type.Bool (If, type (&&))
+import           GHC.Exts       (proxy#)
+import           GHC.TypeLits   (ErrorMessage (..), TypeError)
 import           GHC.TypeNats
-import           Prelude                         (Bool (..))
+import           Prelude        (Bool (..))
 
 value :: forall n . KnownNat n => Natural
 value = natVal' (proxy# @n)
