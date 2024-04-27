@@ -1,14 +1,14 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Algebra.Basic.Prime (
     Prime, KnownPrime, IsPrime, Divides
 ) where
 
-import GHC.TypeLits
-import Data.Kind
-import Data.Type.Bool
-import Prelude
+import           Data.Kind
+import           Data.Type.Bool
+import           GHC.TypeLits
+import           Prelude
 
 class KnownNat p => Prime p where
 
