@@ -90,8 +90,11 @@ jobs:
         cabal build zkfold-base-test
         cabal build zkfold-base-examples
 
-    # - name: Test
-    #   run: cabal test all
+    - name: Test
+      run: |
+        cabal test zkfold-base
+        cabal test zkfold-base-test
+        cabal test zkfold-base-examples
 
     # - name: Check cabal file
     #   run: cabal check
