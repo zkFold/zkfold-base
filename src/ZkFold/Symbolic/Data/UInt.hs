@@ -27,6 +27,7 @@ import           Test.QuickCheck                                           (Arbi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp)
+import           ZkFold.Base.Algebra.Basic.Number                          (Prime)
 import           ZkFold.Prelude                                            (length, splitAt)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
@@ -257,6 +258,10 @@ instance (Arithmetic a, KnownNat n) => Alg.MultiplicativeSemigroup (ArithmeticCi
 instance (Arithmetic a, KnownNat n) => Alg.MultiplicativeMonoid (ArithmeticCircuit a) (UInt n) where
     one | numberOfRegisters @a @n Haskell.== 1 = UInt V.empty one
         | otherwise = UInt (one `V.cons` V.replicate (Haskell.fromIntegral (numberOfRegisters @a @n -! 2)) zero) zero
+
+instance (KnownNat p, Prime p, KnownNat n) => Alg.Semiring (ArithmeticCircuit (Zp p)) (UInt n)
+
+instance (KnownNat p, Prime p, KnownNat n) => Alg.Ring (ArithmeticCircuit (Zp p)) (UInt n)
 
 --------------------------------------------------------------------------------
 
