@@ -6,7 +6,7 @@ import           Data.Distributive               (Distributive (..))
 import           Data.Functor.Rep
 import           GHC.Generics                    (Generic1)
 import           Numeric.Natural                 (Natural)
-import           Prelude                         (Functor, Foldable (..), Traversable, Integer)
+import           Prelude                         (Functor, Foldable (..), Traversable, Integer, undefined)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Types           (Symbolic', SymbolicData')
@@ -14,18 +14,24 @@ import           ZkFold.Symbolic.Types           (Symbolic', SymbolicData')
 newtype Bool a = Bool a
   deriving stock (Generic1, Functor, Foldable, Traversable)
   deriving anyclass Representable
+
 instance Distributive Bool where
   distribute = distributeRep
   collect = collectRep
-deriving via Representably Bool instance Field a => VectorSpace a Bool
-deriving via Representably Bool a instance Field a => AdditiveSemigroup (Bool a)
-deriving via Representably Bool a instance Field a => AdditiveMonoid (Bool a)
-deriving via Representably Bool a instance Field a => AdditiveGroup (Bool a)
-deriving via Representably Bool a instance Field a => Scale Natural (Bool a)
-deriving via Representably Bool a instance Field a => Scale Integer (Bool a)
-deriving via Representably Bool a instance Field a => Scale a (Bool a)
-deriving via Linearly Bool instance DiscreteField' a => Eq a Bool
--- deriving via Linearly Bool instance Trichotomy a => Ord a Bool
+deriving via Representably Bool instance
+  Field a => VectorSpace a Bool
+deriving via Representably Bool a instance
+  AdditiveSemigroup a => AdditiveSemigroup (Bool a)
+deriving via Representably Bool a instance
+  AdditiveMonoid a => AdditiveMonoid (Bool a)
+deriving via Representably Bool a instance
+  AdditiveGroup a => AdditiveGroup (Bool a)
+deriving via Representably Bool a instance
+  Scale Natural a => Scale Natural (Bool a)
+deriving via Representably Bool a instance
+  Scale Integer a => Scale Integer (Bool a)
+deriving via Representably Bool a instance
+  MultiplicativeMonoid a => Scale a (Bool a)
 
 false :: Symbolic' a => Bool a
 false = Bool zero
@@ -52,15 +58,9 @@ ifThenElse, (?) :: SymbolicData' a u => Bool a -> u a -> u a -> u a
 ifThenElse b t f = bool f t b
 (?) = ifThenElse
 
-class Eq a u where
-  (==) :: u a -> u a -> Bool a
-  (/=) :: u a -> u a -> Bool a
-
 -- structural equality
-instance (DiscreteField' a, VectorSpace a u, Foldable u)
-  => Eq a (Linearly u) where
-    Linearly a == Linearly b = Bool (foldl (*) one (zipWithV diEq a b))
-    Linearly a /= Linearly b = Bool (one - foldl (*) one (zipWithV diEq a b))
+(===) :: (SymbolicData' a u, Foldable u) => u a -> u a -> Bool a
+a === b = Bool (foldl (*) one (zipWithV diEq a b))
 
 newtype Ordering a = Ordering a
 
@@ -73,11 +73,25 @@ eq = Ordering zero
 ge :: Symbolic' a => Ordering a
 ge = Ordering one
 
-class Ord a u where
-  compare :: u a -> u a -> Ordering a
-  (<=) :: u a -> u a -> Bool a
-  (>=) :: u a -> u a -> Bool a
-  (<) :: u a -> u a -> Bool a
-  (>) :: u a -> u a -> Bool a
-  min :: u a -> u a -> u a
-  max :: u a -> u a -> u a
+-- lexicographical ordering ???
+compare
+  :: (SymbolicData' a u, Foldable u)
+  => u a -> u a -> Ordering a
+compare = undefined
+  -- as bs =
+    -- let cs = zipWithV trichotomy as bs
+    -- in Ordering (foldl triMin zero cs)
+
+(<=), (>=), (<), (>)
+  :: (SymbolicData' a u, Foldable u)
+  => u a -> u a -> Bool a
+(<=) = undefined
+(>=) = undefined
+(<) = undefined
+(>) = undefined
+
+min, max
+  :: (SymbolicData' a u, Foldable u)
+  => u a -> u a -> u a
+min = undefined
+max = undefined
