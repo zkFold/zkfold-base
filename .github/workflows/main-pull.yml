@@ -92,7 +92,6 @@ jobs:
 
     - name: Test
       run: |
-        cabal test zkfold-base
         cabal test zkfold-base-test
         cabal test zkfold-base-examples
 
