@@ -14,10 +14,10 @@ import           GHC.TypeLits   (ErrorMessage (..), TypeError)
 import           GHC.TypeNats
 import           Prelude        (Bool (..))
 
+class KnownNat p => Prime p
+
 value :: forall n . KnownNat n => Natural
 value = natVal' (proxy# @n)
-
-class KnownNat p => Prime p
 
 -- Use this overlappable instance for small enough primes and testing
 instance {-# OVERLAPPABLE #-} (KnownNat p, KnownPrime p) => Prime p
