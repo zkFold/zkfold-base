@@ -2,7 +2,8 @@
 
 module Examples.MiMCHash (exampleMiMC) where
 
-import           Prelude                                        hiding (Eq (..), Num (..), any, not, (!!), (/), (^), (||))
+import           Prelude                                        hiding (Eq (..), Num (..), any, not, (!!), (/), (^),
+                                                                 (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                (Zp)

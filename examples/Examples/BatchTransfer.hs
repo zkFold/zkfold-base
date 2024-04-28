@@ -2,7 +2,8 @@
 
 module Examples.BatchTransfer (exampleBatchTransfer) where
 
-import           Prelude                                         hiding (Eq (..), Num (..), any, not, (!!), (/), (^), (||))
+import           Prelude                                         hiding (Eq (..), Num (..), any, not, (!!), (/), (^),
+                                                                  (||))
 
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381     (BLS12_381_Scalar)
