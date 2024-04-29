@@ -63,7 +63,7 @@ batchTransfer tx transfers =
         outputs = zip [0..] . init . fromVector $ txOutputs tx
 
         -- Extract the payments from the transaction and validate them
-         payments   = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> even @Integer i) $ outputs
+        payments   = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> even @Integer i) $ outputs
 
         condition2 = all (\(p', (p, _, _)) -> p' == p) $ zip payments transfers
 
