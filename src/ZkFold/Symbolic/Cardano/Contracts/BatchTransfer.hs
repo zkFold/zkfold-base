@@ -60,13 +60,15 @@ batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures
         pkhs       = fromJust $ toVector @5 $ map (paymentCredential . txoAddress . txiOutput) $ init $ fromVector $ txInputs tx
         condition1 = all (\(pkh, (payment, change, signature)) -> verifySignature pkh (payment, change) signature) $ zip pkhs transfers
+        outputs = zip [0..] . init . fromVector $ txOutputs tx
 
         -- Extract the payments from the transaction and validate them
-        payments   = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> even @Integer i) $ zip [0..] (init $ fromVector $ txOutputs tx)
+         payments   = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> even @Integer i) $ outputs
+
         condition2 = all (\(p', (p, _, _)) -> p' == p) $ zip payments transfers
 
         -- Extract the changes from the transaction and validate them
-        changes    = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> odd @Integer i) $ zip [0..] (init $ fromVector $ txOutputs tx)
+        changes    = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> odd @Integer i) $ outputs
         condition3 = all (\(c', (_, c, _)) -> c' == c) $ zip changes transfers
 
     in condition1 && condition2 && condition3
