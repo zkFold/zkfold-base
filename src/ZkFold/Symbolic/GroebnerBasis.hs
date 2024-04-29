@@ -35,7 +35,7 @@ import           ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
 import           ZkFold.Symbolic.GroebnerBasis.Internal.Types
 import           ZkFold.Symbolic.GroebnerBasis.Types
 
-boundVariables :: forall p . Prime p => Polynomial p -> [Polynomial p] -> Polynomial p
+boundVariables :: forall p . PrimeField (Zp p) => Polynomial p -> [Polynomial p] -> Polynomial p
 boundVariables p ps = foldr (makeBound . findVar) p $ zip [0..] ps
     where
         findVar :: (Natural, Polynomial p) -> (Natural, Variable p)
@@ -68,7 +68,7 @@ variableTypes = nub . sortBy (\(x1, _) (x2, _) -> compare x2 x1) . concatMap var
         variableTypes'' :: Monomial p -> [(Monomial p, VarType)]
         variableTypes'' (M _ as) = map (\(j, v) -> (M one (singleton j (setPower 1 v)), getVarType v)) $ toList as
 
-makeTheorem :: forall p . Prime p => ArithmeticCircuit (Zp p) -> (Polynomial p, [Polynomial p])
+makeTheorem :: forall p . PrimeField (Zp p) => ArithmeticCircuit (Zp p) -> (Polynomial p, [Polynomial p])
 makeTheorem r = (boundVariables p0 ps, --systemReduce $
         map (`boundVariables` ps) ps)
     where
@@ -100,10 +100,10 @@ makeTheorem r = (boundVariables p0 ps, --systemReduce $
 groebnerStepMax :: Integer
 groebnerStepMax = 200
 
-verify :: forall p . Prime p => (Polynomial p, [Polynomial p]) -> Bool
+verify :: forall p . PrimeField (Zp p) => (Polynomial p, [Polynomial p]) -> Bool
 verify (p0, ps) = zeroP $ fst $ foldl (\args _ -> uncurry groebnerStep args) (p0, ps) [1..groebnerStepMax]
 
-groebner :: forall p . Prime p => [Polynomial p] -> [Polynomial p]
+groebner :: forall p . PrimeField (Zp p) => [Polynomial p] -> [Polynomial p]
 groebner ps = snd $ foldl (\args _ -> uncurry groebnerStep args) (p, ps) [1..groebnerStepMax]
     where p = polynomial [lt $ head ps, monomial (negate one) empty]
 

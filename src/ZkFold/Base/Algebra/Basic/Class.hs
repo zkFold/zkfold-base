@@ -319,14 +319,16 @@ intPowF a n | n < 0     = finv a ^ naturalFromInteger (-n)
 {- | Class of finite structures. @Order a@ should be the actual number of
 elements in the type, identified up to the associated equality relation.
 -}
-class KnownNat (Order a) => Finite (a :: Type) where
+class (KnownNat (Order a), KnownNat (NumberOfBits a)) => Finite (a :: Type) where
     type Order a :: Natural
 
 order :: forall a . Finite a => Natural
 order = value @(Order a)
 
-numberOfBits :: forall a . Finite a => Natural
-numberOfBits = ceiling $ logBase @Double 2 $ Haskell.fromIntegral $ order @a
+type NumberOfBits a = Log2 (Order a - 1) + 1
+
+numberOfBits :: forall a . KnownNat (NumberOfBits a) => Natural
+numberOfBits = value @(NumberOfBits a)
 
 type FiniteAdditiveGroup a = (Finite a, AdditiveGroup a)
 
@@ -376,7 +378,8 @@ instance Field a => MultiplicativeGroup (NonZero a) where
     invert (NonZero x) = NonZero (finv x)
     NonZero x / NonZero y = NonZero (x // y)
 
-instance KnownNat (Order (NonZero a)) => Finite (NonZero a) where
+instance (KnownNat (Order (NonZero a)), KnownNat (NumberOfBits (NonZero a)))
+    => Finite (NonZero a) where
     type Order (NonZero a) = Order a - 1
 
 --------------------------------------------------------------------------------
