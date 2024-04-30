@@ -18,16 +18,15 @@ module ZkFold.Symbolic.GroebnerBasis (
 
 import           Data.Bool                                        (bool)
 import           Data.List                                        (nub, sortBy)
-import           Data.Map                                         (Map, elems, empty, fromList, keys, mapWithKey,
-                                                                   singleton, toList)
+import           Data.Map                                         (Map, elems, empty, keys, mapWithKey, singleton)
 import           Data.Maybe                                       (mapMaybe)
+import           GHC.IsList                                       (IsList (..))
 import           Numeric.Natural                                  (Natural)
 import           Prelude                                          hiding (Num (..), length, replicate, (!!))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                  (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                 (Prime)
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate     as Poly
 import           ZkFold.Prelude                                   ((!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.GroebnerBasis.Internal
@@ -87,10 +86,10 @@ makeTheorem r = (boundVariables p0 ps, --systemReduce $
                 Nothing -> error $ "mapVars: variable " ++ show x ++ " not found!"
 
         convert :: Constraint (Zp p) -> Polynomial p
-        convert (Poly.P ms) = polynomial $ map convert' ms
+        convert ms = polynomial $ convert' <$> toList ms
             where
-                convert' :: (Zp p, Poly.M Natural Natural (Map Natural Natural)) -> Monomial p
-                convert' (c, Poly.M as) = M c $ fromList $ mapMaybe convert'' $ toList as
+                convert' :: (Zp p, Map Natural Natural) -> Monomial p
+                convert' (c, as) = M c . fromList . mapMaybe convert'' . toList $ as
                     where
                         convert'' :: (Natural, Natural) -> Maybe (Natural, Variable p)
                         convert'' (j, i) =
