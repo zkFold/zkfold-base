@@ -166,6 +166,10 @@ instance KnownNat p => Random (Zp p) where
 instance (KnownNat p, MultiplicativeGroup a, Order a ~ p) => Exponent a (Zp p) where
     a ^ n = a ^ fromZp n
 
+instance Prime p => DiscreteField' (Zp p)
+
+instance Prime p => Trichotomy (Zp p)
+
 ----------------------------- Field Extensions --------------------------------
 
 class IrreduciblePoly f (e :: Symbol) | e -> f where

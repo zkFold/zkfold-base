@@ -10,7 +10,7 @@ import           Numeric.Natural                 (Natural)
 import           Prelude                         (Foldable (..), Functor, Integer, Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Types           (Symbolic', SymbolicData')
+import           ZkFold.Symbolic.Types2          (Symbolic', SymbolicData')
 
 newtype Bool a = Bool a
   deriving stock (Generic1, Functor, Foldable, Traversable)

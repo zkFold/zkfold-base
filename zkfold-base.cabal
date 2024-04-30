@@ -157,6 +157,7 @@ library
       ZkFold.Symbolic.GroebnerBasis.Internal.Types
       ZkFold.Symbolic.GroebnerBasis.Types
       ZkFold.Symbolic.Types
+      ZkFold.Symbolic.Types2
     build-depends:
       base                          >= 4.9 && < 5,
       adjunctions                           < 4.5,
