@@ -7,7 +7,7 @@ import           Data.Distributive               (Distributive (..))
 import           Data.Functor.Rep
 import           GHC.Generics                    (Generic1)
 import           Numeric.Natural                 (Natural)
-import           Prelude                         (Foldable (..), Functor, Integer, Traversable, undefined)
+import           Prelude                         (Foldable (..), Functor, Integer, Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Types           (Symbolic', SymbolicData')
@@ -33,6 +33,7 @@ deriving via Representably Bool a instance
   Scale Integer a => Scale Integer (Bool a)
 deriving via Representably Bool a instance
   MultiplicativeMonoid a => Scale a (Bool a)
+instance Symbolic' a => Eq a Bool
 
 false :: Symbolic' a => Bool a
 false = Bool zero
@@ -59,40 +60,59 @@ ifThenElse, (?) :: SymbolicData' a u => Bool a -> u a -> u a -> u a
 ifThenElse b t f = bool f t b
 (?) = ifThenElse
 
--- structural equality
-(===) :: (SymbolicData' a u, Foldable u) => u a -> u a -> Bool a
-a === b = Bool (foldl (*) one (zipWithV diEq a b))
+class SymbolicData' a u => Eq a u where
+  (==) :: u a -> u a -> Bool a
+  default (==) :: Foldable u => u a -> u a -> Bool a
+  u == v = Bool (foldl (*) one (zipWithV equal u v))
+
+(/=) :: Eq a u => u a -> u a -> Bool a
+x /= y = not (x == y)
 
 newtype Ordering a = Ordering a
+  deriving stock (Generic1, Functor, Foldable, Traversable)
+  deriving anyclass Representable
 
-le :: Symbolic' a => Ordering a
-le = Ordering (negate one)
+instance Distributive Ordering where
+  distribute = distributeRep
+  collect = collectRep
+deriving via Representably Ordering instance
+  Field a => VectorSpace a Ordering
+deriving via Representably Ordering a instance
+  AdditiveSemigroup a => AdditiveSemigroup (Ordering a)
+deriving via Representably Ordering a instance
+  AdditiveMonoid a => AdditiveMonoid (Ordering a)
+deriving via Representably Ordering a instance
+  AdditiveGroup a => AdditiveGroup (Ordering a)
+deriving via Representably Ordering a instance
+  Scale Natural a => Scale Natural (Ordering a)
+deriving via Representably Ordering a instance
+  Scale Integer a => Scale Integer (Ordering a)
+deriving via Representably Ordering a instance
+  MultiplicativeMonoid a => Scale a (Ordering a)
+instance Symbolic' a => Eq a Ordering
+
+lt :: Symbolic' a => Ordering a
+lt = Ordering (negate one)
 
 eq :: Symbolic' a => Ordering a
 eq = Ordering zero
 
-ge :: Symbolic' a => Ordering a
-ge = Ordering one
+gt :: Symbolic' a => Ordering a
+gt = Ordering one
 
--- lexicographical ordering ???
-compare
-  :: (SymbolicData' a u, Foldable u)
-  => u a -> u a -> Ordering a
-compare = undefined
-  -- as bs =
-    -- let cs = zipWithV trichotomy as bs
-    -- in Ordering (foldl triMin zero cs)
+class SymbolicData' a u => Ord a u where
+  compare :: u a -> u a -> Ordering a
+  default compare :: Foldable u => u a -> u a -> Ordering a
+  compare u v =
+    let lexicographical x y = x * x * (x - y) + y
+    in Ordering (foldl lexicographical zero (zipWithV trichotomy u v))
 
-(<=), (>=), (<), (>)
-  :: (SymbolicData' a u, Foldable u)
-  => u a -> u a -> Bool a
-(<=) = undefined
-(>=) = undefined
-(<) = undefined
-(>) = undefined
+(<), (>), (<=), (>=) :: Ord a u => u a -> u a -> Bool a
+u < v = compare u v == lt
+u > v = compare u v == gt
+u <= v = not (u > v)
+u >= v = not (u < v)
 
-min, max
-  :: (SymbolicData' a u, Foldable u)
-  => u a -> u a -> u a
-min = undefined
-max = undefined
+min, max :: Ord a u => u a -> u a -> u a
+min u v = bool u v (u < v)
+max u v = bool u v (u > v)
