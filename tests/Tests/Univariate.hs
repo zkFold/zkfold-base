@@ -7,27 +7,29 @@
 
 module Tests.Univariate (specUnivariate) where
 
-import           Data.Bool                                  (bool)
-import           Data.Data                                  (typeOf)
-import           Data.List                                  ((\\))
-import qualified Data.Vector                                as V
-import qualified Data.Vector.Algorithms.Intro               as VA
-import           Numeric.Natural                            (Natural)
-import           Prelude                                    hiding (Fractional (..), Num (..), drop, length, take, (!!),
+import           Data.Bool                                   (bool)
+import           Data.Data                                   (typeOf)
+import           Data.List                                   ((\\))
+import qualified Data.Vector                                 as V
+import qualified Data.Vector.Algorithms.Intro                as VA
+import           Numeric.Natural                             (Natural)
+import           Prelude                                     hiding (Fractional (..), Num (..), drop, length, take, (!!),
                                                              (^))
-import           Prelude                                    (abs)
+import           Prelude                                     (abs)
 import           Test.Hspec
 import           Test.QuickCheck
-import           Tests.Plonk                                (PlonkMaxPolyDegreeBS, PlonkSizeBS)
+import           Tests.Plonk                                 (PlonkMaxPolyDegreeBS, PlonkSizeBS)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Protocol.ARK.Plonk             (F)
-import           ZkFold.Prelude                             (length, take)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1)
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (ScalarField)
+import           ZkFold.Prelude                              (length, take)
 
--- TODO (Issue #22): remove dependencies from KZG and Plonk
 -- TODO (Issue #22): make all tests polymorphic in the polynomial type
+
+type F = ScalarField BLS12_381_G1
 
 propToPolyVec :: forall c size . (Ring c, KnownNat size) => [c] -> Bool
 propToPolyVec cs =
