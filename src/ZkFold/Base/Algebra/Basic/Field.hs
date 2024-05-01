@@ -49,7 +49,7 @@ toZp = Zp . residue @p
 instance ToConstant (Zp p) Natural where
     toConstant = fromZp
 
-instance KnownNat p => Finite (Zp p) where
+instance (KnownNat p, KnownNat (NumberOfBits (Zp p))) => Finite (Zp p) where
     type Order (Zp p) = p
 
 instance KnownNat p => Eq (Zp p) where
@@ -100,7 +100,7 @@ instance Prime p => Exponent (Zp p) Integer where
 instance Prime p => Field (Zp p) where
     finv (Zp a) = toZp $ snd (f (a, 1) (p, 0))
       where
-        p = fromIntegral (order @(Zp p))
+        p = fromIntegral (value @p)
         f (x, y) (x', y')
             | x' == 0   = (x, y)
             | otherwise = f (x', y') (x - q * x', y - q * y')
@@ -147,7 +147,7 @@ instance FromJSON (Zp p) where
 deriving newtype instance Binary (Zp p)
 
 instance KnownNat p => Arbitrary (Zp p) where
-    arbitrary = toZp <$> chooseInteger (0, fromIntegral (order @(Zp p)) - 1)
+    arbitrary = toZp <$> chooseInteger (0, fromIntegral (value @p) - 1)
 
 instance KnownNat p => Random (Zp p) where
     randomR (Zp a, Zp b) g = (Zp r, g')
@@ -156,7 +156,7 @@ instance KnownNat p => Random (Zp p) where
 
     random g = (Zp r, g')
       where
-        (r, g') = randomR (0, fromIntegral (order @(Zp p)) - 1) g
+        (r, g') = randomR (0, fromIntegral (value @p) - 1) g
 
 -- | Exponentiation by an element of a finite field is well-defined (and lawful)
 -- if and only if the base is a finite multiplicative group of a matching order.
@@ -178,7 +178,7 @@ class IrreduciblePoly f (e :: Symbol) | e -> f where
 data Ext2 f (e :: Symbol) = Ext2 f f
     deriving (Eq, Show)
 
-instance KnownNat (Order (Ext2 f e)) => Finite (Ext2 f e) where
+instance (KnownNat (Order (Ext2 f e)), KnownNat (NumberOfBits (Ext2 f e))) => Finite (Ext2 f e) where
     type Order (Ext2 f e) = Order f ^ 2
 
 instance Field f => AdditiveSemigroup (Ext2 f e) where
@@ -236,7 +236,7 @@ instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext2 f 
 data Ext3 f (e :: Symbol) = Ext3 f f f
     deriving (Eq, Show)
 
-instance KnownNat (Order (Ext3 f e)) => Finite (Ext3 f e) where
+instance (KnownNat (Order (Ext3 f e)), KnownNat (NumberOfBits (Ext3 f e))) => Finite (Ext3 f e) where
     type Order (Ext3 f e) = Order f ^ 3
 
 instance Field f => AdditiveSemigroup (Ext3 f e) where

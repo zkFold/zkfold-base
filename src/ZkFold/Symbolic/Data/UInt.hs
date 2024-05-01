@@ -1,5 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
@@ -18,8 +21,7 @@ import           Data.Maybe                                                (Mayb
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
 import qualified Data.Vector                                               as V
-import           GHC.Natural                                               (naturalFromInteger)
-import           GHC.TypeNats                                              (KnownNat, Natural)
+import           GHC.Natural                                               (naturalFromInteger, Natural)
 import           Prelude                                                   (Integer, error, flip, otherwise, return,
                                                                             ($), (.), (>>=))
 import qualified Prelude                                                   as Haskell
@@ -27,13 +29,17 @@ import           Test.QuickCheck                                           (Arbi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp)
-import           ZkFold.Base.Algebra.Basic.Number                          (Prime)
 import           ZkFold.Prelude                                            (length, splitAt)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import qualified ZkFold.Symbolic.Data.Algebra                              as Alg
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Prelude                                            (take)
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Eq.Structural
 
 -- TODO (Issue #18): hide this constructor
 data UInt (n :: Natural) a = UInt !(V.Vector a) !a
@@ -91,34 +97,34 @@ cast n =
 
 --------------------------------------------------------------------------------
 
-instance (KnownNat p, KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
+instance (Finite (Zp p), KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
     toConstant (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs `V.snoc` x)
         where base = 2 ^ registerSize @(Zp p) @n
 
 toNatural :: ToConstant n Natural => n -> Natural
 toNatural = toConstant
 
-instance (KnownNat p, KnownNat n) => Alg.AdditiveSemigroup (Zp p) (UInt n) where
+instance (Finite (Zp p), KnownNat n) => Alg.AdditiveSemigroup (Zp p) (UInt n) where
     x + y = Alg.fromNatural $ toNatural x + toNatural y
 
-instance (KnownNat p, KnownNat n) => Alg.AdditiveMonoid (Zp p) (UInt n) where
+instance (Finite (Zp p), KnownNat n) => Alg.AdditiveMonoid (Zp p) (UInt n) where
     zero = Alg.fromNatural (0 :: Natural)
 
-instance (KnownNat p, KnownNat n) => Alg.AdditiveGroup (Zp p) (UInt n) where
+instance (Finite (Zp p), KnownNat n) => Alg.AdditiveGroup (Zp p) (UInt n) where
     x - y = Alg.fromNatural $ toNatural x + 2 ^ getNatural @n -! toNatural y
     negate x = Alg.fromNatural $ 2 ^ getNatural @n -! toNatural x
 
-instance (KnownNat p, KnownNat n) => Alg.MultiplicativeSemigroup (Zp p) (UInt n) where
+instance (Finite (Zp p), KnownNat n) => Alg.MultiplicativeSemigroup (Zp p) (UInt n) where
     x * y = Alg.fromNatural $ toNatural x * toNatural y
 
-instance (KnownNat p, KnownNat n) => Alg.MultiplicativeMonoid (Zp p) (UInt n) where
+instance (Finite (Zp p), KnownNat n) => Alg.MultiplicativeMonoid (Zp p) (UInt n) where
     one = Alg.fromNatural 1
 
-instance (KnownNat p, KnownNat n) => Alg.Semiring (Zp p) (UInt n)
+instance (Finite (Zp p), KnownNat n) => Alg.Semiring (Zp p) (UInt n)
 
-instance (KnownNat p, KnownNat n) => Alg.Ring (Zp p) (UInt n)
+instance (Finite (Zp p), KnownNat n) => Alg.Ring (Zp p) (UInt n)
 
-instance (KnownNat p, KnownNat n) => Arbitrary (UInt n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => Arbitrary (UInt n (Zp p)) where
     arbitrary = UInt
         <$> V.replicateM (Haskell.fromIntegral (numberOfRegisters @(Zp p) @n -! 1)) (toss $ registerSize @(Zp p) @n)
         <*> toss (highRegisterSize @(Zp p) @n)
@@ -259,9 +265,13 @@ instance (Arithmetic a, KnownNat n) => Alg.MultiplicativeMonoid (ArithmeticCircu
     one | numberOfRegisters @a @n Haskell.== 1 = UInt V.empty one
         | otherwise = UInt (one `V.cons` V.replicate (Haskell.fromIntegral (numberOfRegisters @a @n -! 2)) zero) zero
 
-instance (KnownNat p, Prime p, KnownNat n) => Alg.Semiring (ArithmeticCircuit (Zp p)) (UInt n)
+instance (PrimeField (Zp p), KnownNat n) => Alg.Semiring (ArithmeticCircuit (Zp p)) (UInt n)
 
-instance (KnownNat p, Prime p, KnownNat n) => Alg.Ring (ArithmeticCircuit (Zp p)) (UInt n)
+instance (PrimeField (Zp p), KnownNat n) => Alg.Ring (ArithmeticCircuit (Zp p)) (UInt n)
+
+deriving via (Structural (UInt n (ArithmeticCircuit a)))
+         instance (Arithmetic a, KnownNat n) =>
+         Eq (Bool (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a))
 
 --------------------------------------------------------------------------------
 
@@ -273,12 +283,38 @@ instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Str
         (x, []) -> x
         (_, _)  -> error "strictConv: overflow"
 
+instance (Finite (Zp p), KnownNat n) => StrictConv (Zp p) (UInt n (Zp p)) where
+    strictConv = strictConv . toConstant @_ @Natural
+
+instance (Arithmetic a, KnownNat n, KnownNat (NumberOfBits a), NumberOfBits a <= n) => StrictConv (ArithmeticCircuit a) (UInt n (ArithmeticCircuit a)) where
+    strictConv a =
+        let (lo, hi) = unsnoc $ take (numberOfRegisters @a @n) $
+                            flip unfoldr a $ Haskell.Just . expand
+         in UInt (V.fromList lo) hi
+        where
+            unsnoc []       = error "unsnoc: empty list"
+            unsnoc [x]      = ([], x)
+            unsnoc (x : xs) = let (ys, z) = unsnoc xs in (x : ys, z)
+
+            bitSize = numberOfBits @a
+            regSize = registerSize @a @n
+
+            expand :: ArithmeticCircuit a -> (ArithmeticCircuit a, ArithmeticCircuit a)
+            expand x = case circuits $ do
+                i <- runCircuit x
+                (j, k) <- splitExpansion regSize (bitSize -! regSize) i
+                return [j, k]
+              of
+                [y, z] -> (y, z)
+                _      -> error "expand: impossible"
+
+
 class StrictNum a where
     strictAdd :: a -> a -> a
     strictSub :: a -> a -> a
     strictMul :: a -> a -> a
 
-instance (KnownNat p, KnownNat n) => StrictNum (UInt n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => StrictNum (UInt n (Zp p)) where
     strictAdd x y = strictConv $ toNatural x + toNatural y
     strictSub x y = strictConv $ toNatural x -! toNatural y
     strictMul x y = strictConv $ toNatural x * toNatural y

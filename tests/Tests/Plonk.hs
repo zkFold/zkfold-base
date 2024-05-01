@@ -40,7 +40,7 @@ propPlonkConstraintConversion x (x1, x2, x3) =
         p'  = fromPlonkConstraint $ toPlonkConstraint p
         xs' = nubOrd $ variables p'
         v'  = (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
-    in v `evalPolynomial` p == v' `evalPolynomial` p'
+    in v `evalMapPolynomial` p == v' `evalMapPolynomial` p'
 
 propPlonkConstraintSatisfaction :: PlonkBS -> NonInteractiveProofTestData PlonkBS -> Bool
 propPlonkConstraintSatisfaction (Plonk _ _ _ inputs ac _) (TestData _ w) =

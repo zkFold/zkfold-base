@@ -9,17 +9,29 @@ import           Prelude                         hiding (Num (..), drop, lcm, le
 
 import           ZkFold.Base.Algebra.Basic.Class
 
-data VarType = VarTypeFree | VarTypeBound | VarTypeBoolean deriving (Eq)
+data VarType
+    = VarTypeFree
+    | VarTypeBound
+    | VarTypeBoolean
+    deriving Eq
+
 instance Show VarType where
     show VarTypeFree    = "Free"
     show VarTypeBound   = "Bound"
     show VarTypeBoolean = "Boolean"
 
-data Var a c = Free a | Bound a Natural | Boolean Natural deriving (Functor)
+data Var a c
+    = Free a
+    | Bound a Natural
+    | Boolean Natural
+    deriving Functor
+
 instance (Show a, MultiplicativeMonoid a) => Show (Var a c) where
     show = show . getPower
+
 instance (Eq a, MultiplicativeMonoid a) => Eq (Var a c) where
     (==) vx vy = getPower vx == getPower vy
+
 instance (Ord a, MultiplicativeMonoid a) => Ord (Var a c) where
     compare vx vy = compare (getPower vx) (getPower vy)
 
@@ -43,8 +55,11 @@ getPoly (Bound _ p) = p
 getPoly (Boolean p) = p
 getPoly _           = error "getPoly: VarType mismatch"
 
-data Monom a c = M c (Map Natural (Var a c)) deriving (Eq, Functor)
-newtype Polynom a c = P [Monom a c] deriving (Eq, Functor)
+data Monom a c = M c (Map Natural (Var a c))
+    deriving (Eq, Functor)
+
+newtype Polynom a c = P [Monom a c]
+    deriving (Eq, Functor)
 
 instance (Show c, Eq c, FiniteField c, Show a, Eq a, AdditiveGroup a, MultiplicativeMonoid a)
         => Show (Monom a c) where

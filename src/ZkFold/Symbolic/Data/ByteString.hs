@@ -144,25 +144,25 @@ instance (FromConstant Natural a, Finite a, KnownNat n) => FromConstant Integer 
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
 
-instance (KnownNat p, KnownNat n) => Iso (ByteString n (Zp p)) (UInt n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => Iso (ByteString n (Zp p)) (UInt n (Zp p)) where
     from bs@(ByteString r rs)
       | null rs && ((highRegisterSize @(Zp p) @n) >= (getNatural @n)) = UInt V.empty r
       | otherwise = fromConstant @Natural . toConstant $ bs
 
-instance (KnownNat p, KnownNat n) => Iso (UInt n (Zp p)) (ByteString n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => Iso (UInt n (Zp p)) (ByteString n (Zp p)) where
     from ui@(UInt rs r)
       | null rs = ByteString r rs -- A ByteString's high register always has at least the same capacity as UInt's
       | otherwise = fromConstant @Natural . toNatural $ ui
 
 
-instance (KnownNat p, KnownNat n) => Arbitrary (ByteString n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => Arbitrary (ByteString n (Zp p)) where
     arbitrary = ByteString
         <$> toss (highRegisterBits @(Zp p) @n)
         <*> V.replicateM (Haskell.fromIntegral (minNumberOfRegisters @(Zp p) @n -! 1)) (toss $ maxBitsPerRegister @(Zp p) @n)
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 
-instance (KnownNat p, KnownNat n) => ShiftBits (ByteString n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => ShiftBits (ByteString n (Zp p)) where
     shiftBits b s = fromConstant $ shift (toConstant @_ @Natural b) (Haskell.fromIntegral s) `Haskell.mod` (2 Haskell.^ (getNatural @n))
 
     -- | @Data.Bits.rotate@ works exactly as @Data.Bits.shift@ for @Natural@, we have to rotate bits manually.
@@ -200,7 +200,7 @@ instance (KnownNat p, KnownNat n) => ShiftBits (ByteString n (Zp p)) where
             d = nat `shiftR` intS
 
 
-instance (KnownNat p, KnownNat n) => BoolType (ByteString n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => BoolType (ByteString n (Zp p)) where
     false = fromConstant (0 :: Natural)
 
     -- | A ByteString with all bits set to 1 is the unity for bitwise and.
@@ -232,7 +232,7 @@ instance (KnownNat p, KnownNat n) => BoolType (ByteString n (Zp p)) where
 instance
   ( KnownNat wordSize
   , KnownNat n
-  , KnownNat p
+  , Finite (Zp p)
   , wordSize <= n
   , 1 <= wordSize
   , 1 <= n
@@ -263,7 +263,7 @@ instance
   , KnownNat m
   , m <= n
   , Mod n m ~ 0
-  , KnownNat p
+  , Finite (Zp p)
   ) => Concat (ByteString m (Zp p)) (ByteString n (Zp p)) where
 
     concat = fromConstant @Natural . foldl (\p y -> toConstant y + p `shift` m) 0
@@ -277,7 +277,7 @@ instance
   ( KnownNat m
   , KnownNat n
   , n <= m
-  , KnownNat p
+  , Finite (Zp p)
   ) => Truncate (ByteString m (Zp p)) (ByteString n (Zp p)) where
 
     truncate = fromConstant @Natural . (`shiftR` diff) . toConstant
@@ -291,7 +291,7 @@ instance
   ( KnownNat m
   , KnownNat n
   , m <= n
-  , KnownNat p
+  , Finite (Zp p)
   ) => Extend (ByteString m (Zp p)) (ByteString n (Zp p)) where
 
     extend = fromConstant @Natural . toConstant

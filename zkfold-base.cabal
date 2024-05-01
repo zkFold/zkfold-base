@@ -120,6 +120,7 @@ library
       ZkFold.Base.Protocol.Commitment.Sona
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Prelude
+      ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
       ZkFold.Symbolic.Cardano.Types
       ZkFold.Symbolic.Cardano.UPLC
       ZkFold.Symbolic.Cardano.UPLC.Builtins
@@ -233,6 +234,7 @@ test-suite zkfold-base-examples
       Examples.Fibonacci
       Examples.LEQ
       Examples.MiMCHash
+      Examples.BatchTransfer
       Examples.ReverseList
       Examples.UInt
     build-depends:

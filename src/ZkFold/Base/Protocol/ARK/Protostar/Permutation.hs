@@ -2,11 +2,11 @@ module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
 import           Data.Functor.Rep
 import           GHC.TypeNats
-import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
+import           Prelude                                         hiding (Num (..), (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate    (SomePolynomial, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Polynomial', var)
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler                        (Arithmetic)
@@ -38,7 +38,7 @@ instance (KnownNat n, Arithmetic f) => SpecialSoundProtocol f (ProtostarPermutat
     verifier' :: ProtostarPermutation n
               -> Input f (ProtostarPermutation n)
               -> SpecialSoundTranscript Natural (ProtostarPermutation n)
-              -> Vector (Dimension (ProtostarPermutation n)) (SomePolynomial f)
+              -> Vector (Dimension (ProtostarPermutation n)) (Polynomial' f)
     verifier' _ sigma [(w, _)] = mzipWithRep (-) (applyPermutation sigma wX) wX
       where wX = fmap var w
     verifier' _ _ _ = error "Invalid transcript"

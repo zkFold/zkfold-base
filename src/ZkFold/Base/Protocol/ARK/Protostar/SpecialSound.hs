@@ -5,7 +5,7 @@ module ZkFold.Base.Protocol.ARK.Protostar.SpecialSound where
 import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (length)
 
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (SomePolynomial)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial')
 import           ZkFold.Base.Data.Vector                      (Vector)
 import           ZkFold.Symbolic.Compiler.Arithmetizable      (Arithmetic)
 
@@ -28,7 +28,7 @@ class Arithmetic f => SpecialSoundProtocol f a where
       prover :: a -> Witness f a -> Input f a -> SpecialSoundTranscript f a -> ProverMessage f a
 
       verifier' :: a -> Input f a -> SpecialSoundTranscript Natural a
-            -> Vector (Dimension a) (SomePolynomial f)
+            -> Vector (Dimension a) (Polynomial' f)
 
       verifier :: a -> Input f a -> SpecialSoundTranscript f a -> Bool
 

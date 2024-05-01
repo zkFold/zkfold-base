@@ -7,11 +7,11 @@ import           Prelude                                     hiding (Eq (..), Nu
 import           Test.Hspec
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number            (Prime)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Symbolic.GroebnerBasis
 
-testPoly :: Prime p => [Polynomial p]
+testPoly :: PrimeField (Zp p) => [Polynomial p]
 testPoly = map polynomial [
         [monomial 1 (fromList [(1, variable 1), (2, variable 1)]),
          monomial 1 (fromList [(1, variable 1), (2, variable 1), (3, variable 1)])],
