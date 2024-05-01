@@ -2,12 +2,13 @@
 
 module ZkFold.Symbolic.Compiler.Arithmetizable2 where
 
-import Data.Either
-import Data.Void
-import Prelude (($), (.), type (~))
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Symbolic.Types2 (SymbolicData')
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit)
+import           Data.Either
+import           Data.Void
+import           Prelude                                             (type (~), ($), (.))
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit)
+import           ZkFold.Symbolic.Types2                              (SymbolicData')
 
 class Arithmetizable a f where
   arithmetize :: f -> (Inputs a f -> ArithmeticCircuit a) -> Outputs a f -> ArithmeticCircuit a
