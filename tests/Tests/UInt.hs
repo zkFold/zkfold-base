@@ -16,8 +16,8 @@ import           Test.Hspec                       (describe, hspec)
 import           Test.QuickCheck                  (Gen, Property, (===))
 import           Tests.ArithmeticCircuit          (eval', it)
 
-import           ZkFold.Base.Algebra.Basic.Field  (Zp)
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                   (chooseNatural)
 import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)

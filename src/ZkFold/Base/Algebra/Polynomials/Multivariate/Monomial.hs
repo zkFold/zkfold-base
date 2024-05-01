@@ -8,16 +8,16 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
     , Variable
     ) where
 
-import           Control.DeepSeq                  (NFData)
-import           Data.Aeson                       (FromJSON, ToJSON)
-import           Data.List                        (intercalate)
-import           Data.Map.Strict                  (Map, differenceWith, empty, unionWith)
-import qualified Data.Map.Strict                  as Map
-import           GHC.Generics                     (Generic)
-import           GHC.IsList                       (IsList (..))
-import           Numeric.Natural                  (Natural)
-import           Prelude                          hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
-import           Test.QuickCheck                  (Arbitrary (..))
+import           Control.DeepSeq                 (NFData)
+import           Data.Aeson                      (FromJSON, ToJSON)
+import           Data.List                       (intercalate)
+import           Data.Map.Strict                 (Map, differenceWith, empty, unionWith)
+import qualified Data.Map.Strict                 as Map
+import           GHC.Generics                    (Generic)
+import           GHC.IsList                      (IsList (..))
+import           Numeric.Natural                 (Natural)
+import           Prelude                         hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
+import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 

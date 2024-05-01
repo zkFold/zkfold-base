@@ -21,7 +21,7 @@ import           Data.Maybe                                                (Mayb
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
 import qualified Data.Vector                                               as V
-import           GHC.Natural                                               (naturalFromInteger, Natural)
+import           GHC.Natural                                               (Natural, naturalFromInteger)
 import           Prelude                                                   (Integer, error, flip, otherwise, return,
                                                                             ($), (.), (>>=))
 import qualified Prelude                                                   as Haskell
@@ -29,13 +29,12 @@ import           Test.QuickCheck                                           (Arbi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp)
-import           ZkFold.Prelude                                            (length, splitAt)
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Prelude                                            (length, splitAt, take)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import qualified ZkFold.Symbolic.Data.Algebra                              as Alg
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                                            (take)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq

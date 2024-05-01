@@ -1,10 +1,10 @@
 module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
-import           Data.Maybe                                     (fromJust)
 import           Data.Functor.Rep                               (mzipRep)
+import           Data.Maybe                                     (fromJust)
 import           Numeric.Natural                                (Natural)
-import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, (&&),
-                                                                 (*), (+))
+import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, (&&), (*),
+                                                                 (+))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector                        (Vector, fromVector, toVector)
