@@ -13,6 +13,7 @@ import           Data.Distributive
 import           Data.Functor.Identity            (Identity (..))
 import           Data.Functor.Rep
 import           Data.Kind                        (Type)
+import           Data.Void                        (Void, absurd)
 import           GHC.Generics                     (U1 (..), (:*:) (..), (:.:) (..))
 import           GHC.Natural                      (naturalFromInteger)
 import           Numeric.Natural                  (Natural)
@@ -598,6 +599,43 @@ mapV f = tabulateV . fmap f . indexV
 
 pureV :: VectorSpace a v => a -> v a
 pureV = tabulateV . const
+
+{- | `Tensorial` class of multilinear functions.
+
+The type @Tensorial a f => f@ should be equivalent to
+
+@(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v0 a@
+-}
+class Tensorial a f where
+  indexT :: f -> (Inputs a f -> a) -> Outputs a f -> a
+  tabulateT :: ((Inputs a f -> a) -> Outputs a f -> a) -> f
+
+-- | The type of lower indices of a tensor
+type family Inputs a f where
+  Inputs a (x a -> f) = Either (Basis a x) (Inputs a f)
+  Inputs a (y a) = Void
+
+-- | The type of upper indices of a tensor
+type family Outputs a f where
+  Outputs a (x a -> f) = Outputs a f
+  Outputs a (y a) = Basis a y
+
+instance {-# OVERLAPPABLE #-}
+  ( VectorSpace a u
+  , Outputs a (u a) ~ Basis a u
+  , Inputs a (u a) ~ Void
+  ) => Tensorial a (u a) where
+    indexT c _ = indexV c
+    tabulateT k = tabulateV (k absurd)
+
+instance {-# OVERLAPPING #-}
+  ( VectorSpace a x
+  , Outputs a (x a -> f) ~ Outputs a f
+  , Inputs a (x a -> f) ~ Either (Basis a x) (Inputs a f)
+  , Tensorial a f
+  ) => Tensorial a (x a -> f) where
+    indexT f i = indexT (f $ tabulateV (i . Left)) (i . Right)
+    tabulateT k x = tabulateT (k . either (indexV x))
 
 -- representable vector space
 newtype Representably v (a :: Type) = Representably
