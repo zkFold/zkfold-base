@@ -74,9 +74,9 @@ evalVectorMonomial :: forall i j b d .
     MultiplicativeMonoid b =>
     Exponent b j =>
     (i -> b) -> M i j (Vector d (i, Bool)) -> b
-evalVectorMonomial f (M v) = product $ toList (toM v) <&> (\(i, j) -> f i ^ j) where
-    toM :: Vector d (i, Bool) -> Map i j
-    toM v = fromListWith (+) $ map (\(i, _) -> (i, one)) $ Data.List.filter snd $ fromVector v
+evalVectorMonomial f (M v) = product $ toList toM <&> (\(i, j) -> f i ^ j) where
+    toM :: Map i j
+    toM = fromListWith (+) $ map (\(i, _) -> (i, one)) $ Data.List.filter snd $ fromVector v
 
 evalMapPolynomial :: forall c i j b .
     Algebra c b =>

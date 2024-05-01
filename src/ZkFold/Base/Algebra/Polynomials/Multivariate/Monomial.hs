@@ -20,8 +20,6 @@ import           Prelude                          hiding (Num (..), drop, lcm, l
 import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector
 
 type Variable i = Ord i
 
