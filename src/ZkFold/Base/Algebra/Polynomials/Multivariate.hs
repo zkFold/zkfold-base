@@ -19,8 +19,7 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate
     , mapVar
     , mapVarMonomial
     , mapVarPolynomial
-    , mapVarPolynomials
-    , removeConstantVariable
+    -- , mapVarPolynomials
     ) where
 
 import           Data.Bifunctor                                            (first, second)
@@ -117,9 +116,5 @@ mapVar vars x = case x `elemIndex` vars of
 mapVarPolynomial :: [Natural] -> Polynomial' c -> Polynomial' c
 mapVarPolynomial vars (P ms) = P $ second (mapVarMonomial vars) <$> ms
 
-mapVarPolynomials :: [Natural] -> [Polynomial' c] -> [Polynomial' c]
-mapVarPolynomials vars = map (mapVarPolynomial vars)
-
-removeConstantVariable :: (Eq c, Field c) => Polynomial' c -> Polynomial' c
-removeConstantVariable (P ms) =
-    polynomial . map (\(c, M as) -> (c, M (0 `delete` as))) $ ms
+-- mapVarPolynomials :: [Natural] -> [Polynomial' c] -> [Polynomial' c]
+-- mapVarPolynomials vars = map (mapVarPolynomial vars)

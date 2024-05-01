@@ -26,7 +26,7 @@ mapVarArithmeticCircuit ac =
     let vars = nubOrd $ sort $ 0 : concatMap variables (elems $ acSystem ac)
     in ac
     {
-        acSystem  = fromList $ zip [0..] $ mapVarPolynomials vars $ elems $ acSystem ac,
+        acSystem  = fromList $ zip [0..] $ mapVarPolynomial vars <$> elems (acSystem ac),
         -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
         acWitness = mapVarWitness vars . acWitness ac,
         acOutput  = mapVar vars $ acOutput ac

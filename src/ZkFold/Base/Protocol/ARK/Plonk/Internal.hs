@@ -21,8 +21,7 @@ import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', polynomial, removeConstantVariable, var,
-                                                               variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', evalMapPolynomial, polynomial, var, variables)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Prelude                               (length, take)
 import           ZkFold.Symbolic.Compiler
@@ -94,6 +93,9 @@ fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
 
 addPublicInput :: Natural -> F -> [Polynomial' F] -> [Polynomial' F]
 addPublicInput i _ ps = var i : ps
+
+removeConstantVariable :: (Eq c, Field c, Scale c c, FromConstant c c) => Polynomial' c -> Polynomial' c
+removeConstantVariable = evalMapPolynomial (\x -> if x == 0 then one else var x)
 
 toPlonkArithmetization :: forall a . KnownNat a => Map Natural F -> ArithmeticCircuit F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
