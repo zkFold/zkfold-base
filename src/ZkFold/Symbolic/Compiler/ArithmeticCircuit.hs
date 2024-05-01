@@ -75,7 +75,7 @@ acValue r = eval r mempty
 --
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
-acPrint :: forall a . (FiniteField a, Eq a, Show a) => ArithmeticCircuit a -> IO ()
+acPrint :: Show a => ArithmeticCircuit a -> IO ()
 acPrint r = do
     let m = elems (acSystem r)
         i = acInput r

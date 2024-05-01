@@ -21,7 +21,6 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             hiding (concat)
 import           ZkFold.Prelude                                      (drop, length, splitAt, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit)
-import           ZkFold.Symbolic.Types2                              (Symbolic')
 
 -- | A class for Symbolic data types.
 -- Type `a` is the finite field of the arithmetic circuit.
