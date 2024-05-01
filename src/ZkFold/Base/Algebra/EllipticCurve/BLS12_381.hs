@@ -53,11 +53,12 @@ type Fq12 = Ext2 Fq6 IP3
 
 data BLS12_381_G1
 
-type instance ScalarField BLS12_381_G1 = Fr
-
-type instance BaseField BLS12_381_G1 = Fq
 
 instance EllipticCurve BLS12_381_G1 where
+    type ScalarField BLS12_381_G1 = Fr
+    
+    type BaseField BLS12_381_G1 = Fq
+
     inf = Inf
 
     gen = Point
@@ -72,11 +73,12 @@ instance EllipticCurve BLS12_381_G1 where
 
 data BLS12_381_G2
 
-type instance ScalarField BLS12_381_G2 = Fr
-
-type instance BaseField BLS12_381_G2 = Fq2
-
 instance EllipticCurve BLS12_381_G2 where
+
+    type ScalarField BLS12_381_G2 = Fr
+    
+    type BaseField BLS12_381_G2 = Fq2
+
     inf = Inf
 
     gen = Point

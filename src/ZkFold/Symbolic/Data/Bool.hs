@@ -18,8 +18,10 @@ class BoolType b where
 
     not   :: b -> b
 
+    infixr 3 &&
     (&&)  :: b -> b -> b
 
+    infixr 2 || 
     (||)  :: b -> b -> b
 
     xor  :: b -> b -> b
@@ -43,7 +45,7 @@ newtype Bool x = Bool x
 instance (Field x, Eq x) => Show (Bool x) where
     show (Bool x) = if x == one then "True" else "False"
 
-instance Field x => BoolType (Bool x) where
+instance (MultiplicativeSemigroup x, AdditiveGroup x, MultiplicativeMonoid x) => BoolType (Bool x) where
     true = Bool one
 
     false = Bool zero

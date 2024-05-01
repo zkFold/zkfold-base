@@ -94,7 +94,6 @@ testAlgorithm
     .  KnownSymbol algorithm
     => SHA2N algorithm element
     => ToConstant element Natural
-    => KnownNat (ResultSize algorithm)
     => FilePath
     -> IO ()
 testAlgorithm file = do
@@ -114,7 +113,6 @@ specSHA2Natural
     .  KnownSymbol algorithm
     => SHA2N algorithm element
     => ToConstant element Natural
-    => KnownNat (ResultSize algorithm)
     => IO ()
 specSHA2Natural = do
     testFiles <- getTestFiles @algorithm
@@ -125,7 +123,7 @@ toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
 eval :: forall a n . ByteString n (ArithmeticCircuit a) -> ByteString n a
-eval (ByteString x xs) = ByteString (eval' x) (fmap eval' xs)
+eval (ByteString bits) = ByteString (fmap eval' bits)
 
 specSHA2bs
     :: forall (n :: Natural) (algorithm :: Symbol)

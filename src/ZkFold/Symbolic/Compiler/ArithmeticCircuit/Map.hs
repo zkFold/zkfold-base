@@ -15,14 +15,14 @@ import           Prelude                                             hiding (Num
                                                                       sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
 mapVarWitness :: [Natural] -> (Map Natural a -> Map Natural a)
 mapVarWitness vars = mapKeys (mapVar vars)
 
-mapVarArithmeticCircuit :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
+mapVarArithmeticCircuit :: ArithmeticCircuit a -> ArithmeticCircuit a
 mapVarArithmeticCircuit ac =
     let vars = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
     in ac

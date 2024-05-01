@@ -43,7 +43,7 @@ main = do
     specSHA2Natural @"SHA512/224" @(Zp BLS12_381_Scalar)
     specSHA2Natural @"SHA512/256" @(Zp BLS12_381_Scalar)
 
--- TODO: optimise and uncomment these tests
+-- TODO: optimise eval and uncomment these tests
 --    specSHA2 @"SHA224"
 --    specSHA2 @"SHA256"
 --    specSHA2 @"SHA384"
