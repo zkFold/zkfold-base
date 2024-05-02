@@ -14,7 +14,7 @@ import           Data.Functor.Identity            (Identity (..))
 import           Data.Functor.Rep
 import           Data.Kind                        (Type)
 import           Data.Void                        (Void, absurd)
-import           GHC.Generics                     (U1 (..), (:*:) (..), (:.:) (..))
+import           GHC.Generics                     hiding (Rep)
 import           GHC.Natural                      (naturalFromInteger)
 import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
@@ -656,11 +656,12 @@ instance (Representable v, AdditiveMonoid a)
     zero = Representably (pureRep zero)
 instance (Representable v, AdditiveGroup a)
   => AdditiveGroup (Representably v a) where
+    negate (Representably a) = Representably (fmapRep negate a)
     Representably a - Representably b =
         Representably (mzipWithRep (-) a b)
 instance (Representable v, Scale b a)
   => Scale b (Representably v a) where
-    scale b (Representably v) = Representably (fmapRep (scale b) v)
+    scale n (Representably v) = Representably (fmapRep (scale n) v)
 
 instance Representable v => Distributive (Representably v) where
   distribute = Representably . distribute . fmap runRepresentably
@@ -692,23 +693,33 @@ instance (Arbitrary a, Representable v, Traversable v)
   => Arbitrary (Representably v a) where
     arbitrary = sequenceA (Representably (pureRep arbitrary))
 
--- Linearly via vector space
-newtype Linearly v (a :: Type) = Linearly
-  { runLinearly :: v a }
-instance VectorSpace a v
-  => AdditiveSemigroup (Linearly v a) where
-    Linearly a + Linearly b =
-        Linearly (zipWithV (+) a b)
-instance VectorSpace a v
-  => AdditiveMonoid (Linearly v a) where
-    zero = Linearly (pureV zero)
-instance VectorSpace a v
-  => AdditiveGroup (Linearly v a) where
-    Linearly a - Linearly b =
-        Linearly (zipWithV (-) a b)
-instance (Scale b a, VectorSpace a v)
-  => Scale b (Linearly v a) where
-    scale b (Linearly v) = Linearly (mapV (scale b) v)
+-- generic vector space
+instance (Field a, Generic1 v, VectorSpace a (Rep1 v))
+  => VectorSpace a (Generically1 v) where
+    type Basis a (Generically1 v) = Basis a (Rep1 v)
+    indexV (Generically1 v) i = indexV (from1 v) i
+    tabulateV f = Generically1 (to1 (tabulateV f))
+instance (Generic1 v, AdditiveSemigroup (Rep1 v a))
+  => AdditiveSemigroup (Generically1 v a) where
+    Generically1 a + Generically1 b =
+        Generically1 (to1 (from1 a + from1 b))
+instance (Generic1 v, AdditiveMonoid (Rep1 v a))
+  => AdditiveMonoid (Generically1 v a) where
+    zero = Generically1 (to1 zero)
+instance (Generic1 v, AdditiveGroup (Rep1 v a))
+  => AdditiveGroup (Generically1 v a) where
+    negate (Generically1 a) = Generically1 (to1 (negate (from1 a)))
+    Generically1 a - Generically1 b =
+        Generically1 (to1 (from1 a - from1 b))
+instance (Generic1 v, Scale Natural (Rep1 v a))
+  => Scale Natural (Generically1 v a) where
+    scale n (Generically1 v) = Generically1 (to1 (scale n (from1 v)))
+instance (Generic1 v, Scale Integer (Rep1 v a))
+  => Scale Integer (Generically1 v a) where
+    scale n (Generically1 v) = Generically1 (to1 (scale n (from1 v)))
+instance (Field a, Generic1 v, Scale a (Rep1 v a))
+  => Scale a (Generically1 v a) where
+    scale n (Generically1 v) = Generically1 (to1 (scale n (from1 v)))
 
 -- zero dimensional vector space
 deriving via Representably U1 instance Field a => VectorSpace a U1
@@ -773,10 +784,10 @@ instance (Representable u, VectorSpace a v)
     Comp1 a - Comp1 b = Comp1 (mzipWithRep (zipWithV (-)) a b)
 instance (Functor u, VectorSpace a v)
   => Scale Natural ((u :.: v) a) where
-    scale b (Comp1 a) = Comp1 (fmap (mapV (scale b)) a)
+    scale n (Comp1 a) = Comp1 (fmap (mapV (scale n)) a)
 instance (Functor u, VectorSpace a v)
   => Scale Integer ((u :.: v) a) where
-    scale b (Comp1 a) = Comp1 (fmap (mapV (scale b)) a)
+    scale n (Comp1 a) = Comp1 (fmap (mapV (scale n)) a)
 instance (Functor u, VectorSpace a v)
   => Scale a ((u :.: v) a) where
-    scale b (Comp1 a) = Comp1 (fmap (mapV (scale b)) a)
+    scale n (Comp1 a) = Comp1 (fmap (mapV (scale n)) a)
