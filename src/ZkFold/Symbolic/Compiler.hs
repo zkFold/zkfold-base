@@ -11,15 +11,14 @@ module ZkFold.Symbolic.Compiler (
 
 import           Data.Aeson                                                (ToJSON)
 import           Data.Foldable                                             (fold)
-import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, ($),
-                                                                            (++), type (~))
+import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, type (~),
+                                                                            ($), (++))
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                                            (replicateA, writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Compiler.Arithmetizable
-
-import ZkFold.Base.Algebra.Basic.Class
 
 {-
     ZkFold Symbolic compiler module dependency order:
