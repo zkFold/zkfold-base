@@ -639,7 +639,7 @@ instance {-# OVERLAPPING #-}
   , InputIndices a (x a -> t) ~ Either (Basis a x) (InputIndices a t)
   , Tensorial a t
   ) => Tensorial a (x a -> t) where
-    indexT f i = indexT (f $ tabulateV (i . Left)) (i . Right)
+    indexT f i = indexT (f (tabulateV (i . Left))) (i . Right)
     tabulateT k x = tabulateT (k . either (indexV x))
 
 -- representable vector space
