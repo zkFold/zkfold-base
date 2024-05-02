@@ -625,7 +625,7 @@ instance {-# OVERLAPPABLE #-}
   , InputBasis a (y a) ~ Void
   ) => Tensorial a (y a) where
     indexT t _ = t
-    tabulateT f = (f absurd)
+    tabulateT f = f absurd
 
 instance {-# OVERLAPPING #-}
   ( VectorSpace a x
