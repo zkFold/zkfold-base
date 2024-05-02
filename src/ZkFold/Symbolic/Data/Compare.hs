@@ -62,7 +62,6 @@ ifThenElse b t f = bool f t b
 
 class SymbolicData' a u => Eq a u where
   (==) :: u a -> u a -> Bool a
-  default (==) :: Foldable u => u a -> u a -> Bool a
   u == v = Bool (foldl (*) one (zipWithV equal u v))
 
 (/=) :: Eq a u => u a -> u a -> Bool a
@@ -102,7 +101,6 @@ gt = Ordering one
 
 class SymbolicData' a u => Ord a u where
   compare :: u a -> u a -> Ordering a
-  default compare :: Foldable u => u a -> u a -> Ordering a
   compare u v =
     let lexicographical x y = x * x * (x - y) + y
     in Ordering (foldl lexicographical zero (zipWithV trichotomy u v))
