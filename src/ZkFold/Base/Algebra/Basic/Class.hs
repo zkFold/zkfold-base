@@ -600,9 +600,9 @@ mapV f = tabulateV . fmap f . indexV
 pureV :: VectorSpace a v => a -> v a
 pureV = tabulateV . const
 
-{- | `Tensorial` class of linear functions.
+{- | `LinearMap` class of linear functions.
 
-The type @Tensorial a t => t@ should be equivalent to
+The type @LinearMap a t => t@ should be equal to
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v1 a -> v0 a@
 
@@ -610,35 +610,34 @@ which via uncurrying is equivalent to
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1) a -> v0 a@
 -}
-class (Field a, VectorSpace a (OutputSpace a t)) => Tensorial a t where
-  indexT :: t -> (InputBasis a t -> a) -> OutputSpace a t a
-  tabulateT :: ((InputBasis a t -> a) -> OutputSpace a t a) -> t
+class (Field a, VectorSpace a (OutputSpace a f)) => LinearMap a f where
+  coindexV :: f -> (InputBasis a f -> a) -> OutputSpace a f a
+  cotabulateV :: ((InputBasis a f -> a) -> OutputSpace a f a) -> f
 
--- | The type of lower indices of a tensor
-type family InputBasis a t where
-  InputBasis a (x a -> t) = Either (Basis a x) (InputBasis a t)
+type family InputBasis a f where
+  InputBasis a (x a -> f) = Either (Basis a x) (InputBasis a f)
   InputBasis a (y a) = Void
 
-type family OutputSpace a t where
-  OutputSpace a (x a -> t) = OutputSpace a t
+type family OutputSpace a f where
+  OutputSpace a (x a -> f) = OutputSpace a f
   OutputSpace a (y a) = y
 
 instance {-# OVERLAPPABLE #-}
   ( VectorSpace a y
   , OutputSpace a (y a) ~ y
   , InputBasis a (y a) ~ Void
-  ) => Tensorial a (y a) where
-    indexT t _ = t
-    tabulateT f = f absurd
+  ) => LinearMap a (y a) where
+    coindexV f _ = f
+    cotabulateV k = k absurd
 
 instance {-# OVERLAPPING #-}
   ( VectorSpace a x
-  , OutputSpace a (x a -> t) ~ OutputSpace a t
-  , InputBasis a (x a -> t) ~ Either (Basis a x) (InputBasis a t)
-  , Tensorial a t
-  ) => Tensorial a (x a -> t) where
-    indexT t i = indexT (t (tabulateV (i . Left))) (i . Right)
-    tabulateT f x = tabulateT (f . either (indexV x))
+  , OutputSpace a (x a -> f) ~ OutputSpace a f
+  , InputBasis a (x a -> f) ~ Either (Basis a x) (InputBasis a f)
+  , LinearMap a f
+  ) => LinearMap a (x a -> f) where
+    coindexV f i = coindexV (f (tabulateV (i . Left))) (i . Right)
+    cotabulateV k x = cotabulateV (k . either (indexV x))
 
 -- representable vector space
 newtype Representably v (a :: Type) = Representably

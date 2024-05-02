@@ -34,11 +34,11 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 
 compile'
   :: ( Arithmetic a
-     , Tensorial (ArithmeticCircuit a) t
+     , LinearMap (ArithmeticCircuit a) t
      , y ~ OutputSpace (ArithmeticCircuit a) t
      )
   => t -> y (ArithmeticCircuit a)
-compile' t = indexT t (\_ -> circuit input)
+compile' f = coindexV f (\_ -> circuit input)
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder :: forall a f . Arithmetizable a f => f -> [ArithmeticCircuit a]
