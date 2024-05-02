@@ -630,8 +630,8 @@ instance {-# OVERLAPPABLE #-}
   , OutputSpace a (y a) ~ y
   , InputIndices a (y a) ~ Void
   ) => Tensorial a (y a) where
-    indexT c _ = indexV c
-    tabulateT k = tabulateV (k absurd)
+    indexT t _ = indexV t
+    tabulateT f = tabulateV (f absurd)
 
 instance {-# OVERLAPPING #-}
   ( VectorSpace a x
@@ -639,8 +639,8 @@ instance {-# OVERLAPPING #-}
   , InputIndices a (x a -> t) ~ Either (Basis a x) (InputIndices a t)
   , Tensorial a t
   ) => Tensorial a (x a -> t) where
-    indexT f i = indexT (f (tabulateV (i . Left))) (i . Right)
-    tabulateT k x = tabulateT (k . either (indexV x))
+    indexT t i = indexT (t (tabulateV (i . Left))) (i . Right)
+    tabulateT f x = tabulateT (f . either (indexV x))
 
 -- representable vector space
 newtype Representably v (a :: Type) = Representably
