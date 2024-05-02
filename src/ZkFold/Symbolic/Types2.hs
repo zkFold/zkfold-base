@@ -4,7 +4,8 @@ module ZkFold.Symbolic.Types2
   , SymbolicFunction
   ) where
 
-import           Data.Foldable (Foldable)
+import           Data.Foldable                   (Foldable)
+
 import           ZkFold.Base.Algebra.Basic.Class
 
 type Symbolic' a = (FiniteField a, Trichotomy a, BinaryExpansion a)
