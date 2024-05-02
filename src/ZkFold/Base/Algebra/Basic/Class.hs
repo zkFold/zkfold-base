@@ -605,6 +605,9 @@ pureV = tabulateV . const
 The type @Tensorial a t => t@ should be equivalent to
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v0 a@
+
+`Tensorial` builds contravariant tensor indices with (->).
+To build covariant indices use the tensor product `(:.:)`.
 -}
 class (Field a, VectorSpace a (OutputSpace a t)) => Tensorial a t where
   indexT :: t -> (InputBasis a t -> a) -> OutputSpace a t a
