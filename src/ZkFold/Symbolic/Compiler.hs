@@ -34,10 +34,10 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 
 compile'
   :: ( Arithmetic a
-     , LinearMap (ArithmeticCircuit a) t
-     , y ~ OutputSpace (ArithmeticCircuit a) t
+     , LinearMap (ArithmeticCircuit a) f
+     , y ~ OutputSpace (ArithmeticCircuit a) f
      )
-  => t -> y (ArithmeticCircuit a)
+  => f -> y (ArithmeticCircuit a)
 compile' f = coindexV f (\_ -> circuit input)
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
