@@ -5,9 +5,10 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         mapVarWitness
     ) where
 
+import           GHC.IsList                                          (IsList (..))
 import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.List                                           (sort)
-import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
+import           Data.Map                                            hiding (fromList, toList, drop, foldl, foldr, map, null, splitAt,
                                                                       take)
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
@@ -23,7 +24,7 @@ mapVarWitness vars = mapKeys (mapVar vars)
 
 mapVarArithmeticCircuit :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 mapVarArithmeticCircuit ac =
-    let vars = nubOrd $ sort $ 0 : concatMap variables (elems $ acSystem ac)
+    let vars = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
     in ac
     {
         acSystem  = fromList $ zip [0..] $ mapVarPolynomial vars <$> elems (acSystem ac),

@@ -3,10 +3,10 @@
 
 module Tests.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
 
+import           GHC.IsList                                   (IsList (..))
 import           Data.ByteString                              (ByteString)
-import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (transpose)
-import           Data.Map                                     (elems, fromList, singleton)
+import           Data.Map                                     (elems, singleton)
 import qualified Data.Vector                                  as V
 import           Prelude                                      hiding (Fractional (..), Num (..), drop, length,
                                                                replicate, take)
@@ -35,10 +35,10 @@ type PlonkMaxPolyDegreeBS = PlonkMaxPolyDegree PlonkSizeBS
 propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
 propPlonkConstraintConversion x (x1, x2, x3) =
     let p   = fromPlonkConstraint x
-        xs  = nubOrd $ variables p
+        xs  = toList $ variables p
         v   = (fromList [(head xs, x1), (xs !! 1, x2), (xs !! 2, x3)] !)
         p'  = fromPlonkConstraint $ toPlonkConstraint p
-        xs' = nubOrd $ variables p'
+        xs' = toList $ variables p'
         v'  = (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
     in evalPolynomial evalMapM v p == evalPolynomial evalMapM v' p'
 

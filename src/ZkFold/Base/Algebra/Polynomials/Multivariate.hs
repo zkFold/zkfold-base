@@ -21,16 +21,19 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate
     , mapVarPolynomial
     ) where
 
+import           GHC.IsList                                                (IsList (..))
 import           Data.Bifunctor                                            (first, second)
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Functor                                              ((<&>))
 import           Data.Map.Strict                                           (Map, foldrWithKey, fromListWith, keys, filter,
-                                                                            mapKeys, singleton)
+                                                                            mapKeys)
+import           Data.Set                                                  (Set, singleton)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   hiding (Num (..), length, product, replicate,
+import           Prelude                                                   hiding (Num (..), filter, length, product, replicate,
                                                                             sum, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Set
@@ -46,7 +49,7 @@ type Polynomial' c = P c Natural Natural (Map Natural Natural) [(c, Monomial')]
 
 -- | Monomial constructor
 monomial :: Monomial i j => Map i j -> M i j (Map i j)
-monomial = M . Data.Map.Strict.filter (/= zero)
+monomial = M . filter (/= zero)
 
 -- | Polynomial constructor
 polynomial ::
@@ -57,7 +60,7 @@ polynomial = foldr (\(c, m) x -> if c == zero then x else P [(c, m)] + x) zero
 
 -- | @'var' i@ is a polynomial \(p(x) = x_i\)
 var :: Polynomial c i j => i -> P c i j (Map i j) [(c, M i j (Map i j))]
-var x = polynomial [(one, monomial (singleton x one))]
+var x = polynomial [(one, monomial $ fromList [(x, one)])]
 
 evalMapM :: forall i j b .
     MultiplicativeMonoid b =>
@@ -80,13 +83,10 @@ evalPolynomial :: forall c i j b m .
     ((i -> b) -> M i j m -> b) -> (i -> b) -> P c i j m [(c, M i j m)] -> b
 evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 
--- TODO: traverse once
-variables :: forall c i j .
-    Ord i =>
-    P c i j (Map i j) [(c, M i j (Map i j))] -> [i]
-variables (P p) = nubOrd
-    . concatMap (\(_, M m) -> keys m)
-    $ p
+variables :: forall c .
+    MultiplicativeMonoid c =>
+    Polynomial' c -> Set Natural
+variables = runSources . evalPolynomial evalMapM (Sources @c . singleton)
 
 mapCoeffs :: forall c c' i j .
     (c -> c')

@@ -51,7 +51,7 @@ getParams l = findK' $ mkStdGen 0
 
 toPlonkConstraint :: Polynomial' F -> (F, F, F, F, F, F, F, F)
 toPlonkConstraint p =
-    let xs    = variables p
+    let xs    = toList $ variables p
         i     = order @F
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
             0 -> [i, i, i]
@@ -101,7 +101,7 @@ toPlonkArithmetization :: forall a . KnownNat a => Map Natural F -> ArithmeticCi
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
 toPlonkArithmetization inputs ac =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]
-        vars    = nubOrd $ sort $ 0 : concatMap variables (elems $ acSystem ac)
+        vars    = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
         ac'     = mapVarArithmeticCircuit ac
         inputs' = mapVarWitness vars inputs
         system  = foldrWithKey addPublicInput (elems $ acSystem ac') inputs'
