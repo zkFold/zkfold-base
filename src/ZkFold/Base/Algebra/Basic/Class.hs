@@ -602,7 +602,7 @@ pureV = tabulateV . const
 
 {- | `LinearMap` class of linear functions.
 
-The type @LinearMap a t => t@ should be equal to
+The type @LinearMap a f => f@ should be equal to
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v1 a -> v0 a@
 
