@@ -38,7 +38,7 @@ compile'
      , y ~ OutputSpace (ArithmeticCircuit a) t
      )
   => t -> y (ArithmeticCircuit a)
-compile' = evalT (\_ -> circuit input)
+compile' t = indexT t (\_ -> circuit input)
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder :: forall a f . Arithmetizable a f => f -> [ArithmeticCircuit a]
