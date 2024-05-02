@@ -610,7 +610,7 @@ which via uncurrying is equivalent to
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1) a -> v0 a@
 -}
-class (Field a, VectorSpace a (OutputSpace a f)) => LinearMap a f where
+class VectorSpace a (OutputSpace a f) => LinearMap a f where
   coindexV :: f -> (InputBasis a f -> a) -> OutputSpace a f a
   cotabulateV :: ((InputBasis a f -> a) -> OutputSpace a f a) -> f
 
