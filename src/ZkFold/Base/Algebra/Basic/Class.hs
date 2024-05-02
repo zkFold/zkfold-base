@@ -602,7 +602,7 @@ pureV = tabulateV . const
 
 {- | `Tensorial` class of multilinear functions.
 
-The type @Tensorial a f => f@ should be equivalent to
+The type @Tensorial a t => t@ should be equivalent to
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v0 a@
 -}
