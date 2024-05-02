@@ -10,8 +10,8 @@ module ZkFold.Symbolic.Compiler (
 ) where
 
 import           Data.Aeson                                                (ToJSON)
-import           Data.Foldable                                             (fold)
-import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, type (~),
+import           Data.Foldable                                             (Foldable (fold))
+import           Prelude                                                   (FilePath, IO, Show (..), putStrLn,
                                                                             ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -19,6 +19,7 @@ import           ZkFold.Prelude                                            (repl
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Compiler.Arithmetizable
+import           ZkFold.Symbolic.Types2
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -32,13 +33,15 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
     8. ZkFold.Symbolic.Compiler
 -}
 
+-- | Arithmetizes a symbolic function
+-- by feeding it an appropriate amount of inputs
+-- and folding its outputs.
 compile'
   :: ( Arithmetic a
-     , LinearMap (ArithmeticCircuit a) f
-     , y ~ OutputSpace (ArithmeticCircuit a) f
+     , SymbolicFunction (ArithmeticCircuit a) f
      )
-  => f -> y (ArithmeticCircuit a)
-compile' f = coindexV f (\_ -> circuit input)
+  => f -> ArithmeticCircuit a
+compile' f = fold (coindexV f (\_ -> circuit input))
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder :: forall a f . Arithmetizable a f => f -> [ArithmeticCircuit a]
