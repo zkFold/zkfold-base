@@ -606,32 +606,37 @@ The type @Tensorial a f => f@ should be equivalent to
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v0 a@
 -}
-class Field a => Tensorial a t where
-  indexT :: t -> (Inputs a t -> a) -> Outputs a t -> a
-  tabulateT :: ((Inputs a t -> a) -> Outputs a t -> a) -> t
+class (Field a, VectorSpace a (OutputSpace a t)) => Tensorial a t where
+  indexT :: t -> (InputIndices a t -> a) -> OutputIndices a t -> a
+  tabulateT :: ((InputIndices a t -> a) -> OutputIndices a t -> a) -> t
+
+evalT :: Tensorial a t => (InputIndices a t -> a) -> t -> OutputSpace a t a
+evalT inputs t = tabulateV (indexT t inputs)
 
 -- | The type of lower indices of a tensor
-type family Inputs a t where
-  Inputs a (x a -> t) = Either (Basis a x) (Inputs a t)
-  Inputs a (y a) = Void
+type family InputIndices a t where
+  InputIndices a (x a -> t) = Either (Basis a x) (InputIndices a t)
+  InputIndices a (y a) = Void
+
+type family OutputSpace a t where
+  OutputSpace a (x a -> t) = OutputSpace a t
+  OutputSpace a (y a) = y
 
 -- | The type of upper indices of a tensor
-type family Outputs a t where
-  Outputs a (x a -> t) = Outputs a t
-  Outputs a (y a) = Basis a y
+type OutputIndices a t = Basis a (OutputSpace a t)
 
 instance {-# OVERLAPPABLE #-}
   ( VectorSpace a y
-  , Outputs a (y a) ~ Basis a y
-  , Inputs a (y a) ~ Void
+  , OutputSpace a (y a) ~ y
+  , InputIndices a (y a) ~ Void
   ) => Tensorial a (y a) where
     indexT c _ = indexV c
     tabulateT k = tabulateV (k absurd)
 
 instance {-# OVERLAPPING #-}
   ( VectorSpace a x
-  , Outputs a (x a -> t) ~ Outputs a t
-  , Inputs a (x a -> t) ~ Either (Basis a x) (Inputs a t)
+  , OutputSpace a (x a -> t) ~ OutputSpace a t
+  , InputIndices a (x a -> t) ~ Either (Basis a x) (InputIndices a t)
   , Tensorial a t
   ) => Tensorial a (x a -> t) where
     indexT f i = indexT (f $ tabulateV (i . Left)) (i . Right)
