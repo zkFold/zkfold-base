@@ -7,8 +7,9 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
 
 import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.List                                           (sort)
-import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                      take)
+import           Data.Map                                            hiding (drop, foldl, foldr, fromList, map, null,
+                                                                      splitAt, take, toList)
+import           GHC.IsList                                          (IsList (..))
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))
@@ -23,10 +24,10 @@ mapVarWitness vars = mapKeys (mapVar vars)
 
 mapVarArithmeticCircuit :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 mapVarArithmeticCircuit ac =
-    let vars = nubOrd $ sort $ 0 : concatMap variables (elems $ acSystem ac)
+    let vars = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
     in ac
     {
-        acSystem  = fromList $ zip [0..] $ mapVarPolynomials vars $ elems $ acSystem ac,
+        acSystem  = fromList $ zip [0..] $ mapVarPolynomial vars <$> elems (acSystem ac),
         -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
         acWitness = mapVarWitness vars . acWitness ac,
         acOutput  = mapVar vars $ acOutput ac

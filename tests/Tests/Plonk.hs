@@ -4,10 +4,10 @@
 module Tests.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
 
 import           Data.ByteString                              (ByteString)
-import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (transpose)
-import           Data.Map                                     (elems, fromList, singleton)
+import           Data.Map                                     (elems, singleton)
 import qualified Data.Vector                                  as V
+import           GHC.IsList                                   (IsList (..))
 import           Prelude                                      hiding (Fractional (..), Num (..), drop, length,
                                                                replicate, take)
 import           Test.Hspec
@@ -35,12 +35,12 @@ type PlonkMaxPolyDegreeBS = PlonkMaxPolyDegree PlonkSizeBS
 propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
 propPlonkConstraintConversion x (x1, x2, x3) =
     let p   = fromPlonkConstraint x
-        xs  = nubOrd $ variables p
+        xs  = toList $ variables p
         v   = (fromList [(head xs, x1), (xs !! 1, x2), (xs !! 2, x3)] !)
         p'  = fromPlonkConstraint $ toPlonkConstraint p
-        xs' = nubOrd $ variables p'
+        xs' = toList $ variables p'
         v'  = (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
-    in v `evalMapPolynomial` p == v' `evalMapPolynomial` p'
+    in evalPolynomial evalMapM v p == evalPolynomial evalMapM v' p'
 
 propPlonkConstraintSatisfaction :: PlonkBS -> NonInteractiveProofTestData PlonkBS -> Bool
 propPlonkConstraintSatisfaction (Plonk _ _ _ inputs ac _) (TestData _ w) =

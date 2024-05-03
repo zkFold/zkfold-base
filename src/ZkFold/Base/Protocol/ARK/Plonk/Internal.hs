@@ -21,7 +21,7 @@ import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', polynomial, removeConstantVariable, var,
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', evalMapM, evalPolynomial, polynomial, var,
                                                                variables)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Prelude                               (length, take)
@@ -52,7 +52,7 @@ getParams l = findK' $ mkStdGen 0
 
 toPlonkConstraint :: Polynomial' F -> (F, F, F, F, F, F, F, F)
 toPlonkConstraint p =
-    let xs    = variables p
+    let xs    = toList $ variables p
         i     = order @F
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
             0 -> [i, i, i]
@@ -95,11 +95,14 @@ fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
 addPublicInput :: Natural -> F -> [Polynomial' F] -> [Polynomial' F]
 addPublicInput i _ ps = var i : ps
 
+removeConstantVariable :: (Eq c, Field c, Scale c c, FromConstant c c) => Polynomial' c -> Polynomial' c
+removeConstantVariable = evalPolynomial evalMapM (\x -> if x == 0 then one else var x)
+
 toPlonkArithmetization :: forall a . KnownNat a => Map Natural F -> ArithmeticCircuit F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
 toPlonkArithmetization inputs ac =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]
-        vars    = nubOrd $ sort $ 0 : concatMap variables (elems $ acSystem ac)
+        vars    = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
         ac'     = mapVarArithmeticCircuit ac
         inputs' = mapVarWitness vars inputs
         system  = foldrWithKey addPublicInput (elems $ acSystem ac') inputs'
