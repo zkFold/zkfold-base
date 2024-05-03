@@ -21,16 +21,16 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate
     , mapVarPolynomial
     ) where
 
-import           GHC.IsList                                                (IsList (..))
 import           Data.Bifunctor                                            (first, second)
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Functor                                              ((<&>))
-import           Data.Map.Strict                                           (Map, foldrWithKey, fromListWith, keys, filter,
-                                                                            mapKeys)
+import           Data.Map.Strict                                           (Map, filter, foldrWithKey, fromListWith,
+                                                                            keys, mapKeys)
 import           Data.Set                                                  (Set, singleton)
+import           GHC.IsList                                                (IsList (..))
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   hiding (Num (..), filter, length, product, replicate,
-                                                                            sum, (!!), (^))
+import           Prelude                                                   hiding (Num (..), filter, length, product,
+                                                                            replicate, sum, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Sources

@@ -5,11 +5,11 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         mapVarWitness
     ) where
 
-import           GHC.IsList                                          (IsList (..))
 import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.List                                           (sort)
-import           Data.Map                                            hiding (fromList, toList, drop, foldl, foldr, map, null, splitAt,
-                                                                      take)
+import           Data.Map                                            hiding (drop, foldl, foldr, fromList, map, null,
+                                                                      splitAt, take, toList)
+import           GHC.IsList                                          (IsList (..))
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))

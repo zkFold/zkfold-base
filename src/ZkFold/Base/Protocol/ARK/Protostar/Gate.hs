@@ -7,7 +7,7 @@ import           Prelude                                         hiding (Num (..
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                (KnownNat)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Polynomial', evalVectorM, evalPolynomial, subs, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Polynomial', evalPolynomial, evalVectorM, subs, var)
 import           ZkFold.Base.Data.Matrix                         (Matrix (..), outer, sum1, transpose)
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProtostar)

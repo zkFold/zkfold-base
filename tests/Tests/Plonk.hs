@@ -3,11 +3,11 @@
 
 module Tests.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
 
-import           GHC.IsList                                   (IsList (..))
 import           Data.ByteString                              (ByteString)
 import           Data.List                                    (transpose)
 import           Data.Map                                     (elems, singleton)
 import qualified Data.Vector                                  as V
+import           GHC.IsList                                   (IsList (..))
 import           Prelude                                      hiding (Fractional (..), Num (..), drop, length,
                                                                replicate, take)
 import           Test.Hspec

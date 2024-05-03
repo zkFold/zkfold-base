@@ -1,9 +1,9 @@
-{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Base.Algebra.Basic.Sources where
 
-import           Data.Set                         (Set)
-import           Prelude                          hiding (replicate)
+import           Data.Set                        (Set)
+import           Prelude                         hiding (replicate)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field

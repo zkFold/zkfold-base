@@ -38,7 +38,7 @@ import           Test.QuickCheck                                     (Arbitrary,
 import           Text.Pretty.Simple                                  (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalPolynomial, evalMapM)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMapM, evalPolynomial)
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,

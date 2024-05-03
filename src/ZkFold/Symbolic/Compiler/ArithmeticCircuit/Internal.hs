@@ -32,8 +32,8 @@ import           System.Random                                (StdGen, mkStdGen,
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Monomial', Polynomial', evalPolynomial, evalMapM, mapCoeffs,
-                                                               var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Monomial', Polynomial', evalMapM, evalPolynomial,
+                                                               mapCoeffs, var)
 import           ZkFold.Prelude                               (drop, length)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
