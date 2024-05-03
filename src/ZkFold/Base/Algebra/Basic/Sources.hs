@@ -3,7 +3,7 @@
 module ZkFold.Base.Algebra.Basic.Sources where
 
 import           Data.Set                         (Set)
-import           Prelude
+import           Prelude                          hiding (replicate)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
@@ -49,3 +49,6 @@ instance Ord i => Ring (Sources a i)
 instance Ord i => Field (Sources a i) where
     finv = id
     rootOfUnity _ = Just (Sources mempty)
+
+instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where
+  binaryExpansion = replicate (numberOfBits @a)

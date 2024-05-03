@@ -145,9 +145,6 @@ circuits b = let (os, r) = runState b mempty in (\o -> r { acOutput = o }) <$> o
 sources :: forall a i . (FiniteField a, Ord i) => Witness i a -> Set i
 sources = runSources . ($ Sources @a . Set.singleton)
 
-instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where
-  binaryExpansion = replicate (numberOfBits @a)
-
 instance Ord i => Eq (Bool (Sources a i)) (Sources a i) where
   x == y = Bool (x <> y)
   x /= y = Bool (x <> y)
