@@ -7,22 +7,22 @@
 
 module Tests.Univariate (specUnivariate) where
 
-import           Data.Bool                                   (bool)
-import           Data.Data                                   (Typeable, typeOf)
-import           Data.List                                   ((\\))
-import qualified Data.Vector                                 as V
-import qualified Data.Vector.Algorithms.Intro                as VA
-import           Numeric.Natural                             (Natural)
-import           Prelude                                     hiding (Fractional (..), Num (..), drop, length, take,
-                                                              (!!), (^))
-import           Prelude                                     (abs)
+import           Data.Bool                                  (bool)
+import           Data.Data                                  (Typeable, typeOf)
+import           Data.List                                  ((\\))
+import qualified Data.Vector                                as V
+import qualified Data.Vector.Algorithms.Intro               as VA
+import           Numeric.Natural                            (Natural)
+import           Prelude                                    hiding (Fractional (..), Num (..), drop, length, take, (!!),
+                                                             (^))
+import           Prelude                                    (abs)
 import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Prelude                              (length, take)
+import           ZkFold.Prelude                             (length, take)
 
 propToPolyVec :: forall c s .
     (Ring c, KnownNat s) =>
@@ -32,7 +32,7 @@ propToPolyVec cs =
     in length (fromPolyVec p) == value @s
 
 propCastPolyVec :: forall c s s' .
-    (Ring c, KnownNat s, KnownNat s', Eq c) => 
+    (Ring c, KnownNat s, KnownNat s', Eq c) =>
     [c] -> Bool
 propCastPolyVec cs =
     let n = min (value @s) (value @s')

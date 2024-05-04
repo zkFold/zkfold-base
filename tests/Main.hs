@@ -14,7 +14,7 @@ import           Tests.Multiplication                        (specMultiplication
 import           Tests.NonInteractiveProof                   (specNonInteractiveProof)
 import           Tests.Pairing                               (specPairing)
 import           Tests.Permutations                          (specPermutations)
-import           Tests.Plonk                                 (PlonkBS, PlonkSizeBS, PlonkMaxPolyDegreeBS, specPlonk)
+import           Tests.Plonk                                 (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk)
 import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.SHA2                                  (specSHA2Natural)
 import           Tests.UInt                                  (specUInt)
@@ -23,8 +23,8 @@ import           Tests.Univariate                            (specUnivariate)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 import           ZkFold.Base.Protocol.ARK.Plonk              (F)
+import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 
 main :: IO ()
 main = do
