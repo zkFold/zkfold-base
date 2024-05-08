@@ -14,6 +14,7 @@ import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))
 
+import           ZkFold.Base.Algebra.Basic.Class (MultiplicativeMonoid (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
 
@@ -22,7 +23,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 mapVarWitness :: [Natural] -> (Map Natural a -> Map Natural a)
 mapVarWitness vars = mapKeys (mapVar vars)
 
-mapVarArithmeticCircuit :: ArithmeticCircuit a -> ArithmeticCircuit a
+mapVarArithmeticCircuit :: MultiplicativeMonoid a => ArithmeticCircuit a -> ArithmeticCircuit a
 mapVarArithmeticCircuit ac =
     let vars = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
     in ac

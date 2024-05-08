@@ -141,7 +141,6 @@ library
       ZkFold.Symbolic.Compiler.Arithmetizable
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
---      ZkFold.Symbolic.Data.ByteStringBits
       ZkFold.Symbolic.Data.Combinators
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
