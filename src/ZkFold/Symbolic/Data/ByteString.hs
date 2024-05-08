@@ -38,7 +38,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.UInt                                
+import           ZkFold.Symbolic.Data.UInt
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers.

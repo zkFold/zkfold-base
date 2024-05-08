@@ -14,7 +14,7 @@ import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))
 
-import           ZkFold.Base.Algebra.Basic.Class (MultiplicativeMonoid (..))
+import           ZkFold.Base.Algebra.Basic.Class                     (MultiplicativeMonoid (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
 

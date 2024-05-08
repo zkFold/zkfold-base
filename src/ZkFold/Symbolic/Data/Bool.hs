@@ -21,7 +21,7 @@ class BoolType b where
     infixr 3 &&
     (&&)  :: b -> b -> b
 
-    infixr 2 || 
+    infixr 2 ||
     (||)  :: b -> b -> b
 
     xor  :: b -> b -> b

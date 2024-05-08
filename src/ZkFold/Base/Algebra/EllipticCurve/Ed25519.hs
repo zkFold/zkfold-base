@@ -6,10 +6,10 @@
 module ZkFold.Base.Algebra.EllipticCurve.Ed25519  where
 
 import           Data.Void                               (Void)
-import           Prelude                                 (($), otherwise, (==))
+import           Prelude                                 (otherwise, ($), (==))
 
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 
@@ -50,8 +50,8 @@ instance EllipticCurve (Ed25519 Void) where
 
 
 ed25519Add :: Point (Ed25519 Void) -> Point (Ed25519 Void) -> Point (Ed25519 Void)
-ed25519Add p Inf = p 
-ed25519Add Inf q = q 
+ed25519Add p Inf = p
+ed25519Add Inf q = q
 ed25519Add (Point x1 y1) (Point x2 y2) = Point x3 y3
     where
         d :: BaseField (Ed25519 Void)
