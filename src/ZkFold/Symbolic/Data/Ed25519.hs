@@ -88,7 +88,7 @@ instance
     ( Arithmetic a
     , SymbolicData a (UInt 256 (ArithmeticCircuit a))
     , FromConstant Natural (UInt 512 (ArithmeticCircuit a))
-    , DivMod (UInt 512 (ArithmeticCircuit a))
+    , EuclideanDomain (UInt 512 (ArithmeticCircuit a))
     , BinaryExpansion (UInt 256 (ArithmeticCircuit a))
     ) => EllipticCurve (Ed25519 (ArithmeticCircuit a)) where
 
@@ -117,8 +117,7 @@ instance
 acAdd25519
     :: forall a
     .  Arithmetic a
-    => FromConstant Natural (UInt 512 (ArithmeticCircuit a))
-    => DivMod (UInt 512 (ArithmeticCircuit a))
+    => EuclideanDomain (UInt 512 (ArithmeticCircuit a))
     => Point (Ed25519 (ArithmeticCircuit a))
     -> Point (Ed25519 (ArithmeticCircuit a))
     -> Point (Ed25519 (ArithmeticCircuit a))
@@ -176,8 +175,7 @@ acAdd25519 (Point x1 y1) (Point x2 y2) = Point (shrink x3) (shrink y3)
 acDouble25519
     :: forall a
     .  Arithmetic a
-    => FromConstant Natural (UInt 512 (ArithmeticCircuit a))
-    => DivMod (UInt 512 (ArithmeticCircuit a))
+    => EuclideanDomain (UInt 512 (ArithmeticCircuit a))
     => Point (Ed25519 (ArithmeticCircuit a))
     -> Point (Ed25519 (ArithmeticCircuit a))
 acDouble25519 Inf = Inf

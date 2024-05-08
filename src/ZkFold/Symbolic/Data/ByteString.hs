@@ -24,10 +24,9 @@ import           Data.Proxy                                                (Prox
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Mod, Natural, natVal)
-import           Prelude                                                   (Bool (..), Integer, divMod, drop, error,
-                                                                            fmap, length, otherwise, pure, take,
-                                                                            type (~), ($), (.), (<$>), (<), (<>), (==),
-                                                                            (>=))
+import           Prelude                                                   (Bool (..), Integer, drop, error, fmap,
+                                                                            length, otherwise, pure, take, type (~),
+                                                                            ($), (.), (<$>), (<), (<>), (==), (>=))
 import qualified Prelude                                                   as Haskell
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
@@ -39,7 +38,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.UInt                                 hiding (DivMod (..))
+import           ZkFold.Symbolic.Data.UInt                                
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers.

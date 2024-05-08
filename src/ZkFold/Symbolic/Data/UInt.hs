@@ -10,7 +10,6 @@ module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
     StrictNum(..),
     UInt(..),
-    DivMod (..),
     toConstant,
     eea
 ) where
@@ -27,9 +26,9 @@ import           Data.Tuple                                                (swap
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Natural)
-import           Prelude                                                   (Integer, concatMap, error, flip, foldl, fst,
-                                                                            otherwise, return, snd, ($), (++), (.),
-                                                                            (<>), (>>=))
+import           Prelude                                                   (Integer, concatMap, error, flip, foldl,
+                                                                            otherwise, return, ($), (++), (.), (<>),
+                                                                            (>>=))
 import qualified Prelude                                                   as Haskell
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
@@ -52,17 +51,6 @@ import           ZkFold.Symbolic.Data.Ord
 data UInt (n :: Natural) a = UInt ![a] !a
     deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
 
-class DivMod a where
-    {-# MINIMAL divMod #-}
-
-    divMod :: a -> a -> (a, a)
-
-    div :: a -> a -> a
-    div n d = fst $ divMod n d
-
-    mod :: a -> a -> a
-    mod n d = snd $ divMod n d
-
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
     fromConstant = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n))
 
@@ -83,14 +71,14 @@ cast n =
             0 -> Haskell.Nothing
             x -> Haskell.Just (swap $ x `Haskell.divMod` base)
         r = numberOfRegisters @a @n -! 1
-     in case greeaySplitAt r registers of
+     in case greedySplitAt r registers of
         (lo, hi:rest) -> (UInt lo hi, rest)
         (lo, [])      -> (UInt (lo ++ replicate (r -! length lo) zero) zero, [])
     where
-        greeaySplitAt 0 xs = ([], xs)
-        greeaySplitAt _ [] = ([], [])
-        greeaySplitAt m (x : xs) =
-            let (ys, zs) = greeaySplitAt (m -! 1) xs
+        greedySplitAt 0 xs = ([], xs)
+        greedySplitAt _ [] = ([], [])
+        greedySplitAt m (x : xs) =
+            let (ys, zs) = greedySplitAt (m -! 1) xs
              in (x : ys, zs)
 
 -- | Extended Euclidean algorithm.
@@ -107,17 +95,21 @@ cast n =
 --
 eea
     :: forall n a
-    .  DivMod (UInt n a)
-    => MultiplicativeMonoid (UInt n a)
+    .  EuclideanDomain (UInt n a)
+    => KnownNat n
     => AdditiveGroup (UInt n a)
     => Eq (Bool a) (UInt n a)
     => Conditional (Bool a) (UInt n a, UInt n a, UInt n a)
     => UInt n a -> UInt n a -> (UInt n a, UInt n a, UInt n a)
 eea a b = eea' 1 a b one zero zero one
     where
+        iterations :: Natural
+        iterations = value @n * 2 + 1
+
         eea' :: Natural -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> (UInt n a, UInt n a, UInt n a)
-        eea' iteration oldR r oldS s oldT t =
-                bool @(Bool a) rec (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR) (r == zero)
+        eea' iteration oldR r oldS s oldT t
+          | iteration == iterations = (oldS, oldT, oldR)
+          | otherwise = bool @(Bool a) rec (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR) (r == zero)
             where
                 quotient = oldR `div` r
 
@@ -131,7 +123,7 @@ instance (Finite (Zp p), KnownNat n, KnownNat m, n <= m) => Extend (UInt n (Zp p
 instance (Finite (Zp p), KnownNat n, KnownNat m, m <= n) => Shrink (UInt n (Zp p)) (UInt m (Zp p)) where
     shrink = fromConstant @Natural . toConstant
 
-instance (Finite (Zp p), KnownNat n) => DivMod (UInt n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => EuclideanDomain (UInt n (Zp p)) where
     divMod n d = let (q, r) = Haskell.divMod (toConstant n :: Natural) (toConstant d :: Natural)
                   in (fromConstant q, fromConstant r)
 
@@ -208,7 +200,7 @@ instance (Arithmetic a, KnownNat n, KnownNat k, k <= n) => Shrink (UInt n (Arith
                 bsBits <- toBits rhi (Haskell.reverse rlows) (highRegisterSize @a @n) (registerSize @a @n)
                 fromBits (highRegisterSize @a @k) (registerSize @a @k) (drop (value @n -! (value @k)) bsBits)
 
-instance (Arithmetic a, KnownNat n) => DivMod (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => EuclideanDomain (UInt n (ArithmeticCircuit a)) where
     divMod (UInt rlows rhi) d = bool @(Bool (ArithmeticCircuit a)) (q, r) (zero, zero) (d == zero)
         where
             (q, r) = foldl longDivisionStep (zero, zero) [value @n -! 1, value @n -! 2 .. 0]

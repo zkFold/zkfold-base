@@ -41,7 +41,7 @@ fromZp :: Zp p -> Natural
 fromZp (Zp a) = fromIntegral a
 
 residue :: forall p . KnownNat p => Integer -> Integer
-residue = (`mod` fromIntegral (value @p))
+residue = (`Haskell.mod` fromIntegral (value @p))
 
 toZp :: forall p . KnownNat p => Integer -> Zp p
 toZp = Zp . residue @p
@@ -88,6 +88,10 @@ instance KnownNat p => FromConstant Natural (Zp p) where
 
 instance KnownNat p => Semiring (Zp p)
 
+instance KnownNat p => EuclideanDomain (Zp p) where
+    divMod a b = let (q, r) = Haskell.divMod (fromZp a) (fromZp b)
+                  in (toZp . fromIntegral $ q, toZp . fromIntegral $ r)
+
 instance KnownNat p => FromConstant Integer (Zp p) where
     fromConstant = toZp
 
@@ -95,7 +99,7 @@ instance KnownNat p => Ring (Zp p)
 
 instance Prime p => Exponent (Zp p) Integer where
     -- | By Fermat's little theorem
-    a ^ n = intPowF a (n `mod` (fromConstant (value @p) - 1))
+    a ^ n = intPowF a (n `Haskell.mod` (fromConstant (value @p) - 1))
 
 instance Prime p => Field (Zp p) where
     finv (Zp a) = toZp $ snd (f (a, 1) (p, 0))
@@ -104,19 +108,19 @@ instance Prime p => Field (Zp p) where
         f (x, y) (x', y')
             | x' == 0   = (x, y)
             | otherwise = f (x', y') (x - q * x', y - q * y')
-            where q = x `div` x'
+            where q = x `Haskell.div` x'
 
     rootOfUnity l
       | l == 0                       = Nothing
-      | (value @p -! 1) `mod` n /= 0 = Nothing
+      | (value @p -! 1) `Haskell.mod` n /= 0 = Nothing
       | otherwise = Just $ rootOfUnity' (mkStdGen 0)
         where
           n = 2 ^ l
           rootOfUnity' :: RandomGen g => g -> Zp p
           rootOfUnity' g =
               let (x, g') = first fromConstant $ uniformR (1, value @p -! 1) g
-                  x' = x ^ ((value @p -! 1) `div` n)
-              in bool (rootOfUnity' g') x' (x' ^ (n `div` 2) /= one)
+                  x' = x ^ ((value @p -! 1) `Haskell.div` n)
+              in bool (rootOfUnity' g') x' (x' ^ (n `Haskell.div` 2) /= one)
 
 instance Prime p => BinaryExpansion (Zp p) where
     binaryExpansion = map (Zp . fromConstant) . binaryExpansion . fromZp

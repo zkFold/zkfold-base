@@ -12,8 +12,7 @@ import           Data.Maybe                                                (from
 import           Data.Proxy                                                (Proxy (..))
 import           Data.Ratio                                                ((%))
 import           GHC.TypeNats                                              (KnownNat, Natural, natVal)
-import           Prelude                                                   (div, error, mod, pure, ($), (.), (<$>),
-                                                                            (<>))
+import           Prelude                                                   (error, pure, ($), (.), (<$>), (<>))
 import qualified Prelude                                                   as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class

@@ -16,7 +16,7 @@ import qualified Data.Vector                                    as V
 import qualified Data.Vector.Mutable                            as VM
 import           GHC.TypeLits                                   (Symbol)
 import           GHC.TypeNats                                   (Div, Natural, natVal, type (<=?))
-import           Prelude                                        (Int, div, id, mod, pure, zip, ($!), ($), (.), (>>=))
+import           Prelude                                        (Int, id, pure, zip, ($!), ($), (.), (>>=))
 import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
