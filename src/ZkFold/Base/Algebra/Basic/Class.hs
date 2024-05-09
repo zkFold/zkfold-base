@@ -629,6 +629,42 @@ zipWithV :: VectorSpace a v => (a -> a -> a) -> v a -> v a -> v a
 zipWithV f as bs = tabulateV $ \k ->
   f (indexV as k) (indexV bs k)
 
+-- representable vector space
+newtype Representably v (a :: Type) = Representably
+  { runRepresentably :: v a }
+instance Representable v => VectorSpace a (Representably v) where
+    type Basis a (Representably v) = Rep v
+    tabulateV = Representably . tabulate
+    indexV = index . runRepresentably
+
+-- generic vector space
+instance (Generic1 v, VectorSpace a (Rep1 v))
+  => VectorSpace a (Generically1 v) where
+    type Basis a (Generically1 v) = Basis a (Rep1 v)
+    indexV (Generically1 v) i = indexV (from1 v) i
+    tabulateV f = Generically1 (to1 (tabulateV f))
+
+-- zero dimensional vector space
+deriving via Representably U1 instance VectorSpace a U1
+
+-- one dimensional vector space
+deriving via Representably Identity instance VectorSpace a Identity
+
+-- direct sum of vector spaces
+instance (VectorSpace a v, VectorSpace a u)
+  => VectorSpace a (v :*: u) where
+    type Basis a (v :*: u) = Either (Basis a v) (Basis a u)
+    tabulateV f = tabulateV (f . Left) :*: tabulateV (f . Right)
+    indexV (a :*: _) (Left  i) = indexV a i
+    indexV (_ :*: b) (Right j) = indexV b j
+
+-- tensor product of vector spaces
+instance (Representable u, VectorSpace a v)
+  => VectorSpace a (u :.: v) where
+    type Basis a (u :.: v) = (Rep u, Basis a v)
+    tabulateV = Comp1 . tabulate . fmap tabulateV . curry
+    indexV (Comp1 fg) (i, j) = indexV (index fg i) j
+
 {- | `LinearMap` class of linear functions.
 
 The type @LinearMap a f => f@ should be equal to
@@ -670,39 +706,3 @@ instance {-# OVERLAPPING #-}
   ) => LinearMap a (x a -> f) where
     coindexV f i = coindexV (f (tabulateV (i . Left))) (i . Right)
     cotabulateV k x = cotabulateV (k . either (indexV x))
-
--- representable vector space
-newtype Representably v (a :: Type) = Representably
-  { runRepresentably :: v a }
-instance Representable v => VectorSpace a (Representably v) where
-    type Basis a (Representably v) = Rep v
-    tabulateV = Representably . tabulate
-    indexV = index . runRepresentably
-
--- generic vector space
-instance (Generic1 v, VectorSpace a (Rep1 v))
-  => VectorSpace a (Generically1 v) where
-    type Basis a (Generically1 v) = Basis a (Rep1 v)
-    indexV (Generically1 v) i = indexV (from1 v) i
-    tabulateV f = Generically1 (to1 (tabulateV f))
-
--- zero dimensional vector space
-deriving via Representably U1 instance VectorSpace a U1
-
--- one dimensional vector space
-deriving via Representably Identity instance VectorSpace a Identity
-
--- direct sum of vector spaces
-instance (VectorSpace a v, VectorSpace a u)
-  => VectorSpace a (v :*: u) where
-    type Basis a (v :*: u) = Either (Basis a v) (Basis a u)
-    tabulateV f = tabulateV (f . Left) :*: tabulateV (f . Right)
-    indexV (a :*: _) (Left  i) = indexV a i
-    indexV (_ :*: b) (Right j) = indexV b j
-
--- tensor product of vector spaces
-instance (Representable u, VectorSpace a v)
-  => VectorSpace a (u :.: v) where
-    type Basis a (u :.: v) = (Rep u, Basis a v)
-    tabulateV = Comp1 . tabulate . fmap tabulateV . curry
-    indexV (Comp1 fg) (i, j) = indexV (index fg i) j
