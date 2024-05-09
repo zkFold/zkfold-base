@@ -593,7 +593,7 @@ element type.
 -}
 class VectorSpace a v where
     {- | The `Basis` for a `VectorSpace`. More accurately, `Basis` will be a spanning
-    set with "out-of-bounds" basis elements corresponding to `zeroV`.
+    set with "out-of-bounds" basis elements corresponding with 0.
     -}
     type Basis a v :: Type
     tabulateV :: (Basis a v -> a) -> v a
