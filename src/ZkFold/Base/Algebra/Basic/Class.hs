@@ -344,8 +344,7 @@ type FiniteField a = (Finite a, Field a)
 
 type PrimeField a = (FiniteField a, Prime (Order a))
 
-{- | A field is a commutative ring in which every nonzero element has a multiplicative inverse and 
-0 ≠ 1 (which may be combined as: an element is invertible if and only if it is nonzero).
+{- | A field is a commutative ring in which an element is invertible if and only if it is nonzero.
 If we replace “an element is invertible iff it is nonzero” by
 “an element is invertible xor it equals zero” (which is equivalent in classical logic
 but stronger in constructive logic), then we obtain the notion of discrete field.
