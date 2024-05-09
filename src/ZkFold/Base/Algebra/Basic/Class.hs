@@ -606,6 +606,12 @@ addV = zipWithV (+)
 zeroV :: (AdditiveMonoid a, VectorSpace a v) => v a
 zeroV = pureV zero
 
+subtractV :: (AdditiveGroup a, VectorSpace a v) => v a -> v a -> v a
+subtractV = zipWithV (-)
+
+negateV :: (AdditiveGroup a, VectorSpace a v) => v a -> v a
+negateV = mapV negate
+
 scaleV :: (MultiplicativeSemigroup a, VectorSpace a v) => a -> v a -> v a
 scaleV c = mapV (c *)
 
