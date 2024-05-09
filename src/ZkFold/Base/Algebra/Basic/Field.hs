@@ -121,6 +121,10 @@ instance Prime p => Field (Zp p) where
 instance Prime p => BinaryExpansion (Zp p) where
     binaryExpansion = map (Zp . fromConstant) . binaryExpansion . fromZp
 
+instance Prime p => DiscreteField' (Zp p)
+
+instance Prime p => Trichotomy (Zp p)
+
 instance KnownNat p => Haskell.Num (Zp p) where
     fromInteger = toZp
     (+)         = (+)

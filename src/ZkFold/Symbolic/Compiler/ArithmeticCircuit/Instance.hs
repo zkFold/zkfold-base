@@ -93,6 +93,24 @@ instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
     binaryExpansion r = circuits $ runCircuit r >>= expansion (numberOfBits @a)
     fromBinary bits = circuit $ Haskell.traverse runCircuit bits >>= horner
 
+instance Arithmetic a => DiscreteField' (ArithmeticCircuit a) where
+    equal r1 r2 = isZeroC (r1 - r2)
+
+instance Arithmetic a => Trichotomy (ArithmeticCircuit a) where
+    trichotomy r1 r2 =
+        let
+            bits1 = binaryExpansion r1
+            bits2 = binaryExpansion r2
+            zipWith0 _ [] [] = []
+            zipWith0 f [] ys = zipWith0 f [zero] ys
+            zipWith0 f xs [] = zipWith0 f xs [zero]
+            zipWith0 f (x:xs) (y:ys) = f x y : zipWith0 f xs ys
+            -- zip pairs of bits in {0,1} to an ordering in {-1,0,1}
+            comparedBits = zipWith0 (-) bits1 bits2
+            lexicographical x y = x * x * (x - y) + y
+        in
+            Haskell.foldl lexicographical zero comparedBits
+
 instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a)) where
     pieces (Bool b) = pieces b
     restore = Bool Haskell.. restore
