@@ -105,7 +105,7 @@ instance Arithmetic a => Trichotomy (ArithmeticCircuit a) where
             zipWith0 f [] ys = zipWith0 f [zero] ys
             zipWith0 f xs [] = zipWith0 f xs [zero]
             zipWith0 f (x:xs) (y:ys) = f x y : zipWith0 f xs ys
-            -- zip pairs of bits in {0,1} to an ordering in {-1,0,1}
+            -- zip pairs of bits in {0,1} to orderings in {-1,0,1}
             comparedBits = zipWith0 (-) bits1 bits2
             lexicographical x y = x * x * (x - y) + y
         in
