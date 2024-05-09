@@ -643,6 +643,11 @@ instance (Generic1 v, VectorSpace a (Rep1 v))
     indexV (Generically1 v) i = indexV (from1 v) i
     tabulateV f = Generically1 (to1 (tabulateV f))
 
+instance VectorSpace a v => VectorSpace a (M1 i c v) where
+    type Basis a (M1 i c v) = Basis a v
+    indexV (M1 v) = indexV v
+    tabulateV f = M1 (tabulateV f)
+
 -- zero dimensional vector space
 deriving via Representably U1 instance VectorSpace a U1
 
