@@ -364,7 +364,8 @@ respect to addition and multiplication. However, we can drop that requirement an
 define a trichotomy field as one with an internal total ordering. which compares
 field elements returning `negate` `one` for <, `zero` for =, and `one`
 for >. The law of trichotomy is that for any two field elements, exactly one
-of the relations <, =, or > holds.
+of the relations <, =, or > holds. Thus we require that -1, 0 and 1 are distinct
+field elements.
 
 prop> equal a b = one - (trichotomy a b)^2
 -}
