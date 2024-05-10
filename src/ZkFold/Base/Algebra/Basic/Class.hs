@@ -344,13 +344,14 @@ type FiniteField a = (Finite a, Field a)
 
 type PrimeField a = (FiniteField a, Prime (Order a))
 
-{- | A field is a commutative ring in which an element is invertible if and only if it is nonzero.
-If we replace “an element is invertible iff it is nonzero” by
-“an element is invertible xor it equals zero” (which is equivalent in classical logic
-but stronger in constructive logic), then we obtain the notion of discrete field.
-This condition means that every element is either 0 or invertible, and it also implies that 0 ≠ 1.
+{- | A field is a commutative ring in which an element is
+invertible if and only if it is nonzero.
+In a discrete field an element is invertible xor it equals zero”.
+That is equivalent in classical logic but stronger in constructive logic.
+Every element is either 0 or invertible, and 0 ≠ 1.
 
-We represent a discrete field as a field with an internal equality function which returns `one`
+We represent a discrete field as a field with an
+internal equality function which returns `one`
 for equal field elements and `zero` for distinct field elements.
 -}
 class Field a => DiscreteField' a where
@@ -360,9 +361,10 @@ class Field a => DiscreteField' a where
 
 {- | An ordering of a field is usually required to have compatibility laws with
 respect to addition and multiplication. However, we can drop that requirement and
-define a trichotomy field as one with an internal total ordering which compares
-field elements returning `negate` `one` for less than, `zero` for equal, and `one`
-for greater than.
+define a trichotomy field as one with an internal total ordering. which compares
+field elements returning `negate` `one` for <, `zero` for =, and `one`
+for >. The law of trichotomy is that for any two field elements, exactly one
+of the relations <, =, or > holds.
 
 prop> equal a b = one - (trichotomy a b)^2
 -}
