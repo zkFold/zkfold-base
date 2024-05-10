@@ -361,7 +361,8 @@ class Field a => DiscreteField' a where
 
 {- | An ordering of a field is usually required to have compatibility laws with
 respect to addition and multiplication. However, we can drop that requirement and
-define a trichotomy field as one with an internal total ordering. which compares
+define a trichotomy field as one with an internal total ordering.
+We represent a trichotomy field as a discrete field with an internal comparison of
 field elements returning `negate` `one` for <, `zero` for =, and `one`
 for >. The law of trichotomy is that for any two field elements, exactly one
 of the relations <, =, or > holds. Thus we require that -1, 0 and 1 are distinct
