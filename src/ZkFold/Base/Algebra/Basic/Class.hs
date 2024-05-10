@@ -346,7 +346,7 @@ type PrimeField a = (FiniteField a, Prime (Order a))
 
 {- | A field is a commutative ring in which an element is
 invertible if and only if it is nonzero.
-In a discrete field an element is invertible xor it equals zero”.
+In a discrete field an element is invertible xor it equals zero.
 That is equivalent in classical logic but stronger in constructive logic.
 Every element is either 0 or invertible, and 0 ≠ 1.
 
