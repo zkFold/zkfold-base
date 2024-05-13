@@ -9,7 +9,8 @@ module ZkFold.Base.Algebra.Basic.Class where
 import           Data.Kind                        (Type)
 import           GHC.Natural                      (naturalFromInteger)
 import           Numeric.Natural                  (Natural)
-import           Prelude                          hiding (Num (..), length, negate, product, replicate, sum, (/), (^))
+import           Prelude                          hiding (Num (..), div, divMod, length, mod, negate, product,
+                                                   replicate, sum, (/), (^))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
@@ -251,6 +252,27 @@ intScale n a | n < 0     = naturalFromInteger (-n) `scale` negate a
 -}
 class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semiring a
 
+{- | A Euclidean domain @R@ is an integral domain which can be endowed
+with at least one function @f : R\{0} -> R+@ s.t.
+If @a@ and @b@ are in @R@ and @b@ is nonzero, then there exist @q@ and @r@ in @R@ such that
+@a = bq + r@ and either @r = 0@ or @f(r) < f(b)@.
+
+@q@ and @r@ are called respectively a quotient and a remainder of the division (or Euclidean division) of @a@ by @b@.
+
+The function @divMod@ associated with this class produces @q@ and @r@ given @a@ and @b@.
+-}
+class Semiring a => EuclideanDomain a where
+    {-# MINIMAL divMod #-}
+
+    divMod :: a -> a -> (a, a)
+
+    div :: a -> a -> a
+    div n d = Haskell.fst $ divMod n d
+
+    mod :: a -> a -> a
+    mod n d = Haskell.snd $ divMod n d
+
+
 {- | Class of rings with both 0, 1 and additive inverses. The following should hold:
 
 [Left distributivity] @a * (b - c) == a * b - a * c@
@@ -401,6 +423,9 @@ instance AdditiveMonoid Natural where
 
 instance Semiring Natural
 
+instance EuclideanDomain Natural where
+    divMod = Haskell.divMod
+
 instance BinaryExpansion Natural where
     binaryExpansion 0 = []
     binaryExpansion x = (x `mod` 2) : binaryExpansion (x `div` 2)
@@ -434,6 +459,9 @@ instance FromConstant Natural Integer where
     fromConstant = Haskell.fromIntegral
 
 instance Semiring Integer
+
+instance EuclideanDomain Integer where
+    divMod = Haskell.divMod
 
 instance Ring Integer
 

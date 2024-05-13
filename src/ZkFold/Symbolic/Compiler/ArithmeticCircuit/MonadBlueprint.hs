@@ -26,7 +26,6 @@ import           Prelude                                             hiding (Boo
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
-import           ZkFold.Prelude                                      (replicate)
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal as I
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
 import           ZkFold.Symbolic.Data.Bool                           (Bool (..))

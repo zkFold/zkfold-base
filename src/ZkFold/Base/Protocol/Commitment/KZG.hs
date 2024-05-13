@@ -1,6 +1,7 @@
-{-# LANGUAGE OverloadedLists  #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE OverloadedLists      #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Commitment.KZG where
 
@@ -12,6 +13,7 @@ import qualified Data.Vector                                as V
 import           Data.Vector.Binary                         ()
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), length, sum, (/), (^))
+import qualified Prelude                                    as P
 import           Test.QuickCheck                            (Arbitrary (..), chooseInt)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -26,18 +28,31 @@ newtype KZG c1 c2 t f (d :: Natural) = KZG f
     deriving (Show, Eq, Arbitrary)
 
 newtype WitnessKZG c1 c2 t f d = WitnessKZG { runWitness :: Map f (V.Vector (PolyVec f d)) }
-instance (EllipticCurve c1, f ~ ScalarField c1) => Show (WitnessKZG c1 c2 t f d) where
+instance (EllipticCurve c1, f ~ ScalarField c1, Show f) => Show (WitnessKZG c1 c2 t f d) where
     show (WitnessKZG w) = "WitnessKZG " <> show w
-instance (EllipticCurve c1, f ~ ScalarField c1, KnownNat d) => Arbitrary (WitnessKZG c1 c2 t f d) where
+instance (EllipticCurve c1, f ~ ScalarField c1, KnownNat d, Ring f, Arbitrary f, Ord f) => Arbitrary (WitnessKZG c1 c2 t f d) where
     arbitrary = do
         n <- chooseInt (1, 3)
         m <- chooseInt (1, 5)
         WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> (V.fromList <$> replicateM m arbitrary))
 
 -- TODO (Issue #18): check list lengths
-instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ ScalarField c2,
-        Pairing c1 c2 t, Binary f, KnownNat d, KZG c1 c2 t f d ~ kzg)
-        => NonInteractiveProof (KZG c1 c2 t f d) where
+instance forall (c1 :: Type) (c2 :: Type) t f d kzg .
+    ( f ~ ScalarField c1
+    , f ~ ScalarField c2
+    , Pairing c1 c2 t
+    , Binary f
+    , KnownNat d
+    , KZG c1 c2 t f d ~ kzg
+    , P.Num f
+    , Ord f
+    , Ring f
+    , Finite f
+    , Field f
+    , AdditiveGroup (BaseField c1)
+    , Binary (BaseField c1)
+
+    ) => NonInteractiveProof (KZG c1 c2 t f d) where
     type Transcript (KZG c1 c2 t f d)   = ByteString
     type Setup (KZG c1 c2 t f d)        = (V.Vector (Point c1), Point c2, Point c2)
     type Witness (KZG c1 c2 t f d)      = WitnessKZG c1 c2 t f d
@@ -78,10 +93,11 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg . (f ~ ScalarField c1, f ~ S
                 p2 = pairing e1 h1
             in p1 == p2
         where
-            prepareVerifyOne :: (Input kzg, Proof kzg)
-                             -> (Transcript kzg, (Point c1, Point c1))
-                             -> f
-                             -> (Transcript kzg, (Point c1, Point c1))
+            prepareVerifyOne
+                :: (Input kzg, Proof kzg)
+                -> (Transcript kzg, (Point c1, Point c1))
+                -> f
+                -> (Transcript kzg, (Point c1, Point c1))
             prepareVerifyOne (iMap, pMap) (ts, (v0, v1)) z = (ts'', (v0 + v0', v1 + v1'))
                 where
                     (cms, fzs) = iMap ! z

@@ -9,8 +9,8 @@ import           Data.Map                                    (Map, elems, single
 import qualified Data.Map                                    as Map
 import qualified Data.Vector                                 as V
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     hiding (Num (..), drop, length, replicate, sum, take, (!!),
-                                                              (/), (^))
+import           Prelude                                     hiding (Num (..), div, drop, length, replicate, sum, take,
+                                                              (!!), (/), (^))
 import qualified Prelude                                     as P
 import           Test.QuickCheck                             (Arbitrary (..))
 

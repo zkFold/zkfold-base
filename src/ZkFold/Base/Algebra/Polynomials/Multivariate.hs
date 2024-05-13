@@ -22,10 +22,9 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate
     ) where
 
 import           Data.Bifunctor                                            (first, second)
-import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Functor                                              ((<&>))
 import           Data.Map.Strict                                           (Map, filter, foldrWithKey, fromListWith,
-                                                                            keys, mapKeys)
+                                                                            mapKeys)
 import           Data.Set                                                  (Set, singleton)
 import           GHC.IsList                                                (IsList (..))
 import           Numeric.Natural                                           (Natural)

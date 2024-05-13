@@ -10,7 +10,10 @@ import qualified Prelude                   as Haskell
 import           ZkFold.Symbolic.Data.Bool (BoolType (..), any)
 
 class BoolType b => Eq b a where
+    infix 4 ==
     (==) :: a -> a -> b
+
+    infix 4 /=
     (/=) :: a -> a -> b
 
 instance {-# OVERLAPPABLE #-} (BoolType b, Haskell.Eq x) => Eq b x where
