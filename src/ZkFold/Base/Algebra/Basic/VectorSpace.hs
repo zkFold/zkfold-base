@@ -7,13 +7,13 @@
 
 module ZkFold.Base.Algebra.Basic.VectorSpace where
 
-import           Data.Functor.Identity            (Identity (..))
+import           Data.Functor.Identity           (Identity (..))
 import           Data.Functor.Rep
-import           Data.Kind                        (Type)
-import           Data.Void                        (Void, absurd)
-import           GHC.Generics                     hiding (Rep)
-import           Prelude                          hiding (Num (..), div, divMod, length, mod, negate, product,
-                                                   replicate, sum, (/), (^))
+import           Data.Kind                       (Type)
+import           Data.Void                       (Void, absurd)
+import           GHC.Generics                    hiding (Rep)
+import           Prelude                         hiding (Num (..), div, divMod, length, mod, negate, product, replicate,
+                                                  sum, (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 
