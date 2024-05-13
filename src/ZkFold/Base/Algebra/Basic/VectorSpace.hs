@@ -27,8 +27,6 @@ class VectorSpace a v where
     -}
     type Basis a v :: Type
     tabulateV :: (Basis a v -> a) -> v a
-    -- | Unlike `Representable`'s `index`, this function should be kept safe
-    -- without out-of-bounds errors.
     indexV :: v a -> Basis a v -> a
 
 addV :: (AdditiveSemigroup a, VectorSpace a v) => v a -> v a -> v a
