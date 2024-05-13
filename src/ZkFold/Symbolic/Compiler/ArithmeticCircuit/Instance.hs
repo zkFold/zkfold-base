@@ -107,9 +107,11 @@ instance Arithmetic a => Trichotomy (ArithmeticCircuit a) where
             zipWith0 f (x:xs) (y:ys) = f x y : zipWith0 f xs ys
             -- zip pairs of bits in {0,1} to orderings in {-1,0,1}
             comparedBits = zipWith0 (-) bits1 bits2
-            lexicographical x y = x * x * (x - y) + y
+            -- least significant bit first,
+            -- reverse lexicographical ordering
+            reverseLexicographical x y = y * y * (y - x) + x
         in
-            Haskell.foldl lexicographical zero comparedBits
+            Haskell.foldl reverseLexicographical zero comparedBits
 
 instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a)) where
     pieces (Bool b) = pieces b
