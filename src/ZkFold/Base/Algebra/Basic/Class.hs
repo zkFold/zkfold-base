@@ -387,7 +387,7 @@ field elements.
 
 prop> equal a b = one - (trichotomy a b)^2
 -}
-class DiscreteField' a => Trichotomy a where
+class DiscreteField' a => TrichotomyField a where
     trichotomy :: a -> a -> a
     default trichotomy :: Ord a => a -> a -> a
     trichotomy a b = case compare a b of

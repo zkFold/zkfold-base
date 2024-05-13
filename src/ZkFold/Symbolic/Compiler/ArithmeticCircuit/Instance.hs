@@ -96,7 +96,7 @@ instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
 instance Arithmetic a => DiscreteField' (ArithmeticCircuit a) where
     equal r1 r2 = isZeroC (r1 - r2)
 
-instance Arithmetic a => Trichotomy (ArithmeticCircuit a) where
+instance Arithmetic a => TrichotomyField (ArithmeticCircuit a) where
     trichotomy r1 r2 =
         let
             bits1 = binaryExpansion r1

@@ -127,7 +127,7 @@ instance Prime p => BinaryExpansion (Zp p) where
 
 instance Prime p => DiscreteField' (Zp p)
 
-instance Prime p => Trichotomy (Zp p)
+instance Prime p => TrichotomyField (Zp p)
 
 instance KnownNat p => Haskell.Num (Zp p) where
     fromInteger = toZp
