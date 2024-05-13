@@ -71,7 +71,7 @@ instance SymbolicData a (UInt 256 (ArithmeticCircuit a)) => SymbolicData a (Poin
 
     typeSize = 2 * typeSize @a @(UInt 256 (ArithmeticCircuit a))
 
-instance Eq (Bool (ArithmeticCircuit a)) (UInt 256 (ArithmeticCircuit a)) => Eq (Bool (ArithmeticCircuit a)) (Point (Ed25519 (ArithmeticCircuit a))) where
+instance (Ring a, Eq (Bool a) (BaseField (Ed25519 a))) => Eq (Bool a) (Point (Ed25519 a)) where
     Inf == Inf                     = true
     Inf == _                       = false
     _ == Inf                       = false

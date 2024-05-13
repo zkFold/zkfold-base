@@ -45,7 +45,7 @@ newtype Bool x = Bool x
 instance (Field x, Eq x) => Show (Bool x) where
     show (Bool x) = if x == one then "True" else "False"
 
-instance (MultiplicativeSemigroup x, AdditiveGroup x, MultiplicativeMonoid x) => BoolType (Bool x) where
+instance (Ring x) => BoolType (Bool x) where
     true = Bool one
 
     false = Bool zero
