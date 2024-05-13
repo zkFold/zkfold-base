@@ -42,7 +42,7 @@ import           ZkFold.Symbolic.Data.UInt
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
--- Bit layout is Big-endian. 
+-- Bit layout is Big-endian.
 --
 newtype ByteString (n :: Natural) a = ByteString [a]
     deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
