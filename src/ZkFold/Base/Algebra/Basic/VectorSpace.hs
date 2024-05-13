@@ -115,10 +115,10 @@ which via uncurrying is equivalent to
 @(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1) a -> v0 a@
 -}
 class VectorSpace a (OutputSpace a f) => FunctionSpace a f where
-  -- | Dually to vector spaces, a linear map enables coindexing,
-  -- essentially evaluating it, by tabulating its input
+  -- | Dually to vector spaces, a function of vector spaces
+  -- enables coindexing, essentially evaluation, by tabulating its input;
   coindexV :: f -> (InputBasis a f -> a) -> OutputSpace a f a
-  -- | And also to cotabulate.
+  -- | and also enables cotabulating.
   cotabulateV :: ((InputBasis a f -> a) -> OutputSpace a f a) -> f
 
 type family InputBasis a f where
