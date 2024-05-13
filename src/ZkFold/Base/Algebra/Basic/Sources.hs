@@ -6,7 +6,6 @@ import           Data.Set                        (Set)
 import           Prelude                         hiding (replicate)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Prelude
 
 newtype Sources a i = Sources { runSources :: Set i }

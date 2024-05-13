@@ -21,6 +21,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Combinators
 
 exampleByteStringAnd :: forall n . KnownNat n => IO ()
 exampleByteStringAnd = makeExample @n "*" "and" (&&)

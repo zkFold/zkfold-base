@@ -87,6 +87,7 @@ library
       ZkFold.Base.Algebra.Basic.Permutations
       ZkFold.Base.Algebra.Basic.DFT
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+      ZkFold.Base.Algebra.EllipticCurve.Ed25519
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.Polynomials.Multivariate
       ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
@@ -143,6 +144,7 @@ library
       ZkFold.Symbolic.Data.Combinators
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
+      ZkFold.Symbolic.Data.Ed25519
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.Eq.Structural
       ZkFold.Symbolic.Data.Ord
@@ -213,6 +215,7 @@ test-suite zkfold-base-test
       vector                                     ,
       vector-algorithms                          ,
       zkfold-base                                ,
+      deepseq,
     hs-source-dirs: tests
 
 test-suite zkfold-base-examples

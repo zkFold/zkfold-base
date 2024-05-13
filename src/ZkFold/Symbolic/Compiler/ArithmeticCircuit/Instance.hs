@@ -123,7 +123,7 @@ instance Arithmetic a => Eq (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) w
     x == y = isZero (x - y)
     x /= y = not $ isZero (x - y)
 
-instance SymbolicData a x => Conditional (Bool (ArithmeticCircuit a)) x where
+instance {-# OVERLAPPING #-} SymbolicData a x => Conditional (Bool (ArithmeticCircuit a)) x where
     bool brFalse brTrue (Bool b) =
         let f' = pieces brFalse
             t' = pieces brTrue
