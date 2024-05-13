@@ -1,26 +1,25 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
 import           Data.Functor                    ((<&>))
+import           Data.Kind                       (Type)
 import           Numeric.Natural                 (Natural)
 import           Prelude                         hiding (Num (..), sum, (/), (^))
-import qualified Prelude                         as Haskell
 import           Test.QuickCheck                 hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString
 
-type family BaseField curve
 
-type family ScalarField curve
+data Point curve = Point { _x :: (BaseField curve), _y :: (BaseField curve) } | Inf
 
-data Point curve = Point (BaseField curve) (BaseField curve) | Inf
+class EllipticCurve curve where
 
-class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curve), Binary (BaseField curve),
-      Haskell.Show (ScalarField curve), Haskell.Num (ScalarField curve), Haskell.Ord (ScalarField curve),
-      PrimeField (ScalarField curve), Eq (ScalarField curve), BinaryExpansion (ScalarField curve), Arbitrary (ScalarField curve)
-    ) => EllipticCurve curve where
+    type BaseField curve :: Type
+    type ScalarField curve :: Type
+
     inf :: Point curve
 
     gen :: Point curve
@@ -29,11 +28,11 @@ class (FiniteField (BaseField curve), Eq (BaseField curve), Show (BaseField curv
 
     mul :: ScalarField curve -> Point curve -> Point curve
 
-instance EllipticCurve curve => Show (Point curve) where
+instance (EllipticCurve curve, Show (BaseField curve)) => Show (Point curve) where
     show Inf         = "Inf"
     show (Point x y) = "(" ++ show x ++ ", " ++ show y ++ ")"
 
-instance EllipticCurve curve => Eq (Point curve) where
+instance (EllipticCurve curve, Eq (BaseField curve)) => Eq (Point curve) where
     Inf         == Inf         = True
     Inf         == _           = False
     _           == Inf         = False
@@ -48,13 +47,13 @@ instance EllipticCurve curve => Scale Natural (Point curve) where
 instance EllipticCurve curve => AdditiveMonoid (Point curve) where
     zero = Inf
 
-instance EllipticCurve curve => Scale Integer (Point curve) where
+instance (EllipticCurve curve, AdditiveGroup (BaseField curve)) => Scale Integer (Point curve) where
     scale = intScale
 
-instance EllipticCurve curve => AdditiveGroup (Point curve) where
+instance (EllipticCurve curve, AdditiveGroup (BaseField curve)) => AdditiveGroup (Point curve) where
     negate = pointNegate
 
-instance EllipticCurve curve => Binary (Point curve) where
+instance (EllipticCurve curve, Binary (BaseField curve)) => Binary (Point curve) where
     -- TODO: Point Compression
     -- When we know the equation of an elliptic curve, y^2 = x^3 + a * x + b
     -- then we only need to retain a flag sign byte,
@@ -67,14 +66,19 @@ instance EllipticCurve curve => Binary (Point curve) where
         else if flag == 1 then Point <$> get <*> get
         else fail ("Binary (Point curve): unexpected flag " <> show flag)
 
-instance EllipticCurve curve => Arbitrary (Point curve) where
+instance (EllipticCurve curve, Arbitrary (ScalarField curve)) => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)
 
 class (EllipticCurve curve1, EllipticCurve curve2, ScalarField curve1 ~ ScalarField curve2,
         Eq t, MultiplicativeGroup t, Exponent t (ScalarField curve1)) => Pairing curve1 curve2 t | curve1 curve2 -> t where
     pairing :: Point curve1 -> Point curve2 -> t
 
-pointAdd :: EllipticCurve curve => Point curve -> Point curve -> Point curve
+pointAdd
+    :: Field (BaseField curve)
+    => Eq (BaseField curve)
+    => Point curve
+    -> Point curve
+    -> Point curve
 pointAdd p   Inf     = p
 pointAdd Inf q       = q
 pointAdd (Point x1 y1) (Point x2 y2)
@@ -85,7 +89,9 @@ pointAdd (Point x1 y1) (Point x2 y2)
     x3 = slope * slope - x1 - x2
     y3 = slope * (x1 - x3) - y1
 
-pointDouble :: EllipticCurve curve => Point curve -> Point curve
+pointDouble
+    :: Field (BaseField curve)
+    => Point curve -> Point curve
 pointDouble Inf = Inf
 pointDouble (Point x y) = Point x' y'
   where
@@ -93,14 +99,29 @@ pointDouble (Point x y) = Point x' y'
     x' = slope * slope - x - x
     y' = slope * (x - x') - y
 
-addPoints :: EllipticCurve curve => Point curve -> Point curve -> Point curve
+addPoints
+    :: EllipticCurve curve
+    => Field (BaseField curve)
+    => Eq (BaseField curve)
+    => Point curve
+    -> Point curve
+    -> Point curve
 addPoints p1 p2
     | p1 == p2  = pointDouble p1
     | otherwise = pointAdd p1 p2
 
-pointNegate :: EllipticCurve curve => Point curve -> Point curve
+pointNegate
+    :: AdditiveGroup (BaseField curve)
+    => Point curve -> Point curve
 pointNegate Inf         = Inf
 pointNegate (Point x y) = Point x (negate y)
 
-pointMul :: forall curve . EllipticCurve curve => ScalarField curve -> Point curve -> Point curve
+pointMul
+    :: forall curve
+    .  EllipticCurve curve
+    => BinaryExpansion (ScalarField curve)
+    => Eq (ScalarField curve)
+    => ScalarField curve
+    -> Point curve
+    -> Point curve
 pointMul = natScale . fromBinary . castBits . binaryExpansion

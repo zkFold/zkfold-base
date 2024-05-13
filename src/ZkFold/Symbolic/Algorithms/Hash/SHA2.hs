@@ -16,7 +16,7 @@ import qualified Data.Vector                                    as V
 import qualified Data.Vector.Mutable                            as VM
 import           GHC.TypeLits                                   (Symbol)
 import           GHC.TypeNats                                   (Div, Natural, natVal, type (<=?))
-import           Prelude                                        (Int, div, id, mod, pure, zip, ($!), ($), (.), (>>=))
+import           Prelude                                        (Int, id, pure, zip, ($!), ($), (.), (>>=))
 import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -26,9 +26,9 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  sha512_224InitialHashes, sha512_256InitialHashes,
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), Concat (..), Extend (..),
-                                                                 ShiftBits (..), ToWords (..), Truncate (..))
-import           ZkFold.Symbolic.Data.Combinators               (Iso (..))
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), Concat (..), ShiftBits (..),
+                                                                 ToWords (..), Truncate (..))
+import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
@@ -60,7 +60,7 @@ class AlgorithmSetup (algorithm :: Symbol) a where
     sumShifts :: (Natural, Natural, Natural, Natural, Natural, Natural)
     -- ^ Round rotation values for Sum in the internal loop.
 
-instance (Finite a, FromConstant Natural a) => AlgorithmSetup "SHA256" a where
+instance (FromConstant Natural a) => AlgorithmSetup "SHA256" a where
     type WordSize "SHA256" = 32
     type ChunkSize "SHA256" = 512
     type ResultSize "SHA256" = 256
@@ -71,7 +71,7 @@ instance (Finite a, FromConstant Natural a) => AlgorithmSetup "SHA256" a where
     sumShifts = (2, 13, 22, 6, 11, 25)
 
 
-instance (Finite a, FromConstant Natural a, Truncate (ByteString 256 a) (ByteString 224 a)) => AlgorithmSetup "SHA224" a where
+instance (FromConstant Natural a, Truncate (ByteString 256 a) (ByteString 224 a)) => AlgorithmSetup "SHA224" a where
     type WordSize "SHA224" = 32
     type ChunkSize "SHA224" = 512
     type ResultSize "SHA224" = 224
@@ -81,7 +81,7 @@ instance (Finite a, FromConstant Natural a, Truncate (ByteString 256 a) (ByteStr
     sigmaShifts = (7, 18, 3, 17, 19, 10)
     sumShifts = (2, 13, 22, 6, 11, 25)
 
-instance (Finite a, FromConstant Natural a) => AlgorithmSetup "SHA512" a where
+instance (FromConstant Natural a) => AlgorithmSetup "SHA512" a where
     type WordSize "SHA512" = 64
     type ChunkSize "SHA512" = 1024
     type ResultSize "SHA512" = 512
@@ -91,7 +91,7 @@ instance (Finite a, FromConstant Natural a) => AlgorithmSetup "SHA512" a where
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance (Finite a, FromConstant Natural a, Truncate (ByteString 512 a) (ByteString 384 a)) => AlgorithmSetup "SHA384" a where
+instance (FromConstant Natural a, Truncate (ByteString 512 a) (ByteString 384 a)) => AlgorithmSetup "SHA384" a where
     type WordSize "SHA384" = 64
     type ChunkSize "SHA384" = 1024
     type ResultSize "SHA384" = 384
@@ -101,7 +101,7 @@ instance (Finite a, FromConstant Natural a, Truncate (ByteString 512 a) (ByteStr
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance (Finite a, FromConstant Natural a, Truncate (ByteString 512 a) (ByteString 224 a)) => AlgorithmSetup "SHA512/224" a where
+instance (FromConstant Natural a, Truncate (ByteString 512 a) (ByteString 224 a)) => AlgorithmSetup "SHA512/224" a where
     type WordSize "SHA512/224" = 64
     type ChunkSize "SHA512/224" = 1024
     type ResultSize "SHA512/224" = 224
@@ -111,7 +111,7 @@ instance (Finite a, FromConstant Natural a, Truncate (ByteString 512 a) (ByteStr
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance (Finite a, FromConstant Natural a, Truncate (ByteString 512 a) (ByteString 256 a)) => AlgorithmSetup "SHA512/256" a where
+instance (FromConstant Natural a, Truncate (ByteString 512 a) (ByteString 256 a)) => AlgorithmSetup "SHA512/256" a where
     type WordSize "SHA512/256" = 64
     type ChunkSize "SHA512/256" = 1024
     type ResultSize "SHA512/256" = 256
@@ -189,7 +189,6 @@ sha2Pad
     :: forall (padTo :: Natural) (lenBits :: Natural) (k :: Natural) element
     .  KnownNat k
     => KnownNat (PaddedLength k padTo lenBits)
-    => Finite element
     => FromConstant Natural element
     => ShiftBits (ByteString (PaddedLength k padTo lenBits) element)
     => BoolType (ByteString (PaddedLength k padTo lenBits) element)
@@ -214,7 +213,7 @@ sha2Pad bs = grown || fromConstant padValue
 -- This is only useful for testing when the length of the test string is unknown at compile time.
 -- This should not be exposed to users (and they probably won't find it useful anyway).
 --
-instance (KnownNat n, Finite a, FromConstant Natural a) => ToWords Natural (ByteString n a) where
+instance (KnownNat n, FromConstant Natural a) => ToWords Natural (ByteString n a) where
     toWords = P.reverse . toWords'
         where
             toWords' :: Natural -> [ByteString n a]

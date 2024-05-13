@@ -152,7 +152,7 @@ mulKaratsuba v1 v2
     len = V.length v1
 
     n :: Int
-    n = len `div` 2
+    n = len `P.div` 2
 
     a, b, c, d :: V.Vector a
     (b, a) = V.splitAt n v1

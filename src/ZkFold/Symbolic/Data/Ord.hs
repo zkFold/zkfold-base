@@ -2,7 +2,7 @@
 {-# LANGUAGE DerivingVia         #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), circuitGE, circuitGT) where
+module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), circuitGE, circuitGT, getBitsBE) where
 
 import qualified Data.Bool                                              as Haskell
 import           Prelude                                                (concatMap, reverse, zipWith, ($), (.))

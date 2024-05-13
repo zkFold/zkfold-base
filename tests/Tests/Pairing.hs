@@ -5,6 +5,7 @@
 
 module Tests.Pairing (specPairing) where
 
+import           Data.Kind                                  (Type)
 import           Data.Typeable                              (Typeable, typeOf)
 import qualified Data.Vector                                as V
 import           Prelude                                    hiding (Fractional (..), Num (..), length, (^))
@@ -17,7 +18,14 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, deg, evalP
                                                              vec2poly)
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 
-propVerificationKZG :: forall c1 c2 t f . (Pairing c1 c2 t, f ~ ScalarField c1, f ~ ScalarField c2)
+propVerificationKZG
+    :: forall c1 c2 t f
+    .  Pairing c1 c2 t
+    => f ~ ScalarField c1
+    => f ~ ScalarField c2
+    => Field f
+    => Eq f
+    => AdditiveGroup (BaseField c1)
     => f -> PolyVec f 32 -> f -> Bool
 propVerificationKZG x p z =
     let n  = deg $ vec2poly p
@@ -39,7 +47,21 @@ propVerificationKZG x p z =
         -- Verification
     in pairing v0 h0 == pairing w h1
 
-specPairing :: forall c1 c2 t f . (Typeable c1, Typeable c2, Typeable t, Pairing c1 c2 t, f ~ ScalarField c1) => IO ()
+specPairing
+    :: forall (c1 :: Type) (c2 :: Type) t f
+    .  Typeable c1
+    => Typeable c2
+    => Typeable t
+    => Pairing c1 c2 t
+    => f ~ ScalarField c1
+    => Field f
+    => Eq f
+    => Show f
+    => Arbitrary f
+    => Show (BaseField c2)
+    => AdditiveGroup (BaseField c1)
+    => Show (BaseField c1)
+    => IO ()
 specPairing = hspec $ do
     describe "Elliptic curve pairing specification" $ do
         describe ("Type: " ++ show (typeOf (pairing @c1 @c2))) $ do

@@ -10,6 +10,7 @@ import           Data.Bits                                  (shiftR)
 import           Data.List                                  (unfoldr)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), (/), (^))
+import qualified Prelude                                    as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
@@ -53,11 +54,12 @@ type Fq12 = Ext2 Fq6 IP3
 
 data BLS12_381_G1
 
-type instance ScalarField BLS12_381_G1 = Fr
-
-type instance BaseField BLS12_381_G1 = Fq
 
 instance EllipticCurve BLS12_381_G1 where
+    type ScalarField BLS12_381_G1 = Fr
+
+    type BaseField BLS12_381_G1 = Fq
+
     inf = Inf
 
     gen = Point
@@ -72,11 +74,12 @@ instance EllipticCurve BLS12_381_G1 where
 
 data BLS12_381_G2
 
-type instance ScalarField BLS12_381_G2 = Fr
-
-type instance BaseField BLS12_381_G2 = Fq2
-
 instance EllipticCurve BLS12_381_G2 where
+
+    type ScalarField BLS12_381_G2 = Fr
+
+    type BaseField BLS12_381_G2 = Fq2
+
     inf = Inf
 
     gen = Point
@@ -172,7 +175,7 @@ miller' p q r (i:iters) result =
 pairingBLS :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> Fq12
 pairingBLS Inf _ = zero
 pairingBLS _ Inf = zero
-pairingBLS p q   = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Natural) -! 1) `div` (order @(ScalarField BLS12_381_G1))) one
+pairingBLS p q   = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Natural) -! 1) `Haskell.div` (order @(ScalarField BLS12_381_G1))) one
 
 -- Used for the final exponentiation; opportunity for further perf optimization
 pow' :: MultiplicativeSemigroup a => a -> Natural -> a -> a

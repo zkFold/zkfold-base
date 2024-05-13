@@ -15,7 +15,7 @@ import           Data.Map                         (Map, elems, empty, singleton,
 import           Data.Maybe                       (fromJust)
 import qualified Data.Vector                      as V
 import           Numeric.Natural                  (Natural)
-import           Prelude                          hiding (Num (..), drop, length, (!!))
+import           Prelude                          hiding (Num (..), drop, length, mod, (!!))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..))
 
@@ -62,7 +62,7 @@ applyCycle c (Permutation perm) = Permutation $ fmap f perm
     where
         f :: Natural -> Natural
         f i = case i `V.elemIndex` c of
-            Just j  -> c V.! ((j P.+ 1) `mod` V.length c)
+            Just j  -> c V.! ((j P.+ 1) `P.mod` V.length c)
             Nothing -> i
 
 fromCycles :: KnownNat n => IndexPartition a -> Permutation n

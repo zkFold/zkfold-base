@@ -16,7 +16,7 @@ import           Prelude                          (show, type (~), (<>))
 import qualified Prelude                          as Haskell
 import           System.IO                        (IO)
 import           Test.Hspec                       (Spec, describe, hspec)
-import           Test.QuickCheck                  (Gen, Property, chooseInteger, (===))
+import           Test.QuickCheck                  (Gen, Property, chooseInteger, withMaxSuccess, (===))
 import           Tests.ArithmeticCircuit          (eval', it)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -26,14 +26,14 @@ import           ZkFold.Prelude                   (chooseNatural)
 import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators (Iso (..))
+import           ZkFold.Symbolic.Data.Combinators (Extend (..), Iso (..))
 import           ZkFold.Symbolic.Data.UInt
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
 eval :: forall a n . ByteString n (ArithmeticCircuit a) -> ByteString n a
-eval (ByteString x xs) = ByteString (eval' x) (map eval' xs)
+eval (ByteString bits) = ByteString (map eval' bits)
 
 type Binary a = a -> a -> a
 
@@ -154,7 +154,9 @@ specByteString = hspec $ do
         it "AC embeds Integer" $ do
             x <- toss m
             return $ eval @(Zp p) @n (fromConstant x) === fromConstant x
-        it "applies sum modulo n via UInt correctly" $ do
+
+        -- TODO: remove withMaxSuccess when eval is optimised
+        it "applies sum modulo n via UInt correctly" $ withMaxSuccess 10 $ do
             x <- toss m
             y <- toss m
 

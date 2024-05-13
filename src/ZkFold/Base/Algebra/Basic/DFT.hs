@@ -4,7 +4,7 @@ import           Control.Monad                   (forM_)
 import qualified Data.STRef                      as ST
 import qualified Data.Vector                     as V
 import qualified Data.Vector.Mutable             as VM
-import           Prelude                         hiding (sum, (*), (+), (-), (/), (^))
+import           Prelude                         hiding (mod, sum, (*), (+), (-), (/), (^))
 import qualified Prelude                         as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -31,8 +31,8 @@ genericDft n wn v = V.create $ do
         ST.modifySTRef wRef (*wn)
     pure result
   where
-    a0 = V.ifilter (\i _ -> i `mod` 2 == 0) v
-    a1 = V.ifilter (\i _ -> i `mod` 2 == 1) v
+    a0 = V.ifilter (\i _ -> i `P.mod` 2 == 0) v
+    a1 = V.ifilter (\i _ -> i `P.mod` 2 == 1) v
 
     wn2 = wn * wn
 
