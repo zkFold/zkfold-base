@@ -104,9 +104,9 @@ instance (Representable u, VectorSpace a v)
     tabulateV = Comp1 . tabulate . fmap tabulateV . curry
     indexV (Comp1 fg) (i, j) = indexV (index fg i) j
 
-{- | `LinearMap` class of linear functions.
+{- | `FunctionSpace` class of functions between `VectorSpace`s.
 
-The type @LinearMap a f => f@ should be equal to
+The type @FunctionSpace a f => f@ should be equal to some
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v1 a -> v0 a@
 
@@ -114,7 +114,7 @@ which via uncurrying is equivalent to
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1) a -> v0 a@
 -}
-class VectorSpace a (OutputSpace a f) => LinearMap a f where
+class VectorSpace a (OutputSpace a f) => FunctionSpace a f where
   -- | Dually to vector spaces, a linear map enables coindexing,
   -- essentially evaluating it, by tabulating its input
   coindexV :: f -> (InputBasis a f -> a) -> OutputSpace a f a
@@ -133,7 +133,7 @@ instance {-# OVERLAPPABLE #-}
   ( VectorSpace a y
   , OutputSpace a (y a) ~ y
   , InputBasis a (y a) ~ Void
-  ) => LinearMap a (y a) where
+  ) => FunctionSpace a (y a) where
     coindexV f _ = f
     cotabulateV k = k absurd
 
@@ -141,7 +141,7 @@ instance {-# OVERLAPPING #-}
   ( VectorSpace a x
   , OutputSpace a (x a -> f) ~ OutputSpace a f
   , InputBasis a (x a -> f) ~ Either (Basis a x) (InputBasis a f)
-  , LinearMap a f
-  ) => LinearMap a (x a -> f) where
+  , FunctionSpace a f
+  ) => FunctionSpace a (x a -> f) where
     coindexV f i = coindexV (f (tabulateV (i . Left))) (i . Right)
     cotabulateV k x = cotabulateV (k . either (indexV x))
