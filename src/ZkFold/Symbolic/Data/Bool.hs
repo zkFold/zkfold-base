@@ -1,68 +1,70 @@
+{-# LANGUAGE
+DerivingStrategies
+, DerivingVia
+, UndecidableInstances
+#-}
+
 module ZkFold.Symbolic.Data.Bool (
-    BoolType(..),
     Bool(..),
-    all,
-    all1,
-    any
+    true,
+    false,
+    not,
+    (&&),
+    (||),
+    xor,
+    bool,
+    ifThenElse,
+    (?),
+    Eq (..),
+    (/=)
 ) where
 
-import           Prelude                         hiding (Bool, Num (..), all, any, not, (&&), (/), (||))
-import qualified Prelude                         as Haskell
+import           Data.Functor.Identity                 (Identity (..))
+import qualified Prelude                               as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-
-class BoolType b where
-    true  :: b
-
-    false :: b
-
-    not   :: b -> b
-
-    infixr 3 &&
-    (&&)  :: b -> b -> b
-
-    infixr 2 ||
-    (||)  :: b -> b -> b
-
-    xor  :: b -> b -> b
-
-instance BoolType Haskell.Bool where
-    true  = True
-
-    false = False
-
-    not   = Haskell.not
-
-    (&&)  = (Haskell.&&)
-
-    (||)  = (Haskell.||)
-
-    xor = xor
+import           ZkFold.Base.Algebra.Basic.VectorSpace
+import           ZkFold.Symbolic.Types                 (Symbolic)
 
 -- TODO (Issue #18): hide this constructor
-newtype Bool x = Bool x
-    deriving (Eq)
-instance (Field x, Eq x) => Show (Bool x) where
-    show (Bool x) = if x == one then "True" else "False"
+newtype Bool a = Bool a
+  deriving stock Haskell.Foldable
+deriving via Identity instance VectorSpace a Bool
+instance Eq a Bool
+instance (Symbolic a, Haskell.Eq a) => Haskell.Show (Bool a) where
+    show (Bool a) = if a Haskell.== one then "true" else "false"
 
-instance (Ring x) => BoolType (Bool x) where
-    true = Bool one
+true :: Symbolic a => Bool a
+true = Bool one
 
-    false = Bool zero
+false :: Symbolic a => Bool a
+false = Bool zero
 
-    not (Bool b) = Bool $ one - b
+not :: Symbolic a => Bool a -> Bool a
+not (Bool b) = Bool (one - b)
 
-    (&&) (Bool b1) (Bool b2) = Bool $ b1 * b2
+(&&) :: Symbolic a => Bool a -> Bool a -> Bool a
+Bool b1 && Bool b2 = Bool (b1 * b2)
 
-    (||) (Bool b1) (Bool b2) = Bool $ b1 + b2 - b1 * b2
+(||) :: Symbolic a => Bool a -> Bool a -> Bool a
+Bool b1 || Bool b2 = Bool (b1 + b2 - b1 * b2)
 
-    xor (Bool b1) (Bool b2) = Bool $ b1 + b2 - (b1 * b2 + b1 * b2)
+xor :: Symbolic a => Bool a -> Bool a -> Bool a
+xor (Bool b1) (Bool b2) = Bool (b1 + b2 - (b1 * b2 + b1 * b2))
 
-all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
-all f = foldr ((&&) . f) true
+bool :: (Symbolic a, VectorSpace a u) => u a -> u a -> Bool a -> u a
+bool f t (Bool b) = scaleV b (t `subtractV` f) `addV` f
 
-all1 :: (BoolType b, Functor t, Foldable t) => (x -> b) -> t x -> b
-all1 f = foldr1 (&&) . fmap f
+ifThenElse, (?)
+  :: (Symbolic a, VectorSpace a u) => Bool a -> u a -> u a -> u a
+ifThenElse b t f = bool f t b
+(?) = ifThenElse
 
-any :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
-any f = foldr ((||) . f) false
+class (VectorSpace a u, Haskell.Foldable u) => Eq a u where
+    infix 4 ==
+    (==) :: Symbolic a => u a -> u a -> Bool a
+    u == v = Bool (Haskell.foldl (*) one (zipWithV equal u v))
+
+infix 4 /=
+(/=) :: (Symbolic a, Eq a u) => u a -> u a -> Bool a
+u /= b = not (u == b)

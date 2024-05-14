@@ -273,7 +273,6 @@ class Semiring a => EuclideanDomain a where
     mod :: a -> a -> a
     mod n d = Haskell.snd $ divMod n d
 
-
 {- | Class of rings with both 0, 1 and additive inverses. The following should hold:
 
 [Left distributivity] @a * (b - c) == a * b - a * c@
@@ -371,7 +370,7 @@ We represent a discrete field as a field with an
 internal equality function which returns `one`
 for equal field elements and `zero` for distinct field elements.
 -}
-class Field a => DiscreteField' a where
+class Field a => DiscreteField a where
     equal :: a -> a -> a
     default equal :: Eq a => a -> a -> a
     equal a b = bool zero one (a == b)
@@ -387,7 +386,7 @@ field elements.
 
 prop> equal a b = one - (trichotomy a b)^2
 -}
-class DiscreteField' a => TrichotomyField a where
+class DiscreteField a => TrichotomyField a where
     trichotomy :: a -> a -> a
     default trichotomy :: Ord a => a -> a -> a
     trichotomy a b = case compare a b of

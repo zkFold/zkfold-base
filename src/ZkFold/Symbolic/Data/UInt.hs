@@ -35,21 +35,20 @@ import           Test.QuickCheck                                           (Arbi
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA,
                                                                             splitAt, take, (!!))
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Types                                     (Symbolic)
 
 -- TODO (Issue #18): hide this constructor
 data UInt (n :: Natural) a = UInt ![a] !a
-    deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
+    deriving (Haskell.Show, Haskell.Eq, Haskell.Foldable, Generic, NFData)
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
     fromConstant = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n))
@@ -63,6 +62,11 @@ instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n, Multip
 
 instance MultiplicativeMonoid (UInt n a) => Exponent (UInt n a) Natural where
     (^) = natPow
+
+instance VectorSpace a (UInt n) where
+    type Basis a (UInt n) = Haskell.Maybe Haskell.Int
+    indexV = Haskell.undefined
+    tabulateV = Haskell.undefined
 
 cast :: forall a n . (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Natural -> (UInt n a, [a])
 cast n =
@@ -96,10 +100,9 @@ cast n =
 eea
     :: forall n a
     .  EuclideanDomain (UInt n a)
+    => Eq a (UInt n)
     => KnownNat n
     => AdditiveGroup (UInt n a)
-    => Eq (Bool a) (UInt n a)
-    => Conditional (Bool a) (UInt n a, UInt n a, UInt n a)
     => UInt n a -> UInt n a -> (UInt n a, UInt n a, UInt n a)
 eea a b = eea' 1 a b one zero zero one
     where
@@ -108,14 +111,29 @@ eea a b = eea' 1 a b one zero zero one
 
         eea' :: Natural -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> (UInt n a, UInt n a, UInt n a)
         eea' iteration oldR r oldS s oldT t
-          | iteration == iterations = (oldS, oldT, oldR)
-          | otherwise = bool @(Bool a) rec (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR) (r == zero)
+          | iteration Haskell.== iterations = (oldS, oldT, oldR)
+          | otherwise =
+                if r Haskell.== zero
+                then (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR)
+                else rec
             where
                 quotient = oldR `div` r
 
                 rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
 
 --------------------------------------------------------------------------------
+
+instance (Finite (Zp p), KnownNat n) => Eq (Zp p) (UInt n) where
+    x == y =
+        if toConstant @_ @Natural x Haskell.== toConstant y
+        then true
+        else false
+
+instance (Finite (Zp p), KnownNat n) => Ord (Zp p) (UInt n) where
+    compare x y = case Haskell.compare (toConstant @_ @Natural x) (toConstant y) of
+        Haskell.LT -> lt
+        Haskell.EQ -> eq
+        Haskell.GT -> gt
 
 instance (Finite (Zp p), KnownNat n, KnownNat m, n <= m) => Extend (UInt n (Zp p)) (UInt m (Zp p)) where
     extend = fromConstant @Natural . toConstant
@@ -126,18 +144,6 @@ instance (Finite (Zp p), KnownNat n, KnownNat m, m <= n) => Shrink (UInt n (Zp p
 instance (Finite (Zp p), KnownNat n) => EuclideanDomain (UInt n (Zp p)) where
     divMod n d = let (q, r) = Haskell.divMod (toConstant n :: Natural) (toConstant d :: Natural)
                   in (fromConstant q, fromConstant r)
-
-instance (Finite (Zp p), KnownNat n) => Eq (Bool (Zp p)) (UInt n (Zp p)) where
-    x == y = Bool . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.== toConstant y
-    x /= y = Bool . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell./= toConstant y
-
-instance (Finite (Zp p), KnownNat n) => Ord (Bool (Zp p)) (UInt n (Zp p)) where
-    x <= y = Bool . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.<= toConstant y
-    x < y  = Bool . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.< toConstant y
-    x >= y = Bool . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.>= toConstant y
-    x > y  = Bool . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.> toConstant y
-    max x y = fromConstant $ Haskell.max (toConstant @_ @Natural x) (toConstant y)
-    min x y = fromConstant $ Haskell.min (toConstant @_ @Natural x) (toConstant y)
 
 instance (Finite (Zp p), KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
     toConstant (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
@@ -174,6 +180,10 @@ instance (Finite (Zp p), KnownNat n) => Arbitrary (UInt n (Zp p)) where
 
 --------------------------------------------------------------------------------
 
+instance (Arithmetic a, KnownNat n) => Eq (ArithmeticCircuit a) (UInt n) where
+
+instance (Arithmetic a, KnownNat n) => Ord (ArithmeticCircuit a) (UInt n) where
+
 instance (Arithmetic a, KnownNat n) => SymbolicData a (UInt n (ArithmeticCircuit a)) where
     pieces (UInt as a) = as ++ [a]
 
@@ -201,7 +211,7 @@ instance (Arithmetic a, KnownNat n, KnownNat k, k <= n) => Shrink (UInt n (Arith
                 fromBits (highRegisterSize @a @k) (registerSize @a @k) (drop (value @n -! (value @k)) bsBits)
 
 instance (Arithmetic a, KnownNat n) => EuclideanDomain (UInt n (ArithmeticCircuit a)) where
-    divMod (UInt rlows rhi) d = bool @(Bool (ArithmeticCircuit a)) (q, r) (zero, zero) (d == zero)
+    divMod (UInt rlows rhi) d = ifThenElse (d == _) (zero, zero) (q, r)
         where
             (q, r) = foldl longDivisionStep (zero, zero) [value @n -! 1, value @n -! 2 .. 0]
 
@@ -220,27 +230,7 @@ instance (Arithmetic a, KnownNat n) => EuclideanDomain (UInt n (ArithmeticCircui
                 -> (UInt n (ArithmeticCircuit a), UInt n (ArithmeticCircuit a))
             longDivisionStep (q', r') i =
                 let rs = addBit (r' + r') (numeratorBits !! i)
-                 in bool @(Bool (ArithmeticCircuit a)) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
-
-instance (Arithmetic a, KnownNat n) => Ord (Bool (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a)) where
-    x <= y = y >= x
-
-    x <  y = y > x
-
-    (UInt rs1 r1) >= (UInt rs2 r2) =
-        circuitGE
-            (getBitsBE r1 <> Haskell.reverse (concatMap getBitsBE rs1))
-            (getBitsBE r2 <> Haskell.reverse (concatMap getBitsBE rs2))
-
-    (UInt rs1 r1) > (UInt rs2 r2) =
-        circuitGT
-            (getBitsBE r1 <> Haskell.reverse (concatMap getBitsBE rs1))
-            (getBitsBE r2 <> Haskell.reverse (concatMap getBitsBE rs2))
-
-    max x y = bool @(Bool (ArithmeticCircuit a)) x y $ x < y
-
-    min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
-
+                 in if rs Haskell.>= d then (q' + fromConstant ((2 :: Natural) ^ i), rs - d) else (q', rs)
 
 instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (UInt n (ArithmeticCircuit a)) where
     UInt [] x + UInt [] y = UInt [] $ circuit $ do
@@ -301,7 +291,7 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
 
     UInt _ _ - UInt _ _ = error "UInt: unreachable"
 
-    negate uint = bool @(Bool (ArithmeticCircuit a)) (negate' uint) zero (uint == zero)
+    negate uint = if uint Haskell.== zero then zero else negate' uint
         where
             negate' (UInt [] x) = UInt [] (negateN (2 ^ highRegisterSize @a @n) x)
             negate' (UInt (x : xs) x') =
@@ -364,10 +354,6 @@ instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (UInt n (ArithmeticC
 instance (Arithmetic a, KnownNat n) => Semiring (UInt n (ArithmeticCircuit a))
 
 instance (Arithmetic a, KnownNat n) => Ring (UInt n (ArithmeticCircuit a))
-
-deriving via (Structural (UInt n (ArithmeticCircuit a)))
-         instance (Arithmetic a, KnownNat n) =>
-         Eq (Bool (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a))
 
 instance (Arithmetic a, KnownNat n) => Arbitrary (UInt n (ArithmeticCircuit a)) where
     arbitrary = UInt

@@ -125,7 +125,7 @@ instance Prime p => Field (Zp p) where
 instance Prime p => BinaryExpansion (Zp p) where
     binaryExpansion = map (Zp . fromConstant) . binaryExpansion . fromZp
 
-instance Prime p => DiscreteField' (Zp p)
+instance Prime p => DiscreteField (Zp p)
 
 instance Prime p => TrichotomyField (Zp p)
 

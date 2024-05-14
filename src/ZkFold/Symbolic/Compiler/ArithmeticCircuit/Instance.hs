@@ -8,7 +8,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 import           Data.Aeson                                                hiding (Bool)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map,
                                                                             null, splitAt, take)
-import           Data.Zip                                                  (zipWith)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   (Integer, const, error, mempty, pure, return,
                                                                             show, ($), (++), (<$>), (<*>), (>>=))
@@ -22,9 +21,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hidin
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.DiscreteField
-import           ZkFold.Symbolic.Data.Eq
 
 ------------------------------------- Instances -------------------------------------
 
@@ -93,7 +89,7 @@ instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a) where
     binaryExpansion r = circuits $ runCircuit r >>= expansion (numberOfBits @a)
     fromBinary bits = circuit $ Haskell.traverse runCircuit bits >>= horner
 
-instance Arithmetic a => DiscreteField' (ArithmeticCircuit a) where
+instance Arithmetic a => DiscreteField (ArithmeticCircuit a) where
     equal r1 r2 = isZeroC (r1 - r2)
 
 instance Arithmetic a => TrichotomyField (ArithmeticCircuit a) where
@@ -117,19 +113,6 @@ instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a)) where
     pieces (Bool b) = pieces b
     restore = Bool Haskell.. restore
     typeSize = 1
-
-instance Arithmetic a => DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) where
-    isZero x = Bool (isZeroC x)
-
-instance Arithmetic a => Eq (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a) where
-    x == y = isZero (x - y)
-    x /= y = not $ isZero (x - y)
-
-instance {-# OVERLAPPING #-} SymbolicData a x => Conditional (Bool (ArithmeticCircuit a)) x where
-    bool brFalse brTrue (Bool b) =
-        let f' = pieces brFalse
-            t' = pieces brTrue
-        in restore $ zipWith (\f t -> b * (t - f) + f) f' t'
 
 -- TODO: make a proper implementation of Arbitrary
 instance Arithmetic a => Arbitrary (ArithmeticCircuit a) where

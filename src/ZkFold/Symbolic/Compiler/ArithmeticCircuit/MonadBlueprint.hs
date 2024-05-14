@@ -29,11 +29,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal as I
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
 import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
-import           ZkFold.Symbolic.Data.Conditional                    (Conditional (..))
-import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
 
-type WitnessField a x = (Algebra a x, FiniteField x, BinaryExpansion x,
-    Eq (Bool x) x, Conditional (Bool x) x, Conditional (Bool x) (Bool x))
+type WitnessField a x = (Algebra a x, FiniteField x, BinaryExpansion x, DiscreteField x)
 -- ^ DSL for constructing witnesses in an arithmetic circuit. @a@ is a base
 -- field; @x@ is a "field of witnesses over @a@" which you can safely assume to
 -- be identical to @a@ with internalized equality.
@@ -143,13 +140,3 @@ circuits b = let (os, r) = runState b mempty in (\o -> r { acOutput = o }) <$> o
 
 sources :: forall a i . (FiniteField a, Ord i) => Witness i a -> Set i
 sources = runSources . ($ Sources @a . Set.singleton)
-
-instance Ord i => Eq (Bool (Sources a i)) (Sources a i) where
-  x == y = Bool (x <> y)
-  x /= y = Bool (x <> y)
-
-instance (Finite a, Ord i) => Conditional (Bool (Sources a i)) (Sources a i) where
-  bool x y (Bool b) = x <> y <> b
-
-instance (Finite a, Ord i) => Conditional (Bool (Sources a i)) (Bool (Sources a i)) where
-  bool (Bool x) (Bool y) (Bool b) = Bool (x <> y <> b)

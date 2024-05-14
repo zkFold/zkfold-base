@@ -20,9 +20,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                                            (splitAt, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-import           ZkFold.Symbolic.Data.Bool                                 (Bool)
-import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
-import           ZkFold.Symbolic.Data.Eq                                   (Eq (..))
 
 boolCheckC :: Arithmetic a => ArithmeticCircuit a -> ArithmeticCircuit a
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
@@ -78,9 +75,6 @@ invertC r = circuit $ snd <$> runInvert r
 runInvert :: MonadBlueprint i a m => ArithmeticCircuit a -> m (i, i)
 runInvert r = do
     i <- runCircuit r
-    j <- newConstrained (\x j -> x i * x j) (isZero . ($ i))
+    j <- newConstrained (\x j -> x i * x j) (equal zero . ($ i))
     k <- newConstrained (\x k -> x i * x k + x j - one) (finv . ($ i))
     return (j, k)
-    where
-      isZero :: forall a . (Ring a, Eq (Bool a) a, Conditional (Bool a) a) => a -> a
-      isZero x = bool @(Bool a) zero one (x == zero)

@@ -51,3 +51,9 @@ instance Ord i => Field (Sources a i) where
 
 instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where
   binaryExpansion = replicate (numberOfBits @a)
+
+instance Ord i => DiscreteField (Sources a i) where
+  equal x y = x <> y
+
+instance Ord i => TrichotomyField (Sources a i) where
+  trichotomy x y = x <> y
