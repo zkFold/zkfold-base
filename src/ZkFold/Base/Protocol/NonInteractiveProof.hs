@@ -58,7 +58,16 @@ class NonInteractiveProof a where
 
     verify :: Setup a -> Input a -> Proof a -> Bool
 
-proveAPI :: forall a . (NonInteractiveProof a, Binary (Setup a), Binary (Witness a), Binary (Input a), Binary (Proof a)) => ByteString -> ByteString -> ByteString
+proveAPI
+    :: forall a
+    . (NonInteractiveProof a
+    , Binary (Setup a)
+    , Binary (Witness a)
+    , Binary (Input a)
+    , Binary (Proof a))
+    => ByteString
+    -> ByteString
+    -> ByteString
 proveAPI bsS bsW = fromMaybe empty $ do
     s <- fromByteString bsS
     w <- fromByteString bsW
