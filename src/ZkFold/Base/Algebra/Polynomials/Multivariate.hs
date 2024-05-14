@@ -57,6 +57,16 @@ polynomial ::
     P c i j (Map i j) [(c, M i j (Map i j))]
 polynomial = foldr (\(c, m) x -> if c == zero then x else P [(c, m)] + x) zero
 
+instance Ord i => IsList (M i j (Map i j)) where
+    type Item (M i j (Map i j)) = (i, j)
+    toList (M m) = toList m
+    fromList m = M $ fromList m
+
+instance (Ord i, Eq c, Field c, Ord j, Semiring j) => IsList (P c i j (Map i j) [(c, M i j (Map i j))]) where
+    type Item (P c i j (Map i j) [(c, M i j (Map i j))]) = (c, Map i j)
+    toList (P p) = second (\(M m) -> m) <$> p
+    fromList p = polynomial $ second monomial <$> p
+
 -- | @'var' i@ is a polynomial \(p(x) = x_i\)
 var :: Polynomial c i j => i -> P c i j (Map i j) [(c, M i j (Map i j))]
 var x = polynomial [(one, monomial $ fromList [(x, one)])]

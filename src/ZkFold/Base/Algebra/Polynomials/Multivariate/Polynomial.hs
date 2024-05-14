@@ -34,11 +34,6 @@ type Polynomial c i j = (Eq c, Field c, Monomial i j)
 newtype P c i j m p = P p
     deriving (Generic, NFData, FromJSON, ToJSON)
 
-instance IsList (P c i j (Map i j) [(c, M i j (Map i j))]) where
-    type Item (P c i j (Map i j) [(c, M i j (Map i j))]) = (c, Map i j)
-    toList (P p) = second (\(M m) -> m) <$> p
-    fromList p = P $ second M <$> p
-
 instance (Show c, Show i, Show j, Monomial i j) => Show (P c i j (Map i j) [(c, M i j (Map i j))]) where
     show (P p) = intercalate " + "
         $ p <&> \(c, m) -> show c <> "∙" <> show (m :: M i j (Map i j))

@@ -29,11 +29,6 @@ type Monomial i j = (Variable i, Ord j, Semiring j)
 newtype M i j m = M m
     deriving (Generic, NFData, FromJSON, ToJSON)
 
-instance Ord i => IsList (M i j (Map i j)) where
-    type Item (M i j (Map i j)) = (i, j)
-    toList (M m) = toList m
-    fromList m = M $ fromList m
-
 instance (Show i, Show j, Monomial i j) => Show (M i j (Map i j)) where
     show (M m) = intercalate "∙" . map showVar $ toList m
         where
