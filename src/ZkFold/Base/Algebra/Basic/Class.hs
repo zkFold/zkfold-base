@@ -6,6 +6,7 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
+import           Data.Bool                        (bool)
 import           Data.Kind                        (Type)
 import           GHC.Natural                      (naturalFromInteger)
 import           Numeric.Natural                  (Natural)
@@ -359,6 +360,40 @@ type FiniteMultiplicativeGroup a = (Finite a, MultiplicativeGroup a)
 type FiniteField a = (Finite a, Field a)
 
 type PrimeField a = (FiniteField a, Prime (Order a))
+
+{- | A field is a commutative ring in which an element is
+invertible if and only if it is nonzero.
+In a discrete field an element is invertible xor it equals zero.
+That is equivalent in classical logic but stronger in constructive logic.
+Every element is either 0 or invertible, and 0 ≠ 1.
+
+We represent a discrete field as a field with an
+internal equality function which returns `one`
+for equal field elements and `zero` for distinct field elements.
+-}
+class Field a => DiscreteField' a where
+    equal :: a -> a -> a
+    default equal :: Eq a => a -> a -> a
+    equal a b = bool zero one (a == b)
+
+{- | An ordering of a field is usually required to have compatibility laws with
+respect to addition and multiplication. However, we can drop that requirement and
+define a trichotomy field as one with an internal total ordering.
+We represent a trichotomy field as a discrete field with an internal comparison of
+field elements returning `negate` `one` for <, `zero` for =, and `one`
+for >. The law of trichotomy is that for any two field elements, exactly one
+of the relations <, =, or > holds. Thus we require that -1, 0 and 1 are distinct
+field elements.
+
+prop> equal a b = one - (trichotomy a b)^2
+-}
+class DiscreteField' a => TrichotomyField a where
+    trichotomy :: a -> a -> a
+    default trichotomy :: Ord a => a -> a -> a
+    trichotomy a b = case compare a b of
+        LT -> negate one
+        EQ -> zero
+        GT -> one
 
 --------------------------------------------------------------------------------
 

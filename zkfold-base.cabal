@@ -86,6 +86,7 @@ library
       ZkFold.Base.Algebra.Basic.Number
       ZkFold.Base.Algebra.Basic.Permutations
       ZkFold.Base.Algebra.Basic.DFT
+      ZkFold.Base.Algebra.Basic.VectorSpace
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.Ed25519
       ZkFold.Base.Algebra.EllipticCurve.Class
@@ -158,6 +159,7 @@ library
       ZkFold.Symbolic.Types
     build-depends:
       base                          >= 4.9 && < 5,
+      adjunctions                           < 4.5,
       aeson                                 < 2.3,
       binary                               < 0.11,
       bytestring                           < 0.12,
