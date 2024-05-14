@@ -4,8 +4,8 @@
 module ZkFold.Base.Protocol.NonInteractiveProof where
 
 import           Crypto.Hash.SHA256          (hash)
-import           Data.ByteString             (ByteString, cons)
-import           Data.Maybe                  (fromJust)
+import           Data.ByteString             (ByteString, cons, empty)
+import           Data.Maybe                  (fromJust, fromMaybe)
 import           Numeric.Natural             (Natural)
 import           Prelude
 
@@ -58,3 +58,8 @@ class NonInteractiveProof a where
 
     verify :: Setup a -> Input a -> Proof a -> Bool
 
+proveAPI :: forall a . (NonInteractiveProof a, Binary (Setup a), Binary (Witness a), Binary (Input a), Binary (Proof a)) => ByteString -> ByteString -> ByteString
+proveAPI bsS bsW = fromMaybe empty $ do
+    s <- fromByteString bsS
+    w <- fromByteString bsW
+    return $ toByteString $ prove @a s w
