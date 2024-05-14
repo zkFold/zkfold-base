@@ -1,11 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof where
 
+import           Control.DeepSeq             (NFData)
 import           Crypto.Hash.SHA256          (hash)
 import           Data.ByteString             (ByteString, cons)
 import           Data.Maybe                  (fromJust)
+import           GHC.Generics                (Generic)
 import           Numeric.Natural             (Natural)
 import           Prelude
 
@@ -58,3 +61,23 @@ class NonInteractiveProof a where
 
     verify :: Setup a -> Input a -> Proof a -> Bool
 
+data ProveAPIResult = ProveAPISuccess ByteString | ProveAPIErrorSetup | ProveAPIErrorWitness
+    deriving (Show, Eq, Generic, NFData)
+
+proveAPI
+    :: forall a
+    . (NonInteractiveProof a
+    , Binary (Setup a)
+    , Binary (Witness a)
+    , Binary (Input a)
+    , Binary (Proof a))
+    => ByteString
+    -> ByteString
+    -> ProveAPIResult
+proveAPI bsS bsW =
+    let mS = fromByteString bsS
+        mW = fromByteString bsW
+    in case (mS, mW) of
+        (Nothing, _)     -> ProveAPIErrorSetup
+        (_, Nothing)     -> ProveAPIErrorWitness
+        (Just s, Just w) -> ProveAPISuccess $ toByteString $ prove @a s w
