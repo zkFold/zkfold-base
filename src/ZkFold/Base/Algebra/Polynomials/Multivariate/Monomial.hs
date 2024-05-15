@@ -21,17 +21,18 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 import           Control.DeepSeq                 (NFData)
 import           Data.Aeson                      (FromJSON, ToJSON)
 import           Data.List                       (intercalate)
-import           Data.Map.Strict                 (Map, differenceWith, filter, foldrWithKey, fromListWith, mapKeys, empty, unionWith)
+import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, fromListWith,
+                                                  mapKeys, unionWith)
 import qualified Data.Map.Strict                 as Map
 import           GHC.Generics                    (Generic)
 import           GHC.IsList                      (IsList (..))
 import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), drop, filter, lcm, length, sum, take, (^), (!!), (/))
+import           Prelude                         hiding (Num (..), drop, filter, lcm, length, sum, take, (!!), (/), (^))
 import           Test.QuickCheck                 (Arbitrary (..))
 
-import           ZkFold.Prelude                  (elemIndex)
-import           ZkFold.Base.Data.Vector         (Vector (..))
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.Vector         (Vector (..))
+import           ZkFold.Prelude                  (elemIndex)
 
 type Variable i = Ord i
 
