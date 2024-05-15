@@ -4,8 +4,18 @@
 {-# LANGUAGE TypeOperators                #-}
 
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
-    ( P(..)
-    , Polynomial
+    ( Polynomial
+    , Polynomial'
+    , polynomial
+    , PolynomialAny
+    , PolynomialRepAny
+    , PolynomialBoundedDegree
+    , PolynomialRepBoundedDegree
+    , mapCoeffs
+    , var
+    , evalPolynomial
+    , mapVarPolynomial
+    , variables
     ) where
 
 import           Control.DeepSeq                                       (NFData)
@@ -14,6 +24,7 @@ import           Data.Bifunctor                                        (Bifuncto
 import           Data.Functor                                          ((<&>))
 import           Data.List                                             (foldl', intercalate)
 import           Data.Map.Strict                                       (Map, empty)
+import           Data.Set                                              (Set, singleton)
 import           GHC.Generics                                          (Generic)
 import           GHC.IsList                                            (IsList (..))
 import           Numeric.Natural                                       (Natural)
@@ -22,6 +33,7 @@ import           Prelude                                               hiding (N
 import           Test.QuickCheck                                       (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 
 -- | A class for polynomials.
@@ -34,10 +46,31 @@ type Polynomial c i j = (Eq c, Field c, Monomial i j)
 newtype P c i j m p = P p
     deriving (Generic, NFData, FromJSON, ToJSON)
 
-instance IsList (P c i j (Map i j) [(c, M i j (Map i j))]) where
+-- | Most general type for a multivariate polynomial
+type Polynomial' c = P c Natural Natural (Map Natural Natural) [(c, Monomial')]
+
+type PolynomialRepAny c = [(c, MonomialAny)]
+
+type PolynomialRepBoundedDegree c i d = [(c, MonomialBoundedDegree i d)]
+
+-- | Most general type for a multivariate polynomial, parameterized by the field of coefficients
+type PolynomialAny c = P c Integer Integer MonomialRepAny (PolynomialRepAny c)
+
+-- | Most general type for a multivariate polynomial with bounded degree,
+-- parameterized by the field of coefficients, the type of variables, and the degree
+type PolynomialBoundedDegree c i d = P c i Bool (MonomialRepBoundedDegree i d) (PolynomialRepBoundedDegree c i d)
+
+-- | Polynomial constructor
+polynomial ::
+    Polynomial c i j =>
+    [(c, M i j (Map i j))] ->
+    P c i j (Map i j) [(c, M i j (Map i j))]
+polynomial = foldr (\(c, m) x -> if c == zero then x else P [(c, m)] + x) zero
+
+instance (Ord i, Eq c, Field c, Ord j, Semiring j) => IsList (P c i j (Map i j) [(c, M i j (Map i j))]) where
     type Item (P c i j (Map i j) [(c, M i j (Map i j))]) = (c, Map i j)
     toList (P p) = second (\(M m) -> m) <$> p
-    fromList p = P $ second M <$> p
+    fromList p = polynomial $ second monomial <$> p
 
 instance (Show c, Show i, Show j, Monomial i j) => Show (P c i j (Map i j) [(c, M i j (Map i j))]) where
     show (P p) = intercalate " + "
@@ -99,3 +132,26 @@ instance FromConstant c' c => FromConstant c' (P c i j (Map i j) [(c, M i j (Map
 instance Polynomial c i j => Semiring (P c i j (Map i j) [(c, M i j (Map i j))])
 
 instance Polynomial c i j => Ring (P c i j (Map i j) [(c, M i j (Map i j))])
+
+-- | @'var' i@ is a polynomial \(p(x) = x_i\)
+var :: Polynomial c i j => i -> P c i j (Map i j) [(c, M i j (Map i j))]
+var x = polynomial [(one, monomial $ fromList [(x, one)])]
+
+evalPolynomial :: forall c i j b m .
+    Algebra c b =>
+    ((i -> b) -> M i j m -> b) -> (i -> b) -> P c i j m [(c, M i j m)] -> b
+evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
+
+variables :: forall c .
+    MultiplicativeMonoid c =>
+    Polynomial' c -> Set Natural
+variables = runSources . evalPolynomial evalMapM (Sources @c . singleton)
+
+mapCoeffs :: forall c c' i j .
+    (c -> c')
+    -> P c i j (Map i j) [(c, M i j (Map i j))]
+    -> P c' i j (Map i j) [(c', M i j (Map i j))]
+mapCoeffs f (P p) = P $ p <&> first f
+
+mapVarPolynomial :: [Natural] -> Polynomial' c -> Polynomial' c
+mapVarPolynomial vars (P ms) = P $ second (mapVarMonomial vars) <$> ms
