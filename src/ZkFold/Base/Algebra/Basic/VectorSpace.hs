@@ -83,6 +83,8 @@ instance VectorSpace a v => VectorSpace a (M1 i c v) where
     indexV (M1 v) = indexV v
     tabulateV f = M1 (tabulateV f)
 
+deriving via Representably Par1 instance VectorSpace a Par1
+
 -- zero dimensional vector space
 deriving via Representably U1 instance VectorSpace a U1
 
