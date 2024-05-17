@@ -35,7 +35,6 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Monomial', Polynomial', evalMapM, evalPolynomial,
                                                                mapCoeffs, var)
 import           ZkFold.Prelude                               (drop, length)
-import           ZkFold.Symbolic.Types                        (Symbolic)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a = ArithmeticCircuit
@@ -88,7 +87,7 @@ type VarField = Zp BLS12_381_Scalar
 toField :: Arithmetic a => a -> VarField
 toField = toZp . fromConstant . fromBinary @Natural . castBits . binaryExpansion
 
-type Arithmetic a = (Symbolic a, Eq a)
+type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a, DiscreteField a)
 
 -- TODO: Remove the hardcoded constant.
 toVar :: forall a . Arithmetic a => [Natural] -> Constraint a -> Natural
