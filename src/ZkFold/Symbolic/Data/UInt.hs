@@ -11,7 +11,7 @@ module ZkFold.Symbolic.Data.UInt (
     StrictNum(..),
     UInt(..),
     toConstant,
-    eea
+    EEA(eea)
 ) where
 
 import           Control.Applicative                                       ((<*>))
