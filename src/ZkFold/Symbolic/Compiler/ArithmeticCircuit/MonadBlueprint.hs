@@ -28,7 +28,6 @@ import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal as I
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
-import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
 
 type WitnessField a x = (Algebra a x, FiniteField x, BinaryExpansion x, DiscreteField x)
 -- ^ DSL for constructing witnesses in an arithmetic circuit. @a@ is a base

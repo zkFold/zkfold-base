@@ -42,7 +42,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expa
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.Compare
 
 -- TODO (Issue #18): hide this constructor
 data UInt (n :: Natural) a = UInt ![a] !a
