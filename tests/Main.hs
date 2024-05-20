@@ -6,6 +6,7 @@ import           Prelude                                     hiding (Bool, Fract
                                                               replicate, take, (==))
 import           Tests.ArithmeticCircuit                     (specArithmeticCircuit)
 import           Tests.Arithmetization                       (specArithmetization)
+import           Tests.Binary                                (specBinary)
 import           Tests.ByteString                            (specByteString)
 import           Tests.Field                                 (specField)
 import           Tests.GroebnerBasis                         (specGroebner)
@@ -35,6 +36,8 @@ main = do
     specByteString @BLS12_381_Scalar @32
     specByteString @BLS12_381_Scalar @512
     specByteString @BLS12_381_Scalar @508 -- Twice the number of bits encoded by BLS12_381_Scalar.
+
+    specBinary
 
     specSHA2Natural @"SHA224" @(Zp BLS12_381_Scalar)
     specSHA2Natural @"SHA256" @(Zp BLS12_381_Scalar)

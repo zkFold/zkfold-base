@@ -153,7 +153,7 @@ instance FromJSON (Zp p) where
     parseJSON = fmap Zp . parseJSON
 
 instance KnownNat p => Binary (Zp p) where
-    put (Zp a) = put a
+    put a = put (LittleEndian (toConstant @_ @Natural a))
     get = fromIntegral . unLittleEndian <$> get
 
 instance KnownNat p => Arbitrary (Zp p) where
