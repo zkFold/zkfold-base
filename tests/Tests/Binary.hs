@@ -1,8 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module Tests.Binary (specBinary) where
 
 import           Data.Binary
@@ -20,7 +15,7 @@ specBinary = hspec $ describe "Binary instance" $ do
   prop "roundtrips LittleEndian" $ doesRoundtrip @LittleEndian
   prop "roundtrips Zp BLS12_381_Scalar" $ doesRoundtrip @(Zp BLS12_381_Scalar)
 
-doesRoundtrip :: forall a. (Binary a, Eq a, Show a) => a -> Property
+doesRoundtrip :: (Binary a, Eq a, Show a) => a -> Property
 doesRoundtrip x = do
     let xEncoded = toByteString x
     let xDecoded = fromByteString xEncoded
