@@ -152,7 +152,9 @@ instance ToJSON (Zp p) where
 instance FromJSON (Zp p) where
     parseJSON = fmap Zp . parseJSON
 
-deriving newtype instance Binary (Zp p)
+instance KnownNat p => Binary (Zp p) where
+    put (Zp a) = put a
+    get = toZp <$> get
 
 instance KnownNat p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, fromIntegral (value @p) - 1)
