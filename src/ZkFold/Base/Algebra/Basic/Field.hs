@@ -154,7 +154,7 @@ instance FromJSON (Zp p) where
 
 instance KnownNat p => Binary (Zp p) where
     put (Zp a) = put a
-    get = toZp <$> get
+    get = fromIntegral . unLittleEndian <$> get
 
 instance KnownNat p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, fromIntegral (value @p) - 1)
