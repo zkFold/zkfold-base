@@ -18,6 +18,7 @@ import qualified Data.ByteString.Lazy as Lazy
 import           Data.Foldable        (foldl')
 import           Numeric.Natural      (Natural)
 import           Prelude
+import           Test.QuickCheck      (Arbitrary (..))
 
 toByteString :: Binary a => a -> Strict.ByteString
 toByteString = Lazy.toStrict . runPut . put
@@ -43,4 +44,6 @@ instance Binary LittleEndian where
     | n == 0 = mempty
     | otherwise =
       let (n', r) = n `divMod` 256
-      in putWord8 (fromIntegral r) <> put (LittleEndian n')
+      in put (LittleEndian n') <> putWord8 (fromIntegral r)
+instance Arbitrary LittleEndian where
+  arbitrary = fromInteger . abs <$> arbitrary

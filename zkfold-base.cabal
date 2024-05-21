@@ -101,10 +101,6 @@ library
       ZkFold.Base.Data.Sparse.Vector
       ZkFold.Base.Data.Type
       ZkFold.Base.Data.Vector
-      ZkFold.Base.Protocol.ARK.BabyHyrax
-      ZkFold.Base.Protocol.ARK.HyperPlonk
-      ZkFold.Base.Protocol.ARK.Lasso
-      ZkFold.Base.Protocol.ARK.Nova
       ZkFold.Base.Protocol.ARK.Plonk
       ZkFold.Base.Protocol.ARK.Plonk.Internal
       ZkFold.Base.Protocol.ARK.Protostar
@@ -116,7 +112,6 @@ library
       ZkFold.Base.Protocol.ARK.Protostar.Permutation
       ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
       ZkFold.Base.Protocol.Commitment.KZG
-      ZkFold.Base.Protocol.Commitment.Sona
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Prelude
       ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
@@ -185,6 +180,7 @@ test-suite zkfold-base-test
       Tests.Arithmetization.Test1
       Tests.Arithmetization.Test2
       Tests.Arithmetization.Test3
+      Tests.Binary
       Tests.ByteString
       Tests.Field
       Tests.GroebnerBasis
@@ -200,6 +196,7 @@ test-suite zkfold-base-test
       Tests.Univariate
     build-depends:
       base                          >= 4.9 && < 5,
+      binary                               < 0.11,
       bytestring                                 ,
       containers                                 ,
       directory                        <= 1.3.8.3,
