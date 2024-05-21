@@ -46,7 +46,15 @@ import           ZkFold.Symbolic.Data.Compare
 
 -- TODO (Issue #18): hide this constructor
 data UInt (n :: Natural) a = UInt ![a] !a
-    deriving (Haskell.Show, Haskell.Eq, Haskell.Foldable, Generic, NFData)
+    deriving
+      ( Haskell.Show
+      , Haskell.Eq
+      , Haskell.Functor
+      , Haskell.Foldable
+      , Haskell.Traversable
+      , Generic
+      , NFData
+      )
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
     fromConstant = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n))

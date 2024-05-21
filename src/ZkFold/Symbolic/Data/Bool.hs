@@ -5,7 +5,7 @@ DerivingStrategies
 #-}
 
 module ZkFold.Symbolic.Data.Bool (
-    Bool(..),
+    Bool(Bool),
     true,
     false,
     not,
@@ -14,7 +14,9 @@ module ZkFold.Symbolic.Data.Bool (
     xor,
     bool,
     ifThenElse,
-    (?)
+    (?),
+    Eq (..),
+    (/=)
 ) where
 
 import           Data.Functor.Identity                 (Identity (..))
@@ -26,7 +28,11 @@ import           ZkFold.Symbolic.Types                 (Symbolic)
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool a = Bool a
-  deriving stock Haskell.Foldable
+  deriving stock
+    ( Haskell.Functor
+    , Haskell.Foldable
+    , Haskell.Traversable
+    )
 deriving via Identity instance VectorSpace a Bool
 instance (Symbolic a, Haskell.Eq a) => Haskell.Show (Bool a) where
     show (Bool a) = if a Haskell.== one then "true" else "false"
@@ -56,3 +62,13 @@ ifThenElse, (?)
   :: (Symbolic a, VectorSpace a u) => Bool a -> u a -> u a -> u a
 ifThenElse b t f = bool f t b
 (?) = ifThenElse
+
+class (VectorSpace a u, Haskell.Foldable u) => Eq a u where
+    infix 4 ==
+    (==) :: Symbolic a => u a -> u a -> Bool a
+    u == v = Bool (Haskell.foldl (*) one (zipWithV equal u v))
+instance Eq a Bool
+
+infix 4 /=
+(/=) :: (Symbolic a, Eq a u) => u a -> u a -> Bool a
+u /= b = not (u == b)

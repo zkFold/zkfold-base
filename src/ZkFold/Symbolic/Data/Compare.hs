@@ -4,9 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Compare
-  ( Eq (..)
-  , (/=)
-  , Ordering (..)
+  ( Ordering
   , lt
   , eq
   , gt
@@ -27,21 +25,10 @@ import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Types                 (Symbolic)
 
-class (VectorSpace a u, Haskell.Foldable u) => Eq a u where
-    infix 4 ==
-    (==) :: Symbolic a => u a -> u a -> Bool a
-    u == v = Bool (Haskell.foldl (*) one (zipWithV equal u v))
-instance Eq a Bool
-instance Eq a Ordering
-
-infix 4 /=
-(/=) :: (Symbolic a, Eq a u) => u a -> u a -> Bool a
-u /= b = not (u == b)
-
--- TODO: Don't export constructor
 newtype Ordering a = Ordering a
   deriving stock Haskell.Foldable
 deriving via Identity instance VectorSpace a Ordering
+instance Eq a Ordering
 instance (Symbolic a, Haskell.Eq a) => Haskell.Show (Ordering a) where
     show (Ordering a) =
         if a Haskell.== negate one then "<"
