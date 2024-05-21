@@ -17,6 +17,7 @@ module ZkFold.Symbolic.Data.UInt (
 import           Control.Applicative                                       ((<*>))
 import           Control.DeepSeq
 import           Control.Monad.State                                       (StateT (..))
+import qualified Data.Bool                                                 as Haskell
 import           Data.Foldable                                             (foldr, foldrM, for_)
 import           Data.Maybe
 import           Data.Functor                                              ((<$>))
@@ -101,60 +102,40 @@ cast n =
 class EEA a where
     eea :: a -> a -> (a,a,a)
 instance (Finite (Zp p), KnownNat n) => EEA (UInt n (Zp p)) where
-    eea = Haskell.undefined
+    eea a b = eea' 1 a b one zero zero one
+      where
+        iterations :: Natural
+        iterations = value @n * 2 + 1
+
+        eea' iteration oldR r oldS s oldT t
+          | iteration Haskell.== iterations = (oldS, oldT, oldR)
+          | otherwise = Haskell.bool recurse
+              ( (if Haskell.even iteration then b - oldS else oldS),
+                (if Haskell.odd iteration then a - oldT else oldT),
+                oldR )
+              (r Haskell.== zero)
+            where
+                quotient = oldR `div` r
+
+                recurse = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
+
 instance (Arithmetic a, KnownNat n) => EEA (UInt n (ArithmeticCircuit a)) where
     eea a b = let s:*:t:*:r = eea' 1 a b one zero zero one in (s,t,r)
       where
         iterations :: Natural
         iterations = value @n * 2 + 1
 
-        eea' :: Natural -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> (UInt n :*: UInt n :*: UInt n) a
         eea' iteration oldR r oldS s oldT t
           | iteration Haskell.== iterations = oldS :*: oldT :*: oldR
-          | otherwise = bool rec
-              ( if Haskell.even iteration then b - oldS else oldS :*:
-                if Haskell.odd iteration then a - oldT else oldT :*:
-                oldR
-              )
+          | otherwise = bool recurse
+              ( (if Haskell.even iteration then b - oldS else oldS) :*:
+                (if Haskell.odd iteration then a - oldT else oldT) :*:
+                oldR )
               (r == zero)
             where
                 quotient = oldR `div` r
 
-                rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
-
--- | Extended Euclidean algorithm.
--- Exploits the fact that @s_i@ and @t_i@ change signs in turns on each iteration, so it adjusts the formulas correspondingly
--- and never requires signed arithmetic.
--- (i.e. it calculates @x = b - a@ instead of @x = a - b@ when @a - b@ is negative
--- and changes @y - x@ to @y + x@ on the following iteration)
--- This only affects Bezout coefficients, remainders are calculated without changes as they are always non-negative.
---
--- If the algorithm is used to calculate Bezout coefficients,
--- it requires that @a@ and @b@ are coprime, @b@ is not 1 and @a@ is not 0, otherwise the optimisation above is not valid.
---
--- If the algorithm is only used to find @gcd(a, b)@ (i.e. @s@ and @t@ will be discarded), @a@ and @b@ can be arbitrary integers.
---
--- eea
---     :: forall n a
---     .  EuclideanDomain (UInt n a)
---     => KnownNat n
---     => AdditiveGroup (UInt n a)
---     => Eq (Bool a) (UInt n a)
---     => Conditional (Bool a) (UInt n a, UInt n a, UInt n a)
---     => UInt n a -> UInt n a -> (UInt n a, UInt n a, UInt n a)
--- eea a b = eea' 1 a b one zero zero one
---     where
---         iterations :: Natural
---         iterations = value @n * 2 + 1
-
---         eea' :: Natural -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> (UInt n a, UInt n a, UInt n a)
---         eea' iteration oldR r oldS s oldT t
---           | iteration == iterations = (oldS, oldT, oldR)
---           | otherwise = bool @(Bool a) rec (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR) (r == zero)
---             where
---                 quotient = oldR `div` r
-
---                 rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
+                recurse = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
 
 --------------------------------------------------------------------------------
 
@@ -260,29 +241,6 @@ instance (Arithmetic a, KnownNat n) => EuclideanDomain (UInt n (ArithmeticCircui
                 let rs = addBit (r' + r') (numeratorBits !! i)
                  in case bool (q' :*: rs) ((q' + fromConstant ((2 :: Natural) ^ i)) :*: (rs - d)) (rs >= d)
                  of q'':*:r'' -> (q'',r'')
-
-instance (Arithmetic a, KnownNat n) => Ord (ArithmeticCircuit a) (UInt n) where
-    compare (UInt rs1 r1) (UInt rs2 r2) =
-        let reverseLexicographical x y = y * y * (y - x) + x
-        in Haskell.undefined
-    -- x <= y = y >= x
-
-    -- x <  y = y > x
-
-    -- (UInt rs1 r1) >= (UInt rs2 r2) =
-    --     circuitGE
-    --         (getBitsBE r1 <> Haskell.reverse (concatMap getBitsBE rs1))
-    --         (getBitsBE r2 <> Haskell.reverse (concatMap getBitsBE rs2))
-
-    -- (UInt rs1 r1) > (UInt rs2 r2) =
-    --     circuitGT
-    --         (getBitsBE r1 <> Haskell.reverse (concatMap getBitsBE rs1))
-    --         (getBitsBE r2 <> Haskell.reverse (concatMap getBitsBE rs2))
-
-    -- max x y = bool @(Bool (ArithmeticCircuit a)) x y $ x < y
-
-    -- min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
-
 
 instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (UInt n (ArithmeticCircuit a)) where
     UInt [] x + UInt [] y = UInt [] $ circuit $ do
@@ -408,6 +366,9 @@ instance (Arithmetic a, KnownNat n) => Semiring (UInt n (ArithmeticCircuit a))
 instance (Arithmetic a, KnownNat n) => Ring (UInt n (ArithmeticCircuit a))
 
 instance (Arithmetic a, KnownNat n) => Eq (ArithmeticCircuit a) (UInt n)
+
+-- TODO: Test this instance for correctness
+instance (Arithmetic a, KnownNat n) => Ord (ArithmeticCircuit a) (UInt n)
 
 instance (Arithmetic a, KnownNat n) => Arbitrary (UInt n (ArithmeticCircuit a)) where
     arbitrary = UInt
