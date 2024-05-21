@@ -18,8 +18,9 @@ import           Control.Applicative                                       ((<*>
 import           Control.DeepSeq
 import           Control.Monad.State                                       (StateT (..))
 import           Data.Foldable                                             (foldr, foldrM, for_)
+import           Data.Maybe
 import           Data.Functor                                              ((<$>))
-import           Data.List                                                 (map, unfoldr, zip, zipWith)
+import           Data.List                                                 (lookup, map, unfoldr, zip, zipWith)
 import           Data.Map                                                  (fromList, (!))
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
@@ -35,6 +36,7 @@ import           Test.QuickCheck                                           (Arbi
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA,
                                                                             splitAt, take, (!!))
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
@@ -55,6 +57,16 @@ data UInt (n :: Natural) a = UInt ![a] !a
       , Generic
       , NFData
       )
+
+instance (FiniteField a, KnownNat n) => VectorSpace a (UInt n) where
+    type Basis a (UInt n) = Maybe Haskell.Int
+    indexV (UInt _ a) Nothing   = a
+    indexV (UInt v _) (Just ix) = fromMaybe zero (lookup ix (zip [0..] v))
+    tabulateV f =
+        let r = numberOfRegisters @a @n -! 1
+        in UInt
+            [f (Just i) | i <- [0 .. Haskell.fromIntegral r Haskell.- 1]]
+            (f Nothing)
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
     fromConstant = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n))
@@ -91,7 +103,24 @@ class EEA a where
 instance (Finite (Zp p), KnownNat n) => EEA (UInt n (Zp p)) where
     eea = Haskell.undefined
 instance (Arithmetic a, KnownNat n) => EEA (UInt n (ArithmeticCircuit a)) where
-    eea = Haskell.undefined
+    eea a b = let s:*:t:*:r = eea' 1 a b one zero zero one in (s,t,r)
+      where
+        iterations :: Natural
+        iterations = value @n * 2 + 1
+
+        eea' :: Natural -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> UInt n a -> (UInt n :*: UInt n :*: UInt n) a
+        eea' iteration oldR r oldS s oldT t
+          | iteration Haskell.== iterations = oldS :*: oldT :*: oldR
+          | otherwise = bool rec
+              ( if Haskell.even iteration then b - oldS else oldS :*:
+                if Haskell.odd iteration then a - oldT else oldT :*:
+                oldR
+              )
+              (r == zero)
+            where
+                quotient = oldR `div` r
+
+                rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
 
 -- | Extended Euclidean algorithm.
 -- Exploits the fact that @s_i@ and @t_i@ change signs in turns on each iteration, so it adjusts the formulas correspondingly
@@ -139,10 +168,10 @@ instance (Finite (Zp p), KnownNat n) => EuclideanDomain (UInt n (Zp p)) where
     divMod n d = let (q, r) = Haskell.divMod (toConstant n :: Natural) (toConstant d :: Natural)
                   in (fromConstant q, fromConstant r)
 
-instance (Finite (Zp p), KnownNat n) => Eq (Zp p) (UInt n) where
+instance (Prime p, Finite (Zp p), KnownNat n) => Eq (Zp p) (UInt n) where
     x == y = Bool . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.== toConstant y
 
-instance (Finite (Zp p), KnownNat n) => Ord (Zp p) (UInt n) where
+instance (Prime p, Finite (Zp p), KnownNat n) => Ord (Zp p) (UInt n) where
     compare x y = case Haskell.compare (toConstant @_ @Natural x) (toConstant y) of
         Haskell.LT -> lt
         Haskell.EQ -> eq
@@ -230,7 +259,7 @@ instance (Arithmetic a, KnownNat n) => EuclideanDomain (UInt n (ArithmeticCircui
             longDivisionStep (q', r') i =
                 let rs = addBit (r' + r') (numeratorBits !! i)
                  in case bool (q' :*: rs) ((q' + fromConstant ((2 :: Natural) ^ i)) :*: (rs - d)) (rs >= d)
-                 of q'':*:r'' -> (q,r)
+                 of q'':*:r'' -> (q'',r'')
 
 instance (Arithmetic a, KnownNat n) => Ord (ArithmeticCircuit a) (UInt n) where
     compare (UInt rs1 r1) (UInt rs2 r2) =
