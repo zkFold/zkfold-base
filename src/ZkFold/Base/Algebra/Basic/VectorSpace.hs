@@ -18,8 +18,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 a `Field` then @v a@ is a vector space over it. If @a@ is a `Ring` then
 we have a free module, rather than a vector space. `VectorSpace` may also be thought of
 as a "monorepresentable" class, similar to `Representable` but with a fixed
-element type. A `VectorSpace` can be thought of as a fixed size tuple of variables
-@(x1,..,xn)@.
+element type. A `VectorSpace` can be thought of as a space of fixed size
+tuple of variables @(x1,..,xn)@.
 -}
 class VectorSpace a v where
     {- | The `Basis` for a `VectorSpace`. More accurately, `Basis` will be a spanning
