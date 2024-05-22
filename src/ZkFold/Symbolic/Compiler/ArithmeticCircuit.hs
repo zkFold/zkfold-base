@@ -53,9 +53,9 @@ applyArgs r args = execState (apply args) r
 
 -- | Optimizes the constraint system.
 --
--- TODO: Implement this.
+-- TODO: Implement nontrivial optimizations.
 optimize :: ArithmeticCircuit a -> ArithmeticCircuit a
-optimize = undefined
+optimize = id
 
 ----------------------------------- Information -----------------------------------
 
