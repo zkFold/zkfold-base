@@ -152,3 +152,11 @@ instance {-# OVERLAPPING #-}
         pi2 (_ :*: v) = v
 
     curryV k x = curryV (k . (:*:) x)
+
+composeFunctions
+  :: ( FunctionSpace a g
+     , FunctionSpace a f
+     , OutputSpace a f ~ InputSpace a g
+     )
+  => g -> f -> InputSpace a f a -> OutputSpace a g a
+composeFunctions g f = uncurryV g . uncurryV f
