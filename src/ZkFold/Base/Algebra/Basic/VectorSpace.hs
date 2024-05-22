@@ -110,9 +110,9 @@ The type @FunctionSpace a f => f@ should be equal to some
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v1 a -> v0 a@
 
-which via uncurrying is equivalent to
+which via multiple-uncurrying is equivalent to
 
-@(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1) a -> v0 a@
+@(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1 :*: U1) a -> v0 a@
 
 A `FunctionSpace` can be thought of as the space of functions of the form
 @(y1,..,yj) = f(x1,..,xi)@
