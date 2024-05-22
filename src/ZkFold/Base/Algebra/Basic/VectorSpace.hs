@@ -26,8 +26,8 @@ class VectorSpace a v where
     set with "out-of-bounds" basis elements corresponding with 0.
     -}
     type Basis a v :: Type
-    indexV :: v a -> Basis a v -> a
     tabulateV :: (Basis a v -> a) -> v a
+    indexV :: v a -> Basis a v -> a
 
 addV :: (AdditiveSemigroup a, VectorSpace a v) => v a -> v a -> v a
 addV = zipWithV (+)
