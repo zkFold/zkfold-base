@@ -121,11 +121,8 @@ class
   ( VectorSpace a (InputSpace a f)
   , VectorSpace a (OutputSpace a f)
   ) => FunctionSpace a f where
-    -- | Dually to vector spaces, a function of vector spaces
-    -- enables coindexing, essentially evaluation;
-    coindexV :: f -> InputSpace a f a -> OutputSpace a f a
-    -- | and also enables cotabulating.
-    cotabulateV :: (InputSpace a f a -> OutputSpace a f a) -> f
+    uncurryV :: f -> InputSpace a f a -> OutputSpace a f a
+    curryV :: (InputSpace a f a -> OutputSpace a f a) -> f
 
 type family InputSpace a f where
   InputSpace a (x a -> f) = x :*: InputSpace a f
@@ -140,8 +137,8 @@ instance {-# OVERLAPPABLE #-}
   , OutputSpace a (y a) ~ y
   , InputSpace a (y a) ~ U1
   ) => FunctionSpace a (y a) where
-    coindexV f _ = f
-    cotabulateV k = k U1
+    uncurryV f _ = f
+    curryV k = k U1
 
 instance {-# OVERLAPPING #-}
   ( VectorSpace a x
@@ -149,9 +146,9 @@ instance {-# OVERLAPPING #-}
   , InputSpace a (x a -> f) ~ x :*: InputSpace a f
   , FunctionSpace a f
   ) => FunctionSpace a (x a -> f) where
-    coindexV f i = coindexV (f (pi1 i)) (pi2 i)
+    uncurryV f i = uncurryV (f (pi1 i)) (pi2 i)
       where
         pi1 (u :*: _) = u
         pi2 (_ :*: v) = v
 
-    cotabulateV k x = cotabulateV (k . (:*:) x)
+    curryV k x = curryV (k . (:*:) x)
