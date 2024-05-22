@@ -8,7 +8,6 @@ module ZkFold.Base.Algebra.Basic.VectorSpace where
 import           Data.Functor.Identity           (Identity (..))
 import           Data.Functor.Rep
 import           Data.Kind                       (Type)
-import           Data.Void                       (Void, absurd)
 import           GHC.Generics                    hiding (Rep)
 import           Prelude                         hiding (Num (..), div, divMod, length, mod, negate, product, replicate,
                                                   sum, (/), (^))
@@ -26,8 +25,8 @@ class VectorSpace a v where
     set with "out-of-bounds" basis elements corresponding with 0.
     -}
     type Basis a v :: Type
-    tabulateV :: (Basis a v -> a) -> v a
     indexV :: v a -> Basis a v -> a
+    tabulateV :: (Basis a v -> a) -> v a
 
 addV :: (AdditiveSemigroup a, VectorSpace a v) => v a -> v a -> v a
 addV = zipWithV (+)
@@ -114,16 +113,19 @@ which via uncurrying is equivalent to
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1) a -> v0 a@
 -}
-class VectorSpace a (OutputSpace a f) => FunctionSpace a f where
-  -- | Dually to vector spaces, a function of vector spaces
-  -- enables coindexing, essentially evaluation, by tabulating its input;
-  coindexV :: f -> (InputBasis a f -> a) -> OutputSpace a f a
-  -- | and also enables cotabulating.
-  cotabulateV :: ((InputBasis a f -> a) -> OutputSpace a f a) -> f
+class
+  ( VectorSpace a (InputSpace a f)
+  , VectorSpace a (OutputSpace a f)
+  ) => FunctionSpace a f where
+    -- | Dually to vector spaces, a function of vector spaces
+    -- enables coindexing, essentially evaluation;
+    coindexV :: f -> InputSpace a f a -> OutputSpace a f a
+    -- | and also enables cotabulating.
+    cotabulateV :: (InputSpace a f a -> OutputSpace a f a) -> f
 
-type family InputBasis a f where
-  InputBasis a (x a -> f) = Either (Basis a x) (InputBasis a f)
-  InputBasis a (y a) = Void
+type family InputSpace a f where
+  InputSpace a (x a -> f) = x :*: InputSpace a f
+  InputSpace a (y a) = U1
 
 type family OutputSpace a f where
   OutputSpace a (x a -> f) = OutputSpace a f
@@ -132,16 +134,20 @@ type family OutputSpace a f where
 instance {-# OVERLAPPABLE #-}
   ( VectorSpace a y
   , OutputSpace a (y a) ~ y
-  , InputBasis a (y a) ~ Void
+  , InputSpace a (y a) ~ U1
   ) => FunctionSpace a (y a) where
     coindexV f _ = f
-    cotabulateV k = k absurd
+    cotabulateV k = k U1
 
 instance {-# OVERLAPPING #-}
   ( VectorSpace a x
   , OutputSpace a (x a -> f) ~ OutputSpace a f
-  , InputBasis a (x a -> f) ~ Either (Basis a x) (InputBasis a f)
+  , InputSpace a (x a -> f) ~ x :*: InputSpace a f
   , FunctionSpace a f
   ) => FunctionSpace a (x a -> f) where
-    coindexV f i = coindexV (f (tabulateV (i . Left))) (i . Right)
-    cotabulateV k x = cotabulateV (k . either (indexV x))
+    coindexV f i = coindexV (f (pi1 i)) (pi2 i)
+      where
+        pi1 (u :*: _) = u
+        pi2 (_ :*: v) = v
+
+    cotabulateV k x = cotabulateV (k . (:*:) x)
