@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -7,6 +9,7 @@ module ZkFold.Symbolic.Data.Ed25519  where
 
 import           Data.List                                 (splitAt)
 import           Data.Void                                 (Void)
+import           GHC.Generics                              (Generic1, Generically1)
 import           GHC.TypeNats                              (Natural)
 import           Prelude                                   (error, otherwise, ($), (.), (<>))
 import qualified Prelude                                   as P
@@ -14,116 +17,122 @@ import qualified Prelude                                   as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
+import           ZkFold.Base.Algebra.Basic.VectorSpace
+import           ZkFold.Base.Algebra.EllipticCurve.Class   as Base
+import qualified ZkFold.Base.Algebra.EllipticCurve.Ed25519 as Base
 import           ZkFold.Prelude                            (length)
 import           ZkFold.Symbolic.Compiler                  hiding (forceZero)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.DiscreteField
-import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Compare
 import           ZkFold.Symbolic.Data.UInt
 
-zpToEd :: (Finite (Zp p)) => Point (Ed25519 (Zp p)) -> Point (Ed25519 Void)
-zpToEd Inf         = Inf
-zpToEd (Point x y) = Point (toZp . toConstant $ x) (toZp . toConstant $ y)
+data PointEd25519 a = PointEd25519 (UInt 256 a) (UInt 256 a)
+  deriving stock (P.Eq, P.Functor, P.Foldable, P.Traversable, Generic1)
+deriving via Generically1 PointEd25519 instance VectorSpace a PointEd25519
+instance Eq a PointEd25519
+instance Ord a PointEd25519
 
-edToZp :: (Finite (Zp p)) => Point (Ed25519 Void) -> Point (Ed25519 (Zp p))
-edToZp Inf         = Inf
-edToZp (Point x y) = Point (fromConstant . fromZp $ x) (fromConstant . fromZp $ y)
+inf :: AdditiveMonoid (UInt 256 a) => PointEd25519 a
+inf = PointEd25519 zero zero
+
+gen :: (AdditiveMonoid (UInt 256 a), FromConstant Natural (UInt 256 a)) => PointEd25519 a
+gen = PointEd25519
+    (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202))
+    (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960))
+
+isInf :: (P.Eq a, AdditiveMonoid (UInt 256 a)) => PointEd25519 a -> P.Bool
+isInf (PointEd25519 x y) = x P.== zero P.&& y P.== zero
+
+zpToEd :: (P.Eq a, AdditiveMonoid (UInt 256 a), ToConstant (UInt 256 a) P.Integer) => PointEd25519 a -> Base.Point (Base.Ed25519 Void)
+zpToEd pt | isInf pt        = Base.Inf
+zpToEd (PointEd25519 x y)   = Base.Point (toZp . toConstant $ x) (toZp . toConstant $ y)
+
+edToZp :: (AdditiveMonoid a, FromConstant P.Integer a) => Base.Point (Base.Ed25519 Void) -> PointEd25519 a
+edToZp Base.Inf         = PointEd25519 zero zero
+edToZp (Base.Point x y) = PointEd25519 (fromConstant . fromZp $ x) (fromConstant . fromZp $ y)
+
+class EllipticCurveEd25519 a where
+    add :: PointEd25519 a -> PointEd25519 a -> PointEd25519 a
+    mul :: UInt 256 a -> PointEd25519 a -> PointEd25519 a
 
 -- | Ed25519 with @UInt 256 (Zp p)@ as computational backend
 --
-instance (Finite (Zp p)) => EllipticCurve (Ed25519 (Zp p)) where
-    type BaseField (Ed25519 (Zp p)) = UInt 256 (Zp p)
-    type ScalarField (Ed25519 (Zp p)) = UInt 256 (Zp p)
-
-    inf = Inf
-
-    gen = Point
-            (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
-            (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
+instance (Finite (Zp p)) => EllipticCurveEd25519 (Zp p) where
 
     -- | Addition casts point coordinates to @Zp Ed25519_Base@ and adds them as if they were points on @Ed25519 Void@
     --
-    add p1 p2 = edToZp $ add (zpToEd p1) (zpToEd p2)
+    add p1 p2 = edToZp $ Base.add (zpToEd p1) (zpToEd p2)
 
     -- | Multiplication casts point coordinates to @Zp Ed25519_Base@ and scale factor to @Zp Ed25519_Scalar@,
     --   then scales the point as if it were a point on @Ed25519 Void@
     --
-    mul s p = edToZp @p $ mul (toZp . toConstant $ s) (zpToEd @p p)
+    mul s p = edToZp $ Base.mul (toZp . toConstant $ s) (zpToEd p)
 
-instance SymbolicData a (UInt 256 (ArithmeticCircuit a)) => SymbolicData a (Point (Ed25519 (ArithmeticCircuit a))) where
+-- instance SymbolicData a (UInt 256 (ArithmeticCircuit a)) => SymbolicData a (PointEd25519 (ArithmeticCircuit a)) where
 
-    -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
-    -- We can encode the point at infinity as (0, 0), therefore.
-    pieces Inf         = pieces (zero :: UInt 256 (ArithmeticCircuit a)) <> pieces (zero :: UInt 256 (ArithmeticCircuit a))
-    pieces (Point x y) = pieces x <> pieces y
+--     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
+--     -- We can encode the point at infinity as (0, 0), therefore.
+--     pieces Inf         = pieces (zero :: UInt 256 (ArithmeticCircuit a)) <> pieces (zero :: UInt 256 (ArithmeticCircuit a))
+--     pieces (Point x y) = pieces x <> pieces y
 
-    restore lst
-      | length lst /= (typeSize @a @(Point (Ed25519 (ArithmeticCircuit a)))) = error "SymbolicData a (Point (Ed25519 (ArithmeticCircuit a))): wrong number of registers"
-      | otherwise =
-            bool @(Bool (ArithmeticCircuit a)) @(Point (Ed25519 (ArithmeticCircuit a))) (Point x y) Inf ((x == zero) && (y == zero))
-        where
-            (piecesX, piecesY) = splitAt (P.fromIntegral (length lst) `P.div` 2) lst
-            (x, y) = (restore piecesX, restore piecesY)
+--     restore lst
+--       | length lst /= (typeSize @a @(PointEd25519 (ArithmeticCircuit a))) = error "SymbolicData a (PointEd25519 (ArithmeticCircuit a)): wrong number of registers"
+--       | otherwise =
+--             bool @(Bool (ArithmeticCircuit a)) @(PointEd25519 (ArithmeticCircuit a)) (Point x y) Inf ((x == zero) && (y == zero))
+--         where
+--             (piecesX, piecesY) = splitAt (P.fromIntegral (length lst) `P.div` 2) lst
+--             (x, y) = (restore piecesX, restore piecesY)
 
-    typeSize = 2 * typeSize @a @(UInt 256 (ArithmeticCircuit a))
+--     typeSize = 2 * typeSize @a @(UInt 256 (ArithmeticCircuit a))
 
-instance (Ring a, Eq (Bool a) (BaseField (Ed25519 a))) => Eq (Bool a) (Point (Ed25519 a)) where
-    Inf == Inf                     = true
-    Inf == _                       = false
-    _ == Inf                       = false
-    (Point x1 y1) == (Point x2 y2) = x1 == x2 && y1 == y2
+-- instance (Ring a, Eq (Bool a) (BaseField (Ed25519 a))) => Eq (Bool a) (Point (Ed25519 a)) where
+--     Inf == Inf                     = true
+--     Inf == _                       = false
+--     _ == Inf                       = false
+--     (Point x1 y1) == (Point x2 y2) = x1 == x2 && y1 == y2
 
-    Inf /= Inf                     = false
-    Inf /= _                       = true
-    _ /= Inf                       = true
-    (Point x1 y1) /= (Point x2 y2) = x1 /= x2 || y1 /= y2
+--     Inf /= Inf                     = false
+--     Inf /= _                       = true
+--     _ /= Inf                       = true
+--     (Point x1 y1) /= (Point x2 y2) = x1 /= x2 || y1 /= y2
 
 -- | Ed25519 with @UInt 256 (ArithmeticCircuit a)@ as computational backend
 --
 instance
     ( Arithmetic a
-    , SymbolicData a (UInt 256 (ArithmeticCircuit a))
-    , FromConstant Natural (UInt 512 (ArithmeticCircuit a))
+    -- , SymbolicData a (UInt 256 (ArithmeticCircuit a))
+    -- , FromConstant Natural (UInt 512 (ArithmeticCircuit a))
     , EuclideanDomain (UInt 512 (ArithmeticCircuit a))
     , BinaryExpansion (UInt 256 (ArithmeticCircuit a))
-    ) => EllipticCurve (Ed25519 (ArithmeticCircuit a)) where
+    ) => EllipticCurveEd25519 (ArithmeticCircuit a) where
 
-    type BaseField (Ed25519 (ArithmeticCircuit a)) = UInt 256 (ArithmeticCircuit a)
-    type ScalarField (Ed25519 (ArithmeticCircuit a)) = UInt 256 (ArithmeticCircuit a)
-
-    inf = Inf
-
-    gen = Point
-            (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
-            (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
-
-    add x y = bool @(Bool (ArithmeticCircuit a)) @(Point (Ed25519 (ArithmeticCircuit a))) (acAdd25519 x y) (acDouble25519 x) (x == y)
+    add x y = bool (acAdd25519 x y) (acDouble25519 x) (x == y)
 
     -- pointMul uses natScale which converts the scale to Natural.
     -- We can't convert arithmetic circuits to Natural, so we can't use pointMul either.
     --
     mul sc x = bitsMul (uintBits sc) x
         where
-            bitsMul :: [ArithmeticCircuit a] -> Point (Ed25519 (ArithmeticCircuit a)) -> Point (Ed25519 (ArithmeticCircuit a))
-            bitsMul bits pt = sum $ P.zipWith (\b p -> bool @(Bool (ArithmeticCircuit a)) zero p (isZero b)) bits (P.iterate (\e -> e + e) pt)
+            bitsMul :: [ArithmeticCircuit a] -> PointEd25519 (ArithmeticCircuit a) -> PointEd25519 (ArithmeticCircuit a)
+            bitsMul bits pt = sum $ P.zipWith (\b p -> bool zero p (b == zero)) _bits (P.iterate (\e -> e + e) pt)
 
             uintBits :: UInt 256 (ArithmeticCircuit a) -> [ArithmeticCircuit a]
             uintBits (UInt lows hi) = P.concatMap binaryExpansion lows <> binaryExpansion hi
+
+isInfSymbolic :: () => PointEd25519 a -> Bool a
+isInfSymbolic (PointEd25519 x y) = x == zero && y == zero
 
 acAdd25519
     :: forall a
     .  Arithmetic a
     => EuclideanDomain (UInt 512 (ArithmeticCircuit a))
-    => Point (Ed25519 (ArithmeticCircuit a))
-    -> Point (Ed25519 (ArithmeticCircuit a))
-    -> Point (Ed25519 (ArithmeticCircuit a))
-acAdd25519 Inf q = q
-acAdd25519 p Inf = p
-acAdd25519 (Point x1 y1) (Point x2 y2) = Point (shrink x3) (shrink y3)
+    => PointEd25519 (ArithmeticCircuit a)
+    -> PointEd25519 (ArithmeticCircuit a)
+    -> PointEd25519 (ArithmeticCircuit a)
+-- acAdd25519 Inf q = q
+-- acAdd25519 p Inf = p
+acAdd25519 (PointEd25519 x1 y1) (PointEd25519 x2 y2) = PointEd25519 (shrink x3) (shrink y3)
     where
         -- We will perform multiplications of UInts of up to n bits, therefore we need 2n bits to store the result.
         --
@@ -134,7 +143,7 @@ acAdd25519 (Point x1 y1) (Point x2 y2) = Point (shrink x3) (shrink y3)
         y2e = extend y2
 
         m :: UInt 512 (ArithmeticCircuit a)
-        m = fromConstant $ value @Ed25519_Base
+        m = fromConstant $ value @Base.Ed25519_Base
 
         plusM :: UInt 512 (ArithmeticCircuit a) -> UInt 512 (ArithmeticCircuit a) -> UInt 512 (ArithmeticCircuit a)
         plusM x y = (x + y) `mod` m
@@ -143,7 +152,7 @@ acAdd25519 (Point x1 y1) (Point x2 y2) = Point (shrink x3) (shrink y3)
         mulM x y = (x * y) `mod` m
 
         d :: UInt 512 (ArithmeticCircuit a)
-        d = fromConstant $ fromZp @Ed25519_Base $ (toZp (-121665) // (toZp 121666))
+        d = fromConstant $ fromZp @Base.Ed25519_Base $ (toZp (-121665) // (toZp 121666))
 
         x3n :: UInt 512 (ArithmeticCircuit a)
         x3n = (x1e `mulM` y2e) `plusM` (y1e `mulM` x2e)
@@ -176,10 +185,10 @@ acDouble25519
     :: forall a
     .  Arithmetic a
     => EuclideanDomain (UInt 512 (ArithmeticCircuit a))
-    => Point (Ed25519 (ArithmeticCircuit a))
-    -> Point (Ed25519 (ArithmeticCircuit a))
-acDouble25519 Inf = Inf
-acDouble25519 (Point x1 y1) = Point (shrink x3) (shrink y3)
+    => PointEd25519 (ArithmeticCircuit a)
+    -> PointEd25519 (ArithmeticCircuit a)
+-- acDouble25519 Inf = Inf
+acDouble25519 (PointEd25519 x1 y1) = PointEd25519 (shrink x3) (shrink y3)
     where
         -- We will perform multiplications of UInts of up to n bits, therefore we need 2n bits to store the result.
         --
@@ -188,7 +197,7 @@ acDouble25519 (Point x1 y1) = Point (shrink x3) (shrink y3)
         ye = extend y1
 
         m :: UInt 512 (ArithmeticCircuit a)
-        m = fromConstant $ value @Ed25519_Base
+        m = fromConstant $ value @Base.Ed25519_Base
 
         plusM :: UInt 512 (ArithmeticCircuit a) -> UInt 512 (ArithmeticCircuit a) -> UInt 512 (ArithmeticCircuit a)
         plusM x y = (x + y) `mod` m

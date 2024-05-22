@@ -46,9 +46,11 @@ false = Bool zero
 not :: Symbolic a => Bool a -> Bool a
 not (Bool b) = Bool (one - b)
 
+infixr 3 &&
 (&&) :: Symbolic a => Bool a -> Bool a -> Bool a
 Bool b1 && Bool b2 = Bool (b1 * b2)
 
+infixr 2 ||
 (||) :: Symbolic a => Bool a -> Bool a -> Bool a
 Bool b1 || Bool b2 = Bool (b1 + b2 - b1 * b2)
 
