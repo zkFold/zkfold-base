@@ -11,7 +11,7 @@ module ZkFold.Symbolic.Compiler (
 import           Data.Aeson                                                (ToJSON)
 import           Data.Foldable                                             (fold)
 import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, ($),
-                                                                            (++))
+                                                                            (++), map)
 
 import           ZkFold.Prelude                                            (replicateA, writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
@@ -36,7 +36,7 @@ solder f = arithmetize f $ circuits $ replicateA (inputSize @a @f) input
 
 -- | Compiles function `f` into an arithmetic circuit.
 compile :: forall a f y . (Arithmetizable a f, SymbolicData a y) => f -> y
-compile f = restore @a (solder f)
+compile f = restore @a (map optimize $ solder f)
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO :: forall a f . (ToJSON a, Arithmetizable a f) => FilePath -> f -> IO ()
