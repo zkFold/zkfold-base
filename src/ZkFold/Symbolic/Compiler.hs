@@ -10,8 +10,8 @@ module ZkFold.Symbolic.Compiler (
 
 import           Data.Aeson                                                (ToJSON)
 import           Data.Foldable                                             (fold)
-import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, ($),
-                                                                            (++), map)
+import           Prelude                                                   (FilePath, IO, Show (..), map, putStrLn, ($),
+                                                                            (++))
 
 import           ZkFold.Prelude                                            (replicateA, writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
