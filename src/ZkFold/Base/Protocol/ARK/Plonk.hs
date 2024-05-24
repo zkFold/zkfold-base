@@ -5,6 +5,7 @@
 
 module ZkFold.Base.Protocol.ARK.Plonk where
 
+import           GHC.IsList                                  (IsList (..))
 import           Data.Map                                    (Map, elems, singleton)
 import qualified Data.Map                                    as Map
 import qualified Data.Vector                                 as V
@@ -107,7 +108,7 @@ instance Show PlonkWitnessInput where
 instance Arbitrary PlonkWitnessInput where
     arbitrary = do
         x <- arbitrary
-        return $ PlonkWitnessInput $ Map.fromList [(1, x), (2, 15//x)]
+        return $ PlonkWitnessInput $ fromList [(1, x), (2, 15//x)]
 
 data PlonkProverSecret = PlonkProverSecret F F F F F F F F F F F
     deriving (Show)
@@ -141,10 +142,10 @@ instance forall d t .
     setup (Plonk omega k1 k2 inputs ac x) =
         let wmap = acWitness $ mapVarArithmeticCircuit ac
             (qlAC, qrAC, qoAC, qmAC, qcAC, a, b, c) = toPlonkArithmetization inputs ac
-            wPub = V.fromList $ map negate $ elems inputs
+            wPub = fromList $ map negate $ elems inputs
 
             d = value @d + 6
-            xs = V.fromList $ map (x^) [0..d-!1]
+            xs = fromList $ map (x^) [0..d-!1]
             gs = fmap (`mul` gen) xs
             h0 = gen
             h1 = x `mul` gen
@@ -156,7 +157,7 @@ instance forall d t .
                 1 -> k1 * (omega^i)
                 2 -> k2 * (omega^i)
                 _ -> error "setup: invalid index"
-            s' = V.fromList $ map f s
+            s' = fromList $ map f s
             s1 = toPolyVec $ V.take (fromIntegral $ value @d) s'
             s2 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ value @d) s'
             s3 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ 2 * value @d) s'
@@ -385,3 +386,47 @@ instance forall d t .
             p1 = pairing (xi `mul` proof1 + (u * xi * omega) `mul` proof2 + f - e) h0
             p2 = pairing (proof1 + u `mul` proof2) h1
 
+plonkTestSetup :: Plonk d t
+plonkTestSetup = Plonk
+    39328881859443649819318207548060215749094715634259317161033277606721139812495
+    30408055829394954151077386799740325127211078769803317463864628380393597220497
+    22480430217943065308028049248840001574957952608951430442819183872979607403152
+
+    (fromList [(8678113694464489710933048369217283413032966867180999276939938815451176314489,15)])
+    ( (mempty { acOutput = 1} * mempty { acOutput = 2})
+        { acSystem = fromList [
+            ( 35305987094761413768461671632404014181177644087777133414028269252557868612419
+            , fromList
+                [ ( 1
+                  , fromList [(1, 1), (2, 1)])
+                , ( 52435875175126190479447740508185965837690552500527637822603658699938581184512
+                  , fromList [(8678113694464489710933048369217283413032966867180999276939938815451176314489, 1)])
+                ]
+            )]
+        , acOutput = 8678113694464489710933048369217283413032966867180999276939938815451176314489
+        , acVarOrder = fromList [
+            ( (0, 8678113694464489710933048369217283413032966867180999276939938815451176314489)
+            , 8678113694464489710933048369217283413032966867180999276939938815451176314489)]
+        }
+    )
+    38006109908173226370189572361536514411213926130909517193818558287382523644284
+
+plonkTestWitness :: (PlonkWitnessInput, PlonkProverSecret)
+plonkTestWitness =
+    ( PlonkWitnessInput (fromList
+        [ (1,40132601360894526647813971406136803763738233162016903110079300359214147185963)
+        , (2,47262452828595940768309982533363321065331607962028689823913877150441641180798)
+        ])
+    , PlonkProverSecret
+        40183235984792062273973595959658622393882268785203711032886615949438556686854
+        16968331371880793773393463159370939679418592283756179417499028295521070054588
+        9200969565155628771155670752022421626150440410157887742677056450873411699083
+        13057853317630911556956405895209582786027112323502523144064031701904127212450
+        41528687495982106921198389137959028140214084361098667936522682736093711051160
+        36745563148426826396747649775341802646579554896461939120428093846933436293017
+        20461262551868691551595188318284832117001886945567116540829244939285212698898
+        16241778574885345212724960486099731303528082236590704582327702724955246176941
+        14269428147692730394587000062724916297472828682964418890263712672649097469002
+        6686888357141194976674072593677964423267816409104462708718596649465065568743
+        16778918529348616586411758027376986057263790236980920102403789525583717758345
+    )
