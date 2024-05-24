@@ -66,10 +66,10 @@ ifThenElse b t f = bool f t b
 (?) = ifThenElse
 
 and :: (Haskell.Foldable f, Ring a) => (f :.: Bool) a -> Bool a
-and (Comp1 bs) = Haskell.foldl (&&) true bs
+and = all Haskell.id
 
 or :: (Haskell.Foldable f, Ring a) => (f :.: Bool) a -> Bool a
-or (Comp1 bs) = Haskell.foldl (||) false bs
+or = any Haskell.id
 
 all :: (Haskell.Foldable f, Ring a) => (u a -> Bool a) -> (f :.: u) a -> Bool a
 all condition (Comp1 xs) = Haskell.foldl (\b x -> b && condition x) true xs
