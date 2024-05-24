@@ -4,6 +4,8 @@
 module ZkFold.Base.Data.Vector where
 
 import           Data.Bifunctor                   (first)
+import           Data.Distributive
+import           Data.Functor.Rep
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           Numeric.Natural                  (Natural)
@@ -18,6 +20,16 @@ import           ZkFold.Prelude                   (length, replicate)
 
 newtype Vector (size :: Natural) a = Vector [a]
     deriving (Show, Eq, Functor, Foldable, Traversable)
+
+instance KnownNat size => Representable (Vector size) where
+    type Rep (Vector size) = Int
+    index (Vector v) i = v !! (i Prelude.- 1)
+    tabulate f =
+        let size = fromIntegral (value @size)
+        in Vector [f i | i <- [1 .. size]]
+instance KnownNat size => Distributive (Vector size) where
+    collect = collectRep
+    distribute = distributeRep
 
 toVector :: forall size a . KnownNat size => [a] -> Maybe (Vector size a)
 toVector as
