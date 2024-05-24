@@ -62,12 +62,10 @@ data UInt (n :: Natural) a = UInt ![a] !a
 instance (FiniteField a, KnownNat n) => VectorSpace a (UInt n) where
     type Basis a (UInt n) = Maybe Haskell.Int
     indexV (UInt _ a) Nothing   = a
-    indexV (UInt v _) (Just ix) = fromMaybe zero (lookup ix (zip [0..] v))
+    indexV (UInt v _) (Just ix) = fromMaybe zero (lookup ix (zip [1..] v))
     tabulateV f =
-        let r = numberOfRegisters @a @n -! 1
-        in UInt
-            [f (Just i) | i <- [0 .. Haskell.fromIntegral r Haskell.- 1]]
-            (f Nothing)
+        let r = Haskell.fromIntegral (numberOfRegisters @a @n)
+        in UInt [f (Just i) | i <- [1 .. r]] (f Nothing)
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
     fromConstant = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n))
