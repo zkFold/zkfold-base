@@ -8,7 +8,6 @@ module ZkFold.Base.Algebra.Basic.VectorSpace where
 import           Data.Functor.Identity           (Identity (..))
 import           Data.Functor.Rep
 import           Data.Kind                       (Type)
-import           Data.Void                       (Void, absurd)
 import           GHC.Generics                    hiding (Rep)
 import           Prelude                         hiding (Num (..), div, divMod, length, mod, negate, product, replicate,
                                                   sum, (/), (^))
@@ -19,7 +18,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 a `Field` then @v a@ is a vector space over it. If @a@ is a `Ring` then
 we have a free module, rather than a vector space. `VectorSpace` may also be thought of
 as a "monorepresentable" class, similar to `Representable` but with a fixed
-element type.
+element type. A `VectorSpace` can be thought of as a space of fixed size
+tuple of variables @(x1,..,xn)@.
 -}
 class VectorSpace a v where
     {- | The `Basis` for a `VectorSpace`. More accurately, `Basis` will be a spanning
@@ -109,20 +109,23 @@ The type @FunctionSpace a f => f@ should be equal to some
 
 @(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v1 a -> v0 a@
 
-which via uncurrying is equivalent to
+which via multiple-uncurrying is equivalent to
 
-@(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1) a -> v0 a@
+@(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1 :*: U1) a -> v0 a@
+
+A `FunctionSpace` can be thought of as the space of functions of the form
+@(y1,..,yj) = f(x1,..,xi)@
 -}
-class VectorSpace a (OutputSpace a f) => FunctionSpace a f where
-  -- | Dually to vector spaces, a function of vector spaces
-  -- enables coindexing, essentially evaluation, by tabulating its input;
-  coindexV :: f -> (InputBasis a f -> a) -> OutputSpace a f a
-  -- | and also enables cotabulating.
-  cotabulateV :: ((InputBasis a f -> a) -> OutputSpace a f a) -> f
+class
+  ( VectorSpace a (InputSpace a f)
+  , VectorSpace a (OutputSpace a f)
+  ) => FunctionSpace a f where
+    uncurryV :: f -> InputSpace a f a -> OutputSpace a f a
+    curryV :: (InputSpace a f a -> OutputSpace a f a) -> f
 
-type family InputBasis a f where
-  InputBasis a (x a -> f) = Either (Basis a x) (InputBasis a f)
-  InputBasis a (y a) = Void
+type family InputSpace a f where
+  InputSpace a (x a -> f) = x :*: InputSpace a f
+  InputSpace a (y a) = U1
 
 type family OutputSpace a f where
   OutputSpace a (x a -> f) = OutputSpace a f
@@ -131,16 +134,28 @@ type family OutputSpace a f where
 instance {-# OVERLAPPABLE #-}
   ( VectorSpace a y
   , OutputSpace a (y a) ~ y
-  , InputBasis a (y a) ~ Void
+  , InputSpace a (y a) ~ U1
   ) => FunctionSpace a (y a) where
-    coindexV f _ = f
-    cotabulateV k = k absurd
+    uncurryV f _ = f
+    curryV k = k U1
 
 instance {-# OVERLAPPING #-}
   ( VectorSpace a x
   , OutputSpace a (x a -> f) ~ OutputSpace a f
-  , InputBasis a (x a -> f) ~ Either (Basis a x) (InputBasis a f)
+  , InputSpace a (x a -> f) ~ x :*: InputSpace a f
   , FunctionSpace a f
   ) => FunctionSpace a (x a -> f) where
-    coindexV f i = coindexV (f (tabulateV (i . Left))) (i . Right)
-    cotabulateV k x = cotabulateV (k . either (indexV x))
+    uncurryV f i = uncurryV (f (pi1 i)) (pi2 i)
+      where
+        pi1 (u :*: _) = u
+        pi2 (_ :*: v) = v
+
+    curryV k x = curryV (k . (:*:) x)
+
+composeFunctions
+  :: ( FunctionSpace a g
+     , FunctionSpace a f
+     , OutputSpace a f ~ InputSpace a g
+     )
+  => g -> f -> InputSpace a f a -> OutputSpace a g a
+composeFunctions g f = uncurryV g . uncurryV f

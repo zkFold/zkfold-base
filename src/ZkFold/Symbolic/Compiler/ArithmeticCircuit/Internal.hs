@@ -139,7 +139,8 @@ input = do
   let s = if null inputs then 1 else maximum inputs + 1
   zoom #acInput $ modify (++ [s])
   zoom #acOutput $ put s
-  zoom #acVarOrder $ put $ singleton (0, s) s
+  zoom #acVarOrder . modify
+      $ \vo -> insert (length vo, s) s vo
   get
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
