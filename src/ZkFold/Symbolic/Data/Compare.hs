@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Compare
@@ -17,12 +18,16 @@ module ZkFold.Symbolic.Data.Compare
   , max
   ) where
 
+import           Data.Foldable                         (Foldable (..))
+import           Data.Functor.Rep                      (Representable)
 import           Data.Functor.Identity                 (Identity (..))
+import           GHC.Generics                          ((:*:) (..), (:.:) (..))
 import qualified Prelude                               as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Container
 
 newtype Ordering a = Ordering a
   deriving stock
@@ -43,6 +48,11 @@ lt = Ordering (negate one)
 eq = Ordering zero
 gt = Ordering one
 
+instance Ring a => Haskell.Semigroup (Ordering a) where
+  Ordering x <> Ordering y = Ordering (x * x * (x - y) + y)
+instance Ring a => Haskell.Monoid (Ordering a) where
+  mempty = eq
+
 class Eq a u => Ord a u where
     compare :: u a -> u a -> Ordering a
     default compare
@@ -53,9 +63,14 @@ class Eq a u => Ord a u where
             lexicographical x y = x * x * (x - y) + y
             uv = zipWithV trichotomy u v
         in
-            Ordering (Haskell.foldl lexicographical zero uv)
+            Ordering (foldl lexicographical zero uv)
 instance TrichotomyField a => Ord a Bool
 instance TrichotomyField a => Ord a Ordering
+instance TrichotomyField a => Ord a Identity
+instance (Ring a, Ord a u, Ord a v) => Ord a (u :*: v) where
+  compare (u1 :*: v1) (u2 :*: v2) = compare u1 u2 Haskell.<> compare v1 v2
+instance (Representable f, Foldable f, Ring a, Ord a u) => Ord a (f :.: u) where
+  compare fu fv = fold (unComp1 (zipWith compare fu fv))
 
 (<=), (<), (>=), (>) :: (TrichotomyField a, Ord a u) => u a -> u a -> Bool a
 u <= v = not (u > v)

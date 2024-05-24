@@ -16,8 +16,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.DiscreteField
-import           ZkFold.Symbolic.Data.Eq
 
 eval' :: ArithmeticCircuit a -> a
 eval' = flip eval empty

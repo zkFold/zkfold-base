@@ -11,15 +11,22 @@ module ZkFold.Symbolic.Data.Bool (
     bool,
     ifThenElse,
     (?),
+    and,
+    or,
+    all,
+    any,
     Eq (..),
     (/=)
 ) where
 
 import           Data.Functor.Identity                 (Identity (..))
+import           Data.Functor.Rep                      (Representable)
+import           GHC.Generics                          ((:*:) (..), (:.:) (..))
 import qualified Prelude                               as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
+import           ZkFold.Symbolic.Data.Container
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool a = Bool a
@@ -58,6 +65,18 @@ ifThenElse, (?)
 ifThenElse b t f = bool f t b
 (?) = ifThenElse
 
+and :: (Haskell.Foldable f, Ring a) => (f :.: Bool) a -> Bool a
+and (Comp1 bs) = Haskell.foldl (&&) true bs
+
+or :: (Haskell.Foldable f, Ring a) => (f :.: Bool) a -> Bool a
+or (Comp1 bs) = Haskell.foldl (||) false bs
+
+all :: (Haskell.Foldable f, Ring a) => (u a -> Bool a) -> (f :.: u) a -> Bool a
+all condition (Comp1 xs) = Haskell.foldl (\b x -> b && condition x) true xs
+
+any :: (Haskell.Foldable f, Ring a) => (u a -> Bool a) -> (f :.: u) a -> Bool a
+any condition (Comp1 xs) = Haskell.foldl (\b x -> b || condition x) false xs
+
 class Eq a u where
     infix 4 ==
     (==) :: u a -> u a -> Bool a
@@ -66,6 +85,11 @@ class Eq a u where
       => u a -> u a -> Bool a
     u == v = Bool (Haskell.foldl (*) one (zipWithV equal u v))
 instance DiscreteField a => Eq a Bool
+instance DiscreteField a => Eq a Identity
+instance (Ring a, Eq a u, Eq a v) => Eq a (u :*: v) where
+  (u1 :*: v1) == (u2 :*: v2) = u1 == u2 && v1 == v2
+instance (Representable f, Haskell.Foldable f, Ring a, Eq a u) => Eq a (f :.: u) where
+  fu == fv = and (zipWith (==) fu fv)
 
 infix 4 /=
 (/=) :: (Ring a, Eq a u) => u a -> u a -> Bool a
