@@ -156,6 +156,7 @@ library
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
+      distributive                          < 0.7,
       mtl                                   < 2.4,
       optics                                < 0.5,
       pretty-simple                         < 4.2,
