@@ -26,7 +26,11 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Types                 (Symbolic)
 
 newtype Ordering a = Ordering a
-  deriving stock Haskell.Foldable
+  deriving stock
+    ( Haskell.Functor
+    , Haskell.Foldable
+    , Haskell.Traversable
+    )
 deriving via Identity instance VectorSpace a Ordering
 instance Eq a Ordering
 instance (Symbolic a, Haskell.Eq a) => Haskell.Show (Ordering a) where
