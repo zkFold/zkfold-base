@@ -5,10 +5,10 @@
 
 module ZkFold.Base.Protocol.ARK.Plonk where
 
-import           GHC.IsList                                  (IsList (..))
 import           Data.Map                                    (Map, elems, singleton)
 import qualified Data.Map                                    as Map
 import qualified Data.Vector                                 as V
+import           GHC.IsList                                  (IsList (..))
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     hiding (Num (..), div, drop, length, replicate, sum, take,
                                                               (!!), (/), (^))
