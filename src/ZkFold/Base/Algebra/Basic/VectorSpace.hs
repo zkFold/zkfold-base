@@ -145,11 +145,7 @@ instance {-# OVERLAPPING #-}
   , InputSpace a (x a -> f) ~ x :*: InputSpace a f
   , FunctionSpace a f
   ) => FunctionSpace a (x a -> f) where
-    uncurryV f i = uncurryV (f (pi1 i)) (pi2 i)
-      where
-        pi1 (u :*: _) = u
-        pi2 (_ :*: v) = v
-
+    uncurryV f (i :*: j) = uncurryV (f i) j
     curryV k x = curryV (k . (:*:) x)
 
 composeFunctions
