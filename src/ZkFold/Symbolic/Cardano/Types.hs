@@ -43,6 +43,7 @@ instance
   , KnownNat inputs
   , KnownNat outputs
   , KnownNat tokens
+  , DiscreteField a
   , FiniteField a
   ) => Eq a (Transaction inputs rinputs outputs tokens datum)
 
@@ -61,7 +62,7 @@ newtype TxId a = TxId a
         , Prelude.Traversable
         )
 deriving via Identity instance VectorSpace a TxId
-instance Eq a TxId
+instance DiscreteField a => Eq a TxId
 
 newtype Value n a = Value ((Vector n :.: (ByteString 224 :*: ByteString 256 :*: UInt 64)) a)
     deriving stock
@@ -72,7 +73,7 @@ newtype Value n a = Value ((Vector n :.: (ByteString 224 :*: ByteString 256 :*: 
         , Prelude.Traversable
         )
 deriving newtype instance (KnownNat n, FiniteField a) => VectorSpace a (Value n)
-instance (KnownNat n, FiniteField a) => Eq a (Value n)
+instance (KnownNat n, DiscreteField a, FiniteField a) => Eq a (Value n)
 
 newtype Input tokens datum a = Input ((OutputRef :*: Output tokens datum) a)
     deriving stock
@@ -83,7 +84,7 @@ newtype Input tokens datum a = Input ((OutputRef :*: Output tokens datum) a)
         , Prelude.Traversable
         )
 deriving newtype instance (KnownNat tokens, FiniteField a) => VectorSpace a (Input tokens datum)
-instance KnownNat tokens => Eq a (Input tokens datum)
+instance (KnownNat tokens, DiscreteField a, FiniteField a) => Eq a (Input tokens datum)
 
 txiOutput :: Input tokens datum a -> Output tokens datum a
 txiOutput (Input (_ :*: txo)) = txo
@@ -100,7 +101,7 @@ newtype Output tokens datum a = Output ((Address :*: Value tokens :*: ByteString
         , Prelude.Traversable
         )
 deriving newtype instance (KnownNat tokens, FiniteField a) => VectorSpace a (Output tokens datum)
-instance KnownNat tokens => Eq a (Output tokens datum)
+instance (KnownNat tokens, DiscreteField a, FiniteField a) => Eq a (Output tokens datum)
 
 txoAddress :: Output tokens datum a -> Address a
 txoAddress (Output (addr :*: _)) = addr
@@ -117,7 +118,7 @@ newtype OutputRef a = OutputRef ((TxId :*: UInt 32) a)
         , Prelude.Traversable
         )
 deriving newtype instance FiniteField a => VectorSpace a OutputRef
-instance Eq a OutputRef
+instance (DiscreteField a, FiniteField a) => Eq a OutputRef
 
 newtype Address a = Address ((ByteString 4 :*: ByteString 224 :*: ByteString 224) a)
     deriving stock
@@ -128,7 +129,7 @@ newtype Address a = Address ((ByteString 4 :*: ByteString 224 :*: ByteString 224
         , Prelude.Traversable
         )
 deriving newtype instance FiniteField a => VectorSpace a Address
-instance Eq a Address
+instance (DiscreteField a, FiniteField a) => Eq a Address
 
 paymentCredential :: Address a -> ByteString 224 a
 paymentCredential (Address (_ :*: pc :*: _)) = pc

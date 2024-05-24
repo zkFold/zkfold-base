@@ -28,8 +28,8 @@ import           ZkFold.Symbolic.Data.UInt
 data PointEd25519 a = PointEd25519 (UInt 256 a) (UInt 256 a)
   deriving stock (P.Eq, P.Functor, P.Foldable, P.Traversable, Generic1)
 deriving via Generically1 PointEd25519 instance FiniteField a => VectorSpace a PointEd25519
-instance FiniteField a => Eq a PointEd25519
-instance FiniteField a => Ord a PointEd25519
+instance (DiscreteField a, FiniteField a) => Eq a PointEd25519
+instance (TrichotomyField a, FiniteField a) => Ord a PointEd25519
 instance FiniteField (Zp p) => AdditiveSemigroup (PointEd25519 (Zp p)) where (+) = add
 instance FiniteField (Zp p) => AdditiveMonoid (PointEd25519 (Zp p)) where zero = inf
 instance

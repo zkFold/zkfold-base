@@ -20,4 +20,4 @@ newtype UTCTime a = UTCTime (UInt 11 a)
     )
 
 deriving newtype instance FiniteField a => VectorSpace a UTCTime
-instance Eq a UTCTime
+instance (FiniteField a, DiscreteField a) => Eq a UTCTime
