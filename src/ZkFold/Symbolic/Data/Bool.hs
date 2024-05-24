@@ -11,10 +11,10 @@ module ZkFold.Symbolic.Data.Bool (
     bool,
     ifThenElse,
     (?),
-    Eq (..),
-    (/=),
     all,
-    any
+    any,
+    Eq (..),
+    (/=)
 ) where
 
 import           Data.Functor.Identity                 (Identity (..))
@@ -62,6 +62,12 @@ ifThenElse, (?)
 ifThenElse b t f = bool f t b
 (?) = ifThenElse
 
+all :: (Haskell.Foldable f, Symbolic a) => (u a -> Bool a) -> (f :.: u) a -> Bool a
+all condition (Comp1 xs) = Haskell.foldl (\b x -> b && condition x) true xs
+
+any :: (Haskell.Foldable f, Symbolic a) => (u a -> Bool a) -> (f :.: u) a -> Bool a
+any condition (Comp1 xs) = Haskell.foldl (\b x -> b || condition x) false xs
+
 class Eq a u where
     infix 4 ==
     (==) :: Symbolic a => u a -> u a -> Bool a
@@ -74,9 +80,3 @@ instance Eq a Bool
 infix 4 /=
 (/=) :: (Symbolic a, Eq a u) => u a -> u a -> Bool a
 u /= b = not (u == b)
-
-all :: (Haskell.Foldable f, Symbolic a) => (u a -> Bool a) -> (f :.: u) a -> Bool a
-all condition (Comp1 xs) = Haskell.foldl (\b x -> b && condition x) true xs
-
-any :: (Haskell.Foldable f, Symbolic a) => (u a -> Bool a) -> (f :.: u) a -> Bool a
-any condition (Comp1 xs) = Haskell.foldl (\b x -> b || condition x) false xs
