@@ -46,6 +46,9 @@ gt = Ordering one
 
 class Eq a u => Ord a u where
     compare :: Symbolic a => u a -> u a -> Ordering a
+    default compare
+      :: (Symbolic a, Haskell.Foldable u, VectorSpace a u)
+      => u a -> u a -> Ordering a
     compare u v =
         let
             lexicographical x y = x * x * (x - y) + y
@@ -61,6 +64,6 @@ u < v = compare u v == lt
 u >= v = not (u < v)
 u > v = compare u v == gt
 
-max, min :: (Symbolic a, Ord a u) => u a -> u a -> u a
+max, min :: (Symbolic a, Ord a u, VectorSpace a u) => u a -> u a -> u a
 max x y = bool y x (x <= y)
 min x y = bool y x (x >= y)
