@@ -7,20 +7,18 @@
 
 module ZkFold.Symbolic.Data.Ed25519  where
 
-import           Data.List                                 (splitAt)
 import           Data.Void                                 (Void)
-import           GHC.Generics                              (Generic1, Generically1)
+import           GHC.Generics                              (Generic1, Generically1 (..))
 import           GHC.TypeNats                              (Natural)
-import           Prelude                                   (error, otherwise, ($), (.), (<>))
+import           Prelude                                   (($), (.), (<>))
 import qualified Prelude                                   as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.VectorSpace
-import           ZkFold.Base.Algebra.EllipticCurve.Class   as Base
+import qualified ZkFold.Base.Algebra.EllipticCurve.Class   as Base
 import qualified ZkFold.Base.Algebra.EllipticCurve.Ed25519 as Base
-import           ZkFold.Prelude                            (length)
 import           ZkFold.Symbolic.Compiler                  hiding (forceZero)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators
@@ -29,17 +27,31 @@ import           ZkFold.Symbolic.Data.UInt
 
 data PointEd25519 a = PointEd25519 (UInt 256 a) (UInt 256 a)
   deriving stock (P.Eq, P.Functor, P.Foldable, P.Traversable, Generic1)
-deriving via Generically1 PointEd25519 instance VectorSpace a PointEd25519
-instance Eq a PointEd25519
-instance Ord a PointEd25519
+deriving via Generically1 PointEd25519 instance FiniteField a => VectorSpace a PointEd25519
+instance FiniteField a => Eq a PointEd25519
+instance FiniteField a => Ord a PointEd25519
+instance FiniteField (Zp p) => AdditiveSemigroup (PointEd25519 (Zp p)) where (+) = add
+instance FiniteField (Zp p) => AdditiveMonoid (PointEd25519 (Zp p)) where zero = inf
+instance
+  ( EuclideanDomain (UInt 512 (ArithmeticCircuit a))
+  , BinaryExpansion (UInt 256 (ArithmeticCircuit a))
+  , Arithmetic a
+  ) => AdditiveSemigroup (PointEd25519 (ArithmeticCircuit a)) where
+    (+) = add
+instance 
+  ( EuclideanDomain (UInt 512 (ArithmeticCircuit a))
+  , BinaryExpansion (UInt 256 (ArithmeticCircuit a))
+  , Arithmetic a
+  ) => AdditiveMonoid (PointEd25519 (ArithmeticCircuit a)) where
+    zero = inf
 
 inf :: AdditiveMonoid (UInt 256 a) => PointEd25519 a
 inf = PointEd25519 zero zero
 
-gen :: (AdditiveMonoid (UInt 256 a), FromConstant Natural (UInt 256 a)) => PointEd25519 a
+gen :: forall a. FromConstant Natural (UInt 256 a) => PointEd25519 a
 gen = PointEd25519
-    (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202))
-    (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960))
+    (fromConstant @Natural @(UInt 256 a) (15112221349535400772501151409588531511454012693041857206046113283949847762202))
+    (fromConstant @Natural @(UInt 256 a) (46316835694926478169428394003475163141307993866256225615783033603165251855960))
 
 isInf :: (P.Eq a, AdditiveMonoid (UInt 256 a)) => PointEd25519 a -> P.Bool
 isInf (PointEd25519 x y) = x P.== zero P.&& y P.== zero
@@ -48,7 +60,7 @@ zpToEd :: (P.Eq a, AdditiveMonoid (UInt 256 a), ToConstant (UInt 256 a) P.Intege
 zpToEd pt | isInf pt        = Base.Inf
 zpToEd (PointEd25519 x y)   = Base.Point (toZp . toConstant $ x) (toZp . toConstant $ y)
 
-edToZp :: (AdditiveMonoid a, FromConstant P.Integer a) => Base.Point (Base.Ed25519 Void) -> PointEd25519 a
+edToZp :: (AdditiveMonoid (UInt 256 a), FiniteField a) => Base.Point (Base.Ed25519 Void) -> PointEd25519 a
 edToZp Base.Inf         = PointEd25519 zero zero
 edToZp (Base.Point x y) = PointEd25519 (fromConstant . fromZp $ x) (fromConstant . fromZp $ y)
 
@@ -58,7 +70,7 @@ class EllipticCurveEd25519 a where
 
 -- | Ed25519 with @UInt 256 (Zp p)@ as computational backend
 --
-instance (Finite (Zp p)) => EllipticCurveEd25519 (Zp p) where
+instance FiniteField (Zp p) => EllipticCurveEd25519 (Zp p) where
 
     -- | Addition casts point coordinates to @Zp Ed25519_Base@ and adds them as if they were points on @Ed25519 Void@
     --
@@ -69,40 +81,10 @@ instance (Finite (Zp p)) => EllipticCurveEd25519 (Zp p) where
     --
     mul s p = edToZp $ Base.mul (toZp . toConstant $ s) (zpToEd p)
 
--- instance SymbolicData a (UInt 256 (ArithmeticCircuit a)) => SymbolicData a (PointEd25519 (ArithmeticCircuit a)) where
-
---     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
---     -- We can encode the point at infinity as (0, 0), therefore.
---     pieces Inf         = pieces (zero :: UInt 256 (ArithmeticCircuit a)) <> pieces (zero :: UInt 256 (ArithmeticCircuit a))
---     pieces (Point x y) = pieces x <> pieces y
-
---     restore lst
---       | length lst /= (typeSize @a @(PointEd25519 (ArithmeticCircuit a))) = error "SymbolicData a (PointEd25519 (ArithmeticCircuit a)): wrong number of registers"
---       | otherwise =
---             bool @(Bool (ArithmeticCircuit a)) @(PointEd25519 (ArithmeticCircuit a)) (Point x y) Inf ((x == zero) && (y == zero))
---         where
---             (piecesX, piecesY) = splitAt (P.fromIntegral (length lst) `P.div` 2) lst
---             (x, y) = (restore piecesX, restore piecesY)
-
---     typeSize = 2 * typeSize @a @(UInt 256 (ArithmeticCircuit a))
-
--- instance (Ring a, Eq (Bool a) (BaseField (Ed25519 a))) => Eq (Bool a) (Point (Ed25519 a)) where
---     Inf == Inf                     = true
---     Inf == _                       = false
---     _ == Inf                       = false
---     (Point x1 y1) == (Point x2 y2) = x1 == x2 && y1 == y2
-
---     Inf /= Inf                     = false
---     Inf /= _                       = true
---     _ /= Inf                       = true
---     (Point x1 y1) /= (Point x2 y2) = x1 /= x2 || y1 /= y2
-
 -- | Ed25519 with @UInt 256 (ArithmeticCircuit a)@ as computational backend
 --
 instance
     ( Arithmetic a
-    -- , SymbolicData a (UInt 256 (ArithmeticCircuit a))
-    -- , FromConstant Natural (UInt 512 (ArithmeticCircuit a))
     , EuclideanDomain (UInt 512 (ArithmeticCircuit a))
     , BinaryExpansion (UInt 256 (ArithmeticCircuit a))
     ) => EllipticCurveEd25519 (ArithmeticCircuit a) where
@@ -115,13 +97,10 @@ instance
     mul sc x = bitsMul (uintBits sc) x
         where
             bitsMul :: [ArithmeticCircuit a] -> PointEd25519 (ArithmeticCircuit a) -> PointEd25519 (ArithmeticCircuit a)
-            bitsMul bits pt = sum $ P.zipWith (\b p -> bool zero p (b == zero)) _bits (P.iterate (\e -> e + e) pt)
+            bitsMul bits pt = sum $ P.zipWith scaleV bits (P.iterate (\e -> e + e) pt)
 
             uintBits :: UInt 256 (ArithmeticCircuit a) -> [ArithmeticCircuit a]
             uintBits (UInt lows hi) = P.concatMap binaryExpansion lows <> binaryExpansion hi
-
-isInfSymbolic :: () => PointEd25519 a -> Bool a
-isInfSymbolic (PointEd25519 x y) = x == zero && y == zero
 
 acAdd25519
     :: forall a
