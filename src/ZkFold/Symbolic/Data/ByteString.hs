@@ -19,24 +19,25 @@ import           Control.Monad                                             (mapM
 import           Data.Bits                                                 as B
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.List.Split                                           (chunksOf)
-import           Data.Maybe                                                (Maybe (..))
+import           Data.Maybe                                                (fromMaybe, Maybe (..))
 import           Data.Proxy                                                (Proxy (..))
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Mod, Natural, natVal)
 import           Prelude                                                   (Bool (..), Integer, drop, error, fmap,
-                                                                            length, otherwise, pure, take, type (~),
+                                                                            otherwise, pure, take, type (~),
                                                                             ($), (.), (<$>), (<), (<>), (==), (>=))
 import qualified Prelude                                                   as Haskell
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
+import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                                            (replicate, replicateA)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-import           ZkFold.Symbolic.Data.Bool                                 (BoolType (..))
+import           ZkFold.Symbolic.Data.Bool                                 (Boolean (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.UInt
 
@@ -45,8 +46,22 @@ import           ZkFold.Symbolic.Data.UInt
 -- Bit layout is Big-endian.
 --
 newtype ByteString (n :: Natural) a = ByteString [a]
-    deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
+    deriving
+      ( Haskell.Show
+      , Haskell.Eq
+      , Generic
+      , NFData
+      , Haskell.Functor
+      , Haskell.Foldable
+      , Haskell.Traversable
+      )
 
+instance (FiniteField a, KnownNat n) => VectorSpace a (ByteString n) where
+    type Basis a (ByteString n) = Haskell.Int
+    indexV (ByteString v) ix = fromMaybe zero (Haskell.lookup ix (Haskell.zip [1..] v))
+    tabulateV f =
+      let n = Haskell.fromIntegral (value @n)
+      in ByteString [f i | i <- [1 .. n]]
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --
@@ -177,7 +192,7 @@ instance (Finite (Zp p), KnownNat n) => ShiftBits (ByteString n (Zp p)) where
             d = nat `shiftR` intS
 
 
-instance (Finite (Zp p), KnownNat n) => BoolType (ByteString n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => Boolean (Zp p) (ByteString n) where
     false = fromConstant (0 :: Natural)
 
     -- | A ByteString with all bits set to 1 is the unity for bitwise and.
@@ -278,7 +293,7 @@ instance (Arithmetic a, KnownNat n) => SymbolicData a (ByteString n (ArithmeticC
     pieces (ByteString bits) = bits
 
     restore bits
-      | Haskell.fromIntegral (length bits) == value @n = ByteString bits
+      | Haskell.fromIntegral (Haskell.length bits) == value @n = ByteString bits
       | otherwise = error "ByteString: invalid number of values"
 
     typeSize = value @n
@@ -321,7 +336,7 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
     --
     rotateBits bs@(ByteString bits) s
       | s == 0 = bs
-      | (s < 0) || (s >= intN) = rotateBits bs (s `Haskell.mod` intN) -- Always perform a left rotation
+      | (s < 0) Haskell.|| (s >= intN) = rotateBits bs (s `Haskell.mod` intN) -- Always perform a left rotation
       | otherwise = ByteString $ rotateList bits
       where
         intN :: Integer
@@ -353,7 +368,7 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circu
     applyBitwise l r = newAssigned $ cons l r
 
 
-instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => Boolean (ArithmeticCircuit a) (ByteString n) where
     false = ByteString (replicate (value @n) zero)
 
     true = not false
