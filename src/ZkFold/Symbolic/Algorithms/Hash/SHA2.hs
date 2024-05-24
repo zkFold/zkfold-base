@@ -25,7 +25,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  sha384InitialHashes, sha512InitialHashes,
                                                                  sha512_224InitialHashes, sha512_256InitialHashes,
                                                                  word32RoundConstants, word64RoundConstants)
-import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
+import           ZkFold.Symbolic.Data.Bool                      (Boolean (..))
 import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), Concat (..), ShiftBits (..),
                                                                  ToWords (..), Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..))
@@ -155,10 +155,10 @@ type SHA2 algorithm element k =
    , Iso (UInt (WordSize algorithm) element) (ByteString (WordSize algorithm) element)
    , Iso (ByteString (WordSize algorithm) element) (UInt (WordSize algorithm) element)
    , AdditiveSemigroup (UInt (WordSize algorithm) element)
-   , BoolType (ByteString (WordSize algorithm) element)
+   , Boolean element (ByteString (WordSize algorithm))
    , ShiftBits (ByteString (WordSize algorithm) element)
    , ShiftBits (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) element)
-   , BoolType (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) element)
+   , Boolean element (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)))
    , Extend (ByteString k element) (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) element)
    , ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
    , Concat (ByteString (WordSize algorithm) element) (ByteString (8 * WordSize algorithm) element)
@@ -191,7 +191,7 @@ sha2Pad
     => KnownNat (PaddedLength k padTo lenBits)
     => FromConstant Natural element
     => ShiftBits (ByteString (PaddedLength k padTo lenBits) element)
-    => BoolType (ByteString (PaddedLength k padTo lenBits) element)
+    => Boolean element (ByteString (PaddedLength k padTo lenBits))
     => Extend (ByteString k element) (ByteString (PaddedLength k padTo lenBits) element)
     => ByteString k element -> ByteString (PaddedLength k padTo lenBits) element
 sha2Pad bs = grown || fromConstant padValue
@@ -236,7 +236,7 @@ type SHA2N algorithm element =
    , Iso (UInt (WordSize algorithm) element) (ByteString (WordSize algorithm) element)
    , Iso (ByteString (WordSize algorithm) element) (UInt (WordSize algorithm) element)
    , AdditiveSemigroup (UInt (WordSize algorithm) element)
-   , BoolType (ByteString (WordSize algorithm) element)
+   , Boolean element (ByteString (WordSize algorithm))
    , ShiftBits (ByteString (WordSize algorithm) element)
    , ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
    , Concat (ByteString (WordSize algorithm) element) (ByteString (8 * WordSize algorithm) element)
@@ -286,7 +286,7 @@ sha2Blocks
     => NFData element
     => Iso (ByteString (WordSize algorithm) element) (UInt (WordSize algorithm) element)
     => AdditiveSemigroup (UInt (WordSize algorithm) element)
-    => BoolType (ByteString (WordSize algorithm) element)
+    => Boolean element (ByteString (WordSize algorithm))
     => ShiftBits (ByteString (WordSize algorithm) element)
     => ToWords (ByteString (ChunkSize algorithm) element) (ByteString (WordSize algorithm) element)
     => Concat (ByteString (WordSize algorithm) element) (ByteString (8 * WordSize algorithm) element)

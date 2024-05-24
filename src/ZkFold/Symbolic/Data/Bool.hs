@@ -1,6 +1,7 @@
 {-# LANGUAGE
 DerivingStrategies
 , DerivingVia
+, TypeOperators
 , UndecidableInstances
 #-}
 
@@ -11,10 +12,13 @@ module ZkFold.Symbolic.Data.Bool (
     ifThenElse,
     (?),
     Eq (..),
-    (/=)
+    (/=),
+    all,
+    any
 ) where
 
 import           Data.Functor.Identity                 (Identity (..))
+import           GHC.Generics
 import qualified Prelude                               as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -70,3 +74,9 @@ instance Eq a Bool
 infix 4 /=
 (/=) :: (Symbolic a, Eq a u) => u a -> u a -> Bool a
 u /= b = not (u == b)
+
+all :: (Haskell.Foldable f, Symbolic a) => (u a -> Bool a) -> (f :.: u) a -> Bool a
+all condition (Comp1 xs) = Haskell.foldl (\b x -> b && condition x) true xs
+
+any :: (Haskell.Foldable f, Symbolic a) => (u a -> Bool a) -> (f :.: u) a -> Bool a
+any condition (Comp1 xs) = Haskell.foldl (\b x -> b || condition x) false xs
