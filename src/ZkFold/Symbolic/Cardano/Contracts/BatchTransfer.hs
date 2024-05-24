@@ -61,6 +61,8 @@ batchTransfer tx transfers =
         condition1 = all (\(pkh :*: payment :*: change :*: signature) -> verifySignature pkh (payment :*: change) signature) $ zipV pkhs transfers
         outputs    = zip [0..] . init . fromVector $ unComp1 $ txOutputs tx
 
+        zipV (Comp1 v1) (Comp1 v2) = Comp1 (mzipWithRep (:*:) v1 v2)
+
         -- Extract the payments from the transaction and validate them
         payments   = Comp1 $ fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> even @Integer i) $ outputs
 
@@ -71,6 +73,3 @@ batchTransfer tx transfers =
         condition3 = all (\(c' :*: _ :*: c :*: _) -> c' == c) $ zipV changes transfers
 
     in condition1 && condition2 && condition3
-
-zipV :: Representable v => (v :.: u1) a -> (v :.: u2) a -> (v :.: (u1 :*: u2)) a
-zipV (Comp1 v1) (Comp1 v2) = Comp1 (mzipWithRep (:*:) v1 v2)
