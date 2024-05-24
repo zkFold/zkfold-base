@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeOperators #-}
 module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
+import           Data.Foldable                                  (toList)
 import           Data.Functor.Rep
 import           Data.Maybe                                     (fromJust)
 import           Data.Zip                                       (zip)
@@ -15,33 +16,29 @@ import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHash)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types                  (Input, Output, Transaction, paymentCredential,
                                                                  txInputs, txOutputs, txiOutput, txoAddress)
-import           ZkFold.Symbolic.Compiler                       (ArithmeticCircuit, SymbolicData (pieces))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Types                          (Symbolic)
+import           ZkFold.Symbolic.Types                          (Symbolic, SymbolicData)
 
 type TxOut = Output 10 ()
 type TxIn = Input 10 ()
 type Tx = Transaction 6 0 11 10 ()
 
-class Hash a x where
-    hash :: x -> a
-
-instance SymbolicData a x => Hash (ArithmeticCircuit a) x where
-    hash datum = case pieces datum of
-        []         -> zero
-        [x]        -> mimcHash mimcConstants zero zero x
-        [xL, xR]   -> mimcHash mimcConstants zero xL xR
-        (xL:xR:xZ) -> mimcHash (zero : xZ ++ [zero]) zero xL xR
+hash :: (Symbolic a, SymbolicData a u) => u a -> a
+hash datum = case toList datum of
+    []         -> zero
+    [x]        -> mimcHash mimcConstants zero zero x
+    [xL, xR]   -> mimcHash mimcConstants zero xL xR
+    (xL:xR:xZ) -> mimcHash (zero : xZ ++ [zero]) zero xL xR
 
 type Sig a = (StrictConv a (UInt 256 a),
     MultiplicativeSemigroup (UInt 256 a),
     Eq a (UInt 256),
     Iso (UInt 256 a) (ByteString 256 a),
     Extend (ByteString 224 a) (ByteString 256 a),
-    Hash a (TxOut a))
+    SymbolicData a TxOut)
 
 verifySignature ::
     forall a . (Symbolic a, Sig a) =>
