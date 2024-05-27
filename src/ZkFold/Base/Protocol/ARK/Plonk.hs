@@ -8,6 +8,7 @@ module ZkFold.Base.Protocol.ARK.Plonk where
 import           Data.Map                                    (Map, elems, singleton)
 import qualified Data.Map                                    as Map
 import qualified Data.Vector                                 as V
+import           GHC.IsList                                  (IsList (..))
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     hiding (Num (..), div, drop, length, replicate, sum, take,
                                                               (!!), (/), (^))
@@ -107,7 +108,7 @@ instance Show PlonkWitnessInput where
 instance Arbitrary PlonkWitnessInput where
     arbitrary = do
         x <- arbitrary
-        return $ PlonkWitnessInput $ Map.fromList [(1, x), (2, 15//x)]
+        return $ PlonkWitnessInput $ fromList [(1, x), (2, 15//x)]
 
 data PlonkProverSecret = PlonkProverSecret F F F F F F F F F F F
     deriving (Show)
@@ -141,10 +142,10 @@ instance forall d t .
     setup (Plonk omega k1 k2 inputs ac x) =
         let wmap = acWitness $ mapVarArithmeticCircuit ac
             (qlAC, qrAC, qoAC, qmAC, qcAC, a, b, c) = toPlonkArithmetization inputs ac
-            wPub = V.fromList $ map negate $ elems inputs
+            wPub = fromList $ map negate $ elems inputs
 
             d = value @d + 6
-            xs = V.fromList $ map (x^) [0..d-!1]
+            xs = fromList $ map (x^) [0..d-!1]
             gs = fmap (`mul` gen) xs
             h0 = gen
             h1 = x `mul` gen
@@ -156,7 +157,7 @@ instance forall d t .
                 1 -> k1 * (omega^i)
                 2 -> k2 * (omega^i)
                 _ -> error "setup: invalid index"
-            s' = V.fromList $ map f s
+            s' = fromList $ map f s
             s1 = toPolyVec $ V.take (fromIntegral $ value @d) s'
             s2 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ value @d) s'
             s3 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ 2 * value @d) s'
@@ -384,4 +385,3 @@ instance forall d t .
 
             p1 = pairing (xi `mul` proof1 + (u * xi * omega) `mul` proof2 + f - e) h0
             p2 = pairing (proof1 + u `mul` proof2) h1
-
