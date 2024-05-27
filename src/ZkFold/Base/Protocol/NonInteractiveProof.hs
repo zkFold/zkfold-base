@@ -90,8 +90,8 @@ testVector :: forall a .
     Binary (Setup a) =>
     Binary (Input a) =>
     Binary (Proof a) =>
-    IO [(ByteString, ByteString, ByteString)]
-testVector = generate . vectorOf 10 $ (,)
+    Int -> IO [(ByteString, ByteString, ByteString)]
+testVector n = generate . vectorOf n $ (,)
     <$> arbitrary @a
     <*> arbitrary @(Witness a)
     >>= \(a, w) -> do
