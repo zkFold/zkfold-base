@@ -35,4 +35,4 @@ specNonInteractiveProof = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
             describe "All correct proofs" $ do
-                it "should validate" $ property $ propNonInteractiveProof @a . traceShowId
+                it "should validate" $ property $ propNonInteractiveProof @a
