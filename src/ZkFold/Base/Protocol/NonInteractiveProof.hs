@@ -10,8 +10,8 @@ import           Data.ByteString             (ByteString, cons)
 import           Data.Maybe                  (fromJust)
 import           GHC.Generics                (Generic)
 import           Numeric.Natural             (Natural)
-import           Test.QuickCheck             (Arbitrary (..), vectorOf, generate)
 import           Prelude
+import           Test.QuickCheck             (Arbitrary (..), generate, vectorOf)
 
 import           ZkFold.Base.Data.ByteString
 
@@ -91,7 +91,7 @@ testVector :: forall a .
 testVector = generate . vectorOf 10 $ (,)
     <$> arbitrary @a
     <*> arbitrary @(Witness a)
-    >>= \(a, w) -> do 
+    >>= \(a, w) -> do
         let s = setup @a a
         let (i, p) = prove @a s w
         pure (s, i, p)
