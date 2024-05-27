@@ -87,11 +87,14 @@ testVector :: forall a .
     NonInteractiveProof a =>
     Arbitrary a =>
     Arbitrary (Witness a) =>
-    IO [(Setup a, Input a, Proof a)]
+    Binary (Setup a) =>
+    Binary (Input a) =>
+    Binary (Proof a) =>
+    IO [(ByteString, ByteString, ByteString)]
 testVector = generate . vectorOf 10 $ (,)
     <$> arbitrary @a
     <*> arbitrary @(Witness a)
     >>= \(a, w) -> do
         let s = setup @a a
         let (i, p) = prove @a s w
-        pure (s, i, p)
+        pure (toByteString s, toByteString i, toByteString p)
