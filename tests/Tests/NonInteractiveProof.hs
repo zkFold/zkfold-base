@@ -12,12 +12,18 @@ import           Test.QuickCheck
 import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
-instance (Show a, Show (Setup a), Show (Witness a)) => Show (NonInteractiveProofTestData a) where
-    show (TestData a w) = "TestData " ++ show a ++ " " ++ show w
-instance (Arbitrary a, NonInteractiveProof a, Arbitrary (Witness a)) => Arbitrary (NonInteractiveProofTestData a) where
+
+instance (Show a, Show (Setup a), Show (Witness a)) =>
+    Show (NonInteractiveProofTestData a) where
+    show (TestData a w) = "TestData: \n" ++ show a ++ "\n" ++ show w
+
+instance (Arbitrary a, NonInteractiveProof a, Arbitrary (Witness a)) =>
+    Arbitrary (NonInteractiveProofTestData a) where
     arbitrary = TestData <$> arbitrary <*> arbitrary
 
-propNonInteractiveProof :: forall a . NonInteractiveProof a => NonInteractiveProofTestData a -> Bool
+propNonInteractiveProof :: forall a .
+    NonInteractiveProof a =>
+    NonInteractiveProofTestData a -> Bool
 propNonInteractiveProof (TestData a w) =
     let s      = setup a
         (i, p) = prove @a s w
@@ -29,4 +35,4 @@ specNonInteractiveProof = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
             describe "All correct proofs" $ do
-                it "should validate" $ property $ propNonInteractiveProof @a
+                it "should validate" $ property $ propNonInteractiveProof @a . traceShowId

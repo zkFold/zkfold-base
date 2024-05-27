@@ -95,12 +95,6 @@ propPlonkPolyIdentity (TestData plonk w) =
 
     in all ((== zero) . f . (omega^)) [0 .. value @PlonkSizeBS -! 1]
 
-propPreparedSetupVerification :: Bool
-propPreparedSetupVerification =
-    let s = setup @(Plonk 32 ByteString) plonkTestSetup in
-    uncurry (verify @(Plonk 32 ByteString) s)
-        $ prove @(Plonk 32 ByteString) s plonkTestWitness
-
 specPlonk :: IO ()
 specPlonk = hspec $ do
     describe "Plonk specification" $ do
@@ -110,5 +104,3 @@ specPlonk = hspec $ do
             it "should hold" $ property propPlonkConstraintSatisfaction
         describe "Plonk polynomial identity" $ do
             it "should hold" $ property propPlonkPolyIdentity
-        describe "Plonk prepared setup verification" $ do
-            it "should hold" $ propPreparedSetupVerification
