@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeOperators #-}
 module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
+import           Data.Functor.Identity                          (runIdentity)
 import           Data.Maybe                                     (fromJust)
 import           Data.Zip                                       (zip)
 import           GHC.Generics                                   ((:*:) (..), (:.:) (..))
@@ -43,7 +44,7 @@ verifySignature pub payChange sig = (from sig * base) == (strictConv mimc * from
         base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)
 
         mimc :: a
-        mimc = hash payChange
+        mimc = runIdentity (hash payChange)
 
 batchTransfer :: (Symbolic a, Eq a TxOut, Sig a) => Tx a -> (Vector 5 :.: (TxOut :*: TxOut :*: ByteString 256)) a -> Bool a
 batchTransfer tx transfers =

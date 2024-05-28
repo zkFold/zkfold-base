@@ -24,7 +24,6 @@ import           ZkFold.Prelude                   (chooseNatural)
 import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators (Extend (..), Shrink (..))
-import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
 
 
@@ -120,14 +119,16 @@ specUInt = hspec $ do
         it "checks equality" $ do
             x <- toss m
             let acUint = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
-            return $ evalBool @(Zp p) (acUint == acUint) === (Bool one)
+            let Bool acEq = evalBool @(Zp p) (acUint == acUint)
+            return $ acEq === one
 
         it "checks inequality" $ do
             x <- toss m
             y' <- toss m
-            let y = if y' == x then x + 1 else y'
+            let y = if y' P.== x then x + 1 else y'
 
             let acUint1 = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
                 acUint2 = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
+                Bool acEq = evalBool @(Zp p) (acUint1 == acUint2)
 
-            return $ evalBool @(Zp p) (acUint1 == acUint2) === (Bool zero)
+            return $ acEq === zero

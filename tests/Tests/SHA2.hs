@@ -14,7 +14,7 @@ import           Data.List.Split                             (splitOn)
 import           Data.Proxy                                  (Proxy (..))
 import           GHC.TypeLits                                (KnownSymbol, Symbol, symbolVal)
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     (String, fmap, otherwise, pure, read, (<>), (==))
+import           Prelude                                     (String, fmap, otherwise, pure, read, (<>))
 import qualified Prelude                                     as Haskell
 import           System.Directory                            (listDirectory)
 import           System.FilePath.Posix
@@ -31,7 +31,6 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2        (AlgorithmSetup (..), SHA2, SHA2N, sha2, sha2Natural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit)
-import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 
 -- | These test files are provided by the Computer Security Resource Center.
@@ -45,15 +44,15 @@ getTestFiles :: forall (algorithm :: Symbol) . KnownSymbol algorithm => IO [File
 getTestFiles = Haskell.filter isAlgoFile <$> listDirectory dataDir
     where
         isAlgoFile :: String -> Haskell.Bool
-        isAlgoFile s = (algorithm `isPrefixOf` s) && not ((algorithm <> "_") `isPrefixOf` s) && (".rsp" `isSuffixOf` s)
+        isAlgoFile s = (algorithm `isPrefixOf` s) Haskell.&& Haskell.not ((algorithm <> "_") `isPrefixOf` s) Haskell.&& (".rsp" `isSuffixOf` s)
 
         algorithm :: String
-        algorithm = fmap (\c -> if c == '/' then '_' else c) $ symbolVal (Proxy @algorithm)
+        algorithm = fmap (\c -> if c Haskell.== '/' then '_' else c) $ symbolVal (Proxy @algorithm)
 
 readRSP :: FilePath -> IO [(Natural, Natural, Natural)]
 readRSP path = do
     contents <- Haskell.readFile path
-    let parts = Haskell.filter (\s -> take 3 s == "Len") $ splitOn "\r\n\r\n" contents
+    let parts = Haskell.filter (\s -> take 3 s Haskell.== "Len") $ splitOn "\r\n\r\n" contents
     pure $ readTestCase <$> parts
 
 readTestCase :: String -> (Natural, Natural, Natural)
@@ -64,7 +63,7 @@ readTestCase s = (numBits, msg, hash)
 
         msgShift :: Haskell.Int
         msgShift
-          | numBits `mod` 8 == 0 = 0
+          | numBits `mod` 8 Haskell.== 0 = 0
           | otherwise = 8 Haskell.- (Haskell.fromIntegral $ numBits `mod` 8)
 
         msg :: Natural

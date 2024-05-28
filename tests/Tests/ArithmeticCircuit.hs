@@ -4,7 +4,7 @@
 
 module Tests.ArithmeticCircuit (eval', it, specArithmeticCircuit) where
 
-import           Data.Bool                                              (bool)
+import qualified Data.Bool                                              as Haskell (bool)
 import           Data.Map                                               (empty)
 import           Prelude                                                (IO, Show, String, flip, head, id, map, ($))
 import qualified Prelude                                                as Haskell
@@ -15,7 +15,6 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
-import           ZkFold.Symbolic.Data.Bool
 
 eval' :: ArithmeticCircuit a -> a
 eval' = flip eval empty
@@ -44,17 +43,17 @@ specArithmeticCircuit = hspec $ do
         it "inverts nonzero correctly" $ correctHom1 @a finv
         it "inverts zero correctly" $ correctHom0 @a (finv zero)
         it "checks isZero(nonzero)" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a) = isZero (embed x)
-           in checkClosedCircuit r .&&. eval' r === bool zero one (x Haskell.== zero)
+          let (r :: ArithmeticCircuit a) = equal zero (embed x)
+           in checkClosedCircuit r .&&. eval' r === Haskell.bool zero one (x Haskell.== zero)
         it "checks isZero(0)" $
-          let Bool (r :: ArithmeticCircuit a) = isZero (zero :: ArithmeticCircuit a)
+          let (r :: ArithmeticCircuit a) = equal zero (zero :: ArithmeticCircuit a)
            in withMaxSuccess 1 $ checkClosedCircuit r .&&. eval' r === one
         it "computes binary expansion" $ withMaxSuccess 10 $ \(x :: a) ->
           let rs = binaryExpansion (embed x)
            in checkClosedCircuit (head rs) .&&. map eval' rs === padBits (numberOfBits @a) (binaryExpansion x)
         it "internalizes equality" $ \(x :: a) (y :: a) ->
-          let Bool (r :: ArithmeticCircuit a) = embed x == embed y
-           in checkClosedCircuit r .&&. eval' r === bool zero one (x Haskell.== y)
+          let (r :: ArithmeticCircuit a) = embed x `equal` embed y
+           in checkClosedCircuit r .&&. eval' r === Haskell.bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a) = embed x == embed x
+          let (r :: ArithmeticCircuit a) = embed x `equal` embed x
            in checkClosedCircuit r .&&. eval' r === one
