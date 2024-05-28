@@ -11,6 +11,7 @@ import           Data.Maybe                  (fromJust)
 import           GHC.Generics                (Generic)
 import           Numeric.Natural             (Natural)
 import           Prelude
+import           Test.QuickCheck             (Arbitrary (..), generate, vectorOf)
 
 import           ZkFold.Base.Data.ByteString
 
@@ -81,3 +82,19 @@ proveAPI bsS bsW =
         (Nothing, _)     -> ProveAPIErrorSetup
         (_, Nothing)     -> ProveAPIErrorWitness
         (Just s, Just w) -> ProveAPISuccess $ toByteString $ prove @a s w
+
+testVector :: forall a .
+    NonInteractiveProof a =>
+    Arbitrary a =>
+    Arbitrary (Witness a) =>
+    Binary (Setup a) =>
+    Binary (Input a) =>
+    Binary (Proof a) =>
+    Int -> IO [(ByteString, ByteString, ByteString)]
+testVector n = generate . vectorOf n $ (,)
+    <$> arbitrary @a
+    <*> arbitrary @(Witness a)
+    >>= \(a, w) -> do
+        let s = setup @a a
+        let (i, p) = prove @a s w
+        pure (toByteString s, toByteString i, toByteString p)
