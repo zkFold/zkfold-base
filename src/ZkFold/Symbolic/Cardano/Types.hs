@@ -1,11 +1,11 @@
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types where
 
-import           GHC.Generics                       hiding (UInt)
 import           Data.Functor.Identity
-import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
+import           GHC.Generics                          hiding (UInt)
+import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -38,7 +38,7 @@ deriving newtype instance
   , KnownNat tokens
   , FiniteField a
   ) => VectorSpace a (Transaction inputs rinputs outputs tokens datum)
-instance 
+instance
   ( KnownNat rinputs
   , KnownNat inputs
   , KnownNat outputs

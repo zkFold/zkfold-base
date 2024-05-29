@@ -1,6 +1,7 @@
 module ZkFold.Symbolic.Types (Symbolic, SymbolicData, SymbolicFunction) where
 
 import           Prelude                               (Traversable)
+
 import           ZkFold.Base.Algebra.Basic.Class       (BinaryExpansion, FiniteField, TrichotomyField)
 import           ZkFold.Base.Algebra.Basic.VectorSpace (FunctionSpace, VectorSpace, type InputSpace, type OutputSpace)
 

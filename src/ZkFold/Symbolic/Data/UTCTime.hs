@@ -1,14 +1,14 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.UTCTime where
-    
+
+import qualified Prelude
+
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.UInt
-
-import qualified Prelude
 
 newtype UTCTime a = UTCTime (UInt 11 a)
   deriving stock

@@ -38,7 +38,7 @@ instance
   , Arithmetic a
   ) => AdditiveSemigroup (PointEd25519 (ArithmeticCircuit a)) where
     (+) = add
-instance 
+instance
   ( EuclideanDomain (UInt 512 (ArithmeticCircuit a))
   , BinaryExpansion (UInt 256 (ArithmeticCircuit a))
   , Arithmetic a

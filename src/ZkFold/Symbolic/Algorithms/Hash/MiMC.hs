@@ -1,10 +1,11 @@
 module ZkFold.Symbolic.Algorithms.Hash.MiMC (mimcHash, hash) where
 
-import           Data.Foldable                   (Foldable (..))
-import           Data.Functor.Identity           (Identity (..))
-import           Data.List.NonEmpty              (NonEmpty ((:|)), nonEmpty)
-import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Eq (..), Num (..), any, length, not, (!!), (/), (^), (||))
+import           Data.Foldable                                  (Foldable (..))
+import           Data.Functor.Identity                          (Identity (..))
+import           Data.List.NonEmpty                             (NonEmpty ((:|)), nonEmpty)
+import           Numeric.Natural                                (Natural)
+import           Prelude                                        hiding (Eq (..), Num (..), any, length, not, (!!), (/),
+                                                                 (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)

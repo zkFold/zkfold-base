@@ -19,13 +19,13 @@ import           Control.DeepSeq
 import           Control.Monad.State                                       (StateT (..))
 import qualified Data.Bool                                                 as Haskell
 import           Data.Foldable                                             (foldr, foldrM, for_)
-import           Data.Maybe
 import           Data.Functor                                              ((<$>))
 import           Data.List                                                 (lookup, map, unfoldr, zip, zipWith)
 import           Data.Map                                                  (fromList, (!))
+import           Data.Maybe
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
-import           GHC.Generics                                              (Generic, (:*:)((:*:)))
+import           GHC.Generics                                              (Generic, (:*:) ((:*:)))
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Natural)
 import           Prelude                                                   (Integer, concatMap, error, flip, foldl,

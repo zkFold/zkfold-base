@@ -19,8 +19,8 @@ module ZkFold.Symbolic.Data.Compare
   ) where
 
 import           Data.Foldable                         (Foldable (..))
-import           Data.Functor.Rep                      (Representable)
 import           Data.Functor.Identity                 (Identity (..))
+import           Data.Functor.Rep                      (Representable)
 import           GHC.Generics                          ((:*:) (..), (:.:) (..))
 import qualified Prelude                               as Haskell
 

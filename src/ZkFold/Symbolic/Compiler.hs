@@ -9,7 +9,7 @@ module ZkFold.Symbolic.Compiler (
 ) where
 
 import           Data.Aeson                                                (ToJSON)
-import           Data.Foldable                                             (Foldable(fold))
+import           Data.Foldable                                             (Foldable (fold))
 import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, ($),
                                                                             (++))
 

@@ -1,9 +1,7 @@
-{-# LANGUAGE
-DerivingStrategies
-, DerivingVia
-, TypeOperators
-, UndecidableInstances
-#-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Bool (
     Bool (Bool),

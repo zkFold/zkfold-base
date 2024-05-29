@@ -19,21 +19,21 @@ import           Control.Monad                                             (mapM
 import           Data.Bits                                                 as B
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.List.Split                                           (chunksOf)
-import           Data.Maybe                                                (fromMaybe, Maybe (..))
+import           Data.Maybe                                                (Maybe (..), fromMaybe)
 import           Data.Proxy                                                (Proxy (..))
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Mod, Natural, natVal)
 import           Prelude                                                   (Bool (..), Integer, drop, error, fmap,
-                                                                            otherwise, pure, take, type (~),
-                                                                            ($), (.), (<$>), (<), (<>), (==), (>=))
+                                                                            otherwise, pure, take, type (~), ($), (.),
+                                                                            (<$>), (<), (<>), (==), (>=))
 import qualified Prelude                                                   as Haskell
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
-import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Prelude                                            (replicate, replicateA)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint

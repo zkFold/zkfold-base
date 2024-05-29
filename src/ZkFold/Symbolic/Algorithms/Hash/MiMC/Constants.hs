@@ -2,8 +2,8 @@ module ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants) where
 
 import           Crypto.Hash.SHA256              (hash)
 import           Data.Maybe                      (fromJust)
-import           Prelude
 import           Numeric.Natural                 (Natural)
+import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class (FromConstant (..))
 import           ZkFold.Base.Data.ByteString

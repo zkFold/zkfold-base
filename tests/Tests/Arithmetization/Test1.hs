@@ -3,17 +3,17 @@
 
 module Tests.Arithmetization.Test1 (specArithmetization1) where
 
-import           Data.Functor.Identity            (Identity (..))
-import           Numeric.Natural                  (Natural)
-import           Prelude                          hiding (Bool, Eq (..), Num (..), not, replicate, (/), (>), (^), (||))
-import qualified Prelude                          as Haskell
+import           Data.Functor.Identity           (Identity (..))
+import           Numeric.Natural                 (Natural)
+import           Prelude                         hiding (Bool, Eq (..), Num (..), not, replicate, (/), (>), (^), (||))
+import qualified Prelude                         as Haskell
 import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Types            (Symbolic)
+import           ZkFold.Symbolic.Types           (Symbolic)
 
 -- f x y = if (2 / x > y) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)
 testFunc :: forall a . Symbolic a => Identity a -> Identity a -> Identity a

@@ -1,25 +1,24 @@
 {-# LANGUAGE TypeOperators #-}
 module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
-import           Data.Functor.Identity                          (runIdentity)
-import           Data.Maybe                                     (fromJust)
-import           Data.Zip                                       (zip)
-import           GHC.Generics                                   ((:*:) (..), (:.:) (..))
-import           Numeric.Natural                                (Natural)
-import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
-                                                                 (*), (+))
+import           Data.Functor.Identity                (runIdentity)
+import           Data.Maybe                           (fromJust)
+import           Data.Zip                             (zip)
+import           GHC.Generics                         ((:*:) (..), (:.:) (..))
+import           Numeric.Natural                      (Natural)
+import           Prelude                              hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                        (Vector, fromVector, toVector)
-import           ZkFold.Symbolic.Cardano.Types                  (Input, Output, Transaction, paymentCredential,
-                                                                 txInputs, txOutputs, txiOutput, txoAddress)
+import           ZkFold.Base.Data.Vector              (Vector, fromVector, toVector)
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC (hash)
+import           ZkFold.Symbolic.Cardano.Types        (Input, Output, Transaction, paymentCredential, txInputs,
+                                                       txOutputs, txiOutput, txoAddress)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
-import qualified ZkFold.Symbolic.Data.Container                 as Container (zip)
+import qualified ZkFold.Symbolic.Data.Container       as Container (zip)
 import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Types                          (Symbolic, SymbolicData)
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (hash)
+import           ZkFold.Symbolic.Types                (Symbolic, SymbolicData)
 
 type TxOut = Output 10 ()
 type TxIn = Input 10 ()
