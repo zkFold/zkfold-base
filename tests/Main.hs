@@ -18,7 +18,6 @@ import           Tests.Permutations                          (specPermutations)
 import           Tests.Plonk                                 (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk)
 import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.SHA2                                  (specSHA2Natural)
--- import           Tests.UInt                                  (specUInt)
 import           Tests.Univariate                            (specUnivariate)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
