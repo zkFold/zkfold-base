@@ -2,7 +2,7 @@
 
 module Main where
 
-import           Examples.BatchTransfer (exampleBatchTransfer)
+-- import           Examples.BatchTransfer (exampleBatchTransfer)
 import           Examples.ByteString    (exampleByteStringAnd, exampleByteStringExtend, exampleByteStringOr)
 import           Examples.Conditional   (exampleConditional)
 import           Examples.Eq            (exampleEq)
@@ -26,11 +26,11 @@ main = do
     exampleConditional
     exampleUIntAdd @32
     exampleUIntAdd @500
-    exampleUIntMul @32
+    -- exampleUIntMul @32
     exampleUIntMul @500
     exampleUIntStrictAdd @32
     exampleUIntStrictAdd @500
-    exampleUIntStrictMul @32
+    -- exampleUIntStrictMul @32
     exampleUIntStrictMul @500
     exampleByteStringAnd @32
     exampleByteStringAnd @500
@@ -38,4 +38,4 @@ main = do
     exampleByteStringOr @500
     exampleByteStringExtend @1 @512
 
-    exampleBatchTransfer
+    -- exampleBatchTransfer
