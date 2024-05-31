@@ -1,7 +1,7 @@
 module ZkFold.Symbolic.Data.Conditional where
 
-import           Prelude                   hiding (Bool, Num (..), (/))
 import           Data.Monoid               (First (..))
+import           Prelude                   hiding (Bool, Num (..), (/))
 
 import           ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..))
 
