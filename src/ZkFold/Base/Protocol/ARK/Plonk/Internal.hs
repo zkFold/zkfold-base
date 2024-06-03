@@ -8,7 +8,7 @@ import           Data.Bifunctor                               (first)
 import           Data.Bool                                    (bool)
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (find, permutations, sort, transpose)
-import           Data.Map                                     (Map, elems, empty, foldrWithKey)
+import           Data.Map                                     (Map, elems, empty)
 import           Data.Maybe                                   (mapMaybe)
 import qualified Data.Vector                                  as V
 import           GHC.IsList                                   (IsList (..))
@@ -92,20 +92,19 @@ fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
 
     in polynomial [(ql, xa), (qr, xb), (qo, xc), (qm, xaxb), (qc, one)]
 
-addPublicInput :: Natural -> F -> [Polynomial' F] -> [Polynomial' F]
-addPublicInput i _ ps = var i : ps
+addPublicInput :: Natural -> [Polynomial' F] -> [Polynomial' F]
+addPublicInput i ps = var i : ps
 
 removeConstantVariable :: (Eq c, Field c, Scale c c, FromConstant c c) => Polynomial' c -> Polynomial' c
 removeConstantVariable = evalPolynomial evalMapM (\x -> if x == 0 then one else var x)
 
-toPlonkArithmetization :: forall a . KnownNat a => Map Natural F -> ArithmeticCircuit F
+toPlonkArithmetization :: forall a . KnownNat a => ArithmeticCircuit F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
-toPlonkArithmetization inputs ac =
+toPlonkArithmetization ac =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]
-        vars    = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
-        ac'     = mapVarArithmeticCircuit ac
-        inputs' = mapVarWitness vars inputs
-        system  = foldrWithKey addPublicInput (elems $ acSystem ac') inputs'
+        vars   = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
+        ac'    = mapVarArithmeticCircuit ac
+        system = foldr addPublicInput (elems $ acSystem ac') vars
 
     in case map (toPolyVec . V.fromList) $ transpose $ map (f . toPlonkConstraint . removeConstantVariable) system of
             [ql, qr, qo, qm, qc, a, b, c] -> (ql, qr, qo, qm, qc, a, b, c)

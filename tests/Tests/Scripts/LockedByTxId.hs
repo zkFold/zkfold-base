@@ -9,9 +9,10 @@ import           Test.Hspec
 import           Test.QuickCheck
 import           Tests.Plonk                                 (PlonkBS)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
+import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..))
+import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkInput (..), PlonkProverSecret,
+                                                              PlonkWitnessInput (..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Cardano.Types               (TxId (..))
@@ -40,13 +41,14 @@ testZKP x ps targetId =
     let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId)) :: Bool (ArithmeticCircuit Fr)
 
         (omega, k1, k2) = getParams 5
-        inputs  = fromList [(1, targetId), (acOutput ac, 1)]
-        plonk   = Plonk omega k1 k2 inputs ac x
-        s       = setup @PlonkBS plonk
-        w       = (PlonkWitnessInput inputs, ps)
-        (input, proof) = prove @PlonkBS s w
+        inputs   = fromList [(1, targetId), (acOutput ac, 1)]
+        plonk    = Plonk omega k1 k2 ac x
+        setup'   = setup @PlonkBS plonk
+        witness' = (PlonkWitnessInput inputs, ps, ac)
+        input'   = PlonkInput $ negate 15
+        proof'   = prove @PlonkBS setup' input' witness'
 
-    in verify @PlonkBS s input proof
+    in verify @PlonkBS setup' input' proof'
 
 specLockedByTxId :: IO ()
 specLockedByTxId = hspec $ do

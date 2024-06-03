@@ -5,7 +5,6 @@ module Tests.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
 
 import           Data.ByteString                              (ByteString)
 import           Data.List                                    (transpose)
-import           Data.Map                                     (elems, singleton)
 import qualified Data.Vector                                  as V
 import           GHC.IsList                                   (IsList (..))
 import           Prelude                                      hiding (Fractional (..), Num (..), drop, length,
@@ -25,7 +24,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkArithmetization,
                                                                toPlonkConstraint)
 import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof (..))
-import           ZkFold.Prelude                               (replicate, take, (!))
+import           ZkFold.Prelude                               (replicate, (!))
 import           ZkFold.Symbolic.Compiler
 
 type PlonkSizeBS = 32
@@ -43,16 +42,15 @@ propPlonkConstraintConversion x (x1, x2, x3) =
     in evalPolynomial evalMapM v p == evalPolynomial evalMapM v' p'
 
 propPlonkConstraintSatisfaction :: PlonkBS -> NonInteractiveProofTestData PlonkBS -> Bool
-propPlonkConstraintSatisfaction (Plonk _ _ _ inputs ac _) (TestData _ w) =
+propPlonkConstraintSatisfaction (Plonk _ _ _ ac _) (TestData _ (PlonkInput input) w) =
     let wmap = acWitness $ mapVarArithmeticCircuit ac
-        (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkSizeBS (singleton (acOutput ac) 15) ac
-        l = 1
+        (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkSizeBS ac
 
-        (PlonkWitnessInput wInput, _) = w
+        (PlonkWitnessInput wInput, _, _) = w
         w1'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec a)
         w2'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec b)
         w3'     = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec c)
-        wPub    = take l (map negate $ elems inputs) ++ replicate (value @PlonkSizeBS -! l) zero
+        wPub    = negate input : replicate (value @PlonkSizeBS -! 1) zero
 
         ql' = V.toList $ fromPolyVec ql
         qr' = V.toList $ fromPolyVec qr
@@ -67,15 +65,16 @@ propPlonkConstraintSatisfaction (Plonk _ _ _ inputs ac _) (TestData _ w) =
     in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', w1', w2', w3', wPub]
 
 propPlonkPolyIdentity :: NonInteractiveProofTestData PlonkBS -> Bool
-propPlonkPolyIdentity (TestData plonk w) =
+propPlonkPolyIdentity (TestData plonk (PlonkInput input) w) =
     let zH = polyVecZero @F @PlonkSizeBS @PlonkMaxPolyDegreeBS
 
         s = setup @PlonkBS plonk
-        (PlonkSetupParams {..}, _, PlonkCircuitPolynomials qlE qrE qoE qmE qcE _ _ _, _, PlonkInput wPub, PlonkWitnessMap wmap) = s
-        (PlonkWitnessInput wInput, ps) = w
+        (PlonkSetupParams {..}, _) = s
+        (PlonkWitnessInput wInput, ps, ac) = w
+        (_, PlonkCircuitPolynomials qlE qrE qoE qmE qcE _ _ _, PlonkWitnessMap wmap) = commonSetup @PlonkSizeBS omega k1 k2 ac
         PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
         (w1, w2, w3) = wmap wInput
-        pubPoly = polyVecInLagrangeBasis @F @PlonkSizeBS @PlonkMaxPolyDegreeBS omega $ toPolyVec @F @PlonkSizeBS wPub
+        pubPoly = polyVecInLagrangeBasis @F @PlonkSizeBS @PlonkMaxPolyDegreeBS omega $ toPolyVec @F @PlonkSizeBS (V.singleton input)
 
         a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega w1
         b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega w2

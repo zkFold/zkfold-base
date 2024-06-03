@@ -58,11 +58,11 @@ class NonInteractiveProof a where
 
     setup :: a -> Setup a
 
-    prove :: Setup a -> Witness a -> (Input a, Proof a)
+    prove :: Setup a -> Input a -> Witness a -> Proof a
 
     verify :: Setup a -> Input a -> Proof a -> Bool
 
-data ProveAPIResult = ProveAPISuccess ByteString | ProveAPIErrorSetup | ProveAPIErrorWitness
+data ProveAPIResult = ProveAPISuccess ByteString | ProveAPIErrorSetup | ProveAPIErrorInput | ProveAPIErrorWitness
     deriving (Show, Eq, Generic, NFData)
 
 proveAPI
@@ -74,27 +74,32 @@ proveAPI
     , Binary (Proof a))
     => ByteString
     -> ByteString
+    -> ByteString
     -> ProveAPIResult
-proveAPI bsS bsW =
+proveAPI bsS bsI bsW =
     let mS = fromByteString bsS
+        mI = fromByteString bsI
         mW = fromByteString bsW
-    in case (mS, mW) of
-        (Nothing, _)     -> ProveAPIErrorSetup
-        (_, Nothing)     -> ProveAPIErrorWitness
-        (Just s, Just w) -> ProveAPISuccess $ toByteString $ prove @a s w
+    in case (mS, mI, mW) of
+        (Nothing, _, _)          -> ProveAPIErrorSetup
+        (_, Nothing, _)          -> ProveAPIErrorInput
+        (_, _, Nothing)          -> ProveAPIErrorWitness
+        (Just s, Just i, Just w) -> ProveAPISuccess $ toByteString $ prove @a s i w
 
 testVector :: forall a .
     NonInteractiveProof a =>
     Arbitrary a =>
+    Arbitrary (Input a) =>
     Arbitrary (Witness a) =>
     Binary (Setup a) =>
     Binary (Input a) =>
     Binary (Proof a) =>
     Int -> IO [(ByteString, ByteString, ByteString)]
-testVector n = generate . vectorOf n $ (,)
+testVector n = generate . vectorOf n $ (,,)
     <$> arbitrary @a
+    <*> arbitrary @(Input a)
     <*> arbitrary @(Witness a)
-    >>= \(a, w) -> do
+    >>= \(a, i, w) -> do
         let s = setup @a a
-        let (i, p) = prove @a s w
+        let p = prove @a s i w
         pure (toByteString s, toByteString i, toByteString p)
