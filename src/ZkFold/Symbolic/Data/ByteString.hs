@@ -20,6 +20,8 @@ import           Data.Bits                                                 as B
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (Maybe (..))
+import           Data.String                                               (IsString (..))
+import           Data.Char                                                 (ord)
 import           Data.Proxy                                                (Proxy (..))
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
@@ -47,6 +49,14 @@ import           ZkFold.Symbolic.Data.UInt
 newtype ByteString (n :: Natural) a = ByteString [a]
     deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
 
+instance
+    ( FromConstant Natural a
+    , Concat (ByteString 128 a) (ByteString n a)
+    ) => IsString (ByteString n a) where
+    fromString xs = concat
+        $ fromConstant @Natural @(ByteString 128 a)
+        . Haskell.fromIntegral . Haskell.toInteger . ord
+        <$> xs
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --
