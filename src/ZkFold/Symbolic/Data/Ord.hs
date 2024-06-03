@@ -5,12 +5,12 @@
 module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), circuitGE, circuitGT, getBitsBE) where
 
 import qualified Data.Bool                                              as Haskell
-import           Prelude                                                (concatMap, reverse, zipWith, ($), (.))
+import           Prelude                                                (reverse, zipWith, ($), (.))
 import qualified Prelude                                                as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                       (Prime)
+import           ZkFold.Base.Algebra.Basic.Number                       (Prime, KnownNat)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (boolCheckC)
 import           ZkFold.Symbolic.Data.Bool                              (Bool (..), BoolType (..))
@@ -63,13 +63,13 @@ newtype Lexicographical a = Lexicographical a
 -- ^ A newtype wrapper for easy definition of Ord instances
 -- (though not necessarily a most effective one)
 
-deriving newtype instance SymbolicData a x => SymbolicData a (Lexicographical x)
+deriving newtype instance SymbolicData a 1 x => SymbolicData a 1 (Lexicographical x)
 
-deriving via (Lexicographical (ArithmeticCircuit a))
-    instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a)
+deriving via (Lexicographical (ArithmeticCircuit 1 a))
+    instance Arithmetic a => Ord (Bool (ArithmeticCircuit 1 a)) (ArithmeticCircuit 1 a)
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
-instance SymbolicData a x => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x) where
+instance SymbolicData a 1 x => Ord (Bool (ArithmeticCircuit 1 a)) (Lexicographical x) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -78,28 +78,29 @@ instance SymbolicData a x => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x
 
     x > y = circuitGT (getBitsBE x) (getBitsBE y)
 
-    max x y = bool @(Bool (ArithmeticCircuit a)) x y $ x < y
+    max x y = bool @(Bool (ArithmeticCircuit 1 a)) x y $ x < y
 
-    min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
+    min x y = bool @(Bool (ArithmeticCircuit 1 a)) x y $ x > y
 
-getBitsBE :: SymbolicData a x => x -> [ArithmeticCircuit a]
+getBitsBE :: SymbolicData a 1 x => x -> [ArithmeticCircuit 1 a]
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = concatMap (reverse . binaryExpansion) $ pieces x
+getBitsBE x = reverse . binaryExpansion $ pieces @_ @1 x
 
-circuitGE :: Arithmetic a => [ArithmeticCircuit a] -> [ArithmeticCircuit a] -> Bool (ArithmeticCircuit a)
+circuitGE :: Arithmetic a => [ArithmeticCircuit 1 a] -> [ArithmeticCircuit 1 a] -> Bool (ArithmeticCircuit 1 a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
 circuitGE xs ys = bitCheckGE dor boolCheckC (zipWith (-) xs ys)
 
-circuitGT :: Arithmetic a => [ArithmeticCircuit a] -> [ArithmeticCircuit a] -> Bool (ArithmeticCircuit a)
+circuitGT :: Arithmetic a => [ArithmeticCircuit 1 a] -> [ArithmeticCircuit 1 a] -> Bool (ArithmeticCircuit 1 a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
 circuitGT xs ys = bitCheckGT dor (zipWith (-) xs ys)
 
 dor ::
   Arithmetic a =>
-  Bool (ArithmeticCircuit a) ->
-  Bool (ArithmeticCircuit a) ->
-  Bool (ArithmeticCircuit a)
+  KnownNat n =>
+  Bool (ArithmeticCircuit n a) ->
+  Bool (ArithmeticCircuit n a) ->
+  Bool (ArithmeticCircuit n a)
 -- ^ @dorAnd a b@ is a schema which computes @a || b@ given @a && b@ is false.
 dor (Bool a) (Bool b) = Bool (a + b)
 

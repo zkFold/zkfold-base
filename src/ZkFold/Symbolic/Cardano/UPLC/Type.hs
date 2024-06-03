@@ -36,8 +36,8 @@ instance Semigroup (SomeType a) where
     _ <> _                                   = error "Semigroup (SomeType a): constructor mismatch"
 
 data SomeSymbolic a where
-    SomeData  :: forall a (t :: Type) . (Typeable t, SymbolicData a t) => Proxy t -> SomeSymbolic a
-    SomeArith :: forall a (t :: Type) . (Typeable t, Arithmetizable a t) => Proxy t -> SomeSymbolic a
+    SomeData  :: forall a n (t :: Type)   . (Typeable t, SymbolicData a n t)     => Proxy t -> SomeSymbolic a
+    SomeArith :: forall a i o (t :: Type) . (Typeable t, Arithmetizable a i o t) => Proxy t -> SomeSymbolic a
 
 getType :: SomeSymbolic a -> TypeRep
 getType (SomeData t)  = typeOf t
@@ -53,8 +53,8 @@ instance Semigroup (SomeSymbolic a) where
     x <> SomeData y
       | getType x == typeOf y = SomeData y
       | otherwise = error "Semigroup (SomeSymbolic a): SomeData mismatch"
-    SomeArith x <> SomeArith y
-      | typeOf x == typeOf y = SomeArith x
+    ax@(SomeArith x) <> SomeArith y
+      | typeOf x == typeOf y = ax
       | otherwise = error "Semigroup (SomeSymbolic a): SomeArith mismatch"
 
 symToSym :: SomeSymbolic a -> SomeSymbolic a -> SomeSymbolic a

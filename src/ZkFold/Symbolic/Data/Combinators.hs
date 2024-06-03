@@ -1,21 +1,27 @@
 {-# LANGUAGE AllowAmbiguousTypes     #-}
 {-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
 module ZkFold.Symbolic.Data.Combinators where
 
 import           Control.Monad                                             (mapM)
+import           Data.Kind                                                 (Type)
 import           Data.List                                                 (find, splitAt)
 import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (fromMaybe)
 import           Data.Proxy                                                (Proxy (..))
 import           Data.Ratio                                                ((%))
-import           GHC.TypeNats                                              (KnownNat, Natural, natVal)
-import           Prelude                                                   (error, pure, ($), (.), (<$>), (<>))
+import           Data.Type.Ord
+import           GHC.TypeNats
+import           Prelude                                                   (error, head, pure, tail, ($), (.), (<$>),
+                                                                            (<>))
 import qualified Prelude                                                   as Haskell
+import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
+import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, horner)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
@@ -41,15 +47,15 @@ class Shrink a b where
 -- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 --
 toBits
-    :: forall a
-    .  ArithmeticCircuit a
-    -> [ArithmeticCircuit a]
+    :: forall a n
+    .  ArithmeticCircuit n a
     -> Natural
     -> Natural
-    -> (forall i m. MonadBlueprint i a m => m [i])
-toBits hi lo hiBits loBits = do
-    lows <- mapM runCircuit lo
-    high <- runCircuit hi
+    -> (forall i m. MonadBlueprint i a n m => m [i])
+toBits c hiBits loBits = do
+    regs <- V.fromVector <$> runCircuit c
+    let lows = tail regs
+        high = head regs
 
     bitsLow  <- Haskell.concatMap Haskell.reverse <$> mapM (expansion loBits) lows
     bitsHigh <- Haskell.reverse <$> expansion hiBits high
@@ -60,10 +66,10 @@ toBits hi lo hiBits loBits = do
 -- | The inverse of @toBits@.
 --
 fromBits
-    :: forall a
+    :: forall a n
     .  Natural
     -> Natural
-    -> (forall i m. MonadBlueprint i a m => [i] -> m [i])
+    -> (forall i m. MonadBlueprint i a n m => [i] -> m [i])
 fromBits hiBits loBits bits = do
     let (bitsHighNew, bitsLowNew) = splitAt (Haskell.fromIntegral hiBits) bits
     let lowVarsNew = chunksOf (Haskell.fromIntegral loBits) bitsLowNew
@@ -82,6 +88,49 @@ highRegisterSize = getNatural @n -! registerSize @a @n * (numberOfRegisters @a @
 
 registerSize :: forall a n . (Finite a, KnownNat n) => Natural
 registerSize = Haskell.ceiling (getNatural @n % numberOfRegisters @a @n)
+
+
+--type family RegisterSize (a :: k) (bits :: Natural) :: Natural where
+--    RegisterSize a bits =
+--        OrdCond (CmpNat bits ((Div bits (NumberOfRegisters a bits)))
+
+type family NumberOfRegisters (a :: Type) (bits :: Natural) :: Natural where
+    NumberOfRegisters a bits = NumberOfRegisters' a bits (ListRange 1 1000) -- TODO: Compilation takes ages if this constant is greater than 10000.
+                                                                            -- But it is weird anyway if someone is trying to store a value
+                                                                            -- which requires more than 1000 registers.
+
+type family NumberOfRegisters' (a :: Type) (bits :: Natural) (c :: [Natural]) :: Natural where
+    NumberOfRegisters' a bits '[] =
+        TypeError
+            ( Text "Could not calculate the required number of registers to store " :<>:
+              ShowType bits :<>:
+              Text " bits using field elements of order " :<>:
+              ShowType (Order a)
+            )
+    NumberOfRegisters' a bits (x ': xs) =
+        OrdCond (CmpNat bits (x * MaxRegisterSize a x))
+            x
+            x
+            (NumberOfRegisters' a bits xs)
+
+type family BitLimit (a :: Type) :: Natural where
+    BitLimit a = Log2 (Order a)
+
+type family MaxAdded (regCount :: Natural) :: Natural where
+    MaxAdded regCount =
+        OrdCond (CmpNat regCount (2 ^ (Log2 regCount)))
+            (TypeError (Text "Impossible"))
+            (Log2 regCount)
+            (1 + Log2 regCount)
+
+type family MaxRegisterSize (a :: Type) (regCount :: Natural) :: Natural where
+    MaxRegisterSize a regCount = Div (BitLimit a - MaxAdded regCount) 2
+
+type family ListRange (from :: Natural) (to :: Natural) :: [Natural] where
+    ListRange from from = '[from]
+    ListRange from to = from ': (ListRange (from + 1) to)
+
+
 
 numberOfRegisters :: forall a n . (Finite a, KnownNat n) => Natural
 numberOfRegisters = fromMaybe (error "too many bits, field is not big enough")

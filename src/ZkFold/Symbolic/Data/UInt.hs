@@ -23,6 +23,7 @@ import           Data.List                                                 (map,
 import           Data.Map                                                  (fromList, (!))
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
+import Data.Kind (Type)
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Natural)
@@ -48,13 +49,20 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 
 -- TODO (Issue #18): hide this constructor
-data UInt (n :: Natural) a = UInt ![a] !a
+data family UInt :: Natural -> Type -> Type
+
+data instance UInt (n :: Natural) (Zp p) = UIntZp ![Zp p] !(Zp p)
     deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
 
-instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
-    fromConstant = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n))
+data instance UInt (n :: Natural) (ArithmeticCircuit n a) = UIntAc (ArithmeticCircuit (NumberOfRegisters a n) a)
+    deriving (Haskell.Show, Generic, NFData)
 
-instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Integer (UInt n a) where
+instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n (Zp p)) where
+    fromConstant c = 
+        let (lo, hi, _) = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n)) $ c
+         in UIntZp (fromConstant <$> lo) (fromConstant hi)
+
+instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Integer (UInt n (Zp p)) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n, MultiplicativeSemigroup (UInt n a)) => Scale Natural (UInt n a)
@@ -64,16 +72,16 @@ instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n, Multip
 instance MultiplicativeMonoid (UInt n a) => Exponent (UInt n a) Natural where
     (^) = natPow
 
-cast :: forall a n . (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Natural -> (UInt n a, [a])
+cast :: forall a n . (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Natural -> ([Natural], Natural, [a])
 cast n =
     let base = 2 ^ registerSize @a @n
-        registers = map fromConstant $ flip unfoldr n $ \case
+        registers = flip unfoldr n $ \case
             0 -> Haskell.Nothing
             x -> Haskell.Just (swap $ x `Haskell.divMod` base)
         r = numberOfRegisters @a @n -! 1
      in case greedySplitAt r registers of
-        (lo, hi:rest) -> (UInt lo hi, rest)
-        (lo, [])      -> (UInt (lo ++ replicate (r -! length lo) zero) zero, [])
+        (lo, hi:rest) -> (lo, hi, rest)
+        (lo, [])      -> ((lo ++ replicate (r -! length lo) zero), zero, [])
     where
         greedySplitAt 0 xs = ([], xs)
         greedySplitAt _ [] = ([], [])
@@ -140,7 +148,7 @@ instance (Finite (Zp p), KnownNat n) => Ord (Bool (Zp p)) (UInt n (Zp p)) where
     min x y = fromConstant $ Haskell.min (toConstant @_ @Natural x) (toConstant y)
 
 instance (Finite (Zp p), KnownNat n) => ToConstant (UInt n (Zp p)) Natural where
-    toConstant (UInt xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
+    toConstant (UIntZp xs x) = foldr (\p y -> fromZp p + base * y) 0 (xs ++ [x])
         where base = 2 ^ registerSize @(Zp p) @n
 
 instance (Finite (Zp p), KnownNat n) => ToConstant (UInt n (Zp p)) Integer where
@@ -167,62 +175,59 @@ instance (Finite (Zp p), KnownNat n) => Semiring (UInt n (Zp p))
 instance (Finite (Zp p), KnownNat n) => Ring (UInt n (Zp p))
 
 instance (Finite (Zp p), KnownNat n) => Arbitrary (UInt n (Zp p)) where
-    arbitrary = UInt
+    arbitrary = UIntZp
         <$> replicateA (numberOfRegisters @(Zp p) @n -! 1) (toss $ registerSize @(Zp p) @n)
         <*> toss (highRegisterSize @(Zp p) @n)
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 --------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownNat n) => SymbolicData a (UInt n (ArithmeticCircuit a)) where
-    pieces (UInt as a) = as ++ [a]
+type CircuitUInt n a = UInt n (ArithmeticCircuit (NumberOfRegisters a n) a)
 
-    restore as = case splitAt (numberOfRegisters @a @n -! 1) as of
-        (lo, [hi]) -> UInt lo hi
-        (_, _)     -> error "UInt: invalid number of values"
+instance (Arithmetic a, KnownNat n) => SymbolicData a (NumberOfRegisters a n) (CircuitUInt n a) where
+    pieces (UIntAc c) = c
 
-    typeSize = numberOfRegisters @a @n
+    restore c o = UInt $ ArithmeticCircuit c o 
 
-instance (Arithmetic a, KnownNat n, KnownNat m, n <= m) => Extend (UInt n (ArithmeticCircuit a)) (UInt m (ArithmeticCircuit a)) where
-    extend (UInt rlows rhi) =
+
+instance (Arithmetic a, KnownNat n, KnownNat m, n <= m) => Extend (CircuitUInt n a) (CircuitUInt m a) where
+    extend (UIntAc ac) =
         case numberOfRegisters @a @m -! numberOfRegisters @a @n of
-          0    -> UInt rlows rhi
-          diff -> UInt (rlows <> [rhi] <> replicate (diff -! 1) zero) zero
+          0    -> UIntAc ac
+          diff -> UIntAc (rlows <> [rhi] <> replicate (diff -! 1) zero) zero
 
-instance (Arithmetic a, KnownNat n, KnownNat k, k <= n) => Shrink (UInt n (ArithmeticCircuit a)) (UInt k (ArithmeticCircuit a)) where
-    shrink (UInt rlows rhi) =
-        case circuits solve of
-             (x:xs) -> UInt (Haskell.reverse xs) x
-             _      -> error "Iso ByteString UInt : unreachable"
+instance (Arithmetic a, KnownNat n, KnownNat k, k <= n) => Shrink (CircuitUInt n a) (CircuitUInt k a) where
+    shrink (UIntAc ac) = UIntAc (circuits solve)
         where
-            solve :: forall i m. MonadBlueprint i a m => m [i]
+            solve :: forall i m. MonadBlueprint i a (NumberOfRegisters a k) m => m [i]
             solve = do
                 bsBits <- toBits rhi (Haskell.reverse rlows) (highRegisterSize @a @n) (registerSize @a @n)
                 fromBits (highRegisterSize @a @k) (registerSize @a @k) (drop (value @n -! (value @k)) bsBits)
 
-instance (Arithmetic a, KnownNat n) => EuclideanDomain (UInt n (ArithmeticCircuit a)) where
-    divMod (UInt rlows rhi) d = bool @(Bool (ArithmeticCircuit a)) (q, r) (zero, zero) (d == zero)
+    {--
+instance (Arithmetic a, KnownNat n) => EuclideanDomain (CircuitUInt n a) where
+    divMod (UIntAc ac) d = bool @(Bool (ArithmeticCircuit a)) (q, r) (zero, zero) (d == zero)
         where
             (q, r) = foldl longDivisionStep (zero, zero) [value @n -! 1, value @n -! 2 .. 0]
 
-            numeratorBits :: [ArithmeticCircuit a]
+            numeratorBits :: [ArithmeticCircuit (NumberOfRegisters a n) a]
             numeratorBits =
                 concatMap (take (registerSize @a @n) . binaryExpansion) rlows <>
                 take (highRegisterSize @a @n) (binaryExpansion rhi)
 
-            addBit :: UInt n (ArithmeticCircuit a) -> ArithmeticCircuit a -> UInt n (ArithmeticCircuit a)
+            addBit :: CircuitUInt n a -> ArithmeticCircuit (NumberOfRegisters a n) a -> CircuitUInt n a 
             addBit (UInt [] hr) bit         = (UInt [] $ hr + bit)
             addBit (UInt (low:lows) hr) bit = UInt ((low + bit) : lows) hr
 
             longDivisionStep
-                :: (UInt n (ArithmeticCircuit a), UInt n (ArithmeticCircuit a))
+                :: (CircuitUInt n a, CircuitUInt n a)
                 -> Natural
-                -> (UInt n (ArithmeticCircuit a), UInt n (ArithmeticCircuit a))
+                -> (CircuitUInt n a, CircuitUInt n a)
             longDivisionStep (q', r') i =
                 let rs = addBit (r' + r') (numeratorBits !! i)
                  in bool @(Bool (ArithmeticCircuit a)) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
-instance (Arithmetic a, KnownNat n) => Ord (Bool (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => Ord (Bool (ArithmeticCircuit a)) (CircuitUInt n a) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -241,39 +246,23 @@ instance (Arithmetic a, KnownNat n) => Ord (Bool (ArithmeticCircuit a)) (UInt n 
 
     min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
+--}
 
-instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (UInt n (ArithmeticCircuit a)) where
-    UInt [] x + UInt [] y = UInt [] $ circuit $ do
-        (z, _) <- runCircuit (x + y) >>= splitExpansion (highRegisterSize @a @n) 1
-        return z
-
-    UInt (x : xs) z + UInt (y : ys) w =
-        let solve :: MonadBlueprint i a m => m [i]
+instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (CircuitUInt n a) where
+    UIntAc x + UIntAc y = UIntAc (circuits solve)
+        let solve :: MonadBlueprint i a (NumberOfRegisters a n) m => m [i]
             solve = do
-                (i, j) <- runCircuit (x + y) >>= splitExpansion (registerSize @a @n) 1
-                (zs, c) <- flip runStateT j $ traverse StateT $
-                    zipWith (fullAdder $ registerSize @a @n) xs ys
-                (k, _) <- fullAdder (highRegisterSize @a @n) z w c
-                return (k : i : zs)
+                (zs, c) <- flip runStateT zero $ traverse StateT $
+                    Z.zipWith (fullAdder $ registerSize @a @n) x y
+                return zs
 
-         in case circuits solve of
-            (hi : lo) -> UInt lo hi
-            []        -> error "UInt: unreachable"
 
-    UInt _ _ + UInt _ _ = error "UInt: unreachable"
 
-instance (Arithmetic a, KnownNat n) => AdditiveMonoid (UInt n (ArithmeticCircuit a)) where
-    zero = UInt (replicate (numberOfRegisters @a @n -! 1) zero) zero
+instance (Arithmetic a, KnownNat n) => AdditiveMonoid (CircuitUInt n a) where
+    zero = UIntAc zero
 
-instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit a)) where
-    UInt [] x - UInt [] y = UInt [] $ circuit $ do
-        i <- runCircuit x
-        j <- runCircuit y
-        z0 <- newAssigned (\v -> v i - v j + fromConstant (2 ^ registerSize @a @n :: Natural))
-        (z, _) <- splitExpansion (highRegisterSize @a @n) 1 z0
-        return z
-
-    UInt (x : xs) z - UInt (y : ys) w =
+instance (Arithmetic a, KnownNat n) => AdditiveGroup (CircuitUInt n a) where
+    UIntAc x - UIntAc y = UIntAc (circuits solve)
         let t :: a
             t = (one + one) ^ registerSize @a @n - one
 
@@ -295,16 +284,9 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (UInt n (ArithmeticCircuit 
                 s <- newAssigned (\v -> v d + v b + fromConstant t)
                 splitExpansion (registerSize @a @n) 1 s
 
-         in case circuits solve of
-            (hi : lo) -> UInt lo hi
-            []        -> error "UInt: unreachable"
-
-    UInt _ _ - UInt _ _ = error "UInt: unreachable"
-
     negate uint = bool @(Bool (ArithmeticCircuit a)) (negate' uint) zero (uint == zero)
         where
-            negate' (UInt [] x) = UInt [] (negateN (2 ^ highRegisterSize @a @n) x)
-            negate' (UInt (x : xs) x') =
+            negate' (UIntAc x) =
                 let y = negateN (2 ^ registerSize @a @n) x
                     ys = map (negateN $ 2 ^ registerSize @a @n -! 1) xs
                     y' = negateN (2 ^ highRegisterSize @a @n -! 1) x'
@@ -315,61 +297,39 @@ negateN n r = circuit $ do
     i <- runCircuit r
     newAssigned (\v -> fromConstant n - v i)
 
-instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (UInt n (ArithmeticCircuit a)) where
-    UInt [] x * UInt [] y = UInt [] $ circuit $ do
-        (z, _) <- runCircuit (x * y) >>= splitExpansion (highRegisterSize @a @n) (maxOverflow @a @n)
-        return z
-
-    UInt (x : xs) z * UInt (y : ys) w =
+instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (CircuitUInt n a) where
+    UIntAc x * UIntAc y = UIntAc (circuitN solve)
         let solve :: MonadBlueprint i a m => m [i]
             solve = do
-                i <- runCircuit x
-                j <- runCircuit y
-                is <- for xs runCircuit
-                js <- for ys runCircuit
-                i' <- runCircuit z
-                j' <- runCircuit w
-                let cs = fromList $ zip [0..] (i : is ++ [i'])
-                    ds = fromList $ zip [0..] (j : js ++ [j'])
+                is <- for x runCircuit
+                js <- for y runCircuit
+                let cs = fromList $ zip [0..] is
+                    ds = fromList $ zip [0..] js
                     r  = numberOfRegisters @a @n
-                -- single addend for lower register
-                q <- newAssigned (\v -> v i * v j)
                 -- multiple addends for middle registers
                 qs <- for [1 .. r -! 2] $ \k ->
                     for [0 .. k] $ \l ->
                         newAssigned (\v -> v (cs ! l) * v (ds ! (k -! l)))
-                -- lower register
-                (p, c) <- splitExpansion (registerSize @a @n) (registerSize @a @n) q
                 -- middle registers
-                (ps, c') <- flip runStateT c $ for qs $ StateT . \rs c' -> do
+                (ps, c') <- flip runStateT zero $ for qs $ StateT . \rs c' -> do
                     s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
                     splitExpansion (registerSize @a @n) (maxOverflow @a @n) s
-                -- high register
-                p'0 <- foldrM (\k l -> do
-                    k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
-                    newAssigned (\v -> v k' + v l)) c' [0 .. r -! 1]
-                (p', _) <- splitExpansion (highRegisterSize @a @n) (maxOverflow @a @n) p'0
-                return (p' : p : ps)
+                return ps
 
-         in case circuits solve of
-            (hi : lo) -> UInt lo hi
-            []        -> error "UInt: unreachable"
 
-    UInt _ _ * UInt _ _ = error "UInt: unreachable"
+instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (CircuitUInt n a) where
+    one = UIntAc $ (one :: ArithmeticCircuit 1 a) `joinCircuits` (zero :: ArithmeticCircuit (NumberOfRegisters a n - 1) a)  
+        
 
-instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (UInt n (ArithmeticCircuit a)) where
-    one | numberOfRegisters @a @n Haskell.== 1 = UInt [] one
-        | otherwise = UInt (one : replicate (numberOfRegisters @a @n -! 2) zero) zero
+instance (Arithmetic a, KnownNat n) => Semiring (CircuitUInt n a)
 
-instance (Arithmetic a, KnownNat n) => Semiring (UInt n (ArithmeticCircuit a))
+instance (Arithmetic a, KnownNat n) => Ring (CircuitUInt n a)
 
-instance (Arithmetic a, KnownNat n) => Ring (UInt n (ArithmeticCircuit a))
-
-deriving via (Structural (UInt n (ArithmeticCircuit a)))
+deriving via (Structural (CircuitUInt n a))
          instance (Arithmetic a, KnownNat n) =>
-         Eq (Bool (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a))
+         Eq (Bool (ArithmeticCircuit a)) (CircuitUInt n a)
 
-instance (Arithmetic a, KnownNat n) => Arbitrary (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => Arbitrary (CircuitUInt n a) where
     arbitrary = UInt
         <$> replicateA (numberOfRegisters @a @n -! 1) (toss $ registerSize @a @n)
         <*> toss (highRegisterSize @a @n)
@@ -388,7 +348,7 @@ instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => Str
 instance (Finite (Zp p), KnownNat n) => StrictConv (Zp p) (UInt n (Zp p)) where
     strictConv = strictConv . toConstant @_ @Natural
 
-instance (Arithmetic a, KnownNat n, KnownNat (NumberOfBits a), NumberOfBits a <= n) => StrictConv (ArithmeticCircuit a) (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n, KnownNat (NumberOfBits a), NumberOfBits a <= n) => StrictConv (ArithmeticCircuit a) (CircuitUInt n a) where
     strictConv a =
         let (lo, hi) = unsnoc $ take (numberOfRegisters @a @n) $
                             flip unfoldr a $ Haskell.Just . expand
@@ -421,7 +381,7 @@ instance (Finite (Zp p), KnownNat n) => StrictNum (UInt n (Zp p)) where
     strictSub x y = strictConv $ toConstant x -! toConstant y
     strictMul x y = strictConv $ toConstant x * toConstant @_ @Natural y
 
-instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n) => StrictNum (CircuitUInt n a) where
     strictAdd (UInt [] x) (UInt [] y) = UInt [] $ circuit $ do
         z <- runCircuit (x + y)
         _ <- expansion (highRegisterSize @a @n) z

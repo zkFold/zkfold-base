@@ -40,6 +40,7 @@ type G2 = Point BLS12_381_G2
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
+
 data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (ArithmeticCircuit F) F
     deriving (Show)
 -- TODO (Issue #25): make a proper implementation of Arbitrary

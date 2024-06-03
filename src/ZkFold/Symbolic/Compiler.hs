@@ -9,12 +9,14 @@ module ZkFold.Symbolic.Compiler (
 ) where
 
 import           Data.Aeson                                                (ToJSON)
-import           Data.Foldable                                             (fold)
-import           Prelude                                                   (FilePath, IO, Show (..), map, putStrLn, ($),
-                                                                            (++))
+import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, ($),
+                                                                            (++), (<$>))
 
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (replicateA, writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Compiler.Arithmetizable
 
@@ -31,17 +33,22 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 -}
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
-solder :: forall a f . Arithmetizable a f => f -> [ArithmeticCircuit a]
-solder f = arithmetize f $ circuits $ replicateA (inputSize @a @f) input
+solder :: forall a i o f . Arithmetizable a i o f => f -> ArithmeticCircuit o a
+solder f = arithmetize f inputC
+    where
+        inputC :: ArithmeticCircuit i a
+        inputC = circuitN $ Vector <$> replicateA (value @i) input
 
 -- | Compiles function `f` into an arithmetic circuit.
-compile :: forall a f y . (Arithmetizable a f, SymbolicData a y) => f -> y
-compile f = restore @a (map optimize $ solder f)
+compile :: forall a i o f y . (Arithmetizable a i o f, SymbolicData a o y) => f -> y
+compile f = restore @a c o
+    where
+        ArithmeticCircuit c o = optimize $ (solder @a @i @o) f
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
-compileIO :: forall a f . (ToJSON a, Arithmetizable a f) => FilePath -> f -> IO ()
+compileIO :: forall a i o f . (ToJSON a, Arithmetizable a i o f) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
-    let ac = optimize (fold (solder f)) :: ArithmeticCircuit a
+    let ac = optimize (solder @a @i @o f) :: ArithmeticCircuit o a
 
     putStrLn "\nCompiling the script...\n"
 

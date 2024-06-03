@@ -15,7 +15,7 @@ data Term name fun a where
     Apply     :: Term name fun a -> Term name fun a -> Term name fun a
     Force     :: Term name fun a -> Term name fun a
     Delay     :: Term name fun a -> Term name fun a
-    Constant  :: (Eq c, Typeable c, SymbolicData a c) => c -> Term name fun a
+    Constant  :: (Eq c, Typeable c, SymbolicData a n c) => c -> Term name fun a
     Builtin   :: fun -> Term name fun a
     Error     :: Term name fun a
 

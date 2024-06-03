@@ -183,7 +183,8 @@ library
       text                                       ,
       tfp                                   < 1.1,
       these                                 < 1.3,
-      vector                                < 0.14,
+      type-errors                         < 0.2.1,
+      vector                               < 0.14,
       vector-binary-instances               < 0.3
     hs-source-dirs: src
 
