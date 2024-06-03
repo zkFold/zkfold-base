@@ -30,7 +30,7 @@ propNonInteractiveProof (TestData a i w) =
     in verify @a s i p
 
 specNonInteractiveProof :: forall a . (Typeable a, NonInteractiveProof a,
-    Show a, Show (Input a), Show (Witness a), 
+    Show a, Show (Input a), Show (Witness a),
     Arbitrary a, Arbitrary (Input a), Arbitrary (Witness a)) => IO ()
 specNonInteractiveProof = hspec $ do
     describe "Non-interactive proof protocol specification" $ do

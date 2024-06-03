@@ -137,18 +137,18 @@ commonSetup omega k1 k2 ac = (PlonkPermutation {..}, PlonkCircuitPolynomials {..
 
         s = fromPermutation @(PlonkPermutationSize d) $ fromCycles $
                 mkIndexPartition $ fmap fromZp $ fromPolyVec a V.++ fromPolyVec b V.++ fromPolyVec c
-        
+
         f i = case (i-!1) `div` value @d of
             0 -> omega^i
             1 -> k1 * (omega^i)
             2 -> k2 * (omega^i)
             _ -> error "setup: invalid index"
-        
+
         s' = fromList $ map f s
         s1 = toPolyVec $ V.take (fromIntegral $ value @d) s'
         s2 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ value @d) s'
         s3 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ 2 * value @d) s'
-        
+
         w1 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec a)
         w2 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec b)
         w3 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec c)
