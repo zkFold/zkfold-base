@@ -17,10 +17,11 @@ module ZkFold.Symbolic.Data.ByteString
 import           Control.DeepSeq                                           (NFData)
 import           Control.Monad                                             (mapM, replicateM, zipWithM)
 import           Data.Bits                                                 as B
-import           Data.Char                                                 (ord)
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (Maybe (..))
+
+import qualified Data.ByteString                                           as Bytes
 import           Data.Proxy                                                (Proxy (..))
 import           Data.String                                               (IsString (..))
 import           GHC.Generics                                              (Generic)
@@ -51,12 +52,19 @@ newtype ByteString (n :: Natural) a = ByteString [a]
 
 instance
     ( FromConstant Natural a
-    , Concat (ByteString 128 a) (ByteString n a)
+    , Concat (ByteString 7 a) (ByteString n a)
     ) => IsString (ByteString n a) where
-    fromString xs = concat
-        $ fromConstant @Natural @(ByteString 128 a)
-        . Haskell.fromIntegral . Haskell.toInteger . ord
-        <$> xs
+    fromString = fromConstant . fromString @Bytes.ByteString
+
+instance
+    ( FromConstant Natural a
+    , Concat (ByteString 7 a) (ByteString n a)
+    ) => FromConstant Bytes.ByteString (ByteString n a) where
+    fromConstant bytes = concat
+        $ fromConstant @Natural @(ByteString 7 a)
+        . Haskell.fromIntegral
+        . Haskell.toInteger
+        <$> Bytes.unpack bytes
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --
