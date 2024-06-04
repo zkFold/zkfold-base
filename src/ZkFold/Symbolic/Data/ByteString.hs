@@ -17,11 +17,10 @@ module ZkFold.Symbolic.Data.ByteString
 import           Control.DeepSeq                                           (NFData)
 import           Control.Monad                                             (mapM, replicateM, zipWithM)
 import           Data.Bits                                                 as B
+import qualified Data.ByteString                                           as Bytes
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (Maybe (..))
-
-import qualified Data.ByteString                                           as Bytes
 import           Data.Proxy                                                (Proxy (..))
 import           Data.String                                               (IsString (..))
 import           GHC.Generics                                              (Generic)
