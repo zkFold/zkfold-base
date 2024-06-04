@@ -2,7 +2,8 @@
 
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
-import           Data.Map                                    (fromList, keys, elems)
+import           Data.Map                                    (elems, fromList, keys)
+import qualified Data.Vector                                 as V
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec
@@ -20,7 +21,6 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
-import qualified Data.Vector as V
 
 lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => TxId a' -> TxId a -> () -> Bool a
 lockedByTxId (TxId targetId) (TxId txId) _ = txId == fromConstant targetId

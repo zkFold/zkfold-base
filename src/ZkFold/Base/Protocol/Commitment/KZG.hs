@@ -65,7 +65,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg .
             xs = V.fromList $ map (x^) [0..d-!1]
             gs = fmap (`mul` gen) xs
         in gs
-    
+
     setupVerify :: kzg -> SetupVerify kzg
     setupVerify (KZG x) =
         let d  = value @d
