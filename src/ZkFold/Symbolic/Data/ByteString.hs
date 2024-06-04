@@ -18,7 +18,6 @@ import           Control.DeepSeq                                           (NFDa
 import           Control.Monad                                             (mapM, replicateM, zipWithM)
 import           Data.Bits                                                 as B
 import qualified Data.ByteString                                           as Bytes
-import           Data.Char                                                 (ord)
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (Maybe (..))
@@ -52,13 +51,9 @@ newtype ByteString (n :: Natural) a = ByteString [a]
 
 instance
     ( FromConstant Natural a
-    , Concat (ByteString 7 a) (ByteString n a)
+    , Concat (ByteString 8 a) (ByteString n a)
     ) => IsString (ByteString n a) where
-    fromString xs = concat
-        $ fromConstant @Natural @(ByteString 7 a)
-        . Haskell.fromIntegral
-        . Haskell.toInteger
-        . ord <$> xs
+    fromString = fromConstant . fromString @Bytes.ByteString
 
 instance
     ( FromConstant Natural a

@@ -7,19 +7,16 @@ module Tests.ByteString (specByteString) where
 
 import           Control.Applicative              ((<*>))
 import           Control.Monad                    (return)
-import qualified Data.ByteString                  as Bytes
-import           Data.Function                    (($), (.))
+import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
 import           Data.List                        (map, (++))
-import           Data.String                      (IsString (..), String)
 import           GHC.TypeNats                     (Mod)
 import           Numeric.Natural                  (Natural)
 import           Prelude                          (show, type (~), (<>))
 import qualified Prelude                          as Haskell
 import           System.IO                        (IO)
 import           Test.Hspec                       (Spec, describe, hspec)
-import           Test.QuickCheck                  (Gen, Property, chooseInteger, elements, forAll, oneof,
-                                                   withMaxSuccess, (===))
+import           Test.QuickCheck                  (Gen, Property, chooseInteger, withMaxSuccess, (===))
 import           Tests.ArithmeticCircuit          (eval', it)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -116,14 +113,6 @@ testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to leng
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
 
-testFromString :: forall p .
-    PrimeField (Zp p) =>
-    String -> Property
-testFromString str =
-     fromString @(ByteString 56 (Zp p)) str
- === fromConstant @Bytes.ByteString @(ByteString 56 (Zp p))
-     (fromString @Bytes.ByteString str)
-
 -- | For some reason, Haskell can't infer obvious type relations such as n <= n + 1...
 --
 specByteString
@@ -156,8 +145,6 @@ specByteString = hspec $ do
     let n = Haskell.fromIntegral $ value @n
         m = 2 Haskell.^ n -! 1
     describe ("ByteString" ++ show n ++ " specification") $ do
-        it "fromString === fromString . fromConstant"
-            . forAll ((:[]) <$> elements ['a'..'z']) $ testFromString @p
 
         it "Zp embeds Integer" $ do
             x <- toss m
