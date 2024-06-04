@@ -48,7 +48,9 @@ challenges ts0 n = go ts0 n []
 class NonInteractiveProof a where
     type Transcript a
 
-    type Setup a
+    type SetupProve a
+
+    type SetupVerify a
 
     type Witness a
 
@@ -56,11 +58,13 @@ class NonInteractiveProof a where
 
     type Proof a
 
-    setup :: a -> Setup a
+    setupProve :: a -> SetupProve a
 
-    prove :: Setup a -> Input a -> Witness a -> Proof a
+    setupVerify :: a -> SetupVerify a
 
-    verify :: Setup a -> Input a -> Proof a -> Bool
+    prove :: SetupProve a -> Input a -> Witness a -> Proof a
+
+    verify :: SetupVerify a -> Input a -> Proof a -> Bool
 
 data ProveAPIResult = ProveAPISuccess ByteString | ProveAPIErrorSetup | ProveAPIErrorInput | ProveAPIErrorWitness
     deriving (Show, Eq, Generic, NFData)
@@ -68,7 +72,7 @@ data ProveAPIResult = ProveAPISuccess ByteString | ProveAPIErrorSetup | ProveAPI
 proveAPI
     :: forall a
     . (NonInteractiveProof a
-    , Binary (Setup a)
+    , Binary (SetupProve a)
     , Binary (Witness a)
     , Binary (Input a)
     , Binary (Proof a))
@@ -91,7 +95,7 @@ testVector :: forall a .
     Arbitrary a =>
     Arbitrary (Input a) =>
     Arbitrary (Witness a) =>
-    Binary (Setup a) =>
+    Binary (SetupProve a) =>
     Binary (Input a) =>
     Binary (Proof a) =>
     Int -> IO [(ByteString, ByteString, ByteString)]
@@ -100,6 +104,6 @@ testVector n = generate . vectorOf n $ (,,)
     <*> arbitrary @(Input a)
     <*> arbitrary @(Witness a)
     >>= \(a, i, w) -> do
-        let s = setup @a a
+        let s = setupProve @a a
         let p = prove @a s i w
         pure (toByteString s, toByteString i, toByteString p)

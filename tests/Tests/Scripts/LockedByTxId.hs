@@ -2,7 +2,7 @@
 
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
-import           Data.Map                                    (fromList)
+import           Data.Map                                    (fromList, keys, elems)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec
@@ -20,6 +20,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
+import qualified Data.Vector as V
 
 lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => TxId a' -> TxId a -> () -> Bool a
 lockedByTxId (TxId targetId) (TxId txId) _ = txId == fromConstant targetId
@@ -41,14 +42,15 @@ testZKP x ps targetId =
     let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId)) :: Bool (ArithmeticCircuit Fr)
 
         (omega, k1, k2) = getParams 5
-        inputs   = fromList [(1, targetId), (acOutput ac, 1)]
-        plonk    = Plonk omega k1 k2 ac x
-        setup'   = setup @PlonkBS plonk
-        witness' = (PlonkWitnessInput inputs, ps, ac)
-        input'   = PlonkInput $ negate 15
-        proof'   = prove @PlonkBS setup' input' witness'
+        inputs  = fromList [(1, targetId), (acOutput ac, 1)]
+        plonk   = Plonk omega k1 k2 (V.fromList $ keys inputs) ac x
+        setupP  = setupProve @PlonkBS plonk
+        setupV  = setupVerify @PlonkBS plonk
+        witness = (PlonkWitnessInput inputs, ps)
+        input   = PlonkInput $ V.fromList $ fmap negate (elems inputs)
+        proof   = prove @PlonkBS setupP input witness
 
-    in verify @PlonkBS setup' input' proof'
+    in verify @PlonkBS setupV input proof
 
 specLockedByTxId :: IO ()
 specLockedByTxId = hspec $ do

@@ -25,9 +25,10 @@ propNonInteractiveProof :: forall a .
     NonInteractiveProof a =>
     NonInteractiveProofTestData a -> Bool
 propNonInteractiveProof (TestData a i w) =
-    let s = setup a
-        p = prove @a s i w
-    in verify @a s i p
+    let sp = setupProve a
+        sv = setupVerify a
+        p = prove @a sp i w
+    in verify @a sv i p
 
 specNonInteractiveProof :: forall a . (Typeable a, NonInteractiveProof a,
     Show a, Show (Input a), Show (Witness a),
