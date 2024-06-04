@@ -7,18 +7,19 @@ module Tests.ByteString (specByteString) where
 
 import           Control.Applicative              ((<*>))
 import           Control.Monad                    (return)
+import qualified Data.ByteString                  as Bytes
 import           Data.Function                    (($), (.))
 import           Data.Functor                     ((<$>))
 import           Data.List                        (map, (++))
-import           Data.String                      (String, IsString (..))
-import qualified Data.ByteString                  as Bytes
+import           Data.String                      (IsString (..), String)
 import           GHC.TypeNats                     (Mod)
 import           Numeric.Natural                  (Natural)
 import           Prelude                          (show, type (~), (<>))
 import qualified Prelude                          as Haskell
 import           System.IO                        (IO)
 import           Test.Hspec                       (Spec, describe, hspec)
-import           Test.QuickCheck                  (Gen, Property, oneof, elements, forAll, chooseInteger, withMaxSuccess, (===))
+import           Test.QuickCheck                  (Gen, Property, chooseInteger, elements, forAll, oneof,
+                                                   withMaxSuccess, (===))
 import           Tests.ArithmeticCircuit          (eval', it)
 
 import           ZkFold.Base.Algebra.Basic.Class

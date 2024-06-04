@@ -18,11 +18,11 @@ import           Control.DeepSeq                                           (NFDa
 import           Control.Monad                                             (mapM, replicateM, zipWithM)
 import           Data.Bits                                                 as B
 import qualified Data.ByteString                                           as Bytes
+import           Data.Char                                                 (ord)
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (Maybe (..))
 import           Data.Proxy                                                (Proxy (..))
-import           Data.Char                                                 (ord)
 import           Data.String                                               (IsString (..))
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
