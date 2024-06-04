@@ -4,12 +4,12 @@ module ZkFold.Symbolic.Data.Maybe (
     Maybe, just, nothing, fromMaybe, isNothing, isJust
 ) where
 
-import qualified Prelude                            as Haskell
+import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Compiler.Arithmetizable
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.Arithmetizable
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.DiscreteField
 
@@ -46,5 +46,5 @@ instance SymbolicData a (u (ArithmeticCircuit a))
   => SymbolicData a (Maybe u (ArithmeticCircuit a)) where
     pieces (Maybe h t) = h : pieces t
     restore (h:ts) = Maybe h (restore ts)
-    restore _ = Haskell.error "restore ArithmeticCircuit: wrong number of arguments"
+    restore _      = Haskell.error "restore ArithmeticCircuit: wrong number of arguments"
     typeSize = 1 + typeSize @a @(u (ArithmeticCircuit a))
