@@ -78,7 +78,7 @@ library
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base
+    build-depends:    base, zkfold-base
 
     -- Directories containing source files.
     hs-source-dirs:   src

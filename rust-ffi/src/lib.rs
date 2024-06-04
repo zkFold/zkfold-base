@@ -12,10 +12,26 @@ fn hello(name: &str) {
     println!("Hello, {name}!");
 }
 
+impl FromReprRust for GAffine {
+        fn from(ptr: *const i8) -> Self {
+            GAffine {
+                name: <String as FromReprRust<*const i8>>::from(ptr),
+                kind: PhantomData::<T>
+            }
+        }    
+}
+
 #[hs_bindgen]
-pub fn add(left: u32, right: u32) -> u32 {
+pub fn add(left: GAffine, right: GAffine) -> GAffine {
     left + right
 }
+
+// #[hs_bindgen(add :: CUInt -> CUInt -> CUInt)]
+// pub fn add(left: u32, right: u32) -> u32 {
+//     let result = (left + right).into();
+//     println!("Result: {}!", result);
+//     result
+// }
 
 // #[hs_bindgen]
 pub fn scalar_mult(a: GAffine, b: GAffine, s1: ScalarField, s2: ScalarField) -> GAffine {
