@@ -1,4 +1,4 @@
-{-# LANGUAGE DerivingStrategies, UndecidableInstances #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Symbolic.Data.Maybe (
     Maybe, just, nothing, fromMaybe, isNothing, isJust
