@@ -22,6 +22,7 @@ import           Data.List                                                 (fold
 import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (Maybe (..))
 import           Data.Proxy                                                (Proxy (..))
+import           Data.Char                                                 (ord)
 import           Data.String                                               (IsString (..))
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
@@ -53,14 +54,18 @@ instance
     ( FromConstant Natural a
     , Concat (ByteString 7 a) (ByteString n a)
     ) => IsString (ByteString n a) where
-    fromString = fromConstant . fromString @Bytes.ByteString
+    fromString xs = concat
+        $ fromConstant @Natural @(ByteString 7 a)
+        . Haskell.fromIntegral
+        . Haskell.toInteger
+        . ord <$> xs
 
 instance
     ( FromConstant Natural a
-    , Concat (ByteString 7 a) (ByteString n a)
+    , Concat (ByteString 8 a) (ByteString n a)
     ) => FromConstant Bytes.ByteString (ByteString n a) where
     fromConstant bytes = concat
-        $ fromConstant @Natural @(ByteString 7 a)
+        $ fromConstant @Natural @(ByteString 8 a)
         . Haskell.fromIntegral
         . Haskell.toInteger
         <$> Bytes.unpack bytes
