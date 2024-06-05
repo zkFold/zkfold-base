@@ -2,14 +2,14 @@ module ZkFold.Prelude where
 
 import           Data.Aeson           (FromJSON, ToJSON, decode, encode)
 import           Data.ByteString.Lazy (readFile, writeFile)
-import           Data.List            (genericIndex)
+import           Data.List            (foldl', genericIndex)
 import           Data.Map             (Map, lookup)
 import           GHC.Num              (Natural, integerToNatural)
 import           Prelude              hiding (drop, lookup, readFile, replicate, take, writeFile, (!!))
 import           Test.QuickCheck      (Gen, chooseInteger)
 
 length :: Foldable t => t a -> Natural
-length = foldl (\c _ -> c + 1) 0
+length = foldl' (\c _ -> c + 1) 0
 
 take :: Natural -> [a] -> [a]
 take 0 _      = []
