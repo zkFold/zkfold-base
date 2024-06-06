@@ -24,9 +24,9 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', evalMapM, evalPolynomial, mapVar,
                                                                polynomial, var, variables)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
+import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                               (length, take)
 import           ZkFold.Symbolic.Compiler
-import ZkFold.Base.Data.Vector
 
 type F = ScalarField BLS12_381_G1
 type G1 = Point BLS12_381_G1
