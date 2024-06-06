@@ -26,6 +26,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', eval
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Prelude                               (length, take)
 import           ZkFold.Symbolic.Compiler
+import ZkFold.Base.Data.Vector
 
 type F = ScalarField BLS12_381_G1
 type G1 = Point BLS12_381_G1
@@ -98,7 +99,7 @@ addPublicInput i ps = var i : ps
 removeConstantVariable :: (Eq c, Field c, Scale c c, FromConstant c c) => Polynomial' c -> Polynomial' c
 removeConstantVariable = evalPolynomial evalMapM (\x -> if x == 0 then one else var x)
 
-toPlonkArithmetization :: forall a . KnownNat a => V.Vector Natural -> ArithmeticCircuit F
+toPlonkArithmetization :: forall a n . KnownNat a => Vector n Natural -> ArithmeticCircuit F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
 toPlonkArithmetization ord ac =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]

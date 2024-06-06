@@ -22,6 +22,7 @@ import           ZkFold.Base.Algebra.Basic.Permutations              (fromCycles
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2, BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
+import           ZkFold.Base.Data.Vector                             (Vector (..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams, toPlonkArithmetization)
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
@@ -39,14 +40,14 @@ type G2 = Point BLS12_381_G2
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
-data Plonk (d :: Natural) t = Plonk F F F Natural (V.Vector Natural) (ArithmeticCircuit F) F
+data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (ArithmeticCircuit F) F
     deriving (Show)
 -- TODO (Issue #25): make a proper implementation of Arbitrary
-instance Arbitrary (Plonk d t) where
+instance Arbitrary (Plonk d n t) where
     arbitrary = do
         let (omega, k1, k2) = getParams 5
         ac <- arbitrary
-        Plonk omega k1 k2 2 (V.fromList [1, 2]) ac <$> arbitrary
+        Plonk omega k1 k2 (Vector [1, 2]) ac <$> arbitrary
 
 type PlonkPermutationSize d = 3 * d
 
@@ -61,8 +62,7 @@ data PlonkSetupParamsProve = PlonkSetupParamsProve {
         k2'    :: F,
         gs'    :: V.Vector G1,
         h0'    :: G2,
-        h1'    :: G2,
-        nPub'  :: Natural
+        h1'    :: G2
     }
     deriving (Show)
 
@@ -140,10 +140,10 @@ instance Arbitrary PlonkInput where
 data PlonkProof = PlonkProof G1 G1 G1 G1 G1 G1 G1 G1 G1 F F F F F F
     deriving (Show)
 
-plonkPermutation :: forall d t .
+plonkPermutation :: forall d n t .
     (KnownNat d, KnownNat (PlonkPermutationSize d)) =>
-    Plonk d t -> (PolyVec F d, PolyVec F d, PolyVec F d) -> PlonkPermutation d
-plonkPermutation (Plonk omega k1 k2 _ _ _ _) (a, b, c) = PlonkPermutation {..}
+    Plonk d n t -> (PolyVec F d, PolyVec F d, PolyVec F d) -> PlonkPermutation d
+plonkPermutation (Plonk omega k1 k2 _ _ _) (a, b, c) = PlonkPermutation {..}
     where
         s = fromPermutation @(PlonkPermutationSize d) $ fromCycles $
                     mkIndexPartition $ fmap fromZp $ fromPolyVec a V.++ fromPolyVec b V.++ fromPolyVec c
@@ -159,14 +159,14 @@ plonkPermutation (Plonk omega k1 k2 _ _ _ _) (a, b, c) = PlonkPermutation {..}
         s2 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ value @d) s'
         s3 = toPolyVec $ V.take (fromIntegral $ value @d) $ V.drop (fromIntegral $ 2 * value @d) s'
 
-plonkCircuitPolynomials :: forall d t .
+plonkCircuitPolynomials :: forall d n t .
     (KnownNat d, KnownNat (PlonkMaxPolyDegree d))
-    => Plonk d t
+    => Plonk d n t
     -> PlonkPermutation d
     -> (PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d)
     -> PlonkCircuitPolynomials d
 plonkCircuitPolynomials
-   (Plonk omega _ _  _ _ _ _)
+   (Plonk omega _ _ _ _ _)
    PlonkPermutation {..}
    (qlAC, qrAC, qoAC, qmAC, qcAC, _, _, _) = PlonkCircuitPolynomials {..}
     where
@@ -179,22 +179,22 @@ plonkCircuitPolynomials
         sigma2 = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega s2
         sigma3 = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega s3
 
-instance forall d t .
-        (KnownNat d,
+instance forall d n t .
+        (KnownNat d, KnownNat n,
          KnownNat (PlonkPermutationSize d),
          KnownNat (PlonkMaxPolyDegree d),
          ToTranscript t F,
          ToTranscript t G1,
-         FromTranscript t F) => NonInteractiveProof (Plonk d t) where
-    type Transcript (Plonk d t)  = t
-    type SetupProve (Plonk d t)  = (PlonkSetupParamsProve, PlonkPermutation d, PlonkCircuitPolynomials d, PlonkWitnessMap d)
-    type SetupVerify (Plonk d t) = (PlonkSetupParamsVerify, PlonkCircuitCommitments)
-    type Witness (Plonk d t)     = (PlonkWitnessInput, PlonkProverSecret)
-    type Input (Plonk d t)       = PlonkInput
-    type Proof (Plonk d t)       = PlonkProof
+         FromTranscript t F) => NonInteractiveProof (Plonk d n t) where
+    type Transcript (Plonk d n t)  = t
+    type SetupProve (Plonk d n t)  = (PlonkSetupParamsProve, PlonkPermutation d, PlonkCircuitPolynomials d, PlonkWitnessMap d)
+    type SetupVerify (Plonk d n t) = (PlonkSetupParamsVerify, PlonkCircuitCommitments)
+    type Witness (Plonk d n t)     = (PlonkWitnessInput, PlonkProverSecret)
+    type Input (Plonk d n t)       = PlonkInput
+    type Proof (Plonk d n t)       = PlonkProof
 
-    setupProve :: Plonk d t -> SetupProve (Plonk d t)
-    setupProve plonk@(Plonk omega' k1' k2' nPub' ord ac x) =
+    setupProve :: Plonk d n t -> SetupProve (Plonk d n t)
+    setupProve plonk@(Plonk omega' k1' k2' ord ac x) =
         (PlonkSetupParamsProve {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap')
         where
             d = value @d + 6
@@ -214,8 +214,8 @@ instance forall d t .
             perm@PlonkPermutation {..} = plonkPermutation plonk (a, b, c)
             PlonkCircuitPolynomials {..} = plonkCircuitPolynomials plonk perm tPA
 
-    setupVerify :: Plonk d t -> SetupVerify (Plonk d t)
-    setupVerify plonk@(Plonk omega k1 k2 _ ord ac x) = (PlonkSetupParamsVerify {..}, PlonkCircuitCommitments {..})
+    setupVerify :: Plonk d n t -> SetupVerify (Plonk d n t)
+    setupVerify plonk@(Plonk omega k1 k2 ord ac x) = (PlonkSetupParamsVerify {..}, PlonkCircuitCommitments {..})
         where
             d = value @d + 6
             xs = fromList $ map (x^) [0..d-!1]
@@ -238,17 +238,17 @@ instance forall d t .
             cmS2 = gs `com` sigma2
             cmS3 = gs `com` sigma3
 
-    prove :: SetupProve (Plonk d t) -> Witness (Plonk d t) -> (Input (Plonk d t), Proof (Plonk d t))
+    prove :: SetupProve (Plonk d n t) -> Witness (Plonk d n t) -> (Input (Plonk d n t), Proof (Plonk d n t))
     prove (PlonkSetupParamsProve {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap)
           (PlonkWitnessInput wInput, PlonkProverSecret b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)
         = (PlonkInput wPub, PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi)
         where
-            n = value @d
+            d = value @d
             zH = polyVecZero @F @d @(PlonkMaxPolyDegree d)
 
             (w1, w2, w3) = wmap wInput
 
-            wPub = V.fromList $ take nPub' $ fmap (negate . snd) (sort $ toList wInput)
+            wPub = V.fromList $ take (value @n) $ fmap (negate . snd) (sort $ toList wInput)
 
             pubPoly = polyVecInLagrangeBasis omega' $ toPolyVec @F @d wPub
 
@@ -266,7 +266,7 @@ instance forall d t .
                 `transcript` cmC
             (gamma, ts') = challenge ts
 
-            omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega') omega'
+            omegas  = toPolyVec $ V.iterateN (fromIntegral d) (* omega') omega'
             omegas' =  V.iterateN (V.length (fromPolyVec z) P.+ 1) (* omega') one
             zs1 = polyVecGrandProduct w1 omegas s1 beta gamma
             zs2 = polyVecGrandProduct w2 (scalePV k1' omegas) s2 beta gamma
@@ -276,7 +276,7 @@ instance forall d t .
             zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
             cmZ = gs' `com` z
 
-            (alpha, ts'') = challenge $ ts' `transcript` cmZ :: (F, Transcript (Plonk d t))
+            (alpha, ts'') = challenge $ ts' `transcript` cmZ :: (F, Transcript (Plonk d n t))
 
             t1  = a * b * qm + a * ql + b * qr + c * qo + pubPoly + qc
             t2  = (a + polyVecLinear gamma beta)
@@ -290,9 +290,9 @@ instance forall d t .
             t4 = (z - one) * polyVecLagrange @F @d @(PlonkMaxPolyDegree d) 1 omega'
             t = (t1 + scalePV alpha (t2 - t3) + scalePV (alpha * alpha) t4) `polyVecDiv` zH
 
-            t_lo'  = toPolyVec $ V.take (fromIntegral n) $ fromPolyVec t
-            t_mid' = toPolyVec $ V.take (fromIntegral n) $ V.drop (fromIntegral n) $ fromPolyVec t
-            t_hi'  = toPolyVec $ V.drop (fromIntegral $ 2*n) $ fromPolyVec t
+            t_lo'  = toPolyVec $ V.take (fromIntegral d) $ fromPolyVec t
+            t_mid' = toPolyVec $ V.take (fromIntegral d) $ V.drop (fromIntegral d) $ fromPolyVec t
+            t_hi'  = toPolyVec $ V.drop (fromIntegral $ 2*d) $ fromPolyVec t
             t_lo   = t_lo' + scalePV b10 (polyVecZero @F @d @(PlonkMaxPolyDegree d) + one)
             t_mid  = t_mid' + scalePV b11 (polyVecZero @F @d @(PlonkMaxPolyDegree d) + one) - scalePV b10 one
             t_hi   = t_hi' - scalePV b11 one
@@ -341,7 +341,7 @@ instance forall d t .
                         ) (scalePV beta sigma3 + scalePV (c_xi + gamma) one)
                     )
                 + scalePV (alpha * alpha * lagrange1_xi) (z - one)
-                - scalePV zH_xi (scalePV (xi^(2 * n)) t_hi + scalePV (xi^n) t_mid + t_lo)
+                - scalePV zH_xi (scalePV (xi^(2 * d)) t_hi + scalePV (xi^d) t_mid + t_lo)
 
             proof1Poly = (r
                     + scalePV v (a - scalePV a_xi one)
@@ -356,7 +356,7 @@ instance forall d t .
             proof1 = gs' `com` proof1Poly
             proof2 = gs' `com` proof2Poly
 
-    verify :: SetupVerify (Plonk d t) -> Input (Plonk d t) -> Proof (Plonk d t) -> Bool
+    verify :: SetupVerify (Plonk d n t) -> Input (Plonk d n t) -> Proof (Plonk d n t) -> Bool
     verify
         (PlonkSetupParamsVerify {..}, PlonkCircuitCommitments {..})
         (PlonkInput ws)
@@ -367,7 +367,7 @@ instance forall d t .
             (beta, ts) = challenge $ mempty
                 `transcript` cmA
                 `transcript` cmB
-                `transcript` cmC :: (F, Transcript (Plonk d t))
+                `transcript` cmC :: (F, Transcript (Plonk d n t))
             (gamma, ts') = challenge ts
 
             (alpha, ts'') = challenge $ ts' `transcript` cmZ

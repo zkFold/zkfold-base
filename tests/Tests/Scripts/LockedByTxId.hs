@@ -3,7 +3,6 @@
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
 import           Data.Map                                    (fromList, keys)
-import qualified Data.Vector                                 as V
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (describe, hspec, it)
@@ -12,6 +11,7 @@ import           Tests.Plonk                                 (PlonkBS)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
+import           ZkFold.Base.Data.Vector                     (Vector (..))
 import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
@@ -42,7 +42,7 @@ testZKP x ps targetId =
 
         (omega, k1, k2) = getParams 5
         inputs  = fromList [(1, targetId), (acOutput ac, 1)]
-        plonk   = Plonk omega k1 k2 2 (V.fromList $ keys inputs) ac x
+        plonk   = Plonk @32 omega k1 k2 (Vector @2 $ keys inputs) ac x
         setupP  = setupProve @PlonkBS plonk
         setupV  = setupVerify @PlonkBS plonk
         witness = (PlonkWitnessInput inputs, ps)
