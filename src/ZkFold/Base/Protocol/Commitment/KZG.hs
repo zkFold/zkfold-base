@@ -56,8 +56,8 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg .
     type SetupProve (KZG c1 c2 t f d)  = V.Vector (Point c1)
     type SetupVerify (KZG c1 c2 t f d) = (V.Vector (Point c1), Point c2, Point c2)
     type Witness (KZG c1 c2 t f d)     = WitnessKZG c1 c2 t f d
-    type Input (KZG c1 c2 t f d)       = ()
-    type Proof (KZG c1 c2 t f d)       = (Map f (V.Vector (Point c1), V.Vector f), Map f (Point c1))
+    type Input (KZG c1 c2 t f d)       = Map f (V.Vector (Point c1), V.Vector f)
+    type Proof (KZG c1 c2 t f d)       = Map f (Point c1)
 
     setupProve :: kzg -> SetupProve kzg
     setupProve (KZG x) =
@@ -74,14 +74,13 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg .
         in (gs, gen, x `mul` gen)
 
     prove :: SetupProve kzg
-          -> Input kzg
           -> Witness kzg
-          -> Proof kzg
-    prove gs () (WitnessKZG w) = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
+          -> (Input kzg, Proof kzg)
+    prove gs (WitnessKZG w) = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
-            proveOne :: (Transcript kzg, (Map f (V.Vector (Point c1), V.Vector f), Map f (Point c1)))
+            proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
                      -> (f, V.Vector (PolyVec f d))
-                     -> (Transcript kzg, (Map f (V.Vector (Point c1), V.Vector f), Map f (Point c1)))
+                     -> (Transcript kzg, (Input kzg, Proof kzg))
             proveOne (ts, (iMap, pMap)) (z, fs) = (ts'', (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
                     cms  = fmap (com gs) fs
@@ -95,7 +94,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg .
                     ts''         = if ts == empty then ts' else snd $ challenge @(Transcript kzg) @f ts'
 
     verify :: SetupVerify kzg -> Input kzg -> Proof kzg -> Bool
-    verify (gs, h0, h1) () (input, proof) =
+    verify (gs, h0, h1) input proof =
             let (e0, e1) = snd $ foldl (prepareVerifyOne (input, proof)) (empty, (inf, inf)) $ keys input
                 p1 = pairing e0 h0
                 p2 = pairing e1 h1

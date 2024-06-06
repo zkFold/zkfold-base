@@ -2,22 +2,21 @@
 
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
-import           Data.Map                                    (elems, fromList, keys)
+import           Data.Map                                    (fromList, keys)
 import qualified Data.Vector                                 as V
-import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..))
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
-import           Test.Hspec
-import           Test.QuickCheck
+import           Test.Hspec                                  (describe, hspec, it)
+import           Test.QuickCheck                             (Testable (..), (==>))
 import           Tests.Plonk                                 (PlonkBS)
 
-import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), FromConstant (..))
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkInput (..), PlonkProverSecret,
-                                                              PlonkWitnessInput (..))
+import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Cardano.Types               (TxId (..))
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
@@ -43,12 +42,11 @@ testZKP x ps targetId =
 
         (omega, k1, k2) = getParams 5
         inputs  = fromList [(1, targetId), (acOutput ac, 1)]
-        plonk   = Plonk omega k1 k2 (V.fromList $ keys inputs) ac x
+        plonk   = Plonk omega k1 k2 2 (V.fromList $ keys inputs) ac x
         setupP  = setupProve @PlonkBS plonk
         setupV  = setupVerify @PlonkBS plonk
         witness = (PlonkWitnessInput inputs, ps)
-        input   = PlonkInput $ V.fromList $ fmap negate (elems inputs)
-        proof   = prove @PlonkBS setupP input witness
+        (input, proof) = prove @PlonkBS setupP witness
 
     in verify @PlonkBS setupV input proof
 

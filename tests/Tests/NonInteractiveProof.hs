@@ -6,33 +6,33 @@ module Tests.NonInteractiveProof (NonInteractiveProofTestData(..), specNonIntera
 
 import           Data.Typeable                            (Proxy (..), Typeable, typeRep)
 import           Prelude                                  hiding (Fractional (..), Num (..), length)
-import           Test.Hspec
-import           Test.QuickCheck
+import           Test.Hspec                               (describe, hspec, it)
+import           Test.QuickCheck                          (Arbitrary (arbitrary), Testable (property))
 
 import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
 
-data NonInteractiveProofTestData a = TestData a (Input a) (Witness a)
+data NonInteractiveProofTestData a = TestData a (Witness a)
 
 instance (Show a, Show (Input a), Show (Witness a)) =>
     Show (NonInteractiveProofTestData a) where
-    show (TestData a i w) = "TestData: \n" ++ show a ++ "\n" ++ show i ++ "\n" ++ show w
+    show (TestData a w) = "TestData: \n" ++ show a ++ "\n" ++ show w
 
-instance (NonInteractiveProof a, Arbitrary a, Arbitrary (Input a), Arbitrary (Witness a)) =>
+instance (NonInteractiveProof a, Arbitrary a, Arbitrary (Witness a)) =>
     Arbitrary (NonInteractiveProofTestData a) where
-    arbitrary = TestData <$> arbitrary <*> arbitrary <*> arbitrary
+    arbitrary = TestData <$> arbitrary <*> arbitrary
 
 propNonInteractiveProof :: forall a .
     NonInteractiveProof a =>
     NonInteractiveProofTestData a -> Bool
-propNonInteractiveProof (TestData a i w) =
+propNonInteractiveProof (TestData a w) =
     let sp = setupProve a
         sv = setupVerify a
-        p = prove @a sp i w
+        (i, p) = prove @a sp w
     in verify @a sv i p
 
 specNonInteractiveProof :: forall a . (Typeable a, NonInteractiveProof a,
     Show a, Show (Input a), Show (Witness a),
-    Arbitrary a, Arbitrary (Input a), Arbitrary (Witness a)) => IO ()
+    Arbitrary a, Arbitrary (Witness a)) => IO ()
 specNonInteractiveProof = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
