@@ -4,7 +4,7 @@
 module Tests.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
 
 import           Data.ByteString                              (ByteString)
-import           Data.List                                    (transpose, sort)
+import           Data.List                                    (sort, transpose)
 import qualified Data.Vector                                  as V
 import           GHC.IsList                                   (IsList (..))
 import           Prelude                                      hiding (Fractional (..), Num (..), drop, length,
