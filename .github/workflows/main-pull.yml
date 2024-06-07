@@ -21,8 +21,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4.1.1
-      with:
-        ref: ${{ github.ref }}
 
     - name: Set up Haskell
       uses: haskell-actions/setup@v2.6.2
