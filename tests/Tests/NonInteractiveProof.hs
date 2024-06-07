@@ -6,18 +6,18 @@ module Tests.NonInteractiveProof (NonInteractiveProofTestData(..), specNonIntera
 
 import           Data.Typeable                            (Proxy (..), Typeable, typeRep)
 import           Prelude                                  hiding (Fractional (..), Num (..), length)
-import           Test.Hspec
-import           Test.QuickCheck
+import           Test.Hspec                               (describe, hspec, it)
+import           Test.QuickCheck                          (Arbitrary (arbitrary), Testable (property))
 
 import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 
-instance (Show a, Show (Setup a), Show (Witness a)) =>
+instance (Show a, Show (Input a), Show (Witness a)) =>
     Show (NonInteractiveProofTestData a) where
     show (TestData a w) = "TestData: \n" ++ show a ++ "\n" ++ show w
 
-instance (Arbitrary a, NonInteractiveProof a, Arbitrary (Witness a)) =>
+instance (NonInteractiveProof a, Arbitrary a, Arbitrary (Witness a)) =>
     Arbitrary (NonInteractiveProofTestData a) where
     arbitrary = TestData <$> arbitrary <*> arbitrary
 
@@ -25,12 +25,14 @@ propNonInteractiveProof :: forall a .
     NonInteractiveProof a =>
     NonInteractiveProofTestData a -> Bool
 propNonInteractiveProof (TestData a w) =
-    let s      = setup a
-        (i, p) = prove @a s w
-    in verify @a s i p
+    let sp = setupProve a
+        sv = setupVerify a
+        (i, p) = prove @a sp w
+    in verify @a sv i p
 
-specNonInteractiveProof :: forall a . (Typeable a, Show a, Arbitrary a, NonInteractiveProof a,
-    Show (Setup a), Show (Witness a), Arbitrary (Witness a)) => IO ()
+specNonInteractiveProof :: forall a . (Typeable a, NonInteractiveProof a,
+    Show a, Show (Input a), Show (Witness a),
+    Arbitrary a, Arbitrary (Witness a)) => IO ()
 specNonInteractiveProof = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
