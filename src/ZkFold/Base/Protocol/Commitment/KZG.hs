@@ -51,25 +51,32 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg .
     , Field f
     , AdditiveGroup (BaseField c1)
     , Binary (BaseField c1)
-
     ) => NonInteractiveProof (KZG c1 c2 t f d) where
-    type Transcript (KZG c1 c2 t f d)   = ByteString
-    type Setup (KZG c1 c2 t f d)        = (V.Vector (Point c1), Point c2, Point c2)
-    type Witness (KZG c1 c2 t f d)      = WitnessKZG c1 c2 t f d
-    type Input (KZG c1 c2 t f d)        = Map f (V.Vector (Point c1), V.Vector f)
-    type Proof (KZG c1 c2 t f d)        = Map f (Point c1)
+    type Transcript (KZG c1 c2 t f d)  = ByteString
+    type SetupProve (KZG c1 c2 t f d)  = V.Vector (Point c1)
+    type SetupVerify (KZG c1 c2 t f d) = (V.Vector (Point c1), Point c2, Point c2)
+    type Witness (KZG c1 c2 t f d)     = WitnessKZG c1 c2 t f d
+    type Input (KZG c1 c2 t f d)       = Map f (V.Vector (Point c1), V.Vector f)
+    type Proof (KZG c1 c2 t f d)       = Map f (Point c1)
 
-    setup :: kzg -> Setup kzg
-    setup (KZG x) =
+    setupProve :: kzg -> SetupProve kzg
+    setupProve (KZG x) =
+        let d  = value @d
+            xs = V.fromList $ map (x^) [0..d-!1]
+            gs = fmap (`mul` gen) xs
+        in gs
+
+    setupVerify :: kzg -> SetupVerify kzg
+    setupVerify (KZG x) =
         let d  = value @d
             xs = V.fromList $ map (x^) [0..d-!1]
             gs = fmap (`mul` gen) xs
         in (gs, gen, x `mul` gen)
 
-    prove :: Setup kzg
+    prove :: SetupProve kzg
           -> Witness kzg
           -> (Input kzg, Proof kzg)
-    prove (gs, _, _) (WitnessKZG w) = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
+    prove gs (WitnessKZG w) = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
             proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
                      -> (f, V.Vector (PolyVec f d))
@@ -86,7 +93,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg .
                     h            = sum $ V.zipWith scalePV (V.fromList gamma) $ fmap (`provePolyVecEval` z) fs
                     ts''         = if ts == empty then ts' else snd $ challenge @(Transcript kzg) @f ts'
 
-    verify :: Setup kzg -> Input kzg -> Proof kzg -> Bool
+    verify :: SetupVerify kzg -> Input kzg -> Proof kzg -> Bool
     verify (gs, h0, h1) input proof =
             let (e0, e1) = snd $ foldl (prepareVerifyOne (input, proof)) (empty, (inf, inf)) $ keys input
                 p1 = pairing e0 h0
@@ -94,7 +101,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg .
             in p1 == p2
         where
             prepareVerifyOne
-                :: (Input kzg, Proof kzg)
+                :: (Map f (V.Vector (Point c1), V.Vector f), Map f (Point c1))
                 -> (Transcript kzg, (Point c1, Point c1))
                 -> f
                 -> (Transcript kzg, (Point c1, Point c1))
