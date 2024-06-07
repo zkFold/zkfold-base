@@ -1,10 +1,10 @@
 {-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Symbolic.Data.Maybe (
-    Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust
+    Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, filter, find
 ) where
 
-import           Prelude                                             (($))
+import           Prelude                                             (($), (.), foldr)
 import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -56,3 +56,16 @@ maybe :: forall a b f .
     DiscreteField (Bool a) a =>
     b -> (f a -> b) -> Maybe f a -> b
 maybe d h x@(Maybe _ v) = bool @(Bool a) d (h v) $ isNothing x
+
+filter ::
+    Conditional (Bool a) [f a] =>
+    DiscreteField (Bool a) a =>
+    (f a -> Maybe f a) -> [f a] -> [f a]
+filter p = foldr (\i a -> maybe a (: a) $ p i) []
+
+find ::
+    AdditiveMonoid (f a) =>
+    Conditional (Bool a) [f a] =>
+    DiscreteField (Bool a) a =>
+    (f a -> Maybe f a) -> [f a] -> Maybe f a
+find p = (\case { [] -> Maybe zero zero; x:_ -> just x }) . filter p
