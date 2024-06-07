@@ -1,9 +1,10 @@
 {-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Symbolic.Data.Maybe (
-    Maybe, just, nothing, fromMaybe, isNothing, isJust
+    Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust
 ) where
 
+import           Prelude                                             (($))
 import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -11,6 +12,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.Arithmetizable
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 
 data Maybe u a = Maybe a (u a)
@@ -48,3 +50,9 @@ instance SymbolicData a (u (ArithmeticCircuit a))
     restore (h:ts) = Maybe h (restore ts)
     restore _      = Haskell.error "restore ArithmeticCircuit: wrong number of arguments"
     typeSize = 1 + typeSize @a @(u (ArithmeticCircuit a))
+
+maybe :: forall a b f .
+    Conditional (Bool a) b =>
+    DiscreteField (Bool a) a =>
+    b -> (f a -> b) -> Maybe f a -> b
+maybe d h x@(Maybe _ v) = bool @(Bool a) d (h v) $ isNothing x
