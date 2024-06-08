@@ -37,8 +37,8 @@ newtype LittleEndian = LittleEndian {unLittleEndian :: Natural}
 instance Binary LittleEndian where
   get = do
     ns <- many getWord8
-    let accum n w8 = n * 256 + fromIntegral w8
-        littleEndian = LittleEndian (foldl' accum 0 (reverse ns))
+    let accum (!pw :: Natural, !acc :: Natural) w8 = (pw * 256, pw * fromIntegral w8 + acc)
+        littleEndian = LittleEndian (snd $ foldl' accum (1, 0) ns)
     return littleEndian
   put (LittleEndian n)
     | n == 0 = mempty
