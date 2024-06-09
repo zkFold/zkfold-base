@@ -60,6 +60,9 @@ txoAddress (Output (addr, _)) = addr
 txoDatumHash :: Output tokens datum a -> ByteString 256 a
 txoDatumHash (Output (_, (_, dh))) = dh
 
+txoTokens :: Output tokens datum a -> Value tokens a
+txoTokens (Output (_, (v, _))) = v
+
 deriving instance (Arithmetic a, KnownNat tokens) => SymbolicData a (Output tokens datum (ArithmeticCircuit a))
 
 deriving via (Structural (Output tokens datum (ArithmeticCircuit a)))
@@ -72,10 +75,14 @@ deriving instance Arithmetic a => SymbolicData a (OutputRef (ArithmeticCircuit a
 
 newtype Address a = Address (ByteString 4 a, (ByteString 224 a, ByteString 224 a))
 
+deriving instance Arithmetic a => SymbolicData a (Address (ArithmeticCircuit a))
+
+deriving via (Structural (Address (ArithmeticCircuit a)))
+         instance Arithmetic a =>
+         Eq (Bool (ArithmeticCircuit a)) (Address (ArithmeticCircuit a))
+
 paymentCredential :: Address a -> ByteString 224 a
 paymentCredential (Address (_, (pc, _))) = pc
-
-deriving instance Arithmetic a => SymbolicData a (Address (ArithmeticCircuit a))
 
 newtype DatumHash datum a = DatumHash a
     deriving (SymbolicData i)

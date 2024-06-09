@@ -1,6 +1,4 @@
-module ZkFold.Symbolic.Data.Conditional (
-    Conditional (..)
-) where
+module ZkFold.Symbolic.Data.Conditional where
 
 import           Prelude                   hiding (Bool, Num (..), (/))
 
