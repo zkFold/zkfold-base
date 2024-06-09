@@ -4,7 +4,7 @@ module ZkFold.Symbolic.Data.Maybe (
     Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, find
 ) where
 
-import           Prelude                                             (($), foldr)
+import           Prelude                                             (foldr, ($))
 import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
