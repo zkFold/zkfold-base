@@ -59,8 +59,9 @@ maybe d h m = fromMaybe d (mapMaybe h m)
 find
   :: (Ring a, VectorSpace a u, Haskell.Foldable f)
   => (u a -> Bool a) -> (f :.: u) a -> Maybe u a
-find p
-  = Haskell.foldr
-      (\i r -> maybe (bool nothing (just i) (p i)) (Haskell.const r) r)
-      nothing
-  Haskell.. unComp1
+find p =
+  let
+    finder i r@(Maybe j _) =
+      fromMaybe (bool nothing (just i) (p i)) (Maybe j r)
+  in
+    Haskell.foldr finder nothing Haskell.. unComp1
