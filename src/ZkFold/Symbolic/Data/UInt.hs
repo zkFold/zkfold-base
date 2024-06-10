@@ -18,10 +18,10 @@ module ZkFold.Symbolic.Data.UInt (
 import           Control.Applicative                                       ((<*>))
 import           Control.DeepSeq
 import           Control.Monad.State                                       (StateT (..))
-import           Data.Foldable                                             (foldr, foldrM, for_)
+import           Data.Foldable                                             (foldr, foldrM)
 import           Data.Functor                                              ((<$>))
 import           Data.Kind                                                 (Type)
-import           Data.List                                                 (map, unfoldr, zip, zipWith)
+import           Data.List                                                 (unfoldr, zip)
 import           Data.Map                                                  (fromList, (!))
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
@@ -29,9 +29,8 @@ import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Natural)
-import           Prelude                                                   (Integer, concatMap, error, flip, foldl,
-                                                                            otherwise, return, ($), (++), (.), (<>),
-                                                                            (>>=))
+import           Prelude                                                   (Integer, error, flip, otherwise, return,
+                                                                            type (~), ($), (++), (.), (<>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
@@ -40,18 +39,14 @@ import           ZkFold.Base.Algebra.Basic.Field                           (Zp, 
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (drop, length, replicate, replicateA,
-                                                                            splitAt, take, (!!))
+import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit                (withOutputs)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, joinCircuits,
-                                                                            splitExpansion)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, joinCircuits, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 
 -- TODO (Issue #18): hide this constructor
@@ -75,7 +70,6 @@ instance
     ( FromConstant Natural a
     , Arithmetic a
     , KnownNat n
-    , KnownNat r
     , r ~ NumberOfRegisters a n
     ) => FromConstant Natural (UInt n (ArithmeticCircuit r a)) where
     fromConstant c =
@@ -208,8 +202,6 @@ instance (Finite (Zp p), KnownNat n) => Arbitrary (UInt n (Zp p)) where
 
 --------------------------------------------------------------------------------
 
-type CircuitUInt n a = UInt n (ArithmeticCircuit (NumberOfRegisters a n) a)
-
 instance (Arithmetic a, KnownNat n, KnownNat r, r ~ NumberOfRegisters a n) => SymbolicData a r (UInt n (ArithmeticCircuit r a)) where
     pieces (UIntAc c) = c
 
@@ -220,7 +212,6 @@ instance
     ( Arithmetic a
     , KnownNat n
     , KnownNat k
-    , KnownNat (to - from)
     , n <= k
     , from ~ NumberOfRegisters a n
     , to ~ NumberOfRegisters a k
@@ -239,7 +230,6 @@ instance
     ( Arithmetic a
     , KnownNat n
     , KnownNat k
-    , KnownNat to
     , k <= n
     , from ~ NumberOfRegisters a n
     , to ~ NumberOfRegisters a k
@@ -296,7 +286,7 @@ instance (Arithmetic a, KnownNat n, KnownNat r, r ~ NumberOfRegisters a n) => Or
 
 --}
 
-instance (Arithmetic a, KnownNat n, KnownNat r, r ~ NumberOfRegisters a n) => AdditiveSemigroup (UInt n (ArithmeticCircuit r a)) where
+instance (Arithmetic a, KnownNat n, r ~ NumberOfRegisters a n) => AdditiveSemigroup (UInt n (ArithmeticCircuit r a)) where
     UIntAc x + UIntAc y = UIntAc (circuitN solve)
         where
             solve :: MonadBlueprint i a m => m (Vector r i)
@@ -370,7 +360,7 @@ negateN ns r = circuitN $ do
     (hi', _) <- splitExpansion (highRegisterSize @a @n) 1 hi
     return $ Vector (Haskell.init listVars <> [hi'])
 
-instance (Arithmetic a, KnownNat n, KnownNat r, r ~ NumberOfRegisters a n) => MultiplicativeSemigroup (UInt n (ArithmeticCircuit r a)) where
+instance (Arithmetic a, KnownNat n, r ~ NumberOfRegisters a n) => MultiplicativeSemigroup (UInt n (ArithmeticCircuit r a)) where
     UIntAc x * UIntAc y = UIntAc (circuitN solve)
         where
             solve :: MonadBlueprint i a m => m (Vector r i)
@@ -409,7 +399,6 @@ instance
     , KnownNat n
     , KnownNat r
     , KnownNat (r - 1)
-    , KnownNat (n * Order a)
     , KnownNat (r * Order a)
     , KnownNat (Log2 ((r * Order a) - 1) + 1)
     , r ~ NumberOfRegisters a n
@@ -421,16 +410,26 @@ instance
     , KnownNat n
     , KnownNat r
     , KnownNat (r - 1)
-    , KnownNat (n * Order a)
     , KnownNat (r * Order a)
     , KnownNat (Log2 ((r * Order a) - 1) + 1)
     , r ~ NumberOfRegisters a n
     , (1 + (r - 1)) ~ r
     ) => Ring (UInt n (ArithmeticCircuit r a))
 
+{--
 deriving via (Structural (CircuitUInt n a))
          instance (Arithmetic a, KnownNat n, KnownNat r, r ~ NumberOfRegisters a n) =>
          Eq (Bool (ArithmeticCircuit 1 a)) (UInt n (ArithmeticCircuit r a))
+--}
+
+-- TODO: The instance above is a huge pain due to some sneaky Overlappable instance in another place
+-- Fix this
+instance
+    ( r ~ NumberOfRegisters a n
+    , Eq (Bool (ArithmeticCircuit 1 a)) (ArithmeticCircuit r a)
+    ) => Eq (Bool (ArithmeticCircuit 1 a)) (UInt n (ArithmeticCircuit r a)) where
+        UIntAc c1 == UIntAc c2 = c1 == c2
+        UIntAc c1 /= UIntAc c2 = not (c1 == c2)
 
 instance (Arithmetic a, KnownNat n, KnownNat r, r ~ NumberOfRegisters a n) => Arbitrary (UInt n (ArithmeticCircuit r a)) where
     arbitrary = do
@@ -451,7 +450,7 @@ instance (Finite (Zp p), KnownNat n) => StrictConv Natural (UInt n (Zp p)) where
         (lo, hi, []) -> UIntZp (toZp . Haskell.fromIntegral <$> lo) (toZp . Haskell.fromIntegral $ hi)
         _            -> error "strictConv: overflow"
 
-instance (FromConstant Natural a, Arithmetic a, KnownNat n, KnownNat r, r ~ NumberOfRegisters a n) => StrictConv Natural (UInt n (ArithmeticCircuit r a)) where
+instance (FromConstant Natural a, Arithmetic a, KnownNat n, r ~ NumberOfRegisters a n) => StrictConv Natural (UInt n (ArithmeticCircuit r a)) where
     strictConv n = case cast @a @n n of
         (lo, hi, []) -> UIntAc $ embedV $ Vector $ fromConstant <$> (lo <> [hi])
         _            -> error "strictConv: overflow"
@@ -508,14 +507,7 @@ instance (Arithmetic a, KnownNat n) => StrictNum (CircuitUInt n a) where
                 return (k : i : zs)
 
 
-    strictAdd (UInt _ _) (UInt _ _) = error "UInt: unreachable"
-
-    strictSub (UInt [] x) (UInt [] y) = UInt [] $ circuit $ do
-        z <- runCircuit (x - y)
-        _ <- expansion (highRegisterSize @a @n) z
-        return z
-
-    strictSub (UInt (x : xs) z) (UInt (y : ys) w) =
+    strictSub (UIntAc x) (UIntAc y) = UIntAc (circuitN solve)
         let t :: a
             t = (one + one) ^ registerSize @a @n - one
 
@@ -537,18 +529,7 @@ instance (Arithmetic a, KnownNat n) => StrictNum (CircuitUInt n a) where
                 s <- newAssigned (\v -> v k + v b + fromConstant t)
                 splitExpansion (registerSize @a @n) 1 s
 
-         in case circuits solve of
-            (hi : lo) -> UInt lo hi
-            []        -> error "UInt: unreachable"
-
-    strictSub (UInt _ _) (UInt _ _) = error "UInt: unreachable"
-
-    strictMul (UInt [] x) (UInt [] y) = UInt [] $ circuit $ do
-        z <- runCircuit (x * y)
-        _ <- expansion (highRegisterSize @a @n) z
-        return z
-
-    strictMul (UInt (x : xs) z) (UInt (y : ys) w) =
+    strictMul (UIntAc x) (UIntAc y) = UIntAc (circuitN solve)
         let solve :: MonadBlueprint i a m => m [i]
             solve = do
                 i <- runCircuit x

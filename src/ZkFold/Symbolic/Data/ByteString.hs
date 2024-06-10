@@ -18,6 +18,7 @@ import           Control.DeepSeq                                           (NFDa
 import           Control.Monad                                             (mapM, replicateM, zipWithM)
 import           Data.Bits                                                 as B
 import qualified Data.ByteString                                           as Bytes
+import           Data.Kind                                                 (Type)
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (Maybe (..))
@@ -46,7 +47,9 @@ import           ZkFold.Symbolic.Data.UInt
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
-newtype ByteString (n :: Natural) a = ByteString [a]
+data family ByteString (n :: Natural) (a :: Type)
+
+data instance ByteString n (Zp p) = ByteStringZp [Zp p]
     deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
 
 instance
@@ -64,6 +67,10 @@ instance
         . Haskell.fromIntegral
         . Haskell.toInteger
         <$> Bytes.unpack bytes
+
+data instance ByteString n (ArithmeticCircuit n a) = ByteStringAc (ArithmeticCircuit n a)
+    deriving (Haskell.Show, Generic, NFData)
+
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --
@@ -291,35 +298,28 @@ instance
 
 --------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownNat n) => SymbolicData a (ByteString n (ArithmeticCircuit a)) where
-    pieces (ByteString bits) = bits
+instance (Arithmetic a, KnownNat n) => SymbolicData a n (ByteString n (ArithmeticCircuit n a)) where
+    pieces (ByteStringAc bits) = bits
 
-    restore bits
-      | Haskell.fromIntegral (length bits) == value @n = ByteString bits
-      | otherwise = error "ByteString: invalid number of values"
-
-    typeSize = value @n
+    restore = withOutput
 
 
-instance (Arithmetic a, KnownNat n) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a)) where
-    from (ByteString bits) =
-       case circuits solve of
-           (x:xs) -> UInt (Haskell.reverse xs) x
-           _      -> error "Iso ByteString UInt : unreachable"
+instance (Arithmetic a, KnownNat n, r ~ NumberOfRegisters a n) => Iso (ByteString n (ArithmeticCircuit n a)) (UInt n (ArithmeticCircuit r a)) where
+    from (ByteStringAc bits) = UIntAc (circuitN $ Vector <$> solve)
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
             solve = do
-                bsBits <- mapM runCircuit bits
+                bsBits <- runCircuit bits
                 fromBits (highRegisterSize @a @n) (registerSize @a @n) bsBits
 
-instance (Arithmetic a, KnownNat n) => Iso (UInt n (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
-    from (UInt rs r) = ByteString $ circuits solve
+instance (Arithmetic a, KnownNat n, r ~ NumberOfRegisters a n) => Iso (UInt n (ArithmeticCircuit r a)) (ByteString n (ArithmeticCircuit n a)) where
+    from (UIntAc ac) = ByteStringAc $ circuitN $ Vector <$> solve
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
-            solve = toBits r (Haskell.reverse rs) (highRegisterSize @a @n) (registerSize @a @n)
+            solve = toBits ac (highRegisterSize @a @n) (registerSize @a @n)
 
-instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircuit a)) where
-    shiftBits bs@(ByteString oldBits) s
+instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircuit n a)) where
+    shiftBits bs@(ByteStringAc oldBits) s
       | s == 0 = bs
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
       | otherwise = ByteString $ circuits solve
@@ -336,7 +336,7 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
 
     -- | rotateBits does not even require operations on the circuit.
     --
-    rotateBits bs@(ByteString bits) s
+    rotateBits bs@(ByteStringAc bits) s
       | s == 0 = bs
       | (s < 0) || (s >= intN) = rotateBits bs (s `Haskell.mod` intN) -- Always perform a left rotation
       | otherwise = ByteString $ rotateList bits
@@ -354,28 +354,28 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
 bitwiseOperation
     :: forall a n
     .  Arithmetic a
-    => ByteString n (ArithmeticCircuit a)
-    -> ByteString n (ArithmeticCircuit a)
+    => ByteString n (ArithmeticCircuit n a)
+    -> ByteString n (ArithmeticCircuit n a)
     -> (forall i. i -> i -> ClosedPoly i a)
-    -> ByteString n (ArithmeticCircuit a)
-bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circuits solve
+    -> ByteString n (ArithmeticCircuit n a)
+bitwiseOperation (ByteStringAc bits1) (ByteStringAc bits2) cons = ByteStringAc $ circuitN solve
   where
     solve :: forall i m. MonadBlueprint i a m => m [i]
     solve = do
-        varsLeft  <- mapM runCircuit bits1
-        varsRight <- mapM runCircuit bits2
+        varsLeft  <- runCircuit bits1
+        varsRight <- runCircuit bits2
         zipWithM applyBitwise varsLeft varsRight
 
     applyBitwise :: forall i m . MonadBlueprint i a m => i -> i -> m i
     applyBitwise l r = newAssigned $ cons l r
 
 
-instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit a)) where
-    false = ByteString (replicate (value @n) zero)
+instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit n a)) where
+    false = ByteStringAc (replicate (value @n) zero)
 
     true = not false
 
-    not (ByteString bits) = ByteString (flipBits <$> bits)
+    not (ByteStringAc bits) = ByteStringAc (flipBits <$> bits)
         where
             flipBits r = circuit $ do
                 i <- runCircuit r
@@ -393,31 +393,31 @@ instance
   , 1 <= wordSize
   , 1 <= n
   , Mod n wordSize ~ 0
-  ) => ToWords (ByteString n (ArithmeticCircuit a)) (ByteString wordSize (ArithmeticCircuit a)) where
+  ) => ToWords (ByteString n (ArithmeticCircuit n a)) (ByteString wordSize (ArithmeticCircuit a)) where
 
-    toWords (ByteString bits) = ByteString <$> chunksOf (Haskell.fromIntegral $ value @wordSize) bits
+    toWords (ByteStringAc bits) = ByteStringAc <$> chunksOf (Haskell.fromIntegral $ value @wordSize) bits
 
 instance
   ( Mod n m ~ 0
-  ) => Concat (ByteString m (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
+  ) => Concat (ByteString m (ArithmeticCircuit m a)) (ByteString n (ArithmeticCircuit n a)) where
 
-    concat bs = ByteString $ Haskell.concatMap (\(ByteString bits) -> bits) bs
+    concat bs = ByteStringAc $ Haskell.concatMap (\(ByteStringAc bits) -> bits) bs
 
 instance
   ( KnownNat n
   , n <= m
-  ) => Truncate (ByteString m (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
+  ) => Truncate (ByteString m (ArithmeticCircuit m a)) (ByteString n (ArithmeticCircuit n a)) where
 
-    truncate (ByteString bits) = ByteString $ take (Haskell.fromIntegral $ getNatural @n) bits
+    truncate (ByteStringAc bits) = ByteStringAc $ take (Haskell.fromIntegral $ getNatural @n) bits
 
 instance
   ( KnownNat m
   , KnownNat n
   , m <= n
   , Arithmetic a
-  ) => Extend (ByteString m (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
+  ) => Extend (ByteString m (ArithmeticCircuit m a)) (ByteString n (ArithmeticCircuit n a)) where
 
-    extend (ByteString oldBits) = ByteString $ circuits solve
+    extend (ByteStringAc oldBits) = ByteStringAc $ circuitsN solve
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do
