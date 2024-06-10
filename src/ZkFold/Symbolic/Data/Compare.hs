@@ -19,9 +19,8 @@ module ZkFold.Symbolic.Data.Compare
   ) where
 
 import           Data.Foldable                         (Foldable (..))
-import           Data.Functor.Identity                 (Identity (..))
 import           Data.Functor.Rep                      (Representable)
-import           GHC.Generics                          ((:*:) (..), (:.:) (..))
+import           GHC.Generics
 import qualified Prelude                               as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -35,7 +34,7 @@ newtype Ordering a = Ordering a
     , Haskell.Foldable
     , Haskell.Traversable
     )
-deriving via Identity instance VectorSpace a Ordering
+deriving via Par1 instance VectorSpace a Ordering
 instance DiscreteField a => Eq a Ordering
 instance (Ring a, Haskell.Eq a) => Haskell.Show (Ordering a) where
     show (Ordering a) =
@@ -66,7 +65,7 @@ class Eq a u => Ord a u where
             Ordering (foldl lexicographical zero uv)
 instance TrichotomyField a => Ord a Bool
 instance TrichotomyField a => Ord a Ordering
-instance TrichotomyField a => Ord a Identity
+instance TrichotomyField a => Ord a Par1
 instance (Ring a, Ord a u, Ord a v) => Ord a (u :*: v) where
   compare (u1 :*: v1) (u2 :*: v2) = compare u1 u2 Haskell.<> compare v1 v2
 instance (Representable f, Foldable f, Ring a, Ord a u) => Ord a (f :.: u) where

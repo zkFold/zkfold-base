@@ -17,9 +17,8 @@ module ZkFold.Symbolic.Data.Bool (
     (/=)
 ) where
 
-import           Data.Functor.Identity                 (Identity (..))
 import           Data.Functor.Rep                      (Representable)
-import           GHC.Generics                          ((:*:) (..), (:.:) (..))
+import           GHC.Generics
 import qualified Prelude                               as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -33,7 +32,7 @@ newtype Bool a = Bool a
     , Haskell.Foldable
     , Haskell.Traversable
     )
-deriving via Identity instance VectorSpace a Bool
+deriving via Par1 instance VectorSpace a Bool
 instance (Haskell.Eq a, MultiplicativeMonoid a) => Haskell.Show (Bool a) where
     show (Bool a) = if a Haskell.== one then "true" else "false"
 
@@ -83,7 +82,7 @@ class Eq a u where
       => u a -> u a -> Bool a
     u == v = Bool (Haskell.foldl (*) one (zipWithV equal u v))
 instance DiscreteField a => Eq a Bool
-instance DiscreteField a => Eq a Identity
+instance DiscreteField a => Eq a Par1
 instance (Ring a, Eq a u, Eq a v) => Eq a (u :*: v) where
   (u1 :*: v1) == (u2 :*: v2) = u1 == u2 && v1 == v2
 instance (Representable f, Haskell.Foldable f, Ring a, Eq a u) => Eq a (f :.: u) where
