@@ -2,9 +2,8 @@
 
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
-import           GHC.Generics
-import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..))
 import           Data.Map                                    (fromList, keys)
+import           GHC.Generics
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (describe, hspec, it)
