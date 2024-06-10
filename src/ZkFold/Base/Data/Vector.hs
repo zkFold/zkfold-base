@@ -4,6 +4,7 @@
 module ZkFold.Base.Data.Vector where
 
 import           Control.DeepSeq                  (NFData)
+import           Control.Monad                    (zipWithM)
 import           Data.Bifunctor                   (first)
 import qualified Data.List                        as List
 import           Data.These                       (These (..))
@@ -40,6 +41,12 @@ singleton = Vector . pure
 item :: Vector 1 a -> a
 item (Vector [a]) = a
 item _            = error "Unreachable"
+
+mapWithIx :: forall n a b . KnownNat n => (Natural -> a -> b) -> Vector n a -> Vector n b
+mapWithIx f (Vector l) = Vector $ zipWith f [0 .. (value @n -! 1)] l
+
+mapMWithIx :: forall n m a b . (KnownNat n, Monad m) => (Natural -> a -> m b) -> Vector n a -> m (Vector n b)
+mapMWithIx f (Vector l) = Vector <$> zipWithM f [0 .. (value @n -! 1)] l
 
 -- TODO: Check that n <= size?
 take :: forall n size a. KnownNat n => Vector size a -> Vector n a

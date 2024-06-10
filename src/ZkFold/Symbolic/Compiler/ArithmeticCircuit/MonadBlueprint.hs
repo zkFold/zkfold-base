@@ -14,7 +14,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
     circuits
 ) where
 
-import           Control.Monad.State                                 (State, gets, modify, runState)
+import           Control.Monad.State                                 (State, modify, runState)
 import           Data.Functor                                        (($>))
 import           Data.Map                                            ((!))
 import           Data.Set                                            (Set)
@@ -71,7 +71,7 @@ type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
 
-class Monad m => MonadBlueprint i a n m | m -> i, m -> a, m -> n where
+class Monad m => MonadBlueprint i a m | m -> i, m -> a where
     -- ^ DSL for constructing arithmetic circuits. @i@ is a type of variables,
     -- @a@ is a base field and @m@ is a monad for constructing the circuit.
     --
@@ -91,9 +91,6 @@ class Monad m => MonadBlueprint i a n m | m -> i, m -> a, m -> n where
     -- | Creates new input variable.
     input :: m i
 
-    -- | Returns a circuit with supplied variable as output.
-    output :: Vector n i -> m (ArithmeticCircuit n a)
-
     -- | Adds the supplied circuit to the blueprint and returns its output variable.
     runCircuit :: ArithmeticCircuit n a -> m (Vector n i)
 
@@ -107,17 +104,15 @@ class Monad m => MonadBlueprint i a n m | m -> i, m -> a, m -> n where
     newAssigned :: ClosedPoly i a -> m i
     newAssigned p = newConstrained (\x i -> p x - x i) p
 
-instance Arithmetic a => MonadBlueprint Natural a n (State (ArithmeticCircuit n a)) where
+instance Arithmetic a => MonadBlueprint Natural a (State (Circuit a)) where
     input = I.input
 
-    output i = gets (\r -> r { acOutput = i })
-
-    runCircuit r = modify @(ArithmeticCircuit n a) (<> r) $> acOutput r
+    runCircuit r = modify (<> acCircuit r) $> acOutput r
 
     newConstrained
         :: NewConstraint Natural a
         -> Witness Natural a
-        -> State (ArithmeticCircuit n a) Natural
+        -> State (Circuit a) Natural
     newConstrained new witness = do
         let ws = sources @a witness
             -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
@@ -131,23 +126,23 @@ instance Arithmetic a => MonadBlueprint Natural a n (State (ArithmeticCircuit n 
 
     constraint p = I.constraint (p var)
 
-circuit :: Arithmetic a => (forall i m . MonadBlueprint i a 1 m => m i) -> ArithmeticCircuit 1 a
+circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> ArithmeticCircuit 1 a
 -- ^ Builds a circuit from blueprint. A blueprint is a function which, given an
 -- arbitrary type of variables @i@ and a monad @m@ supporting the 'MonadBlueprint'
 -- API, computes the output variable of a future circuit.
 circuit b = circuitN (pure <$> b)
 
-circuitN :: forall a n . (Arithmetic a, KnownNat n) => (forall i m . MonadBlueprint i a n m => m (Vector n i)) -> ArithmeticCircuit n a
+circuitN :: forall a n . Arithmetic a => (forall i m . MonadBlueprint i a m => m (Vector n i)) -> ArithmeticCircuit n a
 -- TODO: I should really rethink this...
-circuitN b = let (os, r) = runState b (mempty :: ArithmeticCircuit n a)
-              in r { acOutput = os }
+circuitN b = let (os, r) = runState b (mempty :: Circuit a)
+              in ArithmeticCircuit { acCircuit = r, acOutput = os }
 
 -- TODO: kept for compatibility with @binaryExpansion@ only. Perhaps remove it in the future?
-circuits :: (Arithmetic a, Functor f) => (forall i m . MonadBlueprint i a 1 m => m (f i)) -> f (ArithmeticCircuit 1 a)
+circuits :: forall a f . (Arithmetic a, Functor f) => (forall i m . MonadBlueprint i a m => m (f i)) -> f (ArithmeticCircuit 1 a)
 -- ^ Builds a collection of circuits from one blueprint. A blueprint is a function
 -- which, given an arbitrary type of variables @i@ and a monad @m@ supporting the
 -- 'MonadBlueprint' API, computes the collection of output variables of future circuits.
-circuits b = let (os, r) = runState (fmap pure <$> b) mempty in (\o -> r { acOutput = o }) <$> os
+circuits b = let (os, r) = runState (fmap pure <$> b) (mempty :: Circuit a) in (\o -> ArithmeticCircuit { acCircuit = r, acOutput = o }) <$> os
 
 sources :: forall a i . (FiniteField a, Ord i) => Witness i a -> Set i
 sources = runSources . ($ Sources @a . Set.singleton)

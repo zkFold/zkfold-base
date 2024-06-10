@@ -25,8 +25,8 @@ import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, expansion, horner, invertC,
-                                                                            isZeroC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, horner,
+                                                                            invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN,
                                                                             circuits)
@@ -50,13 +50,13 @@ instance
     ) => Finite (ArithmeticCircuit n a) where
     type Order (ArithmeticCircuit n a) = n * Order a
 
-instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (ArithmeticCircuit n a) where
+instance Arithmetic a => AdditiveSemigroup (ArithmeticCircuit n a) where
     r1 + r2 = circuitN $ do
         is <- runCircuit r1
         js <- runCircuit r2
         for (Z.zip is js) $ \(i, j) -> newAssigned (\x -> x i + x j)
 
-instance (Arithmetic a, Scale c a, KnownNat n) => Scale c (ArithmeticCircuit n a) where
+instance (Arithmetic a, Scale c a) => Scale c (ArithmeticCircuit n a) where
     scale c r = circuitN $ do
         is <- runCircuit r
         for is $ \i -> newAssigned (\x -> (c `scale` one :: a) `scale` x i)
@@ -74,7 +74,7 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (ArithmeticCircuit n a) whe
         js <- runCircuit r2
         for (Z.zip is js) $ \(i, j) -> newAssigned (\x -> x i - x j)
 
-instance (Arithmetic a, KnownNat n) => MultiplicativeSemigroup (ArithmeticCircuit n a) where
+instance Arithmetic a => MultiplicativeSemigroup (ArithmeticCircuit n a) where
     r1 * r2 = circuitN $ do
         is <- runCircuit r1
         js <- runCircuit r2
@@ -84,7 +84,7 @@ instance (Arithmetic a, KnownNat n) => Exponent (ArithmeticCircuit n a) Natural 
     (^) = natPow
 
 instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (ArithmeticCircuit n a) where
-    one = mempty
+    one = embedV (pure one)
 
 -- TODO: The constant will be replicated in all outputs. Is this the desired behaviour?
 instance (Arithmetic a, FromConstant b a, KnownNat n) => FromConstant b (ArithmeticCircuit n a) where
@@ -156,8 +156,8 @@ instance (Arithmetic a, KnownNat n) => Arbitrary (ArithmeticCircuit n a) where
     arbitrary = return $ c1 * c2
         where
             c1, c2 :: ArithmeticCircuit n a
-            c1 = (mempty :: ArithmeticCircuit n a) { acOutput = pure 1}
-            c2 = (mempty :: ArithmeticCircuit n a) { acOutput = pure 2}
+            c1 = ArithmeticCircuit { acCircuit = mempty, acOutput = pure 1}
+            c2 = ArithmeticCircuit { acCircuit = mempty, acOutput = pure 2}
 
 
 -- TODO: make it more readable

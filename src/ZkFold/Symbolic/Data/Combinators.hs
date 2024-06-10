@@ -51,7 +51,7 @@ toBits
     .  ArithmeticCircuit n a
     -> Natural
     -> Natural
-    -> (forall i m. MonadBlueprint i a n m => m [i])
+    -> (forall i m. MonadBlueprint i a m => m [i])
 toBits c hiBits loBits = do
     regs <- V.fromVector <$> runCircuit c
     let lows = tail regs
@@ -66,10 +66,10 @@ toBits c hiBits loBits = do
 -- | The inverse of @toBits@.
 --
 fromBits
-    :: forall a n
+    :: forall a
     .  Natural
     -> Natural
-    -> (forall i m. MonadBlueprint i a n m => [i] -> m [i])
+    -> (forall i m. MonadBlueprint i a m => [i] -> m [i])
 fromBits hiBits loBits bits = do
     let (bitsHighNew, bitsLowNew) = splitAt (Haskell.fromIntegral hiBits) bits
     let lowVarsNew = chunksOf (Haskell.fromIntegral loBits) bitsLowNew
@@ -89,10 +89,6 @@ highRegisterSize = getNatural @n -! registerSize @a @n * (numberOfRegisters @a @
 registerSize :: forall a n . (Finite a, KnownNat n) => Natural
 registerSize = Haskell.ceiling (getNatural @n % numberOfRegisters @a @n)
 
-
---type family RegisterSize (a :: k) (bits :: Natural) :: Natural where
---    RegisterSize a bits =
---        OrdCond (CmpNat bits ((Div bits (NumberOfRegisters a bits)))
 
 type family NumberOfRegisters (a :: Type) (bits :: Natural) :: Natural where
     NumberOfRegisters a bits = NumberOfRegisters' a bits (ListRange 1 1000) -- TODO: Compilation takes ages if this constant is greater than 10000.

@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
         Constraint,
 
+        withOutputs,
         constraintSystem,
         inputVariables,
         witnessGenerator,
@@ -47,15 +48,17 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMapM, 
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Circuit (..), constraintSystem, inputVariables, varOrder, witnessGenerator,
-                                                                      Constraint, apply, eval, forceZero)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Circuit (..),
+                                                                      Constraint, apply, constraintSystem, eval,
+                                                                      forceZero, inputVariables, varOrder, withOutputs,
+                                                                      witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 
 --------------------------------- High-level functions --------------------------------
 
 -- TODO: make this work for different input types.
 applyArgs :: forall a n . ArithmeticCircuit n a -> [a] -> ArithmeticCircuit n a
-applyArgs r args = execState (apply args) r
+applyArgs r args = r { acCircuit = execState (apply args) (acCircuit r) }
 
 -- | Optimizes the constraint system.
 --

@@ -41,7 +41,7 @@ data SomeData a where
     SomeData :: (Typeable t, SymbolicData a n t) => t -> SomeData a
 
 instance Arithmetic a => SymbolicData a 0 () where
-    pieces () = mempty
+    pieces () = ArithmeticCircuit { acCircuit = mempty, acOutput = V.empty }
 
     restore _ _ = ()
 
