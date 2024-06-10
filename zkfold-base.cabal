@@ -140,6 +140,7 @@ library
       ZkFold.Symbolic.Data.Combinators
       ZkFold.Symbolic.Data.Container
       ZkFold.Symbolic.Data.Ed25519
+      ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.GroebnerBasis

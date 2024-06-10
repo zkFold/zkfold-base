@@ -1,19 +1,18 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies, DerivingVia, TypeOperators, UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Maybe (
-    Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, find
+    Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, mapMaybe, find
 ) where
 
-import           Prelude                                             (foldr, ($))
+import           GHC.Generics
 import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.Arithmetizable
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.DiscreteField
 
 data Maybe u a = Maybe a (u a)
   deriving stock
@@ -21,28 +20,26 @@ data Maybe u a = Maybe a (u a)
     , Haskell.Functor
     , Haskell.Foldable
     , Haskell.Traversable
+    , Generic1
     )
 
-just :: Field a => u a -> Maybe u a
+deriving via Generically1 (Maybe u) instance
+  VectorSpace a u => VectorSpace a (Maybe u)
+
+just :: MultiplicativeMonoid a => u a -> Maybe u a
 just = Maybe one
 
-nothing :: forall a u. (SymbolicData a (u (ArithmeticCircuit a))) => Maybe u (ArithmeticCircuit a)
-nothing = Maybe zero (restore @a (Haskell.replicate (Haskell.fromIntegral (typeSize @a @(u (ArithmeticCircuit a)))) zero))
+nothing :: (AdditiveMonoid a, VectorSpace a u) => Maybe u a
+nothing = Maybe zero zeroV
 
-fromMaybe :: (SymbolicData a (u (ArithmeticCircuit a))) => u (ArithmeticCircuit a) -> Maybe u (ArithmeticCircuit a) -> u (ArithmeticCircuit a)
-fromMaybe a (Maybe h t) =
-  let
-    as = pieces a
-    ts = pieces t
-    merge a' t' = (t' - a') * h + a'
-  in
-    restore (Haskell.zipWith merge as ts)
+fromMaybe :: (Ring a, VectorSpace a u) => u a -> Maybe u a -> u a
+fromMaybe d (Maybe j x) = scaleV j (x `subtractV` d) `addV` d
 
-isNothing :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
-isNothing (Maybe h _) = isZero h
+isJust :: Maybe u a -> Bool a
+isJust (Maybe j _) = Bool j
 
-isJust :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
-isJust = not Haskell.. isNothing
+isNothing :: Ring a => Maybe u a -> Bool a
+isNothing (Maybe j _) = Bool (one - j)
 
 instance SymbolicData a (u (ArithmeticCircuit a))
   => SymbolicData a (Maybe u (ArithmeticCircuit a)) where
@@ -51,16 +48,19 @@ instance SymbolicData a (u (ArithmeticCircuit a))
     restore _      = Haskell.error "restore ArithmeticCircuit: wrong number of arguments"
     typeSize = 1 + typeSize @a @(u (ArithmeticCircuit a))
 
-maybe :: forall a b f .
-    Conditional (Bool a) b =>
-    DiscreteField (Bool a) a =>
-    b -> (f a -> b) -> Maybe f a -> b
-maybe d h x@(Maybe _ v) = bool @(Bool a) d (h v) $ isNothing x
+mapMaybe :: (u a -> v a) -> Maybe u a -> Maybe v a
+mapMaybe h (Maybe j u) = Maybe j (h u)
 
-find :: forall a f .
-    AdditiveMonoid (f a) =>
-    Conditional (Bool a) (Maybe f a) =>
-    DiscreteField (Bool a) a =>
-    (f a -> Bool a) -> [f a] -> Maybe f a
-find p = let n = Maybe zero zero in
-    foldr (\i r -> maybe (bool @(Bool a) n (just i) $ p i) (Haskell.const r) $ r) n
+maybe
+  :: (Ring a, VectorSpace a v)
+  => v a -> (u a -> v a) -> Maybe u a -> v a
+maybe d h m = fromMaybe d (mapMaybe h m)
+
+find
+  :: (Ring a, VectorSpace a u, Haskell.Foldable f)
+  => (u a -> Bool a) -> (f :.: u) a -> Maybe u a
+find p
+  = Haskell.foldr
+      (\i r -> maybe (bool nothing (just i) (p i)) (Haskell.const r) r)
+      nothing
+  Haskell.. unComp1
