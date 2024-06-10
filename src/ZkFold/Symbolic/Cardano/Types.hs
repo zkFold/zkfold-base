@@ -3,7 +3,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types where
 
-import           Data.Functor.Identity
 import           GHC.Generics                          hiding (UInt)
 import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude
@@ -61,7 +60,7 @@ newtype TxId a = TxId a
         , Prelude.Foldable
         , Prelude.Traversable
         )
-deriving via Identity instance VectorSpace a TxId
+deriving via Par1 instance VectorSpace a TxId
 instance DiscreteField a => Eq a TxId
 
 newtype Value n a = Value ((Vector n :.: (ByteString 224 :*: ByteString 256 :*: UInt 64)) a)
@@ -106,6 +105,9 @@ instance (KnownNat tokens, DiscreteField a, FiniteField a) => Eq a (Output token
 txoAddress :: Output tokens datum a -> Address a
 txoAddress (Output (addr :*: _)) = addr
 
+txoTokens :: Output tokens datum a -> Value tokens a
+txoTokens (Output (_ :*: v :*: _)) = v
+
 txoDatumHash :: Output tokens datum a -> ByteString 256 a
 txoDatumHash (Output (_ :*: _ :*: dh)) = dh
 
@@ -142,7 +144,7 @@ newtype DatumHash datum a = DatumHash a
         , Prelude.Foldable
         , Prelude.Traversable
         )
-deriving via Identity instance VectorSpace a (DatumHash datum)
+deriving via Par1 instance VectorSpace a (DatumHash datum)
 
 newtype ScriptHash a = ScriptHash a
     deriving stock
@@ -152,4 +154,4 @@ newtype ScriptHash a = ScriptHash a
         , Prelude.Foldable
         , Prelude.Traversable
         )
-deriving via Identity instance VectorSpace a ScriptHash
+deriving via Par1 instance VectorSpace a ScriptHash

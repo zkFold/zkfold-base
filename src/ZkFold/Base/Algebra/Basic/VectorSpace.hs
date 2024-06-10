@@ -5,7 +5,6 @@
 
 module ZkFold.Base.Algebra.Basic.VectorSpace where
 
-import           Data.Functor.Identity           (Identity (..))
 import           Data.Functor.Rep
 import           Data.Kind                       (Type)
 import           GHC.Generics                    hiding (Rep)
@@ -78,7 +77,6 @@ instance (Generic1 v, VectorSpace a (Rep1 v))
     indexV (Generically1 v) i = indexV (from1 v) i
     tabulateV f = Generically1 (to1 (tabulateV f))
 
-deriving via Representably Par1 instance VectorSpace a Par1
 deriving newtype instance VectorSpace a v => VectorSpace a (M1 i c v)
 deriving newtype instance VectorSpace a v => VectorSpace a (Rec1 v)
 
@@ -86,7 +84,7 @@ deriving newtype instance VectorSpace a v => VectorSpace a (Rec1 v)
 deriving via Representably U1 instance VectorSpace a U1
 
 -- one dimensional vector space
-deriving via Representably Identity instance VectorSpace a Identity
+deriving via Representably Par1 instance VectorSpace a Par1
 
 -- direct sum of vector spaces
 instance (VectorSpace a v, VectorSpace a u)
@@ -125,12 +123,10 @@ class
 
 type family InputSpace a f where
   InputSpace a (x a -> f) = x :*: InputSpace a f
-  InputSpace a (a -> f) = Identity :*: InputSpace a f
   InputSpace a (y a) = U1
 
 type family OutputSpace a f where
   OutputSpace a (x a -> f) = OutputSpace a f
-  OutputSpace a (a -> f) = OutputSpace a f
   OutputSpace a (y a) = y
 
 instance {-# OVERLAPPABLE #-}
@@ -149,14 +145,6 @@ instance {-# OVERLAPPING #-}
   ) => FunctionSpace a (x a -> f) where
     uncurryV f (i :*: j) = uncurryV (f i) j
     curryV k x = curryV (k . (:*:) x)
-
-instance {-# OVERLAPPING #-}
-  ( OutputSpace a (a -> f) ~ OutputSpace a f
-  , InputSpace a (a -> f) ~ Identity :*: InputSpace a f
-  , FunctionSpace a f
-  ) => FunctionSpace a (a -> f) where
-    uncurryV f (Identity i :*: j) = uncurryV (f i) j
-    curryV k x = curryV (k . (:*:) (Identity x))
 
 composeFunctions
   :: ( FunctionSpace a g
