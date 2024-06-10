@@ -2,7 +2,7 @@
 
 module Examples.Fibonacci (exampleFibonacci) where
 
-import           GHC.Generics                                (Par1(Par1))
+import           GHC.Generics                                (Par1 (Par1))
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), any, not, (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class

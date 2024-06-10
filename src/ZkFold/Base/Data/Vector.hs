@@ -3,22 +3,22 @@
 
 module ZkFold.Base.Data.Vector where
 
-import           Data.Bifunctor                   (first)
+import           Data.Bifunctor                        (first)
 import           Data.Distributive
 import           Data.Functor.Rep
-import           Data.Maybe                       (fromMaybe)
-import           Data.These                       (These (..))
-import           Data.Zip                         (Semialign (..), Zip (..))
-import           Numeric.Natural                  (Natural)
-import           Prelude                          hiding (length, replicate, sum, zip, zipWith, (*))
-import           System.Random                    (Random (..))
-import           Test.QuickCheck                  (Arbitrary (..))
+import           Data.Maybe                            (fromMaybe)
+import           Data.These                            (These (..))
+import           Data.Zip                              (Semialign (..), Zip (..))
+import           Numeric.Natural                       (Natural)
+import           Prelude                               hiding (length, replicate, sum, zip, zipWith, (*))
+import           System.Random                         (Random (..))
+import           Test.QuickCheck                       (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.VectorSpace
-import           ZkFold.Base.Data.ByteString      (Binary (..))
-import           ZkFold.Prelude                   (length, replicate)
+import           ZkFold.Base.Data.ByteString           (Binary (..))
+import           ZkFold.Prelude                        (length, replicate)
 
 newtype Vector (size :: Natural) a = Vector [a]
     deriving (Show, Eq, Functor, Foldable, Traversable)
