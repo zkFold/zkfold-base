@@ -2,7 +2,7 @@
 
 module Tests.Arithmetization.Test3 (specArithmetization3) where
 
-import           Data.Functor.Identity           (Identity)
+import           GHC.Generics                    (Par1 (..))
 import           Prelude                         hiding (Bool, Eq (..), Num (..), Ord (..), any, not, replicate, (/),
                                                   (^), (||))
 import           Test.Hspec
@@ -16,7 +16,7 @@ import           ZkFold.Symbolic.Types           (Symbolic)
 type R = ArithmeticCircuit (Zp 97)
 
 -- A comparison test
-testFunc :: forall a . Symbolic a => Identity a -> Identity a -> Bool a
+testFunc :: forall a . Symbolic a => Par1 a -> Par1 a -> Bool a
 testFunc x y = x <= y
 
 specArithmetization3 :: Spec
@@ -25,5 +25,5 @@ specArithmetization3 = do
         it "should pass" $ do
             let r = compile @(Zp 97) (testFunc @R)
             let actual = acValue (applyArgs r [3, 5])
-            let Bool expected = testFunc 3 5
+            let Bool expected = testFunc (Par1 3) (Par1 5)
             actual `shouldBe` expected

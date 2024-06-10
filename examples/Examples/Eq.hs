@@ -2,7 +2,7 @@
 
 module Examples.Eq (exampleEq) where
 
-import           Data.Functor.Identity                       (Identity)
+import           GHC.Generics                                (Par1)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), any, not, (!!),
                                                               (/), (^), (||))
 
@@ -17,4 +17,4 @@ exampleEq = do
 
     putStrLn "\nExample: (==) operation\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file ((==) @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @Identity)
+    compileIO @(Zp BLS12_381_Scalar) file ((==) @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @Par1)

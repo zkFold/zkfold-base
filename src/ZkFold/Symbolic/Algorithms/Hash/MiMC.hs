@@ -1,7 +1,6 @@
 module ZkFold.Symbolic.Algorithms.Hash.MiMC (mimcHash, hash) where
 
 import           Data.Foldable                                  (Foldable (..))
-import           Data.Functor.Identity                          (Identity (..))
 import           Data.List.NonEmpty                             (NonEmpty ((:|)), nonEmpty)
 import           Numeric.Natural                                (Natural)
 import           Prelude                                        hiding (Eq (..), Num (..), any, length, not, (!!), (/),
@@ -23,8 +22,8 @@ mimcHash xs k = case nonEmpty (reverse xs) of
               Just cs' -> go cs' (xR + t5) xL
               Nothing  -> xR + t5
 
-hash :: (Semiring a, Foldable u) => u a -> Identity a
-hash datum = Identity $ case toList datum of
+hash :: (Semiring a, Foldable u) => u a -> a
+hash datum = case toList datum of
     []         -> zero
     [x]        -> mimcHash mimcConstants zero zero x
     [xL, xR]   -> mimcHash mimcConstants zero xL xR

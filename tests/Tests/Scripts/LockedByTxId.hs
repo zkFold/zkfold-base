@@ -2,9 +2,7 @@
 
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
-import           Data.Functor.Identity                       (Identity (..))
-import           Data.Map                                    (fromList)
-import           GHC.Generics                                (U1)
+import           GHC.Generics
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..))
 import           Data.Map                                    (fromList, keys)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
@@ -22,13 +20,10 @@ import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProo
 import           ZkFold.Symbolic.Cardano.Types               (TxId (..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
-import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => TxId a' -> TxId a -> U1 a -> Bool a
-lockedByTxId (TxId targetId) (TxId txId) _ = Identity txId == Identity (fromConstant targetId)
+lockedByTxId (TxId targetId) (TxId txId) _ = Par1 txId == Par1 (fromConstant targetId)
 
 testArithmetization1 :: Fr -> Haskell.Bool
 testArithmetization1 targetId =

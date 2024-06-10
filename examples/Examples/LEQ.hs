@@ -2,7 +2,7 @@
 
 module Examples.LEQ (exampleLEQ) where
 
-import           Data.Functor.Identity                       (Identity)
+import           GHC.Generics                                (Par1)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), any, not, (!!),
                                                               (/), (^), (||))
 
@@ -14,7 +14,7 @@ import           ZkFold.Symbolic.Data.Compare                ((<=))
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 -- | (<=) operation
-leq :: forall a . Symbolic a => Identity a -> Identity a -> Bool a
+leq :: forall a . Symbolic a => Par1 a -> Par1 a -> Bool a
 leq x y = x <= y
 
 exampleLEQ :: IO ()

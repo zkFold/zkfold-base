@@ -2,7 +2,7 @@
 
 module Tests.Arithmetization.Test2 (specArithmetization2) where
 
-import           Data.Functor.Identity                       (Identity)
+import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), not, replicate, (/), (^),
                                                               (||))
 import           Test.Hspec
@@ -14,7 +14,7 @@ import           ZkFold.Symbolic.GroebnerBasis               (makeTheorem, verif
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 -- A true statement.
-tautology :: forall a . Symbolic a => Identity a -> Identity a -> Bool a
+tautology :: forall a . Symbolic a => Par1 a -> Par1 a -> Bool a
 tautology x y = (x /= y) || (x == y)
 
 specArithmetization2 :: Spec

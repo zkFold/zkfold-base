@@ -6,6 +6,7 @@ module ZkFold.Base.Data.Vector where
 import           Data.Bifunctor                   (first)
 import           Data.Distributive
 import           Data.Functor.Rep
+import           Data.Maybe                       (fromMaybe)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           Numeric.Natural                  (Natural)
@@ -15,6 +16,7 @@ import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Base.Data.ByteString      (Binary (..))
 import           ZkFold.Prelude                   (length, replicate)
 
@@ -30,6 +32,11 @@ instance KnownNat size => Representable (Vector size) where
 instance KnownNat size => Distributive (Vector size) where
     collect = collectRep
     distribute = distributeRep
+
+instance (KnownNat size, AdditiveMonoid a) => VectorSpace a (Vector size) where
+    type Basis a (Vector size) = Int
+    indexV (Vector v) i = fromMaybe zero (lookup i (zip [1..] v))
+    tabulateV = tabulate
 
 toVector :: forall size a . KnownNat size => [a] -> Maybe (Vector size a)
 toVector as
