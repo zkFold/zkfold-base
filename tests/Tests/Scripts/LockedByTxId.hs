@@ -3,10 +3,8 @@
 module Tests.Scripts.LockedByTxId (specLockedByTxId) where
 
 import           Data.Functor.Identity                       (Identity (..))
-import           Data.Map                                    (fromList)
-import           GHC.Generics                                (U1)
-import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..))
 import           Data.Map                                    (fromList, keys)
+import           GHC.Generics                                (U1)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (describe, hspec, it)
@@ -21,8 +19,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Cardano.Types               (TxId (..))
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
