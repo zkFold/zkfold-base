@@ -8,7 +8,7 @@ module ZkFold.Symbolic.Data.Maybe (
 ) where
 
 import           GHC.Generics
-import qualified Prelude                                             as Haskell
+import qualified Prelude                               as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
