@@ -306,16 +306,6 @@ instance
 
 --------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownNat n) => SymbolicData a (ByteString n (ArithmeticCircuit a)) where
-    pieces (ByteString bits) = bits
-
-    restore bits
-      | Haskell.fromIntegral (Haskell.length bits) == value @n = ByteString bits
-      | otherwise = error "ByteString: invalid number of values"
-
-    typeSize = value @n
-
-
 instance (Arithmetic a, KnownNat n) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a)) where
     from (ByteString bits) =
        case circuits solve of

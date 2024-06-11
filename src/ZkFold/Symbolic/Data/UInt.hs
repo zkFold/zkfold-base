@@ -35,11 +35,11 @@ import qualified Prelude                                                   as Ha
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp, toZp)
+import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA,
-                                                                            splitAt, take, (!!))
+                                                                            take, (!!))
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
@@ -148,7 +148,7 @@ instance (Finite (Zp p), KnownNat n) => EuclideanDomain (UInt n (Zp p)) where
                   in (fromConstant q, fromConstant r)
 
 instance (Prime p, Finite (Zp p), KnownNat n) => Eq (Zp p) (UInt n) where
-    x == y = Bool . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.== toConstant y
+    x == y = Haskell.bool true false $ toConstant @_ @Natural x Haskell.== toConstant y
 
 instance (Prime p, Finite (Zp p), KnownNat n) => Ord (Zp p) (UInt n) where
     compare x y = case Haskell.compare (toConstant @_ @Natural x) (toConstant y) of
@@ -190,15 +190,6 @@ instance (Finite (Zp p), KnownNat n) => Arbitrary (UInt n (Zp p)) where
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 --------------------------------------------------------------------------------
-
-instance (Arithmetic a, KnownNat n) => SymbolicData a (UInt n (ArithmeticCircuit a)) where
-    pieces (UInt as a) = as ++ [a]
-
-    restore as = case splitAt (numberOfRegisters @a @n -! 1) as of
-        (lo, [hi]) -> UInt lo hi
-        (_, _)     -> error "UInt: invalid number of values"
-
-    typeSize = numberOfRegisters @a @n
 
 instance (Arithmetic a, KnownNat n, KnownNat m, n <= m) => Extend (UInt n (ArithmeticCircuit a)) (UInt m (ArithmeticCircuit a)) where
     extend (UInt rlows rhi) =

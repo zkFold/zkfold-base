@@ -45,12 +45,13 @@ maybe
   => v a -> (u a -> v a) -> Maybe u a -> v a
 maybe d h m = fromMaybe d (mapMaybe h m)
 
+instance (Ring a, VectorSpace a u) => Haskell.Monoid (Maybe u a) where
+  mempty = nothing
+
+instance (Ring a, VectorSpace a u) => Haskell.Semigroup (Maybe u a) where
+  m0 <> m1 = ifThenElse (isJust m0) m0 m1
+
 find
   :: (Ring a, VectorSpace a u, Haskell.Foldable f)
   => (u a -> Bool a) -> (f :.: u) a -> Maybe u a
-find p =
-  let
-    finder i r@(Maybe j _) =
-      fromMaybe (bool nothing (just i) (p i)) (Maybe j r)
-  in
-    Haskell.foldr finder nothing Haskell.. unComp1
+find p (Comp1 us) = Haskell.foldMap (\i -> bool nothing (just i) (p i)) us

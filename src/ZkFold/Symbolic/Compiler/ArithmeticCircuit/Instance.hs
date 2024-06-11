@@ -109,11 +109,6 @@ instance Arithmetic a => TrichotomyField (ArithmeticCircuit a) where
         in
             Haskell.foldl reverseLexicographical zero comparedBits
 
-instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a)) where
-    pieces (Bool b) = pieces b
-    restore = Bool Haskell.. restore
-    typeSize = 1
-
 -- TODO: make a proper implementation of Arbitrary
 instance Arithmetic a => Arbitrary (ArithmeticCircuit a) where
     arbitrary = do
