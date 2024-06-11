@@ -4,7 +4,16 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Maybe (
-    Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, mapMaybe, find
+    Maybe,
+    maybe,
+    just,
+    nothing,
+    fromMaybe,
+    isNothing,
+    isJust,
+    find,
+    mapMaybe,
+    bindMaybe
 ) where
 
 import           GHC.Generics
@@ -55,3 +64,9 @@ find
   :: (Ring a, VectorSpace a u, Haskell.Foldable f)
   => (u a -> Bool a) -> (f :.: u) a -> Maybe u a
 find p (Comp1 us) = Haskell.foldMap (\i -> bool nothing (just i) (p i)) us
+
+bindMaybe
+  :: (Ring a, VectorSpace a v)
+  => (u a -> Maybe v a)
+  -> Maybe u a -> Maybe v a
+bindMaybe f (Maybe j u) = bool nothing (f u) j
