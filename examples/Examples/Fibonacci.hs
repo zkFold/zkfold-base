@@ -9,7 +9,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool                   (Bool (..), Eq (..), bool)
+import           ZkFold.Symbolic.Data.Bool                   (Bool, Eq (..), bool)
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 -- | The Fibonacci index function. If `x` is a Fibonacci number, returns its index (up until `nMax`). Otherwise, returns `0`.

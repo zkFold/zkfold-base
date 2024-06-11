@@ -20,7 +20,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embe
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Bool
 
 ------------------------------------- Instances -------------------------------------
 
