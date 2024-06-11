@@ -1,6 +1,6 @@
 {-# LANGUAGE DerivingStrategies    #-}
-{-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module ZkFold.Symbolic.Data.Maybe (
     Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, find
@@ -44,7 +44,7 @@ instance
      let Maybe y z = Haskell.traverse g f in
      Maybe (checkMaybe x y) (join z)
 
-checkMaybe :: forall a b p . 
+checkMaybe :: forall a b p .
    AdditiveMonoid a =>
    Conditional p a =>
    Conditional b a =>
