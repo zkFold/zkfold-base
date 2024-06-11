@@ -1,10 +1,13 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 
 module ZkFold.Symbolic.Data.Maybe (
     Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, find
 ) where
 
-import           Prelude                                             (foldr, ($))
+import           Control.Monad                                       (join)
+import           Prelude                                             (foldr, ($), (.))
 import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -23,6 +26,32 @@ data Maybe u a = Maybe a (u a)
     , Haskell.Traversable
     )
 
+instance
+    ( forall a . Field a
+    , Haskell.Applicative u
+    , forall a b . Conditional a b
+    ) => Haskell.Applicative (Maybe u) where
+    Maybe x f <*> Maybe y g = Maybe (checkMaybe y (x y)) (f Haskell.<*> g)
+    pure = just . Haskell.pure
+
+instance
+    ( forall a . Field a
+    , forall a b . Conditional a b
+    , Haskell.Traversable u
+    , Haskell.Monad u
+    ) => Haskell.Monad (Maybe u) where
+    Maybe x f >>= g =
+     let Maybe y z = Haskell.traverse g f in
+     Maybe (checkMaybe x y) (join z)
+
+checkMaybe :: forall a b p . 
+   AdditiveMonoid a =>
+   Conditional p a =>
+   Conditional b a =>
+   MultiplicativeMonoid a =>
+   p -> b -> a
+checkMaybe x y = bool zero (bool zero one y) $ x
+
 just :: Field a => u a -> Maybe u a
 just = Maybe one
 
@@ -38,10 +67,10 @@ fromMaybe a (Maybe h t) =
   in
     restore (Haskell.zipWith merge as ts)
 
-isNothing :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
+isNothing :: DiscreteField (Bool a) a => Maybe u a -> Bool a
 isNothing (Maybe h _) = isZero h
 
-isJust :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
+isJust :: DiscreteField (Bool a) a => Maybe u a -> Bool a
 isJust = not Haskell.. isNothing
 
 instance SymbolicData a (u (ArithmeticCircuit a))
