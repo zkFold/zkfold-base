@@ -57,10 +57,11 @@ maybe :: forall a b f .
     b -> (f a -> b) -> Maybe f a -> b
 maybe d h x@(Maybe _ v) = bool @(Bool a) d (h v) $ isNothing x
 
-find :: forall a f .
+find :: forall a f t .
+    Haskell.Foldable t =>
     AdditiveMonoid (f a) =>
     Conditional (Bool a) (Maybe f a) =>
     DiscreteField (Bool a) a =>
-    (f a -> Bool a) -> [f a] -> Maybe f a
+    (f a -> Bool a) -> t (f a) -> Maybe f a
 find p = let n = Maybe zero zero in
     foldr (\i r -> maybe (bool @(Bool a) n (just i) $ p i) (Haskell.const r) $ r) n
