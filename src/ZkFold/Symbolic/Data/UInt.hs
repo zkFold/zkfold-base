@@ -38,8 +38,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.VectorSpace
-import           ZkFold.Prelude                                            (drop, length, replicate, replicateA,
-                                                                            take, (!!))
+import           ZkFold.Prelude                                            (drop, length, replicate, replicateA, take,
+                                                                            (!!))
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
