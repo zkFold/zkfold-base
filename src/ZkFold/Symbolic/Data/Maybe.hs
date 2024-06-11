@@ -12,15 +12,11 @@ import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Compiler.Arithmetizable
 import           ZkFold.Symbolic.Data.Bool
 
-data Maybe u a = Maybe a (u a)
+data Maybe u a = Maybe {isJust :: Bool a, maybeVal :: u a}
   deriving stock
-    ( Haskell.Eq
-    , Haskell.Functor
+    ( Haskell.Functor
     , Haskell.Foldable
     , Haskell.Traversable
     , Generic1
@@ -29,27 +25,17 @@ data Maybe u a = Maybe a (u a)
 deriving via Generically1 (Maybe u) instance
   VectorSpace a u => VectorSpace a (Maybe u)
 
-just :: MultiplicativeMonoid a => u a -> Maybe u a
-just = Maybe one
+just :: Ring a => u a -> Maybe u a
+just = Maybe true
 
-nothing :: (AdditiveMonoid a, VectorSpace a u) => Maybe u a
-nothing = Maybe zero zeroV
+nothing :: (Ring a, VectorSpace a u) => Maybe u a
+nothing = Maybe false zeroV
 
 fromMaybe :: (Ring a, VectorSpace a u) => u a -> Maybe u a -> u a
-fromMaybe d (Maybe j x) = scaleV j (x `subtractV` d) `addV` d
-
-isJust :: Maybe u a -> Bool a
-isJust (Maybe j _) = Bool j
+fromMaybe d (Maybe j x) = bool d x j
 
 isNothing :: Ring a => Maybe u a -> Bool a
-isNothing (Maybe j _) = Bool (one - j)
-
-instance SymbolicData a (u (ArithmeticCircuit a))
-  => SymbolicData a (Maybe u (ArithmeticCircuit a)) where
-    pieces (Maybe h t) = h : pieces t
-    restore (h:ts) = Maybe h (restore ts)
-    restore _      = Haskell.error "restore ArithmeticCircuit: wrong number of arguments"
-    typeSize = 1 + typeSize @a @(u (ArithmeticCircuit a))
+isNothing = not Haskell.. isJust
 
 mapMaybe :: (u a -> v a) -> Maybe u a -> Maybe v a
 mapMaybe h (Maybe j u) = Maybe j (h u)
