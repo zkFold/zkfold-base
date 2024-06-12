@@ -22,7 +22,7 @@ import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Container
 
-data Maybe u a = Maybe {isJust :: Bool a, maybeVal :: u a}
+data Maybe u a = Maybe {isJust :: Bool a, justVal :: u a}
   deriving stock
     ( Haskell.Functor
     , Haskell.Foldable
@@ -45,7 +45,7 @@ maybe
 maybe d h m = fromMaybe d (fmap h m)
 
 fromMaybe :: (Ring a, VectorSpace a u) => u a -> Maybe u a -> u a
-fromMaybe d (Maybe j x) = bool d x j
+fromMaybe d (Maybe j u) = bool d u j
 
 isNothing :: Ring a => Maybe u a -> Bool a
 isNothing = not Haskell.. isJust
