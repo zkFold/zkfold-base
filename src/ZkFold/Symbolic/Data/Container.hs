@@ -29,6 +29,9 @@ instance Haskell.Applicative f => Applicative ((:.:) f) where
   return u = Comp1 (Haskell.pure u)
   liftA2 uvw (Comp1 u) (Comp1 v) = Comp1 (Haskell.liftA2 uvw u v)
 
+(>>) :: (Ring a, Applicative f) => f u a -> f v a -> f v a
+(>>) = liftA2 (\_u v -> v)
+
 class Applicative f => Monad f where
   (>>=) :: (Ring a, VectorSpace a v) => f u a -> (u a -> f v a) -> f v a
 instance Haskell.Monad f => Monad ((:.:) f) where
