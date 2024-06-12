@@ -1,5 +1,11 @@
 {-# LANGUAGE TypeOperators #-}
-module ZkFold.Symbolic.Data.Container where
+module ZkFold.Symbolic.Data.Container
+  ( Functor (..)
+  , Applicative (..)
+  , zip
+  , (>>)
+  , Monad (..)
+  ) where
 
 import           Data.Functor.Rep
 import           GHC.Generics
