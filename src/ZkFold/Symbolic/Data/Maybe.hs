@@ -55,7 +55,7 @@ instance Functor Maybe where
 
 instance Applicative Maybe where
   return = just
-  liftA2 f (Maybe ju u) (Maybe jv v) = Maybe (ju && jv) (f u v)
+  zipWith f (Maybe ju u) (Maybe jv v) = Maybe (ju && jv) (f u v)
 
 instance Monad Maybe where
   Maybe j u >>= f = bool nothing (f u) j
