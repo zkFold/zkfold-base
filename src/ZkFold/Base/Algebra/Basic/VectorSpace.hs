@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -5,12 +6,13 @@
 
 module ZkFold.Base.Algebra.Basic.VectorSpace where
 
+import           Control.Monad.State.Strict
 import           Data.Functor.Rep
 import           Data.Kind                       (Type)
 import           GHC.Generics                    hiding (Rep)
 import           Prelude                         hiding (Num (..), div, divMod, length, mod, negate, product, replicate,
                                                   sum, (/), (^))
-
+import           Numeric.Natural                 (Natural)
 import           ZkFold.Base.Algebra.Basic.Class
 
 {- | Class of vector spaces with a basis. More accurately, when @a@ is
@@ -61,6 +63,37 @@ pureV = tabulateV . const
 zipWithV :: VectorSpace a v => (a -> a -> a) -> v a -> v a -> v a
 zipWithV f as bs = tabulateV $ \k ->
   f (indexV as k) (indexV bs k)
+
+dimV
+  :: forall a v. (Functor v, Foldable v, VectorSpace a v)
+  => Natural
+dimV = sum (fmap (\_ -> 1) (pureV @a @v err))
+  where
+    err = error "ZkFold.Base.Algebra.Basic.VectorSpace.dimV impossible"
+
+-- prop> fromListV [] = zeroV
+-- prop> fromListV . toList = id
+-- prop> take <$> length <*> (toList . fromListV) = take dimV
+fromListV
+  :: forall a v. (AdditiveMonoid a, Traversable v, VectorSpace a v)
+  => [a] -> v a
+fromListV = evalState (traverse listState (pureV @a @v err))
+  where
+    err = error "ZkFold.Base.Algebra.Basic.VectorSpace.fromList impossible"
+    listState _ = get >>= \case
+      [] -> return zero
+      x:xs -> put xs >> return x
+
+iterateV
+  :: forall a v x. (Traversable v, VectorSpace a v)
+  => (x -> x) -> x -> v x
+iterateV f = evalState (traverse iteration (pureV @a @v err))
+  where
+    err = error "ZkFold.Base.Algebra.Basic.VectorSpace.iterateV impossible"
+    iteration _ = do
+      x <- get
+      put (f x)
+      return x
 
 -- representable vector space
 newtype Representably v (a :: Type) = Representably
