@@ -10,9 +10,10 @@ import           Control.Monad.State.Strict
 import           Data.Functor.Rep
 import           Data.Kind                       (Type)
 import           GHC.Generics                    hiding (Rep)
+import           Numeric.Natural                 (Natural)
 import           Prelude                         hiding (Num (..), div, divMod, length, mod, negate, product, replicate,
                                                   sum, (/), (^))
-import           Numeric.Natural                 (Natural)
+
 import           ZkFold.Base.Algebra.Basic.Class
 
 {- | Class of vector spaces with a basis. More accurately, when @a@ is
