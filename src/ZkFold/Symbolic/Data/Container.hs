@@ -9,7 +9,6 @@ module ZkFold.Symbolic.Data.Container
 
 import           Data.Functor.Rep
 import           GHC.Generics
-import qualified Prelude                               as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
