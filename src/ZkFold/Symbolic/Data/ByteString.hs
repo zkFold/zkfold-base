@@ -58,17 +58,17 @@ newtype ByteString (n :: Natural) (backend :: Natural -> Type -> Type) (a :: Typ
     deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
 
 instance
-    ( FromConstant Natural a
-    , Concat (ByteString 8 a) (ByteString n a)
-    ) => IsString (ByteString n a) where
+    ( FromConstant Natural (ByteString 8 b a)
+    , Concat (ByteString 8 b a) (ByteString n b a)
+    ) => IsString (ByteString n b a) where
     fromString = fromConstant . fromString @Bytes.ByteString
 
 instance
-    ( FromConstant Natural a
-    , Concat (ByteString 8 a) (ByteString n a)
-    ) => FromConstant Bytes.ByteString (ByteString n a) where
+    ( FromConstant Natural (ByteString 8 b a)
+    , Concat (ByteString 8 b a) (ByteString n b a)
+    ) => FromConstant Bytes.ByteString (ByteString n b a) where
     fromConstant bytes = concat
-        $ fromConstant @Natural @(ByteString 8 a)
+        $ fromConstant @Natural @(ByteString 8 b a)
         . Haskell.fromIntegral
         . Haskell.toInteger
         <$> Bytes.unpack bytes
