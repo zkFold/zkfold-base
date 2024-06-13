@@ -13,8 +13,8 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.UInt
 
-newtype UTCTime a = UTCTime (UInt 11 a)
+newtype UTCTime b a = UTCTime (UInt 11 b a)
 
-deriving newtype instance Eq (UInt 11 a) => Eq (UTCTime a)
+deriving newtype instance Eq (UInt 11 b a) => Eq (UTCTime b a)
 
-deriving newtype instance (Arithmetic a, r ~ NumberOfRegisters a 11, KnownNat r) => SymbolicData a r (UTCTime (ArithmeticCircuit r a))
+deriving newtype instance (Arithmetic a, r ~ NumberOfRegisters a 11, KnownNat r) => SymbolicData a r (UTCTime ArithmeticCircuit a)

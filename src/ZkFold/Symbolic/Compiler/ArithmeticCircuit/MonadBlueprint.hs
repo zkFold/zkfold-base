@@ -19,7 +19,6 @@ import           Data.Functor                                        (($>))
 import           Data.Map                                            ((!))
 import           Data.Set                                            (Set)
 import qualified Data.Set                                            as Set
-import           GHC.TypeNats                                        (KnownNat)
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Bool (..), Eq (..), replicate, (*), (+),
                                                                       (-))

@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeApplications             #-}
 {-# LANGUAGE TypeOperators                #-}
 {-# LANGUAGE UndecidableInstances         #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-} -- Trust me bro
 
 module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
@@ -15,29 +16,33 @@ module ZkFold.Symbolic.Data.ByteString
     ) where
 
 import           Control.DeepSeq                                           (NFData)
-import           Control.Monad                                             (mapM, replicateM, zipWithM)
+import           Control.Monad                                             (replicateM)
 import           Data.Bits                                                 as B
 import qualified Data.ByteString                                           as Bytes
 import           Data.Kind                                                 (Type)
 import           Data.List                                                 (foldl, reverse, unfoldr)
-import           Data.List.Split                                           (chunksOf)
 import           Data.Maybe                                                (Maybe (..))
 import           Data.Proxy                                                (Proxy (..))
 import           Data.String                                               (IsString (..))
+import           Data.Traversable                                          (for)
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
-import           GHC.TypeNats                                              (Mod, Natural, natVal)
-import           Prelude                                                   (Bool (..), Integer, drop, error, fmap,
-                                                                            length, otherwise, pure, take, type (~),
-                                                                            ($), (.), (<$>), (<), (<>), (==), (>=))
+import           GHC.TypeNats                                              (Div, Mod, Natural, natVal)
+import           Prelude                                                   (Bool (..), Integer, drop, fmap, otherwise,
+                                                                            pure, take, type (~), ($), (.), (<$>), (<),
+                                                                            (<>), (==), (>=))
 import qualified Prelude                                                   as Haskell
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
+import           ZkFold.Base.Algebra.Basic.Field                           (Zp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                                            (replicate, replicateA)
+import qualified ZkFold.Base.Data.Vector                                   as V
+import           ZkFold.Base.Data.Vector                                   (Vector (..))
+import           ZkFold.Prelude                                            (replicateA)
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (acCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators
@@ -47,9 +52,9 @@ import           ZkFold.Symbolic.Data.UInt
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
-data family ByteString (n :: Natural) (a :: Type)
+-- data family ByteString (n :: Natural) (a :: Type)
 
-data instance ByteString n (Zp p) = ByteStringZp [Zp p]
+newtype ByteString (n :: Natural) (backend :: Natural -> Type -> Type) (a :: Type) = ByteString (backend n a)
     deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
 
 instance
@@ -68,9 +73,13 @@ instance
         . Haskell.toInteger
         <$> Bytes.unpack bytes
 
-data instance ByteString n (ArithmeticCircuit n a) = ByteStringAc (ArithmeticCircuit n a)
-    deriving (Haskell.Show, Generic, NFData)
+{--
+data instance ByteString n (Zp p) = ByteString [Zp p]
+    deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
 
+data instance ByteString n (ArithmeticCircuit n a) = ByteString (ArithmeticCircuit n a)
+    deriving (Haskell.Show, Generic, NFData)
+--}
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --
@@ -123,46 +132,60 @@ class Truncate a b where
     truncate :: a -> b
 
 
-instance (ToConstant a Natural) => ToConstant (ByteString n a) Natural where
+instance ToConstant (ByteString n Vector (Zp p)) Natural where
     toConstant (ByteString bits) = Haskell.foldl (\y p -> toConstant p + base * y) 0 bits
         where base = 2
 
 
-instance (FromConstant Natural a, KnownNat n) => FromConstant Natural (ByteString n a) where
+instance (KnownNat n, Finite (Zp p)) => FromConstant Natural (ByteString n Vector (Zp p)) where
 
     -- | Pack a ByteString using one field element per bit.
     -- @fromConstant@ discards bits after @n@.
     -- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
     --
-    fromConstant n = ByteString $ reverse bits
-        where
-            base = 2
+    fromConstant n = ByteString . V.unsafeToVector $ toZp . Haskell.fromIntegral <$> toBsBits n (value @n)
 
-            availableBits = unfoldr (toBase base) (n `Haskell.mod` (2 Haskell.^ (getNatural @n))) <> Haskell.repeat (fromConstant @Natural 0)
+instance (KnownNat n, Finite (Zp p)) => FromConstant Integer (ByteString n Vector (Zp p)) where
+    fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
-            bits = take (Haskell.fromIntegral $ value @n) availableBits
+instance (FromConstant Natural a, Arithmetic a, KnownNat n) => FromConstant Natural (ByteString n ArithmeticCircuit a) where
+
+    -- | Pack a ByteString using one field element per bit.
+    -- @fromConstant@ discards bits after @n@.
+    -- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
+    --
+    fromConstant n = ByteString $ embedV $ V.unsafeToVector $ fmap fromConstant $ toBsBits n (value @n)
+
+toBsBits :: Natural -> Natural -> [Natural]
+toBsBits num n = reverse bits
+    where
+        base = 2
+
+        availableBits = unfoldr (toBase base) (num `Haskell.mod` (2 Haskell.^ n)) <> Haskell.repeat 0
+
+        bits = take (Haskell.fromIntegral n) availableBits
 
 -- | Convert a number into @base@-ary system.
 --
-toBase :: FromConstant Natural a => Natural -> Natural -> Maybe (a, Natural)
+toBase :: Natural -> Natural -> Maybe (Natural, Natural)
 toBase _ 0    = Nothing
-toBase base b = let (d, m) = b `divMod` base in Just (fromConstant m, d)
+toBase base b = let (d, m) = b `divMod` base in Just (m, d)
 
 
-instance (FromConstant Natural a, KnownNat n) => FromConstant Integer (ByteString n a) where
+instance (FromConstant Natural a, Arithmetic a, KnownNat n) => FromConstant Integer (ByteString n ArithmeticCircuit a) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
-instance (Finite (Zp p), KnownNat n) => Iso (ByteString n (Zp p)) (UInt n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => Iso (ByteString n Vector (Zp p)) (UInt n Vector (Zp p)) where
     from bs = fromConstant @Natural . toConstant $ bs
 
-instance (Finite (Zp p), KnownNat n) => Iso (UInt n (Zp p)) (ByteString n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => Iso (UInt n Vector (Zp p)) (ByteString n Vector (Zp p)) where
     from ui = fromConstant @Natural . toConstant $ ui
 
-instance (Finite (Zp p), KnownNat n) => Arbitrary (ByteString n (Zp p)) where
-    arbitrary = ByteString <$> replicateA (value @n) (toss (1 :: Natural))
+instance (Finite (Zp p), KnownNat n) => Arbitrary (ByteString n Vector (Zp p)) where
+    arbitrary = ByteString . V.unsafeToVector <$> replicateA (value @n) (toss (1 :: Natural))
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
-instance (Finite (Zp p), KnownNat n) => ShiftBits (ByteString n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => ShiftBits (ByteString n Vector (Zp p)) where
 
     shiftBits b s = fromConstant $ shift (toConstant @_ @Natural b) (Haskell.fromIntegral s) `Haskell.mod` (2 Haskell.^ (getNatural @n))
 
@@ -201,7 +224,7 @@ instance (Finite (Zp p), KnownNat n) => ShiftBits (ByteString n (Zp p)) where
             d = nat `shiftR` intS
 
 
-instance (Finite (Zp p), KnownNat n) => BoolType (ByteString n (Zp p)) where
+instance (Finite (Zp p), KnownNat n) => BoolType (ByteString n Vector (Zp p)) where
     false = fromConstant (0 :: Natural)
 
     -- | A ByteString with all bits set to 1 is the unity for bitwise and.
@@ -238,7 +261,7 @@ instance
   , 1 <= wordSize
   , 1 <= n
   , Mod n wordSize ~ 0
-  ) => ToWords (ByteString n (Zp p)) (ByteString wordSize (Zp p)) where
+  ) => ToWords (ByteString n Vector (Zp p)) (ByteString wordSize Vector (Zp p)) where
 
     toWords bs = fmap fromConstant $ reverse $ take (Haskell.fromIntegral $ n `Haskell.div` wordSize) natWords
       where
@@ -265,7 +288,7 @@ instance
   , m <= n
   , Mod n m ~ 0
   , Finite (Zp p)
-  ) => Concat (ByteString m (Zp p)) (ByteString n (Zp p)) where
+  ) => Concat (ByteString m Vector (Zp p)) (ByteString n Vector (Zp p)) where
 
     concat = fromConstant @Natural . foldl (\p y -> toConstant y + p `shift` m) 0
         where
@@ -279,7 +302,7 @@ instance
   , KnownNat n
   , n <= m
   , Finite (Zp p)
-  ) => Truncate (ByteString m (Zp p)) (ByteString n (Zp p)) where
+  ) => Truncate (ByteString m Vector (Zp p)) (ByteString n Vector (Zp p)) where
 
     truncate = fromConstant @Natural . (`shiftR` diff) . toConstant
         where
@@ -292,60 +315,53 @@ instance
   ( KnownNat n
   , m <= n
   , Finite (Zp p)
-  ) => Extend (ByteString m (Zp p)) (ByteString n (Zp p)) where
+  ) => Extend (ByteString m Vector (Zp p)) (ByteString n Vector (Zp p)) where
 
     extend = fromConstant @Natural . toConstant
 
 --------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownNat n) => SymbolicData a n (ByteString n (ArithmeticCircuit n a)) where
-    pieces (ByteStringAc bits) = bits
+instance (Arithmetic a, KnownNat n) => SymbolicData a n (ByteString n ArithmeticCircuit a) where
+    pieces (ByteString bits) = bits
 
-    restore = withOutput
+    restore c o = ByteString $ c `withOutputs` o
 
 
-instance (Arithmetic a, KnownNat n, r ~ NumberOfRegisters a n) => Iso (ByteString n (ArithmeticCircuit n a)) (UInt n (ArithmeticCircuit r a)) where
-    from (ByteStringAc bits) = UIntAc (circuitN $ Vector <$> solve)
+instance (Arithmetic a, KnownNat n) => Iso (ByteString n ArithmeticCircuit a) (UInt n ArithmeticCircuit a) where
+    from (ByteString bits) = UInt (circuitN $ V.unsafeToVector <$> solve)
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
             solve = do
-                bsBits <- runCircuit bits
+                bsBits <- V.fromVector <$> runCircuit bits
                 fromBits (highRegisterSize @a @n) (registerSize @a @n) bsBits
 
-instance (Arithmetic a, KnownNat n, r ~ NumberOfRegisters a n) => Iso (UInt n (ArithmeticCircuit r a)) (ByteString n (ArithmeticCircuit n a)) where
-    from (UIntAc ac) = ByteStringAc $ circuitN $ Vector <$> solve
+instance (Arithmetic a, KnownNat n) => Iso (UInt n ArithmeticCircuit a) (ByteString n ArithmeticCircuit a) where
+    from (UInt ac) = ByteString $ circuitN $ Vector <$> solve
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
             solve = toBits ac (highRegisterSize @a @n) (registerSize @a @n)
 
-instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircuit n a)) where
-    shiftBits bs@(ByteStringAc oldBits) s
+instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n ArithmeticCircuit a) where
+    shiftBits bs@(ByteString oldBits) s
       | s == 0 = bs
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
-      | otherwise = ByteString $ circuits solve
+      | otherwise = ByteString $ circuitN solve
       where
-        solve :: forall i m. MonadBlueprint i a m => m [i]
+        solve :: forall i m. MonadBlueprint i a m => m (Vector n i)
         solve = do
-            bits <- mapM runCircuit oldBits
+            bits  <- V.fromVector <$> runCircuit oldBits
             zeros <- replicateM (Haskell.fromIntegral $ Haskell.abs s) $ newAssigned (Haskell.const zero)
 
-            pure $ case (s < 0) of
+            let newBits = case (s < 0) of
                         True  -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
                         False -> drop (Haskell.fromIntegral s) $ bits <> zeros
+
+            pure $ V.unsafeToVector newBits
 
 
     -- | rotateBits does not even require operations on the circuit.
     --
-    rotateBits bs@(ByteStringAc bits) s
-      | s == 0 = bs
-      | (s < 0) || (s >= intN) = rotateBits bs (s `Haskell.mod` intN) -- Always perform a left rotation
-      | otherwise = ByteString $ rotateList bits
-      where
-        intN :: Integer
-        intN = Haskell.fromIntegral (getNatural @n)
-
-        rotateList :: [e] -> [e]
-        rotateList lst = drop (Haskell.fromIntegral s) lst <> take (Haskell.fromIntegral s) lst
+    rotateBits (ByteString bits) s = ByteString (bits { acOutput = V.rotate (acOutput bits) s})
 
 
 -- | A generic bitwise operation on two ByteStrings.
@@ -354,32 +370,32 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
 bitwiseOperation
     :: forall a n
     .  Arithmetic a
-    => ByteString n (ArithmeticCircuit n a)
-    -> ByteString n (ArithmeticCircuit n a)
+    => ByteString n ArithmeticCircuit a
+    -> ByteString n ArithmeticCircuit a
     -> (forall i. i -> i -> ClosedPoly i a)
-    -> ByteString n (ArithmeticCircuit n a)
-bitwiseOperation (ByteStringAc bits1) (ByteStringAc bits2) cons = ByteStringAc $ circuitN solve
+    -> ByteString n ArithmeticCircuit a
+bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circuitN solve
   where
-    solve :: forall i m. MonadBlueprint i a m => m [i]
+    solve :: forall i m. MonadBlueprint i a m => m (Vector n i)
     solve = do
         varsLeft  <- runCircuit bits1
         varsRight <- runCircuit bits2
-        zipWithM applyBitwise varsLeft varsRight
+        V.zipWithM applyBitwise varsLeft varsRight
 
     applyBitwise :: forall i m . MonadBlueprint i a m => i -> i -> m i
     applyBitwise l r = newAssigned $ cons l r
 
 
-instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit n a)) where
-    false = ByteStringAc (replicate (value @n) zero)
+instance (Arithmetic a, KnownNat n) => BoolType (ByteString n ArithmeticCircuit a) where
+    false = ByteString zero
 
     true = not false
 
-    not (ByteStringAc bits) = ByteStringAc (flipBits <$> bits)
+    not (ByteString bits) = ByteString (flipBits bits)
         where
-            flipBits r = circuit $ do
-                i <- runCircuit r
-                newAssigned (\p -> one - p i)
+            flipBits r = circuitN $ do
+                is <- runCircuit r
+                for is $ \i -> newAssigned (\p -> one - p i)
 
     l || r = bitwiseOperation l r (\i j x -> x i + x j - x i * x j)
 
@@ -393,37 +409,46 @@ instance
   , 1 <= wordSize
   , 1 <= n
   , Mod n wordSize ~ 0
-  ) => ToWords (ByteString n (ArithmeticCircuit n a)) (ByteString wordSize (ArithmeticCircuit a)) where
+  , (Div n wordSize * wordSize) ~ n
+  ) => ToWords (ByteString n ArithmeticCircuit a) (ByteString wordSize ArithmeticCircuit a) where
 
-    toWords (ByteStringAc bits) = ByteStringAc <$> chunksOf (Haskell.fromIntegral $ value @wordSize) bits
+    toWords (ByteString bits) = (\o -> ByteString $ bits { acOutput = o} ) <$> (V.fromVector (V.chunks @(Div n wordSize) @wordSize $ acOutput bits))
+
 
 instance
   ( Mod n m ~ 0
-  ) => Concat (ByteString m (ArithmeticCircuit m a)) (ByteString n (ArithmeticCircuit n a)) where
+  , (Div n m * m) ~ n
+  , Arithmetic a
+  ) => Concat (ByteString m ArithmeticCircuit a) (ByteString n ArithmeticCircuit a) where
 
-    concat bs = ByteStringAc $ Haskell.concatMap (\(ByteStringAc bits) -> bits) bs
+    concat bs = ByteString $ bsCircuit `withOutputs` bsOutputs
+        where
+            bsCircuit = Haskell.mconcat $ (\(ByteString bits) -> acCircuit bits) <$> bs
+
+            bsOutputs :: Vector n Natural
+            bsOutputs = V.unsafeConcat @(Div n m) $ (\(ByteString bits) -> acOutput bits) <$> bs
 
 instance
   ( KnownNat n
   , n <= m
-  ) => Truncate (ByteString m (ArithmeticCircuit m a)) (ByteString n (ArithmeticCircuit n a)) where
+  ) => Truncate (ByteString m ArithmeticCircuit a) (ByteString n ArithmeticCircuit a) where
 
-    truncate (ByteStringAc bits) = ByteStringAc $ take (Haskell.fromIntegral $ getNatural @n) bits
+    truncate (ByteString bits) = ByteString $ bits { acOutput = V.take @n (acOutput bits) }
 
 instance
   ( KnownNat m
   , KnownNat n
   , m <= n
   , Arithmetic a
-  ) => Extend (ByteString m (ArithmeticCircuit m a)) (ByteString n (ArithmeticCircuit n a)) where
+  ) => Extend (ByteString m ArithmeticCircuit a) (ByteString n ArithmeticCircuit a) where
 
-    extend (ByteStringAc oldBits) = ByteStringAc $ circuitsN solve
+    extend (ByteString oldBits) = ByteString $ circuitN (Vector <$> solve)
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do
-            bits <- mapM runCircuit oldBits
+            bits <- runCircuit oldBits
             zeros <- replicateM diff $ newAssigned (Haskell.const zero)
-            pure $ zeros <> bits
+            pure $ zeros <> (V.fromVector bits)
 
         diff :: Haskell.Int
         diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @m
