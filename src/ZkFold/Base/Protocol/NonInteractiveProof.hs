@@ -4,19 +4,18 @@
 
 module ZkFold.Base.Protocol.NonInteractiveProof where
 
-import           Data.Aeson
 import           Control.DeepSeq             (NFData)
 import           Crypto.Hash.SHA256          (hash)
+import           Data.Aeson
 import           Data.ByteString             (ByteString, cons)
+import qualified Data.ByteString.Base64      as B64
+import qualified Data.ByteString.Char8       as BS
 import           Data.Maybe                  (fromJust)
+import qualified Data.Text                   as T
 import           GHC.Generics                (Generic)
 import           Numeric.Natural             (Natural)
 import           Prelude
 import           Test.QuickCheck             (Arbitrary (..), generate, vectorOf)
-
-import qualified Data.Text              as T
-import qualified Data.ByteString.Char8  as BS
-import qualified Data.ByteString.Base64 as B64
 
 import           ZkFold.Base.Data.ByteString
 
