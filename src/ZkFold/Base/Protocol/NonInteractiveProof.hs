@@ -6,8 +6,12 @@ module ZkFold.Base.Protocol.NonInteractiveProof where
 
 import           Control.DeepSeq             (NFData)
 import           Crypto.Hash.SHA256          (hash)
+import           Data.Aeson
 import           Data.ByteString             (ByteString, cons)
+import qualified Data.ByteString.Base64      as B64
+import qualified Data.ByteString.Char8       as BS
 import           Data.Maybe                  (fromJust)
+import qualified Data.Text                   as T
 import           GHC.Generics                (Generic)
 import           Numeric.Natural             (Natural)
 import           Prelude
@@ -66,7 +70,20 @@ class NonInteractiveProof a where
 
     verify :: SetupVerify a -> Input a -> Proof a -> Bool
 
-data ProveAPIResult = ProveAPISuccess ByteString | ProveAPIErrorSetup | ProveAPIErrorWitness
+newtype ProofBytes = ProofBytes
+  { fromWitnessBytes :: ByteString }
+  deriving (Show, Eq, Generic, NFData)
+
+instance ToJSON ProofBytes where
+    toJSON (ProofBytes b) = String . T.pack . BS.unpack . B64.encode $ b
+
+instance FromJSON ProofBytes where
+    parseJSON = withText "Bytes of proof" $ \t ->
+        case B64.decode . BS.pack . T.unpack $ t of
+            Left err -> fail err
+            Right bs -> return $ ProofBytes bs
+
+data ProveAPIResult = ProveAPISuccess ProofBytes | ProveAPIErrorSetup | ProveAPIErrorWitness
     deriving (Show, Eq, Generic, NFData)
 
 proveAPI
@@ -85,7 +102,7 @@ proveAPI bsS bsW =
     in case (mS, mW) of
         (Nothing, _)     -> ProveAPIErrorSetup
         (_, Nothing)     -> ProveAPIErrorWitness
-        (Just s, Just w) -> ProveAPISuccess $ toByteString $ prove @a s w
+        (Just s, Just w) -> ProveAPISuccess . ProofBytes $ toByteString $ prove @a s w
 
 testVector :: forall a .
     NonInteractiveProof a =>
