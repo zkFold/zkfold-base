@@ -109,9 +109,6 @@ data PlonkPermutation d = PlonkPermutation {
     deriving (Show)
 
 newtype PlonkWitnessMap d = PlonkWitnessMap (Map.Map Natural F -> (PolyVec F d, PolyVec F d, PolyVec F d))
--- TODO (Issue #25): make a proper implementation of Show
-instance Show (PlonkWitnessMap d) where
-    show _ = "PlonkWitnessMap"
 
 newtype PlonkWitnessInput = PlonkWitnessInput (Map.Map Natural F)
 -- TODO (Issue #25): make a proper implementation of Show
