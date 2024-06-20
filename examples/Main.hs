@@ -38,4 +38,4 @@ main = do
     exampleByteStringOr @500
     exampleByteStringExtend @1 @512
 
-    -- exampleBatchTransfer
+    exampleBatchTransfer
