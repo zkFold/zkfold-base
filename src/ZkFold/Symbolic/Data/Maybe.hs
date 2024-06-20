@@ -22,7 +22,7 @@ import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Container
 
-data Maybe u a = Maybe {isJust :: Bool a, justVal :: u a}
+data Maybe u a = Maybe {isJust :: Bool a, maybeVal :: u a}
   deriving stock
     ( Haskell.Functor
     , Haskell.Foldable
