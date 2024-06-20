@@ -166,8 +166,11 @@ acDouble25519
     => EuclideanDomain (UInt 512 (ArithmeticCircuit a))
     => PointEd25519 (ArithmeticCircuit a)
     -> PointEd25519 (ArithmeticCircuit a)
--- acDouble25519 Inf = Inf
-acDouble25519 (PointEd25519 x1 y1) = PointEd25519 (shrink x3) (shrink y3)
+acDouble25519 (PointEd25519 x1 y1) =
+    ifThenElse
+      (x1 == zero && y1 == zero) -- point at infinity
+      inf
+      (PointEd25519 (shrink x3) (shrink y3))
     where
         -- We will perform multiplications of UInts of up to n bits, therefore we need 2n bits to store the result.
         --
