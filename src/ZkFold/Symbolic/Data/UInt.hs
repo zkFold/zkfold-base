@@ -65,7 +65,7 @@ instance (FiniteField a, KnownNat n) => VectorSpace a (UInt n) where
     indexV (UInt v _) (Just ix) = fromMaybe zero (lookup ix (zip [1..] v))
     tabulateV f =
         let r = Haskell.fromIntegral (numberOfRegisters @a @n)
-        in UInt [f (Just i) | i <- [1 .. r]] (f Nothing)
+        in UInt [f (Just i) | i <- [1 .. (r Haskell.- 1)]] (f Nothing)
 
 instance (FromConstant Natural a, Finite a, AdditiveMonoid a, KnownNat n) => FromConstant Natural (UInt n a) where
     fromConstant = Haskell.fst . cast @a @n . (`Haskell.mod` (2 ^ getNatural @n))
