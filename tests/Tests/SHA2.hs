@@ -14,7 +14,8 @@ import           Data.List.Split                             (splitOn)
 import           Data.Proxy                                  (Proxy (..))
 import           GHC.TypeLits                                (KnownSymbol, Symbol, symbolVal)
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     (String, fmap, otherwise, not, pure, read, (<>), (==), (&&))
+import           Prelude                                     (String, fmap, not, otherwise, pure, read, (&&), (<>),
+                                                              (==))
 import qualified Prelude                                     as Haskell
 import           System.Directory                            (listDirectory)
 import           System.FilePath.Posix
