@@ -2,7 +2,7 @@
 
 module Examples.Fibonacci (exampleFibonacci) where
 
-import           GHC.Generics                                (Par1 (Par1))
+import           GHC.Generics                                (Par1)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), any, not, (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -14,9 +14,9 @@ import           ZkFold.Symbolic.Types                       (Symbolic)
 
 -- | The Fibonacci index function. If `x` is a Fibonacci number, returns its index (up until `nMax`). Otherwise, returns `0`.
 fibonacciIndex :: forall a . Symbolic a => Integer -> Par1 a -> Par1 a
-fibonacciIndex nMax x = foldl (\m k -> bool m (Par1 (fromConstant @Integer @a k)) (Par1 (fib k one one) == x :: Bool a)) (Par1 zero) [1..nMax]
+fibonacciIndex nMax x = foldl (\m k -> bool m (fromConstant @Integer @_ k) (fib k one one == x :: Bool a)) zero [1..nMax]
     where
-        fib :: Integer -> a -> a -> a
+        fib :: Integer -> Par1 a -> Par1 a -> Par1 a
         fib 1 x1 _  = x1
         fib n x1 x2 = fib (n - 1) x2 (x1 + x2)
 
