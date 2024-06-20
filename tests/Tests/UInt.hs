@@ -34,12 +34,6 @@ toss x = chooseNatural (0, x)
 eval :: forall a u. P.Functor u => u (ArithmeticCircuit a) -> u a
 eval = P.fmap eval'
 
--- eval :: forall a n . UInt n (ArithmeticCircuit a) -> UInt n a
--- eval (UInt xs x) = UInt (map eval' xs) (eval' x)
-
--- evalBool :: forall a . Bool (ArithmeticCircuit a) -> Bool a
--- evalBool boolAC = fmap eval' boolAC
-
 type Binary a = a -> a -> a
 
 type UBinary n a = Binary (UInt n a)
