@@ -9,6 +9,7 @@ module ZkFold.Symbolic.Compiler.Arithmetizable (
         SomeArithmetizable (..),
         SomeData (..),
         SymbolicData (..),
+        typeSize
     ) where
 
 import           Data.Typeable                                       (Typeable)
@@ -25,49 +26,75 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 -- | A class for Symbolic data types.
 -- Type `a` is the finite field of the arithmetic circuit.
 -- Type `x` represents the data type.
-class (Arithmetic a, KnownNat n) => SymbolicData a n x | x a -> n where
+class Arithmetic a => SymbolicData a x where
+
+    type TypeSize a x :: Natural
+
     -- | Returns the circuit that makes up `x`.
-    pieces :: x -> ArithmeticCircuit n a
+    pieces :: x -> ArithmeticCircuit (TypeSize a x) a
 
     -- | Restores `x` from the circuit's outputs.
-    restore :: Circuit a -> Vector n Natural -> x
+    restore :: Circuit a -> Vector (TypeSize a x) Natural -> x
 
-    -- | Returns the number of finite field elements needed to describe `x`.
-    typeSize :: Natural
-    typeSize = value @n
+-- | Returns the number of finite field elements needed to describe `x`.
+typeSize :: forall a x . KnownNat (TypeSize a x) => Natural
+typeSize = value @(TypeSize a x)
 
 -- A wrapper for `SymbolicData` types.
 data SomeData a where
-    SomeData :: (Typeable t, SymbolicData a n t) => t -> SomeData a
+    SomeData :: (Typeable t, SymbolicData a t) => t -> SomeData a
 
-instance Arithmetic a => SymbolicData a 0 () where
+instance Arithmetic a => SymbolicData a () where
+    type TypeSize a () = 0
+
     pieces () = ArithmeticCircuit { acCircuit = mempty, acOutput = V.empty }
 
     restore _ _ = ()
 
-instance (SymbolicData a m x, SymbolicData a n y, s ~ m + n, s - m ~ n, KnownNat s) => SymbolicData a s (x, y) where
+instance
+    ( SymbolicData a x
+    , SymbolicData a y
+    , m ~ TypeSize a x
+--    , n ~ TypeSize a y
+    , KnownNat m
+    ) => SymbolicData a (x, y) where
+
+    type TypeSize a (x, y) = TypeSize a x + TypeSize a y
+
     pieces (a, b) = pieces a `joinCircuits` pieces b
 
     restore c rs = (restore c rsX, restore c rsY)
         where
-            (rsX, rsY) = (V.take @m rs, V.drop @m rs)
+            (rsX, rsY) = V.splitAt @m rs
 
 instance
-    ( SymbolicData a m x
-    , SymbolicData a n y
-    , SymbolicData a k z
-    , s ~ m + n + k
-    , ((s - m) - n) ~ k
-    , KnownNat s
-    ) => SymbolicData a s (x, y, z) where
+    ( SymbolicData a x
+    , SymbolicData a y
+    , SymbolicData a z
+    , m ~ TypeSize a x
+    , n ~ TypeSize a y
+ --   , k ~ TypeSize a z
+    , KnownNat m
+    , KnownNat n
+    ) => SymbolicData a (x, y, z) where
+
+    type TypeSize a (x, y, z) = TypeSize a x + TypeSize a y + TypeSize a z
+
     pieces (a, b, c) = pieces a `joinCircuits` pieces b `joinCircuits` pieces c
 
     restore c rs = (restore c rsX, restore c rsY, restore c rsZ)
         where
-            (rsX, rsYZ) = (V.take @m rs, V.drop @m rs)
-            (rsY, rsZ)  = (V.take @n rsYZ, V.drop @n rsYZ)
+            (rsX, rsY, rsZ) = V.splitAt3 @m @n rs
 
-instance (SymbolicData a m x, KnownNat n, s ~ n * m, KnownNat s) => SymbolicData a s (Vector n x) where
+instance
+    ( SymbolicData a x
+    , m ~ TypeSize a x
+--    , s ~ n * m
+    , KnownNat m
+    ) => SymbolicData a (Vector n x) where
+
+    type TypeSize a (Vector n x) = n * TypeSize a x
+
     pieces xs = concatCircuits $ pieces <$> xs
 
     restore c rs = restoreElem <$> V.chunks rs
@@ -79,35 +106,39 @@ instance (SymbolicData a m x, KnownNat n, s ~ n * m, KnownNat s) => SymbolicData
 -- computations can be represented by arithmetic circuits.
 -- Type `a` is the finite field of the arithmetic circuit.
 -- Type `x` represents the arithmetizable type.
-class (Arithmetic a, KnownNat i, KnownNat o) => Arithmetizable a i o x where
-    -- | Given a list of circuits computing inputs, return a list of circuits
-    -- computing the result of `x`.
-    arithmetize :: x -> ArithmeticCircuit i a -> ArithmeticCircuit o a
-
+class Arithmetic a => Arithmetizable a x where
     -- | The number of finite field elements needed to describe an input of `x`.
-    inputSize :: Natural
-    inputSize = value @i
+    type InputSize a x :: Natural
 
     -- | The number of finite field elements needed to describe the result of `x`.
-    outputSize :: Natural
-    outputSize = value @o
+    type OutputSize a x :: Natural
+
+    -- | Given a list of circuits computing inputs, return a list of circuits
+    -- computing the result of `x`.
+    arithmetize :: x -> ArithmeticCircuit (InputSize a x) a -> ArithmeticCircuit (OutputSize a x) a
 
 -- A wrapper for `Arithmetizable` types.
 data SomeArithmetizable a where
-    SomeArithmetizable :: (Typeable t, Arithmetizable a i o t) => t -> SomeArithmetizable a
+    SomeArithmetizable :: (Typeable t, Arithmetizable a t) => t -> SomeArithmetizable a
 
-instance {-# OVERLAPPABLE #-} SymbolicData a n x => Arithmetizable a 0 n x where
+
+-- | TODO: Overlapping instance doesn't work anymore (conflicting family instance declarations)
+instance (SymbolicData a (ArithmeticCircuit n a)) => Arithmetizable a (ArithmeticCircuit n a) where
+    type InputSize a (ArithmeticCircuit n a) = 0
+    type OutputSize a (ArithmeticCircuit n a) = TypeSize a (ArithmeticCircuit n a)
     arithmetize x _ = pieces x
 
 instance
-    ( SymbolicData a n x
-    , Arithmetizable a i o f
-    , s ~ i + n
-    , i ~ s - n
-    , KnownNat s
-    , KnownNat o
-    ) => Arithmetizable a s o (x -> f) where
-    arithmetize f is =
-        let ArithmeticCircuit circuit outputs = is
-            (xs, os) = (V.take @n outputs, V.drop @n outputs)
-         in arithmetize (f $ restore circuit xs) (ArithmeticCircuit circuit os)
+    ( SymbolicData a x
+    , Arithmetizable a f
+    , n ~ TypeSize a x
+    , KnownNat n
+    ) => Arithmetizable a (x -> f) where
+
+        type InputSize a (x -> f) = TypeSize a x + InputSize a f
+        type OutputSize a (x -> f) = OutputSize a f
+
+        arithmetize f is =
+            let ArithmeticCircuit circuit outputs = is
+                (xs, os) = V.splitAt @n outputs
+             in arithmetize (f $ restore circuit xs) (ArithmeticCircuit circuit os)

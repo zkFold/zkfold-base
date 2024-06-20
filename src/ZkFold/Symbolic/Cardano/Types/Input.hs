@@ -9,21 +9,26 @@ import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
 import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Compiler
 
-newtype Input tokens datum a = Input (OutputRef a, Output tokens datum a)
+newtype Input tokens datum b a = Input (OutputRef b a, Output tokens datum b a)
 
-deriving instance (Arithmetic a, KnownNat tokens) => SymbolicData a (Input tokens datum (ArithmeticCircuit a))
+deriving instance
+    ( Arithmetic a
+    , KnownNat (TypeSize a (Value tokens ArithmeticCircuit a))
+    , KnownNat (1 + NumberOfRegisters a 32)
+    , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
+    ) => SymbolicData a (Input tokens datum ArithmeticCircuit a)
 
-txiOutputRef :: Input tokens datum a -> OutputRef a
+txiOutputRef :: Input tokens datum b a -> OutputRef b a
 txiOutputRef (Input (ref, _)) = ref
 
-txiOutput :: Input tokens datum a -> Output tokens datum a
+txiOutput :: Input tokens datum b a -> Output tokens datum b a
 txiOutput (Input (_, txo)) = txo
 
-txiAddress :: Input tokens datum a -> Address a
+txiAddress :: Input tokens datum b a -> Address b a
 txiAddress (Input (_, txo)) = txoAddress txo
 
-txiTokens :: Input tokens datum a -> Value tokens a
+txiTokens :: Input tokens datum b a -> Value tokens b a
 txiTokens (Input (_, txo)) = txoTokens txo
 
-txiDatumHash :: Input tokens datum a -> DatumHash a
+txiDatumHash :: Input tokens datum b a -> DatumHash b a
 txiDatumHash (Input (_, txo)) = txoDatumHash txo

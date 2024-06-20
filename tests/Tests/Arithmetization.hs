@@ -15,7 +15,7 @@ import           Tests.Arithmetization.Test4 (specArithmetization4)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Types       (Symbolic)
 
-propCircuitInvariance :: Arithmetic a => (ArithmeticCircuit a, a, a) -> Bool
+propCircuitInvariance :: Arithmetic a => (ArithmeticCircuit 1 a, a, a) -> Bool
 propCircuitInvariance (ac, x, y) =
     let ac' = mapVarArithmeticCircuit ac
         v   = ac `eval` fromList [(1, x), (2, y)]

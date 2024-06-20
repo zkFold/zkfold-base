@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
 import           Data.Zip                                        (Zip (..))

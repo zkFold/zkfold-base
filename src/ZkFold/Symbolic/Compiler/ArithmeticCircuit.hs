@@ -14,6 +14,9 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         optimize,
         -- low-level functions
         eval,
+        eval1,
+        exec,
+        exec1,
         forceZero,
         -- information about the system
         acSizeN,
@@ -49,9 +52,9 @@ import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Circuit (..),
-                                                                      Constraint, apply, constraintSystem, eval,
-                                                                      forceZero, inputVariables, varOrder, withOutputs,
-                                                                      witnessGenerator)
+                                                                      Constraint, apply, constraintSystem, eval, eval1,
+                                                                      exec, exec1, forceZero, inputVariables, varOrder,
+                                                                      withOutputs, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 
 --------------------------------- High-level functions --------------------------------

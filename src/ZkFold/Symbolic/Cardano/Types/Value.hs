@@ -8,9 +8,9 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.UInt
 
-type PolicyId a = ByteString 224 a
-type AssetName a = ByteString 256 a
+type PolicyId b a = ByteString 224 b a
+type AssetName b a = ByteString 256 b a
 
-newtype Value n a = Value { getValue :: Vector n (PolicyId a, (AssetName a, UInt 64 a)) }
+newtype Value n b a = Value { getValue :: Vector n (PolicyId b a, (AssetName b a, UInt 64 b a)) }
 
-deriving instance (Arithmetic a, KnownNat n) => SymbolicData a (Value n (ArithmeticCircuit a))
+deriving instance (Arithmetic a, KnownNat n) => SymbolicData a (Value n ArithmeticCircuit a)

@@ -33,7 +33,7 @@ import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional                    (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
 
-type WitnessField a x = (Algebra a x, FiniteField x, BinaryExpansion x,
+type WitnessField a x = (Algebra a x, FiniteField x, BinaryExpansion x [x],
     Eq (Bool x) x, Conditional (Bool x) x, Conditional (Bool x) (Bool x))
 -- ^ DSL for constructing witnesses in an arithmetic circuit. @a@ is a base
 -- field; @x@ is a "field of witnesses over @a@" which you can safely assume to

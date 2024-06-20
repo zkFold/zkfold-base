@@ -10,6 +10,7 @@
 module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
     , ShiftBits (..)
+    , BitState (..)
     , ToWords (..)
     , Concat (..)
     , Truncate (..)
@@ -28,9 +29,9 @@ import           Data.Traversable                                          (for)
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Div, Mod, Natural, natVal)
-import           Prelude                                                   (Bool (..), Integer, drop, fmap, otherwise,
-                                                                            pure, take, type (~), ($), (.), (<$>), (<),
-                                                                            (<>), (==), (>=))
+import           Prelude                                                   (Integer, drop, fmap, otherwise, pure, take,
+                                                                            type (~), ($), (.), (<$>), (<), (<>), (==),
+                                                                            (>=))
 import qualified Prelude                                                   as Haskell
 import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
 
@@ -39,12 +40,12 @@ import           ZkFold.Base.Algebra.Basic.Field                           (Zp, 
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (replicateA)
+import           ZkFold.Prelude                                            (replicateA, (!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (acCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-import           ZkFold.Symbolic.Data.Bool                                 (BoolType (..))
+import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.UInt
 
@@ -52,10 +53,14 @@ import           ZkFold.Symbolic.Data.UInt
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
--- data family ByteString (n :: Natural) (a :: Type)
-
 newtype ByteString (n :: Natural) (backend :: Natural -> Type -> Type) (a :: Type) = ByteString (backend n a)
     deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
+
+-- TODO
+-- Since the only difference between ByteStrings on Zp and ByteStrings on ArithmeticCircuits is backend,
+-- a lot of code below is actually repeating the same operations on different containers.
+-- Perhaps we can reduce boilerplate code by introducing some generic operations on containers and reusing them.
+--
 
 instance
     ( FromConstant Natural (ByteString 8 b a)
@@ -73,13 +78,6 @@ instance
         . Haskell.toInteger
         <$> Bytes.unpack bytes
 
-{--
-data instance ByteString n (Zp p) = ByteString [Zp p]
-    deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
-
-data instance ByteString n (ArithmeticCircuit n a) = ByteString (ArithmeticCircuit n a)
-    deriving (Haskell.Show, Generic, NFData)
---}
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --
@@ -130,6 +128,13 @@ class Concat a b where
 --
 class Truncate a b where
     truncate :: a -> b
+
+
+-- | Allows to check state of bits in a container @c@ of size @n@ with computational backend @b@ over elements of @a@
+--
+class BitState c n b a where
+    isSet :: c n b a -> Natural -> Bool (b 1 a)
+    isUnset :: c n b a -> Natural -> Bool (b 1 a)
 
 
 instance ToConstant (ByteString n Vector (Zp p)) Natural where
@@ -319,9 +324,16 @@ instance
 
     extend = fromConstant @Natural . toConstant
 
+instance Finite (Zp p) => BitState ByteString n Vector (Zp p) where
+    isSet (ByteString v) ix = Bool (V.singleton . (!! ix) . V.fromVector $ v)
+    isUnset bs ix = let Bool zp = isSet bs ix
+                     in Bool ((one -) <$> zp)
+
 --------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownNat n) => SymbolicData a n (ByteString n ArithmeticCircuit a) where
+instance Arithmetic a => SymbolicData a (ByteString n ArithmeticCircuit a) where
+    type TypeSize a (ByteString n ArithmeticCircuit a) = n
+
     pieces (ByteString bits) = bits
 
     restore c o = ByteString $ c `withOutputs` o
@@ -353,8 +365,8 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n ArithmeticCircuit
             zeros <- replicateM (Haskell.fromIntegral $ Haskell.abs s) $ newAssigned (Haskell.const zero)
 
             let newBits = case (s < 0) of
-                        True  -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
-                        False -> drop (Haskell.fromIntegral s) $ bits <> zeros
+                        Haskell.True  -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
+                        Haskell.False -> drop (Haskell.fromIntegral s) $ bits <> zeros
 
             pure $ V.unsafeToVector newBits
 
@@ -452,3 +464,16 @@ instance
 
         diff :: Haskell.Int
         diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @m
+
+
+instance Arithmetic a => BitState ByteString n ArithmeticCircuit a where
+    isSet (ByteString v) ix = Bool $ circuit solve
+        where
+            solve :: forall i m . MonadBlueprint i a m => m i
+            solve = (!! ix) . V.fromVector <$> runCircuit v
+    isUnset (ByteString v) ix = Bool $ circuit solve
+        where
+            solve :: forall i m . MonadBlueprint i a m => m i
+            solve = do
+                i <- (!! ix) . V.fromVector <$> runCircuit v
+                newAssigned $ \p -> one - p i

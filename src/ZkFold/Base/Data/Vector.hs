@@ -1,18 +1,21 @@
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Data.Vector where
 
 import           Control.DeepSeq                  (NFData)
-import qualified Control.Monad as M
+import qualified Control.Monad                    as M
 import           Data.Bifunctor                   (first)
 import qualified Data.List                        as List
+import           Data.List.Split                  (chunksOf)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
 import           Numeric.Natural                  (Natural)
-import           Prelude                          hiding (drop, length, mod, replicate, sum, take, zip, zipWith, (*))
+import           Prelude                          hiding (drop, head, length, mod, replicate, sum, tail, take, zip,
+                                                   zipWith, (*))
+import qualified Prelude                          as P
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 
@@ -39,6 +42,18 @@ fromVector (Vector as) = as
 (!!) :: Vector size a -> Natural -> a
 (Vector as) !! i = as List.!! fromIntegral i
 
+uncons :: Vector size a -> (a, Vector (size - 1) a)
+uncons (Vector lst) = (P.head lst, Vector $ P.tail lst)
+
+reverse :: Vector size a -> Vector size a
+reverse (Vector lst) = Vector (P.reverse lst)
+
+head :: 1 <= size => Vector size a -> a
+head (Vector as) = P.head as
+
+tail :: Vector size a -> Vector (size - 1) a
+tail (Vector as) = Vector $ P.tail as
+
 singleton :: a -> Vector 1 a
 singleton = Vector . pure
 
@@ -59,8 +74,19 @@ zipWithM f (Vector l) (Vector r) = Vector <$> M.zipWithM f l r
 take :: forall n size a. KnownNat n => Vector size a -> Vector n a
 take (Vector lst) = Vector (ZP.take (value @n) lst)
 
-drop :: forall n size a. KnownNat n => Vector size a -> Vector (size - n) a
+drop :: forall n m a. KnownNat n => Vector (n + m) a -> Vector m a
 drop (Vector lst) = Vector (ZP.drop (value @n) lst)
+
+splitAt :: forall n m a. KnownNat n => Vector (n + m) a -> (Vector n a, Vector m a)
+splitAt (Vector lst) = (Vector (ZP.take (value @n) lst), Vector (ZP.drop (value @n) lst))
+
+-- | The sole purpose of this function is to get rid of annoying constraints in ZkFols.Symbolic.Compiler.Arithmetizable
+--
+splitAt3 :: forall n m k a. (KnownNat n, KnownNat m) => Vector (n + m + k) a -> (Vector n a, Vector m a, Vector k a)
+splitAt3 (Vector lst) = (Vector ln, Vector lm, Vector lk)
+    where
+        (ln, lmk) = (ZP.take (value @n) lst, ZP.drop (value @n) lst)
+        (lm, lk) = (ZP.take (value @m) lmk, ZP.drop (value @m) lmk)
 
 rotate :: forall size a. KnownNat size => Vector size a -> Integer -> Vector size a
 rotate (Vector lst) n = Vector (r <> l)
@@ -71,7 +97,7 @@ rotate (Vector lst) n = Vector (r <> l)
         lshift :: Int
         lshift = fromIntegral $ n `mod` len
 
-        (l, r) = splitAt lshift lst
+        (l, r) = P.splitAt lshift lst
 
 shift :: forall size a. KnownNat size => Vector size a -> Integer -> a -> Vector size a
 shift (Vector lst) n pad
@@ -133,6 +159,6 @@ instance (Random a, KnownNat size) => Random (Vector size a) where
 
     randomR (Vector xs, Vector ys) g =
         let as = fst $ foldl (\((as', g'), (xs', ys')) _ ->
-                let (a, g'') = randomR (head xs', head ys') g'
-                in ((as' ++ [a], g''), (tail xs', tail ys'))) (([], g), (xs, ys)) [1..value @size]
+                let (a, g'') = randomR (P.head xs', P.head ys') g'
+                in ((as' ++ [a], g''), (P.tail xs', P.tail ys'))) (([], g), (xs, ys)) [1..value @size]
         in first Vector as

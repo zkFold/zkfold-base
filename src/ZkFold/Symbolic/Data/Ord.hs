@@ -1,21 +1,24 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DerivingVia         #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), circuitGE, circuitGT, getBitsBE) where
 
-import qualified Data.Bool                                              as Haskell
-import           Prelude                                                (reverse, zipWith, ($), (.))
-import qualified Prelude                                                as Haskell
+import           Control.Monad                                             (foldM)
+import qualified Data.Bool                                                 as Haskell
+import qualified Data.Zip                                                  as Z
+import           Prelude                                                   (type (~), ($))
+import qualified Prelude                                                   as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                       (Prime)
+import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
+import           ZkFold.Base.Algebra.Basic.Number                          (Prime)
+import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (boolCheckC)
-import           ZkFold.Symbolic.Data.Bool                              (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Conditional                       (Conditional (..))
-import           ZkFold.Symbolic.Data.DiscreteField                     (DiscreteField (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit)
+import           ZkFold.Symbolic.Data.Bool                                 (Bool (..))
+import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
@@ -63,13 +66,13 @@ newtype Lexicographical a = Lexicographical a
 -- ^ A newtype wrapper for easy definition of Ord instances
 -- (though not necessarily a most effective one)
 
-deriving newtype instance SymbolicData a 1 x => SymbolicData a 1 (Lexicographical x)
+deriving newtype instance SymbolicData a x => SymbolicData a (Lexicographical x)
 
 deriving via (Lexicographical (ArithmeticCircuit 1 a))
     instance Arithmetic a => Ord (Bool (ArithmeticCircuit 1 a)) (ArithmeticCircuit 1 a)
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
-instance SymbolicData a 1 x => Ord (Bool (ArithmeticCircuit 1 a)) (Lexicographical x) where
+instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit 1 a)) (Lexicographical x) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -82,38 +85,43 @@ instance SymbolicData a 1 x => Ord (Bool (ArithmeticCircuit 1 a)) (Lexicographic
 
     min x y = bool @(Bool (ArithmeticCircuit 1 a)) x y $ x > y
 
-getBitsBE :: SymbolicData a 1 x => x -> [ArithmeticCircuit 1 a]
+getBitsBE :: (SymbolicData a x, TypeSize a x ~ 1, bits ~ NumberOfBits a) => x -> ArithmeticCircuit bits a
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = reverse . binaryExpansion $ pieces @_ @1 x
+getBitsBE x = let expansion = binaryExpansion $ pieces x
+               in expansion { acOutput = V.reverse $ acOutput expansion }
 
-circuitGE :: Arithmetic a => [ArithmeticCircuit 1 a] -> [ArithmeticCircuit 1 a] -> Bool (ArithmeticCircuit 1 a)
+circuitGE :: forall a n . Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a -> Bool (ArithmeticCircuit 1 a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
-circuitGE xs ys = bitCheckGE dor boolCheckC (zipWith (-) xs ys)
+circuitGE xs ys = Bool $ circuit solve
+    where
+        solve :: MonadBlueprint i a m => m i
+        solve = do
+            (_, hasNegOne) <- circuitDelta xs ys
+            newAssigned $ \p -> one - p hasNegOne
 
-circuitGT :: Arithmetic a => [ArithmeticCircuit 1 a] -> [ArithmeticCircuit 1 a] -> Bool (ArithmeticCircuit 1 a)
+circuitGT :: forall a n . Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a -> Bool (ArithmeticCircuit 1 a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
-circuitGT xs ys = bitCheckGT dor (zipWith (-) xs ys)
+circuitGT xs ys = Bool $ circuit solve
+    where
+        solve :: MonadBlueprint i a m => m i
+        solve = do
+            (hasOne, hasNegOne) <- circuitDelta xs ys
+            newAssigned $ \p -> p hasOne * (one - p hasNegOne)
 
-dor ::
-  Arithmetic a =>
-  Bool (ArithmeticCircuit n a) ->
-  Bool (ArithmeticCircuit n a) ->
-  Bool (ArithmeticCircuit n a)
--- ^ @dorAnd a b@ is a schema which computes @a || b@ given @a && b@ is false.
-dor (Bool a) (Bool b) = Bool (a + b)
+circuitDelta :: forall i a m n . MonadBlueprint i a m => ArithmeticCircuit n a -> ArithmeticCircuit n a -> m (i, i)
+circuitDelta xs ys = do
+    l <- runCircuit xs
+    r <- runCircuit ys
+    z1 <- newAssigned (Haskell.const zero)
+    z2 <- newAssigned (Haskell.const zero)
+    foldM update (z1, z2) $ Z.zip l r
+        where
+            update :: (i, i) -> (i, i) -> m (i, i)
+            update (z1, z2) (x, y) = do
+                z1' <- newAssigned $ \p -> p z1 + (one - p z1) * (one - p z2) * (one - p y) * p x
+                z2' <- newAssigned $ \p -> (one - p z1) * (one - p x) * p y
+                Haskell.return (z1', z2')
 
-bitCheckGE :: DiscreteField b x => (b -> b -> b) -> (x -> x) -> [x] -> b
--- ^ @bitCheckGE pl bc ds@ checks if @ds@ contains delta lexicographically
--- greater than or equal to 0, given @pl a b = a || b@ when @a && b@ is false
--- and @bc d = d (d - 1)@.
-bitCheckGE _  _  []     = true
-bitCheckGE _  bc [d]    = isZero (bc d)
-bitCheckGE pl bc (d:ds) = pl (isZero $ d - one) (isZero d && bitCheckGE pl bc ds)
 
-bitCheckGT :: DiscreteField b x => (b -> b -> b) -> [x] -> b
--- ^ @bitCheckGT pl ds@ checks if @ds@ contains delta lexicographically greater
--- than 0, given @pl a b = a || b@ when @a && b@ is false.
-bitCheckGT _  []     = false
-bitCheckGT _  [d]    = isZero (d - one)
-bitCheckGT pl (d:ds) = pl (isZero $ d - one) (isZero d && bitCheckGT pl ds)
+

@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators    #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     boolCheckC,
@@ -11,7 +12,9 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     horner,
     isZeroC,
     invertC,
-    joinCircuits
+    joinCircuits,
+    splitCircuit,
+    foldCircuit
 ) where
 
 import           Control.Monad                                             (replicateM)
@@ -24,9 +27,11 @@ import           Prelude                                                   hidin
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (splitAt, (!!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit, joinCircuits)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..),
+                                                                            joinCircuits)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool)
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
@@ -38,6 +43,16 @@ boolCheckC r = circuitN $ do
     is <- runCircuit r
     for is $ \i -> newAssigned (\x -> x i * (x i - one))
 
+-- | TODO: This is ONLY needed in ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
+-- Using this function is against the new approach to ArithmeticCircuits
+splitCircuit :: forall n a . ArithmeticCircuit n a -> Vector n (ArithmeticCircuit 1 a)
+splitCircuit (ArithmeticCircuit c o) = ArithmeticCircuit c <$> V.chunks @n @1 o
+
+foldCircuit :: forall n a. Arithmetic a => (forall i m . MonadBlueprint i a m => i -> i -> m i) -> ArithmeticCircuit n a -> ArithmeticCircuit 1 a
+foldCircuit f c = circuit $ do
+    outputs <- runCircuit c
+    let (element, rest) = V.uncons outputs
+    foldlM f element rest
 
 -- | TODO: Think about circuits with multiple outputs
 --
@@ -79,7 +94,7 @@ bitsOf :: MonadBlueprint i a m => Natural -> i -> m [i]
 bitsOf n k = for [0 .. n -! 1] $ \j ->
     newConstrained (\x i -> x i * (x i - one)) ((!! j) . repr . ($ k))
     where
-        repr :: forall b . (BinaryExpansion b, Finite b) => b -> [b]
+        repr :: forall b . (BinaryExpansion b [b], Finite b) => b -> [b]
         repr = padBits (numberOfBits @b) . binaryExpansion
 
 horner :: MonadBlueprint i a m => [i] -> m i

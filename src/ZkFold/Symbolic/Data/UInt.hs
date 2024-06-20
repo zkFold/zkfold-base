@@ -15,7 +15,6 @@ module ZkFold.Symbolic.Data.UInt (
     eea
 ) where
 
-import           Control.Applicative                                       ((<*>))
 import           Control.DeepSeq
 import           Control.Monad.State                                       (StateT (..))
 import           Data.Foldable                                             (foldr, foldrM)
@@ -54,16 +53,10 @@ import           ZkFold.Symbolic.Data.Ord
 
 newtype UInt (n :: Natural) (backend :: Natural -> Type -> Type) (a :: Type) = UInt (backend (NumberOfRegisters a n) a)
 
-deriving instance (Generic a, Generic (backend (NumberOfRegisters a n) a)) => Generic (UInt n backend a)
+deriving instance Generic (UInt n backend a)
 deriving instance (Generic a, Generic (backend (NumberOfRegisters a n) a), NFData a, NFData (backend (NumberOfRegisters a n) a)) => NFData (UInt n backend a)
-deriving instance (Haskell.Eq a, Haskell.Eq (backend (NumberOfRegisters a n) a)) => Haskell.Eq (UInt n backend a)
+deriving instance (Haskell.Eq (backend (NumberOfRegisters a n) a)) => Haskell.Eq (UInt n backend a)
 deriving instance (Haskell.Show a, Haskell.Show (backend (NumberOfRegisters a n) a)) => Haskell.Show (UInt n backend a)
-
---data instance UInt (n :: Natural) (Zp p) = UInt ![Zp p] !(Zp p)
---    deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
---
---data instance UInt (n :: Natural) (ArithmeticCircuit r a) = UInt (ArithmeticCircuit r a)
---    deriving (Haskell.Show, Generic, NFData)
 
 instance (KnownNat n, Finite (Zp p)) => FromConstant Natural (UInt n Vector (Zp p)) where
     fromConstant c =
@@ -207,7 +200,9 @@ instance (Finite (Zp p), KnownNat n) => Arbitrary (UInt n Vector (Zp p)) where
 
 --------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownNat n, KnownNat r, r ~ NumberOfRegisters a n) => SymbolicData a r (UInt n ArithmeticCircuit a) where
+instance Arithmetic a => SymbolicData a (UInt n ArithmeticCircuit a) where
+    type TypeSize a (UInt n ArithmeticCircuit a) = NumberOfRegisters a n
+
     pieces (UInt c) = c
 
     restore c o = UInt $ c `withOutputs` o
@@ -220,7 +215,6 @@ instance
     , n <= k
     , from ~ NumberOfRegisters a n
     , to ~ NumberOfRegisters a k
-    , (from + (to - from)) ~ to
     ) => Extend (UInt n ArithmeticCircuit a) (UInt k ArithmeticCircuit a) where
     extend (UInt ac) = UInt (circuitN solve)
         where

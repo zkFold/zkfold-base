@@ -10,12 +10,12 @@ import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.UTCTime
 
-newtype Transaction inputs rinputs outputs tokens datum a = Transaction
-    ( Vector rinputs (Input tokens datum a)
-    , (Vector inputs (Input tokens datum a)
-    , (Vector outputs (Output tokens datum a)
-    , (Value 1 a
-    , (UTCTime a, UTCTime a)
+newtype Transaction inputs rinputs outputs tokens datum b a = Transaction
+    ( Vector rinputs (Input tokens datum b a)
+    , (Vector inputs (Input tokens datum b a)
+    , (Vector outputs (Output tokens datum b a)
+    , (Value 1 b a
+    , (UTCTime b a, UTCTime b a)
     ))))
 
 deriving instance
@@ -24,16 +24,16 @@ deriving instance
     , KnownNat rinputs
     , KnownNat outputs
     , KnownNat tokens
-    ) => SymbolicData a (Transaction inputs rinputs outputs tokens datum (ArithmeticCircuit a))
+    ) => SymbolicData a (Transaction inputs rinputs outputs tokens datum ArithmeticCircuit a)
 
-txRefInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector rinputs (Input tokens datum a)
+txRefInputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector rinputs (Input tokens datum b a)
 txRefInputs (Transaction (ris, _)) = ris
 
-txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input tokens datum a)
+txInputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector inputs (Input tokens datum b a)
 txInputs (Transaction (_, (is, _))) = is
 
-txOutputs :: Transaction inputs rinputs outputs tokens datum a -> Vector outputs (Output tokens datum a)
+txOutputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector outputs (Output tokens datum b a)
 txOutputs (Transaction (_, (_, (os, _)))) = os
 
-txMint :: Transaction inputs rinputs outputs tokens datum a -> Value 1 a
+txMint :: Transaction inputs rinputs outputs tokens datum b a -> Value 1 b a
 txMint (Transaction (_, (_, (_, (mint, _))))) = mint

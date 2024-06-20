@@ -32,10 +32,20 @@ data Maybe u a = Maybe a (u a)
 just :: Field a => u a -> Maybe u a
 just = Maybe one
 
-nothing :: forall a u k. (SymbolicData a k (u (ArithmeticCircuit 1 a))) => Maybe u (ArithmeticCircuit 1 a)
+nothing
+    :: forall a u k
+    .  SymbolicData a (u (ArithmeticCircuit 1 a))
+    => k ~ TypeSize a (u (ArithmeticCircuit 1 a))
+    => KnownNat k
+    => Maybe u (ArithmeticCircuit 1 a)
 nothing = Maybe zero (let ArithmeticCircuit c o = embedV $ Haskell.pure @(Vector k) (zero @a) in restore c o)
 
-fromMaybe :: (SymbolicData a 1 (u (ArithmeticCircuit 1 a))) => u (ArithmeticCircuit 1 a) -> Maybe u (ArithmeticCircuit 1 a) -> u (ArithmeticCircuit 1 a)
+fromMaybe
+    :: SymbolicData a (u (ArithmeticCircuit 1 a))
+    => 1 ~ TypeSize a (u (ArithmeticCircuit 1 a))
+    => u (ArithmeticCircuit 1 a)
+    -> Maybe u (ArithmeticCircuit 1 a)
+    -> u (ArithmeticCircuit 1 a)
 fromMaybe a (Maybe h t) =
   let
     as = pieces a
@@ -51,8 +61,13 @@ isNothing (Maybe h _) = isZero h
 isJust :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
 isJust = not Haskell.. isNothing
 
-instance (SymbolicData a k (u (ArithmeticCircuit 1 a)), KnownNat k1, k1 ~ 1 + k, (k1 - 1) ~ k)
-  => SymbolicData a k1 (Maybe u (ArithmeticCircuit 1 a)) where
+instance
+    ( SymbolicData a (u (ArithmeticCircuit 1 a))
+    , k ~ TypeSize a (u (ArithmeticCircuit 1 a))
+    , k1 ~ 1 + k
+    , (k1 - 1) ~ k)
+  => SymbolicData a (Maybe u (ArithmeticCircuit 1 a)) where
+    type TypeSize a (Maybe u (ArithmeticCircuit 1 a)) = 1 + TypeSize a (u (ArithmeticCircuit 1 a))
     pieces (Maybe h t) = h `joinCircuits` pieces t
     restore c o = Maybe (c `withOutputs` V.take @1 o) (restore c (V.drop @1 o))
 

@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Compiler (
     module ZkFold.Symbolic.Compiler.Arithmetizable,
@@ -9,8 +10,8 @@ module ZkFold.Symbolic.Compiler (
 ) where
 
 import           Data.Aeson                                                (ToJSON)
-import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, ($),
-                                                                            (++), (<$>))
+import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, type (~),
+                                                                            ($), (++), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
@@ -33,22 +34,28 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 -}
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
-solder :: forall a i o f . Arithmetizable a i o f => f -> ArithmeticCircuit o a
+solder :: forall a f . (Arithmetizable a f, KnownNat (InputSize a f)) => f -> ArithmeticCircuit (OutputSize a f) a
 solder f = arithmetize f inputC
     where
-        inputC :: ArithmeticCircuit i a
-        inputC = circuitN $ Vector <$> replicateA (value @i) input
+        inputC :: ArithmeticCircuit (InputSize a f) a
+        inputC = circuitN $ Vector <$> replicateA (value @(InputSize a f)) input
 
 -- | Compiles function `f` into an arithmetic circuit.
-compile :: forall a i o f y . (Arithmetizable a i o f, SymbolicData a o y) => f -> y
+compile 
+    :: forall a f y 
+    .  Arithmetizable a f 
+    => SymbolicData a y
+    => KnownNat (InputSize a f)
+    => OutputSize a f ~ TypeSize a y 
+    => f -> y
 compile f = restore @a c o
     where
-        ArithmeticCircuit c o = optimize $ (solder @a @i @o) f
+        ArithmeticCircuit c o = optimize $ (solder @a) f
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
-compileIO :: forall a i o f . (ToJSON a, Arithmetizable a i o f) => FilePath -> f -> IO ()
+compileIO :: forall a f . (ToJSON a, Arithmetizable a f, KnownNat (InputSize a f)) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
-    let ac = optimize (solder @a @i @o f) :: ArithmeticCircuit o a
+    let ac = optimize (solder @a f) :: ArithmeticCircuit (OutputSize a f) a
 
     putStrLn "\nCompiling the script...\n"
 

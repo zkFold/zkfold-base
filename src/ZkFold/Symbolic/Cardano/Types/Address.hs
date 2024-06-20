@@ -9,23 +9,23 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 
-type AddressType a = ByteString 4 a
-type PaymentCredential a = ByteString 224 a
-type StakingCredential a = ByteString 224 a
+type AddressType b a = ByteString 4 b a
+type PaymentCredential b a = ByteString 224 b a
+type StakingCredential b a = ByteString 224 b a
 
-newtype Address a = Address (AddressType a, (PaymentCredential a, StakingCredential a))
+newtype Address b a = Address (AddressType b a, (PaymentCredential b a, StakingCredential b a))
 
-deriving instance Arithmetic a => SymbolicData a (Address (ArithmeticCircuit a))
+deriving instance Arithmetic a => SymbolicData a (Address ArithmeticCircuit a)
 
-deriving via (Structural (Address (ArithmeticCircuit a)))
+deriving via (Structural (Address ArithmeticCircuit a))
          instance Arithmetic a =>
-         Eq (Bool (ArithmeticCircuit a)) (Address (ArithmeticCircuit a))
+         Eq (Bool (ArithmeticCircuit 1 a)) (Address ArithmeticCircuit a)
 
-addressType :: Address a -> AddressType a
+addressType :: Address b a -> AddressType b a
 addressType (Address (t, _)) = t
 
-paymentCredential :: Address a -> PaymentCredential a
+paymentCredential :: Address b a -> PaymentCredential b a
 paymentCredential (Address (_, (pc, _))) = pc
 
-stakingCredential :: Address a -> StakingCredential a
+stakingCredential :: Address b a -> StakingCredential b a
 stakingCredential (Address (_, (_, sc))) = sc

@@ -21,6 +21,9 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         newVariableWithSource,
         input,
         eval,
+        eval1,
+        exec,
+        exec1,
         apply,
         forceZero,
         joinCircuits,
@@ -109,24 +112,6 @@ instance (Eq a, MultiplicativeMonoid a) => Monoid (Circuit a) where
                acRNG      = mkStdGen 0
            }
 
-{--
-instance Eq a => Semigroup (ArithmeticCircuit n a) where
-    r1 <> r2 =
-        ArithmeticCircuit
-            {
-                acCircuit = acCircuit r1 <> acCircuit r2
-            ,   acOutput  = Z.zipWith max (acOutput r1) (acOutput r2)
-            }
-
-instance (KnownNat n, Eq a, MultiplicativeMonoid a) => Monoid (ArithmeticCircuit n a) where
-    mempty =
-        ArithmeticCircuit
-            {
-                acCircuit = mempty
-            ,   acOutput  = Vector (replicate (fromIntegral $ value @n) 0)
-            }
---}
-
 joinCircuits :: Eq a => ArithmeticCircuit ol a -> ArithmeticCircuit or a -> ArithmeticCircuit (ol + or) a
 joinCircuits r1 r2 =
     ArithmeticCircuit
@@ -152,7 +137,7 @@ type VarField = Zp BLS12_381_Scalar
 toField :: Arithmetic a => a -> VarField
 toField = toZp . fromConstant . fromBinary @Natural . castBits . binaryExpansion
 
-type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a)
+type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a [a])
 
 -- TODO: Remove the hardcoded constant.
 toVar :: forall a . Arithmetic a => [Natural] -> Constraint a -> Natural
@@ -204,11 +189,25 @@ input = do
       $ \vo -> insert (length vo, s) s vo
   return s
 
+-- | Evaluates the arithmetic circuit with one output using the supplied input map.
+eval1 :: ArithmeticCircuit 1 a -> Map Natural a -> a
+eval1 ctx i = witness ! (V.item $ acOutput ctx)
+    where
+        witness = acWitness (acCircuit ctx) i
+
 -- | Evaluates the arithmetic circuit using the supplied input map.
 eval :: ArithmeticCircuit n a -> Map Natural a -> Vector n a
 eval ctx i = (witness !) <$> acOutput ctx
     where
         witness = acWitness (acCircuit ctx) i
+
+-- | Evaluates the arithmetic circuit with no inputs and one output using the supplied input map.
+exec1 :: ArithmeticCircuit 1 a -> a
+exec1 ac = eval1 ac empty
+
+-- | Evaluates the arithmetic circuit with no inputs using the supplied input map.
+exec :: ArithmeticCircuit n a -> Vector n a
+exec ac = eval ac empty
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.
 -- TODO: make this safe

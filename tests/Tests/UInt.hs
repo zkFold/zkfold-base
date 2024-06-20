@@ -4,26 +4,28 @@
 
 module Tests.UInt (specUInt) where
 
-import           Control.Applicative              ((<*>))
-import           Control.Monad                    (return)
-import           Data.Function                    (($))
-import           Data.Functor                     ((<$>))
-import           Data.List                        (map, (++))
-import           Numeric.Natural                  (Natural)
-import           Prelude                          (show)
-import qualified Prelude                          as P
-import           System.IO                        (IO)
-import           Test.Hspec                       (describe, hspec)
-import           Test.QuickCheck                  (Gen, Property, (.&.), (===))
-import           Tests.ArithmeticCircuit          (eval', it)
+import           Control.Applicative                        ((<*>))
+import           Control.Monad                              (return)
+import           Data.Function                              (($))
+import           Data.Functor                               ((<$>))
+import           Data.List                                  (map, (++))
+import           Numeric.Natural                            (Natural)
+import           Prelude                                    (show)
+import qualified Prelude                                    as P
+import           System.IO                                  (IO)
+import           Test.Hspec                                 (describe, hspec)
+import           Test.QuickCheck                            (Gen, Property, (.&.), (===))
+import           Tests.ArithmeticCircuit                    (it)
 
+import           ZkFold.Base.Data.Vector (Vector)
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Field            (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                   (chooseNatural)
-import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)
+import           ZkFold.Prelude                             (chooseNatural)
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (exec)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators (Extend (..), Shrink (..))
+import           ZkFold.Symbolic.Data.Combinators           (Extend (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -32,17 +34,14 @@ import           ZkFold.Symbolic.Data.UInt
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . UInt n (ArithmeticCircuit a) -> UInt n a
-eval (UInt xs x) = UInt (map eval' xs) (eval' x)
-
-evalBool :: forall a . Bool (ArithmeticCircuit a) -> Bool a
-evalBool (Bool ac) = Bool $ eval' ac
+evalBool :: forall a . Bool (ArithmeticCircuit 1 a) -> Bool a
+evalBool (Bool ac) = Bool $ exec1 ac
 
 type Binary a = a -> a -> a
 
-type UBinary n a = Binary (UInt n a)
+type UBinary n b a = Binary (UInt n b a)
 
-isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n (Zp p) -> UBinary n (ArithmeticCircuit (Zp p)) -> Natural -> Natural -> Property
+isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n Vector (Zp p) -> UBinary n ArithmeticCircuit (Zp p) -> Natural -> Natural -> Property
 isHom f g x y = eval (fromConstant x `g` fromConstant y) === fromConstant x `f` fromConstant y
 
 specUInt :: forall p n . (PrimeField (Zp p), KnownNat n, KnownNat (2 * n), n <= (2 * n)) => IO ()
@@ -71,7 +70,7 @@ specUInt = hspec $ do
         it "performs divMod correctly" $ do
             n <- toss m
             d <- toss m
-            let (acQ, acR) = (fromConstant n :: UInt n (ArithmeticCircuit (Zp p))) `divMod` (fromConstant d)
+            let (acQ, acR) = (fromConstant n :: UInt n ArithmeticCircuit (Zp p)) `divMod` (fromConstant d)
             let (zpQ, zpR) = (fromConstant n :: UInt n (Zp p)) `divMod` (fromConstant d)
             return $ (eval acQ, eval acR) === (zpQ, zpR)
         --}
@@ -108,19 +107,19 @@ specUInt = hspec $ do
 
         it "extends correctly" $ do
             x <- toss m
-            let acUint = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
+            let acUint = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
                 zpUint = fromConstant x :: UInt (2 * n) (Zp p)
-            return $ eval @(Zp p) (extend acUint :: UInt (2 * n) (ArithmeticCircuit (Zp p))) === zpUint
+            return $ eval @(Zp p) (extend acUint :: UInt (2 * n) ArithmeticCircuit (Zp p)) === zpUint
 
         it "shrinks correctly" $ do
             x <- toss (m * m)
-            let acUint = fromConstant x :: UInt (2 * n) (ArithmeticCircuit (Zp p))
+            let acUint = fromConstant x :: UInt (2 * n) ArithmeticCircuit (Zp p)
                 zpUint = fromConstant x :: UInt n (Zp p)
-            return $ eval @(Zp p) (shrink acUint :: UInt n (ArithmeticCircuit (Zp p))) === zpUint
+            return $ eval @(Zp p) (shrink acUint :: UInt n ArithmeticCircuit (Zp p)) === zpUint
 
         it "checks equality" $ do
             x <- toss m
-            let acUint = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
+            let acUint = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
             return $ evalBool @(Zp p) (acUint == acUint) === (Bool one)
 
         it "checks inequality" $ do
@@ -128,8 +127,8 @@ specUInt = hspec $ do
             y' <- toss m
             let y = if y' == x then x + 1 else y'
 
-            let acUint1 = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
-                acUint2 = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
+            let acUint1 = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
+                acUint2 = fromConstant y :: UInt n ArithmeticCircuit (Zp p)
 
             return $ evalBool @(Zp p) (acUint1 == acUint2) === (Bool zero)
 

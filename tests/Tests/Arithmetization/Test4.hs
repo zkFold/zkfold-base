@@ -11,6 +11,7 @@ import           Tests.Plonk                                 (PlonkBS)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
+import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector (..))
 import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
@@ -18,26 +19,25 @@ import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProo
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
-import           ZkFold.Symbolic.Types                       (Symbolic)
 
-lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => a' -> a -> Bool a
+lockedByTxId :: forall b a a' . (Symbolic a , FromConstant a' a) => a' -> a -> Bool (b 1 a)
 lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 
 testSameValue :: Fr -> Haskell.Bool
 testSameValue targetValue =
-    let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) targetValue) :: Bool (ArithmeticCircuit Fr)
+    let Bool ac = compile @Fr (lockedByTxId @ArithmeticCircuit @Fr targetValue) :: Bool (ArithmeticCircuit 1 Fr)
         b       = Bool $ acValue (applyArgs ac [targetValue])
     in b == true
 
 testDifferentValue :: Fr -> Fr -> Haskell.Bool
 testDifferentValue targetValue otherValue =
-    let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) targetValue) :: Bool (ArithmeticCircuit Fr)
+    let Bool ac = compile @Fr (lockedByTxId @ArithmeticCircuit @Fr targetValue) :: Bool (ArithmeticCircuit 1 Fr)
         b       = Bool $ acValue (applyArgs ac [otherValue])
     in b == false
 
 testZKP :: Fr -> PlonkProverSecret -> Fr -> Haskell.Bool
 testZKP x ps targetValue =
-    let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) targetValue) :: Bool (ArithmeticCircuit Fr)
+    let Bool ac = compile @Fr (lockedByTxId @ArithmeticCircuit @Fr targetValue) :: Bool (ArithmeticCircuit 1 Fr)
 
         (omega, k1, k2) = getParams 5
         inputs  = fromList [(1, targetValue), (acOutput ac, 1)]

@@ -7,15 +7,16 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
-import           Control.Monad                                             (guard, replicateM)
+import           Control.Monad                                             (foldM, guard, replicateM)
 import           Data.Aeson                                                hiding (Bool)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map,
                                                                             null, splitAt, take)
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, const, fmap, id, mempty, pure,
-                                                                            return, show, ($), (++), (.), (<$>), (>>=))
+import           Prelude                                                   (Integer, const, id, mempty, pure, return,
+                                                                            show, type (~), ($), (++), (.), (<$>),
+                                                                            (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (..))
@@ -25,11 +26,10 @@ import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, horner,
-                                                                            invertC, isZeroC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, foldCircuit,
+                                                                            horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN,
-                                                                            circuits)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
@@ -38,7 +38,9 @@ import           ZkFold.Symbolic.Data.Eq
 
 ------------------------------------- Instances -------------------------------------
 
-instance (Arithmetic a, KnownNat n) => SymbolicData a n (ArithmeticCircuit n a) where
+instance Arithmetic a => SymbolicData a (ArithmeticCircuit n a) where
+    type TypeSize a (ArithmeticCircuit n a) = n
+
     pieces = id
 
     restore = ArithmeticCircuit
@@ -109,9 +111,12 @@ instance (Arithmetic a, KnownNat n) => Field (ArithmeticCircuit n a) where
 --
 -- Ideally, we want to return another ArithmeticCircuit with a number of outputs corresponding to the number of bits.
 -- This does not align well with the type of @binaryExpansion@
-instance Arithmetic a => BinaryExpansion (ArithmeticCircuit 1 a) where
-    binaryExpansion r = circuits $ runCircuit r >>= expansion (numberOfBits @a) . V.item
-    fromBinary bits = circuit $ Haskell.traverse (fmap V.item . runCircuit) bits >>= horner
+instance (Arithmetic a, bits ~ NumberOfBits a) => BinaryExpansion (ArithmeticCircuit 1 a) (ArithmeticCircuit bits a) where
+    binaryExpansion r = circuitN $ do
+        output <- runCircuit r
+        bits <- expansion (numberOfBits @a) . V.item $ output
+        pure $ V.unsafeToVector bits
+    fromBinary bits = circuit $ runCircuit bits >>= horner . V.fromVector
 
 instance (Arithmetic a, KnownNat n) => DiscreteField' (ArithmeticCircuit n a) where
     equal r1 r2 = isZeroC (r1 - r2)
@@ -121,30 +126,29 @@ instance Arithmetic a => TrichotomyField (ArithmeticCircuit 1 a) where
         let
             bits1 = binaryExpansion r1
             bits2 = binaryExpansion r2
-            zipWith0 _ [] []         = []
-            zipWith0 f [] ys         = zipWith0 f [zero] ys
-            zipWith0 f xs []         = zipWith0 f xs [zero]
-            zipWith0 f (x:xs) (y:ys) = f x y : zipWith0 f xs ys
             -- zip pairs of bits in {0,1} to orderings in {-1,0,1}
-            comparedBits = zipWith0 (-) bits1 bits2
+            comparedBits = bits1 - bits2
             -- least significant bit first,
             -- reverse lexicographical ordering
-            reverseLexicographical x y = y * y * (y - x) + x
+            reverseLexicographical x y = newAssigned $ \p -> p y * p y * (p y - p x) + p x
         in
-            Haskell.foldl reverseLexicographical zero comparedBits
+            foldCircuit reverseLexicographical comparedBits
 
-instance (Arithmetic a, KnownNat n) => SymbolicData a n (Bool (ArithmeticCircuit n a)) where
+instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit n a)) where
+    type TypeSize a (Bool (ArithmeticCircuit n a)) = n
     pieces (Bool b) = pieces b
     restore c = Bool Haskell.. restore c
 
-instance (Arithmetic a, KnownNat n) => DiscreteField (Bool (ArithmeticCircuit n a)) (ArithmeticCircuit n a) where
-    isZero x = Bool (isZeroC x)
+instance (Arithmetic a, KnownNat n, 1 <= n) => DiscreteField (Bool (ArithmeticCircuit 1 a)) (ArithmeticCircuit n a) where
+    isZero x = Bool $ circuit $ do
+        bools <- runCircuit $ isZeroC x
+        foldM (\i j -> newAssigned (\p -> p i * p j)) (V.head bools) (V.tail bools)
 
-instance (Arithmetic a, KnownNat n) => Eq (Bool (ArithmeticCircuit n a)) (ArithmeticCircuit n a) where
+instance (Arithmetic a, KnownNat n, 1 <= n) => Eq (Bool (ArithmeticCircuit 1 a)) (ArithmeticCircuit n a) where
     x == y = isZero (x - y)
     x /= y = not $ isZero (x - y)
 
-instance {-# OVERLAPPING #-} SymbolicData a n x => Conditional (Bool (ArithmeticCircuit n a)) x where
+instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit n a)) x where
     bool brFalse brTrue (Bool b) =
         let f' = pieces brFalse
             t' = pieces brTrue
