@@ -53,12 +53,17 @@ gen = PointEd25519
     (fromConstant @Natural @(UInt 256 a) (15112221349535400772501151409588531511454012693041857206046113283949847762202))
     (fromConstant @Natural @(UInt 256 a) (46316835694926478169428394003475163141307993866256225615783033603165251855960))
 
-isInf :: (P.Eq a, AdditiveMonoid (UInt 256 a)) => PointEd25519 a -> P.Bool
-isInf (PointEd25519 x y) = x P.== zero P.&& y P.== zero
+isInf
+  :: (AdditiveMonoid (UInt 256 a), Eq a (UInt 256), Ring a)
+  => PointEd25519 a -> Bool a
+isInf (PointEd25519 x y) = x == zero && y == zero
 
 zpToEd :: (P.Eq a, AdditiveMonoid (UInt 256 a), ToConstant (UInt 256 a) P.Integer) => PointEd25519 a -> Base.Point (Base.Ed25519 Void)
-zpToEd pt | isInf pt        = Base.Inf
-zpToEd (PointEd25519 x y)   = Base.Point (toZp . toConstant $ x) (toZp . toConstant $ y)
+-- zpToEd pt | isInf pt        = Base.Inf
+zpToEd (PointEd25519 x y)   =
+    if (x P.== zero P.&& y P.== zero)
+        then Base.Inf
+        else Base.Point (toZp . toConstant $ x) (toZp . toConstant $ y)
 
 edToZp :: (AdditiveMonoid (UInt 256 a), FiniteField a) => Base.Point (Base.Ed25519 Void) -> PointEd25519 a
 edToZp Base.Inf         = PointEd25519 zero zero
@@ -109,9 +114,11 @@ acAdd25519
     => PointEd25519 (ArithmeticCircuit a)
     -> PointEd25519 (ArithmeticCircuit a)
     -> PointEd25519 (ArithmeticCircuit a)
--- acAdd25519 Inf q = q
--- acAdd25519 p Inf = p
-acAdd25519 (PointEd25519 x1 y1) (PointEd25519 x2 y2) = PointEd25519 (shrink x3) (shrink y3)
+acAdd25519 pt1@(PointEd25519 x1 y1) pt2@(PointEd25519 x2 y2) =
+    ifThenElse (isInf pt1) pt2
+      ( ifThenElse (isInf pt2) pt1
+          (PointEd25519 (shrink x3) (shrink y3))
+      )
     where
         -- We will perform multiplications of UInts of up to n bits, therefore we need 2n bits to store the result.
         --
@@ -166,11 +173,8 @@ acDouble25519
     => EuclideanDomain (UInt 512 (ArithmeticCircuit a))
     => PointEd25519 (ArithmeticCircuit a)
     -> PointEd25519 (ArithmeticCircuit a)
-acDouble25519 (PointEd25519 x1 y1) =
-    ifThenElse
-      (x1 == zero && y1 == zero) -- point at infinity
-      inf
-      (PointEd25519 (shrink x3) (shrink y3))
+acDouble25519 pt@(PointEd25519 x1 y1) =
+    ifThenElse (isInf pt) inf (PointEd25519 (shrink x3) (shrink y3))
     where
         -- We will perform multiplications of UInts of up to n bits, therefore we need 2n bits to store the result.
         --
