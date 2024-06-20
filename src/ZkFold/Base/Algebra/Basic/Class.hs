@@ -8,6 +8,7 @@ module ZkFold.Base.Algebra.Basic.Class where
 
 import           Data.Bool                        (bool)
 import           Data.Kind                        (Type)
+import           GHC.Generics                     (Par1 (..))
 import           GHC.Natural                      (naturalFromInteger)
 import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (Num (..), div, divMod, length, mod, negate, product,
@@ -607,3 +608,26 @@ instance FromConstant b a => FromConstant b (p -> a) where
 instance Semiring a => Semiring (p -> a)
 
 instance Ring a => Ring (p -> a)
+
+--------------------------------------------------------------------------------
+
+deriving newtype instance MultiplicativeSemigroup a
+  => MultiplicativeSemigroup (Par1 a)
+instance Exponent a b => Exponent (Par1 a) b where
+  Par1 a ^ b = Par1 (a ^ b)
+deriving newtype instance MultiplicativeMonoid a
+  => MultiplicativeMonoid (Par1 a)
+deriving newtype instance MultiplicativeGroup a
+  => MultiplicativeGroup (Par1 a)
+deriving newtype instance AdditiveSemigroup a
+  => AdditiveSemigroup (Par1 a)
+deriving newtype instance AdditiveMonoid a
+  => AdditiveMonoid (Par1 a)
+deriving newtype instance AdditiveGroup a
+  => AdditiveGroup (Par1 a)
+deriving newtype instance FromConstant b a
+  => FromConstant b (Par1 a)
+deriving newtype instance Semiring a
+  => Semiring (Par1 a)
+deriving newtype instance Ring a
+  => Ring (Par1 a)
