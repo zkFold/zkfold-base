@@ -1,8 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Tests.ArithmeticCircuit (eval', it, specArithmeticCircuit) where
+module Tests.ArithmeticCircuit (eval', eval, it, specArithmeticCircuit) where
 
 import qualified Data.Bool                                              as Haskell (bool)
 import           Data.Map                                               (empty)
@@ -13,11 +12,15 @@ import           Test.Hspec                                             (Spec, d
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Compiler                               hiding (eval)
+import qualified ZkFold.Symbolic.Compiler                               as Compiler (eval)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
 
 eval' :: ArithmeticCircuit a -> a
-eval' = flip eval empty
+eval' = flip Compiler.eval empty
+
+eval :: forall a u. Haskell.Functor u => u (ArithmeticCircuit a) -> u a
+eval = Haskell.fmap eval'
 
 correctHom0 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = f in withMaxSuccess 1 $ checkClosedCircuit r .&&. eval' r === f @a

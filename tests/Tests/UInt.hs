@@ -15,7 +15,7 @@ import qualified Prelude                          as P
 import           System.IO                        (IO)
 import           Test.Hspec                       (describe, hspec)
 import           Test.QuickCheck                  (Gen, Property, (.&.), (===))
-import           Tests.ArithmeticCircuit          (eval', it)
+import           Tests.ArithmeticCircuit          (eval, it)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field  (Zp)
@@ -30,9 +30,6 @@ import           ZkFold.Symbolic.Data.UInt
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
-
-eval :: forall a u. P.Functor u => u (ArithmeticCircuit a) -> u a
-eval = P.fmap eval'
 
 type Binary a = a -> a -> a
 

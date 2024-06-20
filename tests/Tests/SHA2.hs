@@ -21,7 +21,7 @@ import           System.FilePath.Posix
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (Spec, describe, hspec, shouldBe)
 import           Test.QuickCheck                             (Gen, (===))
-import           Tests.ArithmeticCircuit                     (eval', it)
+import           Tests.ArithmeticCircuit                     (eval, it)
 import           Text.Regex.TDFA
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -121,9 +121,6 @@ specSHA2Natural = do
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . ByteString n (ArithmeticCircuit a) -> ByteString n a
-eval (ByteString bits) = ByteString (fmap eval' bits)
-
 specSHA2bs
     :: forall (n :: Natural) (algorithm :: Symbol)
     .  KnownSymbol algorithm
@@ -137,7 +134,7 @@ specSHA2bs = do
         x <- toss m
         let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @n $ fromConstant x
             hashZP = sha2Natural @algorithm @(Zp BLS12_381_Scalar) n x
-        pure $ eval @(Zp BLS12_381_Scalar) @(ResultSize algorithm) hashAC === hashZP
+        pure $ eval @(Zp BLS12_381_Scalar) hashAC === hashZP
 
 
 -- | Test the implementation of a hashing algorithm with @ArithmeticCircuit (Zp BLS12_381_Scalar)@ as base field for ByteStrings.

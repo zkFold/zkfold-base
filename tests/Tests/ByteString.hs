@@ -9,7 +9,7 @@ import           Control.Applicative              ((<*>))
 import           Control.Monad                    (return)
 import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
-import           Data.List                        (map, (++))
+import           Data.List                        ((++))
 import           GHC.TypeNats                     (Mod)
 import           Numeric.Natural                  (Natural)
 import           Prelude                          (show, type (~), (<>))
@@ -17,7 +17,7 @@ import qualified Prelude                          as Haskell
 import           System.IO                        (IO)
 import           Test.Hspec                       (Spec, describe, hspec)
 import           Test.QuickCheck                  (Gen, Property, chooseInteger, withMaxSuccess, (===))
-import           Tests.ArithmeticCircuit          (eval', it)
+import           Tests.ArithmeticCircuit          (eval, it)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field  (Zp)
@@ -31,9 +31,6 @@ import           ZkFold.Symbolic.Data.UInt
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
-
-eval :: forall a n . ByteString n (ArithmeticCircuit a) -> ByteString n a
-eval (ByteString bits) = ByteString (map eval' bits)
 
 type Binary a = a -> a -> a
 
@@ -153,7 +150,7 @@ specByteString = hspec $ do
             fromConstant (toConstant @_ @Natural x) === x
         it "AC embeds Integer" $ do
             x <- toss m
-            return $ eval @(Zp p) @n (fromConstant x) === fromConstant x
+            return $ eval @(Zp p) @(ByteString n) (fromConstant x) === fromConstant x
 
         -- TODO: remove withMaxSuccess when eval is optimised
         it "applies sum modulo n via UInt correctly" $ withMaxSuccess 10 $ do
@@ -171,26 +168,26 @@ specByteString = hspec $ do
             return $ eval acSum === zpSum
         it "applies bitwise OR correctly" $ isHom @n @p (||) (||) <$> toss m <*> toss m
         it "applies bitwise XOR correctly" $ isHom @n @p xor xor <$> toss m <*> toss m
-        it "has false" $ eval @(Zp p) @n false === false
+        it "has false" $ eval @(Zp p) @(ByteString n) false === false
         it "obeys left neutrality for OR" $ isLeftNeutral @n @p (||) (||) false false <$> toss m
         it "obeys right neutrality for OR" $ isRightNeutral @n @p (||) (||) false false <$> toss m
         it "obeys left neutrality for XOR" $ isLeftNeutral @n @p xor xor false false <$> toss m
         it "obeys right neutrality for XOR" $ isRightNeutral @n @p xor xor false false <$> toss m
         it "applies bitwise NOT correctly" $ do
             x <- toss m
-            return $ eval @(Zp p) @n (not (fromConstant x)) === not (fromConstant x)
+            return $ eval @(Zp p) @(ByteString n) (not (fromConstant x)) === not (fromConstant x)
         it "Applies bitwise AND correctly" $ isHom @n @p (&&) (&&) <$> toss m <*> toss m
-        it "has true" $ eval @(Zp p) @n true === true
+        it "has true" $ eval @(Zp p) @(ByteString n) true === true
         it "obeys left multiplicative neutrality" $ isLeftNeutral @n @p (&&) (&&) true true <$> toss m
         it "obeys right multiplicative neutrality" $ isRightNeutral @n @p (&&) (&&) true true <$> toss m
         it "performs bit shifts correctly" $ do
             shift <- chooseInteger (-3 * n, 3 * n)
             x <- toss m
-            return $ eval @(Zp p) @n (shiftBits (fromConstant x) shift) === (shiftBits (fromConstant x) shift)
+            return $ eval @(Zp p) @(ByteString  n) (shiftBits (fromConstant x) shift) === (shiftBits (fromConstant x) shift)
         it "performs bit rotations correctly" $ do
             shift <- chooseInteger (-3 * n, 3 * n)
             x <- toss m
-            return $ eval @(Zp p) @n (rotateBits (fromConstant x) shift) === (rotateBits (fromConstant x) shift)
+            return $ eval @(Zp p) @(ByteString  n) (rotateBits (fromConstant x) shift) === (rotateBits (fromConstant x) shift)
         testWords @n @1 @p
         testWords @n @2 @p
         testWords @n @4 @p
@@ -201,7 +198,7 @@ specByteString = hspec $ do
             z <- toss m
             let ac = concat $ fromConstant @Natural @(ByteString n (ArithmeticCircuit (Zp p))) <$> [x, y, z]
                 zp = concat $ fromConstant @Natural @(ByteString n (Zp p)) <$> [x, y, z]
-            return $ eval @(Zp p) @(3 * n) ac === zp
+            return $ eval @(Zp p) @(ByteString  (3 * n)) ac === zp
         testTruncate @n @1 @p
         testTruncate @n @4 @p
         testTruncate @n @8 @p
