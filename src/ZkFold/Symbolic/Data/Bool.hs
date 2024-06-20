@@ -57,8 +57,7 @@ instance Ring a => Boolean a Bool where
 bool :: (Ring a, VectorSpace a u) => u a -> u a -> Bool a -> u a
 bool f t (Bool b) = scaleV b (t `subtractV` f) `addV` f
 
-ifThenElse, (?)
-  :: (Ring a, VectorSpace a u) => Bool a -> u a -> u a -> u a
+ifThenElse, (?) :: (Ring a, VectorSpace a u) => Bool a -> u a -> u a -> u a
 ifThenElse b t f = bool f t b
 (?) = ifThenElse
 
