@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Bool (
-    Bool (..),
+    Bool,
     Boolean (..),
     bool,
     ifThenElse,
@@ -25,7 +25,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Symbolic.Data.Container
 
--- TODO: don't export constructor
 newtype Bool a = Bool a
   deriving stock
     ( Haskell.Eq

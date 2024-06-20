@@ -6,10 +6,11 @@ import           GHC.Generics                    (Par1 (..))
 import           Prelude                         hiding (Bool, Eq (..), Num (..), Ord (..), any, not, replicate, (/),
                                                   (^), (||))
 import           Test.Hspec
+import           Unsafe.Coerce                   (unsafeCoerce)
 
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool       (Bool (..))
+import           ZkFold.Symbolic.Data.Bool       (Bool)
 import           ZkFold.Symbolic.Data.Compare    ((<=))
 import           ZkFold.Symbolic.Types           (Symbolic)
 
@@ -25,5 +26,6 @@ specArithmetization3 = do
         it "should pass" $ do
             let r = compile @(Zp 97) (testFunc @R)
             let actual = acValue (applyArgs r [3, 5])
-            let Bool expected = testFunc (Par1 3) (Par1 5)
-            actual `shouldBe` expected
+            let actual' = unsafeCoerce actual :: Bool (Zp 97)
+            let expected = testFunc (Par1 3) (Par1 5)
+            actual' `shouldBe` expected

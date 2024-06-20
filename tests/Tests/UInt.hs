@@ -8,7 +8,7 @@ import           Control.Applicative              ((<*>))
 import           Control.Monad                    (return)
 import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
-import           Data.List                        (map, (++))
+import           Data.List                        ((++))
 import           Numeric.Natural                  (Natural)
 import           Prelude                          (show)
 import qualified Prelude                          as P
@@ -31,11 +31,14 @@ import           ZkFold.Symbolic.Data.UInt
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . UInt n (ArithmeticCircuit a) -> UInt n a
-eval (UInt xs x) = UInt (map eval' xs) (eval' x)
+eval :: forall a u. P.Functor u => u (ArithmeticCircuit a) -> u a
+eval = P.fmap eval'
 
-evalBool :: forall a . Bool (ArithmeticCircuit a) -> Bool a
-evalBool (Bool ac) = Bool $ eval' ac
+-- eval :: forall a n . UInt n (ArithmeticCircuit a) -> UInt n a
+-- eval (UInt xs x) = UInt (map eval' xs) (eval' x)
+
+-- evalBool :: forall a . Bool (ArithmeticCircuit a) -> Bool a
+-- evalBool boolAC = fmap eval' boolAC
 
 type Binary a = a -> a -> a
 
@@ -56,12 +59,12 @@ specUInt = hspec $ do
             fromConstant (toConstant @_ @Natural x) === x
         it "AC embeds Integer" $ do
             x <- toss m
-            return $ eval @(Zp p) @n (fromConstant x) === fromConstant x
+            return $ eval @(Zp p) @(UInt n) (fromConstant x) === fromConstant x
         it "adds correctly" $ isHom @n @p (+) (+) <$> toss m <*> toss m
-        it "has zero" $ eval @(Zp p) @n zero === zero
+        it "has zero" $ eval @(Zp p) @(UInt n) zero === zero
         it "negates correctly" $ do
             x <- toss m
-            return $ eval @(Zp p) @n (negate (fromConstant x)) === negate (fromConstant x)
+            return $ eval @(Zp p) @(UInt n) (negate (fromConstant x)) === negate (fromConstant x)
         it "subtracts correctly" $ isHom @n @p (-) (-) <$> toss m <*> toss m
         it "multiplies correctly" $ isHom @n @p (*) (*) <$> toss m <*> toss m
 
@@ -94,7 +97,7 @@ specUInt = hspec $ do
                 (s, t, _) = eea zpX zpY
             -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
             return $ ((zpX * s) `mod` zpY === one) .&. ((zpY * t) `mod` zpX === one)
-        it "has one" $ eval @(Zp p) @n one === one
+        it "has one" $ eval @(Zp p) @(UInt n) one === one
         it "strictly adds correctly" $ do
             x <- toss m
             isHom @n @p strictAdd strictAdd x <$> toss (m -! x)
@@ -120,8 +123,8 @@ specUInt = hspec $ do
         it "checks equality" $ do
             x <- toss m
             let acUint = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
-            let Bool acEq = evalBool @(Zp p) (acUint == acUint)
-            return $ acEq === one
+            let acEq = eval @(Zp p) (acUint == acUint)
+            return $ acEq === true
 
         it "checks inequality" $ do
             x <- toss m
@@ -130,9 +133,9 @@ specUInt = hspec $ do
 
             let acUint1 = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
                 acUint2 = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
-                Bool acEq = evalBool @(Zp p) (acUint1 == acUint2)
+                acEq = eval @(Zp p) (acUint1 == acUint2)
 
-            return $ acEq === zero
+            return $ acEq === false
 
         it "checks >" $ do
             x <- toss m
@@ -142,5 +145,5 @@ specUInt = hspec $ do
                 x'' = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
                 y'' = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
                 gt' = x' > y'
-                gt'' = evalBool (x'' > y'')
+                gt'' = eval (x'' > y'')
             return $ gt' === gt''
