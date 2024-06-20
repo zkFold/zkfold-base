@@ -12,8 +12,8 @@ import           Test.Hspec                                             (Spec, d
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Compiler                               hiding (eval)
 import qualified ZkFold.Symbolic.Compiler                               as Compiler (eval)
+import           ZkFold.Symbolic.Compiler                               hiding (eval)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
 
 eval' :: ArithmeticCircuit a -> a
