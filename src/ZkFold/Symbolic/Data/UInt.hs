@@ -356,7 +356,6 @@ instance (Arithmetic a, KnownNat n) => Ring (UInt n (ArithmeticCircuit a))
 
 instance (Arithmetic a, KnownNat n) => Eq (ArithmeticCircuit a) (UInt n)
 
--- TODO: Test this instance for correctness
 instance (Arithmetic a, KnownNat n) => Ord (ArithmeticCircuit a) (UInt n)
 
 instance (Arithmetic a, KnownNat n) => Arbitrary (UInt n (ArithmeticCircuit a)) where

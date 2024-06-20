@@ -28,7 +28,8 @@ import           ZkFold.Symbolic.Data.Container
 -- TODO: don't export constructor
 newtype Bool a = Bool a
   deriving stock
-    ( Haskell.Functor
+    ( Haskell.Eq
+    , Haskell.Functor
     , Haskell.Foldable
     , Haskell.Traversable
     )
