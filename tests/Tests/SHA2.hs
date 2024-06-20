@@ -14,7 +14,7 @@ import           Data.List.Split                             (splitOn)
 import           Data.Proxy                                  (Proxy (..))
 import           GHC.TypeLits                                (KnownSymbol, Symbol, symbolVal)
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     (String, fmap, otherwise, pure, read, (<>), (==), (&&))
+import           Prelude                                     (String, fmap, otherwise, not, pure, read, (<>), (==), (&&))
 import qualified Prelude                                     as Haskell
 import           System.Directory                            (listDirectory)
 import           System.FilePath.Posix
@@ -44,7 +44,7 @@ getTestFiles :: forall (algorithm :: Symbol) . KnownSymbol algorithm => IO [File
 getTestFiles = Haskell.filter isAlgoFile <$> listDirectory dataDir
     where
         isAlgoFile :: String -> Haskell.Bool
-        isAlgoFile s = (algorithm `isPrefixOf` s) && Haskell.not ((algorithm <> "_") `isPrefixOf` s) && (".rsp" `isSuffixOf` s)
+        isAlgoFile s = (algorithm `isPrefixOf` s) && not ((algorithm <> "_") `isPrefixOf` s) && (".rsp" `isSuffixOf` s)
 
         algorithm :: String
         algorithm = fmap (\c -> if c == '/' then '_' else c) $ symbolVal (Proxy @algorithm)
