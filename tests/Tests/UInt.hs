@@ -25,6 +25,7 @@ import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators (Extend (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 
 
@@ -131,3 +132,14 @@ specUInt = hspec $ do
                 acUint2 = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
 
             return $ evalBool @(Zp p) (acUint1 == acUint2) === (Bool zero)
+
+        it "checks greater than" $ do
+            x <- toss m
+            y <- toss m
+            let x' = fromConstant x :: UInt n (Zp p)
+                y' = fromConstant y :: UInt n (Zp p)
+                x'' = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
+                y'' = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
+                gt' = x' > y'
+                gt'' = evalBool @(Zp p) (x'' > y'')
+            return $ gt' === gt''
