@@ -288,16 +288,15 @@ instance
 -- We can only impose some restrictions on @n@ and @m@.
 --
 instance
-  ( KnownNat n
-  , KnownNat m
-  , m <= n
-  , Mod n m ~ 0
+  ( KnownNat m
+  , KnownNat k
+  , Mod k m ~ 0
   , Finite (Zp p)
-  ) => Concat (ByteString m Vector (Zp p)) (ByteString n Vector (Zp p)) where
+  ) => Concat (ByteString m Vector (Zp p)) (ByteString k Vector (Zp p)) where
 
     concat = fromConstant @Natural . foldl (\p y -> toConstant y + p `shift` m) 0
         where
-            m = Haskell.fromIntegral $ getNatural @m
+            m = Haskell.fromIntegral $ value @m
 
 
 -- | Only a bigger ByteString can be truncated into a smaller one.
@@ -345,13 +344,15 @@ instance (Arithmetic a, KnownNat n) => Iso (ByteString n ArithmeticCircuit a) (U
             solve :: forall i m. MonadBlueprint i a m => m [i]
             solve = do
                 bsBits <- V.fromVector <$> runCircuit bits
-                fromBits (highRegisterSize @a @n) (registerSize @a @n) bsBits
+                Haskell.reverse <$> fromBits (highRegisterSize @a @n) (registerSize @a @n) bsBits
 
 instance (Arithmetic a, KnownNat n) => Iso (UInt n ArithmeticCircuit a) (ByteString n ArithmeticCircuit a) where
     from (UInt ac) = ByteString $ circuitN $ Vector <$> solve
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
-            solve = toBits ac (highRegisterSize @a @n) (registerSize @a @n)
+            solve = do
+                regs <- V.fromVector <$> runCircuit ac
+                toBits (Haskell.reverse regs) (highRegisterSize @a @n) (registerSize @a @n)
 
 instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n ArithmeticCircuit a) where
     shiftBits bs@(ByteString oldBits) s
@@ -418,27 +419,25 @@ instance (Arithmetic a, KnownNat n) => BoolType (ByteString n ArithmeticCircuit 
 
 instance
   ( KnownNat wordSize
-  , 1 <= wordSize
-  , 1 <= n
   , Mod n wordSize ~ 0
-  , (Div n wordSize * wordSize) ~ n
+  , (Div n wordSize) * wordSize ~ n
   ) => ToWords (ByteString n ArithmeticCircuit a) (ByteString wordSize ArithmeticCircuit a) where
 
     toWords (ByteString bits) = (\o -> ByteString $ bits { acOutput = o} ) <$> (V.fromVector (V.chunks @(Div n wordSize) @wordSize $ acOutput bits))
 
 
 instance
-  ( Mod n m ~ 0
-  , (Div n m * m) ~ n
+  ( Mod k m ~ 0
+  , (Div k m) * m ~ k
   , Arithmetic a
-  ) => Concat (ByteString m ArithmeticCircuit a) (ByteString n ArithmeticCircuit a) where
+  ) => Concat (ByteString m ArithmeticCircuit a) (ByteString k ArithmeticCircuit a) where
 
     concat bs = ByteString $ bsCircuit `withOutputs` bsOutputs
         where
             bsCircuit = Haskell.mconcat $ (\(ByteString bits) -> acCircuit bits) <$> bs
 
-            bsOutputs :: Vector n Natural
-            bsOutputs = V.unsafeConcat @(Div n m) $ (\(ByteString bits) -> acOutput bits) <$> bs
+            bsOutputs :: Vector k Natural
+            bsOutputs = V.unsafeConcat @(Div k m) $ (\(ByteString bits) -> acOutput bits) <$> bs
 
 instance
   ( KnownNat n

@@ -49,12 +49,12 @@ hashCircuit
     :: forall n p
     .  KnownNat n 
     => PrimeField (Zp p)
-    => SHA2 "SHA384" ArithmeticCircuit (Zp p) n 
-    => IO (ByteString 384 ArithmeticCircuit (Zp p))
+    => SHA2 "SHA256" ArithmeticCircuit (Zp p) n 
+    => IO (ByteString 256 ArithmeticCircuit (Zp p))
 hashCircuit = do
     x <- randomIO
     let acX = fromConstant (x :: Integer) :: ByteString n ArithmeticCircuit (Zp p)
-        h = sha2 @"SHA384" @ArithmeticCircuit acX
+        h = sha2 @"SHA256" @ArithmeticCircuit acX
 
     evaluate . force $ h 
 
@@ -106,7 +106,7 @@ benchHash
     :: forall n p
     .  KnownNat n
     => PrimeField (Zp p) 
-    => SHA2 "SHA384" ArithmeticCircuit (Zp p) n 
+    => SHA2 "SHA256" ArithmeticCircuit (Zp p) n 
     => Benchmark
 benchHash = env (hashCircuit @n @p) $ \ ~ac ->
     bench ("Calculating SHA2 512/364 of a bytestring of length " <> show (value @n)) $ nf evalBS ac

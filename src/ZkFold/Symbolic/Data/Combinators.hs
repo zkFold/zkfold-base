@@ -47,13 +47,13 @@ class Shrink a b where
 -- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 --
 toBits
-    :: forall a n
-    .  ArithmeticCircuit n a
+    :: forall i a m
+    .  MonadBlueprint i a m
+    => [i]
     -> Natural
     -> Natural
-    -> (forall i m. MonadBlueprint i a m => m [i])
-toBits c hiBits loBits = do
-    regs <- V.fromVector <$> runCircuit c
+    -> m [i]
+toBits regs hiBits loBits = do
     let lows = tail regs
         high = head regs
 

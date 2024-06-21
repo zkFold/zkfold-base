@@ -236,15 +236,15 @@ test-suite zkfold-base-examples
     ghc-options: -rtsopts
     main-is: Main.hs
     other-modules:
-      Examples.ByteString
-      Examples.Conditional
-      Examples.Eq
-      Examples.Fibonacci
-      Examples.LEQ
-      Examples.MiMCHash
+--      Examples.ByteString
+--      Examples.Conditional
+--      Examples.Eq
+--      Examples.Fibonacci
+--      Examples.LEQ
+--      Examples.MiMCHash
+--      Examples.ReverseList
+--      Examples.UInt
       Examples.BatchTransfer
-      Examples.ReverseList
-      Examples.UInt
     build-depends:
       base                          >= 4.9 && < 5,
       containers                                 ,

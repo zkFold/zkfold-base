@@ -8,24 +8,24 @@ import           Control.Applicative                        ((<*>))
 import           Control.Monad                              (return)
 import           Data.Function                              (($))
 import           Data.Functor                               ((<$>))
-import           Data.List                                  (map, (++))
+import           Data.List                                  ((++))
 import           Numeric.Natural                            (Natural)
-import           Prelude                                    (show)
+import           Prelude                                    (show, type (~))
 import qualified Prelude                                    as P
 import           System.IO                                  (IO)
 import           Test.Hspec                                 (describe, hspec)
 import           Test.QuickCheck                            (Gen, Property, (.&.), (===))
 import           Tests.ArithmeticCircuit                    (it)
 
-import           ZkFold.Base.Data.Vector (Vector)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field            (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Prelude                             (chooseNatural)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (exec)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (exec, exec1)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators           (Extend (..), Shrink (..))
+import           ZkFold.Symbolic.Data.Combinators           (Extend (..), NumberOfRegisters, Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -37,50 +37,66 @@ toss x = chooseNatural (0, x)
 evalBool :: forall a . Bool (ArithmeticCircuit 1 a) -> Bool a
 evalBool (Bool ac) = Bool $ exec1 ac
 
+execAcUint :: forall a n . UInt n ArithmeticCircuit a -> Vector (NumberOfRegisters a n) a
+execAcUint (UInt v) = exec v
+
+execZpUint :: forall a n . UInt n Vector a -> Vector (NumberOfRegisters a n) a
+execZpUint (UInt v) = v
+
 type Binary a = a -> a -> a
 
 type UBinary n b a = Binary (UInt n b a)
 
 isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n Vector (Zp p) -> UBinary n ArithmeticCircuit (Zp p) -> Natural -> Natural -> Property
-isHom f g x y = eval (fromConstant x `g` fromConstant y) === fromConstant x `f` fromConstant y
+isHom f g x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (fromConstant x `f` fromConstant y)
 
-specUInt :: forall p n . (PrimeField (Zp p), KnownNat n, KnownNat (2 * n), n <= (2 * n)) => IO ()
+specUInt
+    :: forall p n
+    .  PrimeField (Zp p)
+    => KnownNat n
+    => KnownNat (2 * n)
+    => n <= (2 * n)
+    => 1 <= NumberOfRegisters (Zp p) n
+    => KnownNat (NumberOfRegisters (Zp p) n)
+    => KnownNat (NumberOfRegisters (Zp p) n - 1)
+    => 1 + (NumberOfRegisters (Zp p) n - 1) ~ NumberOfRegisters (Zp p) n
+    => IO ()
 specUInt = hspec $ do
     let n = value @n
         m = 2 ^ n -! 1
     describe ("UInt" ++ show n ++ " specification") $ do
         it "Zp embeds Integer" $ do
             x <- toss m
-            return $ toConstant @(UInt n (Zp p)) (fromConstant x) === x
-        it "Integer embeds Zp" $ \(x :: UInt n (Zp p)) ->
+            return $ toConstant @(UInt n Vector (Zp p)) (fromConstant x) === x
+        it "Integer embeds Zp" $ \(x :: UInt n Vector (Zp p)) ->
             fromConstant (toConstant @_ @Natural x) === x
         it "AC embeds Integer" $ do
             x <- toss m
-            return $ eval @(Zp p) @n (fromConstant x) === fromConstant x
+            return $ execAcUint @(Zp p) @n (fromConstant x) === execZpUint @_ @n (fromConstant x)
         it "adds correctly" $ isHom @n @p (+) (+) <$> toss m <*> toss m
-        it "has zero" $ eval @(Zp p) @n zero === zero
+        it "has zero" $ execAcUint @(Zp p) @n zero === execZpUint @_ @n zero
         it "negates correctly" $ do
             x <- toss m
-            return $ eval @(Zp p) @n (negate (fromConstant x)) === negate (fromConstant x)
+            return $ execAcUint @(Zp p) @n (negate (fromConstant x)) === execZpUint @_ @n (negate (fromConstant x))
         it "subtracts correctly" $ isHom @n @p (-) (-) <$> toss m <*> toss m
         it "multiplies correctly" $ isHom @n @p (*) (*) <$> toss m <*> toss m
 
-        -- TODO: Optimise eval and uncomment this test
+        -- TODO: Optimise exec and uncomment this test
         {--
         it "performs divMod correctly" $ do
             n <- toss m
             d <- toss m
             let (acQ, acR) = (fromConstant n :: UInt n ArithmeticCircuit (Zp p)) `divMod` (fromConstant d)
-            let (zpQ, zpR) = (fromConstant n :: UInt n (Zp p)) `divMod` (fromConstant d)
-            return $ (eval acQ, eval acR) === (zpQ, zpR)
+            let (zpQ, zpR) = (fromConstant n :: UInt n Vector (Zp p)) `divMod` (fromConstant d)
+            return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR)
         --}
 
-        -- TODO: Optimise eval and test eea on ArithmeticCircuits
+        -- TODO: Optimise exec and test eea on ArithmeticCircuits
         it "calculates gcd correctly" $ do
             x <- toss m
             y <- toss m
-            let (_, _, r) = eea (fromConstant x :: UInt n (Zp p)) (fromConstant y)
-                ans = fromConstant (P.gcd x y) :: UInt n (Zp p)
+            let (_, _, r) = eea (fromConstant x :: UInt n Vector (Zp p)) (fromConstant y)
+                ans = fromConstant (P.gcd x y) :: UInt n Vector (Zp p)
             return $ r === ans
         it "calculates Bezout coefficients correctly" $ do
             x' <- toss m
@@ -89,12 +105,12 @@ specUInt = hspec $ do
                 y = y' `P.div` (P.gcd x' y')
 
                 -- We will test Bezout coefficients by multiplying two UInts less than 2^n, hence we need 2^(2n) bits to store the result
-                zpX = fromConstant x :: UInt (2 * n) (Zp p)
+                zpX = fromConstant x :: UInt (2 * n) Vector (Zp p)
                 zpY = fromConstant y
                 (s, t, _) = eea zpX zpY
             -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
             return $ ((zpX * s) `mod` zpY === one) .&. ((zpY * t) `mod` zpX === one)
-        it "has one" $ eval @(Zp p) @n one === one
+        it "has one" $ execAcUint @(Zp p) @n one === execZpUint @_ @n one
         it "strictly adds correctly" $ do
             x <- toss m
             isHom @n @p strictAdd strictAdd x <$> toss (m -! x)
@@ -108,14 +124,14 @@ specUInt = hspec $ do
         it "extends correctly" $ do
             x <- toss m
             let acUint = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
-                zpUint = fromConstant x :: UInt (2 * n) (Zp p)
-            return $ eval @(Zp p) (extend acUint :: UInt (2 * n) ArithmeticCircuit (Zp p)) === zpUint
+                zpUint = fromConstant x :: UInt (2 * n) Vector (Zp p)
+            return $ execAcUint @(Zp p) (extend acUint :: UInt (2 * n) ArithmeticCircuit (Zp p)) === execZpUint zpUint
 
         it "shrinks correctly" $ do
             x <- toss (m * m)
             let acUint = fromConstant x :: UInt (2 * n) ArithmeticCircuit (Zp p)
-                zpUint = fromConstant x :: UInt n (Zp p)
-            return $ eval @(Zp p) (shrink acUint :: UInt n ArithmeticCircuit (Zp p)) === zpUint
+                zpUint = fromConstant x :: UInt n Vector (Zp p)
+            return $ execAcUint @(Zp p) (shrink acUint :: UInt n ArithmeticCircuit (Zp p)) === execZpUint zpUint
 
         it "checks equality" $ do
             x <- toss m

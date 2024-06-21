@@ -196,7 +196,7 @@ eval1 ctx i = witness ! (V.item $ acOutput ctx)
         witness = acWitness (acCircuit ctx) i
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: ArithmeticCircuit n a -> Map Natural a -> Vector n a
+eval :: forall a n . ArithmeticCircuit n a -> Map Natural a -> Vector n a
 eval ctx i = (witness !) <$> acOutput ctx
     where
         witness = acWitness (acCircuit ctx) i
@@ -206,7 +206,7 @@ exec1 :: ArithmeticCircuit 1 a -> a
 exec1 ac = eval1 ac empty
 
 -- | Evaluates the arithmetic circuit with no inputs using the supplied input map.
-exec :: ArithmeticCircuit n a -> Vector n a
+exec :: forall a n . ArithmeticCircuit n a -> Vector n a
 exec ac = eval ac empty
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.

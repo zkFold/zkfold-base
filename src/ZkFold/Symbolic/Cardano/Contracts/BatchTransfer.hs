@@ -61,7 +61,7 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv mimc * 
         mimc :: a
         mimc = mimcHash mimcConstants zero (hash pay) (hash change)
 
-batchTransfer :: (Symbolic a, Eq (Bool (b 1 a)) (TxOut b a), Sig b a) => Tx b a -> Vector 5 (TxOut b a, TxOut b a, ByteString 256 b a) -> Bool (b 1 a)
+batchTransfer :: forall b a . (Symbolic a, Eq (Bool (b 1 a)) (TxOut b a), Sig b a) => Tx b a -> Vector 5 (TxOut b a, TxOut b a, ByteString 256 b a) -> Bool (b 1 a)
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures
         pkhs       = fromJust $ toVector @5 $ map (paymentCredential . txoAddress . txiOutput) $ init $ fromVector $ txInputs tx

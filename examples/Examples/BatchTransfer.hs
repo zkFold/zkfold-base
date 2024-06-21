@@ -16,4 +16,4 @@ exampleBatchTransfer = do
 
     putStrLn "\nExample: Batch Transfer smart contract\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file (batchTransfer @(ArithmeticCircuit (Zp BLS12_381_Scalar)))
+    compileIO @(Zp BLS12_381_Scalar) file (batchTransfer @ArithmeticCircuit  @(Zp BLS12_381_Scalar))
