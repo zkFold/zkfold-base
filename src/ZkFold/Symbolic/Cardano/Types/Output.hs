@@ -12,7 +12,9 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Eq               (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 
-newtype Output tokens datum a = Output (Address a, (Value tokens a, ByteString 256 a))
+type DatumHash a = ByteString 256 a
+
+newtype Output tokens datum a = Output (Address a, (Value tokens a, DatumHash a))
 
 deriving instance (Arithmetic a, KnownNat tokens) => SymbolicData a (Output tokens datum (ArithmeticCircuit a))
 
@@ -26,5 +28,5 @@ txoAddress (Output (addr, _)) = addr
 txoTokens :: Output tokens datum a -> Value tokens a
 txoTokens (Output (_, (v, _))) = v
 
-txoDatumHash :: Output tokens datum a -> ByteString 256 a
+txoDatumHash :: Output tokens datum a -> DatumHash a
 txoDatumHash (Output (_, (_, dh))) = dh

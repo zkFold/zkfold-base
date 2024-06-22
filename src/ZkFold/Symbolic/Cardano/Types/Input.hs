@@ -4,11 +4,10 @@ import           Prelude                                 hiding (Bool, Eq, lengt
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
-import           ZkFold.Symbolic.Cardano.Types.Output    (Output, txoDatumHash, txoAddress, txoTokens)
+import           ZkFold.Symbolic.Cardano.Types.Output    (Output, DatumHash, txoAddress, txoTokens, txoDatumHash)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
 import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString
 
 newtype Input tokens datum a = Input (OutputRef a, Output tokens datum a)
 
@@ -26,5 +25,5 @@ txiAddress (Input (_, txo)) = txoAddress txo
 txiTokens :: Input tokens datum a -> Value tokens a
 txiTokens (Input (_, txo)) = txoTokens txo
 
-txiDatumHash :: Input tokens datum a -> ByteString 256 a
+txiDatumHash :: Input tokens datum a -> DatumHash a
 txiDatumHash (Input (_, txo)) = txoDatumHash txo

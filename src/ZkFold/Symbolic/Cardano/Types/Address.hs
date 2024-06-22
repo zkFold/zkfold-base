@@ -9,7 +9,11 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 
-newtype Address a = Address (ByteString 4 a, (ByteString 224 a, ByteString 224 a))
+type AddressType a = ByteString 4 a
+type PaymentCredential a = ByteString 224 a
+type StakingCredential a = ByteString 224 a
+
+newtype Address a = Address (AddressType a, (PaymentCredential a, StakingCredential a))
 
 deriving instance Arithmetic a => SymbolicData a (Address (ArithmeticCircuit a))
 
@@ -17,11 +21,11 @@ deriving via (Structural (Address (ArithmeticCircuit a)))
          instance Arithmetic a =>
          Eq (Bool (ArithmeticCircuit a)) (Address (ArithmeticCircuit a))
 
-addressType :: Address a -> ByteString 4 a
+addressType :: Address a -> AddressType a
 addressType (Address (t, _)) = t
 
-paymentCredential :: Address a -> ByteString 224 a
+paymentCredential :: Address a -> PaymentCredential a
 paymentCredential (Address (_, (pc, _))) = pc
 
-stakingCredential :: Address a -> ByteString 224 a
+stakingCredential :: Address a -> StakingCredential a
 stakingCredential (Address (_, (_, sc))) = sc
