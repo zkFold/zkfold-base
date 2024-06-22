@@ -4,7 +4,7 @@ import           Prelude                                 hiding (Bool, Eq, lengt
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
-import           ZkFold.Symbolic.Cardano.Types.Output    (Output, DatumHash, txoAddress, txoTokens, txoDatumHash)
+import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
 import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Compiler

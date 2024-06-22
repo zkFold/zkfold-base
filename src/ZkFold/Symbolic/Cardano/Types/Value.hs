@@ -1,6 +1,6 @@
 module ZkFold.Symbolic.Cardano.Types.Value where
 
-import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                          hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
