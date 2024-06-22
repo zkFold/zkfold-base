@@ -24,6 +24,9 @@ deriving instance
     , KnownNat tokens
     ) => SymbolicData a (Transaction inputs rinputs outputs tokens datum (ArithmeticCircuit a))
 
+txRefInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector rinputs (Input tokens datum a)
+txRefInputs (Transaction (ris, _)) = ris
+
 txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input tokens datum a)
 txInputs (Transaction (_, (is, _))) = is
 

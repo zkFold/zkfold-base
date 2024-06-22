@@ -20,9 +20,10 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Types                          (Symbolic)
 
-type TxOut a = Output 10 () a
-type TxIn a  = Input 10 () a
-type Tx a = Transaction 6 0 11 10 () a
+type Tokens = 10
+type TxOut a = Output Tokens () a
+type TxIn a  = Input Tokens () a
+type Tx a = Transaction 6 0 11 Tokens () a
 
 class Hash a x where
     hash :: x -> a
