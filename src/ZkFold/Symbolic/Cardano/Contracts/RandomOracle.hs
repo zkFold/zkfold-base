@@ -1,6 +1,5 @@
 module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
-import           Numeric.Natural                                (Natural)
 import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (==),
                                                                  (*), (+), maybe)
 
@@ -33,8 +32,9 @@ instance SymbolicData a x => Hash (ArithmeticCircuit a) x where
         (xL:xR:xZ) -> mimcHash (zero : xZ ++ [zero]) zero xL xR
 
 type Sig a = (StrictConv a (UInt 256 a),
-    MultiplicativeSemigroup (UInt 64 a),
+    MultiplicativeMonoid (UInt 64 a),
     MultiplicativeSemigroup (UInt 256 a),
+    Eq (Bool a) (UInt 64 a),
     Eq (Bool a) (UInt 256 a),
     Eq (Bool a) (ByteString 224 a),
     Eq (Bool a) (ByteString 256 a),
@@ -44,16 +44,15 @@ type Sig a = (StrictConv a (UInt 256 a),
     Hash a (OutputRef a))
 
 randomOracle :: forall a' a . (Symbolic a, Sig a, FromConstant a' a) => a' -> Tx a -> (a, a) -> Bool a
-randomOracle h0 tx (w, r) =
-    let -- TODO: this should be changed to the only token's policy ID that is being minted in the tx
-        policyId = fromConstant (0 :: Natural)
+randomOracle c tx (w, r) =
+    let -- The secret key is correct
+        condition1 = fromConstant @a' @a c == mimcHash mimcConstants zero w zero
 
-        -- The secret key is correct
-        condition1 = fromConstant @a' @a h0 == mimcHash mimcConstants zero w zero
-
+        -- Extracting information about the transaction
         seed              = hash @a $ txiOutputRef $ head (fromVector $ txInputs tx)
         Value (Vector xs) = txoTokens $ head $ fromVector $ txOutputs tx
-        (p, (name, _))    = xs !! 1
+        (p, (name, n))    = xs !! 1
+        policyId          = fst $ head $ fromVector $ getValue $ txMint tx
 
         -- The random number is correct
         condition2 = r == mimcHash mimcConstants zero w seed
@@ -64,4 +63,7 @@ randomOracle h0 tx (w, r) =
         -- The token's policy is correct
         condition4 = p == policyId
 
-    in condition1 && condition2 && condition3 && condition4
+        -- The token's quantity is correct
+        condition5 = n == one
+
+    in condition1 && condition2 && condition3 && condition4 && condition5
