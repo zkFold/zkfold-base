@@ -10,6 +10,7 @@ import           Test.QuickCheck
 import           Tests.Arithmetization.Test1 (specArithmetization1)
 import           Tests.Arithmetization.Test2 (specArithmetization2)
 import           Tests.Arithmetization.Test3 (specArithmetization3)
+import           Tests.Arithmetization.Test4 (specArithmetization4)
 
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Types       (Symbolic)
@@ -29,3 +30,4 @@ specArithmetization = hspec $ do
         specArithmetization1 @a
         specArithmetization2
         specArithmetization3
+        specArithmetization4
