@@ -43,8 +43,8 @@ type Sig a = (StrictConv a (UInt 256 a),
     Hash a (ByteString 256 a),
     Hash a (OutputRef a))
 
-randomOracle :: forall a' a . (Symbolic a, Sig a, FromConstant a' a) => a' -> Tx a -> (a, a) -> Bool a
-randomOracle c tx (w, r) =
+randomOracle :: forall a' a . (Symbolic a, Sig a, FromConstant a' a) => a' -> Tx a -> a -> Bool a
+randomOracle c tx w =
     let -- The secret key is correct
         condition1 = fromConstant @a' @a c == mimcHash mimcConstants zero w zero
 
@@ -54,16 +54,16 @@ randomOracle c tx (w, r) =
         (p, (name, n))    = xs !! 1
         policyId          = fst $ head $ fromVector $ getValue $ txMint tx
 
-        -- The random number is correct
-        condition2 = r == mimcHash mimcConstants zero w seed
+        -- Computing the random number
+        r = mimcHash mimcConstants zero w seed
 
         -- The token's name is correct
-        condition3 = name == ByteString (binaryExpansion r)
+        condition2 = name == ByteString (binaryExpansion r)
 
         -- The token's policy is correct
-        condition4 = p == policyId
+        condition3 = p == policyId
 
         -- The token's quantity is correct
-        condition5 = n == one
+        condition4 = n == one
 
-    in condition1 && condition2 && condition3 && condition4 && condition5
+    in condition1 && condition2 && condition3 && condition4
