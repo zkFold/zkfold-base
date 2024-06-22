@@ -128,13 +128,13 @@ specUInt = hspec $ do
 
             return $ acEq === false
 
-        -- it "checks >" $ do
-        --     x <- toss m
-        --     y <- toss m
-        --     let x' = fromConstant x :: UInt n (Zp p)
-        --         y' = fromConstant y :: UInt n (Zp p)
-        --         x'' = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
-        --         y'' = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
-        --         gt' = x' > y'
-        --         gt'' = eval (x'' > y'')
-        --     return $ gt' === gt''
+        it "checks >" $ do
+            x <- toss m
+            y <- toss m
+            let x' = fromConstant x :: UInt n (Zp p)
+                y' = fromConstant y :: UInt n (Zp p)
+                x'' = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
+                y'' = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
+                gt' = x' > y'
+                gt'' = eval (x'' > y'')
+            return $ gt' === gt''

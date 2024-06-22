@@ -96,12 +96,8 @@ instance Arithmetic a => TrichotomyField (ArithmeticCircuit a) where
         let
             bits1 = binaryExpansion r1
             bits2 = binaryExpansion r2
-            zipWith0 _ [] []         = []
-            zipWith0 f [] ys         = zipWith0 f [zero] ys
-            zipWith0 f xs []         = zipWith0 f xs [zero]
-            zipWith0 f (x:xs) (y:ys) = f x y : zipWith0 f xs ys
             -- zip pairs of bits in {0,1} to orderings in {-1,0,1}
-            comparedBits = zipWith0 (-) bits1 bits2
+            comparedBits = Haskell.zipWith (-) bits1 bits2
             -- least significant bit first,
             -- reverse lexicographical ordering
             reverseLexicographical x y = y * y * (y - x) + x
