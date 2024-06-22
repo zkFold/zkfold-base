@@ -46,7 +46,7 @@ instance Haskell.Ord a => Ord Haskell.Bool a where
 
     min = Haskell.min
 
-instance (Prime p, Haskell.Ord x) => Ord (Bool (Zp p)) x where
+instance {-# OVERLAPPABLE #-} (Prime p, Haskell.Ord x) => Ord (Bool (Zp p)) x where
     x <= y = Bool $ Haskell.bool zero one (x Haskell.<= y)
 
     x <  y = Bool $ Haskell.bool zero one (x Haskell.<  y)
