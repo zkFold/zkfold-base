@@ -1,7 +1,7 @@
 module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
-import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (==),
-                                                                 (*), (+), (!!), maybe)
+import           Prelude                                        hiding (Bool, Eq (..), all, length, maybe, splitAt, zip,
+                                                                 (!!), (&&), (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector                        ((!!))
