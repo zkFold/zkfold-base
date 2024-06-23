@@ -1,10 +1,10 @@
 module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
-import           Prelude                                        hiding (Bool, Eq (..), all, length, maybe, splitAt, zip,
-                                                                 (&&), (*), (+), (==))
+import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (==),
+                                                                 (*), (+), (!!), maybe)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                        (Vector (..), fromVector)
+import           ZkFold.Base.Data.Vector                        ((!!))
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHash)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
@@ -46,24 +46,24 @@ type Sig a = (StrictConv a (UInt 256 a),
 randomOracle :: forall a' a . (Symbolic a, Sig a, FromConstant a' a) => a' -> Tx a -> a -> Bool a
 randomOracle c tx w =
     let -- The secret key is correct
-        condition1 = fromConstant @a' @a c == mimcHash mimcConstants zero w zero
+        conditionSecretKey = fromConstant @a' @a c == mimcHash mimcConstants zero w zero
 
         -- Extracting information about the transaction
-        seed              = hash @a $ txiOutputRef $ head (fromVector $ txInputs tx)
-        Value (Vector xs) = txoTokens $ head $ fromVector $ txOutputs tx
-        (p, (name, n))    = xs !! 1
-        policyId          = fst $ head $ fromVector $ getValue $ txMint tx
+        seed           = hash @a $ txiOutputRef $ txInputs tx !! 0
+        Value vs       = txoTokens $ txOutputs tx !! 0
+        (p, (name, n)) = vs !! 1
+        policyId          = fst $ getValue (txMint tx) !! 0
 
         -- Computing the random number
         r = mimcHash mimcConstants zero w seed
 
-        -- The token's name is correct
-        condition2 = name == ByteString (binaryExpansion r)
-
         -- The token's policy is correct
-        condition3 = p == policyId
+        conditionPolicyId  = p == policyId
+
+        -- The token's name is correct
+        conditionTokenName = name == ByteString (binaryExpansion r)
 
         -- The token's quantity is correct
-        condition4 = n == one
+        conditionQuantity  = n == one
 
-    in condition1 && condition2 && condition3 && condition4
+    in conditionSecretKey && conditionPolicyId && conditionTokenName && conditionQuantity
