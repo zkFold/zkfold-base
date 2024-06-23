@@ -52,7 +52,7 @@ randomOracle c tx w =
         seed           = hash @a $ txiOutputRef $ txInputs tx !! 0
         Value vs       = txoTokens $ txOutputs tx !! 0
         (p, (name, n)) = vs !! 1
-        policyId          = fst $ getValue (txMint tx) !! 0
+        policyId       = fst $ getValue (txMint tx) !! 0
 
         -- Computing the random number
         r = mimcHash mimcConstants zero w seed
