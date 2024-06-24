@@ -33,6 +33,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
 import           Control.DeepSeq                              (NFData)
 import           Control.Monad.State                          (MonadState (..), State, modify)
 import           Data.List                                    (nub)
+import qualified Data.Set as S
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
 import           GHC.Generics
 import           Numeric.Natural                              (Natural)
@@ -92,14 +93,19 @@ instance Eq a => Semigroup (Circuit a) where
     c1 <> c2 =
         Circuit
            {
-               acSystem   = acSystem c1 `union` acSystem c2
+               acSystem   = {-# SCC system_union #-}    acSystem c1 `union` acSystem c2
                -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
                -- We need a way to ensure the correct order no matter how `(<>)` is used.
-           ,   acInput    = nub $ acInput c1 ++ acInput c2
-           ,   acWitness  = union <$> acWitness c1 <*> acWitness c2
-           ,   acVarOrder = acVarOrder c1 `union` acVarOrder c2
-           ,   acRNG      = mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
+           ,   acInput    = {-# SCC input_union #-}     nubConcat (acInput c1) (acInput c2)
+           ,   acWitness  = {-# SCC witness_union #-}   union <$> acWitness c1 <*> acWitness c2
+           ,   acVarOrder = {-# SCC var_order_union #-} acVarOrder c1 `union` acVarOrder c2
+           ,   acRNG      = {-# SCC rng_union #-}       mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
            }
+
+nubConcat :: Ord a => [a] -> [a] -> [a]
+nubConcat l r = l ++ Prelude.filter (`S.notMember` lSet) r
+    where
+        lSet = S.fromList l
 
 instance (Eq a, MultiplicativeMonoid a) => Monoid (Circuit a) where
     mempty =
@@ -197,7 +203,7 @@ eval1 ctx i = witness ! (V.item $ acOutput ctx)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
 eval :: forall a n . ArithmeticCircuit n a -> Map Natural a -> Vector n a
-eval ctx i = (witness !) <$> acOutput ctx
+eval ctx i = V.parFmap (witness !) $ acOutput ctx
     where
         witness = acWitness (acCircuit ctx) i
 

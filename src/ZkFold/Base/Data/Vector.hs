@@ -6,6 +6,7 @@ module ZkFold.Base.Data.Vector where
 
 import           Control.DeepSeq                  (NFData)
 import qualified Control.Monad                    as M
+import           Control.Parallel.Strategies      (parMap, rpar)
 import           Data.Bifunctor                   (first)
 import qualified Data.List                        as List
 import           Data.List.Split                  (chunksOf)
@@ -27,6 +28,9 @@ import           ZkFold.Prelude                   (length, replicate)
 
 newtype Vector (size :: Natural) a = Vector [a]
     deriving (Show, Eq, Functor, Foldable, Traversable, Generic, NFData)
+
+parFmap :: (a -> b) -> Vector size a -> Vector size b
+parFmap f (Vector lst) = Vector $ parMap rpar f lst
 
 toVector :: forall size a . KnownNat size => [a] -> Maybe (Vector size a)
 toVector as

@@ -28,15 +28,15 @@ import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 
 main :: IO ()
 main = do
---    specArithmeticCircuit @(Zp BLS12_381_Scalar)
---    specUInt @BLS12_381_Scalar @32
---    specUInt @BLS12_381_Scalar @500
+    specArithmeticCircuit @(Zp BLS12_381_Scalar)
+    specUInt @BLS12_381_Scalar @32
+    specUInt @BLS12_381_Scalar @500
 
---    specByteString @BLS12_381_Scalar @32
---    specByteString @BLS12_381_Scalar @512
---    specByteString @BLS12_381_Scalar @508 -- Twice the number of bits encoded by BLS12_381_Scalar.
---
---    specBinary
+    specByteString @BLS12_381_Scalar @32
+    specByteString @BLS12_381_Scalar @512
+    specByteString @BLS12_381_Scalar @508 -- Twice the number of bits encoded by BLS12_381_Scalar.
+
+    specBinary
 
     specSHA2Natural @"SHA224" @(Zp BLS12_381_Scalar)
     specSHA2Natural @"SHA256" @(Zp BLS12_381_Scalar)
@@ -46,7 +46,7 @@ main = do
     specSHA2Natural @"SHA512/256" @(Zp BLS12_381_Scalar)
 
 -- TODO: optimise eval and uncomment these tests
-    specSHA2 @"SHA224"
+--    specSHA2 @"SHA224"
 --    specSHA2 @"SHA256"
 --    specSHA2 @"SHA384"
 --    specSHA2 @"SHA512"

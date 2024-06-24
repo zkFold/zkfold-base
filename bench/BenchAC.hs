@@ -18,6 +18,7 @@ import           Prelude                                     hiding (sum, (*), (
 import qualified Prelude                                     as P
 import           System.Random                               (randomIO, randomRIO)
 import           Test.Tasty.Bench
+import Data.Time.Clock (getCurrentTime)
 
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Base.Algebra.Basic.Class
@@ -167,17 +168,43 @@ mainSumUInt = do
 
 mainHash :: IO ()
 mainHash = do
+  getCurrentTime >>= print
   ByteString ac32  <- hashCircuit @32 @BLS12_381_Scalar
+  getCurrentTime >>= print
   ByteString ac64  <- hashCircuit @64 @BLS12_381_Scalar
+  getCurrentTime >>= print
   ByteString ac128 <- hashCircuit @128 @BLS12_381_Scalar
+  getCurrentTime >>= print
   ByteString ac256 <- hashCircuit @256 @BLS12_381_Scalar
+  getCurrentTime >>= print
   ByteString ac512 <- hashCircuit @512 @BLS12_381_Scalar
+  getCurrentTime >>= print
+
+  putStrLn "Sizes"
 
   print $ acSizeM ac32
+  getCurrentTime >>= print
   print $ acSizeM ac64
+  getCurrentTime >>= print
   print $ acSizeM ac128
+  getCurrentTime >>= print
   print $ acSizeM ac256
+  getCurrentTime >>= print
   print $ acSizeM ac512
+  getCurrentTime >>= print
+
+  putStrLn "Evaluation"
+
+  print $ exec ac32
+  getCurrentTime >>= print
+  print $ exec ac64
+  getCurrentTime >>= print
+  print $ exec ac128
+  getCurrentTime >>= print
+  print $ exec ac256
+  getCurrentTime >>= print
+  print $ exec ac512
+  getCurrentTime >>= print
 
   defaultMain
       [ benchHash @32 @BLS12_381_Scalar
