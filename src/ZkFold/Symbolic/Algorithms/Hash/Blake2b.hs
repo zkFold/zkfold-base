@@ -29,7 +29,7 @@ blake2b_224 :: forall keylen a .
 blake2b_224 = blake2b_libsodium @keylen @28
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_256 :: forall keylen a . 
+blake2b_256 :: forall keylen a .
     ( KnownNat keylen
     , keylen <= 64
     , ToWords (ByteString (keylen * 8) a) (ByteString 8 a)

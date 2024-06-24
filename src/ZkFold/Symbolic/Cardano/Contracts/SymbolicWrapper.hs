@@ -2,15 +2,13 @@
 module ZkFold.Symbolic.Cardano.Contracts.SymbolicWrapper where
 
 import qualified Data.ByteString                                     as B
-import           Prelude                                             (($), (.), undefined)
+import           Prelude                                             (undefined, ($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class                     (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, type (+))
 import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk                      (F)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b             (blake2b_224)
--- import           ZkFold.Symbolic.Cardano.Builtins                    (BuiltinByteString (..), serialiseData)
--- import           ZkFold.Symbolic.Cardano.IsData.Class                (ToData (..))
 import           ZkFold.Symbolic.Cardano.Types                       (Output, OutputRef)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.Arithmetizable             (Arithmetic, SymbolicData)
