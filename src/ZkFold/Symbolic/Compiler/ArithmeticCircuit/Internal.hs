@@ -30,7 +30,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         concatCircuits
     ) where
 
-import           Control.DeepSeq                              (NFData)
+import           Control.DeepSeq                              (NFData, force)
 import           Control.Monad.State                          (MonadState (..), State, modify)
 import           Data.List                                    (nub)
 import qualified Data.Set as S
@@ -147,7 +147,7 @@ type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a [a])
 
 -- TODO: Remove the hardcoded constant.
 toVar :: forall a . Arithmetic a => [Natural] -> Constraint a -> Natural
-toVar srcs c = fromZp ex
+toVar srcs c = force $ fromZp ex
     where
         r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: VarField

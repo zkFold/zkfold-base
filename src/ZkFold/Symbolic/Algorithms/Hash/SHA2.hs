@@ -331,7 +331,7 @@ sha2Blocks chunks = truncateResult @algorithm @backend @element $ concat $ V.toL
                 !hRef <- hn `VM.read` 7 >>= ST.newSTRef
 
                 forM_ [0 .. rounds P.- 1] $ \ix -> do
-                --forM_ [0 .. 2] $ \ix -> do
+                --forM_ [0 .. 1] $ \ix -> do
                     !a <- ST.readSTRef aRef
                     !b <- ST.readSTRef bRef
                     !c <- ST.readSTRef cRef

@@ -410,11 +410,15 @@ instance (Arithmetic a, KnownNat n) => BoolType (ByteString n ArithmeticCircuit 
                 is <- runCircuit r
                 for is $ \i -> newAssigned (\p -> one - p i)
 
-    l || r = bitwiseOperation l r (\i j x -> x i + x j - x i * x j)
+    l || r = bitwiseOperation l r (\i j x -> let xi = x i
+                                                 xj = x j
+                                              in xi + xj - xi * xj)
 
     l && r = bitwiseOperation l r (\i j x -> x i * x j)
 
-    xor l r = bitwiseOperation l r (\i j x -> x i + x j - (x i * x j + x i * x j))
+    xor l r = bitwiseOperation l r (\i j x -> let xi = x i
+                                                  xj = x j 
+                                               in xi + xj - (xi * xj + xi * xj))
 
 
 instance

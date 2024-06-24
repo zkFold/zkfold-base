@@ -41,7 +41,7 @@ boolCheckC :: Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
 boolCheckC r = circuitN $ do
     is <- runCircuit r
-    for is $ \i -> newAssigned (\x -> x i * (x i - one))
+    for is $ \i -> newAssigned (\x -> let xi = x i in xi * (xi - one))
 
 -- | TODO: This is ONLY needed in ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
 -- Using this function is against the new approach to ArithmeticCircuits
@@ -92,7 +92,7 @@ bitsOf :: MonadBlueprint i a m => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
 bitsOf n k = for [0 .. n -! 1] $ \j ->
-    newConstrained (\x i -> x i * (x i - one)) ((!! j) . repr . ($ k))
+    newConstrained (\x i -> let xi = x i in xi * (xi - one)) ((!! j) . repr . ($ k))
     where
         repr :: forall b . (BinaryExpansion b [b], Finite b) => b -> [b]
         repr = padBits (numberOfBits @b) . binaryExpansion
@@ -102,7 +102,7 @@ horner :: MonadBlueprint i a m => [i] -> m i
 -- Horner's scheme.
 horner xs = case reverse xs of
     []       -> newAssigned (const zero)
-    (b : bs) -> foldlM (\a i -> newAssigned (\x -> x i + x a + x a)) b bs
+    (b : bs) -> foldlM (\a i -> newAssigned (\x -> let xa = x a in x i + xa + xa)) b bs
 
 isZeroC :: Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a
 isZeroC r = circuitN $ fst <$> runInvert r
