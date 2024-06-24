@@ -1,9 +1,8 @@
 {-# LANGUAGE DerivingStrategies #-}
 module ZkFold.Symbolic.Cardano.Data where
 
-import qualified Data.ByteString          as BS
-
-import           Prelude                  (Eq (..), Integer, Ord (..), Show (..))
+import qualified Data.ByteString as BS
+import           Prelude         (Eq (..), Integer, Ord (..), Show (..))
 
 
 data Data =
