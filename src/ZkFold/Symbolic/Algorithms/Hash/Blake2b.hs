@@ -1,57 +1,71 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE TypeOperators        #-}
 
 module ZkFold.Symbolic.Algorithms.Hash.Blake2b where
 
 import           Data.Bits                                         (Bits (..))
-import           Data.Vector                                       (Vector, foldl, fromList, head, slice, take, toList,
-                                                                    zip, (!), (++), (//))
-import           Data.Word                                         (Word64, Word8)
-import           GHC.Natural                                       (Natural)
-import           Prelude                                           (Eq (..), Functor (..), Int, Num (..),
-                                                                    Ord (..), fromIntegral, fst, otherwise, repeat, snd,
-                                                                    undefined, ($), (.), (<$>), (||), error)
+import           Data.Word                                         (Word64)
+import           Prelude                                           (Eq (..), Functor (..), Int, Num (..), Ord (..),
+                                                                    error, fromIntegral, fst, otherwise, repeat, snd,
+                                                                    undefined, ($), (.), (<$>), (||))
 
-import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, blake2b_keybytes, blake2b_outbytes,
-                                                                    sigma)
-import           ZkFold.Symbolic.Cardano.Builtins                  (BuiltinByteString)
-import           ZkFold.Symbolic.Data.ByteString                   (ByteString)
+import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, type (*), type (<=), value)
+import           ZkFold.Base.Data.Vector                           (Vector (..), fromVector)
+import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
+import           ZkFold.Symbolic.Data.ByteString                   (ByteString, Concat (..), ToWords (..))
 
 data Blake2b_224
 data Blake2b_256
 
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
-blake2b_224 :: Int -> BuiltinByteString -> ByteString 28 a -- 28 * 8 = 224
-blake2b_224 = blake2b_libsodium 28
+blake2b_224 :: forall keylen a .
+    ( KnownNat keylen
+    , keylen <= 64
+    , ToWords (ByteString (keylen * 8) a) (ByteString 8 a)
+    , Concat (ByteString 8 a) (ByteString 224 a)
+    ) => ByteString (keylen * 8) a -> ByteString 224 a -- 28 * 8 = 224
+blake2b_224 = blake2b_libsodium @keylen @28
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_256 :: Int -> BuiltinByteString -> ByteString 32 a -- 32 * 8 = 256
-blake2b_256 = blake2b_libsodium 32
+blake2b_256 :: forall keylen a . 
+    ( KnownNat keylen
+    , keylen <= 64
+    , ToWords (ByteString (keylen * 8) a) (ByteString 8 a)
+    , Concat (ByteString 8 a) (ByteString 256 a)
+    ) => ByteString (keylen * 8) a -> ByteString 256 a -- 32 * 8 = 256
+blake2b_256 = blake2b_libsodium @keylen @32
 
-blake2b_libsodium :: forall a m . Natural -> Int -> BuiltinByteString -> ByteString m a
-blake2b_libsodium size inputlen input = undefined
-    where -- Vector 128 Word8 -> ByteString n a
-          -- ByteString n a -> Vector 128 Word8
-        inptr = undefined input
-        outM = blake2b (fromIntegral size) inptr inputlen -- we used unkeyed hash
+blake2b_libsodium :: forall keylen outlen a .
+    ( KnownNat keylen
+    , KnownNat outlen
+    , keylen <= 64
+    , 1 <= outlen
+    , outlen <= 64
+    , ToWords (ByteString (keylen * 8) a) (ByteString 8 a)
+    , Concat (ByteString 8 a) (ByteString (outlen * 8) a)
+    ) =>
+    ByteString (keylen * 8) a -> ByteString (outlen * 8) a
+blake2b_libsodium input = concat $ fromVector $ blake2b @keylen @outlen @a $ Vector @(keylen * 8) $ toWords input
 
 -- | state context
-data Blake2bCtx = Blake2bCtx
-   { b :: Vector Word8     -- input buffer 128
-   , h :: Vector Word64    -- chained state 8
-   , t :: (Word64, Word64) -- total number of bytes
-   , c :: Word64           -- pointer for b[]
+data Blake2bCtx a = Blake2bCtx
+   { b :: Vector 128 (ByteString 8 a)            -- input buffer 128
+   , h :: Vector 8 (ByteString 64 a)             -- chained state 8
+   , t :: ((ByteString 64 a), (ByteString 64 a)) -- total number of bytes
+   , c :: (ByteString 64 a)                      -- pointer for b[]
    }
+{-
 
 -- | Cyclic right rotation.
 rotr64 :: (Word64, Word64) -> Word64
 rotr64 (x, y) = x `shiftR` fromIntegral y `xor` x `shiftL` (64 - fromIntegral y)
 
 -- | Little-endian byte access.
-b2b_get64 :: Vector Word8 -> Word64
+b2b_get64 :: Vector 128 (ByteString 8 a) -> Word64
 b2b_get64 (fmap fromIntegral . toList -> [p0, p1, p2, p3, p4, p5, p6, p7]) =
-    p0               `xor`
+    p0             `xor`
     p1 `shiftL` 8  `xor`
     p2 `shiftL` 16 `xor`
     p3 `shiftL` 24 `xor`
@@ -62,7 +76,7 @@ b2b_get64 (fmap fromIntegral . toList -> [p0, p1, p2, p3, p4, p5, p6, p7]) =
 b2b_get64 _ = undefined
 
 -- | Little-endian byte access.
-b2b_g :: Vector Word64 -> (Int, Int, Int, Int, Word64, Word64) -> Vector Word64
+b2b_g :: Vector 8 (ByteString 64 a) -> (Int, Int, Int, Int, Word64, Word64) -> Vector 8 (ByteString 64 a)
 b2b_g v (a, b, c, d, x, y) = v // [(a, a2), (d, d2), (c, c2), (b, b2)]
     where
         a1 = v!a + v!b + x             -- v[a] = v[a] + v[b] + x;         \
@@ -75,7 +89,7 @@ b2b_g v (a, b, c, d, x, y) = v // [(a, a2), (d, d2), (c, c2), (b, b2)]
         b2 = rotr64 (b1 `xor` c2, 63)  -- v[b] = ROTR64(v[b] ^ v[c], 63); }
 
 -- | Compression function. "last" flag indicates last block.
-blake2b_compress :: Blake2bCtx -> Int -> Vector Word64
+blake2b_compress :: Blake2bCtx a -> Int -> Vector 8 (ByteString 64 a)
 blake2b_compress Blake2bCtx{b, h, t} last = h'
     where
         v0 = if last == 0 then v''
@@ -86,7 +100,7 @@ blake2b_compress Blake2bCtx{b, h, t} last = h'
                             , (13, v'!12 `xor` snd t) {- high 64 bits -}
                             ]
         -- get little-endian words
-        m = ((\i -> b2b_get64 (slice (8 * i) 8 b)) <$> fromList [0..15]) :: Vector Word64
+        m = ((\i -> b2b_get64 (slice (8 * i) 8 b)) <$> fromList [0..15]) :: Vector 8 Word64
 
         v1 = foldl f v0 $ fromList [0..11] -- twelve rounds
             where
@@ -107,33 +121,36 @@ blake2b_compress Blake2bCtx{b, h, t} last = h'
 --
 -- 1 <= outlen <= 64 gives the digest size in bytes.
 -- Secret key (also <= 64 bytes) is optional (keylen = 0).
-blake2b_init :: Word64 -> Vector Word8 -> Int -> Blake2bCtx
-blake2b_init outlen key keylen
-    | outlen <= 0 || outlen > blake2b_outbytes || keylen > blake2b_keybytes =
-        error "blake2b_init: something went wrong: outlen <= 0 || outlen > blake2b_outbytes || keylen > blake2b_keybytes"
-    | otherwise = if keylen > 0 then ctx' else ctx
+blake2b_init :: forall keylen outlen a .
+    ( KnownNat keylen
+    , KnownNat outlen
+    , keylen <= 64
+    , 1 <= outlen
+    , outlen <= 64
+    ) => Vector (keylen * 8) (ByteString 8 a) -> Blake2bCtx a
+blake2b_init key = if value @keylen > 0 then ctx' else ctx
     where
         ctx = Blake2bCtx b h (0, 0) 0
             where
                 b = take 128 (fromList $ repeat 0)
                 h = blake2b_iv // [(0, b1)]
                     where
-                        b1 = head blake2b_iv `xor` 0x01010000 `xor` fromIntegral keylen `shiftL` 8 `xor` outlen
+                        b1 = head blake2b_iv `xor` 0x01010000 `xor` fromIntegral (value @keylen * 8) `shiftL` 8 `xor` (value @outlen * 8)
 
         ctx' = Blake2bCtx b h t 128
             where
-                Blake2bCtx b h t _ = blake2b_update ctx key keylen
+                Blake2bCtx b h t _ = blake2b_update ctx key
 
 -- | Add "inlen" bytes from "key" into the hash.
-blake2b_update :: Blake2bCtx -> Vector Word8 -> Int -> Blake2bCtx
-blake2b_update ctx in' inlen = foldl f ctx (fromList [0..inlen - 1])
+blake2b_update :: forall keylen a .  KnownNat keylen => Blake2bCtx a -> Vector (keylen * 8) (ByteString 8 a) -> Blake2bCtx a
+blake2b_update ctx in' = foldl f ctx (fromList [0..((value @keylen * 8)) - 1])
     where
-        f :: Blake2bCtx -> Int -> Blake2bCtx
+        f :: Blake2bCtx a -> Int -> Blake2bCtx a
         f ctx'@Blake2bCtx{b, h, t, c} i
           | c == 128 = bufferFull ctx' -- buffer full ?
           | otherwise = Blake2bCtx {b = b // [(fromIntegral c + 1, in'!i)], h, t, c = c + 1}
 
-        bufferFull :: Blake2bCtx -> Blake2bCtx
+        bufferFull :: Blake2bCtx a -> Blake2bCtx a
         bufferFull Blake2bCtx{b, h, t, c} = Blake2bCtx b h' t' 0
             where
                 t' = if fst t + c < c {- carry overflow ? -}
@@ -143,7 +160,11 @@ blake2b_update ctx in' inlen = foldl f ctx (fromList [0..inlen - 1])
 
 -- | Generate the message digest (size given in init).
 -- Result placed in "out".
-blake2b_final :: Blake2bCtx -> Vector Word8
+blake2b_final :: forall outlen a .
+    ( KnownNat outlen
+    , 1 <= outlen
+    , outlen <= 64
+    ) => Blake2bCtx a -> Vector outlen (ByteString 8 a)
 blake2b_final Blake2bCtx{b, h, t, c} = out'
     where
         ctx' = Blake2bCtx b' h t' 128
@@ -158,7 +179,30 @@ blake2b_final Blake2bCtx{b, h, t, c} = out'
             where
                 indexs = take (fromIntegral c) $ fromList [0..]
                 h' = blake2b_compress ctx' 1 -- final block flag = 1
+-}
+
+blake2b_init :: forall keylen outlen a .
+    ( KnownNat keylen
+    , KnownNat outlen
+    , keylen <= 64
+    , 1 <= outlen
+    , outlen <= 64
+    ) => Vector (keylen * 8) (ByteString 8 a) -> Blake2bCtx a
+blake2b_init = undefined
+
+blake2b_final :: forall outlen a .
+    ( KnownNat outlen
+    , 1 <= outlen
+    , outlen <= 64
+    ) => Blake2bCtx a -> Vector outlen (ByteString 8 a)
+blake2b_final = undefined
 
 -- | Convenience function for all-in-one computation.
-blake2b :: Word64 -> Vector Word8 -> Int -> Vector Word8
-blake2b outlen key keylen = blake2b_final $ blake2b_init outlen key keylen
+blake2b :: forall keylen outlen a .
+    ( KnownNat keylen
+    , KnownNat outlen
+    , keylen <= 64
+    , 1 <= outlen
+    , outlen <= 64
+    ) => Vector (keylen * 8) (ByteString 8 a) -> Vector outlen (ByteString 8 a)
+blake2b key = blake2b_final @outlen $ blake2b_init @keylen @outlen key

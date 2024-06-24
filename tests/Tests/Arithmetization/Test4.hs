@@ -3,15 +3,13 @@
 module Tests.Arithmetization.Test4 (specArithmetization4) where
 
 import           Data.Map                                    (fromList, keys)
-import           Numeric.Natural                             (Natural)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (Spec, describe, it)
 import           Test.QuickCheck                             (Testable (..), (==>))
 import           Tests.Plonk                                 (PlonkBS)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), ToConstant (..))
-import           ZkFold.Base.Algebra.Basic.Field             (fromZp)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector (..))
@@ -21,7 +19,6 @@ import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProo
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
-import           ZkFold.Symbolic.Data.UInt                   (UInt)
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 lockedByTxId :: forall b a a' . (FromConstant a' (b 1 a), Eq (Bool (b 1 a)) (b 1 a)) => a' -> (b 1 a) -> Bool (b 1 a)
