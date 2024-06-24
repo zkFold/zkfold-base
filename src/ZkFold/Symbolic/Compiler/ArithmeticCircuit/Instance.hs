@@ -5,6 +5,7 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
+import           Control.Monad                                             (liftM2)
 import           Data.Aeson                                                hiding (Bool)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map,
                                                                             null, splitAt, take)
@@ -14,10 +15,11 @@ import           Prelude                                                   (Inte
                                                                             show, ($), (++), (<$>), (<*>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (..), frequency, chooseInteger)
+import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger, frequency)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, expansion, horner, invertC, isZeroC, boolCheckC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (boolCheckC, embed, expansion, horner,
+                                                                            invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
@@ -25,7 +27,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
-import           Control.Monad (liftM2)
 
 ------------------------------------- Instances -------------------------------------
 
