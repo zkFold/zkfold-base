@@ -14,10 +14,10 @@ import           Prelude                                                   (Inte
                                                                             show, ($), (++), (<$>), (<*>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (..))
+import           Test.QuickCheck                                           (Arbitrary (..), frequency, chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, expansion, horner, invertC, isZeroC)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, expansion, horner, invertC, isZeroC, boolCheckC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuits)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
@@ -25,6 +25,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
+import           Control.Monad (liftM2)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -133,9 +134,16 @@ instance {-# OVERLAPPING #-} SymbolicData a x => Conditional (Bool (ArithmeticCi
 
 -- TODO: make a proper implementation of Arbitrary
 instance Arithmetic a => Arbitrary (ArithmeticCircuit a) where
-    arbitrary = do
-        let ac = mempty { acOutput = 1} * mempty { acOutput = 2}
-        return ac
+    arbitrary = frequency [
+        (1, return mempty { acOutput = 1}),
+        (2, liftM2 (+) arbitrary arbitrary),
+        (2, liftM2 (-) arbitrary arbitrary),
+        (2, liftM2 (*) arbitrary arbitrary),
+        (2, liftM2 (//) arbitrary arbitrary),
+        (2, fromConstant <$> c),
+        (2, boolCheckC <$> arbitrary) ]
+        where c = chooseInteger (1, 100)
+
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Haskell.Show a) => Haskell.Show (ArithmeticCircuit a) where

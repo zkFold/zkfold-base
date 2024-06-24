@@ -9,11 +9,12 @@ import           Data.List                                           (sort)
 import qualified Data.Map                                            as Map
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
+import           GHC.Num                                             (integerToNatural)
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P
-import           Test.QuickCheck                                     (Arbitrary (..))
+import           Test.QuickCheck                                     (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (Zp, fromZp)
@@ -45,9 +46,11 @@ data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (Ari
 -- TODO (Issue #25): make a proper implementation of Arbitrary
 instance Arbitrary (Plonk d n t) where
     arbitrary = do
-        let (omega, k1, k2) = getParams 5
+        nP <- integerToNatural <$> chooseInteger (1, 10)
+        let (omega, k1, k2) = getParams nP
         ac <- arbitrary
-        Plonk omega k1 k2 (Vector [1, 2]) ac <$> arbitrary
+        nV <- integerToNatural <$> chooseInteger (1, 100)
+        Plonk omega k1 k2 (Vector [1..nV]) ac <$> arbitrary
 
 type PlonkPermutationSize d = 3 * d
 
@@ -113,7 +116,8 @@ newtype PlonkWitnessMap d = PlonkWitnessMap (Map.Map Natural F -> (PolyVec F d, 
 newtype PlonkWitnessInput = PlonkWitnessInput (Map.Map Natural F)
 -- TODO (Issue #25): make a proper implementation of Show
 instance Show PlonkWitnessInput where
-    show _ = "PlonkWitnessInput"
+    show (PlonkWitnessInput m) = "Witness Input: " ++ show m
+
 -- TODO (Issue #25): make a proper implementation of Arbitrary
 instance Arbitrary PlonkWitnessInput where
     arbitrary = do
