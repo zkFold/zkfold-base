@@ -1,6 +1,7 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes          #-}
+{-# LANGUAGE DeriveAnyClass               #-}
+{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications             #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof where
 
