@@ -1,20 +1,18 @@
 {-# LANGUAGE TypeOperators #-}
-module ZkFold.Symbolic.Cardano.Contracts.SymbolicWrapper where
+module ZkFold.Symbolic.Cardano.Contracts.ContractWrapper where
 
-import qualified Data.ByteString                                     as B
-import           Prelude                                             (undefined, ($), (.))
+import           Prelude                                             (undefined, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class                     (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, type (+))
 import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk                      (F)
-import           ZkFold.Symbolic.Algorithms.Hash.Blake2b             (blake2b_224)
 import           ZkFold.Symbolic.Cardano.Types                       (Output, OutputRef)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.Arithmetizable             (Arithmetic, SymbolicData)
 import           ZkFold.Symbolic.Data.Bool                           (Bool, BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                     (ByteString, ToWords)
-import           ZkFold.Symbolic.Data.Combinators                    (Extend, Iso (..))
+import           ZkFold.Symbolic.Data.ByteString                     (ByteString)
+import           ZkFold.Symbolic.Data.Combinators                    (Iso (..))
 import           ZkFold.Symbolic.Data.Eq                             (Eq ((==)))
 import           ZkFold.Symbolic.Data.UInt                           (UInt)
 import           ZkFold.Symbolic.Data.UTCTime                        (UTCTime)
@@ -39,12 +37,10 @@ hashFunction tx = fromConstant $ blake2b_224 @keylen . serialiseData . toBuiltin
 -- toBuiltinData :: a -> BuiltinData
 -- ~
 -- toBuiltinData :: HashData inputs rinputs outputs tokens datum a -> Data
-toBuiltinData = undefined
 
 -- serialiseData :: BuiltinData -> BuiltinByteString
 -- ~
 -- serialiseData :: Data -> ByteString (x <= 256) a
-serialiseData = undefined
 
 {-
 blake2b_224 :: forall keylen a .
@@ -56,7 +52,7 @@ blake2b_224 :: forall keylen a .
 blake2b_224 = blake2b_libsodium @keylen @28
 -}
 
-hashFunction :: HashData inputs rinputs outputs tokens datum a -> Public F
+hashFunction :: HashData inputs rinputs outputs tokens datum a -> Public a
 hashFunction = undefined -- toConstant . fromConstant . blake2b_224 . serialiseData . toBuiltinData
 
 
@@ -84,11 +80,10 @@ type HashFun inputs rinputs outputs tokens datum a =
 
 -- | Use wrapper to convert circuit to plonk circuit
 symbolicWrapper :: forall a privates inputs rinputs outputs tokens datum .
-    ( Eq (Bool a) (Public F),
-      Iso (HashData inputs rinputs outputs tokens datum a) a,
-      HashFun inputs rinputs outputs tokens datum a) =>
-    HashData inputs rinputs outputs tokens datum a -> Contract (privates + 1) a -> Public F -> Privates privates a -> Bool a
-symbolicWrapper tx contract hash witness =
+    ( Eq (Bool a) (Public a),
+      Iso (HashData inputs rinputs outputs tokens datum a) a) =>
+    Contract (privates + 1) a -> HashData inputs rinputs outputs tokens datum a -> Public a -> Privates privates a -> Bool a
+symbolicWrapper contract tx hash witness =
     let -- Сhecking equality of hash and embedded data
         conditionSameHash    = hashFunction tx == hash
 

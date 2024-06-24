@@ -123,13 +123,8 @@ library
       ZkFold.Symbolic.Algorithms.Hash.SHA2
       ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants
       ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
+      ZkFold.Symbolic.Cardano.Contracts.ContractWrapper
       ZkFold.Symbolic.Cardano.Contracts.RandomOracle
-      ZkFold.Symbolic.Cardano.Contracts.SymbolicWrapper
-      ZkFold.Symbolic.Cardano.Builtins
-      ZkFold.Symbolic.Cardano.Data
-      ZkFold.Symbolic.Cardano.IsData.Class
-      ZkFold.Symbolic.Cardano.IsData.Instances
-      ZkFold.Symbolic.Cardano.IsData.TH
       ZkFold.Symbolic.Cardano.Types
       ZkFold.Symbolic.Cardano.Types.Address
       ZkFold.Symbolic.Cardano.Types.Input
