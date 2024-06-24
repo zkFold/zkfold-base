@@ -4,6 +4,7 @@
 module ZkFold.Base.Data.Vector where
 
 import           Data.Bifunctor                   (first)
+import qualified Data.List                        as List
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           Numeric.Natural                  (Natural)
@@ -26,6 +27,9 @@ toVector as
 
 fromVector :: Vector size a -> [a]
 fromVector (Vector as) = as
+
+(!!) :: Vector size a -> Natural -> a
+(Vector as) !! i = as List.!! fromIntegral i
 
 vectorDotProduct :: forall size a . Semiring a => Vector size a -> Vector size a -> a
 vectorDotProduct (Vector as) (Vector bs) = sum $ zipWith (*) as bs

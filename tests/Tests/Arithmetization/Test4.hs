@@ -1,11 +1,11 @@
 {-# LANGUAGE TypeApplications #-}
 
-module Tests.Scripts.LockedByTxId (specLockedByTxId) where
+module Tests.Arithmetization.Test4 (specArithmetization4) where
 
 import           Data.Map                                    (fromList, keys)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
-import           Test.Hspec                                  (describe, hspec, it)
+import           Test.Hspec                                  (Spec, describe, it)
 import           Test.QuickCheck                             (Testable (..), (==>))
 import           Tests.Plonk                                 (PlonkBS)
 
@@ -15,33 +15,32 @@ import           ZkFold.Base.Data.Vector                     (Vector (..))
 import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
-import           ZkFold.Symbolic.Cardano.Types               (TxId (..))
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
-lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => TxId a' -> TxId a -> () -> Bool a
-lockedByTxId (TxId targetId) (TxId txId) _ = txId == fromConstant targetId
+lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => a' -> a -> Bool a
+lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 
-testArithmetization1 :: Fr -> Haskell.Bool
-testArithmetization1 targetId =
-    let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId)) :: Bool (ArithmeticCircuit Fr)
-        b       = Bool $ acValue (applyArgs ac [targetId])
+testSameValue :: Fr -> Haskell.Bool
+testSameValue targetValue =
+    let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) targetValue) :: Bool (ArithmeticCircuit Fr)
+        b       = Bool $ acValue (applyArgs ac [targetValue])
     in b == true
 
-testArithmetization2 :: Fr -> Fr -> Haskell.Bool
-testArithmetization2 targetId txId =
-    let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId)) :: Bool (ArithmeticCircuit Fr)
-        b       = Bool $ acValue (applyArgs ac [txId])
+testDifferentValue :: Fr -> Fr -> Haskell.Bool
+testDifferentValue targetValue otherValue =
+    let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) targetValue) :: Bool (ArithmeticCircuit Fr)
+        b       = Bool $ acValue (applyArgs ac [otherValue])
     in b == false
 
 testZKP :: Fr -> PlonkProverSecret -> Fr -> Haskell.Bool
-testZKP x ps targetId =
-    let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId)) :: Bool (ArithmeticCircuit Fr)
+testZKP x ps targetValue =
+    let Bool ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) targetValue) :: Bool (ArithmeticCircuit Fr)
 
         (omega, k1, k2) = getParams 5
-        inputs  = fromList [(1, targetId), (acOutput ac, 1)]
+        inputs  = fromList [(1, targetValue), (acOutput ac, 1)]
         plonk   = Plonk @32 omega k1 k2 (Vector @2 $ keys inputs) ac x
         setupP  = setupProve @PlonkBS plonk
         setupV  = setupVerify @PlonkBS plonk
@@ -50,11 +49,11 @@ testZKP x ps targetId =
 
     in verify @PlonkBS setupV input proof
 
-specLockedByTxId :: IO ()
-specLockedByTxId = hspec $ do
+specArithmetization4 :: Spec
+specArithmetization4 = do
     describe "LockedByTxId arithmetization test 1" $ do
-        it "should pass" $ property testArithmetization1
+        it "should pass" $ property testSameValue
     describe "LockedByTxId arithmetization test 2" $ do
-        it "should pass" $ property $ \x y -> x /= y ==> testArithmetization2 x y
+        it "should pass" $ property $ \x y -> x /= y ==> testDifferentValue x y
     describe "LockedByTxId ZKP test" $ do
         it "should pass" $ property testZKP
