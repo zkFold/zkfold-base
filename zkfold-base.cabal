@@ -158,6 +158,21 @@ library
       ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
       ZkFold.Symbolic.GroebnerBasis.Internal.Types
       ZkFold.Symbolic.GroebnerBasis.Types
+      ZkFold.Symbolic.Ledger.Types
+      ZkFold.Symbolic.Ledger.Types.Address
+      ZkFold.Symbolic.Ledger.Types.Contract
+      ZkFold.Symbolic.Ledger.Types.Hash
+      ZkFold.Symbolic.Ledger.Types.Input
+      ZkFold.Symbolic.Ledger.Types.Ledger
+      ZkFold.Symbolic.Ledger.Types.Output
+      ZkFold.Symbolic.Ledger.Types.OutputRef
+      ZkFold.Symbolic.Ledger.Types.Transaction
+      ZkFold.Symbolic.Ledger.Types.Value
+      ZkFold.Symbolic.Ledger.Validation.Contract
+      ZkFold.Symbolic.Ledger.Validation.Ledger
+      ZkFold.Symbolic.Ledger.Validation.PrivateInput
+      ZkFold.Symbolic.Ledger.Validation.PublicInput
+      ZkFold.Symbolic.Ledger.Validation.Transaction
       ZkFold.Symbolic.Types
     build-depends:
       base                          >= 4.9 && < 5,
