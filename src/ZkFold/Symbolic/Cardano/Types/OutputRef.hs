@@ -1,20 +1,23 @@
+{-# LANGUAGE DerivingVia, TypeOperators, UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
-import           Prelude                         hiding (Bool, Eq, length, splitAt, (*), (+))
+import           GHC.Generics                    (Generic1, Generically1 (..))
+import           Prelude                         (Functor, Foldable, Traversable)
 
-import           ZkFold.Symbolic.Compiler
+
+import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
+import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
+import           ZkFold.Symbolic.Data.Bool (Eq)
 import           ZkFold.Symbolic.Data.ByteString (ByteString)
-import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Data.UInt       (UInt)
 
-type TxRefId a = ByteString 256 a
-type TxRedIndex a = UInt 32 a
+type TxRefId = ByteString 256
+type TxRefIndex = UInt 32
 
-newtype OutputRef a = OutputRef (TxRefId a, TxRedIndex a)
-
-deriving instance Arithmetic a => SymbolicData a (OutputRef (ArithmeticCircuit a))
-
-outputRefId :: OutputRef a -> TxRefId a
-outputRefId (OutputRef (x, _)) = x
-
-outputRefIndex :: OutputRef a -> TxRedIndex a
-outputRefIndex (OutputRef (_, i)) = i
+data OutputRef a = OutputRef
+  { outputRefId :: TxRefId a
+  , outputRefIndex :: TxRefIndex a
+  } deriving stock (Functor, Foldable, Traversable, Generic1)
+deriving via Generically1 OutputRef
+  instance (FiniteField a) => VectorSpace a OutputRef
+instance (FiniteField a, DiscreteField a) => Eq a OutputRef

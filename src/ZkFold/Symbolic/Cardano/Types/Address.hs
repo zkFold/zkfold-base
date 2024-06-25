@@ -1,31 +1,23 @@
-{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DerivingVia, UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.Address where
 
-import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
+import           GHC.Generics                          (Generic1, Generically1 (..))
+import           Prelude                               (Functor, Foldable, Traversable)
 
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool          (Bool)
-import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Eq            (Eq)
-import           ZkFold.Symbolic.Data.Eq.Structural
+import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
+import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
+import           ZkFold.Symbolic.Data.Bool             (Eq)
+import           ZkFold.Symbolic.Data.ByteString       (ByteString)
 
-type AddressType a = ByteString 4 a
-type PaymentCredential a = ByteString 224 a
-type StakingCredential a = ByteString 224 a
+type AddressType = ByteString 4
+type PaymentCredential = ByteString 224
+type StakingCredential = ByteString 224
 
-newtype Address a = Address (AddressType a, (PaymentCredential a, StakingCredential a))
-
-deriving instance Arithmetic a => SymbolicData a (Address (ArithmeticCircuit a))
-
-deriving via (Structural (Address (ArithmeticCircuit a)))
-         instance Arithmetic a =>
-         Eq (Bool (ArithmeticCircuit a)) (Address (ArithmeticCircuit a))
-
-addressType :: Address a -> AddressType a
-addressType (Address (t, _)) = t
-
-paymentCredential :: Address a -> PaymentCredential a
-paymentCredential (Address (_, (pc, _))) = pc
-
-stakingCredential :: Address a -> StakingCredential a
-stakingCredential (Address (_, (_, sc))) = sc
+data Address a = Address
+  { addressType :: AddressType a
+  , paymentCredential :: PaymentCredential a
+  , stakingCredential :: StakingCredential a
+  } deriving stock (Functor, Foldable, Traversable, Generic1)
+deriving via Generically1 Address
+  instance (FiniteField a) => VectorSpace a Address
+instance (FiniteField a, DiscreteField a) => Eq a Address

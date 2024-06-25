@@ -6,6 +6,7 @@ module ZkFold.Base.Data.Vector where
 import           Data.Bifunctor                        (first)
 import           Data.Distributive
 import           Data.Functor.Rep
+import qualified Data.List                             as List
 import           Data.Maybe                            (fromMaybe)
 import           Data.These                            (These (..))
 import           Data.Zip                              (Semialign (..), Zip (..))
@@ -25,7 +26,7 @@ newtype Vector (size :: Natural) a = Vector [a]
 
 instance KnownNat size => Representable (Vector size) where
     type Rep (Vector size) = Int
-    index (Vector v) i = v !! (i Prelude.- 1)
+    index (Vector v) i = v List.!! (i Prelude.- 1)
     tabulate f =
         let size = fromIntegral (value @size)
         in Vector [f i | i <- [1 .. size]]

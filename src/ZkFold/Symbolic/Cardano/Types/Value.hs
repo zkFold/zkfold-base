@@ -1,16 +1,30 @@
+{-# LANGUAGE DerivingVia, TypeOperators, UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.Value where
 
-import           Prelude                          hiding (Bool, Eq, length, splitAt, (*), (+))
+import           GHC.Generics                          (Generic1, Generically1 (..), (:.:))
+import           Prelude                               (Functor, Foldable, Traversable)
 
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
+import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
+import           ZkFold.Base.Data.Vector               (Vector)
+import           ZkFold.Symbolic.Data.Bool             (Eq)
+import           ZkFold.Symbolic.Data.ByteString       (ByteString)
+import           ZkFold.Symbolic.Data.UInt             (UInt)
 
-type PolicyId a = ByteString 224 a
-type AssetName a = ByteString 256 a
+type PolicyId = ByteString 224
+type AssetName = ByteString 256
 
-newtype Value n a = Value { getValue :: Vector n (PolicyId a, (AssetName a, UInt 64 a)) }
+data ValueElement a = ValueElement
+  { policyId :: PolicyId a
+  , assetName :: AssetName a
+  , assetAmount :: UInt 64 a
+  } deriving stock (Functor, Foldable, Traversable, Generic1)
+deriving via Generically1 ValueElement
+  instance (FiniteField a) => VectorSpace a ValueElement
+instance (FiniteField a, DiscreteField a) => Eq a ValueElement
 
-deriving instance (Arithmetic a, KnownNat n) => SymbolicData a (Value n (ArithmeticCircuit a))
+type Value n = Vector n :.: ValueElement
+
+-- newtype Value n a = Value { getValue :: Vector n (PolicyId a, (AssetName a, UInt 64 a)) }
+
+-- deriving instance (Arithmetic a, KnownNat n) => SymbolicData a (Value n (ArithmeticCircuit a))

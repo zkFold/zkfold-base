@@ -1,32 +1,24 @@
-{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DerivingVia, UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.Output where
 
-import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
+import           GHC.Generics                          (Generic1, Generically1 (..))
+import           GHC.TypeNats                          (KnownNat)
+import           Prelude                               (Functor, Foldable, Traversable)
 
-import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
+import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
 import           ZkFold.Symbolic.Cardano.Types.Address (Address)
 import           ZkFold.Symbolic.Cardano.Types.Value   (Value)
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool             (Bool)
-import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Eq               (Eq)
-import           ZkFold.Symbolic.Data.Eq.Structural
+import           ZkFold.Symbolic.Data.Bool             (Eq)
+import           ZkFold.Symbolic.Data.ByteString       (ByteString)
 
-type DatumHash a = ByteString 256 a
+type DatumHash = ByteString 256
 
-newtype Output tokens datum a = Output (Address a, (Value tokens a, DatumHash a))
-
-deriving instance (Arithmetic a, KnownNat tokens) => SymbolicData a (Output tokens datum (ArithmeticCircuit a))
-
-deriving via (Structural (Output tokens datum (ArithmeticCircuit a)))
-         instance (Arithmetic a, KnownNat tokens) =>
-         Eq (Bool (ArithmeticCircuit a)) (Output tokens datum (ArithmeticCircuit a))
-
-txoAddress :: Output tokens datum a -> Address a
-txoAddress (Output (addr, _)) = addr
-
-txoTokens :: Output tokens datum a -> Value tokens a
-txoTokens (Output (_, (v, _))) = v
-
-txoDatumHash :: Output tokens datum a -> DatumHash a
-txoDatumHash (Output (_, (_, dh))) = dh
+data Output tokens datum a = Output 
+  { txoAddress :: Address a
+  , txoTokens :: Value tokens a
+  , txoDatumHash :: DatumHash a
+  } deriving stock (Functor, Foldable, Traversable, Generic1)
+deriving via Generically1 (Output tokens datum)
+  instance (FiniteField a, KnownNat tokens) => VectorSpace a (Output tokens datum)
+instance (FiniteField a, DiscreteField a, KnownNat tokens) => Eq a (Output tokens datum)

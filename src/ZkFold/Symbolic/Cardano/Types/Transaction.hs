@@ -1,39 +1,40 @@
+{-# LANGUAGE DerivingVia, TypeOperators, UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.Transaction where
 
-import           Prelude                              hiding (Bool, Eq, length, splitAt, (*), (+))
+import           GHC.Generics                          (Generic1, Generically1 (..), (:*:), (:.:))
+import           GHC.TypeNats                          (KnownNat)
+import           Prelude                               (Functor, Foldable, Traversable)
 
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector
+import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
+import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
+import           ZkFold.Base.Data.Vector              (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
 import           ZkFold.Symbolic.Cardano.Types.Output (Output)
 import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.UTCTime
+import           ZkFold.Symbolic.Data.UTCTime         (UTCTime)
+import           ZkFold.Symbolic.Data.Bool             (Eq)
 
-newtype Transaction inputs rinputs outputs tokens datum a = Transaction
-    ( Vector rinputs (Input tokens datum a)
-    , (Vector inputs (Input tokens datum a)
-    , (Vector outputs (Output tokens datum a)
-    , (Value 1 a
-    , (UTCTime a, UTCTime a)
-    ))))
-
-deriving instance
-    ( Arithmetic a
-    , KnownNat inputs
+data Transaction inputs rinputs outputs tokens datum a = Transaction
+    { txRefInputs :: (Vector rinputs :.: Input tokens datum) a
+    , txInputs :: (Vector inputs :.: Input tokens datum) a
+    , txOutputs :: (Vector outputs :.: Output tokens datum) a
+    , txMint :: Value 1 a
+    , txTimeRange :: (UTCTime :*: UTCTime) a
+    } deriving stock (Functor, Foldable, Traversable, Generic1)
+deriving via Generically1 (Transaction inputs rinputs outputs tokens datum)
+  instance
+    ( FiniteField a
     , KnownNat rinputs
+    , KnownNat inputs
     , KnownNat outputs
     , KnownNat tokens
-    ) => SymbolicData a (Transaction inputs rinputs outputs tokens datum (ArithmeticCircuit a))
-
-txRefInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector rinputs (Input tokens datum a)
-txRefInputs (Transaction (ris, _)) = ris
-
-txInputs :: Transaction inputs rinputs outputs tokens datum a -> Vector inputs (Input tokens datum a)
-txInputs (Transaction (_, (is, _))) = is
-
-txOutputs :: Transaction inputs rinputs outputs tokens datum a -> Vector outputs (Output tokens datum a)
-txOutputs (Transaction (_, (_, (os, _)))) = os
-
-txMint :: Transaction inputs rinputs outputs tokens datum a -> Value 1 a
-txMint (Transaction (_, (_, (_, (mint, _))))) = mint
+    ) => VectorSpace a (Transaction inputs rinputs outputs tokens datum)
+instance
+    ( FiniteField a
+    , DiscreteField a
+    , KnownNat rinputs
+    , KnownNat inputs
+    , KnownNat outputs
+    , KnownNat tokens
+    )
+    => Eq a (Transaction inputs rinputs outputs tokens datum)

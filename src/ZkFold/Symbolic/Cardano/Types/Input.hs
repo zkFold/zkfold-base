@@ -1,29 +1,31 @@
+{-# LANGUAGE DerivingVia, UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.Input where
 
-import           Prelude                                 hiding (Bool, Eq, length, splitAt, (*), (+))
+import           GHC.Generics                          (Generic1, Generically1 (..))
+import           GHC.TypeNats                          (KnownNat)
+import           Prelude                               (Functor, Foldable, Traversable, (.))
 
-import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
+import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
 import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
 import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.Bool             (Eq)
 
-newtype Input tokens datum a = Input (OutputRef a, Output tokens datum a)
-
-deriving instance (Arithmetic a, KnownNat tokens) => SymbolicData a (Input tokens datum (ArithmeticCircuit a))
-
-txiOutputRef :: Input tokens datum a -> OutputRef a
-txiOutputRef (Input (ref, _)) = ref
-
-txiOutput :: Input tokens datum a -> Output tokens datum a
-txiOutput (Input (_, txo)) = txo
+data Input tokens datum a = Input
+  { txiOutputRef :: OutputRef a
+  , txiOutput :: Output tokens datum a
+  } deriving stock (Functor, Foldable, Traversable, Generic1)
+deriving via Generically1 (Input tokens datum)
+  instance (FiniteField a, KnownNat tokens) => VectorSpace a (Input tokens datum)
+instance (FiniteField a, DiscreteField a, KnownNat tokens) => Eq a (Input tokens datum)
 
 txiAddress :: Input tokens datum a -> Address a
-txiAddress (Input (_, txo)) = txoAddress txo
+txiAddress = txoAddress . txiOutput
 
 txiTokens :: Input tokens datum a -> Value tokens a
-txiTokens (Input (_, txo)) = txoTokens txo
+txiTokens = txoTokens . txiOutput
 
 txiDatumHash :: Input tokens datum a -> DatumHash a
-txiDatumHash (Input (_, txo)) = txoDatumHash txo
+txiDatumHash = txoDatumHash . txiOutput
