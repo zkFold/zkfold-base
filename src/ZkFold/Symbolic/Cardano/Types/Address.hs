@@ -10,14 +10,10 @@ import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
 import           ZkFold.Symbolic.Data.Bool             (Eq)
 import           ZkFold.Symbolic.Data.ByteString       (ByteString)
 
-type AddressType = ByteString 4
-type PaymentCredential = ByteString 224
-type StakingCredential = ByteString 224
-
 data Address a = Address
-  { addressType       :: AddressType a
-  , paymentCredential :: PaymentCredential a
-  , stakingCredential :: StakingCredential a
+  { addressType       :: ByteString 4 a
+  , paymentCredential :: ByteString 224 a
+  , stakingCredential :: ByteString 224 a
   } deriving stock (Functor, Foldable, Traversable, Generic1)
 deriving via Generically1 Address
   instance (FiniteField a) => VectorSpace a Address

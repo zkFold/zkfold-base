@@ -12,12 +12,9 @@ import           ZkFold.Symbolic.Data.Bool             (Eq)
 import           ZkFold.Symbolic.Data.ByteString       (ByteString)
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 
-type TxRefId = ByteString 256
-type TxRefIndex = UInt 32
-
 data OutputRef a = OutputRef
-  { outputRefId    :: TxRefId a
-  , outputRefIndex :: TxRefIndex a
+  { outputRefId    :: ByteString 256 a
+  , outputRefIndex :: UInt 32 a
   } deriving stock (Functor, Foldable, Traversable, Generic1)
 deriving via Generically1 OutputRef
   instance (FiniteField a) => VectorSpace a OutputRef
