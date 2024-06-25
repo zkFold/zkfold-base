@@ -49,7 +49,7 @@ randomOracle c tx w =
         seed                   = hash @a $ txiOutputRef $ unComp1 (txInputs tx) !! 0
         Comp1 vs               = txoTokens $ unComp1 (txOutputs tx) !! 0
         Policy p name n  = vs !! 1
-        Policy{policyId} = unComp1 (txMint tx) !! 0
+        Policy{policyId} = txMint tx
 
         -- Computing the random number
         r = hash (w :*: Par1 seed)
