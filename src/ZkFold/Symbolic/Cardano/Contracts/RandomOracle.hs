@@ -1,6 +1,14 @@
+{-# LANGUAGE
+ImpredicativeTypes
+, QuantifiedConstraints
+, TypeOperators
+, UndecidableInstances
+#-}
 module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
+import           Data.Kind    (Constraint, Type)
 import           GHC.Generics ((:*:)(..), (:.:)(..), Par1(..))
+import           GHC.TypeNats (KnownNat, type (<=))
 import           Prelude                                        hiding (Bool, Eq (..), all, length, maybe, splitAt, zip,
                                                                  (!!), (&&), (*), (+), (==))
 
@@ -19,17 +27,15 @@ type TxOut = Output Tokens ()
 type TxIn  = Input Tokens ()
 type Tx = Transaction 1 0 2 Tokens ()
 
+type Sig :: Type -> Constraint
 type Sig a =
-    ( StrictConv a (UInt 256 a)
-    , MultiplicativeSemigroup (UInt 256 a)
-    , Eq a (UInt 256)
-    , MultiplicativeMonoid (UInt 64 a)
-    , Eq a (UInt 64)
-    , Iso (UInt 256 a) (ByteString 256 a)
-    , Eq a (ByteString 224)
-    , Extend (ByteString 224 a) (ByteString 256 a)
-    , Eq a (ByteString 256)
-    )
+  ( forall n. KnownNat n => StrictConv a (UInt n a)
+  , forall n. KnownNat n => MultiplicativeMonoid (UInt n a)
+  , forall n. KnownNat n => Eq a (UInt n)
+  , forall n. KnownNat n => Iso (UInt n a) (ByteString n a)
+  , forall n. KnownNat n => Eq a (ByteString n)
+  , forall m n. (KnownNat n, m <= n) => Extend (ByteString m a) (ByteString n a)
+  )
 
 randomOracle
   :: forall a' a w. (Symbolic a, Sig a, FromConstant a' a, Foldable w)
