@@ -17,36 +17,28 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import qualified ZkFold.Symbolic.Data.Container       as Container (zip)
 import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Types                (Symbolic, SymbolicData)
+import           ZkFold.Symbolic.Types                (Symbolic)
 
-type TxOut = Output 10 ()
-type TxIn = Input 10 ()
-type Tx = Transaction 6 0 11 10 ()
+type Tokens = 10
+type TxOut = Output Tokens ()
+type TxIn = Input Tokens ()
+type Tx = Transaction 6 0 11 Tokens ()
 
-class Hash a x where
-    hash :: x -> a
+type Sig a =
+    ( StrictConv a (UInt 256 a)
+    , MultiplicativeSemigroup (UInt 256 a)
+    , Eq a (UInt 256)
+    , Iso (UInt 256 a) (ByteString 256 a)
+    , Extend (ByteString 224 a) (ByteString 256 a)
+    )
 
-instance SymbolicData a x => Hash (ArithmeticCircuit a) x where
-    hash datum = case pieces datum of
-        []         -> zero
-        [x]        -> mimcHash mimcConstants zero zero x
-        [xL, xR]   -> mimcHash mimcConstants zero xL xR
-        (xL:xR:xZ) -> mimcHash (zero : xZ ++ [zero]) zero xL xR
-
-type Sig a = (StrictConv a (UInt 256 a),
-    MultiplicativeSemigroup (UInt 256 a),
-    Eq a (UInt 256),
-    Iso (UInt 256 a) (ByteString 256 a),
-    Extend (ByteString 224 a) (ByteString 256 a),
-    SymbolicData a TxOut)
-
-verifySignature ::
-    forall a . (Symbolic a, Sig a) =>
-    ByteString 224 a ->
-    (TxOut :*: TxOut) a ->
-    ByteString 256 a ->
-    Bool a
-verifySignature pub payChange sig = (from sig * base) == (strictConv mimc * from (extend pub :: ByteString 256 a))
+verifySignature
+  :: forall a. (Symbolic a, Sig a)
+  => ByteString 224 a
+  -> (TxOut :*: TxOut) a
+  -> ByteString 256 a
+  -> Bool a
+verifySignature pub payChange sig = (from sig * base) == (strictConv @a mimc * from (extend pub :: ByteString 256 a))
     where
         base :: UInt 256 a
         base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)
