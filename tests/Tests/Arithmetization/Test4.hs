@@ -16,30 +16,28 @@ import           ZkFold.Base.Data.Vector                     (Vector (..))
 import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
-import           ZkFold.Symbolic.Cardano.Types               (TxId (..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
-lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => TxId a' -> TxId a -> U1 a -> Bool a
-lockedByTxId (TxId targetId) (TxId txId) _ = Par1 txId == Par1 (fromConstant targetId)
+lockedByTxId :: forall a a' . (Symbolic a , FromConstant a' a) => a' -> Par1 a -> Bool a
+lockedByTxId targetValue txId = txId == Par1 (fromConstant targetValue)
 
-testArithmetization1 :: Fr -> Haskell.Bool
-testArithmetization1 targetId =
-    let ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId))
-        b  = acValue (applyArgs ac [targetId])
+testSameValue :: Fr -> Haskell.Bool
+testSameValue targetValue =
+    let ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) targetValue)
+        b  = acValue (applyArgs ac [targetValue])
     in b Haskell.== one
 
-testArithmetization2 :: Fr -> Fr -> Haskell.Bool
-testArithmetization2 targetId txId =
-    let ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId))
-        b  = acValue (applyArgs ac [txId])
+testDifferentValue :: Fr -> Fr -> Haskell.Bool
+testDifferentValue targetValue otherValue =
+    let ac = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) targetValue)
+        b  = acValue (applyArgs ac [otherValue])
     in b Haskell.== zero
 
 testZKP :: Fr -> PlonkProverSecret -> Fr -> Haskell.Bool
-testZKP x ps targetId =
-    let ac      = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId))
-
+testZKP x ps targetValue =
+    let ac      = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) targetValue)
         (omega, k1, k2) = getParams 5
         inputs  = fromList [(1, targetValue), (acOutput ac, 1)]
         plonk   = Plonk @32 omega k1 k2 (Vector @2 $ keys inputs) ac x
@@ -55,6 +53,6 @@ specArithmetization4 = do
     describe "LockedByTxId arithmetization test 1" $ do
         it "should pass" $ property testSameValue
     describe "LockedByTxId arithmetization test 2" $ do
-        it "should pass" $ property $ \x y -> x Haskell./= y ==> testArithmetization2 x y
+        it "should pass" $ property $ \x y -> x Haskell./= y ==> testDifferentValue x y
     describe "LockedByTxId ZKP test" $ do
         it "should pass" $ property testZKP
