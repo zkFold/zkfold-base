@@ -46,6 +46,9 @@ toVector as
 fromVector :: Vector size a -> [a]
 fromVector (Vector as) = as
 
+(!!) :: Vector size a -> Natural -> a
+(Vector as) !! i = as List.!! fromIntegral i
+
 vectorDotProduct :: forall size a . Semiring a => Vector size a -> Vector size a -> a
 vectorDotProduct (Vector as) (Vector bs) = sum $ zipWith (*) as bs
 

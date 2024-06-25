@@ -1,12 +1,12 @@
 {-# LANGUAGE TypeApplications #-}
 
-module Tests.Scripts.LockedByTxId (specLockedByTxId) where
+module Tests.Arithmetization.Test4 (specArithmetization4) where
 
 import           Data.Map                                    (fromList, keys)
 import           GHC.Generics
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
-import           Test.Hspec                                  (describe, hspec, it)
+import           Test.Hspec                                  (Spec, describe, it)
 import           Test.QuickCheck                             (Testable (..), (==>))
 import           Tests.Plonk                                 (PlonkBS)
 
@@ -41,7 +41,7 @@ testZKP x ps targetId =
     let ac      = compile @Fr (lockedByTxId @(ArithmeticCircuit Fr) (TxId targetId))
 
         (omega, k1, k2) = getParams 5
-        inputs  = fromList [(1, targetId), (acOutput ac, 1)]
+        inputs  = fromList [(1, targetValue), (acOutput ac, 1)]
         plonk   = Plonk @32 omega k1 k2 (Vector @2 $ keys inputs) ac x
         setupP  = setupProve @PlonkBS plonk
         setupV  = setupVerify @PlonkBS plonk
@@ -50,10 +50,10 @@ testZKP x ps targetId =
 
     in verify @PlonkBS setupV input proof
 
-specLockedByTxId :: IO ()
-specLockedByTxId = hspec $ do
+specArithmetization4 :: Spec
+specArithmetization4 = do
     describe "LockedByTxId arithmetization test 1" $ do
-        it "should pass" $ property testArithmetization1
+        it "should pass" $ property testSameValue
     describe "LockedByTxId arithmetization test 2" $ do
         it "should pass" $ property $ \x y -> x Haskell./= y ==> testArithmetization2 x y
     describe "LockedByTxId ZKP test" $ do

@@ -128,7 +128,7 @@ specUInt = hspec $ do
 
             return $ acEq === false
 
-        it "checks >" $ do
+        it "checks greater than" $ do
             x <- toss m
             y <- toss m
             let x' = fromConstant x :: UInt n (Zp p)

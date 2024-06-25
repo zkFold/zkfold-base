@@ -16,7 +16,6 @@ import           Tests.NonInteractiveProof                   (specNonInteractive
 import           Tests.Pairing                               (specPairing)
 import           Tests.Permutations                          (specPermutations)
 import           Tests.Plonk                                 (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk)
-import           Tests.Scripts.LockedByTxId                  (specLockedByTxId)
 import           Tests.SHA2                                  (specSHA2Natural)
 import           Tests.UInt                                  (specUInt)
 import           Tests.Univariate                            (specUnivariate)
@@ -53,8 +52,6 @@ main = do
 --    specSHA2 @"SHA512"
 --    specSHA2 @"SHA512/224"
 --    specSHA2 @"SHA512/256"
-
-    specLockedByTxId
 
     specArithmetization @(Zp BLS12_381_Scalar)
     specGroebner
