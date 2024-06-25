@@ -26,17 +26,17 @@ newtype Vector (size :: Natural) a = Vector [a]
 
 instance KnownNat size => Representable (Vector size) where
     type Rep (Vector size) = Int
-    index (Vector v) i = v List.!! (i Prelude.- 1)
+    index (Vector v) i = v List.!! i
     tabulate f =
         let size = fromIntegral (value @size)
-        in Vector [f i | i <- [1 .. size]]
+        in Vector [f i | i <- [0 .. size Prelude.- 1]]
 instance KnownNat size => Distributive (Vector size) where
     collect = collectRep
     distribute = distributeRep
 
 instance (KnownNat size, AdditiveMonoid a) => VectorSpace a (Vector size) where
     type Basis a (Vector size) = Int
-    indexV (Vector v) i = fromMaybe zero (lookup i (zip [1..] v))
+    indexV (Vector v) i = fromMaybe zero (lookup i (zip [0..] v))
     tabulateV = tabulate
 
 toVector :: forall size a . KnownNat size => [a] -> Maybe (Vector size a)
