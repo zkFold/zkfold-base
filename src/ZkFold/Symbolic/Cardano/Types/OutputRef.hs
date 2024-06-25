@@ -1,21 +1,22 @@
-{-# LANGUAGE DerivingVia, TypeOperators, UndecidableInstances #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
-import           GHC.Generics                    (Generic1, Generically1 (..))
-import           Prelude                         (Functor, Foldable, Traversable)
-
+import           GHC.Generics                          (Generic1, Generically1 (..))
+import           Prelude                               (Foldable, Functor, Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
 import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
-import           ZkFold.Symbolic.Data.Bool (Eq)
-import           ZkFold.Symbolic.Data.ByteString (ByteString)
-import           ZkFold.Symbolic.Data.UInt       (UInt)
+import           ZkFold.Symbolic.Data.Bool             (Eq)
+import           ZkFold.Symbolic.Data.ByteString       (ByteString)
+import           ZkFold.Symbolic.Data.UInt             (UInt)
 
 type TxRefId = ByteString 256
 type TxRefIndex = UInt 32
 
 data OutputRef a = OutputRef
-  { outputRefId :: TxRefId a
+  { outputRefId    :: TxRefId a
   , outputRefIndex :: TxRefIndex a
   } deriving stock (Functor, Foldable, Traversable, Generic1)
 deriving via Generically1 OutputRef

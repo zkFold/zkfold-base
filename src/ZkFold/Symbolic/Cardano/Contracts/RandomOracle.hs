@@ -1,26 +1,24 @@
-{-# LANGUAGE
-ImpredicativeTypes
-, QuantifiedConstraints
-, TypeOperators
-, UndecidableInstances
-#-}
+{-# LANGUAGE ImpredicativeTypes    #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
-import           Data.Kind    (Constraint, Type)
-import           GHC.Generics ((:*:)(..), (:.:)(..), Par1(..))
-import           GHC.TypeNats (KnownNat, type (<=))
-import           Prelude                                        hiding (Bool, Eq (..), all, length, maybe, splitAt, zip,
-                                                                 (!!), (&&), (*), (+), (==))
+import           Data.Kind                            (Constraint, Type)
+import           GHC.Generics                         (Par1 (..), (:*:) (..), (:.:) (..))
+import           GHC.TypeNats                         (KnownNat, type (<=))
+import           Prelude                              hiding (Bool, Eq (..), all, length, maybe, splitAt, zip, (!!),
+                                                       (&&), (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                        ((!!))
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (hash)
+import           ZkFold.Base.Data.Vector              ((!!))
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC (hash)
 import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Data.Bool                      (Bool, Eq (..), Boolean (..))
+import           ZkFold.Symbolic.Data.Bool            (Bool, Boolean (..), Eq (..))
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Types                          (Symbolic)
+import           ZkFold.Symbolic.Types                (Symbolic)
 
 type Tokens = 2
 type TxOut = Output Tokens ()

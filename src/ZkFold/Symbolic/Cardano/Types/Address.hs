@@ -1,8 +1,9 @@
-{-# LANGUAGE DerivingVia, UndecidableInstances #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.Address where
 
 import           GHC.Generics                          (Generic1, Generically1 (..))
-import           Prelude                               (Functor, Foldable, Traversable)
+import           Prelude                               (Foldable, Functor, Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
 import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
@@ -14,7 +15,7 @@ type PaymentCredential = ByteString 224
 type StakingCredential = ByteString 224
 
 data Address a = Address
-  { addressType :: AddressType a
+  { addressType       :: AddressType a
   , paymentCredential :: PaymentCredential a
   , stakingCredential :: StakingCredential a
   } deriving stock (Functor, Foldable, Traversable, Generic1)

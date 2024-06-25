@@ -1,8 +1,10 @@
-{-# LANGUAGE DerivingVia, TypeOperators, UndecidableInstances #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.Value where
 
 import           GHC.Generics                          (Generic1, Generically1 (..), (:.:))
-import           Prelude                               (Functor, Foldable, Traversable)
+import           Prelude                               (Foldable, Functor, Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
 import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
@@ -15,8 +17,8 @@ type PolicyId = ByteString 224
 type AssetName = ByteString 256
 
 data ValueElement a = ValueElement
-  { policyId :: PolicyId a
-  , assetName :: AssetName a
+  { policyId    :: PolicyId a
+  , assetName   :: AssetName a
   , assetAmount :: UInt 64 a
   } deriving stock (Functor, Foldable, Traversable, Generic1)
 deriving via Generically1 ValueElement

@@ -1,9 +1,10 @@
-{-# LANGUAGE DerivingVia, UndecidableInstances #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.Output where
 
 import           GHC.Generics                          (Generic1, Generically1 (..))
 import           GHC.TypeNats                          (KnownNat)
-import           Prelude                               (Functor, Foldable, Traversable)
+import           Prelude                               (Foldable, Functor, Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class       (DiscreteField, FiniteField)
 import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
@@ -14,9 +15,9 @@ import           ZkFold.Symbolic.Data.ByteString       (ByteString)
 
 type DatumHash = ByteString 256
 
-data Output tokens datum a = Output 
-  { txoAddress :: Address a
-  , txoTokens :: Value tokens a
+data Output tokens datum a = Output
+  { txoAddress   :: Address a
+  , txoTokens    :: Value tokens a
   , txoDatumHash :: DatumHash a
   } deriving stock (Functor, Foldable, Traversable, Generic1)
 deriving via Generically1 (Output tokens datum)
