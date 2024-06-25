@@ -42,7 +42,7 @@ nothing = Maybe false zeroV
 maybe
   :: (Ring a, VectorSpace a v)
   => v a -> (u a -> v a) -> Maybe u a -> v a
-maybe d h m = fromMaybe d (fmap h m)
+maybe d h m = fromMaybe d (map h m)
 
 fromMaybe :: (Ring a, VectorSpace a u) => u a -> Maybe u a -> u a
 fromMaybe d (Maybe j u) = bool d u j
@@ -51,7 +51,7 @@ isNothing :: Ring a => Maybe u a -> Bool a
 isNothing = not Haskell.. isJust
 
 instance Functor Maybe where
-  fmap h (Maybe j u) = Maybe j (h u)
+  map h (Maybe j u) = Maybe j (h u)
 
 instance Applicative Maybe where
   return = just

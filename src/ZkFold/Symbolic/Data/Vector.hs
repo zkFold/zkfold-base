@@ -9,7 +9,7 @@ module ZkFold.Symbolic.Data.Vector
 import           Data.Functor.Rep
 import           GHC.Generics            hiding (Rep)
 
-import           ZkFold.Base.Data.Vector hiding ((!!))
+import           ZkFold.Base.Data.Vector (Vector)
 
 -- | unsafe indexing (out-of-bounds error)
 (!!) :: Representable vector => (vector :.: u) a -> Rep vector -> u a

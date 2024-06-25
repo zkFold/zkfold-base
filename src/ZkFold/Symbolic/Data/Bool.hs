@@ -17,7 +17,6 @@ module ZkFold.Symbolic.Data.Bool (
     (/=)
 ) where
 
-import           Data.Functor.Rep                      (Representable)
 import           GHC.Generics
 import qualified Prelude                               as Haskell
 
@@ -84,7 +83,7 @@ instance DiscreteField a => Eq a Bool
 instance DiscreteField a => Eq a Par1
 instance (Ring a, Eq a u, Eq a v) => Eq a (u :*: v) where
   (u1 :*: v1) == (u2 :*: v2) = u1 == u2 && v1 == v2
-instance (Representable f, Haskell.Foldable f, Ring a, Eq a u) => Eq a (f :.: u) where
+instance (Haskell.Applicative v, Haskell.Foldable v, Ring a, Eq a u) => Eq a (v :.: u) where
   fu == fv = and (zipWith (==) fu fv)
 
 infix 4 /=
