@@ -22,7 +22,7 @@ import           ZkFold.Symbolic.Types                (Symbolic)
 
 type Tokens = 2
 type TxOut = Output Tokens ()
-type TxIn  = Input Tokens ()
+type TxIn = Input Tokens ()
 type Tx = Transaction 1 0 2 Tokens ()
 
 type Sig :: Type -> Constraint
