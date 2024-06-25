@@ -6,13 +6,26 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+borsh = "0.10"
+der = { version = "0.7.9", features = ["alloc"] }
 hs-bindgen = { version = "0.9.0", features = ["full"] }
+hs-bindgen-attribute = { version = "0.9.0" }
+hs-bindgen-traits = { version = "0.9.0" }
 ark-ff = { version= "0.4.0", default-features = false }
 ark-ec = { version= "0.4.0" }
 ark-std = { version = "0.4.0", default-features = false }
 ark-serialize = { version = "0.4.0", default-features = false }
 ark-bls12-381 = { version = "0.4.0" }
 ark-test-curves = { version = "0.4.0", features= ["bls12_381_curve", "bls12_381_scalar_field"] }
+
+haskell-ffi.git = "https://github.com/BeFunctional/haskell-rust-ffi.git"
+haskell-ffi.rev = "2bf292e2e56eac8e9fb0fb2e1450cf4a4bd01274"
+
+[features]
+capi = []
+
+[package.metadata.capi.library]
+versioning = false
 
 [lib]
 crate-type = ["staticlib"]
