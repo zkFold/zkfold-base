@@ -12,7 +12,7 @@ import           ZkFold.Base.Algebra.Basic.VectorSpace (VectorSpace)
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Input   (Input)
 import           ZkFold.Symbolic.Cardano.Types.Output  (Output)
-import           ZkFold.Symbolic.Cardano.Types.Value   (Policy, Value)
+import           ZkFold.Symbolic.Cardano.Types.Value   (Value)
 import           ZkFold.Symbolic.Data.Bool             (Eq)
 import           ZkFold.Symbolic.Data.UTCTime          (UTCTime)
 
@@ -20,7 +20,7 @@ data Transaction inputs rinputs outputs tokens datum a = Transaction
     { txRefInputs :: (Vector rinputs :.: Input tokens datum) a
     , txInputs    :: (Vector inputs :.: Input tokens datum) a
     , txOutputs   :: (Vector outputs :.: Output tokens datum) a
-    , txMint      :: Policy a
+    , txMint      :: Value a
     , txTimeRange :: (UTCTime :*: UTCTime) a
     } deriving stock (Functor, Foldable, Traversable, Generic1)
 deriving via Generically1 (Transaction inputs rinputs outputs tokens datum)

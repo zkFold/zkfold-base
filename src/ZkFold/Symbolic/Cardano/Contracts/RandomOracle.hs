@@ -48,8 +48,8 @@ randomOracle c tx w =
         -- Extracting information about the transaction
         seed                   = hash @a $ txiOutputRef $ unComp1 (txInputs tx) !! 0
         Comp1 vs               = txoTokens $ unComp1 (txOutputs tx) !! 0
-        Policy p name n  = vs !! 1
-        Policy{policyId} = txMint tx
+        Value p name n  = vs !! 1
+        Value{policyId} = txMint tx
 
         -- Computing the random number
         r = hash (w :*: Par1 seed)

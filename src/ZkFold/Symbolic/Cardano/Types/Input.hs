@@ -1,13 +1,15 @@
 {-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Cardano.Types.Input where
 
-import           GHC.Generics                            (Generic1, Generically1 (..))
+import           GHC.Generics                            (Generic1, Generically1 (..), (:.:))
 import           GHC.TypeNats                            (KnownNat)
 import           Prelude                                 (Foldable, Functor, Traversable, (.))
 
 import           ZkFold.Base.Algebra.Basic.Class         (DiscreteField, FiniteField)
 import           ZkFold.Base.Algebra.Basic.VectorSpace   (VectorSpace)
+import           ZkFold.Base.Data.Vector                 (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
 import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
@@ -25,7 +27,7 @@ instance (FiniteField a, DiscreteField a, KnownNat tokens) => Eq a (Input tokens
 txiAddress :: Input tokens datum a -> Address a
 txiAddress = txoAddress . txiOutput
 
-txiTokens :: Input tokens datum a -> Value tokens a
+txiTokens :: Input tokens datum a -> (Vector tokens :.: Value) a
 txiTokens = txoTokens . txiOutput
 
 txiDatumHash :: Input tokens datum a -> DatumHash a
