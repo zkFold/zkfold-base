@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Data.Vector
   ) where
 
 import           Data.Functor.Rep
-import           GHC.Generics hiding (Rep)
+import           GHC.Generics            hiding (Rep)
 
 import           ZkFold.Base.Data.Vector hiding ((!!))
 

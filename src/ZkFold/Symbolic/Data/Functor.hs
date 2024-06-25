@@ -8,7 +8,7 @@ module ZkFold.Symbolic.Data.Functor
   ) where
 
 import           Data.Functor.Rep
-import           GHC.Generics hiding (Rep)
+import           GHC.Generics                          hiding (Rep)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
