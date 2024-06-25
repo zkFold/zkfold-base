@@ -20,7 +20,7 @@ import qualified Prelude                               as Haskell
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Container
+import           ZkFold.Symbolic.Data.Functor
 
 data Maybe u a = Maybe {isJust :: Bool a, maybeVal :: u a}
   deriving stock

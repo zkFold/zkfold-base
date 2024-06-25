@@ -15,7 +15,7 @@ import           ZkFold.Symbolic.Cardano.Types        (Input, Output, Transactio
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
-import qualified ZkFold.Symbolic.Data.Container       as Container (zip)
+import qualified ZkFold.Symbolic.Data.Functor         as Symbolic (zip)
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Types                (Symbolic)
 
@@ -50,16 +50,16 @@ batchTransfer :: (Symbolic a, Eq a TxOut, Sig a) => Tx a -> (Vector 5 :.: (TxOut
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures
         pkhs       = Comp1 $ fromJust $ toVector @5 $ map (paymentCredential . txoAddress . txiOutput) $ init $ fromVector $ unComp1 $ txInputs tx
-        condition1 = all (\(pkh :*: payment :*: change :*: signature) -> verifySignature pkh (payment :*: change) signature) $ Container.zip pkhs transfers
+        condition1 = all (\(pkh :*: payment :*: change :*: signature) -> verifySignature pkh (payment :*: change) signature) $ Symbolic.zip pkhs transfers
         outputs    = zip [0..] . init . fromVector $ unComp1 $ txOutputs tx
 
         -- Extract the payments from the transaction and validate them
         payments   = Comp1 $ fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> even @Integer i) $ outputs
 
-        condition2 = all (\(p' :*: p :*: _ :*: _) -> p' == p) $ Container.zip payments transfers
+        condition2 = all (\(p' :*: p :*: _ :*: _) -> p' == p) $ Symbolic.zip payments transfers
 
         -- Extract the changes from the transaction and validate them
         changes    = Comp1 $ fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> odd @Integer i) $ outputs
-        condition3 = all (\(c' :*: _ :*: c :*: _) -> c' == c) $ Container.zip changes transfers
+        condition3 = all (\(c' :*: _ :*: c :*: _) -> c' == c) $ Symbolic.zip changes transfers
 
     in condition1 && condition2 && condition3

@@ -145,11 +145,12 @@ library
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Compare
       ZkFold.Symbolic.Data.Combinators
-      ZkFold.Symbolic.Data.Container
       ZkFold.Symbolic.Data.Ed25519
+      ZkFold.Symbolic.Data.Functor
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
+      ZkFold.Symbolic.Data.Vector
       ZkFold.Symbolic.GroebnerBasis
       ZkFold.Symbolic.GroebnerBasis.Internal
       ZkFold.Symbolic.GroebnerBasis.Internal.Reduction

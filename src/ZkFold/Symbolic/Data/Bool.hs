@@ -23,7 +23,7 @@ import qualified Prelude                               as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
-import           ZkFold.Symbolic.Data.Container
+import           ZkFold.Symbolic.Data.Functor
 
 newtype Bool a = Bool a
   deriving stock

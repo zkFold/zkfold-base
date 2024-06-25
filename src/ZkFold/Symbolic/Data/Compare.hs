@@ -26,7 +26,7 @@ import qualified Prelude                               as Haskell
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Container
+import           ZkFold.Symbolic.Data.Functor
 
 newtype Ordering a = Ordering a
   deriving stock

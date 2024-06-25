@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
-module ZkFold.Symbolic.Data.Container
+module ZkFold.Symbolic.Data.Functor
   ( Functor (..)
   , Applicative (..)
   , zip
@@ -8,20 +8,20 @@ module ZkFold.Symbolic.Data.Container
   ) where
 
 import           Data.Functor.Rep
-import           GHC.Generics
+import           GHC.Generics hiding (Rep)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.VectorSpace
 
 class Functor f where
   fmap :: (u a -> v a) -> f u a -> f v a
-instance Representable f => Functor ((:.:) f) where
-  fmap g (Comp1 f) = Comp1 (fmapRep g f)
+instance Representable v => Functor ((:.:) v) where
+  fmap g (Comp1 v) = Comp1 (fmapRep g v)
 
 class Functor f => Applicative f where
   return :: Ring a => u a -> f u a
   zipWith :: Ring a => (u a -> v a -> w a) -> f u a -> f v a -> f w a
-instance Representable f => Applicative ((:.:) f) where
+instance Representable v => Applicative ((:.:) v) where
   return u = Comp1 (pureRep u)
   zipWith uvw (Comp1 u) (Comp1 v) = Comp1 (mzipWithRep uvw u v)
 
