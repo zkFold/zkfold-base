@@ -4,30 +4,30 @@
 
 module Tests.UInt (specUInt) where
 
-import           Control.Applicative              ((<*>))
-import           Control.Monad                    (return)
-import           Data.Function                    (($))
-import           Data.Functor                     ((<$>))
-import           Data.List                        (map, (++))
-import           Numeric.Natural                  (Natural)
-import           Prelude                          (show)
-import qualified Prelude                          as P
-import           System.IO                        (IO)
-import           Test.Hspec                       (describe, hspec)
-import           Test.QuickCheck                  (Gen, Property, (.&.), (===))
-import           Tests.ArithmeticCircuit          (eval', it)
+import           Control.Applicative                         ((<*>))
+import           Control.Monad                               (return)
+import           Data.Function                               (($))
+import           Data.Functor                                ((<$>))
+import           Data.List                                   (map, (++))
+import           Numeric.Natural                             (Natural)
+import           Prelude                                     (show)
+import qualified Prelude                                     as P
+import           System.IO                                   (IO)
+import           Test.Hspec                                  (describe, hspec)
+import           Test.QuickCheck                             (Gen, Property, (.&.), (===))
+import           Tests.ArithmeticCircuit                     (eval', it)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                   (chooseNatural)
-import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Prelude                              (chooseNatural)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators (Extend (..), Shrink (..))
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
-
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -45,8 +45,8 @@ type UBinary n a = Binary (UInt n a)
 isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n (Zp p) -> UBinary n (ArithmeticCircuit (Zp p)) -> Natural -> Natural -> Property
 isHom f g x y = eval (fromConstant x `g` fromConstant y) === fromConstant x `f` fromConstant y
 
-specUInt :: forall p n . (PrimeField (Zp p), KnownNat n, KnownNat (2 * n), n <= (2 * n)) => IO ()
-specUInt = hspec $ do
+specUInt' :: forall p n . (PrimeField (Zp p), KnownNat n, KnownNat (2 * n), n <= (2 * n)) => IO ()
+specUInt' = hspec $ do
     let n = value @n
         m = 2 ^ n -! 1
     describe ("UInt" ++ show n ++ " specification") $ do
@@ -143,3 +143,8 @@ specUInt = hspec $ do
                 gt' = x' > y'
                 gt'' = evalBool @(Zp p) (x'' > y'')
             return $ gt' === gt''
+
+specUInt :: IO ()
+specUInt = do
+    specUInt' @BLS12_381_Scalar @32
+    specUInt' @BLS12_381_Scalar @500

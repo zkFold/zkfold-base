@@ -19,10 +19,12 @@ import           Prelude                                    (abs)
 import           Test.Hspec
 import           Test.QuickCheck
 
+import           Tests.Plonk                                (PlonkSizeBS, PlonkMaxPolyDegreeBS)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Prelude                             (length, take)
+import           ZkFold.Base.Protocol.ARK.Plonk             (F)
 
 propToPolyVec :: forall c s .
     (Ring c, KnownNat s) =>
@@ -81,11 +83,11 @@ propPolyVecGrandProduct p beta gamma =
     V.last (fromPolyVec zs) * (beta * V.last (fromPolyVec p) + gamma)
         == (beta * V.last (fromPolyVec p') + gamma)
 
-specUnivariate :: forall c s d .
+specUnivariate' :: forall c s d .
     (KnownNat s, KnownNat d) =>
     (Arbitrary c, Show c, Typeable c, Field c, Ord c) =>
     IO ()
-specUnivariate = hspec $ do
+specUnivariate' = hspec $ do
     describe "Univariate polynomials specification" $ do
         describe ("Type: " ++ show (typeOf @(PolyVec c s) zero)) $ do
             describe "toPolyVec" $ do
@@ -128,3 +130,6 @@ specUnivariate = hspec $ do
                 it "should satisfy the definition" $ do
                     property $ propPolyVecGrandProduct @c @s
 
+specUnivariate :: IO ()
+specUnivariate = do
+    specUnivariate' @F @PlonkSizeBS @PlonkMaxPolyDegreeBS
