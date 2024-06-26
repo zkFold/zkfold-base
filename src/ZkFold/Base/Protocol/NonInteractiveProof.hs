@@ -1,22 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes          #-}
-{-# LANGUAGE DeriveAnyClass               #-}
-{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 {-# LANGUAGE TypeApplications             #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof where
 
-import           Control.DeepSeq             (NFData)
 import           Crypto.Hash.BLAKE2.BLAKE2b  (hash)
-import           Data.Aeson
 import           Data.ByteString             (ByteString, cons)
-import qualified Data.ByteString.Base64      as B64
-import qualified Data.ByteString.Char8       as BS
 import           Data.Maybe                  (fromJust)
-import qualified Data.Text                   as T
-import           GHC.Generics                (Generic)
 import           Numeric.Natural             (Natural)
 import           Prelude
-import           Test.QuickCheck             (Arbitrary (..), generate, vectorOf)
 
 import           ZkFold.Base.Data.ByteString
 
@@ -70,53 +61,3 @@ class NonInteractiveProof a where
     prove :: SetupProve a -> Witness a -> (Input a, Proof a)
 
     verify :: SetupVerify a -> Input a -> Proof a -> Bool
-
-newtype ProofBytes = ProofBytes
-  { fromWitnessBytes :: ByteString }
-  deriving (Show, Eq, Generic, NFData)
-
-instance ToJSON ProofBytes where
-    toJSON (ProofBytes b) = String . T.pack . BS.unpack . B64.encode $ b
-
-instance FromJSON ProofBytes where
-    parseJSON = withText "Bytes of proof" $ \t ->
-        case B64.decode . BS.pack . T.unpack $ t of
-            Left err -> fail err
-            Right bs -> return $ ProofBytes bs
-
-data ProveAPIResult = ProveAPISuccess ProofBytes | ProveAPIErrorSetup | ProveAPIErrorWitness
-    deriving (Show, Eq, Generic, NFData)
-
-proveAPI
-    :: forall a
-    . (NonInteractiveProof a
-    , Binary (SetupProve a)
-    , Binary (Witness a)
-    , Binary (Input a)
-    , Binary (Proof a))
-    => ByteString
-    -> ByteString
-    -> ProveAPIResult
-proveAPI bsS bsW =
-    let mS = fromByteString bsS
-        mW = fromByteString bsW
-    in case (mS, mW) of
-        (Nothing, _)     -> ProveAPIErrorSetup
-        (_, Nothing)     -> ProveAPIErrorWitness
-        (Just s, Just w) -> ProveAPISuccess . ProofBytes $ toByteString $ prove @a s w
-
-testVector :: forall a .
-    NonInteractiveProof a =>
-    Arbitrary a =>
-    Arbitrary (Witness a) =>
-    Binary (SetupProve a) =>
-    Binary (Input a) =>
-    Binary (Proof a) =>
-    Int -> IO [(ByteString, ByteString, ByteString)]
-testVector n = generate . vectorOf n $ (,)
-    <$> arbitrary @a
-    <*> arbitrary @(Witness a)
-    >>= \(a, w) -> do
-        let s = setupProve @a a
-        let (i, p) = prove @a s w
-        pure (toByteString s, toByteString i, toByteString p)
