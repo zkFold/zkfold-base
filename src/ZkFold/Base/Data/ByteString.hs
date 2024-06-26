@@ -7,6 +7,7 @@ module ZkFold.Base.Data.ByteString
   , putWord8
   , getWord8
   , LittleEndian (..)
+  , BigEndian (..)
   ) where
 
 import           Control.Applicative  (many)
