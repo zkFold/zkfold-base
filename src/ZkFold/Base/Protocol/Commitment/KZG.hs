@@ -50,7 +50,7 @@ instance forall (c1 :: Type) (c2 :: Type) t f d kzg .
     , Finite f
     , Field f
     , AdditiveGroup (BaseField c1)
-    , Binary (BaseField c1)
+    , Binary (Point c1)
     ) => NonInteractiveProof (KZG c1 c2 t f d) where
     type Transcript (KZG c1 c2 t f d)  = ByteString
     type SetupProve (KZG c1 c2 t f d)  = V.Vector (Point c1)

@@ -17,6 +17,7 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
+import           ZkFold.Base.Data.ByteString
 
 -------------------------------- Introducing Fields ----------------------------------
 
@@ -28,11 +29,21 @@ instance Prime BLS12_381_Base
 
 type Fr = Zp BLS12_381_Scalar
 type Fq = Zp BLS12_381_Base
+-- TODO: newtype Fq so we can ensure its encoding
+--
+-- Fq elements are encoded in big-endian form.
+-- They occupy 48 bytes in this form.
 
 type IP1 = "IP1"
 instance IrreduciblePoly Fq IP1 where
     irreduciblePoly = toPoly [1, 0, 1]
 type Fq2 = Ext2 Fq IP1
+-- TODO: newtype Fq2 so we can ensure its encoding
+--
+-- Fq2 elements are encoded in big-endian form,
+-- meaning that the Fq element c0 + c1 * u is represented
+-- by the Fq element c1 followed by the Fq element c0.
+-- This means Fq2 elements occupy 96 bytes in this form.
 
 type IP2 = "IP2"
 instance IrreduciblePoly Fq2 IP2 where
@@ -49,6 +60,11 @@ instance IrreduciblePoly Fq6 IP3 where
         let e = Ext3 zero (negate one) zero
         in toPoly [e, zero, one]
 type Fq12 = Ext2 Fq6 IP3
+
+instance StandardEllipticCurve BLS12_381_G1 where
+    aParameter = zero
+
+    bParameter = fromConstant (4 :: Natural)
 
 ------------------------------------ BLS12-381 G1 ------------------------------------
 
@@ -93,6 +109,58 @@ instance EllipticCurve BLS12_381_G2 where
     add = addPoints
 
     mul = pointMul
+
+instance StandardEllipticCurve BLS12_381_G2 where
+    aParameter = zero
+
+    bParameter = fromConstant (4 :: Natural)
+
+------------------------------------ Encoding ------------------------------------
+
+
+{-
+G1 and G2 elements can be encoded in uncompressed form
+(the x-coordinate followed by the y-coordinate)
+or in compressed form (just the x-coordinate).
+G1 elements occupy 96 bytes in uncompressed form,
+and 48 bytes in compressed form.
+G2 elements occupy 192 bytes in uncompressed form,
+and 96 bytes in compressed form.
+
+The most-significant three bits of a G1 or G2 encoding
+should be masked away before the coordinate(s) are interpreted.
+These bits are used to unambiguously represent the underlying element:
+
+The most significant bit, when set,
+indicates that the point is in compressed form.
+Otherwise, the point is in uncompressed form.
+
+The second-most significant bit indicates that the point is at infinity.
+If this bit is set,
+the remaining bits of the group element's encoding should be set to zero.
+
+The third-most significant bit is set
+if (and only if) this point is in compressed form
+and it is not the point at infinity and its y-coordinate
+is the lexicographically largest of
+the two associated with the encoded x-coordinate.
+-}
+instance Binary (Point BLS12_381_G1) where
+    put Inf         = Haskell.error "to implement"
+    put (Point x y) = Haskell.error "to implement"
+    get = Haskell.error "to implement"
+instance Binary (PointCompressed BLS12_381_G1) where
+    put InfCompressed              = Haskell.error "to implement"
+    put (PointCompressed x isBigY) = Haskell.error "to implement"
+    get = Haskell.error "to implement"
+instance Binary (Point BLS12_381_G2) where
+    put Inf         = Haskell.error "to implement"
+    put (Point x y) = Haskell.error "to implement"
+    get = Haskell.error "to implement"
+instance Binary (PointCompressed BLS12_381_G2) where
+    put InfCompressed              = Haskell.error "to implement"
+    put (PointCompressed x isBigY) = Haskell.error "to implement"
+    get = Haskell.error "to implement"
 
 --------------------------------------- Pairing ---------------------------------------
 
