@@ -52,7 +52,7 @@ uncons (Vector lst) = (P.head lst, Vector $ P.tail lst)
 reverse :: Vector size a -> Vector size a
 reverse (Vector lst) = Vector (P.reverse lst)
 
-head :: 1 <= size => Vector size a -> a
+head :: Vector size a -> a
 head (Vector as) = P.head as
 
 tail :: Vector size a -> Vector (size - 1) a

@@ -32,9 +32,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
 
 import           Control.DeepSeq                              (NFData, force)
 import           Control.Monad.State                          (MonadState (..), State, modify)
-import           Data.List                                    (nub)
-import qualified Data.Set as S
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
+import qualified Data.Set                                     as S
 import           GHC.Generics
 import           Numeric.Natural                              (Natural)
 import           Optics

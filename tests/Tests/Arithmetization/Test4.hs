@@ -20,7 +20,7 @@ import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit 
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 
-lockedByTxId :: forall b a a' . (Symbolic a , FromConstant a' a) => a' -> a -> Bool (b 1 a)
+lockedByTxId :: forall b a a' . (FromConstant a' (b 1 a), Eq (Bool (b 1 a)) (b 1 a)) => a' -> (b 1 a) -> Bool (b 1 a)
 lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 
 testSameValue :: Fr -> Haskell.Bool
@@ -40,7 +40,7 @@ testZKP x ps targetValue =
     let Bool ac = compile @Fr (lockedByTxId @ArithmeticCircuit @Fr targetValue) :: Bool (ArithmeticCircuit 1 Fr)
 
         (omega, k1, k2) = getParams 5
-        inputs  = fromList [(1, targetValue), (acOutput ac, 1)]
+        inputs  = fromList [(1, targetValue), (V.item $ acOutput ac, 1)]
         plonk   = Plonk @32 omega k1 k2 (Vector @2 $ keys inputs) ac x
         setupP  = setupProve @PlonkBS plonk
         setupV  = setupVerify @PlonkBS plonk

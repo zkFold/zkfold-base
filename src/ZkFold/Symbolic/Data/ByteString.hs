@@ -1,11 +1,11 @@
-{-# LANGUAGE AllowAmbiguousTypes          #-}
-{-# LANGUAGE DeriveAnyClass               #-}
-{-# LANGUAGE DerivingStrategies           #-}
-{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
-{-# LANGUAGE TypeApplications             #-}
-{-# LANGUAGE TypeOperators                #-}
-{-# LANGUAGE UndecidableInstances         #-}
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Trust me bro
+{-# LANGUAGE AllowAmbiguousTypes        #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralisedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
@@ -47,14 +47,16 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (acCi
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.UInt
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
 newtype ByteString (n :: Natural) (backend :: Natural -> Type -> Type) (a :: Type) = ByteString (backend n a)
-    deriving (Haskell.Show, Haskell.Eq, Generic, NFData)
+    deriving (Haskell.Show, Haskell.Eq, Generic)
+
+deriving anyclass instance NFData (b n a) => NFData (ByteString n b a)
+deriving newtype instance Arithmetic a => Arithmetizable a (ByteString n ArithmeticCircuit a)
 
 -- TODO
 -- Since the only difference between ByteStrings on Zp and ByteStrings on ArithmeticCircuits is backend,
@@ -179,12 +181,6 @@ toBase base b = let (d, m) = b `divMod` base in Just (m, d)
 
 instance (FromConstant Natural a, Arithmetic a, KnownNat n) => FromConstant Integer (ByteString n ArithmeticCircuit a) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
-
-instance (Finite (Zp p), KnownNat n) => Iso (ByteString n Vector (Zp p)) (UInt n Vector (Zp p)) where
-    from bs = fromConstant @Natural . toConstant $ bs
-
-instance (Finite (Zp p), KnownNat n) => Iso (UInt n Vector (Zp p)) (ByteString n Vector (Zp p)) where
-    from ui = fromConstant @Natural . toConstant $ ui
 
 instance (Finite (Zp p), KnownNat n) => Arbitrary (ByteString n Vector (Zp p)) where
     arbitrary = ByteString . V.unsafeToVector <$> replicateA (value @n) (toss (1 :: Natural))
@@ -338,22 +334,6 @@ instance Arithmetic a => SymbolicData a (ByteString n ArithmeticCircuit a) where
     restore c o = ByteString $ c `withOutputs` o
 
 
-instance (Arithmetic a, KnownNat n) => Iso (ByteString n ArithmeticCircuit a) (UInt n ArithmeticCircuit a) where
-    from (ByteString bits) = UInt (circuitN $ V.unsafeToVector <$> solve)
-        where
-            solve :: forall i m. MonadBlueprint i a m => m [i]
-            solve = do
-                bsBits <- V.fromVector <$> runCircuit bits
-                Haskell.reverse <$> fromBits (highRegisterSize @a @n) (registerSize @a @n) bsBits
-
-instance (Arithmetic a, KnownNat n) => Iso (UInt n ArithmeticCircuit a) (ByteString n ArithmeticCircuit a) where
-    from (UInt ac) = ByteString $ circuitN $ Vector <$> solve
-        where
-            solve :: forall i m. MonadBlueprint i a m => m [i]
-            solve = do
-                regs <- V.fromVector <$> runCircuit ac
-                toBits (Haskell.reverse regs) (highRegisterSize @a @n) (registerSize @a @n)
-
 instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n ArithmeticCircuit a) where
     shiftBits bs@(ByteString oldBits) s
       | s == 0 = bs
@@ -417,7 +397,7 @@ instance (Arithmetic a, KnownNat n) => BoolType (ByteString n ArithmeticCircuit 
     l && r = bitwiseOperation l r (\i j x -> x i * x j)
 
     xor l r = bitwiseOperation l r (\i j x -> let xi = x i
-                                                  xj = x j 
+                                                  xj = x j
                                                in xi + xj - (xi * xj + xi * xj))
 
 

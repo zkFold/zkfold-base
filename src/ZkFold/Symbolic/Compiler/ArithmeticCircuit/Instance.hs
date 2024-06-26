@@ -148,12 +148,19 @@ instance (Arithmetic a, KnownNat n, 1 <= n) => Eq (Bool (ArithmeticCircuit 1 a))
     x == y = isZero (x - y)
     x /= y = not $ isZero (x - y)
 
-instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit n a)) x where
-    bool brFalse brTrue (Bool b) =
-        let f' = pieces brFalse
+instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit 1 a)) x where
+    bool brFalse brTrue (Bool b) = restore c o
+        where
+            f' = pieces brFalse
             t' = pieces brTrue
-            ArithmeticCircuit c o = b * (t' - f') + f'
-        in restore c o
+            ArithmeticCircuit c o = circuitN solve
+
+            solve :: forall i m . MonadBlueprint i a m => m (Vector n i)
+            solve = do
+                ts <- runCircuit t'
+                fs <- runCircuit f'
+                bs <- V.item <$> runCircuit b
+                V.zipWithM (\x y -> newAssigned $ \p -> p bs * (p x - p y) + p y) ts fs
 
 -- TODO: make a proper implementation of Arbitrary
 instance (Arithmetic a, KnownNat n) => Arbitrary (ArithmeticCircuit n a) where

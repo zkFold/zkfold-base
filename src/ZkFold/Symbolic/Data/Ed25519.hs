@@ -1,14 +1,14 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.Ed25519  where
 
-import           Data.List                                              (splitAt)
 import           Data.Void                                              (Void)
 import           GHC.TypeNats                                           (Natural)
-import           Prelude                                                (error, otherwise, ($), (.), (<>))
+import           Prelude                                                (type (~), ($), (.))
 import qualified Prelude                                                as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -18,14 +18,12 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Base.Data.Vector                                (Vector)
-import           ZkFold.Prelude                                         (length)
 import           ZkFold.Symbolic.Compiler                               hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (joinCircuits)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
 
@@ -60,7 +58,10 @@ instance (Finite (Zp p)) => EllipticCurve (Ed25519 UInt (Zp p)) where
 
 instance
     ( SymbolicData a (UInt 256 ArithmeticCircuit a)
-    , KnownNat (NumberOfRegisters a 256)
+    , r ~ NumberOfRegisters a 256
+    , KnownNat r
+    , KnownNat (r + r)
+    , 1 <= r
     ) => SymbolicData a (Point (Ed25519 ArithmeticCircuit a)) where
 
     type TypeSize a (Point (Ed25519 ArithmeticCircuit a)) = TypeSize a (UInt 256 ArithmeticCircuit a) + TypeSize a (UInt 256 ArithmeticCircuit a)
@@ -77,7 +78,7 @@ instance
             (x, y) = (partialRestore piecesX, partialRestore piecesY)
 
 
-instance (Ring a, Eq (Bool (b 1 a)) (BaseField (Ed25519 b a))) => Eq (Bool (b 1 a)) (Point (Ed25519 b a)) where
+instance (Ring (b 1 a), Eq (Bool (b 1 a)) (BaseField (Ed25519 b a))) => Eq (Bool (b 1 a)) (Point (Ed25519 b a)) where
     Inf == Inf                     = true
     Inf == _                       = false
     _ == Inf                       = false
@@ -95,6 +96,14 @@ instance
     , SymbolicData a (UInt 256 ArithmeticCircuit a)
     , FromConstant Natural (UInt 512 ArithmeticCircuit a)
     , EuclideanDomain (UInt 512 ArithmeticCircuit a)
+    , r256 ~ NumberOfRegisters a 256
+    , KnownNat r256
+    , KnownNat (r256 + r256)
+    , 1 <= r256
+    , r512 ~ NumberOfRegisters a 512
+    , 1 <= r512
+    , KnownNat r512
+    , KnownNat (r512 + r512 + r512)
     , Iso (UInt 256 ArithmeticCircuit a) (ByteString 256 ArithmeticCircuit a)
     ) => EllipticCurve (Ed25519 ArithmeticCircuit a)  where
 
@@ -118,10 +127,13 @@ instance
             bits = from sc
 
 acAdd25519
-    :: forall a
+    :: forall a r
     .  Arithmetic a
     => EuclideanDomain (UInt 512 ArithmeticCircuit a)
-    => KnownNat (NumberOfRegisters a 512)
+    => r ~ NumberOfRegisters a 512
+    => KnownNat r
+    => KnownNat (r + r + r)
+    => 1 <= r
     => Point (Ed25519 ArithmeticCircuit a)
     -> Point (Ed25519 ArithmeticCircuit a)
     -> Point (Ed25519 ArithmeticCircuit a)
@@ -177,10 +189,13 @@ acAdd25519 (Point x1 y1) (Point x2 y2) = Point (shrink x3) (shrink y3)
         y3 = y3n `mulM` y3di
 
 acDouble25519
-    :: forall a
+    :: forall a r
     .  Arithmetic a
     => EuclideanDomain (UInt 512 ArithmeticCircuit a)
-    => KnownNat (NumberOfRegisters a 512)
+    => r ~ NumberOfRegisters a 512
+    => KnownNat r
+    => KnownNat (r + r + r)
+    => 1 <= r
     => Point (Ed25519 ArithmeticCircuit a)
     -> Point (Ed25519 ArithmeticCircuit a)
 acDouble25519 Inf = Inf

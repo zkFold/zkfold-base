@@ -1,4 +1,6 @@
-{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module ZkFold.Symbolic.Cardano.Types.Address where
 
 import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))

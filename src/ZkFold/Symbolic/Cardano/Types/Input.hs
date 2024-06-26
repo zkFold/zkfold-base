@@ -1,3 +1,7 @@
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
+
 module ZkFold.Symbolic.Cardano.Types.Input where
 
 import           Prelude                                 hiding (Bool, Eq, length, splitAt, (*), (+))
@@ -8,13 +12,16 @@ import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txo
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
 import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.ByteString         (ByteString)
+import           ZkFold.Symbolic.Data.Combinators        (NumberOfRegisters)
+import           ZkFold.Symbolic.Data.UInt               (UInt)
 
 newtype Input tokens datum b a = Input (OutputRef b a, Output tokens datum b a)
 
 deriving instance
     ( Arithmetic a
     , KnownNat (TypeSize a (Value tokens ArithmeticCircuit a))
-    , KnownNat (1 + NumberOfRegisters a 32)
+    , KnownNat (256 + NumberOfRegisters a 32)
     , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
     ) => SymbolicData a (Input tokens datum ArithmeticCircuit a)
 

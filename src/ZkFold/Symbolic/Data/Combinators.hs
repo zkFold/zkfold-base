@@ -21,8 +21,6 @@ import qualified Prelude                                                   as Ha
 import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
-import qualified ZkFold.Base.Data.Vector                                   as V
-import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, horner)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 
@@ -91,20 +89,12 @@ registerSize = Haskell.ceiling (getNatural @n % numberOfRegisters @a @n)
 
 
 type family NumberOfRegisters (a :: Type) (bits :: Natural) :: Natural where
-    NumberOfRegisters a bits = NumberOfRegisters' a bits (ListRange 1 5) -- TODO: Compilation takes ages if this constant is greater than 10000.
-                                                                            -- But it is weird anyway if someone is trying to store a value
-                                                                            -- which requires more than 1000 registers.
+    NumberOfRegisters a bits = NumberOfRegisters' a bits (ListRange 1 500) -- TODO: Compilation takes ages if this constant is greater than 10000.
+                                                                           -- But it is weird anyway if someone is trying to store a value
+                                                                           -- which requires more than 500 registers.
 
 type family NumberOfRegisters' (a :: Type) (bits :: Natural) (c :: [Natural]) :: Natural where
     NumberOfRegisters' a bits '[] = 0
-        {--
-        DelayError
-            ( Text "Could not calculate the required number of registers to store " :<>:
-              ShowType bits :<>:
-              Text " bits using field elements of order " :<>:
-              ShowType (Order a)
-            )
-        --}
     NumberOfRegisters' a bits (x ': xs) =
         OrdCond (CmpNat bits (x * MaxRegisterSize a x))
             x

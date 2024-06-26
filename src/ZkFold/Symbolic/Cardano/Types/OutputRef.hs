@@ -1,3 +1,6 @@
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
+
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
 import           Prelude                         hiding (Bool, Eq, length, splitAt, (*), (+))

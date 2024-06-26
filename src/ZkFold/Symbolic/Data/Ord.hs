@@ -117,10 +117,15 @@ circuitDelta xs ys = do
     z2 <- newAssigned (Haskell.const zero)
     foldM update (z1, z2) $ Z.zip l r
         where
+            -- | If @z1@ is set, there was an index i where @xs[i] == 1@ and @ys[i] == 0@ and @xs[j] == ys[j]@ for all j < i. 
+            -- In this case, no matter what bit states are after this index, @z1@ and @z2@ are not updated.
+            --
+            --   If @z2@ is set, there was an index i where @xs[i] == 0@ and @ys[i] == 1@ and @xs[j] == ys[j]@ for all j < i.
+            -- In the same manner, @z1@ and @z2@ won't be updated afterwards.
             update :: (i, i) -> (i, i) -> m (i, i)
             update (z1, z2) (x, y) = do
                 z1' <- newAssigned $ \p -> p z1 + (one - p z1) * (one - p z2) * (one - p y) * p x
-                z2' <- newAssigned $ \p -> (one - p z1) * (one - p x) * p y
+                z2' <- newAssigned $ \p -> p z2 + (one - p z1) * (one - p z2) * (one - p x) * p y
                 Haskell.return (z1', z2')
 
 

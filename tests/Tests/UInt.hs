@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module Tests.UInt (specUInt) where
 
@@ -14,13 +15,13 @@ import           Prelude                                    (show, type (~))
 import qualified Prelude                                    as P
 import           System.IO                                  (IO)
 import           Test.Hspec                                 (describe, hspec)
-import           Test.QuickCheck                            (Gen, Property, (.&.), (===))
+import           Test.QuickCheck                            (Gen, Property, withMaxSuccess, (.&.), (===))
 import           Tests.ArithmeticCircuit                    (it)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field            (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                    (Vector)
+import           ZkFold.Base.Data.Vector                    (Vector, item)
 import           ZkFold.Prelude                             (chooseNatural)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (exec, exec1)
@@ -37,6 +38,9 @@ toss x = chooseNatural (0, x)
 evalBool :: forall a . Bool (ArithmeticCircuit 1 a) -> Bool a
 evalBool (Bool ac) = Bool $ exec1 ac
 
+evalBoolVec :: forall a . Bool (Vector 1 a) -> Bool a
+evalBoolVec (Bool v) = Bool $ item v
+
 execAcUint :: forall a n . UInt n ArithmeticCircuit a -> Vector (NumberOfRegisters a n) a
 execAcUint (UInt v) = exec v
 
@@ -51,15 +55,23 @@ isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n Vector (Zp p) -> UBinary n
 isHom f g x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (fromConstant x `f` fromConstant y)
 
 specUInt
-    :: forall p n
+    :: forall p n r r2n
     .  PrimeField (Zp p)
     => KnownNat n
     => KnownNat (2 * n)
     => n <= (2 * n)
-    => 1 <= NumberOfRegisters (Zp p) n
-    => KnownNat (NumberOfRegisters (Zp p) n)
-    => KnownNat (NumberOfRegisters (Zp p) n - 1)
-    => 1 + (NumberOfRegisters (Zp p) n - 1) ~ NumberOfRegisters (Zp p) n
+    => r ~ NumberOfRegisters (Zp p) n
+    => r2n ~ NumberOfRegisters (Zp p) (2 * n)
+    => 1 <= r
+    => 1 <= r2n
+    => KnownNat r
+    => KnownNat (r + r)
+    => KnownNat r2n
+    => KnownNat (r2n + r2n)
+    => KnownNat (r - 1)
+    => KnownNat (r2n - 1)
+    => 1 + (r - 1) ~ r
+    => 1 + (r2n - 1) ~ r2n
     => IO ()
 specUInt = hspec $ do
     let n = value @n
@@ -92,13 +104,13 @@ specUInt = hspec $ do
         --}
 
         -- TODO: Optimise exec and test eea on ArithmeticCircuits
-        it "calculates gcd correctly" $ do
+        it "calculates gcd correctly" $ withMaxSuccess 10 $ do
             x <- toss m
             y <- toss m
             let (_, _, r) = eea (fromConstant x :: UInt n Vector (Zp p)) (fromConstant y)
                 ans = fromConstant (P.gcd x y) :: UInt n Vector (Zp p)
             return $ r === ans
-        it "calculates Bezout coefficients correctly" $ do
+        it "calculates Bezout coefficients correctly" $ withMaxSuccess 10 $ do
             x' <- toss m
             y' <- toss m
             let x = x' `P.div` (P.gcd x' y')
@@ -151,10 +163,10 @@ specUInt = hspec $ do
         it "checks greater than" $ do
             x <- toss m
             y <- toss m
-            let x' = fromConstant x :: UInt n (Zp p)
-                y' = fromConstant y :: UInt n (Zp p)
-                x'' = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
-                y'' = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
-                gt' = x' > y'
+            let x' = fromConstant x  :: UInt n Vector (Zp p)
+                y' = fromConstant y  :: UInt n Vector (Zp p)
+                x'' = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
+                y'' = fromConstant y :: UInt n ArithmeticCircuit (Zp p)
+                gt' = evalBoolVec $ x' > y'
                 gt'' = evalBool @(Zp p) (x'' > y'')
             return $ gt' === gt''

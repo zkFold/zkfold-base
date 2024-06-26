@@ -51,11 +51,11 @@ instance Arithmetic a => SymbolicData a () where
 
     restore _ _ = ()
 
+
 instance
     ( SymbolicData a x
     , SymbolicData a y
     , m ~ TypeSize a x
---    , n ~ TypeSize a y
     , KnownNat m
     ) => SymbolicData a (x, y) where
 
@@ -73,7 +73,6 @@ instance
     , SymbolicData a z
     , m ~ TypeSize a x
     , n ~ TypeSize a y
- --   , k ~ TypeSize a z
     , KnownNat m
     , KnownNat n
     ) => SymbolicData a (x, y, z) where
@@ -89,7 +88,6 @@ instance
 instance
     ( SymbolicData a x
     , m ~ TypeSize a x
---    , s ~ n * m
     , KnownNat m
     ) => SymbolicData a (Vector n x) where
 
@@ -121,12 +119,19 @@ class Arithmetic a => Arithmetizable a x where
 data SomeArithmetizable a where
     SomeArithmetizable :: (Typeable t, Arithmetizable a t) => t -> SomeArithmetizable a
 
-
 -- | TODO: Overlapping instance doesn't work anymore (conflicting family instance declarations)
 instance (SymbolicData a (ArithmeticCircuit n a)) => Arithmetizable a (ArithmeticCircuit n a) where
     type InputSize a (ArithmeticCircuit n a) = 0
     type OutputSize a (ArithmeticCircuit n a) = TypeSize a (ArithmeticCircuit n a)
     arithmetize x _ = pieces x
+
+instance (Arithmetizable a f, KnownNat n, KnownNat (InputSize a f)) => Arithmetizable a (Vector n f) where
+    type InputSize a (Vector n f) = n * InputSize a f
+    type OutputSize a (Vector n f) = n * OutputSize a f
+    arithmetize v (ArithmeticCircuit c o) = concatCircuits results
+        where
+            inputs  = (ArithmeticCircuit c) <$> V.chunks @n @(InputSize a f) o
+            results = arithmetize <$> v <*> inputs
 
 instance
     ( SymbolicData a x
