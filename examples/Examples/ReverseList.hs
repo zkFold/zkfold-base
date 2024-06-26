@@ -7,8 +7,8 @@ import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Data.Vector (Vector)
-import qualified ZkFold.Base.Data.Vector as V 
+import qualified ZkFold.Base.Data.Vector                     as V
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler
 
 -- | Reverses the order of elements in a vector

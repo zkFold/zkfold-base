@@ -39,7 +39,7 @@ instance SymbolicData a x => Hash (ArithmeticCircuit 1 a) x where
             [xL, xR]   -> mimcHash mimcConstants zero xL xR
             (xL:xR:xZ) -> mimcHash (zero : xZ ++ [zero]) zero xL xR
 
-type Sig b a = 
+type Sig b a =
     (StrictConv (b 1 a) (UInt 256 b a),
      FromConstant Natural (UInt 256 b a),
      MultiplicativeSemigroup (UInt 256 b a),

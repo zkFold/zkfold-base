@@ -41,12 +41,12 @@ solder f = arithmetize f inputC
         inputC = circuitN $ Vector <$> replicateA (value @(InputSize a f)) input
 
 -- | Compiles function `f` into an arithmetic circuit.
-compile 
-    :: forall a f y 
-    .  Arithmetizable a f 
+compile
+    :: forall a f y
+    .  Arithmetizable a f
     => SymbolicData a y
     => KnownNat (InputSize a f)
-    => OutputSize a f ~ TypeSize a y 
+    => OutputSize a f ~ TypeSize a y
     => f -> y
 compile f = restore @a c o
     where
