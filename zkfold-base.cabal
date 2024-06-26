@@ -165,6 +165,7 @@ library
       aeson                                 < 2.3,
       base64-bytestring                          ,
       binary                               < 0.11,
+      blake2                                < 0.4,
       bytestring                           < 0.12,
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,

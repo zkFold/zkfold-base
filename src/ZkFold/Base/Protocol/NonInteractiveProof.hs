@@ -6,7 +6,7 @@
 module ZkFold.Base.Protocol.NonInteractiveProof where
 
 import           Control.DeepSeq             (NFData)
-import           Crypto.Hash.SHA256          (hash)
+import           Crypto.Hash.BLAKE2.BLAKE2b  (hash)
 import           Data.Aeson
 import           Data.ByteString             (ByteString, cons)
 import qualified Data.ByteString.Base64      as B64
@@ -35,7 +35,7 @@ class Monoid t => FromTranscript t a where
 
 instance Binary a => FromTranscript ByteString a where
     newTranscript  = cons 0
-    fromTranscript = fromJust . fromByteString . hash
+    fromTranscript = fromJust . fromByteString . hash 28 mempty
 
 challenge :: forall t a . FromTranscript t a => t -> (a, t)
 challenge ts =
