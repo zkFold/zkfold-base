@@ -6,6 +6,7 @@ module ZkFold.Base.Data.ByteString
   , fromByteString
   , putWord8
   , getWord8
+  , skip
   , LittleEndian (..)
   , BigEndian (..)
   ) where
