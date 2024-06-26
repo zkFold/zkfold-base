@@ -6,8 +6,11 @@
 
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
-import           Data.Bits                                  (shiftR)
+import           Control.Monad
+import           Data.Bits
+import           Data.Foldable
 import           Data.List                                  (unfoldr)
+import           Data.Word
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), (/), (^))
 import qualified Prelude                                    as Haskell
@@ -29,21 +32,11 @@ instance Prime BLS12_381_Base
 
 type Fr = Zp BLS12_381_Scalar
 type Fq = Zp BLS12_381_Base
--- TODO: newtype Fq so we can ensure its encoding
---
--- Fq elements are encoded in big-endian form.
--- They occupy 48 bytes in this form.
 
 type IP1 = "IP1"
 instance IrreduciblePoly Fq IP1 where
     irreduciblePoly = toPoly [1, 0, 1]
 type Fq2 = Ext2 Fq IP1
--- TODO: newtype Fq2 so we can ensure its encoding
---
--- Fq2 elements are encoded in big-endian form,
--- meaning that the Fq element c0 + c1 * u is represented
--- by the Fq element c1 followed by the Fq element c0.
--- This means Fq2 elements occupy 96 bytes in this form.
 
 type IP2 = "IP2"
 instance IrreduciblePoly Fq2 IP2 where
@@ -145,21 +138,94 @@ and it is not the point at infinity and its y-coordinate
 is the lexicographically largest of
 the two associated with the encoded x-coordinate.
 -}
+
+-- infinite list of divMod 256's, little endian order
+leBytesOf :: Natural -> [(Natural, Word8)]
+leBytesOf n =
+    let
+        (n', r) = n `Prelude.divMod` 256
+    in
+        (n', fromIntegral r) : leBytesOf n'
+
+-- finite list of bytes, big endian order
+bytesOf :: ToConstant a Natural => Int -> a -> [Word8]
+bytesOf n
+    = reverse
+    . take n
+    . map snd
+    . leBytesOf
+    . toConstant
+
+-- big endian decoding
+ofBytes :: [Word8] -> Natural
+ofBytes = foldl' (\n w8 -> n * 256 + fromIntegral w8) 0
+
 instance Binary (Point BLS12_381_G1) where
-    put Inf         = Haskell.error "to implement"
-    put (Point x y) = Haskell.error "to implement"
-    get = Haskell.error "to implement"
+    put Inf = putWord8 (bit 1) <> mconcat (replicate 95 (putWord8 0))
+    put (Point x y) = foldMap putWord8 (bytesOf 48 x <> bytesOf 48 y)
+    get = do
+        byte <- getWord8
+        let infinite = testBit byte 1
+        if infinite then return Inf
+        else do
+            let byteXhead = clearBit (clearBit (clearBit byte 0) 1) 2
+            bytesXtail <- replicateM 47 getWord8
+            let x = fromConstant (ofBytes (byteXhead:bytesXtail))
+                compressed = testBit byte 0
+                bigY = testBit byte 2
+            if compressed then return (decompress (PointCompressed x bigY))
+            else do
+                bytesY <- replicateM 48 getWord8
+                let y = fromConstant (ofBytes bytesY)
+                return (Point x y)
+
 instance Binary (PointCompressed BLS12_381_G1) where
-    put InfCompressed              = Haskell.error "to implement"
-    put (PointCompressed x isBigY) = Haskell.error "to implement"
-    get = Haskell.error "to implement"
+    put InfCompressed =
+        putWord8 (bit 0 .|. bit 1) <> mconcat (replicate 47 (putWord8 0))
+    put (PointCompressed x bigY) =
+        let
+            flags = if bigY then bit 0 .|. bit 2 else bit 0
+            bytes = bytesOf 48 x
+        in
+            putWord8 (flags .|. head bytes) <> foldMap putWord8 (tail bytes)
+    get = do
+        byte <- getWord8
+        let infinite = testBit byte 1
+        if infinite then return InfCompressed
+        else do
+            let byteXhead = clearBit (clearBit (clearBit byte 0) 1) 2
+            bytesXtail <- replicateM 47 getWord8
+            let x = fromConstant (ofBytes (byteXhead:bytesXtail))
+                compressed = testBit byte 0
+                bigY = testBit byte 2
+            if compressed then return (PointCompressed x bigY)
+            else do
+                bytesY <- replicateM 48 getWord8
+                let y :: Fq = fromConstant (ofBytes bytesY)
+                    bigY' = y > negate y
+                return (PointCompressed x bigY')
+
 instance Binary (Point BLS12_381_G2) where
-    put Inf         = Haskell.error "to implement"
-    put (Point x y) = Haskell.error "to implement"
+    put Inf = putWord8 (bit 1) <> mconcat (replicate 191 (putWord8 0))
+    put (Point (Ext2 x0 x1) (Ext2 y0 y1)) =
+        let
+            bytes = bytesOf 48 x0
+              <> bytesOf 48 x1
+              <> bytesOf 48 y0
+              <> bytesOf 48 y1 -- check order here...
+        in
+            foldMap putWord8 bytes
     get = Haskell.error "to implement"
 instance Binary (PointCompressed BLS12_381_G2) where
-    put InfCompressed              = Haskell.error "to implement"
-    put (PointCompressed x isBigY) = Haskell.error "to implement"
+    put InfCompressed =
+        putWord8 (bit 0 .|. bit 1) <> mconcat (replicate 95 (putWord8 0))
+    put (PointCompressed (Ext2 x0 x1) bigY) =
+        let
+            flags = if bigY then bit 0 .|. bit 2 else bit 0
+            bytes = bytesOf 48 x0 <> bytesOf 48 x1
+            -- check order ^
+        in
+            putWord8 (flags .|. head bytes) <> foldMap putWord8 (tail bytes)
     get = Haskell.error "to implement"
 
 --------------------------------------- Pairing ---------------------------------------
