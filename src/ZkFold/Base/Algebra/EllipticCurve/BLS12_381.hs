@@ -110,35 +110,6 @@ instance StandardEllipticCurve BLS12_381_G2 where
 
 ------------------------------------ Encoding ------------------------------------
 
-
-{-
-G1 and G2 elements can be encoded in uncompressed form
-(the x-coordinate followed by the y-coordinate)
-or in compressed form (just the x-coordinate).
-G1 elements occupy 96 bytes in uncompressed form,
-and 48 bytes in compressed form.
-G2 elements occupy 192 bytes in uncompressed form,
-and 96 bytes in compressed form.
-
-The most-significant three bits of a G1 or G2 encoding
-should be masked away before the coordinate(s) are interpreted.
-These bits are used to unambiguously represent the underlying element:
-
-The most significant bit, when set,
-indicates that the point is in compressed form.
-Otherwise, the point is in uncompressed form.
-
-The second-most significant bit indicates that the point is at infinity.
-If this bit is set,
-the remaining bits of the group element's encoding should be set to zero.
-
-The third-most significant bit is set
-if (and only if) this point is in compressed form
-and it is not the point at infinity and its y-coordinate
-is the lexicographically largest of
-the two associated with the encoded x-coordinate.
--}
-
 -- infinite list of divMod 256's, little endian order
 leBytesOf :: Natural -> [(Natural, Word8)]
 leBytesOf n =
@@ -157,8 +128,10 @@ bytesOf n
     . toConstant
 
 -- big endian decoding
-ofBytes :: [Word8] -> Natural
-ofBytes = foldl' (\n w8 -> n * 256 + fromIntegral w8) 0
+ofBytes :: FromConstant Natural a => [Word8] -> a
+ofBytes
+  = fromConstant @Natural
+  . foldl' (\n w8 -> n * 256 + fromIntegral w8) 0
 
 instance Binary (Point BLS12_381_G1) where
     put Inf = putWord8 (bit 1) <> mconcat (replicate 95 (putWord8 0))
@@ -170,13 +143,13 @@ instance Binary (Point BLS12_381_G1) where
         else do
             let byteXhead = clearBit (clearBit (clearBit byte 0) 1) 2
             bytesXtail <- replicateM 47 getWord8
-            let x = fromConstant (ofBytes (byteXhead:bytesXtail))
+            let x = ofBytes (byteXhead:bytesXtail)
                 compressed = testBit byte 0
                 bigY = testBit byte 2
             if compressed then return (decompress (PointCompressed x bigY))
             else do
                 bytesY <- replicateM 48 getWord8
-                let y = fromConstant (ofBytes bytesY)
+                let y = ofBytes bytesY
                 return (Point x y)
 
 instance Binary (PointCompressed BLS12_381_G1) where
@@ -195,13 +168,13 @@ instance Binary (PointCompressed BLS12_381_G1) where
         else do
             let byteXhead = clearBit (clearBit (clearBit byte 0) 1) 2
             bytesXtail <- replicateM 47 getWord8
-            let x = fromConstant (ofBytes (byteXhead:bytesXtail))
+            let x = ofBytes (byteXhead:bytesXtail)
                 compressed = testBit byte 0
                 bigY = testBit byte 2
             if compressed then return (PointCompressed x bigY)
             else do
                 bytesY <- replicateM 48 getWord8
-                let y :: Fq = fromConstant (ofBytes bytesY)
+                let y :: Fq = ofBytes bytesY
                     bigY' = y > negate y
                 return (PointCompressed x bigY')
 
@@ -209,24 +182,63 @@ instance Binary (Point BLS12_381_G2) where
     put Inf = putWord8 (bit 1) <> mconcat (replicate 191 (putWord8 0))
     put (Point (Ext2 x0 x1) (Ext2 y0 y1)) =
         let
-            bytes = bytesOf 48 x0
-              <> bytesOf 48 x1
+            bytes = bytesOf 48 x1
+              <> bytesOf 48 x0
+              <> bytesOf 48 y1
               <> bytesOf 48 y0
-              <> bytesOf 48 y1 -- check order here...
         in
             foldMap putWord8 bytes
-    get = Haskell.error "to implement"
+    get = do
+        byte <- getWord8
+        let infinite = testBit byte 1
+        if infinite then return Inf
+        else do
+            let byteX1head = clearBit (clearBit (clearBit byte 0) 1) 2
+            bytesX1tail <- replicateM 47 getWord8
+            bytesX0 <- replicateM 48 getWord8
+            let x1 = ofBytes (byteX1head:bytesX1tail)
+                x0 = ofBytes bytesX0
+                compressed = testBit byte 0
+                bigY = testBit byte 2
+            if compressed then return (decompress (PointCompressed (Ext2 x0 x1) bigY))
+            else do
+                bytesY1 <- replicateM 48 getWord8
+                bytesY0 <- replicateM 48 getWord8
+                let y0 = ofBytes bytesY0
+                    y1 = ofBytes bytesY1
+                return (Point (Ext2 x0 x1) (Ext2 y0 y1))
+
 instance Binary (PointCompressed BLS12_381_G2) where
     put InfCompressed =
         putWord8 (bit 0 .|. bit 1) <> mconcat (replicate 95 (putWord8 0))
     put (PointCompressed (Ext2 x0 x1) bigY) =
         let
             flags = if bigY then bit 0 .|. bit 2 else bit 0
-            bytes = bytesOf 48 x0 <> bytesOf 48 x1
-            -- check order ^
+            bytes = bytesOf 48 x1 <> bytesOf 48 x0
         in
             putWord8 (flags .|. head bytes) <> foldMap putWord8 (tail bytes)
-    get = Haskell.error "to implement"
+    get = do
+        byte <- getWord8
+        let infinite = testBit byte 1
+        if infinite then return InfCompressed
+        else do
+            let byteX1head = clearBit (clearBit (clearBit byte 0) 1) 2
+            bytesX1tail <- replicateM 47 getWord8
+            bytesX0 <- replicateM 48 getWord8
+            let x1 = ofBytes (byteX1head:bytesX1tail)
+                x0 = ofBytes bytesX0
+                x = Ext2 x0 x1
+                compressed = testBit byte 0
+                bigY = testBit byte 2
+            if compressed then return (PointCompressed (Ext2 x0 x1) bigY)
+            else do
+                bytesY1 <- replicateM 48 getWord8
+                bytesY0 <- replicateM 48 getWord8
+                let y0 = ofBytes bytesY0
+                    y1 = ofBytes bytesY1
+                    y :: Fq2 = Ext2 y0 y1
+                    bigY' = y > negate y
+                return (PointCompressed x bigY')
 
 --------------------------------------- Pairing ---------------------------------------
 
