@@ -9,22 +9,23 @@ import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
-import           Data.List                                   (map, (++))
-import           GHC.TypeNats                                (Mod)
+import           Data.List                                   ((++))
+import           GHC.TypeNats                                (Div, Mod)
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (show, type (~), (<>))
 import qualified Prelude                                     as Haskell
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (Spec, describe, hspec)
 import           Test.QuickCheck                             (Gen, Property, chooseInteger, withMaxSuccess, (===))
-import           Tests.ArithmeticCircuit                     (eval', it)
+import           Tests.ArithmeticCircuit                     (it)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..))

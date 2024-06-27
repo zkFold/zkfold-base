@@ -14,6 +14,7 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
 import           ZkFold.Symbolic.Data.Bool
@@ -51,13 +52,13 @@ specArithmeticCircuit' = hspec $ do
            in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === one
         it "computes binary expansion" $ \(x :: a) ->
           let rs = binaryExpansion (embed x)
-           in checkClosedCircuit rs .&&. (V.fromVector $ exec rs) === padBits (numberOfBits @a) (binaryExpansion x)
+           in checkClosedCircuit rs .&&. V.fromVector (exec rs) === padBits (numberOfBits @a) (binaryExpansion x)
         it "internalizes equality" $ \(x :: a) (y :: a) ->
           let Bool (r :: ArithmeticCircuit 1 a) = embed x == embed y
            in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
           let Bool (r :: ArithmeticCircuit 1 a) = embed x == embed x
-           in checkClosedCircuit r .&&. eval' r === one
+           in checkClosedCircuit r .&&. exec1 r === one
 
 specArithmeticCircuit :: IO ()
 specArithmeticCircuit = do
