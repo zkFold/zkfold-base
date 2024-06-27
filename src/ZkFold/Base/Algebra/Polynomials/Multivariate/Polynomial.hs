@@ -129,7 +129,7 @@ var :: Polynomial c i j => i -> Poly c i j
 var x = polynomial [(one, monomial $ fromList [(x, one)])]
 
 lt :: Poly c i j -> Mono i j
-lt (P []) = M empty
+lt (P [])         = M empty
 lt (P ((_, m):_)) = m
 
 zeroP :: Poly c i j -> Bool

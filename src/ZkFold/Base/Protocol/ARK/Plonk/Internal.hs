@@ -21,8 +21,8 @@ import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, evalMonomial, evalPolynomial, mapVar,
-                                                               polynomial, var, variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, evalMonomial, evalPolynomial, mapVar, polynomial,
+                                                               var, variables)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Base.Data.Vector                      (Vector)
 import           ZkFold.Prelude                               (length, take)
