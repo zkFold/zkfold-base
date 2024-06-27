@@ -86,9 +86,9 @@ jobs:
 
     - name: Build
       run: |
-        cabal build zkfold-base
-        cabal build zkfold-base-test
-        cabal build zkfold-base-examples
+        cabal build zkfold-base -f Pedantic
+        cabal build zkfold-base-test -f Pedantic
+        cabal build zkfold-base-examples -f Pedantic
 
     - name: Test
       run: cabal test all
