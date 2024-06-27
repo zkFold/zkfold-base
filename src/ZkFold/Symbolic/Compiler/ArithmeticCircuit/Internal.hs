@@ -46,8 +46,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Monomial', Polynomial', evalMapM, evalPolynomial,
-                                                               mapCoeffs, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
 import qualified ZkFold.Base.Data.Vector                      as V
 import           ZkFold.Base.Data.Vector                      (Vector (..))
 import           ZkFold.Prelude                               (drop, length)
@@ -151,7 +150,7 @@ toVar srcs c = force $ fromZp ex
         r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: VarField
         v  = (+ r) . fromConstant
-        x  = g ^ fromZp (evalPolynomial evalMapM v $ mapCoeffs toField c)
+        x  = g ^ fromZp (evalPolynomial evalMonomial v $ mapCoeffs toField c)
         ex = foldr (\p y -> x ^ p + y) x srcs
 
 newVariableWithSource :: Arithmetic a => [Natural] -> (Natural -> Constraint a) -> State (Circuit a) Natural
@@ -166,10 +165,10 @@ addVariable x = do
 
 ---------------------------------- Low-level functions --------------------------------
 
-type ConstraintMonomial = Monomial'
+type ConstraintMonomial = Mono Natural Natural
 
 -- | The type that represents a constraint in the arithmetic circuit.
-type Constraint c = Polynomial' c
+type Constraint c = Poly c Natural Natural
 
 -- | Adds a constraint to the arithmetic circuit.
 constraint :: Arithmetic a => Constraint a -> State (Circuit a) ()

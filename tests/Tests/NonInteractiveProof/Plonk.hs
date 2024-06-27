@@ -39,7 +39,7 @@ propPlonkConstraintConversion x (x1, x2, x3) =
         p'  = fromPlonkConstraint $ toPlonkConstraint p
         xs' = toList $ variables p'
         v'  = (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
-    in evalPolynomial evalMapM v p == evalPolynomial evalMapM v' p'
+    in evalPolynomial evalMonomial v p == evalPolynomial evalMonomial v' p'
 
 propPlonkConstraintSatisfaction :: PlonkBS -> NonInteractiveProofTestData PlonkBS -> Bool
 propPlonkConstraintSatisfaction (Plonk _ _ _ ord ac _) (TestData _ w) =

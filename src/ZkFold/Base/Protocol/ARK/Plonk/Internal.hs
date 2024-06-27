@@ -21,7 +21,7 @@ import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', evalMapM, evalPolynomial, mapVar,
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, evalMonomial, evalPolynomial, mapVar,
                                                                polynomial, var, variables)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Base.Data.Vector                      (Vector)
@@ -51,7 +51,7 @@ getParams l = findK' $ mkStdGen 0
                 all (`notElem` hGroup) (hGroup' k1)
                 && all (`notElem` hGroup' k1) (hGroup' k2)
 
-toPlonkConstraint :: Polynomial' F -> (F, F, F, F, F, F, F, F)
+toPlonkConstraint :: Poly F Natural Natural -> (F, F, F, F, F, F, F, F)
 toPlonkConstraint p =
     let xs    = toList $ variables p
         i     = order @F
@@ -84,7 +84,7 @@ toPlonkConstraint p =
 
     in head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (F, F, F, F, F, F, F, F) -> Polynomial' F
+fromPlonkConstraint :: (F, F, F, F, F, F, F, F) -> Poly F Natural Natural
 fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
     let xa = [(fromZp a, 1)]
         xb = [(fromZp b, 1)]
@@ -93,11 +93,11 @@ fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
 
     in polynomial [(ql, xa), (qr, xb), (qo, xc), (qm, xaxb), (qc, one)]
 
-addPublicInput :: Natural -> [Polynomial' F] -> [Polynomial' F]
+addPublicInput :: Natural -> [Poly F Natural Natural] -> [Poly F Natural Natural]
 addPublicInput i ps = var i : ps
 
-removeConstantVariable :: (Eq c, Field c, Scale c c, FromConstant c c) => Polynomial' c -> Polynomial' c
-removeConstantVariable = evalPolynomial evalMapM (\x -> if x == 0 then one else var x)
+removeConstantVariable :: (Eq c, Field c, Scale c c, FromConstant c c) => Poly c Natural Natural -> Poly c Natural Natural
+removeConstantVariable = evalPolynomial evalMonomial (\x -> if x == 0 then one else var x)
 
 toPlonkArithmetization :: forall a n . KnownNat a => Vector n Natural -> ArithmeticCircuit 1 F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
