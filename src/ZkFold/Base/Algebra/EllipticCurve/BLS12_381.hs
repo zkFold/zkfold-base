@@ -134,7 +134,7 @@ ofBytes
   . foldl' (\n w8 -> n * 256 + fromIntegral w8) 0
 
 instance Binary (Point BLS12_381_G1) where
-    put Inf = putWord8 (bit 1) <> mconcat (replicate 95 (putWord8 0))
+    put Inf         = putWord8 (bit 1) <> mconcat (replicate 95 (putWord8 0))
     put (Point x y) = foldMap putWord8 (bytesOf 48 x <> bytesOf 48 y)
     get = do
         byte <- getWord8
