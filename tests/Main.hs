@@ -12,7 +12,6 @@ import           Tests.Group                                 (specAdditiveGroup)
 import           Tests.NonInteractiveProof                   (specNonInteractiveProof)
 import           Tests.Pairing                               (specPairing)
 import           Tests.Permutations                          (specPermutations)
-import           Tests.Plonk                                 (specPlonk)
 import           Tests.SHA2                                  (specSHA2Natural)
 import           Tests.UInt                                  (specUInt)
 import           Tests.Univariate                            (specUnivariate)
@@ -37,12 +36,13 @@ main = do
     -- specSHA2
 
     -- Arithmetic circuit
-    specArithmetization
     specArithmeticCircuit
+
+    -- Arithmetization
+    specArithmetization
 
     -- Non-interactive proofs
     specNonInteractiveProof
-    specPlonk
 
     -- Cryptography
     specSHA2Natural

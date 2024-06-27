@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Tests.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
+module Tests.NonInteractiveProof.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
 
 import           Data.ByteString                              (ByteString)
 import           Data.List                                    (sort, transpose)
@@ -11,7 +11,7 @@ import           Prelude                                      hiding (Fractional
                                                                replicate, take)
 import           Test.Hspec
 import           Test.QuickCheck
-import           Tests.NonInteractiveProof                    (NonInteractiveProofTestData (..))
+import           Tests.NonInteractiveProof.Internal           (NonInteractiveProofTestData (..))
 
 import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..),
                                                                MultiplicativeSemigroup (..), negate, zero, (-!))

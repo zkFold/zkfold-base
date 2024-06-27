@@ -19,7 +19,7 @@ import           Prelude                                    (abs)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           Tests.Plonk                                (PlonkSizeBS, PlonkMaxPolyDegreeBS)
+import           Tests.NonInteractiveProof.Plonk            (PlonkSizeBS, PlonkMaxPolyDegreeBS)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate

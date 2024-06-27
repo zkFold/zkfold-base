@@ -7,8 +7,8 @@ import           Prelude                                     hiding (Bool, Eq (.
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (Spec, describe, it)
 import           Test.QuickCheck                             (Testable (..), (==>))
-import           Tests.Plonk                                 (PlonkBS)
 
+import           Tests.NonInteractiveProof.Plonk             (PlonkBS)
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
 import           ZkFold.Base.Data.Vector                     (Vector (..))

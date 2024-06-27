@@ -2,29 +2,19 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Tests.NonInteractiveProof (NonInteractiveProofTestData(..), specNonInteractiveProof) where
+module Tests.NonInteractiveProof (specNonInteractiveProof) where
 
-import           Data.ByteString                             (ByteString)
 import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
-import           Test.QuickCheck                             (Arbitrary (arbitrary), Testable (property))
+import           Test.QuickCheck                             (Arbitrary, Testable (property))
 
+import           Tests.NonInteractiveProof.Internal          (NonInteractiveProofTestData (..))
+import           Tests.NonInteractiveProof.Plonk             (PlonkBS, specPlonk)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk)
 import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
-
-data NonInteractiveProofTestData a = TestData a (Witness a)
-
-instance (Show a, Show (Input a), Show (Witness a)) =>
-    Show (NonInteractiveProofTestData a) where
-    show (TestData a w) = "TestData: \n" ++ show a ++ "\n" ++ show w
-
-instance (NonInteractiveProof a, Arbitrary a, Arbitrary (Witness a)) =>
-    Arbitrary (NonInteractiveProofTestData a) where
-    arbitrary = TestData <$> arbitrary <*> arbitrary
 
 propNonInteractiveProof :: forall a .
     NonInteractiveProof a =>
@@ -47,4 +37,6 @@ specNonInteractiveProof' = hspec $ do
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) 32)
-    specNonInteractiveProof' @(Plonk 32 2 ByteString)
+
+    specPlonk
+    specNonInteractiveProof' @PlonkBS

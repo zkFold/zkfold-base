@@ -205,9 +205,10 @@ test-suite zkfold-base-test
       Tests.GroebnerBasis
       Tests.Group
       Tests.NonInteractiveProof
+      Tests.NonInteractiveProof.Internal
+      Tests.NonInteractiveProof.Plonk
       Tests.Pairing
       Tests.Permutations
-      Tests.Plonk
       Tests.SHA2
       Tests.UInt
       Tests.Univariate
