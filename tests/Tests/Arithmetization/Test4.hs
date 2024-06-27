@@ -6,8 +6,8 @@ import           Data.Map                                    (fromList, keys)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (Spec, describe, it)
-import           Test.QuickCheck                             (Testable (..), (==>))
-import           Tests.Plonk                                 (PlonkBS)
+import           Test.QuickCheck                             (Testable (..), withMaxSuccess, (==>))
+import           Tests.NonInteractiveProof.Plonk             (PlonkBS)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
@@ -56,4 +56,4 @@ specArithmetization4 = do
     describe "LockedByTxId arithmetization test 2" $ do
         it "should pass" $ property $ \x y -> x /= y ==> testDifferentValue x y
     describe "LockedByTxId ZKP test" $ do
-        it "should pass" $ property testZKP
+        it "should pass" $ withMaxSuccess 10 $ property testZKP

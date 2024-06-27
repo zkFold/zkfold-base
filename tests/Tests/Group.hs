@@ -6,15 +6,17 @@
 
 module Tests.Group (specAdditiveGroup) where
 
-import           Data.Data                       (Typeable, typeOf)
-import           Prelude                         hiding (Fractional (..), Num (..), length)
+import           Data.Data                                   (Typeable, typeOf)
+import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.EllipticCurve.Class
 
-specAdditiveGroup :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
-specAdditiveGroup = hspec $ do
+specAdditiveGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
+specAdditiveGroup' = hspec $ do
     describe "Group specification" $ do
         describe ("Type: " ++ show (typeOf @a zero)) $ do
             describe "Additive group axioms" $ do
@@ -26,3 +28,8 @@ specAdditiveGroup = hspec $ do
                     property $ \(a :: a) -> a + zero == a
                 it "should satisfy additive inverse" $ do
                     property $ \(a :: a) -> a + negate a == zero
+
+specAdditiveGroup :: IO ()
+specAdditiveGroup = do
+    specAdditiveGroup' @(Point BLS12_381_G1)
+    specAdditiveGroup' @(Point BLS12_381_G2)

@@ -5,32 +5,31 @@
 
 module Tests.UInt (specUInt) where
 
-import           Control.Applicative                        ((<*>))
-import           Control.Monad                              (return)
-import           Data.Function                              (($))
-import           Data.Functor                               ((<$>))
-import           Data.List                                  ((++))
-import           Numeric.Natural                            (Natural)
-import           Prelude                                    (show, type (~))
-import qualified Prelude                                    as P
-import           System.IO                                  (IO)
-import           Test.Hspec                                 (describe, hspec)
-import           Test.QuickCheck                            (Gen, Property, withMaxSuccess, (.&.), (===))
-import           Tests.ArithmeticCircuit                    (it)
+import           Control.Applicative                         ((<*>))
+import           Control.Monad                               (return)
+import           Data.Function                               (($))
+import           Data.Functor                                ((<$>))
+import           Data.List                                   ((++))
+import           Numeric.Natural                             (Natural)
+import           Prelude                                     (show, type (~))
+import qualified Prelude                                     as P
+import           System.IO                                   (IO)
+import           Test.Hspec                                  (describe, hspec)
+import           Test.QuickCheck                             (Gen, Property, withMaxSuccess, (.&.), (===))
+import           Tests.ArithmeticCircuit                     (exec1, it)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field            (Zp)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                    (Vector, item)
-import           ZkFold.Prelude                             (chooseNatural)
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (exec, exec1)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Data.Vector                     (Vector, item)
+import           ZkFold.Prelude                              (chooseNatural)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators           (Extend (..), NumberOfRegisters, Shrink (..))
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), NumberOfRegisters, Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
-
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -54,7 +53,7 @@ type UBinary n b a = Binary (UInt n b a)
 isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n Vector (Zp p) -> UBinary n ArithmeticCircuit (Zp p) -> Natural -> Natural -> Property
 isHom f g x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (fromConstant x `f` fromConstant y)
 
-specUInt
+specUInt'
     :: forall p n r r2n
     .  PrimeField (Zp p)
     => KnownNat n
@@ -73,7 +72,7 @@ specUInt
     => 1 + (r - 1) ~ r
     => 1 + (r2n - 1) ~ r2n
     => IO ()
-specUInt = hspec $ do
+specUInt' = hspec $ do
     let n = value @n
         m = 2 ^ n -! 1
     describe ("UInt" ++ show n ++ " specification") $ do
@@ -103,7 +102,6 @@ specUInt = hspec $ do
             return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR)
         --}
 
-        -- TODO: Optimise exec and test eea on ArithmeticCircuits
         it "calculates gcd correctly" $ withMaxSuccess 10 $ do
             x <- toss m
             y <- toss m
@@ -170,3 +168,8 @@ specUInt = hspec $ do
                 gt' = evalBoolVec $ x' > y'
                 gt'' = evalBool @(Zp p) (x'' > y'')
             return $ gt' === gt''
+
+specUInt :: IO ()
+specUInt = do
+    specUInt' @BLS12_381_Scalar @32
+    specUInt' @BLS12_381_Scalar @500

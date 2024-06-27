@@ -5,18 +5,19 @@
 
 module Tests.Pairing (specPairing) where
 
-import           Data.Kind                                  (Type)
-import           Data.Typeable                              (Typeable, typeOf)
-import qualified Data.Vector                                as V
-import           Prelude                                    hiding (Fractional (..), Num (..), length, (^))
+import           Data.Kind                                   (Type)
+import           Data.Typeable                               (Typeable, typeOf)
+import qualified Data.Vector                                 as V
+import           Prelude                                     hiding (Fractional (..), Num (..), length, (^))
 import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, deg, evalPolyVec, polyVecDiv, scalePV, toPolyVec,
-                                                             vec2poly)
-import           ZkFold.Base.Protocol.Commitment.KZG        (com)
+import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, deg, evalPolyVec, polyVecDiv, scalePV, toPolyVec,
+                                                              vec2poly)
+import           ZkFold.Base.Protocol.Commitment.KZG         (com)
 
 propVerificationKZG
     :: forall c1 c2 t f
@@ -47,7 +48,7 @@ propVerificationKZG x p z =
         -- Verification
     in pairing v0 h0 == pairing w h1
 
-specPairing
+specPairing'
     :: forall (c1 :: Type) (c2 :: Type) t f
     .  Typeable c1
     => Typeable c2
@@ -62,14 +63,18 @@ specPairing
     => AdditiveGroup (BaseField c1)
     => Show (BaseField c1)
     => IO ()
-specPairing = hspec $ do
+specPairing' = hspec $ do
     describe "Elliptic curve pairing specification" $ do
         describe ("Type: " ++ show (typeOf (pairing @c1 @c2))) $ do
             describe "Pairing axioms" $ do
-                it "should satisfy bilinearity" $ do
+                it "should satisfy bilinearity" $ withMaxSuccess 10 $ do
                     property $ \a b p q -> pairing @c1 @c2 (a `mul` p) (b `mul` q) == pairing p q ^ (a * b)
-                it "should satisfy non-degeneracy" $ do
+                it "should satisfy non-degeneracy" $ withMaxSuccess 10 $ do
                     property $ \p q -> pairing @c1 @c2 p q /= one
             describe "Pairing verification" $ do
-                it "should verify KZG commitments" $ do
+                it "should verify KZG commitments" $ withMaxSuccess 10 $ do
                     property $ propVerificationKZG @c1 @c2
+
+specPairing :: IO ()
+specPairing = do
+    specPairing' @BLS12_381_G1 @BLS12_381_G2

@@ -2,24 +2,19 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Tests.NonInteractiveProof (NonInteractiveProofTestData(..), specNonInteractiveProof) where
+module Tests.NonInteractiveProof (specNonInteractiveProof) where
 
-import           Data.Typeable                            (Proxy (..), Typeable, typeRep)
-import           Prelude                                  hiding (Fractional (..), Num (..), length)
-import           Test.Hspec                               (describe, hspec, it)
-import           Test.QuickCheck                          (Arbitrary (arbitrary), Testable (property))
+import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
+import           Prelude                                     hiding (Fractional (..), Num (..), length)
+import           Test.Hspec                                  (describe, hspec, it)
+import           Test.QuickCheck                             (Arbitrary, Testable (property), withMaxSuccess)
+import           Tests.NonInteractiveProof.Internal          (NonInteractiveProofTestData (..))
+import           Tests.NonInteractiveProof.Plonk             (PlonkBS, specPlonk)
 
-import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
-
-data NonInteractiveProofTestData a = TestData a (Witness a)
-
-instance (Show a, Show (Input a), Show (Witness a)) =>
-    Show (NonInteractiveProofTestData a) where
-    show (TestData a w) = "TestData: \n" ++ show a ++ "\n" ++ show w
-
-instance (NonInteractiveProof a, Arbitrary a, Arbitrary (Witness a)) =>
-    Arbitrary (NonInteractiveProofTestData a) where
-    arbitrary = TestData <$> arbitrary <*> arbitrary
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
+import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 
 propNonInteractiveProof :: forall a .
     NonInteractiveProof a =>
@@ -30,11 +25,18 @@ propNonInteractiveProof (TestData a w) =
         (i, p) = prove @a sp w
     in verify @a sv i p
 
-specNonInteractiveProof :: forall a . (Typeable a, NonInteractiveProof a,
+specNonInteractiveProof' :: forall a . (Typeable a, NonInteractiveProof a,
     Show a, Show (Input a), Show (Witness a),
     Arbitrary a, Arbitrary (Witness a)) => IO ()
-specNonInteractiveProof = hspec $ do
+specNonInteractiveProof' = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
             describe "All correct proofs" $ do
-                it "should validate" $ property $ propNonInteractiveProof @a
+                it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @a
+
+specNonInteractiveProof :: IO ()
+specNonInteractiveProof = do
+    specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) 32)
+
+    specPlonk
+    specNonInteractiveProof' @PlonkBS

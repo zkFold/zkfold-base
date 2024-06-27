@@ -113,16 +113,24 @@ testAlgorithm file = do
 
 -- | Test the implementation of a hashing algorithm with @Zp BLS12_381_Scalar@ as base field for ByteStrings.
 --
-specSHA2Natural
+specSHA2Natural'
     :: forall (algorithm :: Symbol) element
     .  KnownSymbol algorithm
     => SHA2N algorithm Vector element
     => ToConstant (ByteString (ResultSize algorithm) Vector element) Natural
     => IO ()
-specSHA2Natural = do
+specSHA2Natural' = do
     testFiles <- getTestFiles @algorithm
     forM_ testFiles $ testAlgorithm @algorithm @element
 
+specSHA2Natural :: IO ()
+specSHA2Natural = do
+    specSHA2Natural' @"SHA224" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA256" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA384" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA512" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA512/224" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA512/256" @(Zp BLS12_381_Scalar)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -148,7 +156,7 @@ specSHA2bs = do
 
 -- | Test the implementation of a hashing algorithm with @ArithmeticCircuit (Zp BLS12_381_Scalar)@ as base field for ByteStrings.
 --
-specSHA2
+specSHA2'
     :: forall (algorithm :: Symbol)
     .  KnownSymbol algorithm
     => SHA2N algorithm Vector (Zp BLS12_381_Scalar)
@@ -162,7 +170,7 @@ specSHA2
     => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 900
     => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 1900
     => IO ()
-specSHA2 = hspec $ do
+specSHA2' = hspec $ do
     specSHA2bs @1    @algorithm
     specSHA2bs @2    @algorithm
     specSHA2bs @3    @algorithm
@@ -172,3 +180,12 @@ specSHA2 = hspec $ do
     specSHA2bs @64   @algorithm
     specSHA2bs @900  @algorithm
     specSHA2bs @1900 @algorithm
+
+specSHA2 :: IO ()
+specSHA2 = do
+    specSHA2' @"SHA224"
+    specSHA2' @"SHA256"
+    specSHA2' @"SHA384"
+    specSHA2' @"SHA512"
+    specSHA2' @"SHA512/224"
+    specSHA2' @"SHA512/256"

@@ -25,4 +25,3 @@ specArithmetization3 = do
         it "should pass" $ do
             let Bool r = compile @(Zp 97) (testFunc @R) :: Bool R
             Bool (V.item $ acValue (applyArgs r [3, 5])) `shouldBe` testFunc 3 5
-
