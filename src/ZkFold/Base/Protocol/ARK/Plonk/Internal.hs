@@ -101,11 +101,11 @@ removeConstantVariable = evalPolynomial evalMonomial (\x -> if x == 0 then one e
 
 toPlonkArithmetization :: forall a n . KnownNat a => Vector n Natural -> ArithmeticCircuit 1 F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
-toPlonkArithmetization ord ac =
+toPlonkArithmetization iPub ac =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]
         vars   = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ constraintSystem ac)
         ac'    = mapVarArithmeticCircuit ac
-        inputs = fmap (mapVar vars [0..]) ord
+        inputs = fmap (mapVar vars [0..]) iPub
         system = foldr addPublicInput (elems $ constraintSystem ac') inputs
 
     in case map (toPolyVec . V.fromList) $ transpose $ map (f . toPlonkConstraint . removeConstantVariable) system of
