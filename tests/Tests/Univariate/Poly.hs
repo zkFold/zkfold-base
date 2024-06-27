@@ -16,6 +16,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (Poly, fromPoly, toPoly)
 import           ZkFold.Prelude
 
+-- TODO: derive naive multiplication for univariate polynomials from multivariate polynomial multiplication
 naive :: (Eq a, Field a) => Poly a -> Poly a -> Poly a
 naive l r = toPoly $ V.fromList $ go (V.toList (fromPoly l)) (V.toList (fromPoly r))
   where

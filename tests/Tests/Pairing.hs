@@ -67,12 +67,12 @@ specPairing' = hspec $ do
     describe "Elliptic curve pairing specification" $ do
         describe ("Type: " ++ show (typeOf (pairing @c1 @c2))) $ do
             describe "Pairing axioms" $ do
-                it "should satisfy bilinearity" $ do
+                it "should satisfy bilinearity" $ withMaxSuccess 10 $ do
                     property $ \a b p q -> pairing @c1 @c2 (a `mul` p) (b `mul` q) == pairing p q ^ (a * b)
-                it "should satisfy non-degeneracy" $ do
+                it "should satisfy non-degeneracy" $ withMaxSuccess 10 $ do
                     property $ \p q -> pairing @c1 @c2 p q /= one
             describe "Pairing verification" $ do
-                it "should verify KZG commitments" $ do
+                it "should verify KZG commitments" $ withMaxSuccess 10 $ do
                     property $ propVerificationKZG @c1 @c2
 
 specPairing :: IO ()

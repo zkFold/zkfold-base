@@ -102,7 +102,6 @@ specUInt' = hspec $ do
             return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR)
         --}
 
-        -- TODO: Optimise exec and test eea on ArithmeticCircuits
         it "calculates gcd correctly" $ withMaxSuccess 10 $ do
             x <- toss m
             y <- toss m
