@@ -18,7 +18,7 @@ import           Prelude                         hiding (Num (..), drop, filter,
 import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Prelude                  (elemIndex)
+import           ZkFold.Prelude                  (elemIndex, (!!))
 
 type Variable i = (Eq i, Ord i)
 
@@ -43,6 +43,14 @@ evalMonomial :: forall i j b .
     (i -> b) -> Mono i j -> b
 evalMonomial f (M m) =
     foldrWithKey (\i j x -> (f i ^ j) * x) (one @b) m
+
+mapVar :: Variable i => [i] -> [i] -> i -> i
+mapVar vars vars' x = case x `elemIndex` vars of
+    Just i  -> vars' !! i
+    Nothing -> error "mapVar: something went wrong"
+
+mapVarMonomial :: Variable i => [i] -> [i] -> Mono i j -> Mono i j
+mapVarMonomial vars vars' (M as) = M $ mapKeys (mapVar vars vars') as
 
 instance Monomial i j => IsList (Mono i j) where
     type Item (Mono i j) = (i, j)
@@ -88,11 +96,3 @@ instance (Monomial i j, Ring j) => MultiplicativeGroup (Mono i j) where
 
     M l / M r = M $ differenceWith f l r
         where f a b = if a == b then Nothing else Just (a - b)
-
-mapVar :: [Natural] -> Natural -> Natural
-mapVar vars x = case x `elemIndex` vars of
-    Just i  -> i
-    Nothing -> error "mapVar: something went wrong"
-
-mapVarMonomial :: [Natural] -> Mono Natural j -> Mono Natural j
-mapVarMonomial vars (M as) = M $ mapKeys (mapVar vars) as

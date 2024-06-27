@@ -44,6 +44,20 @@ evalPolynomial :: forall c i j b .
     ((i -> b) -> Mono i j -> b) -> (i -> b) -> Poly c i j -> b
 evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 
+variables :: forall c .
+    MultiplicativeMonoid c =>
+    Poly c Natural Natural -> Set Natural
+variables = runSources . evalPolynomial evalMonomial (Sources @c . singleton)
+
+mapVarPolynomial :: Variable i => [i] -> [i] -> Poly c i j -> Poly c i j
+mapVarPolynomial vars vars' (P ms) = P $ second (mapVarMonomial vars vars') <$> ms
+
+mapCoeffs :: forall c c' i j .
+    (c -> c')
+    -> Poly c i j
+    -> Poly c' i j
+mapCoeffs f (P p) = P $ p <&> first f
+
 instance Polynomial c i j => IsList (Poly c i j) where
     type Item (Poly c i j) = (c, Map i j)
     toList (P p) = second (\(M m) -> m) <$> p
@@ -170,17 +184,3 @@ systemReduce = foldr f []
         f p ps =
             let p' = fullReduceMany p ps
             in bool ps (p' : ps) (not $ zeroP p')
-
-variables :: forall c .
-    MultiplicativeMonoid c =>
-    Poly c Natural Natural -> Set Natural
-variables = runSources . evalPolynomial evalMonomial (Sources @c . singleton)
-
-mapCoeffs :: forall c c' i j .
-    (c -> c')
-    -> Poly c i j
-    -> Poly c' i j
-mapCoeffs f (P p) = P $ p <&> first f
-
-mapVarPolynomial :: [Natural] -> Poly c Natural Natural -> Poly c Natural Natural
-mapVarPolynomial vars (P ms) = P $ second (mapVarMonomial vars) <$> ms
