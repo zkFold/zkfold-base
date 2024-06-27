@@ -5,7 +5,7 @@
 
 module ZkFold.Base.Protocol.NonInteractiveProof where
 
-import           Control.DeepSeq             (NFData)
+import           Control.DeepSeq (NFData)
 import           Crypto.Hash.BLAKE2.BLAKE2b  (hash)
 import           Data.Aeson
 import           Data.ByteString             (ByteString, cons)
