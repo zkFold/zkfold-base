@@ -16,21 +16,22 @@ import           Prelude                                             hiding (Num
 
 import           ZkFold.Base.Algebra.Basic.Class                     (MultiplicativeMonoid (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), Circuit (..))
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
 mapVarWitness :: [Natural] -> (Map Natural a -> Map Natural a)
 mapVarWitness vars = mapKeys (mapVar vars)
 
-mapVarArithmeticCircuit :: MultiplicativeMonoid a => ArithmeticCircuit a -> ArithmeticCircuit a
-mapVarArithmeticCircuit ac =
+mapVarArithmeticCircuit :: MultiplicativeMonoid a => ArithmeticCircuit n a -> ArithmeticCircuit n a
+mapVarArithmeticCircuit (ArithmeticCircuit ac out) =
     let vars = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
-    in ac
-    {
-        acSystem  = fromList $ zip [0..] $ mapVarPolynomial vars <$> elems (acSystem ac),
-        -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
-        acWitness = mapVarWitness vars . acWitness ac,
-        acOutput  = mapVar vars $ acOutput ac
-    }
+        mappedCircuit = ac
+            {
+                acSystem  = fromList $ zip [0..] $ mapVarPolynomial vars <$> elems (acSystem ac),
+                -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
+                acWitness = mapVarWitness vars . acWitness ac
+            }
+        mappedOutputs = mapVar vars <$> out
+     in ArithmeticCircuit mappedCircuit mappedOutputs
 

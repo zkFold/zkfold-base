@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module ZkFold.Base.Protocol.ARK.Protostar.Gate where
 
 import           Data.Zip                                        (zipWith)

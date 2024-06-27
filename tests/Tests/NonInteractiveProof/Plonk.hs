@@ -43,7 +43,7 @@ propPlonkConstraintConversion x (x1, x2, x3) =
 
 propPlonkConstraintSatisfaction :: PlonkBS -> NonInteractiveProofTestData PlonkBS -> Bool
 propPlonkConstraintSatisfaction (Plonk _ _ _ ord ac _) (TestData _ w) =
-    let wmap = acWitness $ mapVarArithmeticCircuit ac
+    let wmap = witnessGenerator $ mapVarArithmeticCircuit ac
         (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkSizeBS ord ac
 
         (PlonkWitnessInput wInput, _) = w

@@ -22,4 +22,4 @@ exampleLEQ = do
 
     putStrLn "\nExample: (<=) operation\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file (leq @(ArithmeticCircuit (Zp BLS12_381_Scalar)))
+    compileIO @(Zp BLS12_381_Scalar) file (leq @(ArithmeticCircuit 1 (Zp BLS12_381_Scalar)))

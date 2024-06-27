@@ -27,6 +27,7 @@ import           Prelude                                          hiding (Num (.
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                  (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                 (Prime)
+import           ZkFold.Base.Data.Vector                          (item)
 import           ZkFold.Prelude                                   ((!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.GroebnerBasis.Internal
@@ -67,15 +68,15 @@ variableTypes = nub . sortBy (\(x1, _) (x2, _) -> compare x2 x1) . concatMap var
         variableTypes'' :: Monomial p -> [(Monomial p, VarType)]
         variableTypes'' (M _ as) = map (\(j, v) -> (M one (singleton j (setPower 1 v)), getVarType v)) $ toList as
 
-makeTheorem :: forall p . PrimeField (Zp p) => ArithmeticCircuit (Zp p) -> (Polynomial p, [Polynomial p])
+makeTheorem :: forall p . PrimeField (Zp p) => ArithmeticCircuit 1 (Zp p) -> (Polynomial p, [Polynomial p])
 makeTheorem r = (boundVariables p0 ps, --systemReduce $
         map (`boundVariables` ps) ps)
     where
-        m  = acSystem r
-        xs = reverse $ elems $ acVarOrder r
+        m  = constraintSystem r
+        xs = reverse $ elems $ varOrder r
         ps = sortBy (flip compare) $ map convert $ elems m
 
-        k  = acOutput r
+        k  = item $ acOutput r
         p0 = polynomial [M one (singleton (mapVars k) (Free 1))] - polynomial [M one empty]
 
         mapVars :: Natural -> Natural
