@@ -91,7 +91,7 @@ registerSize = Haskell.ceiling (getNatural @n % numberOfRegisters @a @n)
 type family NumberOfRegisters (a :: Type) (bits :: Natural) :: Natural where
     NumberOfRegisters a bits = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
                                                                           -- But it is weird anyway if someone is trying to store a value
-                                                                          -- which requires more than 500 registers.
+                                                                          -- which requires more than 50 registers.
 
 type family NumberOfRegisters' (a :: Type) (bits :: Natural) (c :: [Natural]) :: Natural where
     NumberOfRegisters' a bits '[] = 0
