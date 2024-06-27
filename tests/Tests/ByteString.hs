@@ -5,29 +5,30 @@
 
 module Tests.ByteString (specByteString) where
 
-import           Control.Applicative              ((<*>))
-import           Control.Monad                    (return)
-import           Data.Function                    (($))
-import           Data.Functor                     ((<$>))
-import           Data.List                        ((++))
-import           GHC.TypeNats                     (Div, Mod)
-import           Numeric.Natural                  (Natural)
-import           Prelude                          (show, type (~), (<>))
-import qualified Prelude                          as Haskell
-import           System.IO                        (IO)
-import           Test.Hspec                       (Spec, describe, hspec)
-import           Test.QuickCheck                  (Gen, Property, chooseInteger, withMaxSuccess, (===))
-import           Tests.ArithmeticCircuit          (it)
+import           Control.Applicative                         ((<*>))
+import           Control.Monad                               (return)
+import           Data.Function                               (($))
+import           Data.Functor                                ((<$>))
+import           Data.List                                   ((++))
+import           GHC.TypeNats                                (Div, Mod)
+import           Numeric.Natural                             (Natural)
+import           Prelude                                     (show, type (~), (<>))
+import qualified Prelude                                     as Haskell
+import           System.IO                                   (IO)
+import           Test.Hspec                                  (Spec, describe, hspec)
+import           Test.QuickCheck                             (Gen, Property, chooseInteger, withMaxSuccess, (===))
+import           Tests.ArithmeticCircuit                     (it)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector          (Vector)
-import           ZkFold.Prelude                   (chooseNatural)
-import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit, exec)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Prelude                              (chooseNatural)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators (Extend (..), Iso (..))
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..))
 import           ZkFold.Symbolic.Data.UInt
 
 toss :: Natural -> Gen Natural
@@ -116,7 +117,7 @@ testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to leng
 
 -- | For some reason, Haskell can't infer obvious type relations such as n <= n + 1...
 --
-specByteString
+specByteString'
     :: forall p n
     .  PrimeField (Zp p)
     => KnownNat n
@@ -145,7 +146,7 @@ specByteString
     => KnownNat (n + 128)
     => KnownNat (n + n)
     => IO ()
-specByteString = hspec $ do
+specByteString' = hspec $ do
     let n = Haskell.fromIntegral $ value @n
         m = 2 Haskell.^ n -! 1
     describe ("ByteString" ++ show n ++ " specification") $ do
@@ -218,3 +219,9 @@ specByteString = hspec $ do
         testGrow @n @(n + 10) @p
         testGrow @n @(n + 128) @p
         testGrow @n @(n + n) @p
+
+specByteString :: IO ()
+specByteString = do
+    specByteString' @BLS12_381_Scalar @32
+    specByteString' @BLS12_381_Scalar @512
+    specByteString' @BLS12_381_Scalar @508 -- Twice the number of bits encoded by BLS12_381_Scalar.

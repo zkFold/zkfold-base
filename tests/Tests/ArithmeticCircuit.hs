@@ -12,6 +12,8 @@ import           Test.Hspec                                             (Spec, d
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
@@ -31,8 +33,8 @@ correctHom2 f x y = let r = f (embed x) (embed y) in checkClosedCircuit r .&&. e
 it :: Testable prop => String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
 
-specArithmeticCircuit :: forall a . (Arbitrary a, Arithmetic a, FromConstant a a, Scale a a, Show a) => IO ()
-specArithmeticCircuit = hspec $ do
+specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, FromConstant a a, Scale a a, Show a) => IO ()
+specArithmeticCircuit' = hspec $ do
     describe "ArithmeticCircuit specification" $ do
         it "embeds constants" $ correctHom1 @a id
         it "adds correctly" $ correctHom2 @a (+)
@@ -50,10 +52,14 @@ specArithmeticCircuit = hspec $ do
            in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === one
         it "computes binary expansion" $ \(x :: a) ->
           let rs = binaryExpansion (embed x)
-           in checkClosedCircuit rs .&&. (V.fromVector $ exec rs) === padBits (numberOfBits @a) (binaryExpansion x)
+           in checkClosedCircuit rs .&&. V.fromVector (exec rs) === padBits (numberOfBits @a) (binaryExpansion x)
         it "internalizes equality" $ \(x :: a) (y :: a) ->
           let Bool (r :: ArithmeticCircuit 1 a) = embed x == embed y
            in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
           let Bool (r :: ArithmeticCircuit 1 a) = embed x == embed x
            in checkClosedCircuit r .&&. exec1 r === one
+
+specArithmeticCircuit :: IO ()
+specArithmeticCircuit = do
+  specArithmeticCircuit' @(Zp BLS12_381_Scalar)
