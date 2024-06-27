@@ -7,7 +7,7 @@ module Tests.NonInteractiveProof (specNonInteractiveProof) where
 import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
-import           Test.QuickCheck                             (Arbitrary, Testable (property))
+import           Test.QuickCheck                             (Arbitrary, Testable (property), withMaxSuccess)
 import           Tests.NonInteractiveProof.Internal          (NonInteractiveProofTestData (..))
 import           Tests.NonInteractiveProof.Plonk             (PlonkBS, specPlonk)
 
