@@ -9,7 +9,6 @@ import           Tests.ByteString                            (specByteString)
 import           Tests.Field                                 (specField)
 import           Tests.GroebnerBasis                         (specGroebner)
 import           Tests.Group                                 (specAdditiveGroup)
-import           Tests.Multiplication                        (specMultiplication)
 import           Tests.NonInteractiveProof                   (specNonInteractiveProof)
 import           Tests.Pairing                               (specPairing)
 import           Tests.Permutations                          (specPermutations)
@@ -29,7 +28,6 @@ main = do
     specAdditiveGroup
     specPairing
     specUnivariate
-    specMultiplication
     specGroebner
 
     -- Symbolic types and operations

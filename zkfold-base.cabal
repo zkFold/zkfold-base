@@ -204,7 +204,6 @@ test-suite zkfold-base-test
       Tests.Field
       Tests.GroebnerBasis
       Tests.Group
-      Tests.Multiplication
       Tests.NonInteractiveProof
       Tests.Pairing
       Tests.Permutations
@@ -212,6 +211,8 @@ test-suite zkfold-base-test
       Tests.SHA2
       Tests.UInt
       Tests.Univariate
+      Tests.Univariate.Poly
+      Tests.Univariate.PolyVec
     build-depends:
       base                          >= 4.9 && < 5,
       binary                               < 0.11,
