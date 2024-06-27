@@ -12,6 +12,7 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
     , MonomialRepAny
     , MonomialRepBoundedDegree
     , MonomialBoundedDegree
+    , dividable
     , evalMapM
     , evalVectorM
     , mapVar
@@ -33,6 +34,7 @@ import           Test.QuickCheck                 (Arbitrary (..))
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector         (Vector (..))
 import           ZkFold.Prelude                  (elemIndex)
+import Data.Map (isSubmapOfBy)
 
 type Variable i = Ord i
 
@@ -101,6 +103,9 @@ instance (Monomial i j, Ring j) => MultiplicativeGroup (M i j (Map i j)) where
 
     M l / M r = M $ differenceWith f l r
         where f a b = if a == b then Nothing else Just (a - b)
+
+dividable :: forall i j . Monomial i j => M i j (Map i j) -> M i j (Map i j) -> Bool
+dividable (M l) (M r) = isSubmapOfBy (<=) r l
 
 evalMapM :: forall i j b .
     MultiplicativeMonoid b =>

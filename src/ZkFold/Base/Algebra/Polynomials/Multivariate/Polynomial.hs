@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass               #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 {-# LANGUAGE TypeApplications             #-}
-{-# LANGUAGE TypeOperators                #-}
 
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
     ( Polynomial
@@ -13,6 +12,12 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
     , PolynomialRepBoundedDegree
     , mapCoeffs
     , var
+    , lt
+    , reducable
+    , reduce
+    , reduceMany
+    , fullReduceMany
+    , systemReduce
     , evalPolynomial
     , mapVarPolynomial
     , variables
@@ -35,6 +40,7 @@ import           Test.QuickCheck                                       (Arbitrar
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
+import Data.Bool (bool)
 
 -- | A class for polynomials.
 -- `c` is the coefficient type,
@@ -136,6 +142,63 @@ instance Polynomial c i j => Ring (P c i j (Map i j) [(c, M i j (Map i j))])
 -- | @'var' i@ is a polynomial \(p(x) = x_i\)
 var :: Polynomial c i j => i -> P c i j (Map i j) [(c, M i j (Map i j))]
 var x = polynomial [(one, monomial $ fromList [(x, one)])]
+
+lt :: P c i j (Map i j) [(c, M i j (Map i j))] -> M i j (Map i j)
+lt (P []) = M empty
+lt (P ((_, m):_)) = m
+
+zeroP :: P c i j (Map i j) [(c, M i j (Map i j))] -> Bool
+zeroP (P []) = True
+zeroP _      = False
+
+reducable :: Polynomial c i j  => P c i j (Map i j) [(c, M i j (Map i j))] -> P c i j (Map i j) [(c, M i j (Map i j))] -> Bool
+reducable l r = dividable (lt l) (lt r)
+
+reduce ::
+       forall c i j . (Ring j, Polynomial c i j)
+    => P c i j (Map i j) [(c, M i j (Map i j))]
+    -> P c i j (Map i j) [(c, M i j (Map i j))]
+    -> P c i j (Map i j) [(c, M i j (Map i j))]
+reduce l r =
+    let q = P [(one, lt l / lt r)]
+    in l - q * r
+
+reduceMany ::
+       forall c i j . (Ring j, Polynomial c i j)
+    => P c i j (Map i j) [(c, M i j (Map i j))]
+    -> [P c i j (Map i j) [(c, M i j (Map i j))]]
+    -> P c i j (Map i j) [(c, M i j (Map i j))]
+reduceMany h fs = if reduced then reduceMany h' fs else h'
+  where
+    (h', reduced) = reduceStep h fs False
+    reduceStep p (q:qs) r
+      | zeroP p   = (h, r)
+      | otherwise =
+        if reducable p q
+          then (reduce p q, True)
+          else reduceStep p qs r
+    reduceStep p [] r = (p, r)
+
+fullReduceMany ::
+       forall c i j . (Ring j, Polynomial c i j)
+    => P c i j (Map i j) [(c, M i j (Map i j))]
+    -> [P c i j (Map i j) [(c, M i j (Map i j))]]
+    -> P c i j (Map i j) [(c, M i j (Map i j))]
+fullReduceMany h fs =
+    let h' = reduceMany h fs
+    in case h' of
+        P []         -> h'
+        P ((c, m):_) -> P [(c, m)] + fullReduceMany (h' - P [(c, m)]) fs
+
+systemReduce ::
+       forall c i j . (Ring j, Polynomial c i j)
+    => [P c i j (Map i j) [(c, M i j (Map i j))]]
+    -> [P c i j (Map i j) [(c, M i j (Map i j))]]
+systemReduce = foldr f []
+    where
+        f p ps =
+            let p' = fullReduceMany p ps
+            in bool ps (p' : ps) (not $ zeroP p')
 
 evalPolynomial :: forall c i j b m .
     Algebra c b =>
