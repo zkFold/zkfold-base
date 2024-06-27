@@ -11,12 +11,12 @@ import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     (show, type(~))
+import           Prelude                                     (show, type (~))
 import qualified Prelude                                     as P
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (describe, hspec)
-import           Test.QuickCheck                             (Gen, Property, (.&.), (===), withMaxSuccess)
-import           Tests.ArithmeticCircuit                     (it, exec1)
+import           Test.QuickCheck                             (Gen, Property, withMaxSuccess, (.&.), (===))
+import           Tests.ArithmeticCircuit                     (exec1, it)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -26,7 +26,7 @@ import           ZkFold.Base.Data.Vector                     (Vector, item)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Shrink (..), NumberOfRegisters)
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), NumberOfRegisters, Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt

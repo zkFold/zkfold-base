@@ -6,7 +6,7 @@ module Tests.Univariate.Poly (specUnivariatePoly) where
 
 import           Data.Data                                   (typeOf)
 import qualified Data.Vector                                 as V
-import           Prelude                                     hiding (Fractional(..), Num(..), (^))
+import           Prelude                                     hiding (Fractional (..), Num (..), (^))
 import           Test.Hspec
 import           Test.QuickCheck
 

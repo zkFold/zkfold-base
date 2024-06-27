@@ -3,10 +3,10 @@
 
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
-import           Prelude                                     hiding (Fractional (..), Num (..), length)
-import           Test.QuickCheck                             (Arbitrary (arbitrary))
+import           Prelude                                  hiding (Fractional (..), Num (..), length)
+import           Test.QuickCheck                          (Arbitrary (arbitrary))
 
-import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
+import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 

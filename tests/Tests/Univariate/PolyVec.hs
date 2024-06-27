@@ -18,13 +18,13 @@ import           Prelude                                    hiding (Fractional (
 import           Prelude                                    (abs)
 import           Test.Hspec
 import           Test.QuickCheck
+import           Tests.NonInteractiveProof.Plonk            (PlonkMaxPolyDegreeBS, PlonkSizeBS)
 
-import           Tests.NonInteractiveProof.Plonk            (PlonkSizeBS, PlonkMaxPolyDegreeBS)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Prelude                             (length, take)
 import           ZkFold.Base.Protocol.ARK.Plonk             (F)
+import           ZkFold.Prelude                             (length, take)
 
 propToPolyVec :: forall c s .
     (Ring c, KnownNat s) =>

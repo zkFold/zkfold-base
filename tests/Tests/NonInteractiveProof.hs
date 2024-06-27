@@ -8,9 +8,9 @@ import           Data.Typeable                               (Proxy (..), Typeab
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (Arbitrary, Testable (property))
-
 import           Tests.NonInteractiveProof.Internal          (NonInteractiveProofTestData (..))
 import           Tests.NonInteractiveProof.Plonk             (PlonkBS, specPlonk)
+
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
