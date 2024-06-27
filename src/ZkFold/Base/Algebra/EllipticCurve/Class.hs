@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -10,7 +11,6 @@ import           Prelude                         hiding (Num (..), sum, (/), (^)
 import           Test.QuickCheck                 hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString
 
 
 data Point curve = Point { _x :: (BaseField curve), _y :: (BaseField curve) } | Inf
@@ -52,19 +52,6 @@ instance (EllipticCurve curve, AdditiveGroup (BaseField curve)) => Scale Integer
 
 instance (EllipticCurve curve, AdditiveGroup (BaseField curve)) => AdditiveGroup (Point curve) where
     negate = pointNegate
-
-instance (EllipticCurve curve, Binary (BaseField curve)) => Binary (Point curve) where
-    -- TODO: Point Compression
-    -- When we know the equation of an elliptic curve, y^2 = x^3 + a * x + b
-    -- then we only need to retain a flag sign byte,
-    -- and the x-value to reconstruct the y-value of a point.
-    put Inf         = putWord8 0
-    put (Point x y) = putWord8 1 <> put x <> put y
-    get = do
-        flag <- getWord8
-        if flag == 0 then return Inf
-        else if flag == 1 then Point <$> get <*> get
-        else fail ("Binary (Point curve): unexpected flag " <> show flag)
 
 instance (EllipticCurve curve, Arbitrary (ScalarField curve)) => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)
@@ -125,3 +112,38 @@ pointMul
     -> Point curve
     -> Point curve
 pointMul = natScale . fromBinary . castBits . binaryExpansion
+
+-- An elliptic curve in standard form, y^2 = x^3 + a * x + b
+class EllipticCurve curve => StandardEllipticCurve curve where
+    aParameter :: BaseField curve
+    bParameter :: BaseField curve
+
+data PointCompressed curve = PointCompressed (BaseField curve) Bool | InfCompressed
+
+compress
+  :: ( AdditiveGroup (BaseField curve)
+     , Ord (BaseField curve)
+     )
+  => Point curve -> PointCompressed curve
+compress = \case
+  Inf -> InfCompressed
+  Point x y -> PointCompressed x (y > negate y)
+
+decompress
+  :: forall curve .
+     ( StandardEllipticCurve curve
+     , FiniteField (BaseField curve)
+     , Ord (BaseField curve)
+     )
+  => PointCompressed curve -> Point curve
+decompress = \case
+  InfCompressed -> Inf
+  PointCompressed x bigY ->
+    let a = aParameter @curve
+        b = bParameter @curve
+        p = order @(BaseField curve)
+        sqrt_ z = z ^ ((p + 1) `Prelude.div` 2)
+        y' = sqrt_ (x * x * x + a * x + b)
+        y = (if bigY then maximum else minimum) [y', negate y']
+    in
+        Point x y

@@ -6,8 +6,11 @@
 
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
-import           Data.Bits                                  (shiftR)
+import           Control.Monad
+import           Data.Bits
+import           Data.Foldable
 import           Data.List                                  (unfoldr)
+import           Data.Word
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), (/), (^))
 import qualified Prelude                                    as Haskell
@@ -17,6 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate
+import           ZkFold.Base.Data.ByteString
 
 -------------------------------- Introducing Fields ----------------------------------
 
@@ -49,6 +53,11 @@ instance IrreduciblePoly Fq6 IP3 where
         let e = Ext3 zero (negate one) zero
         in toPoly [e, zero, one]
 type Fq12 = Ext2 Fq6 IP3
+
+instance StandardEllipticCurve BLS12_381_G1 where
+    aParameter = zero
+
+    bParameter = fromConstant (4 :: Natural)
 
 ------------------------------------ BLS12-381 G1 ------------------------------------
 
@@ -93,6 +102,151 @@ instance EllipticCurve BLS12_381_G2 where
     add = addPoints
 
     mul = pointMul
+
+instance StandardEllipticCurve BLS12_381_G2 where
+    aParameter = zero
+
+    bParameter = fromConstant (4 :: Natural)
+
+------------------------------------ Encoding ------------------------------------
+
+-- infinite list of divMod 256's, little endian order
+leBytesOf :: Natural -> [(Natural, Word8)]
+leBytesOf n =
+    let
+        (n', r) = n `Prelude.divMod` 256
+    in
+        (n', fromIntegral r) : leBytesOf n'
+
+-- finite list of bytes, big endian order
+bytesOf :: ToConstant a Natural => Int -> a -> [Word8]
+bytesOf n
+    = reverse
+    . take n
+    . map snd
+    . leBytesOf
+    . toConstant
+
+-- big endian decoding
+ofBytes :: FromConstant Natural a => [Word8] -> a
+ofBytes
+  = fromConstant @Natural
+  . foldl' (\n w8 -> n * 256 + fromIntegral w8) 0
+
+instance Binary (Point BLS12_381_G1) where
+    put Inf = putWord8 (bit 1) <> mconcat (replicate 95 (putWord8 0))
+    put (Point x y) = foldMap putWord8 (bytesOf 48 x <> bytesOf 48 y)
+    get = do
+        byte <- getWord8
+        let compressed = testBit byte 0
+            infinite = testBit byte 1
+        if infinite then do
+            skip (if compressed then 47 else 95)
+            return Inf
+        else do
+            let byteXhead = clearBit (clearBit (clearBit byte 0) 1) 2
+            bytesXtail <- replicateM 47 getWord8
+            let x = ofBytes (byteXhead:bytesXtail)
+                bigY = testBit byte 2
+            if compressed then return (decompress (PointCompressed x bigY))
+            else do
+                bytesY <- replicateM 48 getWord8
+                let y = ofBytes bytesY
+                return (Point x y)
+
+instance Binary (PointCompressed BLS12_381_G1) where
+    put InfCompressed =
+        putWord8 (bit 0 .|. bit 1) <> mconcat (replicate 47 (putWord8 0))
+    put (PointCompressed x bigY) =
+        let
+            flags = if bigY then bit 0 .|. bit 2 else bit 0
+            bytes = bytesOf 48 x
+        in
+            putWord8 (flags .|. head bytes) <> foldMap putWord8 (tail bytes)
+    get = do
+        byte <- getWord8
+        let compressed = testBit byte 0
+            infinite = testBit byte 1
+        if infinite then do
+            skip (if compressed then 47 else 95)
+            return InfCompressed
+        else do
+            let byteXhead = clearBit (clearBit (clearBit byte 0) 1) 2
+            bytesXtail <- replicateM 47 getWord8
+            let x = ofBytes (byteXhead:bytesXtail)
+                bigY = testBit byte 2
+            if compressed then return (PointCompressed x bigY)
+            else do
+                bytesY <- replicateM 48 getWord8
+                let y :: Fq = ofBytes bytesY
+                    bigY' = y > negate y
+                return (PointCompressed x bigY')
+
+instance Binary (Point BLS12_381_G2) where
+    put Inf = putWord8 (bit 1) <> mconcat (replicate 191 (putWord8 0))
+    put (Point (Ext2 x0 x1) (Ext2 y0 y1)) =
+        let
+            bytes = bytesOf 48 x1
+              <> bytesOf 48 x0
+              <> bytesOf 48 y1
+              <> bytesOf 48 y0
+        in
+            foldMap putWord8 bytes
+    get = do
+        byte <- getWord8
+        let compressed = testBit byte 0
+            infinite = testBit byte 1
+        if infinite then do
+            skip (if compressed then 95 else 191)
+            return Inf
+        else do
+            let byteX1head = clearBit (clearBit (clearBit byte 0) 1) 2
+            bytesX1tail <- replicateM 47 getWord8
+            bytesX0 <- replicateM 48 getWord8
+            let x1 = ofBytes (byteX1head:bytesX1tail)
+                x0 = ofBytes bytesX0
+                bigY = testBit byte 2
+            if compressed then return (decompress (PointCompressed (Ext2 x0 x1) bigY))
+            else do
+                bytesY1 <- replicateM 48 getWord8
+                bytesY0 <- replicateM 48 getWord8
+                let y0 = ofBytes bytesY0
+                    y1 = ofBytes bytesY1
+                return (Point (Ext2 x0 x1) (Ext2 y0 y1))
+
+instance Binary (PointCompressed BLS12_381_G2) where
+    put InfCompressed =
+        putWord8 (bit 0 .|. bit 1) <> mconcat (replicate 95 (putWord8 0))
+    put (PointCompressed (Ext2 x0 x1) bigY) =
+        let
+            flags = if bigY then bit 0 .|. bit 2 else bit 0
+            bytes = bytesOf 48 x1 <> bytesOf 48 x0
+        in
+            putWord8 (flags .|. head bytes) <> foldMap putWord8 (tail bytes)
+    get = do
+        byte <- getWord8
+        let compressed = testBit byte 0
+            infinite = testBit byte 1
+        if infinite then do
+            skip (if compressed then 95 else 191)
+            return InfCompressed
+        else do
+            let byteX1head = clearBit (clearBit (clearBit byte 0) 1) 2
+            bytesX1tail <- replicateM 47 getWord8
+            bytesX0 <- replicateM 48 getWord8
+            let x1 = ofBytes (byteX1head:bytesX1tail)
+                x0 = ofBytes bytesX0
+                x = Ext2 x0 x1
+                bigY = testBit byte 2
+            if compressed then return (PointCompressed (Ext2 x0 x1) bigY)
+            else do
+                bytesY1 <- replicateM 48 getWord8
+                bytesY0 <- replicateM 48 getWord8
+                let y0 = ofBytes bytesY0
+                    y1 = ofBytes bytesY1
+                    y :: Fq2 = Ext2 y0 y1
+                    bigY' = y > negate y
+                return (PointCompressed x bigY')
 
 --------------------------------------- Pairing ---------------------------------------
 
