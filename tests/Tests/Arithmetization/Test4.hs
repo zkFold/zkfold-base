@@ -6,7 +6,7 @@ import           Data.Map                                    (fromList, keys)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (Spec, describe, it)
-import           Test.QuickCheck                             (Testable (..), (==>), withMaxSuccess)
+import           Test.QuickCheck                             (Testable (..), withMaxSuccess, (==>))
 import           Tests.NonInteractiveProof.Plonk             (PlonkBS)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
