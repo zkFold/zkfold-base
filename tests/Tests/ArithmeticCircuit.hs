@@ -2,34 +2,31 @@
 {-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Tests.ArithmeticCircuit (eval', it, specArithmeticCircuit) where
+module Tests.ArithmeticCircuit (exec1, it, specArithmeticCircuit) where
 
 import           Data.Bool                                              (bool)
-import           Data.Map                                               (empty)
-import           Prelude                                                (IO, Show, String, flip, head, id, map, ($))
+import           Prelude                                                (IO, Show, String, id, ($))
 import qualified Prelude                                                as Haskell
 import qualified Test.Hspec
 import           Test.Hspec                                             (Spec, describe, hspec)
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
+import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
 
-eval' :: ArithmeticCircuit a -> a
-eval' = flip eval empty
-
 correctHom0 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b) -> Property
-correctHom0 f = let r = f in withMaxSuccess 1 $ checkClosedCircuit r .&&. eval' r === f @a
+correctHom0 f = let r = f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a
 
 correctHom1 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b -> b) -> a -> Property
-correctHom1 f x = let r = f (embed x) in checkClosedCircuit r .&&. eval' r === f x
+correctHom1 f x = let r = f (embed x) in checkClosedCircuit r .&&. exec1 r === f x
 
 correctHom2 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b -> b -> b) -> a -> a -> Property
-correctHom2 f x y = let r = f (embed x) (embed y) in checkClosedCircuit r .&&. eval' r === f x y
+correctHom2 f x y = let r = f (embed x) (embed y) in checkClosedCircuit r .&&. exec1 r === f x y
 
 it :: Testable prop => String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
@@ -46,17 +43,17 @@ specArithmeticCircuit = hspec $ do
         it "inverts nonzero correctly" $ correctHom1 @a finv
         it "inverts zero correctly" $ correctHom0 @a (finv zero)
         it "checks isZero(nonzero)" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a) = isZero (embed x)
-           in checkClosedCircuit r .&&. eval' r === bool zero one (x Haskell.== zero)
+          let Bool (r :: ArithmeticCircuit 1 a) = isZero (embed x)
+           in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== zero)
         it "checks isZero(0)" $
-          let Bool (r :: ArithmeticCircuit a) = isZero (zero :: ArithmeticCircuit a)
-           in withMaxSuccess 1 $ checkClosedCircuit r .&&. eval' r === one
-        it "computes binary expansion" $ withMaxSuccess 10 $ \(x :: a) ->
+          let Bool (r :: ArithmeticCircuit 1 a) = isZero (zero :: ArithmeticCircuit 1 a)
+           in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === one
+        it "computes binary expansion" $ \(x :: a) ->
           let rs = binaryExpansion (embed x)
-           in checkClosedCircuit (head rs) .&&. map eval' rs === padBits (numberOfBits @a) (binaryExpansion x)
+           in checkClosedCircuit rs .&&. (V.fromVector $ exec rs) === padBits (numberOfBits @a) (binaryExpansion x)
         it "internalizes equality" $ \(x :: a) (y :: a) ->
-          let Bool (r :: ArithmeticCircuit a) = embed x == embed y
-           in checkClosedCircuit r .&&. eval' r === bool zero one (x Haskell.== y)
+          let Bool (r :: ArithmeticCircuit 1 a) = embed x == embed y
+           in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a) = embed x == embed x
-           in checkClosedCircuit r .&&. eval' r === one
+          let Bool (r :: ArithmeticCircuit 1 a) = embed x == embed x
+           in checkClosedCircuit r .&&. exec1 r === one

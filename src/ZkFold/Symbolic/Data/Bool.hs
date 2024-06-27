@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingStrategies #-}
+
 module ZkFold.Symbolic.Data.Bool (
     BoolType(..),
     Bool(..),
@@ -6,10 +8,12 @@ module ZkFold.Symbolic.Data.Bool (
     any
 ) where
 
-import           Prelude                         hiding (Bool, Num (..), all, any, not, (&&), (/), (||))
-import qualified Prelude                         as Haskell
+import           Prelude                                 hiding (Bool, Num (..), all, any, not, (&&), (/), (||))
+import qualified Prelude                                 as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.Vector                 (Vector)
+import           ZkFold.Symbolic.Compiler.Arithmetizable
 
 class BoolType b where
     true  :: b
@@ -42,10 +46,13 @@ instance BoolType Haskell.Bool where
 -- TODO (Issue #18): hide this constructor
 newtype Bool x = Bool x
     deriving (Eq)
+
+deriving newtype instance Arithmetizable a x => Arithmetizable a (Bool x)
+
 instance (Field x, Eq x) => Show (Bool x) where
     show (Bool x) = if x == one then "True" else "False"
 
-instance (Ring x) => BoolType (Bool x) where
+instance {-# OVERLAPPABLE #-} (Ring x) => BoolType (Bool x) where
     true = Bool one
 
     false = Bool zero
@@ -57,6 +64,19 @@ instance (Ring x) => BoolType (Bool x) where
     (||) (Bool b1) (Bool b2) = Bool $ b1 + b2 - b1 * b2
 
     xor (Bool b1) (Bool b2) = Bool $ b1 + b2 - (b1 * b2 + b1 * b2)
+
+instance (Ring x) => BoolType (Bool (Vector 1 x)) where
+    true = Bool $ pure one
+
+    false = Bool $ pure zero
+
+    not (Bool b) = Bool $ (one -) <$> b
+
+    (&&) (Bool b1) (Bool b2) = Bool $ (*) <$> b1 <*> b2
+
+    (||) (Bool b1) (Bool b2) = Bool $ (\x y -> x + y - x * y) <$> b1 <*> b2
+
+    xor (Bool b1) (Bool b2) = Bool $ (\x y -> x + y - (x * y + x * y)) <$> b1 <*> b2
 
 all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true

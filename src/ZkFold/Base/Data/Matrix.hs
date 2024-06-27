@@ -13,7 +13,7 @@ import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector
+import           ZkFold.Base.Data.Vector          hiding (head, tail)
 
 -- TODO: implement a proper matrix algebra
 -- Could be useful for speeding up the proof computations

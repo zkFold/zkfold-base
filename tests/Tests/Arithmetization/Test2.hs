@@ -21,5 +21,5 @@ specArithmetization2 :: Spec
 specArithmetization2 = do
     describe "Arithmetization test 2" $ do
         it "should pass" $ do
-            let Bool r = compile @Fr (tautology @(ArithmeticCircuit Fr)) :: Bool (ArithmeticCircuit Fr)
+            let Bool r = compile @Fr (tautology @(ArithmeticCircuit 1 Fr)) :: Bool (ArithmeticCircuit 1 Fr)
             verify (makeTheorem r) `shouldBe` True

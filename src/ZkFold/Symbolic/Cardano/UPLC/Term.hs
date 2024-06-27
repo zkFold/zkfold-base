@@ -2,11 +2,12 @@
 
 module ZkFold.Symbolic.Cardano.UPLC.Term where
 
-import           Data.Maybe               (fromJust)
-import           Data.Typeable            (Typeable, cast, typeOf)
+import           Data.Maybe                       (fromJust)
+import           Data.Typeable                    (Typeable, cast, typeOf)
 import           Prelude
 
-import           ZkFold.Symbolic.Compiler (SymbolicData)
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Symbolic.Compiler         (Arithmetizable, SymbolicData (..))
 
 -- Based on the November 2022 UPLC spec
 data Term name fun a where
@@ -15,7 +16,7 @@ data Term name fun a where
     Apply     :: Term name fun a -> Term name fun a -> Term name fun a
     Force     :: Term name fun a -> Term name fun a
     Delay     :: Term name fun a -> Term name fun a
-    Constant  :: (Eq c, Typeable c, SymbolicData a c) => c -> Term name fun a
+    Constant  :: (Eq c, Typeable c, SymbolicData a c, Arithmetizable a c, KnownNat (TypeSize a c)) => c -> Term name fun a
     Builtin   :: fun -> Term name fun a
     Error     :: Term name fun a
 

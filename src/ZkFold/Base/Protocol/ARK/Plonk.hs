@@ -28,7 +28,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams,
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                                      (take, (!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map      (mapVarArithmeticCircuit)
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
@@ -41,7 +41,8 @@ type G2 = Point BLS12_381_G2
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
-data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (ArithmeticCircuit F) F
+
+data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (ArithmeticCircuit 1 F) F
     deriving (Show)
 -- TODO (Issue #25): make a proper implementation of Arbitrary
 instance Arbitrary (Plonk d n t) where
@@ -204,7 +205,7 @@ instance forall d n t .
             h0' = gen
             h1' = x `mul` gen
 
-            wmap = acWitness $ mapVarArithmeticCircuit ac
+            wmap = witnessGenerator $ mapVarArithmeticCircuit ac
             tPA@(_, _, _, _, _, a, b, c) = toPlonkArithmetization ord ac
 
             w1 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec a)

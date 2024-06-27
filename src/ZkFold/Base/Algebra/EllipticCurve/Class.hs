@@ -119,7 +119,7 @@ pointNegate (Point x y) = Point x (negate y)
 pointMul
     :: forall curve
     .  EllipticCurve curve
-    => BinaryExpansion (ScalarField curve)
+    => BinaryExpansion (ScalarField curve) [ScalarField curve]
     => Eq (ScalarField curve)
     => ScalarField curve
     -> Point curve

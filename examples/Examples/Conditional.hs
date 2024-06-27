@@ -11,7 +11,7 @@ import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Conditional            (Conditional (..))
 
 type F = Zp BLS12_381_Scalar
-type A = ArithmeticCircuit F
+type A = ArithmeticCircuit 1 F
 type B = Bool A
 
 exampleConditional :: IO ()
