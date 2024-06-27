@@ -3,11 +3,20 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
         Constraint,
+
+        withOutputs,
+        constraintSystem,
+        inputVariables,
+        witnessGenerator,
+        varOrder,
         -- high-level functions
         applyArgs,
         optimize,
         -- low-level functions
         eval,
+        eval1,
+        exec,
+        exec1,
         forceZero,
         -- information about the system
         acSizeN,
@@ -39,54 +48,56 @@ import           Text.Pretty.Simple                                  (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMapM, evalPolynomial)
+import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                      apply, eval, forceZero)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Circuit (..),
+                                                                      Constraint, apply, constraintSystem, eval, eval1,
+                                                                      exec, exec1, forceZero, inputVariables, varOrder,
+                                                                      withOutputs, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 
 --------------------------------- High-level functions --------------------------------
 
 -- TODO: make this work for different input types.
-applyArgs :: forall a . ArithmeticCircuit a -> [a] -> ArithmeticCircuit a
-applyArgs r args = execState (apply args) r
+applyArgs :: forall a n . ArithmeticCircuit n a -> [a] -> ArithmeticCircuit n a
+applyArgs r args = r { acCircuit = execState (apply args) (acCircuit r) }
 
 -- | Optimizes the constraint system.
 --
 -- TODO: Implement nontrivial optimizations.
-optimize :: ArithmeticCircuit a -> ArithmeticCircuit a
+optimize :: forall a n . ArithmeticCircuit n a -> ArithmeticCircuit n a
 optimize = id
 
 ----------------------------------- Information -----------------------------------
 
 -- | Calculates the number of constraints in the system.
-acSizeN :: ArithmeticCircuit a -> Natural
-acSizeN = length . acSystem
+acSizeN :: forall a n . ArithmeticCircuit n a -> Natural
+acSizeN = length . acSystem . acCircuit
 
 -- | Calculates the number of variables in the system.
 -- The constant `1` is not counted.
-acSizeM :: ArithmeticCircuit a -> Natural
-acSizeM = length . acVarOrder
+acSizeM :: forall a n . ArithmeticCircuit n a -> Natural
+acSizeM = length . acVarOrder . acCircuit
 
-acValue :: ArithmeticCircuit a -> a
+acValue :: forall a n . ArithmeticCircuit n a -> Vector n a
 acValue r = eval r mempty
 
 -- | Prints the constraint system, the witness, and the output.
 --
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
-acPrint :: forall a . Show a => ArithmeticCircuit a -> IO ()
-acPrint r = do
+acPrint :: forall a n . Show a => ArithmeticCircuit n a -> IO ()
+acPrint ac@(ArithmeticCircuit r o) = do
     let m = elems (acSystem r)
         i = acInput r
         w = acWitness r empty
-        o = acOutput r
-        v = acValue r
+        v = acValue ac
         vo = acVarOrder r
     putStr "System size: "
-    pPrint $ acSizeN r
+    pPrint $ acSizeN ac
     putStr "Variable size: "
-    pPrint $ acSizeM r
+    pPrint $ acSizeM ac
     putStr "Matrices: "
     pPrint m
     putStr "Input: "
@@ -102,14 +113,29 @@ acPrint r = do
 
 ---------------------------------- Testing -------------------------------------
 
-checkClosedCircuit :: (Arithmetic a, FromConstant a a, Scale a a, Show a) => ArithmeticCircuit a -> Property
-checkClosedCircuit r = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem r) ]
+checkClosedCircuit
+    :: forall a n
+     . Arithmetic a
+    => FromConstant a a
+    => Scale a a
+    => Show a
+    => ArithmeticCircuit n a
+    -> Property
+checkClosedCircuit (ArithmeticCircuit r _) = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem r) ]
     where
         w = acWitness r empty
         testPoly p = evalPolynomial evalMapM (w !) p === zero
 
-checkCircuit :: (Arbitrary a, Arithmetic a, FromConstant a a, Scale a a, Show a) => ArithmeticCircuit a -> Property
-checkCircuit r = conjoin [ property (testPoly p) | p <- elems (acSystem r) ]
+checkCircuit
+    :: forall a n
+     . Arbitrary a
+    => Arithmetic a
+    => FromConstant a a
+    => Scale a a
+    => Show a
+    => ArithmeticCircuit n a
+    -> Property
+checkCircuit (ArithmeticCircuit r _) = conjoin [ property (testPoly p) | p <- elems (acSystem r) ]
     where
         testPoly p = do
             ins <- vector . fromIntegral $ length (acInput r)

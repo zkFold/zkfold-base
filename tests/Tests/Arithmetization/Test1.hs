@@ -10,6 +10,7 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
+import qualified ZkFold.Base.Data.Vector          as V
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
@@ -25,12 +26,12 @@ testFunc x y =
         g3 = c 2 // x
     in (g3 == y :: Bool a) ? g1 $ g2
 
-testResult :: forall a . (Symbolic a, Haskell.Eq a) => ArithmeticCircuit a -> a -> a -> Haskell.Bool
-testResult r x y = acValue (applyArgs r [x, y]) == testFunc @a x y
+testResult :: forall a . (Symbolic a, Haskell.Eq a) => ArithmeticCircuit 1 a -> a -> a -> Haskell.Bool
+testResult r x y = V.item (acValue (applyArgs r [x, y])) == testFunc @a x y
 
 specArithmetization1 :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a) => Spec
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do
-            let ac = compile @a (testFunc @(ArithmeticCircuit a)) :: ArithmeticCircuit a
+            let ac = compile @a (testFunc @(ArithmeticCircuit 1 a)) :: ArithmeticCircuit 1 a
             property $ \x y -> testResult ac x y

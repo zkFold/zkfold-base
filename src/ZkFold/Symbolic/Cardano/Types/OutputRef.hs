@@ -1,3 +1,6 @@
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
+
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
 import           Prelude                         hiding (Bool, Eq, length, splitAt, (*), (+))
@@ -6,15 +9,15 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString (ByteString)
 import           ZkFold.Symbolic.Data.UInt
 
-type TxRefId a = ByteString 256 a
-type TxRedIndex a = UInt 32 a
+type TxRefId b a = ByteString 256 b a
+type TxRedIndex b a = UInt 32 b a
 
-newtype OutputRef a = OutputRef (TxRefId a, TxRedIndex a)
+newtype OutputRef b a = OutputRef (TxRefId b a, TxRedIndex b a)
 
-deriving instance Arithmetic a => SymbolicData a (OutputRef (ArithmeticCircuit a))
+deriving instance Arithmetic a => SymbolicData a (OutputRef ArithmeticCircuit a)
 
-outputRefId :: OutputRef a -> TxRefId a
+outputRefId :: OutputRef b a -> TxRefId b a
 outputRefId (OutputRef (x, _)) = x
 
-outputRefIndex :: OutputRef a -> TxRedIndex a
+outputRefIndex :: OutputRef b a -> TxRedIndex b a
 outputRefIndex (OutputRef (_, i)) = i

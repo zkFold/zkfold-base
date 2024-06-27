@@ -1,5 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes          #-}
-{-# LANGUAGE TypeApplications             #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof where
 

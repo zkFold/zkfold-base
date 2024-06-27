@@ -10,11 +10,11 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
     Witness,
     WitnessField,
     circuit,
-    circuits,
+    circuitN,
+    circuits
 ) where
 
-import           Control.Monad.Identity                              (Identity (..))
-import           Control.Monad.State                                 (State, gets, modify, runState)
+import           Control.Monad.State                                 (State, modify, runState)
 import           Data.Functor                                        (($>))
 import           Data.Map                                            ((!))
 import           Data.Set                                            (Set)
@@ -26,13 +26,14 @@ import           Prelude                                             hiding (Boo
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
+import           ZkFold.Base.Data.Vector
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal as I
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
 import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional                    (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
 
-type WitnessField a x = (Algebra a x, FiniteField x, BinaryExpansion x,
+type WitnessField a x = (Algebra a x, FiniteField x, BinaryExpansion x [x],
     Eq (Bool x) x, Conditional (Bool x) x, Conditional (Bool x) (Bool x))
 -- ^ DSL for constructing witnesses in an arithmetic circuit. @a@ is a base
 -- field; @x@ is a "field of witnesses over @a@" which you can safely assume to
@@ -89,11 +90,8 @@ class Monad m => MonadBlueprint i a m | m -> i, m -> a where
     -- | Creates new input variable.
     input :: m i
 
-    -- | Returns a circuit with supplied variable as output.
-    output :: i -> m (ArithmeticCircuit a)
-
     -- | Adds the supplied circuit to the blueprint and returns its output variable.
-    runCircuit :: ArithmeticCircuit a -> m i
+    runCircuit :: ArithmeticCircuit n a -> m (Vector n i)
 
     -- | Creates new variable given a constraint polynomial and a witness.
     newConstrained :: NewConstraint i a -> Witness i a -> m i
@@ -105,17 +103,15 @@ class Monad m => MonadBlueprint i a m | m -> i, m -> a where
     newAssigned :: ClosedPoly i a -> m i
     newAssigned p = newConstrained (\x i -> p x - x i) p
 
-instance Arithmetic a => MonadBlueprint Natural a (State (ArithmeticCircuit a)) where
-    input = acOutput <$> I.input
+instance Arithmetic a => MonadBlueprint Natural a (State (Circuit a)) where
+    input = I.input
 
-    output i = gets (\r -> r { acOutput = i })
-
-    runCircuit r = modify (<> r) $> acOutput r
+    runCircuit r = modify (<> acCircuit r) $> acOutput r
 
     newConstrained
         :: NewConstraint Natural a
         -> Witness Natural a
-        -> State (ArithmeticCircuit a) Natural
+        -> State (Circuit a) Natural
     newConstrained new witness = do
         let ws = sources @a witness
             -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
@@ -124,22 +120,28 @@ instance Arithmetic a => MonadBlueprint Natural a (State (ArithmeticCircuit a)) 
             s = ws `Set.difference` sources @a (`new` x)
         i <- addVariable =<< newVariableWithSource (Set.toList s) (new var)
         constraint (`new` i)
-        assignment (\m -> witness (m !))
+        assignment i (\m -> witness (m !))
         return i
 
     constraint p = I.constraint (p var)
 
-circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> ArithmeticCircuit a
+circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> ArithmeticCircuit 1 a
 -- ^ Builds a circuit from blueprint. A blueprint is a function which, given an
 -- arbitrary type of variables @i@ and a monad @m@ supporting the 'MonadBlueprint'
 -- API, computes the output variable of a future circuit.
-circuit b = runIdentity $ circuits (Identity <$> b)
+circuit b = circuitN (pure <$> b)
 
-circuits :: (Arithmetic a, Functor f) => (forall i m . MonadBlueprint i a m => m (f i)) -> f (ArithmeticCircuit a)
+circuitN :: forall a n . Arithmetic a => (forall i m . MonadBlueprint i a m => m (Vector n i)) -> ArithmeticCircuit n a
+-- TODO: I should really rethink this...
+circuitN b = let (os, r) = runState b (mempty :: Circuit a)
+              in ArithmeticCircuit { acCircuit = r, acOutput = os }
+
+-- TODO: kept for compatibility with @binaryExpansion@ only. Perhaps remove it in the future?
+circuits :: forall a f . (Arithmetic a, Functor f) => (forall i m . MonadBlueprint i a m => m (f i)) -> f (ArithmeticCircuit 1 a)
 -- ^ Builds a collection of circuits from one blueprint. A blueprint is a function
 -- which, given an arbitrary type of variables @i@ and a monad @m@ supporting the
 -- 'MonadBlueprint' API, computes the collection of output variables of future circuits.
-circuits b = let (os, r) = runState b mempty in (\o -> r { acOutput = o }) <$> os
+circuits b = let (os, r) = runState (fmap pure <$> b) (mempty :: Circuit a) in (\o -> ArithmeticCircuit { acCircuit = r, acOutput = o }) <$> os
 
 sources :: forall a i . (FiniteField a, Ord i) => Witness i a -> Set i
 sources = runSources . ($ Sources @a . Set.singleton)
