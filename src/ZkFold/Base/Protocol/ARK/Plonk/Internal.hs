@@ -9,6 +9,7 @@ import           Data.Bool                                    (bool)
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (find, permutations, sort, transpose)
 import           Data.Map                                     (Map, elems, empty)
+import qualified Data.Map                                     as Map
 import           Data.Maybe                                   (mapMaybe)
 import qualified Data.Vector                                  as V
 import           GHC.IsList                                   (IsList (..))
@@ -21,8 +22,8 @@ import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, evalMonomial, evalPolynomial, mapVar,
-                                                               polynomial, var, variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, evalMonomial, evalPolynomial, mapVar, polynomial,
+                                                               var, variables)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Base.Data.Vector                      (Vector)
 import           ZkFold.Prelude                               (length, take)
@@ -105,7 +106,7 @@ toPlonkArithmetization iPub ac =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]
         vars   = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ constraintSystem ac)
         ac'    = mapVarArithmeticCircuit ac
-        inputs = fmap (mapVar vars [0..]) iPub
+        inputs = fmap (mapVar (Map.fromList $ zip vars [0..])) iPub
         system = foldr addPublicInput (elems $ constraintSystem ac') inputs
 
     in case map (toPolyVec . V.fromList) $ transpose $ map (f . toPlonkConstraint . removeConstantVariable) system of

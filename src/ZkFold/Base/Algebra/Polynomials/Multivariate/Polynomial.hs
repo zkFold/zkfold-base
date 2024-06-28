@@ -49,8 +49,8 @@ variables :: forall c .
     Poly c Natural Natural -> Set Natural
 variables = runSources . evalPolynomial evalMonomial (Sources @c . singleton)
 
-mapVarPolynomial :: Variable i => [i] -> [i] -> Poly c i j -> Poly c i j
-mapVarPolynomial vars vars' (P ms) = P $ second (mapVarMonomial vars vars') <$> ms
+mapVarPolynomial :: Variable i => Map i i-> Poly c i j -> Poly c i j
+mapVarPolynomial m (P ms) = P $ second (mapVarMonomial m) <$> ms
 
 mapCoeffs :: forall c c' i j .
     (c -> c')
@@ -78,11 +78,6 @@ instance Polynomial c i j => Ord (Poly c i j) where
 
 instance (Arbitrary c, Arbitrary (Mono i j)) => Arbitrary (Poly c i j) where
     arbitrary = P <$> arbitrary
-
-{-
-    In general, `P c i j m p` may define a set of polynomials that is not necessarily a ring.
-    Arithmetic operations are defined for a more concrete type below.
--}
 
 instance Polynomial c i j => AdditiveSemigroup (Poly c i j) where
     P l + P r = P $ go l r
@@ -129,7 +124,7 @@ var :: Polynomial c i j => i -> Poly c i j
 var x = polynomial [(one, monomial $ fromList [(x, one)])]
 
 lt :: Poly c i j -> Mono i j
-lt (P []) = M empty
+lt (P [])         = M empty
 lt (P ((_, m):_)) = m
 
 zeroP :: Poly c i j -> Bool

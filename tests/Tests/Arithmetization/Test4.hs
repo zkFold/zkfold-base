@@ -3,7 +3,6 @@
 module Tests.Arithmetization.Test4 (specArithmetization4) where
 
 import           Data.Map                                    (fromList)
--- import           Data.Vector                                 (singleton)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (Spec, describe, it)
@@ -13,7 +12,8 @@ import           Tests.NonInteractiveProof.Plonk             (PlonkBS)
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
 import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..), plonkVerifierInput)
+import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..),
+                                                              plonkVerifierInput)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
@@ -50,9 +50,9 @@ testZKP x ps targetValue =
         (_, proof) = prove @(PlonkBS N) setupP witness
 
         -- `one` corresponds to `True`
-        output = plonkVerifierInput $ V.singleton one
+        circuitOutputsTrue = plonkVerifierInput $ V.singleton one
 
-    in verify @(PlonkBS N) setupV output proof
+    in verify @(PlonkBS N) setupV circuitOutputsTrue proof
 
 specArithmetization4 :: Spec
 specArithmetization4 = do
