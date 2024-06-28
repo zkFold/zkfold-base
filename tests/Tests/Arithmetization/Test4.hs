@@ -50,9 +50,9 @@ testZKP x ps targetValue =
         (_, proof) = prove @(PlonkBS N) setupP witness
 
         -- `one` corresponds to `True`
-        output = plonkVerifierInput $ V.singleton one
+        circuitOutputsTrue = plonkVerifierInput $ V.singleton one
 
-    in verify @(PlonkBS N) setupV output proof
+    in verify @(PlonkBS N) setupV circuitOutputsTrue proof
 
 specArithmetization4 :: Spec
 specArithmetization4 = do
