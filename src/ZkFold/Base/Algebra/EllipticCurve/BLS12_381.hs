@@ -134,7 +134,7 @@ ofBytes
   . foldl' (\n w8 -> n * 256 + fromIntegral w8) 0
 
 instance Binary (Point BLS12_381_G1) where
-    put Inf         = putWord8 (bit 1) <> mconcat (replicate 95 (putWord8 0))
+    put Inf         = putWord8 (bit 1) <> foldMap putWord8 (replicate 95 0)
     put (Point x y) = foldMap putWord8 (bytesOf 48 x <> bytesOf 48 y)
     get = do
         byte <- getWord8
@@ -156,7 +156,7 @@ instance Binary (Point BLS12_381_G1) where
 
 instance Binary (PointCompressed BLS12_381_G1) where
     put InfCompressed =
-        putWord8 (bit 0 .|. bit 1) <> mconcat (replicate 47 (putWord8 0))
+        putWord8 (bit 0 .|. bit 1) <> foldMap putWord8 (replicate 47 0)
     put (PointCompressed x bigY) =
         let
             flags = if bigY then bit 0 .|. bit 2 else bit 0
@@ -183,7 +183,7 @@ instance Binary (PointCompressed BLS12_381_G1) where
                 return (PointCompressed x bigY')
 
 instance Binary (Point BLS12_381_G2) where
-    put Inf = putWord8 (bit 1) <> mconcat (replicate 191 (putWord8 0))
+    put Inf = putWord8 (bit 1) <> foldMap putWord8 (replicate 191  0)
     put (Point (Ext2 x0 x1) (Ext2 y0 y1)) =
         let
             bytes = bytesOf 48 x1
@@ -216,7 +216,7 @@ instance Binary (Point BLS12_381_G2) where
 
 instance Binary (PointCompressed BLS12_381_G2) where
     put InfCompressed =
-        putWord8 (bit 0 .|. bit 1) <> mconcat (replicate 95 (putWord8 0))
+        putWord8 (bit 0 .|. bit 1) <> foldMap putWord8 (replicate 95 0)
     put (PointCompressed (Ext2 x0 x1) bigY) =
         let
             flags = if bigY then bit 0 .|. bit 2 else bit 0
