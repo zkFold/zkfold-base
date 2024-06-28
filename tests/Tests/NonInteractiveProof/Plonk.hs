@@ -28,7 +28,7 @@ import           ZkFold.Prelude                               (replicate, take, 
 import           ZkFold.Symbolic.Compiler
 
 type PlonkSizeBS = 32
-type PlonkBS = Plonk PlonkSizeBS 2 ByteString
+type PlonkBS n = Plonk PlonkSizeBS n ByteString
 type PlonkMaxPolyDegreeBS = PlonkMaxPolyDegree PlonkSizeBS
 
 propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
@@ -39,9 +39,9 @@ propPlonkConstraintConversion x (x1, x2, x3) =
         p'  = fromPlonkConstraint $ toPlonkConstraint p
         xs' = toList $ variables p'
         v'  = (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
-    in evalPolynomial evalMapM v p == evalPolynomial evalMapM v' p'
+    in evalPolynomial evalMonomial v p == evalPolynomial evalMonomial v' p'
 
-propPlonkConstraintSatisfaction :: PlonkBS -> NonInteractiveProofTestData PlonkBS -> Bool
+propPlonkConstraintSatisfaction :: PlonkBS n -> NonInteractiveProofTestData (PlonkBS n) -> Bool
 propPlonkConstraintSatisfaction (Plonk _ _ _ ord ac _) (TestData _ w) =
     let wmap = witnessGenerator $ mapVarArithmeticCircuit ac
         (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkSizeBS ord ac
@@ -66,11 +66,11 @@ propPlonkConstraintSatisfaction (Plonk _ _ _ ord ac _) (TestData _ w) =
 
     in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', w1', w2', w3', wPub]
 
-propPlonkPolyIdentity :: NonInteractiveProofTestData PlonkBS -> Bool
+propPlonkPolyIdentity :: forall n . NonInteractiveProofTestData (PlonkBS n) -> Bool
 propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @F @PlonkSizeBS @PlonkMaxPolyDegreeBS
 
-        s = setupProve @PlonkBS plonk
+        s = setupProve @(PlonkBS n) plonk
         (PlonkSetupParamsProve {..}, _, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap) = s
         (PlonkWitnessInput wInput, ps) = w
         PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
@@ -103,6 +103,6 @@ specPlonk = hspec $ do
         describe "Conversion to Plonk constraints and back" $ do
             it "produces equivalent polynomials" $ property propPlonkConstraintConversion
         describe "Plonk constraint satisfaction" $ do
-            it "should hold" $ property propPlonkConstraintSatisfaction
+            it "should hold" $ property $ propPlonkConstraintSatisfaction @1
         describe "Plonk polynomial identity" $ do
-            it "should hold" $ property propPlonkPolyIdentity
+            it "should hold" $ property $ propPlonkPolyIdentity @1

@@ -1,77 +1,73 @@
 {-# LANGUAGE DeriveAnyClass               #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 {-# LANGUAGE TypeApplications             #-}
+{-# LANGUAGE UndecidableInstances         #-}
 
-module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
-    ( M(..)
-    , Monomial
-    , Monomial'
-    , monomial
-    , Variable
-    , MonomialAny
-    , MonomialRepAny
-    , MonomialRepBoundedDegree
-    , MonomialBoundedDegree
-    , evalMapM
-    , evalVectorM
-    , mapVar
-    , mapVarMonomial
-    ) where
+module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial where
 
 import           Control.DeepSeq                 (NFData)
 import           Data.Aeson                      (FromJSON, ToJSON)
 import           Data.List                       (intercalate)
-import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, fromListWith,
-                                                  mapKeys, unionWith)
+import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, isSubmapOfBy,
+                                                  lookup, mapKeys, unionWith)
 import qualified Data.Map.Strict                 as Map
 import           GHC.Generics                    (Generic)
 import           GHC.IsList                      (IsList (..))
 import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), drop, filter, lcm, length, sum, take, (!!), (/), (^))
+import           Prelude                         hiding (Num (..), drop, filter, lcm, length, lookup, sum, take, (!!),
+                                                  (/), (^))
 import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector         (Vector (..))
-import           ZkFold.Prelude                  (elemIndex)
 
-type Variable i = Ord i
+type Variable i = (Eq i, Ord i)
 
 type Monomial i j = (Variable i, Ord j, Semiring j)
 
 -- | Monomial type
-newtype M i j m = M m
+newtype Mono i j = M (Map i j)
     deriving (Generic, NFData, FromJSON, ToJSON)
 
--- | Most general type for a multivariate monomial
-type Monomial' = M Natural Natural (Map Natural Natural)
+------------------------------------ Map-based monomials ------------------------------------
 
-type MonomialRepAny = Map Integer Integer
+-- | Monomial constructor
+monomial :: Monomial i j => Map i j -> Mono i j
+monomial = M . filter (/= zero)
 
-type MonomialRepBoundedDegree i d = Vector d (i, Bool)
+dividable :: forall i j . Monomial i j => Mono i j -> Mono i j -> Bool
+dividable (M l) (M r) = isSubmapOfBy (<=) r l
 
-type MonomialAny = M Integer Integer MonomialRepAny
+evalMonomial :: forall i j b .
+    MultiplicativeMonoid b =>
+    Exponent b j =>
+    (i -> b) -> Mono i j -> b
+evalMonomial f (M m) =
+    foldrWithKey (\i j x -> (f i ^ j) * x) (one @b) m
 
-type MonomialBoundedDegree i d = M i Bool (MonomialRepBoundedDegree i d)
+-- | Maps a variable index using the provided `Map`
+mapVar :: Variable i => Map i i -> i -> i
+mapVar m x = case x `lookup` m of
+    Just y -> y
+    _      -> error "mapVar: something went wrong"
 
-instance Ord i => IsList (M i j (Map i j)) where
-    type Item (M i j (Map i j)) = (i, j)
+mapVarMonomial :: Variable i => Map i i -> Mono i j -> Mono i j
+mapVarMonomial m (M as) = M $ mapKeys (mapVar m) as
+
+instance Monomial i j => IsList (Mono i j) where
+    type Item (Mono i j) = (i, j)
     toList (M m) = toList m
     fromList m = M $ fromList m
 
--- | Monomial constructor
-monomial :: Monomial i j => Map i j -> M i j (Map i j)
-monomial = M . filter (/= zero)
-
-instance (Show i, Show j, Monomial i j) => Show (M i j (Map i j)) where
+instance (Show i, Show j, Monomial i j) => Show (Mono i j) where
     show (M m) = intercalate "∙" . map showVar $ toList m
         where
             showVar :: (i, j) -> String
             showVar (i, j) = "x" ++ show i ++ (if j == one then "" else "^" ++ show j)
 
-instance (Eq i, Eq j) => Eq (M i j (Map i j)) where
+instance Monomial i j => Eq (Mono i j) where
     M asl == M asr = asl == asr
 
-instance (Eq i, Ord i, Ord j) => Ord (M i j (Map i j)) where
+instance Monomial i j => Ord (Mono i j) where
     compare (M asl) (M asr) = go (toList asl) (toList asr)
         where
             go [] [] = EQ
@@ -81,47 +77,26 @@ instance (Eq i, Ord i, Ord j) => Ord (M i j (Map i j)) where
                 | k1 == k2  = if a1 == a2 then go xs ys else compare a1 a2
                 | otherwise = compare k2 k1
 
-instance Arbitrary m => Arbitrary (M i j m) where
+instance (Monomial i j, Arbitrary (Map i j)) => Arbitrary (Mono i j) where
     arbitrary = M <$> arbitrary
 
-instance Monomial i j => MultiplicativeSemigroup (M i j (Map i j)) where
+instance Monomial i j => MultiplicativeSemigroup (Mono i j) where
     M l * M r = M $ Map.filter (/= zero) $ unionWith (+) l r
 
-instance Monomial i j => Exponent (M i j (Map i j)) Natural where
+instance Monomial i j => Exponent (Mono i j) Natural where
     (^) = natPow
 
-instance Monomial i j => MultiplicativeMonoid (M i j (Map i j)) where
+instance Monomial i j => MultiplicativeMonoid (Mono i j) where
     one = M empty
 
-instance (Monomial i j, Ring j) => Exponent (M i j (Map i j)) Integer where
+instance (Monomial i j, Ring j) => Exponent (Mono i j) Integer where
     (^) = intPow
 
-instance (Monomial i j, Ring j) => MultiplicativeGroup (M i j (Map i j)) where
+instance (Monomial i j, Ring j) => MultiplicativeGroup (Mono i j) where
     invert (M m) = M $ Map.map negate $ m
 
     M l / M r = M $ differenceWith f l r
         where f a b = if a == b then Nothing else Just (a - b)
 
-evalMapM :: forall i j b .
-    MultiplicativeMonoid b =>
-    Exponent b j =>
-    (i -> b) -> M i j (Map i j) -> b
-evalMapM f (M m) =
-    foldrWithKey (\i j x -> (f i ^ j) * x) (one @b) m
-
-evalVectorM :: forall i j b d .
-    Monomial i j =>
-    MultiplicativeMonoid b =>
-    Exponent b j =>
-    (i -> b) -> M i j (Vector d (i, Bool)) -> b
-evalVectorM f (M (Vector v)) =
-    evalMapM f . M . fromListWith (+)
-        $ foldr (\(i, x) xs -> if x then (i, one @j) : xs else xs) [] v
-
-mapVar :: [Natural] -> Natural -> Natural
-mapVar vars x = case x `elemIndex` vars of
-    Just i  -> i
-    Nothing -> error "mapVar: something went wrong"
-
-mapVarMonomial :: [Natural] -> Monomial' -> Monomial'
-mapVarMonomial vars (M as) = M $ mapKeys (mapVar vars) as
+zeroM :: Mono i j -> Bool
+zeroM (M m) = Map.null m

@@ -13,7 +13,7 @@ import           Prelude                                         hiding (Num (..
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Polynomial')
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Poly)
 import           ZkFold.Base.Data.Sparse.Vector                  (SVector (..))
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
@@ -56,7 +56,7 @@ instance (Arithmetic f, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLook
     verifier' :: ProtostarLookup l sizeT
               -> Input f (ProtostarLookup l sizeT)
               -> SpecialSoundTranscript Natural (ProtostarLookup l sizeT)
-              -> Vector (Dimension (ProtostarLookup l sizeT)) (Polynomial' f)
+              -> Vector (Dimension (ProtostarLookup l sizeT)) (Poly f Natural Natural)
     verifier' = undefined
 
     verifier :: ProtostarLookup l sizeT

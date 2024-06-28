@@ -9,6 +9,7 @@ import           Data.Bool                                    (bool)
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (find, permutations, sort, transpose)
 import           Data.Map                                     (Map, elems, empty)
+import qualified Data.Map                                     as Map
 import           Data.Maybe                                   (mapMaybe)
 import qualified Data.Vector                                  as V
 import           GHC.IsList                                   (IsList (..))
@@ -21,8 +22,8 @@ import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial', evalMapM, evalPolynomial, mapVar,
-                                                               polynomial, var, variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, evalMonomial, evalPolynomial, mapVar, polynomial,
+                                                               var, variables)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Base.Data.Vector                      (Vector)
 import           ZkFold.Prelude                               (length, take)
@@ -51,7 +52,7 @@ getParams l = findK' $ mkStdGen 0
                 all (`notElem` hGroup) (hGroup' k1)
                 && all (`notElem` hGroup' k1) (hGroup' k2)
 
-toPlonkConstraint :: Polynomial' F -> (F, F, F, F, F, F, F, F)
+toPlonkConstraint :: Poly F Natural Natural -> (F, F, F, F, F, F, F, F)
 toPlonkConstraint p =
     let xs    = toList $ variables p
         i     = order @F
@@ -84,7 +85,7 @@ toPlonkConstraint p =
 
     in head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (F, F, F, F, F, F, F, F) -> Polynomial' F
+fromPlonkConstraint :: (F, F, F, F, F, F, F, F) -> Poly F Natural Natural
 fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
     let xa = [(fromZp a, 1)]
         xb = [(fromZp b, 1)]
@@ -93,19 +94,19 @@ fromPlonkConstraint (ql, qr, qo, qm, qc, a, b, c) =
 
     in polynomial [(ql, xa), (qr, xb), (qo, xc), (qm, xaxb), (qc, one)]
 
-addPublicInput :: Natural -> [Polynomial' F] -> [Polynomial' F]
+addPublicInput :: Natural -> [Poly F Natural Natural] -> [Poly F Natural Natural]
 addPublicInput i ps = var i : ps
 
-removeConstantVariable :: (Eq c, Field c, Scale c c, FromConstant c c) => Polynomial' c -> Polynomial' c
-removeConstantVariable = evalPolynomial evalMapM (\x -> if x == 0 then one else var x)
+removeConstantVariable :: (Eq c, Field c, Scale c c, FromConstant c c) => Poly c Natural Natural -> Poly c Natural Natural
+removeConstantVariable = evalPolynomial evalMonomial (\x -> if x == 0 then one else var x)
 
 toPlonkArithmetization :: forall a n . KnownNat a => Vector n Natural -> ArithmeticCircuit 1 F
     -> (PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a, PolyVec F a)
-toPlonkArithmetization ord ac =
+toPlonkArithmetization iPub ac =
     let f (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7]
         vars   = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ constraintSystem ac)
         ac'    = mapVarArithmeticCircuit ac
-        inputs = fmap (mapVar vars) ord
+        inputs = fmap (mapVar (Map.fromList $ zip vars [0..])) iPub
         system = foldr addPublicInput (elems $ constraintSystem ac') inputs
 
     in case map (toPolyVec . V.fromList) $ transpose $ map (f . toPlonkConstraint . removeConstantVariable) system of

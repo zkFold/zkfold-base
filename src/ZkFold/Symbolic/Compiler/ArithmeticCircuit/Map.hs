@@ -9,6 +9,7 @@ import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.List                                           (sort)
 import           Data.Map                                            hiding (drop, foldl, foldr, fromList, map, null,
                                                                       splitAt, take, toList)
+import qualified Data.Map                                            as Map
 import           GHC.IsList                                          (IsList (..))
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
@@ -21,17 +22,17 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 -- This module contains functions for mapping variables in arithmetic circuits.
 
 mapVarWitness :: [Natural] -> (Map Natural a -> Map Natural a)
-mapVarWitness vars = mapKeys (mapVar vars)
+mapVarWitness vars = mapKeys (mapVar $ Map.fromList $ zip vars [0..])
 
 mapVarArithmeticCircuit :: MultiplicativeMonoid a => ArithmeticCircuit n a -> ArithmeticCircuit n a
 mapVarArithmeticCircuit (ArithmeticCircuit ac out) =
     let vars = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
         mappedCircuit = ac
             {
-                acSystem  = fromList $ zip [0..] $ mapVarPolynomial vars <$> elems (acSystem ac),
+                acSystem  = fromList $ zip [0..] $ mapVarPolynomial (Map.fromList $ zip vars [0..]) <$> elems (acSystem ac),
                 -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
                 acWitness = mapVarWitness vars . acWitness ac
             }
-        mappedOutputs = mapVar vars <$> out
+        mappedOutputs = mapVar (Map.fromList $ zip vars [0..]) <$> out
      in ArithmeticCircuit mappedCircuit mappedOutputs
 

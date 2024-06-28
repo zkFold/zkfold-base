@@ -39,4 +39,4 @@ specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) 32)
 
     specPlonk
-    specNonInteractiveProof' @PlonkBS
+    specNonInteractiveProof' @(PlonkBS 2)
