@@ -16,7 +16,7 @@ import           Tests.NonInteractiveProof.Internal           (NonInteractivePro
 import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..),
                                                                MultiplicativeSemigroup (..), negate, zero, (-!))
 import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
-import           ZkFold.Base.Algebra.Basic.Number             (KnownNat, value)
+import           ZkFold.Base.Algebra.Basic.Number             (value)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
                                                                polyVecLinear, polyVecZero, toPolyVec)
@@ -66,7 +66,7 @@ propPlonkConstraintSatisfaction (Plonk _ _ _ ord ac _) (TestData _ w) =
 
     in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', w1', w2', w3', wPub]
 
-propPlonkPolyIdentity :: forall n . KnownNat n => NonInteractiveProofTestData (PlonkBS n) -> Bool
+propPlonkPolyIdentity :: forall n . NonInteractiveProofTestData (PlonkBS n) -> Bool
 propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @F @PlonkSizeBS @PlonkMaxPolyDegreeBS
 
