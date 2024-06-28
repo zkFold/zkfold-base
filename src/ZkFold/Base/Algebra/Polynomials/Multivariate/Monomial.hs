@@ -9,12 +9,13 @@ import           Control.DeepSeq                 (NFData)
 import           Data.Aeson                      (FromJSON, ToJSON)
 import           Data.List                       (intercalate)
 import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, isSubmapOfBy,
-                                                  mapKeys, unionWith, lookup)
+                                                  lookup, mapKeys, unionWith)
 import qualified Data.Map.Strict                 as Map
 import           GHC.Generics                    (Generic)
 import           GHC.IsList                      (IsList (..))
 import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), drop, filter, lcm, length, sum, take, lookup, (!!), (/), (^))
+import           Prelude                         hiding (Num (..), drop, filter, lcm, length, lookup, sum, take, (!!),
+                                                  (/), (^))
 import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
