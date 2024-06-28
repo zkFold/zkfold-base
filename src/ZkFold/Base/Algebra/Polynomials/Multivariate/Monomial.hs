@@ -9,16 +9,15 @@ import           Control.DeepSeq                 (NFData)
 import           Data.Aeson                      (FromJSON, ToJSON)
 import           Data.List                       (intercalate)
 import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, isSubmapOfBy,
-                                                  mapKeys, unionWith)
+                                                  mapKeys, unionWith, lookup)
 import qualified Data.Map.Strict                 as Map
 import           GHC.Generics                    (Generic)
 import           GHC.IsList                      (IsList (..))
 import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), drop, filter, lcm, length, sum, take, (!!), (/), (^))
+import           Prelude                         hiding (Num (..), drop, filter, lcm, length, sum, take, lookup, (!!), (/), (^))
 import           Test.QuickCheck                 (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Prelude                  (elemIndex, (!!))
 
 type Variable i = (Eq i, Ord i)
 
@@ -44,13 +43,14 @@ evalMonomial :: forall i j b .
 evalMonomial f (M m) =
     foldrWithKey (\i j x -> (f i ^ j) * x) (one @b) m
 
-mapVar :: Variable i => [i] -> [i] -> i -> i
-mapVar vars vars' x = case x `elemIndex` vars of
-    Just i  -> vars' !! i
-    Nothing -> error "mapVar: something went wrong"
+-- | Maps a variable index using the provided `Map`
+mapVar :: Variable i => Map i i -> i -> i
+mapVar m x = case x `lookup` m of
+    Just y -> y
+    _      -> error "mapVar: something went wrong"
 
-mapVarMonomial :: Variable i => [i] -> [i] -> Mono i j -> Mono i j
-mapVarMonomial vars vars' (M as) = M $ mapKeys (mapVar vars vars') as
+mapVarMonomial :: Variable i => Map i i -> Mono i j -> Mono i j
+mapVarMonomial m (M as) = M $ mapKeys (mapVar m) as
 
 instance Monomial i j => IsList (Mono i j) where
     type Item (Mono i j) = (i, j)
