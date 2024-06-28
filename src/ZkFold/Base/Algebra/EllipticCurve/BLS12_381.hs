@@ -162,7 +162,7 @@ instance Binary (PointCompressed BLS12_381_G1) where
             flags = if bigY then bit 0 .|. bit 2 else bit 0
             bytes = bytesOf 48 x
         in
-            putWord8 (flags .|. head bytes) <> foldMap putWord8 (tail bytes)
+            foldMap putWord8 ((flags .|. head bytes) : tail bytes)
     get = do
         byte <- getWord8
         let compressed = testBit byte 0
