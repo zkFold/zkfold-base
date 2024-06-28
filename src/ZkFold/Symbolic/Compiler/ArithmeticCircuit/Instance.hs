@@ -19,7 +19,6 @@ import           Prelude                                                   (Inte
                                                                             (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger, frequency)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -35,6 +34,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
+import Test.QuickCheck (Arbitrary (arbitrary), Gen, oneof)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -164,11 +164,26 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
 
 -- TODO: make a proper implementation of Arbitrary
 instance (Arithmetic a, KnownNat n) => Arbitrary (ArithmeticCircuit n a) where
-    arbitrary = return $ c1 * c2
+    arbitrary = do
+            let k = 150 -- choose (100,200)
+            arbitrary' k
+
+arbitrary' :: (Arithmetic a, KnownNat n) => Integer -> Gen (ArithmeticCircuit n a)
+arbitrary' n
+    | n Haskell.== 1    = oneof [
+        return ArithmeticCircuit { acCircuit = mempty, acOutput = pure 150 }
+        , return $ fromConstant (15 :: Integer)
+        ]
+    | Haskell.otherwise = oneof [
+        Haskell.liftA2 (+) l r
+        , Haskell.liftA2 (-) l r
+        , Haskell.liftA2 (*) l r
+        , Haskell.liftA2 (//) l r
+        -- , someCheck
+        ]
         where
-            c1, c2 :: ArithmeticCircuit n a
-            c1 = ArithmeticCircuit { acCircuit = mempty, acOutput = pure 1}
-            c2 = ArithmeticCircuit { acCircuit = mempty, acOutput = pure 2}
+            l = arbitrary' (n-1)
+            r = arbitrary' 1
 
 
 -- TODO: make it more readable

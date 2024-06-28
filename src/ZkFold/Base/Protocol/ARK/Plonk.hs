@@ -9,12 +9,12 @@ import           Data.List                                           (sort)
 import qualified Data.Map                                            as Map
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
-import           GHC.Num                                             (integerToNatural)
+import           GHC.Num                                             (integerToNatural, integerToInt)
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P
-import           Test.QuickCheck                                     (Arbitrary (..), chooseInteger)
+import           Test.QuickCheck                                     (Arbitrary (..), chooseInteger, Gen, vector)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (Zp, fromZp)
@@ -28,8 +28,9 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams,
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                                      (take, (!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), witnessGenerator)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), witnessGenerator, Arithmetic, inputVariables)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map      (mapVarArithmeticCircuit)
+import GHC.Natural (naturalToInteger)
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
 
@@ -119,11 +120,24 @@ newtype PlonkWitnessInput = PlonkWitnessInput (Map.Map Natural F)
 instance Show PlonkWitnessInput where
     show (PlonkWitnessInput m) = "Witness Input: " ++ show m
 
--- TODO (Issue #25): make a proper implementation of Arbitrary
-instance Arbitrary PlonkWitnessInput where
+data ACandWitness n a = ACandWitness 
+    {
+        arithmeticCircuit :: ArithmeticCircuit n a 
+        , witnessInput :: PlonkWitnessInput  
+    }
+
+instance (Arithmetic a, KnownNat n) => Arbitrary (ACandWitness n a) where
+    arbitrary :: Gen (ACandWitness n a)
     arbitrary = do
-        x <- arbitrary
-        return $ PlonkWitnessInput $ fromList [(1, x), (2, 15//x)]
+        ac <- arbitrary 
+        let keys = inputVariables ac
+        let len = last keys
+        values <- vector (integerToInt $ naturalToInteger len)
+        let wi = fromList $ zip keys values
+        return ACandWitness {
+            arithmeticCircuit = ac
+            , witnessInput = PlonkWitnessInput wi  
+            }
 
 data PlonkProverSecret = PlonkProverSecret F F F F F F F F F F F
     deriving (Show)
