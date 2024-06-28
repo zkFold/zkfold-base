@@ -61,3 +61,20 @@ class NonInteractiveProof a where
     prove :: SetupProve a -> Witness a -> (Input a, Proof a)
 
     verify :: SetupVerify a -> Input a -> Proof a -> Bool
+
+class CompatibleNonInteractiveProofs a b where
+    nipProtocolTransform :: a -> b
+    nipInputTransform    :: Input a -> Input b
+    nipProofTransform    :: Proof a -> Proof b
+
+nipCompatibility :: forall a b .
+       NonInteractiveProof a
+    => NonInteractiveProof b
+    => CompatibleNonInteractiveProofs a b
+    => a -> Witness a -> Bool
+nipCompatibility a w =
+    let b      = nipProtocolTransform @a @b a
+        (i, p) = prove @a (setupProve a) w
+        i'     = nipInputTransform @a @b i
+        p'     = nipProofTransform @a @b p
+    in verify @b (setupVerify b) i' p'
