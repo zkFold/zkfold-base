@@ -5,6 +5,7 @@ module Tests.NonInteractiveProof.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSize
 
 import           Data.ByteString                              (ByteString)
 import           Data.List                                    (sort, transpose)
+import           Data.Maybe                                   (fromJust)
 import qualified Data.Vector                                  as V
 import           GHC.IsList                                   (IsList (..))
 import           Prelude                                      hiding (Fractional (..), Num (..), drop, length,
@@ -14,59 +15,46 @@ import           Test.QuickCheck
 import           Tests.NonInteractiveProof.Internal           (NonInteractiveProofTestData (..))
 
 import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..),
-                                                               MultiplicativeSemigroup (..), negate, zero, (-!))
-import           ZkFold.Base.Algebra.Basic.Field              (fromZp)
-import           ZkFold.Base.Algebra.Basic.Number             (value)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate
+                                                               MultiplicativeSemigroup (..), negate, zero, (-!), FiniteField)
+import           ZkFold.Base.Algebra.Basic.Number             (value, KnownNat)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
                                                                polyVecLinear, polyVecZero, toPolyVec)
 import           ZkFold.Base.Protocol.ARK.Plonk
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal      (fromPlonkConstraint, toPlonkArithmetization,
-                                                               toPlonkConstraint)
+import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
+import           ZkFold.Base.Protocol.ARK.Plonk.Relation      (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof (..))
-import           ZkFold.Prelude                               (replicate, take, (!))
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Prelude                               (replicate, take)
 
 type PlonkSizeBS = 32
 type PlonkBS n = Plonk PlonkSizeBS n ByteString
 type PlonkMaxPolyDegreeBS = PlonkMaxPolyDegree PlonkSizeBS
 
-propPlonkConstraintConversion :: (F, F, F, F, F, F, F, F) -> (F, F, F) -> Bool
-propPlonkConstraintConversion x (x1, x2, x3) =
-    let p   = fromPlonkConstraint x
-        xs  = toList $ variables p
-        v   = (fromList [(head xs, x1), (xs !! 1, x2), (xs !! 2, x3)] !)
-        p'  = fromPlonkConstraint $ toPlonkConstraint p
-        xs' = toList $ variables p'
-        v'  = (fromList [(head xs', x1), (xs' !! 1, x2), (xs' !! 2, x3)] !)
-    in evalPolynomial evalMonomial v p == evalPolynomial evalMonomial v' p'
+propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint a -> Bool
+propPlonkConstraintConversion p =
+    toPlonkConstraint (fromPlonkConstraint p) == p
 
-propPlonkConstraintSatisfaction :: PlonkBS n -> NonInteractiveProofTestData (PlonkBS n) -> Bool
-propPlonkConstraintSatisfaction (Plonk _ _ _ ord ac _) (TestData _ w) =
-    let wmap = witnessGenerator $ mapVarArithmeticCircuit ac
-        (ql, qr, qo, qm, qc, a, b, c) = toPlonkArithmetization @PlonkSizeBS ord ac
-
+propPlonkConstraintSatisfaction :: forall n . KnownNat n => PlonkBS n -> NonInteractiveProofTestData (PlonkBS n) -> Bool
+propPlonkConstraintSatisfaction (Plonk _ _ _ iPub ac _) (TestData _ w) =
+    let pr   = fromJust $ toPlonkRelation @PlonkSizeBS iPub ac
         (PlonkWitnessInput wInput, _) = w
-        w1'   = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec a)
-        w2'   = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec b)
-        w3'   = V.toList $ fmap ((wmap wInput !) . fromZp) (fromPolyVec c)
+        (w1', w2', w3') = wmap pr wInput
 
-        input = take 2 $ fmap (negate . snd) (sort $ toList wInput)
-        wPub  = input ++ replicate (value @PlonkSizeBS -! 2) zero
+        input = take (value @n) $ fmap (negate . snd) (sort $ toList wInput)
+        wPub  = input ++ replicate (value @PlonkSizeBS -! (value @n)) zero
 
-        ql' = V.toList $ fromPolyVec ql
-        qr' = V.toList $ fromPolyVec qr
-        qo' = V.toList $ fromPolyVec qo
-        qm' = V.toList $ fromPolyVec qm
-        qc' = V.toList $ fromPolyVec qc
+        qm' = V.toList $ fromPolyVec $ qM pr
+        ql' = V.toList $ fromPolyVec $ qL pr
+        qr' = V.toList $ fromPolyVec $ qR pr
+        qo' = V.toList $ fromPolyVec $ qO pr
+        qc' = V.toList $ fromPolyVec $ qC pr
 
         f [qlX, qrX, qoX, qmX, qcX, w1X, w2X, w3X, wPubX] =
             qlX * w1X + qrX * w2X + qoX * w3X + qmX * w1X * w2X + qcX + wPubX
         f _ = error "impossible"
 
-    in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', w1', w2', w3', wPub]
+    in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', toList $ fromPolyVec w1', toList $ fromPolyVec w2', toList $ fromPolyVec w3', wPub]
 
-propPlonkPolyIdentity :: forall n . NonInteractiveProofTestData (PlonkBS n) -> Bool
+propPlonkPolyIdentity :: forall n . KnownNat n => NonInteractiveProofTestData (PlonkBS n) -> Bool
 propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @F @PlonkSizeBS @PlonkMaxPolyDegreeBS
 
@@ -101,8 +89,8 @@ specPlonk :: IO ()
 specPlonk = hspec $ do
     describe "Plonk specification" $ do
         describe "Conversion to Plonk constraints and back" $ do
-            it "produces equivalent polynomials" $ property propPlonkConstraintConversion
+            it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @F
         describe "Plonk constraint satisfaction" $ do
-            it "should hold" $ property $ propPlonkConstraintSatisfaction @1
+            it "should hold" $ property $ propPlonkConstraintSatisfaction @2
         describe "Plonk polynomial identity" $ do
-            it "should hold" $ property $ propPlonkPolyIdentity @1
+            it "should hold" $ property $ propPlonkPolyIdentity @2
