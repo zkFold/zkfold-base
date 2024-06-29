@@ -204,7 +204,7 @@ instance forall d n t .
             h0'   = gen
             h1'   = x `mul` gen
             iPub' = fromList . fromVector $ iPub
-            
+
             pr    = fromJust $ toPlonkRelation @d @n @F iPub ac
 
             perm@PlonkPermutation {..}   = plonkPermutation plonk pr

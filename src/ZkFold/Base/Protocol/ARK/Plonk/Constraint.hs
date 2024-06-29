@@ -11,7 +11,7 @@ import           Data.Maybe                                   (mapMaybe)
 import           GHC.IsList                                   (IsList (..))
 import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
-import           Test.QuickCheck                              (Arbitrary(..))
+import           Test.QuickCheck                              (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, polynomial, variables)
@@ -23,9 +23,9 @@ data PlonkConstraint a = PlonkConstraint
     , qr :: a
     , qo :: a
     , qc :: a
-    , x1  :: Natural
-    , x2  :: Natural
-    , x3  :: Natural
+    , x1 :: Natural
+    , x2 :: Natural
+    , x3 :: Natural
     }
     deriving (Show, Eq)
 

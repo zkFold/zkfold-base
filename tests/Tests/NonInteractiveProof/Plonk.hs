@@ -3,27 +3,27 @@
 
 module Tests.NonInteractiveProof.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
 
-import           Data.ByteString                              (ByteString)
-import           Data.List                                    (sort, transpose)
-import           Data.Maybe                                   (fromJust)
-import qualified Data.Vector                                  as V
-import           GHC.IsList                                   (IsList (..))
-import           Prelude                                      hiding (Fractional (..), Num (..), drop, length,
-                                                               replicate, take)
+import           Data.ByteString                            (ByteString)
+import           Data.List                                  (sort, transpose)
+import           Data.Maybe                                 (fromJust)
+import qualified Data.Vector                                as V
+import           GHC.IsList                                 (IsList (..))
+import           Prelude                                    hiding (Fractional (..), Num (..), drop, length, replicate,
+                                                             take)
 import           Test.Hspec
 import           Test.QuickCheck
-import           Tests.NonInteractiveProof.Internal           (NonInteractiveProofTestData (..))
+import           Tests.NonInteractiveProof.Internal         (NonInteractiveProofTestData (..))
 
-import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup (..), AdditiveSemigroup (..),
-                                                               MultiplicativeSemigroup (..), negate, zero, (-!), FiniteField)
-import           ZkFold.Base.Algebra.Basic.Number             (value, KnownNat)
-import           ZkFold.Base.Algebra.Polynomials.Univariate   (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
-                                                               polyVecLinear, polyVecZero, toPolyVec)
+import           ZkFold.Base.Algebra.Basic.Class            (AdditiveGroup (..), AdditiveSemigroup (..), FiniteField,
+                                                             MultiplicativeSemigroup (..), negate, zero, (-!))
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, value)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
+                                                             polyVecLinear, polyVecZero, toPolyVec)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
-import           ZkFold.Base.Protocol.ARK.Plonk.Relation      (PlonkRelation (..), toPlonkRelation)
-import           ZkFold.Base.Protocol.NonInteractiveProof     (NonInteractiveProof (..))
-import           ZkFold.Prelude                               (replicate, take)
+import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
+import           ZkFold.Base.Protocol.NonInteractiveProof   (NonInteractiveProof (..))
+import           ZkFold.Prelude                             (replicate, take)
 
 type PlonkSizeBS = 32
 type PlonkBS n = Plonk PlonkSizeBS n ByteString

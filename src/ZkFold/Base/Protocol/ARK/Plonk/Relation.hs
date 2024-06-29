@@ -1,22 +1,22 @@
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.ARK.Plonk.Relation where
 
-import           Data.Map                                     (elems, Map, (!))
+import           Data.Map                                     (Map, elems, (!))
 import           GHC.IsList                                   (IsList (..))
 import           Numeric.Natural                              (Natural)
-import           Prelude                                      hiding (Num (..), drop, length, sum, take, replicate, (!!), (/), (^))
+import           Prelude                                      hiding (Num (..), drop, length, replicate, sum, take,
+                                                               (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (evalMonomial, evalPolynomial,
-                                                               var)
+import           ZkFold.Base.Algebra.Basic.Permutations       (Permutation, fromCycles, mkIndexPartition)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (evalMonomial, evalPolynomial, var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
 import           ZkFold.Base.Data.Vector                      (Vector, fromVector)
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Base.Protocol.ARK.Plonk.Constraint    (toPlonkConstraint, PlonkConstraint (..))
-import           ZkFold.Base.Algebra.Basic.Permutations       (mkIndexPartition, fromCycles, Permutation)
+import           ZkFold.Base.Protocol.ARK.Plonk.Constraint    (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Prelude                               (replicate)
+import           ZkFold.Symbolic.Compiler
 
 type PlonkPolyDegree n = 2 ^ (Log2 n + 1)
 
@@ -44,7 +44,7 @@ toPlonkRelation :: forall n l a .
     -> Maybe (PlonkRelation n l a)
 toPlonkRelation xPub ac =
     let evalX0 = evalPolynomial evalMonomial (\x -> if x == 0 then one else var x)
-        
+
         pubInputConstraints = map var (fromVector xPub)
         acConstraints       = map evalX0 $ elems (constraintSystem ac)
         extraConstraints    = replicate (value @n -! acSizeN ac -! value @l) zero

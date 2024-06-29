@@ -1,10 +1,10 @@
 module ZkFold.Base.Protocol.ARK.Plonk.Internal where
 
-import           Data.Bifunctor                               (first)
-import           Data.Bool                                    (bool)
-import           Numeric.Natural                              (Natural)
-import           Prelude                                      hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
-import           System.Random                                (RandomGen, mkStdGen, uniformR)
+import           Data.Bifunctor                  (first)
+import           Data.Bool                       (bool)
+import           Numeric.Natural                 (Natural)
+import           Prelude                         hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+import           System.Random                   (RandomGen, mkStdGen, uniformR)
 
 import           ZkFold.Base.Algebra.Basic.Class
 
