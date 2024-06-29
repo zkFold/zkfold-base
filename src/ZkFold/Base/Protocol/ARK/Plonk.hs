@@ -79,6 +79,13 @@ data PlonkSetupParamsVerify = PlonkSetupParamsVerify {
     }
     deriving (Show)
 
+data PlonkPermutation d = PlonkPermutation {
+        s1 :: PolyVec F d,
+        s2 :: PolyVec F d,
+        s3 :: PolyVec F d
+    }
+    deriving (Show)
+
 data PlonkCircuitPolynomials d = PlonkCircuitPolynomials {
         ql     :: PlonkPolyExtended d,
         qr     :: PlonkPolyExtended d,
@@ -100,13 +107,6 @@ data PlonkCircuitCommitments = PlonkCircuitCommitments {
         cmS1 :: G1,
         cmS2 :: G1,
         cmS3 :: G1
-    }
-    deriving (Show)
-
-data PlonkPermutation d = PlonkPermutation {
-        s1 :: PolyVec F d,
-        s2 :: PolyVec F d,
-        s3 :: PolyVec F d
     }
     deriving (Show)
 
