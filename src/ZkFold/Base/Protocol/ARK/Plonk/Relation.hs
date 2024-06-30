@@ -18,8 +18,6 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Constraint    (PlonkConstraint (
 import           ZkFold.Prelude                               (replicate)
 import           ZkFold.Symbolic.Compiler
 
-type PlonkPolyDegree n = 2 ^ (Log2 n + 1)
-
 -- Here `n` is the total number of constraints, `l` is the number of public inputs, and `a` is the field type.
 data PlonkRelation n l a = PlonkRelation
     { qM    :: PolyVec a n
