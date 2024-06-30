@@ -63,10 +63,10 @@ toPlonkRelation xPub ac =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c
 
-        wmap' = witnessGenerator ac
-        w1 i    = toPolyVec $ fromList $ map (wmap' i !) a
-        w2 i    = toPolyVec $ fromList $ map (wmap' i !) b
-        w3 i    = toPolyVec $ fromList $ map (wmap' i !) c
+        wmap'  = witnessGenerator ac
+        w1 i   = toPolyVec $ fromList $ map (wmap' i !) a
+        w2 i   = toPolyVec $ fromList $ map (wmap' i !) b
+        w3 i   = toPolyVec $ fromList $ map (wmap' i !) c
         wmap i = (w1 i, w2 i, w3 i)
 
     in if (acSizeN ac + value @l) <= value @n
