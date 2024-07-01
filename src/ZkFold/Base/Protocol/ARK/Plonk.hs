@@ -75,7 +75,8 @@ data PlonkSetupParamsVerify = PlonkSetupParamsVerify {
         g0    :: G1,
         h0    :: G2,
         h1    :: G2,
-        pow   :: Integer
+        pow   :: Integer,
+        n     :: Integer
     }
     deriving (Show)
 
@@ -213,6 +214,7 @@ instance forall d n t .
     setupVerify :: Plonk d n t -> SetupVerify (Plonk d n t)
     setupVerify plonk@(Plonk omega k1 k2 iPub ac x) = (PlonkSetupParamsVerify {..}, PlonkCircuitCommitments {..})
         where
+            n = fromIntegral $ value @d
             d = value @d + 6
             xs = fromList $ map (x^) [0..d-!1]
             gs = fmap (`mul` gen) xs
@@ -358,7 +360,6 @@ instance forall d n t .
         (PlonkInput wPub)
         (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi) = p1 == p2
         where
-            n = value @d
 
             (beta, ts) = challenge $ mempty
                 `transcript` cmA
