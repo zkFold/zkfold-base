@@ -4,6 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans     #-}
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
@@ -13,13 +14,15 @@ import           Data.Map                                                  hidin
                                                                             null, splitAt, take)
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
+import           GHC.Num                                                   (integerToNatural)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   (Integer, const, id, mempty, pure, return,
                                                                             show, type (~), ($), (++), (.), (<$>),
                                                                             (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (..))
+import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
+                                                                            oneof)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -164,17 +167,34 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
 
 -- TODO: make a proper implementation of Arbitrary
 instance (Arithmetic a, KnownNat n) => Arbitrary (ArithmeticCircuit n a) where
-    arbitrary = return $ c1 * c2
-        where
-            c1, c2 :: ArithmeticCircuit n a
-            c1 = ArithmeticCircuit { acCircuit = mempty, acOutput = pure 1}
-            c2 = ArithmeticCircuit { acCircuit = mempty, acOutput = pure 2}
+    arbitrary = do
+            k <- chooseInteger (0,10)
+            arbitrary' k
 
+arbitrary' :: (Arithmetic a, KnownNat n) => Integer -> Gen (ArithmeticCircuit n a)
+arbitrary' 1 = do
+    oneof [
+        return $ ArithmeticCircuit { acCircuit = mempty {acInput = [integerToNatural 1]}, acOutput = pure 1 }
+        , fromConstant <$> chooseInteger (0, 100)
+        ]
+arbitrary' n = do
+        index <- chooseInteger (1, n-1)
+
+        l <- arbitrary' (n-index)
+        r <- arbitrary' index
+
+        oneof $ Haskell.fmap return [
+            l + r
+            , l - r
+            , l * r
+            , l // r
+        -- , someCheck
+            ]
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Haskell.Show a) => Haskell.Show (ArithmeticCircuit n a) where
-    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acSystem = " ++ show (acSystem r) ++ ", acInput = "
-        ++ show (acInput r) ++ ", acOutput = " ++ show o ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
+    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = "
+        ++ show (acInput r) ++ ", acSystem = " ++ show (acSystem r) ++ ", acOutput = " ++ show o ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
 -- TODO: add witness generation info to the JSON object
 instance ToJSON a => ToJSON (ArithmeticCircuit n a) where

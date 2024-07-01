@@ -9,11 +9,13 @@ import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
+import           GHC.Natural                                         (naturalToInteger)
+import           GHC.Num                                             (integerToInt)
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P
-import           Test.QuickCheck                                     (Arbitrary (..))
+import           Test.QuickCheck                                     (Arbitrary (..), Gen, chooseInteger, vector)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (Zp)
@@ -28,7 +30,9 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelat
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                                      ((!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (arbitrary')
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..),
+                                                                      inputVariables)
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
 
@@ -44,11 +48,12 @@ type G2 = Point BLS12_381_G2
 data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (ArithmeticCircuit 1 F) F
     deriving (Show)
 -- TODO (Issue #25): make a proper implementation of Arbitrary
-instance Arbitrary (Plonk d n t) where
+instance (KnownNat d) => Arbitrary (Plonk d n t) where
     arbitrary = do
-        let (omega, k1, k2) = getParams 5
-        ac <- arbitrary
-        Plonk omega k1 k2 (Vector [1, 2]) ac <$> arbitrary
+        let nP = ceiling @Double . logBase 2.0 . fromIntegral $ value @d
+        let (omega, k1, k2) = getParams nP
+        ac <- arbitrary' (toInteger nP)
+        Plonk omega k1 k2 (Vector [1..nP]) ac <$> arbitrary
 
 type PlonkPermutationSize d = 3 * d
 
@@ -114,13 +119,35 @@ newtype PlonkWitnessMap d = PlonkWitnessMap (Map.Map Natural F -> (PolyVec F d, 
 
 newtype PlonkWitnessInput = PlonkWitnessInput (Map.Map Natural F)
 -- TODO (Issue #25): make a proper implementation of Show
-instance Show PlonkWitnessInput where
-    show _ = "PlonkWitnessInput"
--- TODO (Issue #25): make a proper implementation of Arbitrary
 instance Arbitrary PlonkWitnessInput where
     arbitrary = do
-        x <- arbitrary
-        return $ PlonkWitnessInput $ fromList [(1, x), (2, 15//x)]
+        keysLen <- ceiling @Double . logBase 2.0 . fromIntegral <$> chooseInteger (0, 100)
+        let keys = [0..keysLen]
+        values <- vector (integerToInt $ naturalToInteger keysLen) :: Gen [F]
+        let wi = Map.fromList $ zip keys values
+        return (PlonkWitnessInput wi)
+
+instance Show PlonkWitnessInput where
+    show (PlonkWitnessInput m) = "Witness Input: " ++ show m
+
+data (Arithmetic a, KnownNat n) => ACandWitness n a = ACandWitness
+    {
+        arithmeticCircuit :: ArithmeticCircuit n a
+        , witnessInput    :: PlonkWitnessInput
+    }
+
+instance (Arithmetic a, KnownNat n) => Arbitrary (ACandWitness n a) where
+    arbitrary :: Gen (ACandWitness n a)
+    arbitrary = do
+        ac <- arbitrary
+        let keys = inputVariables ac
+        let len = last keys
+        values <- vector (integerToInt $ naturalToInteger len)
+        let wi = fromList $ zip keys values
+        return ACandWitness {
+            arithmeticCircuit = ac
+            , witnessInput = PlonkWitnessInput wi
+            }
 
 data PlonkProverSecret = PlonkProverSecret F F F F F F F F F F F
     deriving (Show)
