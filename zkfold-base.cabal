@@ -103,7 +103,9 @@ library
       ZkFold.Base.Data.Type
       ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.ARK.Plonk
+      ZkFold.Base.Protocol.ARK.Plonk.Constraint
       ZkFold.Base.Protocol.ARK.Plonk.Internal
+      ZkFold.Base.Protocol.ARK.Plonk.Relation
       ZkFold.Base.Protocol.ARK.Protostar
       ZkFold.Base.Protocol.ARK.Protostar.Accumulator
       ZkFold.Base.Protocol.ARK.Protostar.CommitOpen

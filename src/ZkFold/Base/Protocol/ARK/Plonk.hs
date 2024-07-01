@@ -6,6 +6,7 @@
 module ZkFold.Base.Protocol.ARK.Plonk where
 
 import qualified Data.Map                                            as Map
+import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
 import           Numeric.Natural                                     (Natural)
@@ -15,19 +16,19 @@ import qualified Prelude                                             as P
 import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                     (Zp, fromZp)
+import           ZkFold.Base.Algebra.Basic.Field                     (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Permutations              (fromCycles, fromPermutation, mkIndexPartition)
+import           ZkFold.Base.Algebra.Basic.Permutations              (fromPermutation)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2, BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams, toPlonkArithmetization)
+import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
+import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                                      ((!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), witnessGenerator)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map      (mapVarArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
 
@@ -78,6 +79,13 @@ data PlonkSetupParamsVerify = PlonkSetupParamsVerify {
     }
     deriving (Show)
 
+data PlonkPermutation d = PlonkPermutation {
+        s1 :: PolyVec F d,
+        s2 :: PolyVec F d,
+        s3 :: PolyVec F d
+    }
+    deriving (Show)
+
 data PlonkCircuitPolynomials d = PlonkCircuitPolynomials {
         ql     :: PlonkPolyExtended d,
         qr     :: PlonkPolyExtended d,
@@ -99,13 +107,6 @@ data PlonkCircuitCommitments = PlonkCircuitCommitments {
         cmS1 :: G1,
         cmS2 :: G1,
         cmS3 :: G1
-    }
-    deriving (Show)
-
-data PlonkPermutation d = PlonkPermutation {
-        s1 :: PolyVec F d,
-        s2 :: PolyVec F d,
-        s3 :: PolyVec F d
     }
     deriving (Show)
 
@@ -139,12 +140,10 @@ data PlonkProof = PlonkProof G1 G1 G1 G1 G1 G1 G1 G1 G1 F F F F F F
     deriving (Show)
 
 plonkPermutation :: forall d n t .
-    (KnownNat d, KnownNat (PlonkPermutationSize d)) =>
-    Plonk d n t -> (PolyVec F d, PolyVec F d, PolyVec F d) -> PlonkPermutation d
-plonkPermutation (Plonk omega k1 k2 _ _ _) (a, b, c) = PlonkPermutation {..}
+    (KnownNat d) => Plonk d n t -> PlonkRelation d n F -> PlonkPermutation d
+plonkPermutation (Plonk omega k1 k2 _ _ _) PlonkRelation {..} = PlonkPermutation {..}
     where
-        s = fromPermutation @(PlonkPermutationSize d) $ fromCycles $
-                    mkIndexPartition $ fmap fromZp $ fromPolyVec a V.++ fromPolyVec b V.++ fromPolyVec c
+        s = fromPermutation @(PlonkPermutationSize d) sigma
 
         f i = case (i-!1) `div` value @d of
             0 -> omega^i
@@ -161,18 +160,18 @@ plonkCircuitPolynomials :: forall d n t .
     (KnownNat d, KnownNat (PlonkMaxPolyDegree d))
     => Plonk d n t
     -> PlonkPermutation d
-    -> (PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d, PolyVec F d)
+    -> PlonkRelation d n F
     -> PlonkCircuitPolynomials d
 plonkCircuitPolynomials
    (Plonk omega _ _ _ _ _)
    PlonkPermutation {..}
-   (qlAC, qrAC, qoAC, qmAC, qcAC, _, _, _) = PlonkCircuitPolynomials {..}
+   PlonkRelation {..} = PlonkCircuitPolynomials {..}
     where
-        qm     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qmAC
-        ql     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qlAC
-        qr     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qrAC
-        qo     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qoAC
-        qc     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qcAC
+        qm     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qM
+        ql     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qL
+        qr     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qR
+        qo     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qO
+        qc     = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega qC
         sigma1 = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega s1
         sigma2 = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega s2
         sigma3 = polyVecInLagrangeBasis @F @d @(PlonkMaxPolyDegree d) omega s3
@@ -182,6 +181,7 @@ plonkVerifierInput input = PlonkInput $ fromList $ map negate $ fromVector input
 
 instance forall d n t .
         (KnownNat d,
+         KnownNat n,
          KnownNat (PlonkPermutationSize d),
          KnownNat (PlonkMaxPolyDegree d),
          ToTranscript t F,
@@ -196,7 +196,7 @@ instance forall d n t .
 
     setupProve :: Plonk d n t -> SetupProve (Plonk d n t)
     setupProve plonk@(Plonk omega' k1' k2' iPub ac x) =
-        (PlonkSetupParamsProve {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap')
+        (PlonkSetupParamsProve {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkWitnessMap $ wmap pr)
         where
             d     = value @d + 6
             xs    = fromList $ map (x^) [0..d-!1]
@@ -205,16 +205,10 @@ instance forall d n t .
             h1'   = x `mul` gen
             iPub' = fromList . fromVector $ iPub
 
-            wmap = witnessGenerator $ mapVarArithmeticCircuit ac
-            tPA@(_, _, _, _, _, a, b, c) = toPlonkArithmetization iPub ac
+            pr    = fromJust $ toPlonkRelation @d @n @F iPub ac
 
-            w1 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec a)
-            w2 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec b)
-            w3 i    = toPolyVec $ fmap ((wmap i !) . fromZp) (fromPolyVec c)
-            wmap' i = (w1 i, w2 i, w3 i)
-
-            perm@PlonkPermutation {..} = plonkPermutation plonk (a, b, c)
-            PlonkCircuitPolynomials {..} = plonkCircuitPolynomials plonk perm tPA
+            perm@PlonkPermutation {..}   = plonkPermutation plonk pr
+            PlonkCircuitPolynomials {..} = plonkCircuitPolynomials plonk perm pr
 
     setupVerify :: Plonk d n t -> SetupVerify (Plonk d n t)
     setupVerify plonk@(Plonk omega k1 k2 iPub ac x) = (PlonkSetupParamsVerify {..}, PlonkCircuitCommitments {..})
@@ -227,9 +221,9 @@ instance forall d n t .
             h1 = x `mul` gen
             pow = floor @Double . logBase 2.0 . fromIntegral $ value @d
 
-            tPA@(_, _, _, _, _, a, b, c) = toPlonkArithmetization iPub ac
-            perm = plonkPermutation plonk (a, b, c)
-            PlonkCircuitPolynomials {..} = plonkCircuitPolynomials plonk perm tPA
+            pr   = fromJust $ toPlonkRelation @d @n @F iPub ac
+            perm = plonkPermutation plonk pr
+            PlonkCircuitPolynomials {..} = plonkCircuitPolynomials plonk perm pr
 
             cmQl = gs `com` ql
             cmQr = gs `com` qr
