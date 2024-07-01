@@ -227,6 +227,9 @@ test-suite zkfold-base-test
       base                          >= 4.9 && < 5,
       binary                               < 0.11,
       bytestring                                 ,
+      blake2                                     ,
+      containers                                 ,
+      deepseq                                    ,
       containers                                 ,
       directory                        <= 1.3.8.3,
       filepath                         <= 1.5.2.0,
@@ -237,7 +240,6 @@ test-suite zkfold-base-test
       vector                                     ,
       vector-algorithms                          ,
       zkfold-base                                ,
-      deepseq,
     hs-source-dirs: tests
 
 test-suite zkfold-base-examples

@@ -52,6 +52,7 @@ blake2b_224 :: forall keylen a .
 blake2b_224 = blake2b_libsodium @keylen @28
 -}
 
+{-
 hashFunction :: HashData inputs rinputs outputs tokens datum a -> Public a
 hashFunction = undefined -- toConstant . fromConstant . blake2b_224 . serialiseData . toBuiltinData
 
@@ -91,3 +92,4 @@ symbolicWrapper contract tx hash witness =
         conditionRunContract = contract $ Vector @(privates + 1) (from tx : fromVector witness)
 
     in conditionSameHash && conditionRunContract
+-}
