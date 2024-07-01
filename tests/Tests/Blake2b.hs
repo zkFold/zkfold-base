@@ -1,11 +1,15 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 module Tests.Blake2b where
 
+import           Crypto.Hash.BLAKE2.BLAKE2b                  (hash)
+import qualified Data.ByteString                             as B
+import qualified Data.ByteString.Internal                    as BI
 import qualified Data.Vector                                 as V
 import qualified GHC.Num                                     as GHC
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     (Eq (..), Foldable (..), Functor (..), IO, Monoid (..),
-                                                              fromIntegral, ($), (<$>), replicate, undefined, Int, Maybe (..))
+import           Prelude                                     (Eq (..), Foldable (..), Functor (..), IO, Int, Maybe (..),
+                                                              Monoid (..), fromIntegral, replicate, undefined, ($),
+                                                              (<$>))
 import           Test.Hspec
 
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveMonoid, AdditiveSemigroup (..), Finite,
@@ -13,16 +17,12 @@ import           ZkFold.Base.Algebra.Basic.Class             (AdditiveMonoid, Ad
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Symbolic.Algorithms.Hash.Blake2b     (Blake2bByteString, andUInt, blake2b, blake2b_final,
-                                                              blake2b_init, blake2b_update, shiftUIntR, blake2b_256)
+import           ZkFold.Symbolic.Algorithms.Hash.Blake2b     (Blake2bByteString, andUInt, blake2b, blake2b_256,
+                                                              blake2b_final, blake2b_init, blake2b_update, shiftUIntR)
 import           ZkFold.Symbolic.Data.Bool                   (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString             (ByteString, ShiftBits (..), Concat, ToWords)
+import           ZkFold.Symbolic.Data.ByteString             (ByteString, Concat, ShiftBits (..), ToWords)
 import           ZkFold.Symbolic.Data.Combinators            (Iso)
 import           ZkFold.Symbolic.Data.UInt                   (UInt, toConstant)
-import           Crypto.Hash.BLAKE2.BLAKE2b  (hash)
-
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Internal as BI
 
 {-
 

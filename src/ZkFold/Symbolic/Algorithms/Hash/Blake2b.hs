@@ -1,5 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Algorithms.Hash.Blake2b where
 
@@ -9,7 +9,8 @@ import qualified Data.Vector                                       as V
 import           GHC.Natural                                       (Natural)
 import qualified GHC.Num                                           as GHC
 import           Prelude                                           (Eq (..), Functor (..), Int, Ord (..), error,
-                                                                    fromIntegral, fst, otherwise, snd, ($), (.), (<$>), replicate, take)
+                                                                    fromIntegral, fst, otherwise, replicate, snd, take,
+                                                                    ($), (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGroup (..), AdditiveSemigroup (..),
                                                                     Exponent (..), FromConstant (..),
