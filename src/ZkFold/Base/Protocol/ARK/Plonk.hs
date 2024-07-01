@@ -152,6 +152,7 @@ instance forall n l c1 c2 t plonk f g1.
             h0''    = gen
             h1''    = x `mul` gen
             pow''   = log2 $ value @n
+            n''     = fromIntegral $ value @n
 
             pr   = fromJust $ toPlonkRelation @n @l @f iPub ac
             perm = plonkPermutation plonk pr

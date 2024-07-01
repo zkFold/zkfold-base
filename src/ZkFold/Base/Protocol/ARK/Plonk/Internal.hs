@@ -77,19 +77,21 @@ data PlonkSetupParamsVerify c1 c2 = PlonkSetupParamsVerify {
         g0''    :: Point c1,
         h0''    :: Point c2,
         h1''    :: Point c2,
-        pow''   :: Integer
+        pow''   :: Integer,
+        n''     :: Integer
     }
 instance (Show (ScalarField c1), Show (BaseField c1), Show (BaseField c2),
         EllipticCurve c1, EllipticCurve c2) => Show (PlonkSetupParamsVerify c1 c2) where
-    show (PlonkSetupParamsVerify omega'' k1'' k2'' g0'' h0'' h1'' pow'') =
+    show (PlonkSetupParamsVerify omega'' k1'' k2'' g0'' h0'' h1'' pow'' n'') =
         "Setup Parameters (Verify): "
         ++ show omega'' ++ " "
-        ++ show k1'' ++ " "
-        ++ show k2'' ++ " "
-        ++ show g0'' ++ " "
-        ++ show h0'' ++ " "
-        ++ show h1'' ++ " "
-        ++ show pow''
+        ++ show k1''  ++ " "
+        ++ show k2''  ++ " "
+        ++ show g0''  ++ " "
+        ++ show h0''  ++ " "
+        ++ show h1''  ++ " "
+        ++ show pow'' ++ " "
+        ++ show n''
 
 data PlonkPermutation n c = PlonkPermutation {
         s1 :: PolyVec (ScalarField c) n,
