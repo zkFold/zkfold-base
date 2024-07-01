@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-}
 module ZkFold.Symbolic.Cardano.Contracts.ContractWrapper where
 
 import           Prelude                                             (undefined, ($))
@@ -7,9 +9,11 @@ import           ZkFold.Base.Algebra.Basic.Class                     (FromConsta
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, type (+))
 import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk                      (F)
-import           ZkFold.Symbolic.Cardano.Types                       (Output, OutputRef)
+import           ZkFold.Symbolic.Cardano.Types.Output                (Output)
+import           ZkFold.Symbolic.Cardano.Types.OutputRef             (OutputRef)
+import           ZkFold.Symbolic.Cardano.Types.Value                 (OneValue, Value)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit)
-import           ZkFold.Symbolic.Compiler.Arithmetizable             (Arithmetic, SymbolicData)
+import           ZkFold.Symbolic.Compiler.Arithmetizable             (Arithmetic, SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool                           (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                     (ByteString)
 import           ZkFold.Symbolic.Data.Combinators                    (Iso (..))
@@ -52,39 +56,42 @@ blake2b_224 :: forall keylen a .
 blake2b_224 = blake2b_libsodium @keylen @28
 -}
 
-{-
-hashFunction :: HashData inputs rinputs outputs tokens datum a -> Public a
+hashFunction :: HashData inputs rinputs outputs tokens datum b a -> Public b a
 hashFunction = undefined -- toConstant . fromConstant . blake2b_224 . serialiseData . toBuiltinData
 
 
-newtype HashData inputs rinputs outputs tokens datum a = HashData
-    ( Vector rinputs (OutputRef a)
-    , (Vector inputs (OutputRef a)
-    , (Vector outputs (Output tokens datum a)
-    , (UTCTime a, UTCTime a)
+newtype HashData inputs rinputs outputs tokens datum b a = HashData
+    ( Vector rinputs (OutputRef b a)
+    , (Vector inputs (OutputRef b a)
+    , (Vector outputs (Output tokens datum b a)
+    , (UTCTime b a, UTCTime b a)
     )))
 
 deriving instance
     ( Arithmetic a
-    , KnownNat inputs
-    , KnownNat rinputs
-    , KnownNat outputs
-    , KnownNat tokens
-    ) => SymbolicData a (HashData inputs rinputs outputs tokens datum (ArithmeticCircuit a))
+    , KnownNat (TypeSize a (UTCTime ArithmeticCircuit a))
+    , KnownNat (TypeSize a (Value tokens ArithmeticCircuit a))
+    , KnownNat (TypeSize a (Output tokens datum ArithmeticCircuit a))
+    , KnownNat (TypeSize a (Vector outputs (Output tokens datum ArithmeticCircuit a)))
+    , KnownNat (TypeSize a (OutputRef ArithmeticCircuit a))
+    , KnownNat (TypeSize a (Vector inputs (OutputRef ArithmeticCircuit a)))
+    , KnownNat (TypeSize a (Vector rinputs (OutputRef ArithmeticCircuit a)))
+    , KnownNat (TypeSize a (OneValue ArithmeticCircuit a))
+    ) => SymbolicData a (HashData inputs rinputs outputs tokens datum ArithmeticCircuit a)
 
 type Contract inputs a = Vector inputs a -> Bool a
 type Public a = UInt 64 a
 type Privates privates a = Vector privates a
 
-type HashFun inputs rinputs outputs tokens datum a =
-    ( FromConstant (ByteString 224 a) (Public F))
+type HashFun inputs rinputs outputs tokens datum a b =
+    ( FromConstant (ByteString 224 b a) (Public b F))
 
 -- | Use wrapper to convert circuit to plonk circuit
-symbolicWrapper :: forall a privates inputs rinputs outputs tokens datum .
-    ( Eq (Bool a) (Public a),
-      Iso (HashData inputs rinputs outputs tokens datum a) a) =>
-    Contract (privates + 1) a -> HashData inputs rinputs outputs tokens datum a -> Public a -> Privates privates a -> Bool a
-symbolicWrapper contract tx hash witness =
+contractWrapper :: forall privates inputs rinputs outputs tokens datum b a.
+    ( Eq (Bool a) (Public b a),
+      Iso (HashData inputs rinputs outputs tokens datum b a) a) =>
+    Contract (privates + 1) a -> HashData inputs rinputs outputs tokens datum b a -> Public b a -> Privates privates a -> Bool a
+contractWrapper contract tx hash witness =
     let -- Сhecking equality of hash and embedded data
         conditionSameHash    = hashFunction tx == hash
 
@@ -92,4 +99,3 @@ symbolicWrapper contract tx hash witness =
         conditionRunContract = contract $ Vector @(privates + 1) (from tx : fromVector witness)
 
     in conditionSameHash && conditionRunContract
--}
