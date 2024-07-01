@@ -47,7 +47,7 @@ import           Test.QuickCheck                                     (Arbitrary,
 import           Text.Pretty.Simple                                  (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMapM, evalPolynomial)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
@@ -124,7 +124,7 @@ checkClosedCircuit
 checkClosedCircuit (ArithmeticCircuit r _) = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem r) ]
     where
         w = acWitness r empty
-        testPoly p = evalPolynomial evalMapM (w !) p === zero
+        testPoly p = evalPolynomial evalMonomial (w !) p === zero
 
 checkCircuit
     :: forall a n
@@ -140,4 +140,4 @@ checkCircuit (ArithmeticCircuit r _) = conjoin [ property (testPoly p) | p <- el
         testPoly p = do
             ins <- vector . fromIntegral $ length (acInput r)
             let w = acWitness r . fromList $ zip (acInput r) ins
-            return $ evalPolynomial evalMapM (w !) p === zero
+            return $ evalPolynomial evalMonomial (w !) p === zero
