@@ -14,12 +14,15 @@ import           Data.Map                                                  hidin
                                                                             null, splitAt, take)
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
+import           GHC.Num                                                   (integerToNatural)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   (Integer, const, id, mempty, pure, return,
                                                                             show, type (~), ($), (++), (.), (<$>),
                                                                             (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
+import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
+                                                                            oneof)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -35,8 +38,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
-import Test.QuickCheck (Arbitrary (arbitrary), Gen, oneof, chooseInteger)
-import GHC.Num (integerToNatural)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -171,14 +172,14 @@ instance (Arithmetic a, KnownNat n) => Arbitrary (ArithmeticCircuit n a) where
             arbitrary' k
 
 arbitrary' :: (Arithmetic a, KnownNat n) => Integer -> Gen (ArithmeticCircuit n a)
-arbitrary' 1 = do 
+arbitrary' 1 = do
     oneof [
         return $ ArithmeticCircuit { acCircuit = mempty {acInput = [integerToNatural 1]}, acOutput = pure 1 }
-        , fromConstant <$> chooseInteger (0, 100) 
+        , fromConstant <$> chooseInteger (0, 100)
         ]
-arbitrary' n = do 
+arbitrary' n = do
         index <- chooseInteger (1, n-1)
-        
+
         l <- arbitrary' (n-index)
         r <- arbitrary' index
 

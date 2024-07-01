@@ -8,10 +8,10 @@ module ZkFold.Base.Protocol.ARK.Plonk where
 import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
+import           GHC.IsList                                          (IsList (..))
 import           GHC.Natural                                         (naturalToInteger)
 import           GHC.Num                                             (integerToInt)
 import           Numeric.Natural                                     (Natural)
-import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P
@@ -30,8 +30,9 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelat
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                                      ((!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), Arithmetic, inputVariables)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (arbitrary')
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..),
+                                                                      inputVariables)
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
 
