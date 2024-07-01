@@ -4,6 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans     #-}
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
@@ -34,7 +35,8 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
-import Test.QuickCheck (Arbitrary (arbitrary), Gen, oneof)
+import Test.QuickCheck (Arbitrary (arbitrary), Gen, oneof, chooseInteger)
+import GHC.Num (integerToNatural)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -165,31 +167,33 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
 -- TODO: make a proper implementation of Arbitrary
 instance (Arithmetic a, KnownNat n) => Arbitrary (ArithmeticCircuit n a) where
     arbitrary = do
-            let k = 150 -- choose (100,200)
+            k <- chooseInteger (0,10)
             arbitrary' k
 
 arbitrary' :: (Arithmetic a, KnownNat n) => Integer -> Gen (ArithmeticCircuit n a)
-arbitrary' n
-    | n Haskell.== 1    = oneof [
-        return ArithmeticCircuit { acCircuit = mempty, acOutput = pure 150 }
-        , return $ fromConstant (15 :: Integer)
+arbitrary' 1 = do 
+    oneof [
+        return $ ArithmeticCircuit { acCircuit = mempty {acInput = [integerToNatural 1]}, acOutput = pure 1 }
+        , fromConstant <$> chooseInteger (0, 100) 
         ]
-    | Haskell.otherwise = oneof [
-        Haskell.liftA2 (+) l r
-        , Haskell.liftA2 (-) l r
-        , Haskell.liftA2 (*) l r
-        , Haskell.liftA2 (//) l r
-        -- , someCheck
-        ]
-        where
-            l = arbitrary' (n-1)
-            r = arbitrary' 1
+arbitrary' n = do 
+        index <- chooseInteger (1, n-1)
+        
+        let l = arbitrary' (n-index)
+        let r = arbitrary' index
 
+        oneof [
+            Haskell.liftA2 (+) l r
+            , Haskell.liftA2 (-) l r
+            , Haskell.liftA2 (*) l r
+            , Haskell.liftA2 (//) l r
+        -- , someCheck
+            ]
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Haskell.Show a) => Haskell.Show (ArithmeticCircuit n a) where
-    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acSystem = " ++ show (acSystem r) ++ ", acInput = "
-        ++ show (acInput r) ++ ", acOutput = " ++ show o ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
+    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = "
+        ++ show (acInput r) ++ ", acSystem = " ++ show (acSystem r) ++ ", acOutput = " ++ show o ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
 -- TODO: add witness generation info to the JSON object
 instance ToJSON a => ToJSON (ArithmeticCircuit n a) where
