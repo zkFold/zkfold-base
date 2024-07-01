@@ -179,14 +179,14 @@ arbitrary' 1 = do
 arbitrary' n = do 
         index <- chooseInteger (1, n-1)
         
-        let l = arbitrary' (n-index)
-        let r = arbitrary' index
+        l <- arbitrary' (n-index)
+        r <- arbitrary' index
 
-        oneof [
-            Haskell.liftA2 (+) l r
-            , Haskell.liftA2 (-) l r
-            , Haskell.liftA2 (*) l r
-            , Haskell.liftA2 (//) l r
+        oneof $ Haskell.fmap return [
+            l + r
+            , l - r
+            , l * r
+            , l // r
         -- , someCheck
             ]
 

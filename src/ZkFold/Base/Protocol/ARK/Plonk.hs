@@ -48,9 +48,9 @@ type G2 = Point BLS12_381_G2
 data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (ArithmeticCircuit 1 F) F
     deriving (Show)
 -- TODO (Issue #25): make a proper implementation of Arbitrary
-instance Arbitrary (Plonk d n t) where
+instance (KnownNat d) => Arbitrary (Plonk d n t) where
     arbitrary = do
-        nP <- ceiling @Double . logBase 2.0 . fromIntegral <$> chooseInteger (0, 100)
+        let nP = ceiling @Double . logBase 2.0 . fromIntegral $ value @d
         let (omega, k1, k2) = getParams nP
         ac <- arbitrary' (toInteger nP)
         Plonk omega k1 k2 (Vector [1..nP]) ac <$> arbitrary
