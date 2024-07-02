@@ -15,7 +15,7 @@ import           Prelude                                           (Eq (..), Fun
 import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGroup (..), AdditiveSemigroup (..),
                                                                     Exponent (..), FromConstant (..),
                                                                     MultiplicativeSemigroup (..), (-!))
-import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, type (*), type (<=), value)
+import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, type (*), value)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString, Concat (..), ShiftBits (..),
@@ -75,8 +75,6 @@ blake2b_libsodium :: forall outlen keylen inlen a backend .
     ( KnownNat keylen
     , KnownNat outlen
     , KnownNat inlen
-    , 1 <= outlen
-    , outlen <= 64
     , ToWords (ByteString (inlen * 8) backend a) (ByteString 8 backend a)
     , Iso (UInt 8 backend a) (ByteString 8 backend a)
     , Concat (ByteString 8 backend a) (ByteString (outlen * 8) backend a)

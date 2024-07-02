@@ -1,4 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# OPTIONS_GHC -Wno-orphans     #-}
+
 module Tests.Blake2b where
 
 import           Crypto.Hash.BLAKE2.BLAKE2b                  (hash)
@@ -7,7 +9,7 @@ import qualified Data.ByteString.Internal                    as BI
 import qualified Data.Vector                                 as V
 import qualified GHC.Num                                     as GHC
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     (Eq (..), Foldable (..), Functor (..), IO, Int, Maybe (..),
+import           Prelude                                     (Eq (..), Foldable (..), Functor (..), IO,
                                                               Monoid (..), fromIntegral, replicate, undefined, ($),
                                                               (<$>))
 import           Test.Hspec
@@ -118,8 +120,7 @@ blake2bSimple :: forall a b .
     , FromConstant Natural (ByteString 8 b a)
     , Concat (ByteString 8 b a) (ByteString 8 b a)
     , ToWords (ByteString 8 b a) (ByteString 8 b a)
-    , Concat (ByteString 8 b a) (ByteString 256 b a)
-    , ToConstant (ByteString 256 b a) BI.ByteString) => Spec
+    , Concat (ByteString 8 b a) (ByteString 256 b a)) => Spec
 blake2bSimple =
     let bs = ""
         a = blake2b_256 $ fromConstant @B.ByteString @(ByteString 8 b a) bs

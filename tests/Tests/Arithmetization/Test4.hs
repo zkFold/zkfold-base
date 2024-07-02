@@ -19,7 +19,6 @@ import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProo
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
-import           ZkFold.Symbolic.Types                       (Symbolic)
 
 type N = 1
 
