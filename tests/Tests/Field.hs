@@ -6,15 +6,16 @@
 
 module Tests.Field (specField) where
 
-import           Data.Data                       (Typeable, typeOf)
-import           Prelude                         hiding (Fractional (..), Num (..), length)
+import           Data.Data                                   (Typeable, typeOf)
+import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 
-specField :: forall a . (Field a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
-specField = hspec $ do
+specField' :: forall a . (Field a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
+specField' = hspec $ do
     describe "Field specification" $ do
         describe ("Type: " ++ show (typeOf @a zero)) $ do
             describe "Field axioms" $ do
@@ -36,3 +37,11 @@ specField = hspec $ do
                     property $ \(a :: a) -> a /= zero ==> a * finv a == one
                 it "should satisfy distributivity" $ do
                     property $ \(a :: a) b c -> a * (b + c) == a * b + a * c
+
+specField :: IO ()
+specField = do
+    specField' @Fr
+    specField' @Fq
+    specField' @Fq2
+    specField' @Fq6
+    specField' @Fq12

@@ -1,8 +1,21 @@
 module ZkFold.Base.Protocol.ARK.Protostar.Internal where
 
+import           Numeric.Natural                              (Natural)
+import           Prelude                                      (Eq, Integer, Ord, Show)
+
+import           ZkFold.Base.Algebra.Basic.Class              (AdditiveGroup, AdditiveMonoid, AdditiveSemigroup, Scale)
 import           ZkFold.Base.Algebra.Basic.Field              (Zp)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (MonomialBoundedDegree, PolynomialBoundedDegree)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate
 
-type MonomialPorotostar n d = MonomialBoundedDegree (Zp n) d
+newtype PolynomialProtostar c n d = PolynomialProtostar (Poly c (Zp n) Natural)
+  deriving (Show, Eq, Ord)
 
-type PolynomialProtostar c n d = PolynomialBoundedDegree c (Zp n) d
+deriving instance Polynomial c (Zp n) Natural => AdditiveSemigroup (PolynomialProtostar c n d)
+
+deriving instance Polynomial c (Zp n) Natural => Scale Natural (PolynomialProtostar c n d)
+
+deriving instance Polynomial c (Zp n) Natural => AdditiveMonoid (PolynomialProtostar c n d)
+
+deriving instance Polynomial c (Zp n) Natural => Scale Integer (PolynomialProtostar c n d)
+
+deriving instance Polynomial c (Zp n) Natural => AdditiveGroup (PolynomialProtostar c n d)
