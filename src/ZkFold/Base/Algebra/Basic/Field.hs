@@ -10,6 +10,7 @@ module ZkFold.Base.Algebra.Basic.Field (
     Zp,
     toZp,
     fromZp,
+    inv,
     Ext2(..),
     Ext3(..)
     ) where
@@ -22,7 +23,7 @@ import qualified Data.Vector                                as V
 import           GHC.Generics                               (Generic)
 import           GHC.TypeLits                               (Symbol)
 import           Numeric.Natural                            (Natural)
-import           Prelude                                    hiding (Fractional (..), Num (..), length, (^))
+import           Prelude                                    hiding (Fractional (..), Num (..), length, (^), div)
 import qualified Prelude                                    as Haskell
 import           System.Random                              (Random (..), RandomGen, mkStdGen, uniformR)
 import           Test.QuickCheck                            hiding (scale)
@@ -102,13 +103,7 @@ instance Prime p => Exponent (Zp p) Integer where
     a ^ n = intPowF a (n `Haskell.mod` (fromConstant (value @p) - 1))
 
 instance Prime p => Field (Zp p) where
-    finv (Zp a) = toZp $ snd (f (a, 1) (p, 0))
-      where
-        p = fromIntegral (value @p)
-        f (x, y) (x', y')
-            | x' == 0   = (x, y)
-            | otherwise = f (x', y') (x - q * x', y - q * y')
-            where q = x `Haskell.div` x'
+    finv (Zp a) = fromConstant $ inv a (value @p)
 
     rootOfUnity l
       | l == 0                       = Nothing
@@ -121,6 +116,13 @@ instance Prime p => Field (Zp p) where
               let (x, g') = first fromConstant $ uniformR (1, value @p -! 1) g
                   x' = x ^ ((value @p -! 1) `Haskell.div` n)
               in bool (rootOfUnity' g') x' (x' ^ (n `Haskell.div` 2) /= one)
+
+inv :: Integer -> Natural -> Natural
+inv a p = fromIntegral $ snd $ egcd (a, 1) (fromConstant p, 0)
+  where 
+    egcd (x, y) (0, _) = (x, y)
+    egcd (x, y) (x', y') = egcd (x', y') (x - q * x', y - q * y')
+      where q = x `div` x'
 
 instance Prime p => BinaryExpansion (Zp p) where
     type Bits (Zp p) = [Zp p]

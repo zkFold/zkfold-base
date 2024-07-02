@@ -8,30 +8,51 @@ import           Data.Function                                             (($),
 import           Data.Functor                                              ((<$>))
 import           Data.Maybe                                                (fromJust)
 import           Data.Traversable                                          (for)
+import           Data.Zip                                                  (zipWith)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   (Integer, error)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
+import           ZkFold.Base.Algebra.Basic.Field                           (Zp, inv)
 import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat, value)
-import           ZkFold.Base.Data.Vector                                   (Vector (..), toVector, zipWithM)
+import           ZkFold.Base.Data.Vector                                   (Vector (..), toVector, vectorDotProduct,
+                                                                            zipWithM)
 import           ZkFold.Symbolic.Compiler                                  (Arithmetic, ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (circuitN, newAssigned, runCircuit)
 import           ZkFold.Symbolic.Data.Combinators                          (maxBitsPerFieldElement)
 
 type Size = 5
 
+-- | Foreign-field arithmetic based on https://cr.yp.to/papers/mmecrt.pdf
 newtype FFA (p :: Natural) b a = FFA (b Size a)
 
 coprimes :: forall a. Finite a => Vector Size Natural
 coprimes = let n = 2 ^ (maxBitsPerFieldElement @a `div` 2)
             in fromJust $ toVector [n, n -! 1, n -! 3, n -! 5, n -! 9]
 
-instance (KnownNat p, ToConstant (Zp p) c) => ToConstant (FFA p Vector (Zp q)) c where
+mprod0 :: forall a. Finite a => Natural
+mprod0 = product (coprimes @a)
+
+mprod :: forall a p . (Finite a, KnownNat p) => Natural
+mprod = mprod0 @a `mod` value @p
+
+mis0 :: forall a. Finite a => Vector Size Natural
+mis0 = let (c, m) = (coprimes @a, mprod0 @a) in (m `div`) <$> c
+
+mis :: forall a p. (Finite a, KnownNat p) => Vector Size Natural
+mis = (`mod` value @p) <$> mis0 @a
+
+minv :: forall a. Finite a => Vector Size Natural
+minv = zipWith (\x p -> fromConstant x `inv` p) (mis0 @a) (coprimes @a)
+
+instance (KnownNat p, Finite (Zp q), ToConstant (Zp p) c) => ToConstant (FFA p Vector (Zp q)) c where
   toConstant = (toConstant :: Zp p -> c) . fromConstant . impl
     where
       impl :: FFA p Vector (Zp q) -> Natural
-      impl = error "TODO"
+      impl (FFA xs) =
+        let gs = zipWith (\x y -> toConstant x * y) xs $ minv @(Zp q)
+            residue = error "TODO"
+         in vectorDotProduct gs (mis @(Zp q) @p) -! mprod @(Zp q) @p * residue
 
 instance (FromConstant c (Zp p), Finite (Zp q)) => FromConstant c (FFA p Vector (Zp q)) where
   fromConstant = FFA . impl . toConstant . (fromConstant :: c -> Zp p)
@@ -43,7 +64,7 @@ instance (FromConstant c (Zp p), Arithmetic a) => FromConstant c (FFA p Arithmet
   fromConstant = FFA . impl . toConstant . (fromConstant :: c -> Zp p)
     where
       impl :: Natural -> ArithmeticCircuit Size a
-      impl x = circuitN $ for (coprimes @a) $ \m -> newAssigned (\_ -> fromConstant (x `mod` m))
+      impl x = circuitN $ for (coprimes @a) $ \m -> newAssigned (fromConstant (x `mod` m))
 
 cast :: Vector Size i -> m (Vector Size i)
 cast = error "TODO"
