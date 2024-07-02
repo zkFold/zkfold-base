@@ -10,7 +10,7 @@ import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, 
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Input                 (Input)
 import           ZkFold.Symbolic.Cardano.Types.Output                (Output)
-import           ZkFold.Symbolic.Cardano.Types.Value                 (OneValue, Value)
+import           ZkFold.Symbolic.Cardano.Types.Value                 (SingleAsset, Value)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.Arithmetizable             (SymbolicData (TypeSize))
 import           ZkFold.Symbolic.Data.Combinators                    (NumberOfRegisters)
@@ -34,7 +34,7 @@ deriving instance
     , KnownNat (TypeSize a (Input tokens datum ArithmeticCircuit a))
     , KnownNat (TypeSize a (Vector inputs (Input tokens datum ArithmeticCircuit a)))
     , KnownNat (TypeSize a (Vector rinputs (Input tokens datum ArithmeticCircuit a)))
-    , KnownNat (TypeSize a (OneValue ArithmeticCircuit a))
+    , KnownNat (TypeSize a (SingleAsset ArithmeticCircuit a))
     , KnownNat (256 + NumberOfRegisters a 32)
     ) => SymbolicData a (Transaction inputs rinputs outputs tokens datum ArithmeticCircuit a)
 

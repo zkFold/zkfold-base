@@ -11,7 +11,7 @@ import           ZkFold.Base.Data.Vector                             (Vector (..
 import           ZkFold.Base.Protocol.ARK.Plonk                      (F)
 import           ZkFold.Symbolic.Cardano.Types.Output                (Output)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef             (OutputRef)
-import           ZkFold.Symbolic.Cardano.Types.Value                 (OneValue, Value)
+import           ZkFold.Symbolic.Cardano.Types.Value                 (SingleAsset, Value)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.Arithmetizable             (Arithmetic, SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool                           (Bool, BoolType (..))
@@ -76,7 +76,7 @@ deriving instance
     , KnownNat (TypeSize a (OutputRef ArithmeticCircuit a))
     , KnownNat (TypeSize a (Vector inputs (OutputRef ArithmeticCircuit a)))
     , KnownNat (TypeSize a (Vector rinputs (OutputRef ArithmeticCircuit a)))
-    , KnownNat (TypeSize a (OneValue ArithmeticCircuit a))
+    , KnownNat (TypeSize a (SingleAsset ArithmeticCircuit a))
     ) => SymbolicData a (HashData inputs rinputs outputs tokens datum ArithmeticCircuit a)
 
 type Contract inputs a = Vector inputs a -> Bool a
