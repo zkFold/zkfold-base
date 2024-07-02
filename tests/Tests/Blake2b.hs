@@ -9,9 +9,8 @@ import qualified Data.ByteString.Internal                    as BI
 import qualified Data.Vector                                 as V
 import qualified GHC.Num                                     as GHC
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     (Eq (..), Foldable (..), Functor (..), IO,
-                                                              Monoid (..), fromIntegral, replicate, undefined, ($),
-                                                              (<$>))
+import           Prelude                                     (Eq (..), Foldable (..), Functor (..), IO, Monoid (..),
+                                                              fromIntegral, replicate, undefined, ($), (<$>))
 import           Test.Hspec
 
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveMonoid, AdditiveSemigroup (..), Finite,
