@@ -4,18 +4,17 @@
 
 module ZkFold.Symbolic.Cardano.Types.Transaction where
 
-import           Prelude                              hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                                             hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector
-import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
-import           ZkFold.Symbolic.Cardano.Types.Output (Output)
-import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Data.UTCTime
+import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, type (+))
+import           ZkFold.Base.Data.Vector                             (Vector)
+import           ZkFold.Symbolic.Cardano.Types.Input                 (Input)
+import           ZkFold.Symbolic.Cardano.Types.Output                (Output)
+import           ZkFold.Symbolic.Cardano.Types.Value                 (SingleAsset, Value)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler.Arithmetizable             (SymbolicData (TypeSize))
+import           ZkFold.Symbolic.Data.Combinators                    (NumberOfRegisters)
+import           ZkFold.Symbolic.Data.UTCTime                        (UTCTime)
 
 newtype Transaction inputs rinputs outputs tokens datum b a = Transaction
     ( Vector rinputs (Input tokens datum b a)
@@ -35,8 +34,8 @@ deriving instance
     , KnownNat (TypeSize a (Input tokens datum ArithmeticCircuit a))
     , KnownNat (TypeSize a (Vector inputs (Input tokens datum ArithmeticCircuit a)))
     , KnownNat (TypeSize a (Vector rinputs (Input tokens datum ArithmeticCircuit a)))
+    , KnownNat (TypeSize a (SingleAsset ArithmeticCircuit a))
     , KnownNat (256 + NumberOfRegisters a 32)
-    , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
     ) => SymbolicData a (Transaction inputs rinputs outputs tokens datum ArithmeticCircuit a)
 
 txRefInputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector rinputs (Input tokens datum b a)
