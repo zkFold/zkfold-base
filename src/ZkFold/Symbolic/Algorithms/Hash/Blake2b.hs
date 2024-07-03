@@ -8,20 +8,24 @@ import           Data.List                                         (foldl')
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
 import qualified Data.Vector                                       as V
-import           GHC.IsList                                        (IsList(..))
+import           GHC.IsList                                        (IsList (..))
 import           GHC.Natural                                       (Natural)
 import qualified GHC.Num                                           as GHC
-import           Prelude                                           hiding (Num(..), length, replicate, splitAt, truncate, mod, divMod, concat, (!!), (&&), (^))
+import           Prelude                                           hiding (Num (..), concat, divMod, length, mod,
+                                                                    replicate, splitAt, truncate, (!!), (&&), (^))
+
 import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGroup (..), AdditiveSemigroup (..),
-                                                                    Exponent (..), FromConstant (..),
-                                                                    MultiplicativeSemigroup (..), (-!), divMod, EuclideanDomain (..), zero, one, MultiplicativeMonoid)
+                                                                    EuclideanDomain (..), Exponent (..),
+                                                                    FromConstant (..), MultiplicativeMonoid,
+                                                                    MultiplicativeSemigroup (..), divMod, one, zero,
+                                                                    (-!))
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                                    ((!!), replicate, splitAt, length)
+import           ZkFold.Prelude                                    (length, replicate, splitAt, (!!))
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..),
-                                                                    ToWords (..), Truncate (..), Concat(..))
-import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), extend, Extend)
+import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Concat (..), ShiftBits (..),
+                                                                    ToWords (..), Truncate (..))
+import           ZkFold.Symbolic.Data.Combinators                  (Extend, Iso (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 
 -- | BLAKE2b Cryptographic hash. Reference:
