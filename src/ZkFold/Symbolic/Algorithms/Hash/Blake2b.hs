@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module ZkFold.Symbolic.Algorithms.Hash.Blake2b where
 
@@ -24,7 +25,7 @@ import           ZkFold.Prelude                                    (length, repl
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Concat (..), ShiftBits (..),
-                                                                    ToWords (..), Truncate (..))
+                                                                    ToWords (..), Truncate (..), ReverseEndianness (..))
 import           ZkFold.Symbolic.Data.Combinators                  (Extend, Iso (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 
@@ -37,6 +38,7 @@ type Blake2bSig b a =
     ( Iso (UInt 64 b a) (ByteString 64 b a)
     , ShiftBits (ByteString 64 b a)
     , Concat (ByteString 64 b a) (ByteString 512 b a)
+    , ReverseEndianness 64 (ByteString 512 b a)
     , BoolType (ByteString 64 b a)
     , AdditiveGroup (UInt 64 b a)
     , FromConstant Natural (UInt 64 b a)
@@ -88,8 +90,8 @@ blake2b_compress Blake2bCtx{h, m, t} lastBlock =
         v'' = v' V.// [ (12, (v' ! 12) `xorUInt` fromConstant (fst t))  -- low word of the offset
                       , (13, (v' ! 13) `xorUInt` fromConstant (snd t))] -- high word of the offset
 
-        v0 = if lastBlock                                           -- last block flag set ?
-                then v'' // [(14, (v'' ! 14) `xorUInt` negate one)] -- Invert all bits
+        v0 = if lastBlock                                               -- last block flag set ?
+                then v'' // [(14, (v'' ! 14) `xorUInt` negate one)]     -- Invert all bits
                 else v''
 
         hashRound w0 i = w8
@@ -140,8 +142,8 @@ blake2b' d =
             then blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll)) True
             else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
-        bs = concat @(ByteString 64 b a) $ map from $ toList h''' :: ByteString (64 * 8) b a
-    in truncate  bs
+        bs = reverseEndianness @64 $ concat @(ByteString 64 b a) $ map from $ toList h''' :: ByteString (64 * 8) b a
+    in truncate bs
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen b a = ByteString (8 * inputLen + ExtensionBits inputLen) b a
@@ -153,12 +155,14 @@ blake2b :: forall keyLen inputLen outputLen a b .
     , KnownNat (ExtensionBits inputLen)
     , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
     , ShiftBits (ExtendedInputByteString inputLen  b a)
+    , ReverseEndianness 64 (ExtendedInputByteString inputLen b a)
     , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
     , Truncate (ByteString 512 b a) (ByteString (8 * outputLen) b a)
     , Blake2bSig b a
     ) => Natural -> ByteString (8 * inputLen) b a -> ByteString (8 * outputLen) b a
 blake2b key input =
     let input' = map from (toWords $
+            reverseEndianness @64 $
             flip rotateBitsL (value @(ExtensionBits inputLen)) $
             extend @_ @(ExtendedInputByteString inputLen b a) input :: [ByteString 64 b a])
 
@@ -187,6 +191,7 @@ blake2b_224 :: forall inputLen b a .
     , KnownNat (ExtensionBits inputLen)
     , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
     , ShiftBits (ExtendedInputByteString inputLen  b a)
+    , ReverseEndianness 64 (ExtendedInputByteString inputLen b a)
     , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
     , Truncate (ByteString 512 b a) (ByteString 224 b a)
     , Blake2bSig b a
@@ -199,6 +204,7 @@ blake2b_256 :: forall inputLen b a .
     , KnownNat (ExtensionBits inputLen)
     , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
     , ShiftBits (ExtendedInputByteString inputLen  b a)
+    , ReverseEndianness 64 (ExtendedInputByteString inputLen b a)
     , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
     , Truncate (ByteString 512 b a) (ByteString 256 b a)
     , Blake2bSig b a
@@ -211,6 +217,7 @@ blake2b_512 :: forall inputLen b a .
     , KnownNat (ExtensionBits inputLen)
     , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
     , ShiftBits (ExtendedInputByteString inputLen  b a)
+    , ReverseEndianness 64 (ExtendedInputByteString inputLen b a)
     , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
     , Truncate (ByteString 512 b a) (ByteString 512 b a)
     , Blake2bSig b a

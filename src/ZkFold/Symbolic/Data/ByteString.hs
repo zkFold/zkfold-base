@@ -10,6 +10,7 @@
 module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
     , ShiftBits (..)
+    , ReverseEndianness (..)
     , BitState (..)
     , ToWords (..)
     , Concat (..)
@@ -112,6 +113,8 @@ class ShiftBits a where
     rotateBitsR :: a -> Natural -> a
     rotateBitsR a s = rotateBits a (negate . Haskell.fromIntegral $ s)
 
+class ReverseEndianness wordSize a where
+    reverseEndianness :: a -> a
 
 -- | Describes types which can be split into words of equal size.
 -- Parameters have to be of different types as ByteString store their lengths on type level and hence after splitting they chagne types.
@@ -224,6 +227,22 @@ instance (Finite (Zp p), KnownNat n) => ShiftBits (ByteString n Vector (Zp p)) w
             d :: Natural
             d = nat `shiftR` intS
 
+reverseEndianness' :: forall wordSize n x .
+    ( KnownNat wordSize
+    , (Div n wordSize) * wordSize ~ n
+    , (Div wordSize 8) * 8 ~ wordSize
+    ) => Vector n x -> Vector n x
+reverseEndianness' v =
+    let chunks = V.chunks @(Div n wordSize) @wordSize v
+        chunks' = fmap (V.concat . V.reverse . V.chunks @(Div wordSize 8) @8) chunks
+     in V.concat chunks'
+
+instance
+    ( KnownNat wordSize
+    , (Div n wordSize) * wordSize ~ n
+    , (Div wordSize 8) * 8 ~ wordSize
+    ) => ReverseEndianness wordSize (ByteString n Vector (Zp p)) where
+    reverseEndianness (ByteString v) = ByteString $ reverseEndianness' @wordSize v
 
 instance (Finite (Zp p), KnownNat n) => BoolType (ByteString n Vector (Zp p)) where
     false = fromConstant (0 :: Natural)
@@ -355,6 +374,13 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n ArithmeticCircuit
     -- | rotateBits does not even require operations on the circuit.
     --
     rotateBits (ByteString bits) s = ByteString (bits { acOutput = V.rotate (acOutput bits) s})
+
+instance
+    ( KnownNat wordSize
+    , (Div n wordSize) * wordSize ~ n
+    , (Div wordSize 8) * 8 ~ wordSize
+    ) => ReverseEndianness wordSize (ByteString n ArithmeticCircuit a) where
+        reverseEndianness (ByteString v) = ByteString $ v { acOutput = reverseEndianness' @wordSize (acOutput v) }
 
 
 -- | A generic bitwise operation on two ByteStrings.
