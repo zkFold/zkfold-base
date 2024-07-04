@@ -22,7 +22,7 @@ import           Prelude                                                   (Inte
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
-                                                                            oneof)
+                                                                            oneof, frequency)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -166,30 +166,54 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
                 V.zipWithM (\x y -> newAssigned $ \p -> p bs * (p x - p y) + p y) ts fs
 
 -- TODO: make a proper implementation of Arbitrary
-instance (Arithmetic a, KnownNat n) => Arbitrary (ArithmeticCircuit n a) where
-    arbitrary = do
-            k <- chooseInteger (0,10)
-            arbitrary' k
+instance (Arithmetic a, KnownNat n, Arbitrary a) => Arbitrary (ArithmeticCircuit n a) where
+    arbitrary = (ArithmeticCircuit { acCircuit = mempty {acInput = [ 1 ]}, acOutput = pure 1} * ) <$> arbitrary' 0 0 (Haskell.toInteger $ value @n)
 
-arbitrary' :: (Arithmetic a, KnownNat n) => Integer -> Gen (ArithmeticCircuit n a)
-arbitrary' 1 = do
-    oneof [
-        return $ ArithmeticCircuit { acCircuit = mempty {acInput = [integerToNatural 1]}, acOutput = pure 1 }
-        , fromConstant <$> chooseInteger (0, 100)
-        ]
-arbitrary' n = do
-        index <- chooseInteger (1, n-1)
+arbitrary' :: forall a n . (Arithmetic a, KnownNat n, Arbitrary a, FromConstant a a) => Integer -> Integer ->  Integer -> Gen (ArithmeticCircuit n a)
+arbitrary' inp out outMax
+    | out Haskell.== outMax = return $ ArithmeticCircuit { acCircuit = mempty, acOutput = pure $ integerToNatural outMax}
+    | Haskell.otherwise  = let
+        arbVar = do
+            arbInp <- integerToNatural <$> chooseInteger (0, inp)
+            arbOut <- integerToNatural <$> chooseInteger (0, out)
+            return ArithmeticCircuit { acCircuit   = mempty {acInput = [ arbInp ]}, acOutput    = pure arbOut}
+        newInp = ArithmeticCircuit {
+            acCircuit   = mempty {
+                acInput = [integerToNatural $ inp + 1]},
+            acOutput    = pure . integerToNatural $ 1}
+        newOut = ArithmeticCircuit {
+            acCircuit   = mempty,
+            acOutput    = pure . integerToNatural $ out + 1}
+        constant = fromConstant <$> ( arbitrary :: Gen a)
 
-        l <- arbitrary' (n-index)
-        r <- arbitrary' index
-
-        oneof $ Haskell.fmap return [
-            l + r
-            , l - r
-            , l * r
-            , l // r
-        -- , someCheck
+        newVars = [
+            newInp
+            , newOut
             ]
+
+        la = frequency $ (1, arbVar) : (1, constant) : Haskell.fmap ((3, ) . return) newVars
+
+        in do
+            l <- la
+            let inp' =  Haskell.max (Haskell.toInteger . Haskell.length $ inputVariables l) inp
+            let out' =  Haskell.max (Haskell.toInteger . Haskell.length $ acOutput l) out
+            r <- arbitrary' inp' out' outMax
+            oneof $ Haskell.fmap return [
+                l + r
+                , l * r
+                , l - r
+                , r - l
+                , l // r
+                , r // l
+                ]
+
+
+
+
+        -- | Haskell.otherwise  = return ArithmeticCircuit { acCircuit = mempty, acOutput = pure $ integerToNatural outMax}
+
+
+
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Haskell.Show a) => Haskell.Show (ArithmeticCircuit n a) where

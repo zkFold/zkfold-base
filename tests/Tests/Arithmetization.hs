@@ -20,8 +20,8 @@ import           ZkFold.Symbolic.Types                       (Symbolic)
 propCircuitInvariance :: Arithmetic a => (ArithmeticCircuit 1 a, a, a) -> Bool
 propCircuitInvariance (ac, x, y) =
     let ac' = mapVarArithmeticCircuit ac
-        v   = ac `eval` fromList [(1, x), (2, y)]
-        v'  = ac' `eval` fromList [(1, x), (2, y)]
+        v   = ac `eval` fromList [(0, x), (1, y)]
+        v'  = ac' `eval` fromList [(0, x), (1, y)]
     in v == v'
 
 specArithmetization' :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a) => IO ()

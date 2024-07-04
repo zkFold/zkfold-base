@@ -30,7 +30,6 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelat
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                                      ((!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (arbitrary')
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..),
                                                                       inputVariables)
 
@@ -52,7 +51,7 @@ instance (KnownNat d) => Arbitrary (Plonk d n t) where
     arbitrary = do
         let nP = ceiling @Double . logBase 2.0 . fromIntegral $ value @d
         let (omega, k1, k2) = getParams nP
-        ac <- arbitrary' (toInteger nP)
+        ac <- arbitrary
         Plonk omega k1 k2 (Vector [1..nP]) ac <$> arbitrary
 
 type PlonkPermutationSize d = 3 * d
@@ -136,7 +135,7 @@ data (Arithmetic a, KnownNat n) => ACandWitness n a = ACandWitness
         , witnessInput    :: PlonkWitnessInput
     }
 
-instance (Arithmetic a, KnownNat n) => Arbitrary (ACandWitness n a) where
+instance (Arithmetic a, KnownNat n, Arbitrary a) => Arbitrary (ACandWitness n a) where
     arbitrary :: Gen (ACandWitness n a)
     arbitrary = do
         ac <- arbitrary
