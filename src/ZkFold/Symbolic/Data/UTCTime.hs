@@ -1,5 +1,4 @@
 {-# LANGUAGE DerivingStrategies   #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- This is what our life will look like from now on if we keep using NumberOfRegisters
 

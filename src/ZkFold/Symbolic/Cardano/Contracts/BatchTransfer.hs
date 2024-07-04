@@ -1,5 +1,3 @@
-{-# LANGUAGE UndecidableInstances #-}
-
 module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
 import           Data.Maybe                                             (fromJust)

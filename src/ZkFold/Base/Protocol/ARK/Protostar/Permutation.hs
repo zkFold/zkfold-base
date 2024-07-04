@@ -1,5 +1,3 @@
-{-# LANGUAGE UndecidableInstances #-}
-
 module ZkFold.Base.Protocol.ARK.Protostar.Permutation where
 
 import           Data.Zip                                        (Zip (..))
@@ -52,4 +50,3 @@ instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
              -> Bool
     verifier _ sigma [(w, _)] = applyPermutation sigma w == w
     verifier _ _     _        = error "Invalid transcript"
-

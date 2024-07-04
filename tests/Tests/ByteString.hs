@@ -1,7 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Tests.ByteString (specByteString) where
 

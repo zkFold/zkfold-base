@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Tests.NonInteractiveProof (specNonInteractiveProof) where
 
