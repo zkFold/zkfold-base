@@ -23,7 +23,7 @@ import qualified Data.Vector                                as V
 import           GHC.Generics                               (Generic)
 import           GHC.TypeLits                               (Symbol)
 import           Numeric.Natural                            (Natural)
-import           Prelude                                    hiding (Fractional (..), Num (..), length, (^), div)
+import           Prelude                                    hiding (Fractional (..), Num (..), div, length, (^))
 import qualified Prelude                                    as Haskell
 import           System.Random                              (Random (..), RandomGen, mkStdGen, uniformR)
 import           Test.QuickCheck                            hiding (scale)
@@ -119,7 +119,7 @@ instance Prime p => Field (Zp p) where
 
 inv :: Integer -> Natural -> Natural
 inv a p = fromIntegral $ snd $ egcd (a, 1) (fromConstant p, 0)
-  where 
+  where
     egcd (x, y) (0, _) = (x, y)
     egcd (x, y) (x', y') = egcd (x', y') (x - q * x', y - q * y')
       where q = x `div` x'
