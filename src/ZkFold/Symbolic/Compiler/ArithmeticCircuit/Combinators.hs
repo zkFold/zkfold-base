@@ -94,7 +94,7 @@ bitsOf :: MonadBlueprint i a m => Natural -> i -> m [i]
 bitsOf n k = for [0 .. n -! 1] $ \j ->
     newConstrained (\x i -> let xi = x i in xi * (xi - one)) ((!! j) . repr . ($ k))
     where
-        repr :: forall b . (BinaryExpansion b [b], Finite b) => b -> [b]
+        repr :: forall b . (BinaryExpansion b, Bits b ~ [b], Finite b) => b -> [b]
         repr = padBits (numberOfBits @b) . binaryExpansion
 
 horner :: MonadBlueprint i a m => [i] -> m i
