@@ -1,11 +1,11 @@
 module ZkFold.Symbolic.Cardano.Wrapper where
 
-import           Prelude                                   hiding (Bool, Eq(..), length, splitAt, (*), (+), (&&))
+import           Prelude                                   hiding (Bool, Eq (..), length, splitAt, (&&), (*), (+))
 
+import           ZkFold.Symbolic.Cardano.Types.Transaction (Transaction)
 import           ZkFold.Symbolic.Data.Bool                 (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                   (Eq ((==)))
 import           ZkFold.Symbolic.Data.UInt                 (UInt)
-import           ZkFold.Symbolic.Cardano.Types.Transaction (Transaction)
 
 {-
 hashFunction :: forall inputs rinputs outputs tokens datum a .

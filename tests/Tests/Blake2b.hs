@@ -14,8 +14,8 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString             (ByteString, Concat, ShiftBits, ToWords (..),
-                                                              Truncate (..), ReverseEndianness)
+import           ZkFold.Symbolic.Data.ByteString             (ByteString, Concat, ReverseEndianness, ShiftBits,
+                                                              ToWords (..), Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators            (Extend)
 
 -- TODO: We need a proper test for both numeric and symbolic blake2b hashing

@@ -24,8 +24,9 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                                    (length, replicate, splitAt, (!!))
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Concat (..), ShiftBits (..),
-                                                                    ToWords (..), Truncate (..), ReverseEndianness (..))
+import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Concat (..),
+                                                                    ReverseEndianness (..), ShiftBits (..),
+                                                                    ToWords (..), Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators                  (Extend, Iso (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 
