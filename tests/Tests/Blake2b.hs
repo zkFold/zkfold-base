@@ -13,7 +13,8 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b
-import           ZkFold.Symbolic.Data.ByteString             (ByteString, Concat, ToWords (..), Truncate (..), ShiftBits)
+import           ZkFold.Symbolic.Data.ByteString             (ByteString, Concat, ShiftBits, ToWords (..),
+                                                              Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators            (Extend)
 
 blake2bSimple :: forall a b .
