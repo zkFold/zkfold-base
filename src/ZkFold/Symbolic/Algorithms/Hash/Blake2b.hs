@@ -83,26 +83,26 @@ blake2b_compress :: forall a b . Blake2bSig b a =>
     Blake2bCtx a b -> Bool -> V.Vector (UInt 64 b a)
 blake2b_compress Blake2bCtx{h, m, t} lastBlock =
     let v'  = h V.++ blake2b_iv -- init work variables
-        v'' = v' V.// [ (12, (v' ! 12) `xorUInt` fromConstant (fst t))  -- low 64 bits of offset
-                      , (13, (v' ! 13) `xorUInt` fromConstant (snd t))] -- high 64 bits
+        v'' = v' V.// [ (12, (v' ! 12) `xorUInt` fromConstant (fst t))  -- low word of the offset
+                      , (13, (v' ! 13) `xorUInt` fromConstant (snd t))] -- high word of the offset
 
-        v0 = if lastBlock
-                then v''
-                else v'' // [(14, (v'' ! 14) `xorUInt` negate one)] -- last block flag set ?
+        v0 = if lastBlock                                           -- last block flag set ?
+                then v'' // [(14, (v'' ! 14) `xorUInt` negate one)] -- Invert all bits
+                else v''
+
+        hashRound w0 i = w8
+            where
+                s  = sigma ! i
+                w1 = b2b_g w0 (0, 4,  8, 12, m ! (s ! 0),  m ! (s ! 1))
+                w2 = b2b_g w1 (1, 5,  9, 13, m ! (s ! 2),  m ! (s ! 3))
+                w3 = b2b_g w2 (2, 6, 10, 14, m ! (s ! 4),  m ! (s ! 5))
+                w4 = b2b_g w3 (3, 7, 11, 15, m ! (s ! 6),  m ! (s ! 7))
+                w5 = b2b_g w4 (0, 5, 10, 15, m ! (s ! 8),  m ! (s ! 9))
+                w6 = b2b_g w5 (1, 6, 11, 12, m ! (s ! 10), m ! (s ! 11))
+                w7 = b2b_g w6 (2, 7,  8, 13, m ! (s ! 12), m ! (s ! 13))
+                w8 = b2b_g w7 (3, 4,  9, 14, m ! (s ! 14), m ! (s ! 15))
 
         v1 = V.foldl hashRound v0 $ fromList [0..11] -- twelve rounds
-            where
-                hashRound w0 i = w8
-                    where
-                        s  = sigma ! i
-                        w1 = b2b_g w0 (0, 4,  8, 12, m ! (s ! 0),  m ! (s ! 1))
-                        w2 = b2b_g w1 (1, 5,  9, 13, m ! (s ! 2),  m ! (s ! 3))
-                        w3 = b2b_g w2 (2, 6, 10, 14, m ! (s ! 4),  m ! (s ! 5))
-                        w4 = b2b_g w3 (3, 7, 11, 15, m ! (s ! 6),  m ! (s ! 7))
-                        w5 = b2b_g w4 (0, 5, 10, 15, m ! (s ! 8),  m ! (s ! 9))
-                        w6 = b2b_g w5 (1, 6, 11, 12, m ! (s ! 10), m ! (s ! 11))
-                        w7 = b2b_g w6 (2, 7,  8, 13, m ! (s ! 12), m ! (s ! 13))
-                        w8 = b2b_g w7 (3, 4,  9, 14, m ! (s ! 14), m ! (s ! 15))
     in fmap (\(i, hi) -> hi `xorUInt` (v1 ! i) `xorUInt` (v1 ! (i GHC.+ 8))) (V.zip (fromList [0..7]) h)
 
 blake2b' :: forall bb' kk' ll' nn' a b .
@@ -141,19 +141,24 @@ blake2b' d =
         bs = concat @(ByteString 64 b a) $ map from $ toList h''' :: ByteString (64 * 8) b a
     in truncate  bs
 
-type ExtendedInputByteString inputLen b a = ByteString (8 * inputLen + (64 - Mod (8 * inputLen) 64)) b a
+type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
+type ExtendedInputByteString inputLen b a = ByteString (8 * inputLen + ExtensionBits inputLen) b a
 
 blake2b :: forall keyLen inputLen outputLen a b .
     ( KnownNat keyLen
     , KnownNat inputLen
     , KnownNat outputLen
+    , KnownNat (ExtensionBits inputLen)
     , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
+    , ShiftBits (ExtendedInputByteString inputLen  b a)
     , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
     , Truncate (ByteString 512 b a) (ByteString (8 * outputLen) b a)
     , Blake2bSig b a
     ) => Natural -> ByteString (8 * inputLen) b a -> ByteString (8 * outputLen) b a
 blake2b key input =
-    let input' = map from (toWords $ extend @_ @(ExtendedInputByteString inputLen b a) input :: [ByteString 64 b a])
+    let input' = map from (toWords $
+            flip rotateBitsL (value @(ExtensionBits inputLen)) $
+            extend @_ @(ExtendedInputByteString inputLen b a) input :: [ByteString 64 b a])
 
         key'    = fromConstant @_ key :: UInt 64 b a
         input'' = if value @keyLen > 0
@@ -177,7 +182,9 @@ blake2b key input =
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
 blake2b_224 :: forall inputLen b a .
     ( KnownNat inputLen
+    , KnownNat (ExtensionBits inputLen)
     , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
+    , ShiftBits (ExtendedInputByteString inputLen  b a)
     , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
     , Truncate (ByteString 512 b a) (ByteString 224 b a)
     , Blake2bSig b a
@@ -187,9 +194,23 @@ blake2b_224 = blake2b @0 @inputLen @28 (fromConstant @Natural 0)
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
 blake2b_256 :: forall inputLen b a .
     ( KnownNat inputLen
+    , KnownNat (ExtensionBits inputLen)
     , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
+    , ShiftBits (ExtendedInputByteString inputLen  b a)
     , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
     , Truncate (ByteString 512 b a) (ByteString 256 b a)
     , Blake2bSig b a
     ) => ByteString (8 * inputLen) b a -> ByteString 256 b a
 blake2b_256 = blake2b @0 @inputLen @32 (fromConstant @Natural 0)
+
+-- | Hash a `ByteString` using the Blake2b-256 hash function.
+blake2b_512 :: forall inputLen b a .
+    ( KnownNat inputLen
+    , KnownNat (ExtensionBits inputLen)
+    , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
+    , ShiftBits (ExtendedInputByteString inputLen  b a)
+    , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
+    , Truncate (ByteString 512 b a) (ByteString 512 b a)
+    , Blake2bSig b a
+    ) => ByteString (8 * inputLen) b a -> ByteString 512 b a
+blake2b_512 = blake2b @0 @inputLen @64 (fromConstant @Natural 0)
