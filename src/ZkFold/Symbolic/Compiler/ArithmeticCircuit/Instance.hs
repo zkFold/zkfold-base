@@ -22,7 +22,7 @@ import           Prelude                                                   (Inte
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
-                                                                            oneof, frequency)
+                                                                            frequency, oneof)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
