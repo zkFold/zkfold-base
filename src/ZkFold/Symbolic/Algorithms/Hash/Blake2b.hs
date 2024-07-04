@@ -28,6 +28,8 @@ import           ZkFold.Symbolic.Data.ByteString                   (ByteString (
 import           ZkFold.Symbolic.Data.Combinators                  (Extend, Iso (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 
+-- TODO: This module is not finished yet. The hash computation is not correct.
+
 -- | BLAKE2b Cryptographic hash. Reference:
 -- https://tools.ietf.org/html/rfc7693
 

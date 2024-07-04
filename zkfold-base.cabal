@@ -124,8 +124,8 @@ library
       ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
       ZkFold.Symbolic.Algorithms.Hash.SHA2
       ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants
+      ZkFold.Symbolic.Cardano.Wrapper
       ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
-      ZkFold.Symbolic.Cardano.Contracts.ContractWrapper
       ZkFold.Symbolic.Cardano.Contracts.RandomOracle
       ZkFold.Symbolic.Cardano.Types
       ZkFold.Symbolic.Cardano.Types.Address
