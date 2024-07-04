@@ -7,19 +7,19 @@ module ZkFold.Symbolic.Data.FFA where
 import           Data.Function                                             (($), (.))
 import           Data.Functor                                              ((<$>))
 import           Data.Maybe                                                (fromJust)
+import           Data.Ratio                                                ((%))
 import           Data.Traversable                                          (for)
 import           Data.Zip                                                  (zipWith)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, error)
+import           Prelude                                                   (Integer, ceiling, error)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, inv)
 import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat, value)
-import           ZkFold.Base.Data.Vector                                   (Vector (..), toVector, vectorDotProduct,
-                                                                            zipWithM)
+import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Compiler                                  (Arithmetic, ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (circuitN, newAssigned, runCircuit)
-import           ZkFold.Symbolic.Data.Combinators                          (maxBitsPerFieldElement)
+import           ZkFold.Symbolic.Data.Combinators                          (log2, maxBitsPerFieldElement)
 
 type Size = 5
 
@@ -50,8 +50,12 @@ instance (KnownNat p, Finite (Zp q), ToConstant (Zp p) c) => ToConstant (FFA p V
     where
       impl :: FFA p Vector (Zp q) -> Natural
       impl (FFA xs) =
-        let gs = zipWith (\x y -> toConstant x * y) xs $ minv @(Zp q)
-            residue = error "TODO"
+        let mods = coprimes @(Zp q)
+            gs0 = zipWith (\x y -> toConstant x * y) xs $ minv @(Zp q)
+            gs = zipWith mod gs0 mods
+            sigma = ceiling (log2 $ value @Size) + 1 :: Natural
+            binary g m = (fromConstant g * 2 ^ sigma) `div` fromConstant m
+            residue = truncateN (3 % 4 + sum (zipWith binary gs mods) % 2 ^ sigma)
          in vectorDotProduct gs (mis @(Zp q) @p) -! mprod @(Zp q) @p * residue
 
 instance (FromConstant c (Zp p), Finite (Zp q)) => FromConstant c (FFA p Vector (Zp q)) where
