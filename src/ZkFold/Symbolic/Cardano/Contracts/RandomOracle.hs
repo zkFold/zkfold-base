@@ -2,16 +2,16 @@
 
 module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
-import           Prelude                                                hiding (Bool, Eq (..), all, length, maybe,
-                                                                         splitAt, zip, (!!), (&&), (*), (+), (==))
+import           Prelude                                        hiding (Bool, Eq (..), all, length, maybe, splitAt, zip,
+                                                                 (!!), (&&), (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                                ((!!))
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC                   (mimcHash, MiMCHash)
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants         (mimcConstants)
+import           ZkFold.Base.Data.Vector                        ((!!))
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (MiMCHash, mimcHash)
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Compiler.Arithmetizable                (Arithmetic)
-import           ZkFold.Symbolic.Data.Bool                              (Bool, BoolType (..))
+import           ZkFold.Symbolic.Compiler.Arithmetizable        (Arithmetic)
+import           ZkFold.Symbolic.Data.Bool                      (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq

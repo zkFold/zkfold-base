@@ -10,7 +10,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
 import           ZkFold.Symbolic.Cardano.Types.Output (Output)
-import           ZkFold.Symbolic.Cardano.Types.Value  (Value, SingleAsset)
+import           ZkFold.Symbolic.Cardano.Types.Value  (SingleAsset, Value)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators

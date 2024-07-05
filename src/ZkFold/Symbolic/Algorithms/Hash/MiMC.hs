@@ -4,13 +4,14 @@ module ZkFold.Symbolic.Algorithms.Hash.MiMC where
 
 import           Data.List.NonEmpty                                     (NonEmpty ((:|)), nonEmpty)
 import           Numeric.Natural                                        (Natural)
-import           Prelude                                                hiding (Eq (..), Num (..), any, length, not, (!!), (/), (^), (||))
+import           Prelude                                                hiding (Eq (..), Num (..), any, length, not,
+                                                                         (!!), (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                                (fromVector, Vector, singleton)
+import           ZkFold.Base.Data.Vector                                (Vector, fromVector, singleton)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
-import           ZkFold.Symbolic.Data.FieldElement                      (FieldElementData(..))
+import           ZkFold.Symbolic.Data.FieldElement                      (FieldElementData (..))
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5

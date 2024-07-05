@@ -48,7 +48,7 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
-import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData(..))
+import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData (..))
 import           ZkFold.Symbolic.Data.Ord
 
 -- TODO (Issue #18): hide this constructor

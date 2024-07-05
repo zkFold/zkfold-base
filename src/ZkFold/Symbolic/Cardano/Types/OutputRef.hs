@@ -8,8 +8,8 @@ import           Prelude                           hiding (Bool, Eq, length, spl
 import           ZkFold.Base.Data.Vector           (Vector)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString   (ByteString)
-import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Data.FieldElement (FieldElementData)
+import           ZkFold.Symbolic.Data.UInt
 
 type TxRefId b a = ByteString 256 b a
 type TxRedIndex b a = UInt 32 b a

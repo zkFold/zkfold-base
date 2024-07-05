@@ -2,24 +2,24 @@
 
 module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
-import           Data.Maybe                                             (fromJust)
-import           Data.Zip                                               (zip)
-import           Numeric.Natural                                        (Natural)
-import           Prelude                                                hiding (Bool, Eq (..), all, length, splitAt,
-                                                                         zip, (&&), (*), (+))
+import           Data.Maybe                                     (fromJust)
+import           Data.Zip                                       (zip)
+import           Numeric.Natural                                (Natural)
+import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
+                                                                 (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                                (Vector, fromVector, toVector)
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC                   
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants         (mimcConstants)
-import           ZkFold.Symbolic.Cardano.Types                          
-import           ZkFold.Symbolic.Compiler.Arithmetizable                (Arithmetic)
-import           ZkFold.Symbolic.Data.Bool                              (Bool, BoolType (..), all)
+import           ZkFold.Base.Data.Vector                        (Vector, fromVector, toVector)
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
+import           ZkFold.Symbolic.Cardano.Types
+import           ZkFold.Symbolic.Compiler.Arithmetizable        (Arithmetic)
+import           ZkFold.Symbolic.Data.Bool                      (Bool, BoolType (..), all)
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Types                                  (Symbolic)
+import           ZkFold.Symbolic.Types                          (Symbolic)
 
 type Tokens = 10
 type TxOut b a = Output Tokens () b a
