@@ -92,6 +92,7 @@ library
       ZkFold.Base.Algebra.EllipticCurve.Ed25519
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.Polynomials.Multivariate
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Groebner
       ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution

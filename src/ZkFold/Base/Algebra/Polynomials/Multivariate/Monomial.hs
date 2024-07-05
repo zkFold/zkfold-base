@@ -9,7 +9,7 @@ import           Control.DeepSeq                 (NFData)
 import           Data.Aeson                      (FromJSON, ToJSON)
 import           Data.List                       (intercalate)
 import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, isSubmapOfBy,
-                                                  lookup, mapKeys, unionWith)
+                                                  lookup, mapKeys, unionWith, intersectionWith)
 import qualified Data.Map.Strict                 as Map
 import           GHC.Generics                    (Generic)
 import           GHC.IsList                      (IsList (..))
@@ -33,9 +33,6 @@ newtype Mono i j = M (Map i j)
 -- | Monomial constructor
 monomial :: Monomial i j => Map i j -> Mono i j
 monomial = M . filter (/= zero)
-
-dividable :: forall i j . Monomial i j => Mono i j -> Mono i j -> Bool
-dividable (M l) (M r) = isSubmapOfBy (<=) r l
 
 evalMonomial :: forall i j b .
     MultiplicativeMonoid b =>
@@ -100,3 +97,12 @@ instance (Monomial i j, Ring j) => MultiplicativeGroup (Mono i j) where
 
 zeroM :: Mono i j -> Bool
 zeroM (M m) = Map.null m
+
+dividable :: forall i j . Monomial i j => Mono i j -> Mono i j -> Bool
+dividable (M l) (M r) = isSubmapOfBy (<=) r l
+
+lcmM :: Monomial i j => Mono i j -> Mono i j -> Mono i j
+lcmM (M l) (M r) = M $ unionWith max l r
+
+gcdM :: Monomial i j => Mono i j -> Mono i j -> Mono i j
+gcdM (M al) (M ar) = M (intersectionWith min al ar)
