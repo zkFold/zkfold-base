@@ -30,17 +30,17 @@ hash :: forall a b x . (Arithmetic a, MiMCHash a b x) => x -> b 1 a
 hash = mimcHash @a mimcConstants zero
 
 type Sig b a =
-    (Arithmetic a,
-     StrictConv (b 1 a) (UInt 256 b a),
-     FromConstant Natural (UInt 256 b a),
-     MultiplicativeSemigroup (UInt 256 b a),
-     AdditiveMonoid (b 1 a),
-     Symbolic (b 1 a),
-     MiMCHash a b (TxOut b a, TxOut b a),
-     Eq (Bool (b 1 a)) (UInt 256 b a),
-     Iso (UInt 256 b a) (ByteString 256 b a),
-     Extend (ByteString 224 b a) (ByteString 256 b a)
-     )
+    ( Arithmetic a
+    , StrictConv (b 1 a) (UInt 256 b a)
+    , FromConstant Natural (UInt 256 b a)
+    , MultiplicativeSemigroup (UInt 256 b a)
+    , AdditiveMonoid (b 1 a)
+    , Symbolic (b 1 a)
+    , MiMCHash a b (TxOut b a, TxOut b a)
+    , Eq (Bool (b 1 a)) (UInt 256 b a)
+    , Eq (Bool (b 1 a)) (TxOut b a)
+    , Iso (UInt 256 b a) (ByteString 256 b a)
+    , Extend (ByteString 224 b a) (ByteString 256 b a))
 
 verifySignature ::
     forall b a . Sig b a =>
@@ -56,13 +56,7 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv mimc * 
         mimc :: b 1 a
         mimc = hash (pay, change)
 
-batchTransfer
-    :: forall b a
-    .  Eq (Bool (b 1 a)) (TxOut b a)
-    => Sig b a
-    => Tx b a
-    -> Vector 5 (TxOut b a, TxOut b a, ByteString 256 b a)
-    -> Bool (b 1 a)
+batchTransfer :: forall b a .  Sig b a => Tx b a -> Vector 5 (TxOut b a, TxOut b a, ByteString 256 b a) -> Bool (b 1 a)
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures
         pkhs       = fromJust $ toVector @5 $ map (paymentCredential . txoAddress . txiOutput) $ init $ fromVector $ txInputs tx

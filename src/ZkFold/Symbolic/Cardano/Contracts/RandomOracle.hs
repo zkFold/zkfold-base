@@ -34,11 +34,14 @@ type Sig b a =
     , Eq (Bool (b 1 a)) (UInt 64 b a)
     , Eq (Bool (b 1 a)) (ByteString 224 b a)
     , Eq (Bool (b 1 a)) (ByteString 256 b a)
+    , Extend (Bits (b 1 a)) (b 256 a)
     , Extend (ByteString 224 b a) (ByteString 256 b a)
     , BinaryExpansion (b 1 a)
-    )
+    , MiMCHash a b (b 1 a)
+    , MiMCHash a b (OutputRef b a)
+    , MiMCHash a b (b 1 a, b 1 a))
 
-randomOracle :: forall a b . (Sig b a, Extend (Bits (b 1 a)) (b 256 a), MiMCHash a b (b 1 a), MiMCHash a b (OutputRef b a), MiMCHash a b (b 1 a, b 1 a)) => a -> Tx b a -> b 1 a -> Bool (b 1 a)
+randomOracle :: forall a b . Sig b a => a -> Tx b a -> b 1 a -> Bool (b 1 a)
 randomOracle c tx w =
     let -- The secret key is correct
         conditionSecretKey = fromConstant @a @(b 1 a) c == hash @a @_ @(b 1 a) w
