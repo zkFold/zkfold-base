@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
 import           Prelude                                                hiding (Bool, Eq (..), all, length, maybe,
@@ -42,7 +44,7 @@ type Sig b a = (StrictConv a (UInt 256 b a),
     Eq (Bool (b 1 a)) (ByteString 256 b a),
     Iso (UInt 256 b a) (ByteString 256 b a),
     Extend (ByteString 224 b a) (ByteString 256 b a),
-    BinaryExpansion a (b 256 a),
+    BinaryExpansion a, Bits a ~ b 256 a,
     Hash a (ByteString 256 b a),
     Hash a (OutputRef b a))
 

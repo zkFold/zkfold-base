@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoDeriveAnyClass     #-}
 {-# LANGUAGE TypeApplications     #-}
