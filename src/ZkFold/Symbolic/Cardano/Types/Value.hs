@@ -3,12 +3,13 @@
 
 module ZkFold.Symbolic.Cardano.Types.Value where
 
-import           Prelude                          hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString
+import qualified ZkFold.Symbolic.Data.FieldElement as FE
 import           ZkFold.Symbolic.Data.UInt
 
 type PolicyId b a    = ByteString 224 b a
@@ -19,5 +20,10 @@ newtype Value n b a = Value { getValue :: Vector n (SingleAsset b a) }
 
 deriving instance
     ( Arithmetic a
-    , KnownNat (TypeSize a (SingleAsset ArithmeticCircuit a))
+    , KnownNat (FE.TypeSize a Vector (ByteString 224 Vector a, (ByteString 256 Vector a, UInt 64 Vector a)))
+    ) => FE.FieldElementData a Vector (Value n Vector a)
+
+deriving instance
+    ( Arithmetic a
+    , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
     ) => SymbolicData a (Value n ArithmeticCircuit a)

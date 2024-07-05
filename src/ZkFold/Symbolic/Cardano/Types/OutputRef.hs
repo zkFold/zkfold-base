@@ -3,16 +3,20 @@
 
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
-import           Prelude                         hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
 
+import           ZkFold.Base.Data.Vector           (Vector)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString (ByteString)
+import           ZkFold.Symbolic.Data.ByteString   (ByteString)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElementData)
 import           ZkFold.Symbolic.Data.UInt
 
 type TxRefId b a = ByteString 256 b a
 type TxRedIndex b a = UInt 32 b a
 
 newtype OutputRef b a = OutputRef (TxRefId b a, TxRedIndex b a)
+
+deriving instance Arithmetic a => FieldElementData a Vector (OutputRef Vector a)
 
 deriving instance Arithmetic a => SymbolicData a (OutputRef ArithmeticCircuit a)
 
