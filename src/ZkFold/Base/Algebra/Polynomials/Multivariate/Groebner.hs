@@ -1,7 +1,8 @@
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Groebner where
 
 import           Data.Bool                                               (bool)
-import           Prelude                                                 hiding (Num (..), drop, lcm, length, sum, take, (!!), (/))
+import           Prelude                                                 hiding (Num (..), drop, lcm, length, sum, take,
+                                                                          (!!), (/))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
