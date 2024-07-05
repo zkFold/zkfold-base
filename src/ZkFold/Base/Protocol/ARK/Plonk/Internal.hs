@@ -74,22 +74,18 @@ data PlonkSetupParamsVerify c1 c2 = PlonkSetupParamsVerify {
         omega'' :: ScalarField c1,
         k1''    :: ScalarField c1,
         k2''    :: ScalarField c1,
-        g0''    :: Point c1,
-        h0''    :: Point c2,
-        h1''    :: Point c2,
+        x2''    :: Point c2,
         pow''   :: Integer,
         n''     :: Integer
     }
 instance (Show (ScalarField c1), Show (BaseField c1), Show (BaseField c2),
         EllipticCurve c1, EllipticCurve c2) => Show (PlonkSetupParamsVerify c1 c2) where
-    show (PlonkSetupParamsVerify omega'' k1'' k2'' g0'' h0'' h1'' pow'' n'') =
+    show (PlonkSetupParamsVerify omega'' k1'' k2'' x2'' pow'' n'') =
         "Setup Parameters (Verify): "
         ++ show omega'' ++ " "
         ++ show k1''  ++ " "
         ++ show k2''  ++ " "
-        ++ show g0''  ++ " "
-        ++ show h0''  ++ " "
-        ++ show h1''  ++ " "
+        ++ show x2''  ++ " "
         ++ show pow'' ++ " "
         ++ show n''
 

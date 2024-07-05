@@ -148,9 +148,7 @@ instance forall n l c1 c2 t plonk f g1.
             omega'' = omega
             k1''    = k1
             k2''    = k2
-            g0''    = gen
-            h0''    = gen
-            h1''    = x `mul` gen
+            x2''    = x `mul` gen
             pow''   = log2 $ value @n
             n''     = fromIntegral $ value @n
 
@@ -367,7 +365,7 @@ instance forall n l c1 c2 t plonk f g1.
                 + v * v * v * v * s1_xi
                 + v * v * v * v * v * s2_xi
                 + u * z_xi
-                ) `mul` g0''
+                ) `mul` gen
 
-            p1 = pairing @c1 @c2 (xi `mul` proof1 + (u * xi * omega'') `mul` proof2 + f - e) h0''
-            p2 = pairing (proof1 + u `mul` proof2) h1''
+            p1 = pairing @c1 @c2 (xi `mul` proof1 + (u * xi * omega'') `mul` proof2 + f - e) (gen :: Point c2)
+            p2 = pairing (proof1 + u `mul` proof2) x2''
