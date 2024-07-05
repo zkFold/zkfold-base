@@ -13,7 +13,6 @@ import           Data.List.Split                  (chunksOf)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
-import           GHC.IsList                       (IsList (..))
 import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (drop, head, length, mod, replicate, sum, tail, take, zip,
                                                    zipWith, (*))
@@ -133,11 +132,6 @@ unsafeConcat = Vector . concatMap fromVector
 
 chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
 chunks (Vector lists) = Vector (Vector <$> chunksOf (fromIntegral $ value @n) lists)
-
-instance IsList (Vector size a) where
-    type Item (Vector size a) = a
-    fromList = unsafeToVector
-    toList = fromVector
 
 instance Binary a => Binary (Vector n a) where
     put = put . fromVector
