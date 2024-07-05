@@ -48,6 +48,7 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
+import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData(..))
 import           ZkFold.Symbolic.Data.Ord
 
 -- TODO (Issue #18): hide this constructor
@@ -60,6 +61,13 @@ deriving instance (NFData (backend (NumberOfRegisters a n) a)) => NFData (UInt n
 deriving instance (Haskell.Eq (backend (NumberOfRegisters a n) a)) => Haskell.Eq (UInt n backend a)
 deriving instance (Haskell.Show a, Haskell.Show (backend (NumberOfRegisters a n) a)) => Haskell.Show (UInt n backend a)
 deriving newtype instance Arithmetic a => Arithmetizable a (UInt n ArithmeticCircuit a)
+
+instance Arithmetic a => FieldElementData a Vector (UInt n Vector a) where
+    type TypeSize a Vector (UInt n Vector a) = NumberOfRegisters a n
+
+    toFieldElements (UInt c) = c
+
+    fromFieldElements = UInt
 
 instance (KnownNat n, Finite (Zp p)) => FromConstant Natural (UInt n Vector (Zp p)) where
     fromConstant c =

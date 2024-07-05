@@ -14,6 +14,7 @@ import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
+import qualified ZkFold.Symbolic.Data.FieldElement    as FE
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Data.UTCTime
 
@@ -24,6 +25,19 @@ newtype Transaction inputs rinputs outputs tokens datum b a = Transaction
     , (Value 1 b a
     , (UTCTime b a, UTCTime b a)
     ))))
+
+deriving instance
+    ( Arithmetic a
+    , KnownNat (FE.TypeSize a Vector (UTCTime Vector a))
+    , KnownNat (FE.TypeSize a Vector (Value tokens Vector a))
+    , KnownNat (FE.TypeSize a Vector (Output tokens datum Vector a))
+    , KnownNat (FE.TypeSize a Vector (Vector outputs (Output tokens datum Vector a)))
+    , KnownNat (FE.TypeSize a Vector (Input tokens datum Vector a))
+    , KnownNat (FE.TypeSize a Vector (Vector inputs (Input tokens datum Vector a)))
+    , KnownNat (FE.TypeSize a Vector (Vector rinputs (Input tokens datum Vector a)))
+    , KnownNat (256 + NumberOfRegisters a 32)
+    , KnownNat (FE.TypeSize a Vector (ByteString 224 Vector a, (ByteString 256 Vector a, UInt 64 Vector a)))
+    ) => FE.FieldElementData a Vector (Transaction inputs rinputs outputs tokens datum Vector a)
 
 -- TODO: Think how to prettify this abomination
 deriving instance

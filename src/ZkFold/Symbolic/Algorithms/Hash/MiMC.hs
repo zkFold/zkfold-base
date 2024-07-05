@@ -1,16 +1,21 @@
-module ZkFold.Symbolic.Algorithms.Hash.MiMC (mimcHash) where
+{-# LANGUAGE UndecidableInstances #-}
 
-import           Data.List.NonEmpty              (NonEmpty ((:|)), nonEmpty)
-import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Eq (..), Num (..), any, length, not, (!!), (/), (^), (||))
+module ZkFold.Symbolic.Algorithms.Hash.MiMC where
+
+import           Data.List.NonEmpty                                     (NonEmpty ((:|)), nonEmpty)
+import           Numeric.Natural                                        (Natural)
+import           Prelude                                                hiding (Eq (..), Num (..), any, length, not, (!!), (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Types           (Symbolic)
+import           ZkFold.Base.Data.Vector                                (fromVector, Vector, singleton)
+import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
+import           ZkFold.Symbolic.Data.FieldElement                      (FieldElementData(..))
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5
-mimcHash :: forall a . Symbolic a => [a] -> a -> a -> a -> a
-mimcHash xs k = case nonEmpty (reverse xs) of
+mimcHash2 :: (FromConstant a x, Ring x) => [a] -> a -> x -> x -> x
+mimcHash2 (map fromConstant -> xs) (fromConstant -> k) = case nonEmpty (reverse xs) of
     Just cs -> go cs
     Nothing -> error "mimcHash: empty list"
     where
@@ -19,3 +24,21 @@ mimcHash xs k = case nonEmpty (reverse xs) of
            in case nonEmpty cs of
               Just cs' -> go cs' (xR + t5) xL
               Nothing  -> xR + t5
+
+mimcHashN :: (FromConstant a x, Ring x) => [a] -> a -> [x] -> x
+mimcHashN xs k = go
+  where
+    go zs = case zs of
+      []          -> mimcHash2 xs k zero zero
+      [z]         -> mimcHash2 xs k zero z
+      [zL, zR]    -> mimcHash2 xs k zL zR
+      (zL:zR:zs') -> go (mimcHash2 xs k zL zR : zs')
+
+class MiMCHash a b x where
+    mimcHash :: [a] -> a -> x -> b 1 a
+
+instance FieldElementData a Vector x => MiMCHash a Vector x where
+    mimcHash xs k = singleton . mimcHashN xs k . fromVector . toFieldElements
+
+instance FieldElementData a ArithmeticCircuit x => MiMCHash a ArithmeticCircuit x where
+    mimcHash xs k = mimcHashN xs k . fromVector . splitCircuit . toFieldElements @a

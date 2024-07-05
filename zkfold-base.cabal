@@ -157,6 +157,7 @@ library
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
+      ZkFold.Symbolic.Data.FieldElement
       ZkFold.Symbolic.GroebnerBasis
       ZkFold.Symbolic.GroebnerBasis.Internal
       ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
@@ -169,6 +170,7 @@ library
       aeson                                 < 2.3,
       base64-bytestring                          ,
       binary                               < 0.11,
+      -- TODO: remove `blake2` after refactoring of ZK protocols
       blake2                                < 0.4,
       bytestring                           < 0.12,
       containers                            < 0.7,

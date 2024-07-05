@@ -47,6 +47,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (acCi
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData (..))
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
@@ -57,6 +58,13 @@ newtype ByteString (n :: Natural) (backend :: Natural -> Type -> Type) (a :: Typ
 
 deriving anyclass instance NFData (b n a) => NFData (ByteString n b a)
 deriving newtype instance Arithmetic a => Arithmetizable a (ByteString n ArithmeticCircuit a)
+
+instance Arithmetic a => FieldElementData a Vector (ByteString n Vector a) where
+    type TypeSize a Vector (ByteString n Vector a) = n
+
+    toFieldElements (ByteString bits) = bits
+
+    fromFieldElements = ByteString
 
 -- TODO
 -- Since the only difference between ByteStrings on Zp and ByteStrings on ArithmeticCircuits is backend,
@@ -332,7 +340,6 @@ instance Arithmetic a => SymbolicData a (ByteString n ArithmeticCircuit a) where
     pieces (ByteString bits) = bits
 
     restore c o = ByteString $ c `withOutputs` o
-
 
 instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n ArithmeticCircuit a) where
     shiftBits bs@(ByteString oldBits) s

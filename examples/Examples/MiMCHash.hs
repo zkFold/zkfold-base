@@ -8,9 +8,11 @@ import           Prelude                                        hiding (Eq (..),
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381    (BLS12_381_Scalar)
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHash)
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHash2)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Compiler
+
+type F = Zp BLS12_381_Scalar
 
 exampleMiMC :: IO ()
 exampleMiMC = do
@@ -18,4 +20,4 @@ exampleMiMC = do
 
     putStrLn "\nExample: MiMC hash function\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file (mimcHash @(ArithmeticCircuit 1 (Zp BLS12_381_Scalar)) mimcConstants zero)
+    compileIO @F file (mimcHash2 @F @(ArithmeticCircuit 1 F) mimcConstants zero)
