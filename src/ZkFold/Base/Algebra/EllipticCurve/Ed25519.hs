@@ -1,6 +1,3 @@
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Ed25519  where

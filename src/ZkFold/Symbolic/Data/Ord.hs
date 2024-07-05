@@ -85,10 +85,10 @@ instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit 1 
 
     min x y = bool @(Bool (ArithmeticCircuit 1 a)) x y $ x > y
 
-getBitsBE :: (SymbolicData a x, TypeSize a x ~ 1, bits ~ NumberOfBits a) => x -> ArithmeticCircuit bits a
+getBitsBE :: forall a x . (SymbolicData a x, TypeSize a x ~ 1) => x -> ArithmeticCircuit (NumberOfBits a) a
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = let expansion = binaryExpansion $ pieces x
+getBitsBE x = let expansion = binaryExpansion $ pieces @a @x x
                in expansion { acOutput = V.reverse $ acOutput expansion }
 
 circuitGE :: forall a n . Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a -> Bool (ArithmeticCircuit 1 a)
