@@ -10,6 +10,7 @@
 module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
     , ShiftBits (..)
+    , ReverseEndianness (..)
     , BitState (..)
     , ToWords (..)
     , Concat (..)
@@ -28,7 +29,7 @@ import           Data.String                                               (IsSt
 import           Data.Traversable                                          (for)
 import           GHC.Generics                                              (Generic)
 import           GHC.Natural                                               (naturalFromInteger)
-import           GHC.TypeNats                                              (Div, Mod, Natural, natVal)
+import           GHC.TypeNats                                              (Natural, natVal)
 import           Prelude                                                   (Integer, drop, fmap, otherwise, pure, take,
                                                                             type (~), ($), (.), (<$>), (<), (<>), (==),
                                                                             (>=))
@@ -47,6 +48,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (acCi
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData (..))
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
@@ -57,6 +59,13 @@ newtype ByteString (n :: Natural) (backend :: Natural -> Type -> Type) (a :: Typ
 
 deriving anyclass instance NFData (b n a) => NFData (ByteString n b a)
 deriving newtype instance Arithmetic a => Arithmetizable a (ByteString n ArithmeticCircuit a)
+
+instance Arithmetic a => FieldElementData a Vector (ByteString n Vector a) where
+    type TypeSize a Vector (ByteString n Vector a) = n
+
+    toFieldElements (ByteString bits) = bits
+
+    fromFieldElements = ByteString
 
 -- TODO
 -- Since the only difference between ByteStrings on Zp and ByteStrings on ArithmeticCircuits is backend,
@@ -112,6 +121,8 @@ class ShiftBits a where
     rotateBitsR :: a -> Natural -> a
     rotateBitsR a s = rotateBits a (negate . Haskell.fromIntegral $ s)
 
+class ReverseEndianness wordSize a where
+    reverseEndianness :: a -> a
 
 -- | Describes types which can be split into words of equal size.
 -- Parameters have to be of different types as ByteString store their lengths on type level and hence after splitting they chagne types.
@@ -224,6 +235,22 @@ instance (Finite (Zp p), KnownNat n) => ShiftBits (ByteString n Vector (Zp p)) w
             d :: Natural
             d = nat `shiftR` intS
 
+reverseEndianness' :: forall wordSize n x .
+    ( KnownNat wordSize
+    , (Div n wordSize) * wordSize ~ n
+    , (Div wordSize 8) * 8 ~ wordSize
+    ) => Vector n x -> Vector n x
+reverseEndianness' v =
+    let chunks = V.chunks @(Div n wordSize) @wordSize v
+        chunks' = fmap (V.concat . V.reverse . V.chunks @(Div wordSize 8) @8) chunks
+     in V.concat chunks'
+
+instance
+    ( KnownNat wordSize
+    , (Div n wordSize) * wordSize ~ n
+    , (Div wordSize 8) * 8 ~ wordSize
+    ) => ReverseEndianness wordSize (ByteString n Vector (Zp p)) where
+    reverseEndianness (ByteString v) = ByteString $ reverseEndianness' @wordSize v
 
 instance (Finite (Zp p), KnownNat n) => BoolType (ByteString n Vector (Zp p)) where
     false = fromConstant (0 :: Natural)
@@ -333,7 +360,6 @@ instance Arithmetic a => SymbolicData a (ByteString n ArithmeticCircuit a) where
 
     restore c o = ByteString $ c `withOutputs` o
 
-
 instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n ArithmeticCircuit a) where
     shiftBits bs@(ByteString oldBits) s
       | s == 0 = bs
@@ -355,6 +381,13 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n ArithmeticCircuit
     -- | rotateBits does not even require operations on the circuit.
     --
     rotateBits (ByteString bits) s = ByteString (bits { acOutput = V.rotate (acOutput bits) s})
+
+instance
+    ( KnownNat wordSize
+    , (Div n wordSize) * wordSize ~ n
+    , (Div wordSize 8) * 8 ~ wordSize
+    ) => ReverseEndianness wordSize (ByteString n ArithmeticCircuit a) where
+        reverseEndianness (ByteString v) = ByteString $ v { acOutput = reverseEndianness' @wordSize (acOutput v) }
 
 
 -- | A generic bitwise operation on two ByteStrings.

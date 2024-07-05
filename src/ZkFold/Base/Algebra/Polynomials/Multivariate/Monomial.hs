@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass               #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 {-# LANGUAGE TypeApplications             #-}
-{-# LANGUAGE UndecidableInstances         #-}
 
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial where
 
@@ -74,7 +73,7 @@ instance Monomial i j => Ord (Mono i j) where
                 | k1 == k2  = if a1 == a2 then go xs ys else compare a1 a2
                 | otherwise = compare k2 k1
 
-instance (Monomial i j, Arbitrary (Map i j)) => Arbitrary (Mono i j) where
+instance (Monomial i j, Arbitrary i, Arbitrary j) => Arbitrary (Mono i j) where
     arbitrary = M <$> arbitrary
 
 instance Monomial i j => MultiplicativeSemigroup (Mono i j) where

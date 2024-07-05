@@ -8,6 +8,7 @@ module ZkFold.Symbolic.Cardano.Types.Output where
 import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Address (Address)
 import           ZkFold.Symbolic.Cardano.Types.Value   (Value)
 import           ZkFold.Symbolic.Compiler
@@ -15,11 +16,18 @@ import           ZkFold.Symbolic.Data.Bool             (Bool)
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Eq               (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
+import qualified ZkFold.Symbolic.Data.FieldElement     as FE
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 
 type DatumHash b a = ByteString 256 b a
 
 newtype Output tokens datum b a = Output (Address b a, (Value tokens b a, DatumHash b a))
+
+deriving instance
+    ( Arithmetic a
+    , KnownNat (FE.TypeSize a Vector (Value tokens Vector a))
+    , KnownNat (FE.TypeSize a Vector (ByteString 224 Vector a, (ByteString 256 Vector a, UInt 64 Vector a)))
+    ) => FE.FieldElementData a Vector (Output tokens datum Vector a)
 
 deriving instance
     ( Arithmetic a

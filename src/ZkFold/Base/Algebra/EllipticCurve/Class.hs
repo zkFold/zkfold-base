@@ -13,7 +13,7 @@ import           Test.QuickCheck                 hiding (scale)
 import           ZkFold.Base.Algebra.Basic.Class
 
 
-data Point curve = Point { _x :: (BaseField curve), _y :: (BaseField curve) } | Inf
+data Point curve = Point { _x :: BaseField curve, _y :: BaseField curve } | Inf
 
 class EllipticCurve curve where
 
@@ -106,7 +106,8 @@ pointNegate (Point x y) = Point x (negate y)
 pointMul
     :: forall curve
     .  EllipticCurve curve
-    => BinaryExpansion (ScalarField curve) [ScalarField curve]
+    => BinaryExpansion (ScalarField curve)
+    => Bits (ScalarField curve) ~ [ScalarField curve]
     => Eq (ScalarField curve)
     => ScalarField curve
     -> Point curve

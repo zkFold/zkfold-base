@@ -1,7 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.ByteString (specByteString) where
 
@@ -10,7 +9,6 @@ import           Control.Monad                               (return)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
-import           GHC.TypeNats                                (Div, Mod)
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (show, type (~), (<>))
 import qualified Prelude                                     as Haskell
