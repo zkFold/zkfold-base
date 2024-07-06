@@ -16,7 +16,7 @@ import           ZkFold.Symbolic.Cardano.Types.Value   (Value)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool             (Bool)
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators      (Extend(..))
+import           ZkFold.Symbolic.Data.Combinators      (Extend (..))
 import           ZkFold.Symbolic.Data.Eq               (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import qualified ZkFold.Symbolic.Data.FieldElement     as FE
