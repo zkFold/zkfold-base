@@ -24,7 +24,7 @@ import           ZkFold.Symbolic.Types                          (Symbolic)
 type Tokens = 10
 type TxOut b a = Output Tokens () b a
 type TxIn b a  = Input Tokens () b a
-type Tx b a = Transaction 6 0 11 Tokens () b a
+type Tx b a = Transaction 6 0 11 Tokens 0 () b a
 
 hash :: forall a b x . (Arithmetic a, MiMCHash a b x) => x -> b 1 a
 hash = mimcHash @a mimcConstants zero

@@ -3,8 +3,10 @@
 
 module ZkFold.Symbolic.Cardano.Types.Value where
 
+import           GHC.Natural                       (Natural)
 import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Compiler
@@ -27,3 +29,17 @@ deriving instance
     ( Arithmetic a
     , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
     ) => SymbolicData a (Value n ArithmeticCircuit a)
+
+-- TODO
+instance Semigroup (Value n b a) where
+    (<>) = undefined
+
+-- TODO
+instance Monoid (Value n b a) where
+    mempty = undefined
+
+instance AdditiveSemigroup (Value n b a) where
+    (+) = (<>)
+
+instance Scale Natural (Value n b a) => AdditiveMonoid (Value n b a) where
+    zero = mempty
