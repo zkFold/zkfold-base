@@ -18,11 +18,11 @@ import qualified ZkFold.Symbolic.Data.FieldElement    as FE
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Data.UTCTime
 
-newtype Transaction inputs rinputs outputs tokens tokensMint datum b a = Transaction
+newtype Transaction inputs rinputs outputs tokens mint datum b a = Transaction
     ( Vector rinputs (Input tokens datum b a)
     , (Vector inputs (Input tokens datum b a)
     , (Vector outputs (Output tokens datum b a)
-    , (Value tokensMint b a
+    , (Value mint b a
     , (UTCTime b a, UTCTime b a)
     ))))
 
@@ -35,10 +35,10 @@ deriving instance
     , KnownNat (FE.TypeSize a Vector (Input tokens datum Vector a))
     , KnownNat (FE.TypeSize a Vector (Vector inputs (Input tokens datum Vector a)))
     , KnownNat (FE.TypeSize a Vector (Vector rinputs (Input tokens datum Vector a)))
-    , KnownNat (TypeSize a (Value tokensMint ArithmeticCircuit a))
+    , KnownNat (TypeSize a (Value mint ArithmeticCircuit a))
     , KnownNat (256 + NumberOfRegisters a 32)
     , KnownNat (FE.TypeSize a Vector (ByteString 224 Vector a, (ByteString 256 Vector a, UInt 64 Vector a)))
-    ) => FE.FieldElementData a Vector (Transaction inputs rinputs outputs tokens tokensMint datum Vector a)
+    ) => FE.FieldElementData a Vector (Transaction inputs rinputs outputs tokens mint datum Vector a)
 
 -- TODO: Think how to prettify this abomination
 deriving instance
@@ -51,18 +51,18 @@ deriving instance
     , KnownNat (TypeSize a (Vector inputs (Input tokens datum ArithmeticCircuit a)))
     , KnownNat (TypeSize a (Vector rinputs (Input tokens datum ArithmeticCircuit a)))
     , KnownNat (TypeSize a (SingleAsset ArithmeticCircuit a))
-    , KnownNat (TypeSize a (Value tokensMint ArithmeticCircuit a))
+    , KnownNat (TypeSize a (Value mint ArithmeticCircuit a))
     , KnownNat (256 + NumberOfRegisters a 32)
-    ) => SymbolicData a (Transaction inputs rinputs outputs tokens tokensMint datum ArithmeticCircuit a)
+    ) => SymbolicData a (Transaction inputs rinputs outputs tokens mint datum ArithmeticCircuit a)
 
-txRefInputs :: Transaction inputs rinputs outputs tokens tokensMint datum b a -> Vector rinputs (Input tokens datum b a)
+txRefInputs :: Transaction inputs rinputs outputs tokens mint datum b a -> Vector rinputs (Input tokens datum b a)
 txRefInputs (Transaction (ris, _)) = ris
 
-txInputs :: Transaction inputs rinputs outputs tokens tokensMint datum b a -> Vector inputs (Input tokens datum b a)
+txInputs :: Transaction inputs rinputs outputs tokens mint datum b a -> Vector inputs (Input tokens datum b a)
 txInputs (Transaction (_, (is, _))) = is
 
-txOutputs :: Transaction inputs rinputs outputs tokens tokensMint datum b a -> Vector outputs (Output tokens datum b a)
+txOutputs :: Transaction inputs rinputs outputs tokens mint datum b a -> Vector outputs (Output tokens datum b a)
 txOutputs (Transaction (_, (_, (os, _)))) = os
 
-txMint :: Transaction inputs rinputs outputs tokens tokensMint datum b a -> Value tokensMint b a
+txMint :: Transaction inputs rinputs outputs tokens mint datum b a -> Value mint b a
 txMint (Transaction (_, (_, (_, (mint, _))))) = mint

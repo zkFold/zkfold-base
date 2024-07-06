@@ -10,17 +10,17 @@ import           ZkFold.Symbolic.Data.UInt                 (UInt)
 type TxHash b a = UInt 64 b a
 
 -- TODO: implement transaction hashing
-hashFunction :: Transaction inputs rinputs outputs tokens tokensMint datum b a -> TxHash b a
+hashFunction :: Transaction inputs rinputs outputs tokens mint datum b a -> TxHash b a
 hashFunction = undefined -- from . blake2b_224 . serialiseData . toBuiltinData
 
 type Contract tx redeemer backend a = tx backend a -> redeemer backend a -> Bool a
 
 -- | Use wrapper to convert circuit to plonk circuit
-symbolicContractWrapper :: forall inputs rinputs outputs tokens tokensMint datum redeemer backend a .
+symbolicContractWrapper :: forall inputs rinputs outputs tokens mint datum redeemer backend a .
     Eq (Bool a) (UInt 64 backend a)
-    => Contract (Transaction inputs rinputs outputs tokens tokensMint datum) redeemer backend a
+    => Contract (Transaction inputs rinputs outputs tokens mint datum) redeemer backend a
     -> TxHash backend a
-    -> Transaction inputs rinputs outputs tokens tokensMint datum backend a
+    -> Transaction inputs rinputs outputs tokens mint datum backend a
     -> redeemer backend a
     -> Bool a
 symbolicContractWrapper contract hash tx witness =

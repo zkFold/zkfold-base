@@ -30,9 +30,11 @@ deriving instance
     , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
     ) => SymbolicData a (Value n ArithmeticCircuit a)
 
+-- TODO
 instance Semigroup (Value n b a) where
     (<>) = undefined
 
+-- TODO
 instance Monoid (Value n b a) where
     mempty = undefined
 
