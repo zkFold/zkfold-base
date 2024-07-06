@@ -1,13 +1,15 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Cardano.UPLC.Type where
 
-import           Data.Kind                (Type)
-import           Data.Typeable            (Proxy (..), TypeRep, Typeable, typeOf)
+import           Data.Kind                        (Type)
+import           Data.Typeable                    (Proxy (..), TypeRep, Typeable, typeOf)
 import           Prelude
 
-import           ZkFold.Symbolic.Compiler (Arithmetizable, SymbolicData)
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Symbolic.Compiler         (Arithmetizable, SymbolicData (..))
 
 data SomeType a where
     NoType         :: SomeType a
@@ -36,8 +38,8 @@ instance Semigroup (SomeType a) where
     _ <> _                                   = error "Semigroup (SomeType a): constructor mismatch"
 
 data SomeSymbolic a where
-    SomeData  :: forall a (t :: Type) . (Typeable t, SymbolicData a t) => Proxy t -> SomeSymbolic a
-    SomeArith :: forall a (t :: Type) . (Typeable t, Arithmetizable a t) => Proxy t -> SomeSymbolic a
+    SomeData  :: forall a (t :: Type) . (Typeable t, SymbolicData a t, KnownNat (TypeSize a t), Arithmetizable a t) => Proxy t -> SomeSymbolic a
+    SomeArith :: forall a (t :: Type) . (Typeable t, Arithmetizable a t)                                            => Proxy t -> SomeSymbolic a
 
 getType :: SomeSymbolic a -> TypeRep
 getType (SomeData t)  = typeOf t
@@ -53,11 +55,11 @@ instance Semigroup (SomeSymbolic a) where
     x <> SomeData y
       | getType x == typeOf y = SomeData y
       | otherwise = error "Semigroup (SomeSymbolic a): SomeData mismatch"
-    SomeArith x <> SomeArith y
-      | typeOf x == typeOf y = SomeArith x
+    ax@(SomeArith x) <> SomeArith y
+      | typeOf x == typeOf y = ax
       | otherwise = error "Semigroup (SomeSymbolic a): SomeArith mismatch"
 
-symToSym :: SomeSymbolic a -> SomeSymbolic a -> SomeSymbolic a
+symToSym :: forall a. SomeSymbolic a -> SomeSymbolic a -> SomeSymbolic a
 symToSym (SomeData (_ :: Proxy x)) (SomeData (_ :: Proxy y))  = SomeArith (Proxy @(x -> y))
 symToSym (SomeData (_ :: Proxy x)) (SomeArith (_ :: Proxy y)) = SomeArith (Proxy @(x -> y))
 symToSym (SomeArith _) _                                      = error "symToSym: cannot make a conversion"

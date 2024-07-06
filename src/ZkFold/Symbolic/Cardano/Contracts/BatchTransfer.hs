@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
 import           Data.Maybe                                     (fromJust)
@@ -8,11 +10,10 @@ import           Prelude                                        hiding (Bool, Eq
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector                        (Vector, fromVector, toVector)
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHash)
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
-import           ZkFold.Symbolic.Cardano.Types                  (Input, Output, Transaction, paymentCredential,
-                                                                 txInputs, txOutputs, txiOutput, txoAddress)
-import           ZkFold.Symbolic.Compiler                       (ArithmeticCircuit, SymbolicData (pieces))
+import           ZkFold.Symbolic.Cardano.Types
+import           ZkFold.Symbolic.Compiler.Arithmetizable        (Arithmetic)
 import           ZkFold.Symbolic.Data.Bool                      (Bool, BoolType (..), all)
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
@@ -21,42 +22,41 @@ import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Types                          (Symbolic)
 
 type Tokens = 10
-type TxOut a = Output Tokens () a
-type TxIn a  = Input Tokens () a
-type Tx a = Transaction 6 0 11 Tokens () a
+type TxOut b a = Output Tokens () b a
+type TxIn b a  = Input Tokens () b a
+type Tx b a = Transaction 6 0 11 Tokens () b a
 
-class Hash a x where
-    hash :: x -> a
+hash :: forall a b x . (Arithmetic a, MiMCHash a b x) => x -> b 1 a
+hash = mimcHash @a mimcConstants zero
 
-instance SymbolicData a x => Hash (ArithmeticCircuit a) x where
-    hash datum = case pieces datum of
-        []         -> zero
-        [x]        -> mimcHash mimcConstants zero zero x
-        [xL, xR]   -> mimcHash mimcConstants zero xL xR
-        (xL:xR:xZ) -> mimcHash (zero : xZ ++ [zero]) zero xL xR
-
-type Sig a = (StrictConv a (UInt 256 a),
-    MultiplicativeSemigroup (UInt 256 a),
-    Eq (Bool a) (UInt 256 a),
-    Iso (UInt 256 a) (ByteString 256 a),
-    Extend (ByteString 224 a) (ByteString 256 a),
-    Hash a (TxOut a))
+type Sig b a =
+    ( Arithmetic a
+    , StrictConv (b 1 a) (UInt 256 b a)
+    , FromConstant Natural (UInt 256 b a)
+    , MultiplicativeSemigroup (UInt 256 b a)
+    , AdditiveMonoid (b 1 a)
+    , Symbolic (b 1 a)
+    , MiMCHash a b (TxOut b a, TxOut b a)
+    , Eq (Bool (b 1 a)) (UInt 256 b a)
+    , Eq (Bool (b 1 a)) (TxOut b a)
+    , Iso (UInt 256 b a) (ByteString 256 b a)
+    , Extend (ByteString 224 b a) (ByteString 256 b a))
 
 verifySignature ::
-    forall a . (Symbolic a, Sig a) =>
-    ByteString 224 a ->
-    (TxOut a, TxOut a) ->
-    ByteString 256 a ->
-    Bool a
-verifySignature pub (pay, change) sig = (from sig * base) == (strictConv mimc * from (extend pub :: ByteString 256 a))
+    forall b a . Sig b a =>
+    ByteString 224 b a ->
+    (TxOut b a, TxOut b a) ->
+    ByteString 256 b a ->
+    Bool (b 1 a)
+verifySignature pub (pay, change) sig = (from sig * base) == (strictConv mimc * from (extend pub :: ByteString 256 b a))
     where
-        base :: UInt 256 a
+        base :: UInt 256 b a
         base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)
 
-        mimc :: a
-        mimc = mimcHash mimcConstants zero (hash pay) (hash change)
+        mimc :: b 1 a
+        mimc = hash (pay, change)
 
-batchTransfer :: (Symbolic a, Eq (Bool a) (TxOut a), Sig a) => Tx a -> Vector 5 (TxOut a, TxOut a, ByteString 256 a) -> Bool a
+batchTransfer :: forall b a .  Sig b a => Tx b a -> Vector 5 (TxOut b a, TxOut b a, ByteString 256 b a) -> Bool (b 1 a)
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures
         pkhs       = fromJust $ toVector @5 $ map (paymentCredential . txoAddress . txiOutput) $ init $ fromVector $ txInputs tx

@@ -6,7 +6,9 @@ module ZkFold.Base.Data.ByteString
   , fromByteString
   , putWord8
   , getWord8
+  , skip
   , LittleEndian (..)
+  , BigEndian (..)
   ) where
 
 import           Control.Applicative  (many)
@@ -46,4 +48,22 @@ instance Binary LittleEndian where
       let (n', r) = n `divMod` 256
       in putWord8 (fromIntegral r) <> put (LittleEndian n')
 instance Arbitrary LittleEndian where
+  arbitrary = fromInteger . abs <$> arbitrary
+
+-- Big-endian encoding for unsigned & unsized integers
+newtype BigEndian = BigEndian {unBigEndian :: Natural}
+  deriving stock (Read, Show)
+  deriving newtype (Eq, Ord, Num, Enum, Real, Integral)
+instance Binary BigEndian where
+  get = do
+    ns <- many getWord8
+    let accum n w8 = n * 256 + fromIntegral w8
+        bigEndian = BigEndian (foldl' accum 0 ns)
+    return bigEndian
+  put (BigEndian n)
+    | n == 0 = mempty
+    | otherwise =
+      let (n', r) = n `divMod` 256
+      in put (BigEndian n') <> putWord8 (fromIntegral r)
+instance Arbitrary BigEndian where
   arbitrary = fromInteger . abs <$> arbitrary

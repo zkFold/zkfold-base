@@ -6,7 +6,7 @@ import           Prelude                                         hiding (Num (..
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Polynomial', var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Poly, var)
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler                        (Arithmetic)
@@ -38,7 +38,7 @@ instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
     verifier' :: ProtostarPermutation n
               -> Input f (ProtostarPermutation n)
               -> SpecialSoundTranscript Natural (ProtostarPermutation n)
-              -> Vector (Dimension (ProtostarPermutation n)) (Polynomial' f)
+              -> Vector (Dimension (ProtostarPermutation n)) (Poly f Natural Natural)
     verifier' _ sigma [(w, _)] = zipWith (-) (applyPermutation sigma wX) wX
       where wX = fmap var w
     verifier' _ _ _ = error "Invalid transcript"
@@ -50,4 +50,3 @@ instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
              -> Bool
     verifier _ sigma [(w, _)] = applyPermutation sigma w == w
     verifier _ _     _        = error "Invalid transcript"
-

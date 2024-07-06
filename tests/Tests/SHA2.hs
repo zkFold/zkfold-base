@@ -1,7 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Tests.SHA2 (specSHA2Natural, specSHA2) where
 
@@ -17,20 +15,22 @@ import           Numeric.Natural                             (Natural)
 import           Prelude                                     (String, fmap, otherwise, pure, read, (<>), (==))
 import qualified Prelude                                     as Haskell
 import           System.Directory                            (listDirectory)
+import           System.Environment                          (lookupEnv)
 import           System.FilePath.Posix
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (Spec, describe, hspec, shouldBe)
 import           Test.QuickCheck                             (Gen, (===))
-import           Tests.ArithmeticCircuit                     (eval', it)
+import           Tests.ArithmeticCircuit                     (it)
 import           Text.Regex.TDFA
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2        (AlgorithmSetup (..), SHA2, SHA2N, sha2, sha2Natural)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 
@@ -52,9 +52,12 @@ getTestFiles = Haskell.filter isAlgoFile <$> listDirectory dataDir
 
 readRSP :: FilePath -> IO [(Natural, Natural, Natural)]
 readRSP path = do
+    fullTests <- lookupEnv "FULL_SHA2"
     contents <- Haskell.readFile path
     let parts = Haskell.filter (\s -> take 3 s == "Len") $ splitOn "\r\n\r\n" contents
-    pure $ readTestCase <$> parts
+    case fullTests of
+      Haskell.Nothing -> pure $ take 20 $ readTestCase <$> parts
+      _               -> pure $ readTestCase <$> parts
 
 readTestCase :: String -> (Natural, Natural, Natural)
 readTestCase s = (numBits, msg, hash)
@@ -92,8 +95,8 @@ readTestCase s = (numBits, msg, hash)
 testAlgorithm
     :: forall (algorithm :: Symbol) element
     .  KnownSymbol algorithm
-    => SHA2N algorithm element
-    => ToConstant element Natural
+    => SHA2N algorithm Vector element
+    => ToConstant (ByteString (ResultSize algorithm) Vector element) Natural
     => FilePath
     -> IO ()
 testAlgorithm file = do
@@ -101,63 +104,71 @@ testAlgorithm file = do
     hspec $ describe description $
         forM_ testCases $ \(bits, input, hash) -> do
             let bitMsg = "calculates hash on a message of " <> Haskell.show bits <> " bits"
-            it bitMsg $ toConstant (sha2Natural @algorithm @element bits input) `shouldBe` hash
+            it bitMsg $ toConstant (sha2Natural @algorithm @Vector @element bits input) `shouldBe` hash
     where
         description :: String
         description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file
 
 -- | Test the implementation of a hashing algorithm with @Zp BLS12_381_Scalar@ as base field for ByteStrings.
 --
-specSHA2Natural
+specSHA2Natural'
     :: forall (algorithm :: Symbol) element
     .  KnownSymbol algorithm
-    => SHA2N algorithm element
-    => ToConstant element Natural
+    => SHA2N algorithm Vector element
+    => ToConstant (ByteString (ResultSize algorithm) Vector element) Natural
     => IO ()
-specSHA2Natural = do
+specSHA2Natural' = do
     testFiles <- getTestFiles @algorithm
     forM_ testFiles $ testAlgorithm @algorithm @element
 
+specSHA2Natural :: IO ()
+specSHA2Natural = do
+    specSHA2Natural' @"SHA224" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA256" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA384" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA512" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA512/224" @(Zp BLS12_381_Scalar)
+    specSHA2Natural' @"SHA512/256" @(Zp BLS12_381_Scalar)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . ByteString n (ArithmeticCircuit a) -> ByteString n a
-eval (ByteString bits) = ByteString (fmap eval' bits)
+eval :: forall a n . ByteString n ArithmeticCircuit a -> Vector n a
+eval (ByteString bits) = exec bits
 
 specSHA2bs
     :: forall (n :: Natural) (algorithm :: Symbol)
     .  KnownSymbol algorithm
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) n
-    => SHA2N algorithm (Zp BLS12_381_Scalar)
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) n
+    => SHA2N algorithm Vector (Zp BLS12_381_Scalar)
     => Spec
 specSHA2bs = do
     let n = value @n
         m = 2 ^ n -! 1
     it ("calculates " <> symbolVal (Proxy @algorithm) <> " of a " <> Haskell.show n <> "-bit bytestring") $ do
         x <- toss m
-        let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @n $ fromConstant x
-            hashZP = sha2Natural @algorithm @(Zp BLS12_381_Scalar) n x
+        let hashAC = sha2 @algorithm @ArithmeticCircuit @(Zp BLS12_381_Scalar) @n $ fromConstant x
+            ByteString hashZP = sha2Natural @algorithm @Vector @(Zp BLS12_381_Scalar) n x
         pure $ eval @(Zp BLS12_381_Scalar) @(ResultSize algorithm) hashAC === hashZP
 
 
 -- | Test the implementation of a hashing algorithm with @ArithmeticCircuit (Zp BLS12_381_Scalar)@ as base field for ByteStrings.
 --
-specSHA2
+specSHA2'
     :: forall (algorithm :: Symbol)
     .  KnownSymbol algorithm
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 1
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 2
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 3
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 4
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 10
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 63
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 64
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 900
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 1900
-    => SHA2N algorithm (Zp BLS12_381_Scalar)
+    => SHA2N algorithm Vector (Zp BLS12_381_Scalar)
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 1
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 2
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 3
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 4
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 10
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 63
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 64
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 900
+    => SHA2 algorithm ArithmeticCircuit (Zp BLS12_381_Scalar) 1900
     => IO ()
-specSHA2 = hspec $ do
+specSHA2' = hspec $ do
     specSHA2bs @1    @algorithm
     specSHA2bs @2    @algorithm
     specSHA2bs @3    @algorithm
@@ -167,3 +178,12 @@ specSHA2 = hspec $ do
     specSHA2bs @64   @algorithm
     specSHA2bs @900  @algorithm
     specSHA2bs @1900 @algorithm
+
+specSHA2 :: IO ()
+specSHA2 = do
+    specSHA2' @"SHA224"
+    specSHA2' @"SHA256"
+    specSHA2' @"SHA384"
+    specSHA2' @"SHA512"
+    specSHA2' @"SHA512/224"
+    specSHA2' @"SHA512/256"

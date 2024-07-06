@@ -14,14 +14,14 @@ import           ZkFold.Symbolic.Cardano.UPLC.Builtins
 import           ZkFold.Symbolic.Cardano.UPLC.Inference
 import           ZkFold.Symbolic.Cardano.UPLC.Term
 import           ZkFold.Symbolic.Cardano.UPLC.Type
-import           ZkFold.Symbolic.Compiler               (Arithmetic, Arithmetizable (..), SomeArithmetizable (..),
+import           ZkFold.Symbolic.Compiler               (Arithmetizable (..), SomeArithmetizable (..),
                                                          SymbolicData (..))
 
 -- TODO: we need to figure out what to do with error terms
 
 data ArgList name a where
     ArgListEmpty :: ArgList name a
-    ArgListCons  :: (Typeable t, SymbolicData a t) => (name, t) -> ArgList name a -> ArgList name a
+    ArgListCons  :: (Typeable t, SymbolicData a t, Arithmetizable a t) => (name, t) -> ArgList name a -> ArgList name a
 
 class FromUPLC name fun a where
     fromUPLC :: ArgList name a -> Term name fun a -> SomeArithmetizable a
@@ -65,11 +65,11 @@ instance forall name fun (a :: Type) . (Eq name, Typeable name, Typeable fun, Eq
     fromUPLC _ (Builtin b)  = builtinFunctionRep b
     fromUPLC _ Error        = error "fromUPLC: Error"
 
+-- TODO: No idea how to define type-level input size here
+{--
 instance forall name (a :: Type) . (Typeable name, Eq name, Eq BuiltinFunctions, Typeable a, Arithmetic a)
         => Arithmetizable a (Term name BuiltinFunctions a) where
+
     arithmetize term = case fromUPLC @name @_ @a ArgListEmpty term of
         SomeArithmetizable t -> arithmetize t
-
-    inputSize = error "inputSize Term: not implemented"
-
-    outputSize = error "outputSize Term: not implemented"
+--}

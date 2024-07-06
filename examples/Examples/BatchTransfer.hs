@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module Examples.BatchTransfer (exampleBatchTransfer) where
 
@@ -16,4 +17,4 @@ exampleBatchTransfer = do
 
     putStrLn "\nExample: Batch Transfer smart contract\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file (batchTransfer @(ArithmeticCircuit (Zp BLS12_381_Scalar)))
+    compileIO @(Zp BLS12_381_Scalar) file (batchTransfer @ArithmeticCircuit  @(Zp BLS12_381_Scalar))

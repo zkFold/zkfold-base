@@ -398,6 +398,7 @@ class DiscreteField' a => TrichotomyField a where
 --------------------------------------------------------------------------------
 
 {- | Class of semirings where a binary expansion of elements can be computed.
+The methods store binary expansion of @a@ as objects of type @b@.
 Note: numbers should convert to Little-endian bit representation.
 
 The following should hold:
@@ -406,12 +407,15 @@ The following should hold:
 * @fromBinary xs == foldr (\x y -> x + y + y) zero xs@
 -}
 class Semiring a => BinaryExpansion a where
-    binaryExpansion :: a -> [a]
+    type Bits a :: Type
 
-    fromBinary :: [a] -> a
+    binaryExpansion :: a -> Bits a
+
+    fromBinary :: Bits a -> a
+    default fromBinary :: Bits a ~ [a] => Bits a -> a
     fromBinary = foldr (\x y -> x + y + y) zero
 
-padBits :: forall a . BinaryExpansion a => Natural -> [a] -> [a]
+padBits :: forall a . AdditiveMonoid a => Natural -> [a] -> [a]
 padBits n xs = xs ++ replicate (n -! length xs) zero
 
 castBits :: (Semiring a, Eq a, Semiring b) => [a] -> [b]
@@ -462,6 +466,7 @@ instance EuclideanDomain Natural where
     divMod = Haskell.divMod
 
 instance BinaryExpansion Natural where
+    type Bits Natural = [Natural]
     binaryExpansion 0 = []
     binaryExpansion x = (x `mod` 2) : binaryExpansion (x `div` 2)
 
@@ -539,6 +544,8 @@ instance FromConstant Integer Bool where
 instance Ring Bool
 
 instance BinaryExpansion Bool where
+    type Bits Bool = [Bool]
+
     binaryExpansion = (:[])
 
     fromBinary []  = False

@@ -123,6 +123,7 @@ instance Prime p => Field (Zp p) where
               in bool (rootOfUnity' g') x' (x' ^ (n `Haskell.div` 2) /= one)
 
 instance Prime p => BinaryExpansion (Zp p) where
+    type Bits (Zp p) = [Zp p]
     binaryExpansion = map (Zp . fromConstant) . binaryExpansion . fromZp
 
 instance Prime p => DiscreteField' (Zp p)
@@ -182,7 +183,7 @@ class IrreduciblePoly f (e :: Symbol) | e -> f where
     irreduciblePoly :: Poly f
 
 data Ext2 f (e :: Symbol) = Ext2 f f
-    deriving (Eq, Show)
+    deriving (Eq, Ord, Show)
 
 instance (KnownNat (Order (Ext2 f e)), KnownNat (NumberOfBits (Ext2 f e))) => Finite (Ext2 f e) where
     type Order (Ext2 f e) = Order f ^ 2
