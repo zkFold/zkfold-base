@@ -122,7 +122,8 @@ instance Prime p => Field (Zp p) where
                   x' = x ^ ((value @p -! 1) `Haskell.div` n)
               in bool (rootOfUnity' g') x' (x' ^ (n `Haskell.div` 2) /= one)
 
-instance Prime p => BinaryExpansion (Zp p) [Zp p] where
+instance Prime p => BinaryExpansion (Zp p) where
+    type Bits (Zp p) = [Zp p]
     binaryExpansion = map (Zp . fromConstant) . binaryExpansion . fromZp
 
 instance Prime p => DiscreteField' (Zp p)

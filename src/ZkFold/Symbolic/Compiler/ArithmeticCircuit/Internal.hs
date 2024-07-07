@@ -122,7 +122,7 @@ joinCircuits r1 r2 =
     ArithmeticCircuit
         {
             acCircuit = acCircuit r1 <> acCircuit r2
-        ,   acOutput = (acOutput r1 `V.append` acOutput r2)
+        ,   acOutput = acOutput r1 `V.append` acOutput r2
         }
 
 concatCircuits :: (Eq a, MultiplicativeMonoid a) => Vector n (ArithmeticCircuit m a) -> ArithmeticCircuit (n * m) a
@@ -142,7 +142,7 @@ type VarField = Zp BLS12_381_Scalar
 toField :: Arithmetic a => a -> VarField
 toField = toZp . fromConstant . fromBinary @Natural . castBits . binaryExpansion
 
-type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a [a])
+type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a, Bits a ~ [a])
 
 -- TODO: Remove the hardcoded constant.
 toVar :: forall a . Arithmetic a => [Natural] -> Constraint a -> Natural

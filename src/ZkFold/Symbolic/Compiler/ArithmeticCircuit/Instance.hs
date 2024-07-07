@@ -117,7 +117,8 @@ instance (Arithmetic a, KnownNat n) => Field (ArithmeticCircuit n a) where
 --
 -- Ideally, we want to return another ArithmeticCircuit with a number of outputs corresponding to the number of bits.
 -- This does not align well with the type of @binaryExpansion@
-instance (Arithmetic a, bits ~ NumberOfBits a) => BinaryExpansion (ArithmeticCircuit 1 a) (ArithmeticCircuit bits a) where
+instance Arithmetic a => BinaryExpansion (ArithmeticCircuit 1 a) where
+    type Bits (ArithmeticCircuit 1 a) = ArithmeticCircuit (NumberOfBits a) a
     binaryExpansion r = circuitN $ do
         output <- runCircuit r
         bits <- expansion (numberOfBits @a) . V.item $ output

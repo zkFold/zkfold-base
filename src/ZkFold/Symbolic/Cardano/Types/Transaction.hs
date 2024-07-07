@@ -10,20 +10,35 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
 import           ZkFold.Symbolic.Cardano.Types.Output (Output)
-import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
+import           ZkFold.Symbolic.Cardano.Types.Value  (SingleAsset, Value)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
+import qualified ZkFold.Symbolic.Data.FieldElement    as FE
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Data.UTCTime
 
-newtype Transaction inputs rinputs outputs tokens datum b a = Transaction
+newtype Transaction inputs rinputs outputs tokens mint datum b a = Transaction
     ( Vector rinputs (Input tokens datum b a)
     , (Vector inputs (Input tokens datum b a)
     , (Vector outputs (Output tokens datum b a)
-    , (Value 1 b a
+    , (Value mint b a
     , (UTCTime b a, UTCTime b a)
     ))))
+
+deriving instance
+    ( Arithmetic a
+    , KnownNat (FE.TypeSize a Vector (UTCTime Vector a))
+    , KnownNat (FE.TypeSize a Vector (Value tokens Vector a))
+    , KnownNat (FE.TypeSize a Vector (Output tokens datum Vector a))
+    , KnownNat (FE.TypeSize a Vector (Vector outputs (Output tokens datum Vector a)))
+    , KnownNat (FE.TypeSize a Vector (Input tokens datum Vector a))
+    , KnownNat (FE.TypeSize a Vector (Vector inputs (Input tokens datum Vector a)))
+    , KnownNat (FE.TypeSize a Vector (Vector rinputs (Input tokens datum Vector a)))
+    , KnownNat (TypeSize a (Value mint ArithmeticCircuit a))
+    , KnownNat (256 + NumberOfRegisters a 32)
+    , KnownNat (FE.TypeSize a Vector (ByteString 224 Vector a, (ByteString 256 Vector a, UInt 64 Vector a)))
+    ) => FE.FieldElementData a Vector (Transaction inputs rinputs outputs tokens mint datum Vector a)
 
 -- TODO: Think how to prettify this abomination
 deriving instance
@@ -35,18 +50,19 @@ deriving instance
     , KnownNat (TypeSize a (Input tokens datum ArithmeticCircuit a))
     , KnownNat (TypeSize a (Vector inputs (Input tokens datum ArithmeticCircuit a)))
     , KnownNat (TypeSize a (Vector rinputs (Input tokens datum ArithmeticCircuit a)))
+    , KnownNat (TypeSize a (SingleAsset ArithmeticCircuit a))
+    , KnownNat (TypeSize a (Value mint ArithmeticCircuit a))
     , KnownNat (256 + NumberOfRegisters a 32)
-    , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
-    ) => SymbolicData a (Transaction inputs rinputs outputs tokens datum ArithmeticCircuit a)
+    ) => SymbolicData a (Transaction inputs rinputs outputs tokens mint datum ArithmeticCircuit a)
 
-txRefInputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector rinputs (Input tokens datum b a)
+txRefInputs :: Transaction inputs rinputs outputs tokens mint datum b a -> Vector rinputs (Input tokens datum b a)
 txRefInputs (Transaction (ris, _)) = ris
 
-txInputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector inputs (Input tokens datum b a)
+txInputs :: Transaction inputs rinputs outputs tokens mint datum b a -> Vector inputs (Input tokens datum b a)
 txInputs (Transaction (_, (is, _))) = is
 
-txOutputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector outputs (Output tokens datum b a)
+txOutputs :: Transaction inputs rinputs outputs tokens mint datum b a -> Vector outputs (Output tokens datum b a)
 txOutputs (Transaction (_, (_, (os, _)))) = os
 
-txMint :: Transaction inputs rinputs outputs tokens datum b a -> Value 1 b a
+txMint :: Transaction inputs rinputs outputs tokens mint datum b a -> Value mint b a
 txMint (Transaction (_, (_, (_, (mint, _))))) = mint

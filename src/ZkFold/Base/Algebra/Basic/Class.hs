@@ -406,14 +406,16 @@ The following should hold:
 * @fromBinary . binaryExpansion == id@
 * @fromBinary xs == foldr (\x y -> x + y + y) zero xs@
 -}
-class Semiring a => BinaryExpansion a b | a -> b, b -> a where
-    binaryExpansion :: a -> b
+class Semiring a => BinaryExpansion a where
+    type Bits a :: Type
 
-    fromBinary :: b -> a
-    default fromBinary :: b ~ [a] => b -> a
+    binaryExpansion :: a -> Bits a
+
+    fromBinary :: Bits a -> a
+    default fromBinary :: Bits a ~ [a] => Bits a -> a
     fromBinary = foldr (\x y -> x + y + y) zero
 
-padBits :: forall a . BinaryExpansion a [a] => Natural -> [a] -> [a]
+padBits :: forall a . AdditiveMonoid a => Natural -> [a] -> [a]
 padBits n xs = xs ++ replicate (n -! length xs) zero
 
 castBits :: (Semiring a, Eq a, Semiring b) => [a] -> [b]
@@ -463,7 +465,8 @@ instance Semiring Natural
 instance EuclideanDomain Natural where
     divMod = Haskell.divMod
 
-instance BinaryExpansion Natural [Natural] where
+instance BinaryExpansion Natural where
+    type Bits Natural = [Natural]
     binaryExpansion 0 = []
     binaryExpansion x = (x `mod` 2) : binaryExpansion (x `div` 2)
 
@@ -540,7 +543,9 @@ instance FromConstant Integer Bool where
 
 instance Ring Bool
 
-instance BinaryExpansion Bool [Bool] where
+instance BinaryExpansion Bool where
+    type Bits Bool = [Bool]
+
     binaryExpansion = (:[])
 
     fromBinary []  = False
