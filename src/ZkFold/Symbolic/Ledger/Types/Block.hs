@@ -6,9 +6,9 @@ import           ZkFold.Symbolic.Ledger.Types.Contract    (ContractId)
 import           ZkFold.Symbolic.Ledger.Types.Hash        (Hash)
 import           ZkFold.Symbolic.Ledger.Types.Transaction (Transaction)
 
-type BlockId a = Hash a
+type BlockId backend = Hash backend
 
-data Block uint utc a = Block
-    { blockTransactions :: [(ContractId a, Transaction uint utc a)]
-    , blockReference    :: BlockId a
+data Block backend = Block
+    { blockTransactions :: [(ContractId backend, Transaction backend)]
+    , blockReference    :: BlockId backend
     }

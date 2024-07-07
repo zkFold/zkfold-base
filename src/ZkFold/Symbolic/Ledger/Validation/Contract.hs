@@ -5,8 +5,8 @@ import           Prelude                      hiding (Bool, Eq, length, splitAt,
 import           ZkFold.Symbolic.Ledger.Types
 
 contractStateTransition ::
-    Hashable a (ContractState a, TransactionId a)
-    => ContractState a
-    -> TransactionId a
-    -> ContractState a
+    Hashable backend (ContractState backend, TransactionId backend)
+    => ContractState backend
+    -> TransactionId backend
+    -> ContractState backend
 contractStateTransition s i = hash (s, i)

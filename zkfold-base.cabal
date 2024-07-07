@@ -168,6 +168,7 @@ library
       ZkFold.Symbolic.GroebnerBasis.Types
       ZkFold.Symbolic.Ledger.Types
       ZkFold.Symbolic.Ledger.Types.Address
+      ZkFold.Symbolic.Ledger.Types.Basic
       ZkFold.Symbolic.Ledger.Types.Block
       ZkFold.Symbolic.Ledger.Types.Contract
       ZkFold.Symbolic.Ledger.Types.Hash

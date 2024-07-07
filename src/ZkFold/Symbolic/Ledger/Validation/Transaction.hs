@@ -2,30 +2,30 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction where
 
 import           Prelude                         hiding (Bool, Eq, length, splitAt, (*), (+), (==), (&&))
 
-import           ZkFold.Symbolic.Data.Bool       (Bool, BoolType (..))
+import           ZkFold.Symbolic.Data.Bool       (BoolType (..))
 import           ZkFold.Symbolic.Ledger.Types
 
-type TransactionInputsWitness a = a
+data TransactionInputsWitness backend
 
 transactionInputsAreValid ::
-       BlockId a
-    -> Transaction uint utc a
-    -> TransactionInputsWitness a
-    -> Bool a
+       BlockId backend
+    -> Transaction backend
+    -> TransactionInputsWitness backend
+    -> Bool backend
 transactionInputsAreValid _ _ _ = undefined
 
-transactionBalanceIsCorrect :: Transaction uint utc a -> Bool a
+transactionBalanceIsCorrect :: Transaction backend -> Bool a
 transactionBalanceIsCorrect _ = undefined
 
-transactionContractsSucceed :: Transaction uint utc a -> Bool a
+transactionContractsSucceed :: Transaction backend -> Bool a
 transactionContractsSucceed _ = undefined
 
 transactionIsValid ::
-       BoolType (Bool a)
-    => BlockId a
-    -> Transaction uint utc a
-    -> TransactionInputsWitness a
-    -> Bool a
+       BoolType (Bool backend)
+    => BlockId backend
+    -> Transaction backend
+    -> TransactionInputsWitness backend
+    -> Bool backend
 transactionIsValid s t w =
        transactionInputsAreValid s t w
     && transactionBalanceIsCorrect t
