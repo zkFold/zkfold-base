@@ -5,8 +5,8 @@ import           Prelude                              hiding (Bool, Eq, length, 
 import           ZkFold.Symbolic.Ledger.Types.Value   (Value)
 import           ZkFold.Symbolic.Ledger.Types.Address (Address, Datum)
 
-data Output a = Output
+data Output uint a = Output
         { txoAddress  :: Address a
-        , txoValue    :: Value a
+        , txoValue    :: Value uint a
         , txoDatum    :: Datum a
 }

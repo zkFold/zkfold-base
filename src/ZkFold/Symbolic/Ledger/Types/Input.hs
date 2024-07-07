@@ -5,7 +5,7 @@ import           Prelude                                hiding (Bool, Eq, length
 import           ZkFold.Symbolic.Ledger.Types.Output    (Output)
 import           ZkFold.Symbolic.Ledger.Types.OutputRef (OutputRef)
 
-data Input a = Input
-    { txiOutputRef :: OutputRef a
-    , txiOutput    :: Output a
+data Input uint a = Input
+    { txiOutputRef :: OutputRef uint a
+    , txiOutput    :: Output uint a
     }

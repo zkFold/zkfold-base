@@ -1,13 +1,13 @@
 module ZkFold.Symbolic.Ledger.Types.OutputRef where
 
-import           Prelude                   hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Data.UInt (UInt)
+import           ZkFold.Symbolic.Ledger.Types.Hash (Hash)
 
-type TransactionId a = a
-type OutputIndex a   = UInt 32 a
+type TransactionId a    = Hash a
+type OutputIndex uint a = uint a
 
-data OutputRef a = OutputRef
+data OutputRef uint a = OutputRef
     { refId  :: TransactionId a
-    , refIdx :: OutputIndex a
+    , refIdx :: OutputIndex uint a
     }

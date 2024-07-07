@@ -2,8 +2,7 @@ module ZkFold.Symbolic.Ledger.Types.Hash where
 
 import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
 
-class LedgerHash x y where
-  ledgerHash :: x -> y
+data Hash a
 
-instance LedgerHash [a] a where
-  ledgerHash = undefined
+class Hashable a x where
+  hash :: x -> Hash a

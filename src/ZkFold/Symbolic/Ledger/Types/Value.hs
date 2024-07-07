@@ -2,12 +2,10 @@ module ZkFold.Symbolic.Ledger.Types.Value where
 
 import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Ledger.Types.Contract (Contract)
+import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
 
-type Token a = [a]
+data Token a
 
-data Policy a where
-    Policy :: Contract tx (Token a) w a -> w -> Policy a
+type MintingPolicy tx w a = Contract tx (Token a) w a
 
-data Value a = Value (Policy a) (Token a) (UInt 64 a)
+data Value uint a = Value (ContractId a) (Token a) (uint a)
