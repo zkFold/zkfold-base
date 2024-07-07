@@ -27,7 +27,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         apply,
         forceZero,
         joinCircuits,
-        concatCircuits
+        concatCircuits,
+        mempty
     ) where
 
 import           Control.DeepSeq                              (NFData, force)

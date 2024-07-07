@@ -14,23 +14,21 @@ import           Data.Map                                                  hidin
                                                                             null, splitAt, take)
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
-import           GHC.Num                                                   (integerToNatural)
+import           GHC.Num                                                   (integerToInt)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, const, id, mempty, pure, return,
+import           Prelude                                                   (Integer, const, id, pure, return,
                                                                             show, type (~), ($), (++), (.), (<$>),
-                                                                            (>>=))
+                                                                            (>>=), otherwise, zip, fmap, max, toInteger)
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
-                                                                            frequency, oneof)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (length)
+import           ZkFold.Prelude                                            (length, chooseNatural)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, foldCircuit,
-                                                                            horner, invertC, isZeroC)
+                                                                            horner, invertC, isZeroC, embedVarIndex, embedVarIndexV)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
@@ -38,6 +36,11 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
+import ZkFold.Base.Algebra.Basic.Field (Zp)
+import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import qualified Data.Map as Map
+import GHC.Natural (naturalToInteger)
+import Test.QuickCheck (Arbitrary (arbitrary), Gen, frequency, oneof, vector)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -167,38 +170,33 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
 
 -- TODO: make a proper implementation of Arbitrary
 instance (Arithmetic a, KnownNat n, Arbitrary a) => Arbitrary (ArithmeticCircuit n a) where
-    arbitrary = (ArithmeticCircuit { acCircuit = mempty {acInput = [ 1 ]}, acOutput = pure 1} * ) <$> arbitrary' 0 0 (Haskell.toInteger $ value @n)
+    arbitrary = (ArithmeticCircuit { acCircuit = mempty {acInput = [ 1 ]}, acOutput = pure 1} * ) <$> arbitrary' 0 0 (value @n)
 
-arbitrary' :: forall a n . (Arithmetic a, KnownNat n, Arbitrary a, FromConstant a a) => Integer -> Integer ->  Integer -> Gen (ArithmeticCircuit n a)
+arbitrary' :: forall a n . (Arithmetic a, KnownNat n, Arbitrary a, FromConstant a a) => Natural -> Natural ->  Natural -> Gen (ArithmeticCircuit n a)
 arbitrary' inp out outMax
-    | out Haskell.== outMax = return $ ArithmeticCircuit { acCircuit = mempty, acOutput = pure $ integerToNatural outMax}
-    | Haskell.otherwise  = let
+    | out Haskell.== outMax = return $ ArithmeticCircuit { acCircuit = mempty, acOutput = pure outMax}
+    | otherwise  = let
         arbVar = do
-            arbInp <- integerToNatural <$> chooseInteger (0, inp)
-            arbOut <- integerToNatural <$> chooseInteger (0, out)
-            return ArithmeticCircuit { acCircuit   = mempty {acInput = [ arbInp ]}, acOutput    = pure arbOut}
-        newInp = ArithmeticCircuit {
-            acCircuit   = mempty {
-                acInput = [integerToNatural $ inp + 1]},
-            acOutput    = pure . integerToNatural $ 1}
-        newOut = ArithmeticCircuit {
-            acCircuit   = mempty,
-            acOutput    = pure . integerToNatural $ out + 1}
-        constant = fromConstant <$> ( arbitrary :: Gen a)
+            arbInp <- chooseNatural (0 , inp)
+            arbOut <- chooseNatural (0 , out)
+            return $ (embedVarIndex arbInp) { acOutput    = pure arbOut}
+        newInp = embedVarIndexV $ inp + 1
+        newOut = withOutputs mempty (pure $ out + 1)
+        constant = embedV . V.unsafeToVector <$> vector (integerToInt . toInteger $ value @n) 
 
         newVars = [
             newInp
             , newOut
             ]
 
-        la = frequency $ (1, arbVar) : (1, constant) : Haskell.fmap ((3, ) . return) newVars
+        la = frequency $ (1, arbVar) : (1, constant) : fmap ((3, ) . return) newVars
 
         in do
             l <- la
-            let inp' =  Haskell.max (Haskell.toInteger . Haskell.length $ inputVariables l) inp
-            let out' =  Haskell.max (Haskell.toInteger . Haskell.length $ acOutput l) out
+            let inp' =  max (length $ inputVariables l) inp
+            let out' =  max (length $ acOutput l) out
             r <- arbitrary' inp' out' outMax
-            oneof $ Haskell.fmap return [
+            oneof $ fmap return [
                 l + r
                 , l * r
                 , l - r
@@ -245,3 +243,23 @@ instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
             let acRNG = mkStdGen 0
                 acCircuit = Circuit{..}
             pure ArithmeticCircuit{..}
+
+type F = Zp BLS12_381_Scalar
+data (Arithmetic a, KnownNat n) => ArithmeticCircuitTest n a = ArithmeticCircuitTest
+    {
+        arithmeticCircuit :: ArithmeticCircuit n a
+        , witnessInput    :: Map.Map Natural F
+    }
+
+instance (Arithmetic a, KnownNat n, Arbitrary a) => Arbitrary (ArithmeticCircuitTest n a) where
+    arbitrary :: Gen (ArithmeticCircuitTest n a)
+    arbitrary = do
+        ac <- arbitrary
+        let keysAC = inputVariables ac
+        let len = length keysAC
+        values <- vector (integerToInt $ naturalToInteger len)
+        let wi = fromList $ zip keysAC values
+        return ArithmeticCircuitTest {
+            arithmeticCircuit = ac
+            , witnessInput = wi
+            }

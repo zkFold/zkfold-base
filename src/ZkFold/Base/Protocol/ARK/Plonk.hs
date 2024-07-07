@@ -2,6 +2,8 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
+{-# OPTIONS_GHC -Wno-unused-matches #-}
 
 module ZkFold.Base.Protocol.ARK.Plonk where
 
@@ -9,13 +11,12 @@ import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
-import           GHC.Natural                                         (naturalToInteger)
-import           GHC.Num                                             (integerToInt)
+import           GHC.Num                                             (integerToNatural)
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
+import           Prelude                                             hiding (length, Num (..), div, drop, replicate,
                                                                       sum, take, (!!), (/), (^))
-import qualified Prelude                                             as P
-import           Test.QuickCheck                                     (Arbitrary (..), Gen, chooseInteger, vector)
+import qualified Prelude                                             as P hiding (length)
+import           Test.QuickCheck                                     (Arbitrary (..), Gen, chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (Zp)
@@ -29,9 +30,10 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                                      ((!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..),
+import           ZkFold.Prelude                                      ((!), length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..),
                                                                       inputVariables)
+import qualified Data.Set                                            as S
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
 
@@ -47,12 +49,23 @@ type G2 = Point BLS12_381_G2
 data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (ArithmeticCircuit 1 F) F
     deriving (Show)
 -- TODO (Issue #25): make a proper implementation of Arbitrary
-instance (KnownNat d) => Arbitrary (Plonk d n t) where
+instance (KnownNat d, KnownNat n) => Arbitrary (Plonk d n t) where
     arbitrary = do
-        let nP = ceiling @Double . logBase 2.0 . fromIntegral $ value @d
-        let (omega, k1, k2) = getParams nP
         ac <- arbitrary
-        Plonk omega k1 k2 (Vector [1..nP]) ac <$> arbitrary
+        let fullInp = length . inputVariables $ ac
+        vecPubInp <- genSubset (return []) (value @n) fullInp
+        let (omega, k1, k2) = getParams $ value @n
+        Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        where 
+            genSubset :: Gen [Natural] -> Natural -> Natural -> Gen [Natural]
+            genSubset arr maxPub maxInp = do
+                len <- length <$> arr 
+                case maxPub == len of
+                    true -> arr
+                    _    -> do
+                        newNat <- integerToNatural <$> chooseInteger (0, toInteger maxInp)
+                        let arr' = toList . S.fromList . (newNat : ) <$> arr
+                        genSubset arr' maxPub maxInp
 
 type PlonkPermutationSize d = 3 * d
 
@@ -118,35 +131,8 @@ newtype PlonkWitnessMap d = PlonkWitnessMap (Map.Map Natural F -> (PolyVec F d, 
 
 newtype PlonkWitnessInput = PlonkWitnessInput (Map.Map Natural F)
 -- TODO (Issue #25): make a proper implementation of Show
-instance Arbitrary PlonkWitnessInput where
-    arbitrary = do
-        keysLen <- ceiling @Double . logBase 2.0 . fromIntegral <$> chooseInteger (0, 100)
-        let keys = [0..keysLen]
-        values <- vector (integerToInt $ naturalToInteger keysLen) :: Gen [F]
-        let wi = Map.fromList $ zip keys values
-        return (PlonkWitnessInput wi)
-
 instance Show PlonkWitnessInput where
     show (PlonkWitnessInput m) = "Witness Input: " ++ show m
-
-data (Arithmetic a, KnownNat n) => ACandWitness n a = ACandWitness
-    {
-        arithmeticCircuit :: ArithmeticCircuit n a
-        , witnessInput    :: PlonkWitnessInput
-    }
-
-instance (Arithmetic a, KnownNat n, Arbitrary a) => Arbitrary (ACandWitness n a) where
-    arbitrary :: Gen (ACandWitness n a)
-    arbitrary = do
-        ac <- arbitrary
-        let keys = inputVariables ac
-        let len = last keys
-        values <- vector (integerToInt $ naturalToInteger len)
-        let wi = fromList $ zip keys values
-        return ACandWitness {
-            arithmeticCircuit = ac
-            , witnessInput = PlonkWitnessInput wi
-            }
 
 data PlonkProverSecret = PlonkProverSecret F F F F F F F F F F F
     deriving (Show)

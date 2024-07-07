@@ -14,7 +14,9 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     invertC,
     joinCircuits,
     splitCircuit,
-    foldCircuit
+    foldCircuit,
+    embedVarIndex,
+    embedVarIndexV
 ) where
 
 import           Control.Monad                                             (replicateM)
@@ -31,7 +33,7 @@ import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (splitAt, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..),
-                                                                            joinCircuits)
+                                                                            joinCircuits, mempty, acInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool)
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
@@ -119,3 +121,9 @@ runInvert r = do
     where
       isZero :: forall a . (Ring a, Eq (Bool a) a, Conditional (Bool a) a) => a -> a
       isZero x = bool @(Bool a) zero one (x == zero)
+
+embedVarIndex :: Arithmetic a => Natural -> ArithmeticCircuit 1 a
+embedVarIndex n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure 1}
+
+embedVarIndexV :: (Arithmetic a, KnownNat n) => Natural -> ArithmeticCircuit n a
+embedVarIndexV n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure 1}
