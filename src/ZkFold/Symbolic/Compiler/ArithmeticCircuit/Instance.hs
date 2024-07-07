@@ -12,23 +12,30 @@ import           Control.Monad                                             (fold
 import           Data.Aeson                                                hiding (Bool)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map,
                                                                             null, splitAt, take)
+import qualified Data.Map                                                  as Map
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
+import           GHC.Natural                                               (naturalToInteger)
 import           GHC.Num                                                   (integerToInt)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, const, id, pure, return,
-                                                                            show, type (~), ($), (++), (.), (<$>),
-                                                                            (>>=), otherwise, zip, fmap, max, toInteger)
+import           Prelude                                                   (Integer, const, fmap, id, max, otherwise,
+                                                                            pure, return, show, toInteger, type (~),
+                                                                            zip, ($), (++), (.), (<$>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
+import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, frequency,
+                                                                            oneof, vector)
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381               (BLS12_381_Scalar)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (length, chooseNatural)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, foldCircuit,
-                                                                            horner, invertC, isZeroC, embedVarIndex, embedVarIndexV)
+import           ZkFold.Prelude                                            (chooseNatural, length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, embedVarIndex,
+                                                                            embedVarIndexV, expansion, foldCircuit,
+                                                                            horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
@@ -36,11 +43,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import qualified Data.Map as Map
-import GHC.Natural (naturalToInteger)
-import Test.QuickCheck (Arbitrary (arbitrary), Gen, frequency, oneof, vector)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -183,7 +185,7 @@ arbitrary' inp out outMax
             return $ (embedVarIndex arbInp) { acOutput    = pure arbOut}
         newInp = embedVarIndexV $ inp + 1
         newOut = withOutputs mempty (pure $ out + 1)
-        constant = embedV . V.unsafeToVector <$> vector (integerToInt . toInteger $ value @n) 
+        constant = embedV . V.unsafeToVector <$> vector (integerToInt . toInteger $ value @n)
 
         newVars = [
             newInp

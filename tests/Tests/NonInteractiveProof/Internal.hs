@@ -3,14 +3,13 @@
 
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
-import           Prelude                                  hiding (Fractional (..), Num (..), length)
-import           Test.QuickCheck                          (Arbitrary (arbitrary), Gen)
+import           Data.ByteString                                     (ByteString)
+import           Prelude                                             hiding (Fractional (..), Num (..), length)
+import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen)
 
-import           ZkFold.Base.Protocol.NonInteractiveProof (NonInteractiveProof (..))
-import ZkFold.Base.Protocol.ARK.Plonk
-    ( Plonk, PlonkWitnessInput(..) )
-import Data.ByteString (ByteString)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (witnessInput), F)
+import           ZkFold.Base.Protocol.ARK.Plonk                      (Plonk, PlonkWitnessInput (..))
+import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInteractiveProof (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (witnessInput), F)
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
@@ -25,7 +24,7 @@ instance {-# INCOHERENT #-}
     Arbitrary (NonInteractiveProofTestData a) where
     arbitrary = TestData <$> arbitrary <*> arbitrary
 
-instance {-# OVERLAPPING #-} 
+instance {-# OVERLAPPING #-}
     Arbitrary (NonInteractiveProofTestData (PlonkBS 1) ) where
     arbitrary = TestData <$> arbitrary <*> arbitraryW where
         arbitraryW = do
