@@ -15,6 +15,7 @@ module ZkFold.Symbolic.Data.ByteString
     , ToWords (..)
     , Concat (..)
     , Truncate (..)
+    , emptyByteString
     ) where
 
 import           Control.DeepSeq                                           (NFData)
@@ -89,6 +90,8 @@ instance
         . Haskell.toInteger
         <$> Bytes.unpack bytes
 
+emptyByteString :: forall a b . FromConstant Natural (ByteString 0 b a) => ByteString 0 b a
+emptyByteString = fromConstant @Natural 0
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --

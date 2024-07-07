@@ -5,8 +5,10 @@
 
 module ZkFold.Symbolic.Cardano.Types.Output where
 
+import           GHC.Natural                           (Natural)
 import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
 
+import           ZkFold.Base.Algebra.Basic.Class       (FromConstant)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Address (Address)
@@ -14,12 +16,19 @@ import           ZkFold.Symbolic.Cardano.Types.Value   (Value)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool             (Bool)
 import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Combinators      (Extend (..))
 import           ZkFold.Symbolic.Data.Eq               (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import qualified ZkFold.Symbolic.Data.FieldElement     as FE
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 
 type DatumHash b a = ByteString 256 b a
+
+emptyDatumHash :: forall a b .
+    ( FromConstant Natural (ByteString 0 b a)
+    , Extend (ByteString 0 b a) (DatumHash b a)
+    ) => DatumHash b a
+emptyDatumHash = extend $ emptyByteString @a @b
 
 newtype Output tokens datum b a = Output (Address b a, (Value tokens b a, DatumHash b a))
 
