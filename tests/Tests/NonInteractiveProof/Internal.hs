@@ -3,17 +3,17 @@
 
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
-import           Data.ByteString                                     (ByteString)
-import           Prelude                                             hiding (Fractional (..), Num (..), length)
-import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, vector)
+import           Data.ByteString                            (ByteString)
+import           Data.Map                                   (fromList)
+import           GHC.Natural                                (naturalToInteger)
+import           GHC.Num                                    (integerToInt)
+import           Prelude                                    hiding (Fractional (..), Num (..), length)
+import           Test.QuickCheck                            (Arbitrary (arbitrary), Gen, vector)
 
-import           ZkFold.Base.Protocol.ARK.Plonk                      (Plonk (Plonk), PlonkWitnessInput (..))
-import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInteractiveProof (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (inputVariables)
-import           GHC.Natural                                               (naturalToInteger)
-import           GHC.Num                                                   (integerToInt)
-import           ZkFold.Prelude                                            (length)
-import Data.Map (fromList)
+import           ZkFold.Base.Protocol.ARK.Plonk             (Plonk (Plonk), PlonkWitnessInput (..))
+import           ZkFold.Base.Protocol.NonInteractiveProof   (NonInteractiveProof (..))
+import           ZkFold.Prelude                             (length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (inputVariables)
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
