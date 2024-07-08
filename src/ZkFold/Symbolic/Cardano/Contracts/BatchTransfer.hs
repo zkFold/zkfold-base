@@ -16,7 +16,7 @@ import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.UInt                      (StrictConv(..))
+import           ZkFold.Symbolic.Data.UInt                      (StrictConv (..))
 import           ZkFold.Symbolic.Types                          (Symbolic)
 
 type Tokens = 10
