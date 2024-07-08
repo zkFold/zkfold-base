@@ -10,56 +10,48 @@ import           Prelude                               hiding (Bool, Eq, length,
 
 import           ZkFold.Base.Algebra.Basic.Class       (FromConstant)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Address (Address)
+import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Value   (Value)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool             (Bool)
-import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.ByteString       (emptyByteString)
 import           ZkFold.Symbolic.Data.Combinators      (Extend (..))
 import           ZkFold.Symbolic.Data.Eq               (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import qualified ZkFold.Symbolic.Data.FieldElement     as FE
-import           ZkFold.Symbolic.Data.UInt             (UInt)
 
-type DatumHash b a = ByteString 256 b a
+type DatumHash context = ByteString 256 context
 
-emptyDatumHash :: forall a b .
-    ( FromConstant Natural (ByteString 0 b a)
-    , Extend (ByteString 0 b a) (DatumHash b a)
-    ) => DatumHash b a
-emptyDatumHash = extend $ emptyByteString @a @b
+emptyDatumHash :: forall context .
+    ( FromConstant Natural (ByteString 0 context)
+    , Extend (ByteString 0 context) (DatumHash context)
+    ) => DatumHash context
+emptyDatumHash = extend $ emptyByteString @F @context
 
-newtype Output tokens datum b a = Output (Address b a, (Value tokens b a, DatumHash b a))
-
-deriving instance
-    ( Arithmetic a
-    , KnownNat (FE.TypeSize a Vector (Value tokens Vector a))
-    , KnownNat (FE.TypeSize a Vector (ByteString 224 Vector a, (ByteString 256 Vector a, UInt 64 Vector a)))
-    ) => FE.FieldElementData a Vector (Output tokens datum Vector a)
+newtype Output tokens datum context = Output (Address context, (Value tokens context, DatumHash context))
 
 deriving instance
-    ( Arithmetic a
-    , KnownNat (TypeSize a (Value tokens ArithmeticCircuit a))
-    , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
-    ) => SymbolicData a (Output tokens datum ArithmeticCircuit a)
+    KnownNat (FE.TypeSize F CtxEvaluation (Value tokens CtxEvaluation))
+    => FE.FieldElementData F CtxEvaluation (Output tokens datum CtxEvaluation)
 
-deriving via (Structural (Output tokens datum ArithmeticCircuit a))
+deriving instance
+    KnownNat (TypeSize F (Value tokens CtxCompilation))
+    => SymbolicData F (Output tokens datum CtxCompilation)
+
+deriving via (Structural (Output tokens datum CtxCompilation))
          instance
-            ( Arithmetic a
-            , ts ~ TypeSize a (Output tokens datum ArithmeticCircuit a)
+            ( ts ~ TypeSize F (Output tokens datum CtxCompilation)
             , 1 <= ts
             , KnownNat ts
-            , KnownNat (TypeSize a (Value tokens ArithmeticCircuit a))
-            , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
-            ) => Eq (Bool (ArithmeticCircuit 1 a)) (Output tokens datum ArithmeticCircuit a)
+            , KnownNat (TypeSize F (Value tokens CtxCompilation))
+            ) => Eq (Bool CtxCompilation) (Output tokens datum CtxCompilation)
 
 
-txoAddress :: Output tokens datum b a -> Address b a
+txoAddress :: Output tokens datum context -> Address context
 txoAddress (Output (addr, _)) = addr
 
-txoTokens :: Output tokens datum b a -> Value tokens b a
+txoTokens :: Output tokens datum context -> Value tokens context
 txoTokens (Output (_, (v, _))) = v
 
-txoDatumHash :: Output tokens datum b a -> DatumHash b a
+txoDatumHash :: Output tokens datum context -> DatumHash context
 txoDatumHash (Output (_, (_, dh))) = dh

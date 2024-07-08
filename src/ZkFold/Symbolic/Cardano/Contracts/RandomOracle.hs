@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
@@ -10,56 +11,53 @@ import           ZkFold.Base.Data.Vector                        ((!!))
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (MiMCHash, mimcHash)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Compiler.Arithmetizable        (Arithmetic)
-import           ZkFold.Symbolic.Data.Bool                      (Bool, BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
+import qualified ZkFold.Symbolic.Data.ByteString                as Symbolic
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.UInt
-
 
 type Tokens = 2
-type TxOut b a = Output Tokens () b a
-type TxIn b a  = Input Tokens () b a
-type Tx b a = Transaction 1 0 2 Tokens 1 () b a
+type TxOut context = Output Tokens () context
+type TxIn context  = Input Tokens () context
+type Tx context = Transaction 1 0 2 Tokens 1 () context
 
-hash :: forall a b x . (Arithmetic a, MiMCHash a b x) => x -> b 1 a
-hash = mimcHash @a mimcConstants zero
+hash :: forall context x . MiMCHash F context x => x -> FieldElement context
+hash = mimcHash mimcConstants zero
 
-type Sig b a =
-    ( Arithmetic a
-    , FromConstant a (b 1 a)
-    , MultiplicativeMonoid (UInt 64 b a)
-    , Eq (Bool (b 1 a)) (b 1 a)
-    , Eq (Bool (b 1 a)) (UInt 64 b a)
-    , Eq (Bool (b 1 a)) (ByteString 224 b a)
-    , Eq (Bool (b 1 a)) (ByteString 256 b a)
-    , Extend (Bits (b 1 a)) (b 256 a)
-    , Extend (ByteString 224 b a) (ByteString 256 b a)
-    , BinaryExpansion (b 1 a)
-    , MiMCHash a b (b 1 a)
-    , MiMCHash a b (OutputRef b a)
-    , MiMCHash a b (b 1 a, b 1 a))
+type Sig context =
+    ( FromConstant F (FieldElement context)
+    , MultiplicativeMonoid (UInt 64 context)
+    , Eq (Bool context) (FieldElement context)
+    , Eq (Bool context) (UInt 64 context)
+    , Eq (Bool context) (ByteString 224 context)
+    , Eq (Bool context) (ByteString 256 context)
+    , Extend (ByteString 224 context) (ByteString 256 context)
+    , Extend (AssetName context) (AssetName context)
+    , BinaryExpansion (FieldElement context)
+    , Bits (FieldElement context) ~ FieldElementBits context
+    , MiMCHash F context (FieldElement context)
+    , MiMCHash F context (OutputRef context)
+    , MiMCHash F context (FieldElement context, FieldElement context))
 
-randomOracle :: forall a b . Sig b a => a -> Tx b a -> b 1 a -> Bool (b 1 a)
+randomOracle :: forall context . Sig context => F -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =
     let -- The secret key is correct
-        conditionSecretKey = fromConstant @a @(b 1 a) c == hash @a @_ @(b 1 a) w
+        conditionSecretKey = fromConstant c == hash @context w
 
         -- Extracting information about the transaction
-        seed           = hash @a $ txiOutputRef $ txInputs tx !! 0 :: b 1 a
+        seed           = hash @context $ txiOutputRef $ txInputs tx !! 0
         Value vs       = txoTokens $ txOutputs tx !! 0
         (p, (name, n)) = vs !! 1
         policyId       = fst $ getValue (txMint tx) !! 0
 
         -- Computing the random number
-        r = hash @a (w, seed) :: b 1 a
+        r = hash @context (w, seed)
 
         -- The token's policy is correct
         conditionPolicyId  = p == policyId
 
         -- The token's name is correct
-        conditionTokenName = name == ByteString (extend @_ @(b 256 a) $ binaryExpansion r)
+        conditionTokenName = name == extend (Symbolic.ByteString $ binaryExpansion r)
 
         -- The token's quantity is correct
         conditionQuantity  = n == one
