@@ -6,8 +6,10 @@ import           ZkFold.Symbolic.Ledger.Types.Contract    (ContractId)
 import           ZkFold.Symbolic.Ledger.Types.Hash        (Hash)
 import           ZkFold.Symbolic.Ledger.Types.Transaction (Transaction)
 
+-- | Block hash.
 type BlockId context = Hash context
 
+-- | Block of transactions.
 data Block context = Block
     { blockTransactions :: [(ContractId context, Transaction context)]
     , blockReference    :: BlockId context

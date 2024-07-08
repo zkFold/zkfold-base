@@ -4,6 +4,7 @@ import           Prelude                      hiding (Bool, Eq, length, splitAt,
 
 import           ZkFold.Symbolic.Ledger.Types
 
+-- A contract state transition happens when a transaction must satisfy the contract.
 contractStateTransition ::
     Hashable context (ContractState context, TransactionId context)
     => ContractState context

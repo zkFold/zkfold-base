@@ -21,3 +21,13 @@ import           ZkFold.Symbolic.Ledger.Types.Output
 import           ZkFold.Symbolic.Ledger.Types.OutputRef
 import           ZkFold.Symbolic.Ledger.Types.Transaction
 import           ZkFold.Symbolic.Ledger.Types.Value
+
+{-
+    zkFold's ledger is a UTXO-based ledger. The architecture of the ledger is mostly similar to the Cardano ledger with some key differences:
+    
+    - Some transaction data is private and is kept off-chain by the concerned parties.
+
+    - All UTXOs are locked by contracts.
+
+    - Stake delegation and governance is implemented through contracts.
+-}

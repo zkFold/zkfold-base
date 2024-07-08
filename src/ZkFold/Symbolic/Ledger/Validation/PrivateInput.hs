@@ -5,8 +5,10 @@ import           Prelude                         hiding (Bool, Eq, length, split
 import           ZkFold.Symbolic.Data.Bool       (BoolType (..))
 import           ZkFold.Symbolic.Ledger.Types
 
+-- | Witness data that is required to prove the validity of a private transaction input.
 data PrivateInputWitness context
 
+-- | Checks if the private input existed.
 privateInputExisted ::
        BlockId context
     -> Input context
@@ -14,6 +16,7 @@ privateInputExisted ::
     -> Bool context
 privateInputExisted _ _ _ = undefined
 
+-- | Checks if the private input was not spent.
 privateInputNotSpent ::
        BlockId context
     -> Input context
@@ -21,6 +24,7 @@ privateInputNotSpent ::
     -> Bool context
 privateInputNotSpent _ _ _ = undefined
 
+-- | Checks if the private input is valid.
 privateInputIsValid ::
     BoolType (Bool context)
     => BlockId context
