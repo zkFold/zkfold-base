@@ -16,14 +16,15 @@ import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           GHC.Natural                                               (naturalToInteger)
 import           GHC.Num                                                   (integerToInt)
+import           GHC.Num.Integer                                           (integerToNatural)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, const, fmap, id, mempty,
-                                                                            pure, return, show, type (~),
-                                                                            zip, ($), (++), (.), (<$>), (>>=), Show)
+import           Prelude                                                   (Integer, Show, const, fmap, id, mempty,
+                                                                            pure, return, show, type (~), zip, ($),
+                                                                            (++), (.), (<$>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen,
-                                                                            oneof, vector, chooseInteger)
+import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
+                                                                            oneof, vector)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
@@ -33,7 +34,7 @@ import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, foldCircuit,
-                                                                            horner, invertC, isZeroC, getAllVars)
+                                                                            getAllVars, horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
@@ -41,7 +42,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
-import GHC.Num.Integer (integerToNatural)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -172,7 +172,7 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
 
 -- TODO: make a proper implementation of Arbitrary
 instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit 1 a) where
-    arbitrary = do 
+    arbitrary = do
         k <- integerToNatural <$> chooseInteger (0, 5)
         let ac = ArithmeticCircuit { acCircuit = mempty {acInput = [1..k]}, acOutput = pure k }
         arbitrary' ac 0
@@ -230,10 +230,10 @@ data ArithmeticCircuitTest n a = ArithmeticCircuitTest
     {
         arithmeticCircuit :: ArithmeticCircuit n a
         , witnessInput    :: Map.Map Natural a
-    } 
+    }
 
 instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuitTest n a) where
-    show (ArithmeticCircuitTest ac wi) = "ArithmeticCircuit: " ++ show ac 
+    show (ArithmeticCircuitTest ac wi) = "ArithmeticCircuit: " ++ show ac
         ++ ",\nwitnessInput: " ++ show wi
 
 instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuitTest 1 a) where

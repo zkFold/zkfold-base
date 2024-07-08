@@ -21,29 +21,29 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
 ) where
 
 import           Control.Monad                                             (replicateM)
+import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Foldable                                             (foldlM)
+import           Data.List                                                 (sort)
+import           Data.Map                                                  (elems)
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
+import           GHC.IsList                                                (IsList (..))
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Bool, Eq (..), negate, splitAt, (!!),
                                                                             (*), (+), (-), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Polynomials.Multivariate              (variables)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (splitAt, (!!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..), acInput,
-                                                                            joinCircuits, Circuit (acSystem))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..),
+                                                                            Circuit (acSystem), acInput, joinCircuits)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool)
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq                                   (Eq (..))
-import Data.Map ( elems )
-import ZkFold.Base.Algebra.Polynomials.Multivariate (variables)
-import           GHC.IsList                                          (IsList (..))
-import           Data.List                                           (sort)
-import           Data.Containers.ListUtils                           (nubOrd)
 
 boolCheckC :: Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.

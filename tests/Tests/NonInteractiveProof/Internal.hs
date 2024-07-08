@@ -11,10 +11,10 @@ import           Prelude                                    hiding (Fractional (
 import           Test.QuickCheck                            (Arbitrary (arbitrary), Gen, vector)
 
 import           ZkFold.Base.Protocol.ARK.Plonk             (Plonk (Plonk), PlonkWitnessInput (..))
+import           ZkFold.Base.Protocol.Commitment.KZG        (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof   (NonInteractiveProof (..))
 import           ZkFold.Prelude                             (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (inputVariables)
-import           ZkFold.Base.Protocol.Commitment.KZG (KZG)
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32

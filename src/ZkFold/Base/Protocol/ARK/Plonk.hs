@@ -57,7 +57,7 @@ instance (KnownNat d, KnownNat n) => Arbitrary (Plonk d n t) where
             genSubset :: Gen [Natural] -> Natural -> Natural -> Gen [Natural]
             genSubset arr maxPub maxInp = do
                 len <- length <$> arr
-                if maxPub == len 
+                if maxPub == len
                     then arr
                     else do
                         newNat <- integerToNatural <$> chooseInteger (0, toInteger maxInp)

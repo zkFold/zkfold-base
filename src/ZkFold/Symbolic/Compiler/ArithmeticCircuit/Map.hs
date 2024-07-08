@@ -5,19 +5,19 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         mapVarWitness
     ) where
 
-import           Data.Map                                            hiding (drop, foldl, foldr, fromList, map, null,
-                                                                      splitAt, take, toList)
-import qualified Data.Map                                            as Map
-import           GHC.IsList                                          (IsList (..))
-import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
-                                                                      sum, take, (!!), (^))
+import           Data.Map                                               hiding (drop, foldl, foldr, fromList, map, null,
+                                                                         splitAt, take, toList)
+import qualified Data.Map                                               as Map
+import           GHC.IsList                                             (IsList (..))
+import           Numeric.Natural                                        (Natural)
+import           Prelude                                                hiding (Num (..), drop, length, product,
+                                                                         splitAt, sum, take, (!!), (^))
 
-import           ZkFold.Base.Algebra.Basic.Class                     (MultiplicativeMonoid (..))
+import           ZkFold.Base.Algebra.Basic.Class                        (MultiplicativeMonoid (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), Circuit (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (getAllVars)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (getAllVars)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    (ArithmeticCircuitTest (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (ArithmeticCircuit (..), Circuit (..))
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
@@ -27,7 +27,7 @@ mapVarWitness vars = mapKeys (mapVar $ Map.fromList $ zip vars [0..])
 mapVarArithmeticCircuitTest :: MultiplicativeMonoid a => ArithmeticCircuitTest n a -> ArithmeticCircuitTest n a
 mapVarArithmeticCircuitTest (ArithmeticCircuitTest ac wi) =
     let ct = acCircuit ac
-        vars = getAllVars ct 
+        vars = getAllVars ct
         mappedCircuit = ct
             {
                 acSystem  = fromList $ zip [0..] $ mapVarPolynomial (Map.fromList $ zip vars [0..]) <$> elems (acSystem ct),
