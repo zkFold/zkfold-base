@@ -5,11 +5,15 @@ module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) wher
 
 import           Data.ByteString                                     (ByteString)
 import           Prelude                                             hiding (Fractional (..), Num (..), length)
-import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen)
+import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, vector)
 
-import           ZkFold.Base.Protocol.ARK.Plonk                      (Plonk, PlonkWitnessInput (..))
+import           ZkFold.Base.Protocol.ARK.Plonk                      (Plonk (Plonk), PlonkWitnessInput (..))
 import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInteractiveProof (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (witnessInput), F)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit (inputVariables)
+import           GHC.Natural                                               (naturalToInteger)
+import           GHC.Num                                                   (integerToInt)
+import           ZkFold.Prelude                                            (length)
+import Data.Map (fromList)
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
@@ -26,9 +30,10 @@ instance {-# INCOHERENT #-}
 
 instance {-# OVERLAPPING #-}
     Arbitrary (NonInteractiveProofTestData (PlonkBS 1) ) where
-    arbitrary = TestData <$> arbitrary <*> arbitraryW where
-        arbitraryW = do
-            arbACT <- arbitrary :: Gen ( ArithmeticCircuitTest 1 F )
-            let witness = witnessInput arbACT
-            secret <- arbitrary
-            return (PlonkWitnessInput witness, secret)
+    arbitrary = do
+        rbPlonk@(Plonk _ _ _ _ ac _) <- arbitrary :: Gen (PlonkBS 1)
+        let keysAC = inputVariables ac
+        values <- vector . integerToInt . naturalToInteger . length  $ keysAC
+        let wi = fromList $ zip keysAC values
+        secret <- arbitrary
+        return $ TestData rbPlonk (PlonkWitnessInput wi, secret)
