@@ -5,27 +5,27 @@ import           Prelude                         hiding (Bool, Eq, length, split
 import           ZkFold.Symbolic.Data.Bool       (BoolType (..))
 import           ZkFold.Symbolic.Ledger.Types
 
-data TransactionInputsWitness backend
+data TransactionInputsWitness context
 
 transactionInputsAreValid ::
-       BlockId backend
-    -> Transaction backend
-    -> TransactionInputsWitness backend
-    -> Bool backend
+       BlockId context
+    -> Transaction context
+    -> TransactionInputsWitness context
+    -> Bool context
 transactionInputsAreValid _ _ _ = undefined
 
-transactionBalanceIsCorrect :: Transaction backend -> Bool a
+transactionBalanceIsCorrect :: Transaction context -> Bool a
 transactionBalanceIsCorrect _ = undefined
 
-transactionContractsSucceed :: Transaction backend -> Bool a
+transactionContractsSucceed :: Transaction context -> Bool a
 transactionContractsSucceed _ = undefined
 
 transactionIsValid ::
-       BoolType (Bool backend)
-    => BlockId backend
-    -> Transaction backend
-    -> TransactionInputsWitness backend
-    -> Bool backend
+       BoolType (Bool context)
+    => BlockId context
+    -> Transaction context
+    -> TransactionInputsWitness context
+    -> Bool context
 transactionIsValid s t w =
        transactionInputsAreValid s t w
     && transactionBalanceIsCorrect t

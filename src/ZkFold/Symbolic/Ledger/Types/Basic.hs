@@ -2,12 +2,12 @@ module ZkFold.Symbolic.Ledger.Types.Basic where
 
 import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
 
-data F backend
+data F context
 
-data Bool backend
+data Bool context
 
-data UInt32 backend
+data UInt32 context
 
-data UInt64 backend
+data UInt64 context
 
-data UTCTime backend
+data UTCTime context

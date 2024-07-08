@@ -5,7 +5,7 @@ import           Prelude                                hiding (Bool, Eq, length
 import           ZkFold.Symbolic.Ledger.Types.Output    (Output)
 import           ZkFold.Symbolic.Ledger.Types.OutputRef (OutputRef)
 
-data Input backend = Input
-    { txiOutputRef :: OutputRef backend
-    , txiOutput    :: Output backend
+data Input context = Input
+    { txiOutputRef :: OutputRef context
+    , txiOutput    :: Output context
     }

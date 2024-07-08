@@ -11,8 +11,6 @@ module ZkFold.Symbolic.Ledger.Types (
     module ZkFold.Symbolic.Ledger.Types.Value
 ) where
 
-import           Prelude                                   hiding (Bool, Eq, length, splitAt, (*), (+))
-
 import           ZkFold.Symbolic.Ledger.Types.Address
 import           ZkFold.Symbolic.Ledger.Types.Basic
 import           ZkFold.Symbolic.Ledger.Types.Block

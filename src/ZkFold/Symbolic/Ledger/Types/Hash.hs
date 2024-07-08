@@ -2,7 +2,7 @@ module ZkFold.Symbolic.Ledger.Types.Hash where
 
 import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
 
-data Hash backend
+data Hash context
 
-class Hashable backend x where
-  hash :: x -> Hash backend
+class Hashable context x where
+  hash :: x -> Hash context

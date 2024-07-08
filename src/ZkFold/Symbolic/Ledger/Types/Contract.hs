@@ -5,13 +5,13 @@ import           Prelude                           hiding (Bool, Eq, length, spl
 import           ZkFold.Symbolic.Ledger.Types.Basic
 import           ZkFold.Symbolic.Ledger.Types.Hash (Hash)
 
-newtype Contract tx pub prv backend = Contract (tx -> pub -> prv -> Bool backend)
+newtype Contract tx pub prv context = Contract (tx -> pub -> prv -> Bool context)
 
-type ContractId backend = Hash backend
+type ContractId context = Hash context
 
-contractId :: Contract tx pub prv backend -> ContractId backend
+contractId :: Contract tx pub prv context -> ContractId context
 contractId _ = undefined
 
-type ContractState backend = Hash backend
+type ContractState context = Hash context
 
-data ContractData backend
+data ContractData context

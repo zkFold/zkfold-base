@@ -4,11 +4,11 @@ import           Prelude                      hiding (Bool, Eq, length, splitAt,
 
 import           ZkFold.Symbolic.Ledger.Types
 
-data PublicInputWitness backend
+data PublicInputWitness context
 
 publicInputIsValid ::
-       BlockId backend
-    -> Input backend
-    -> PublicInputWitness backend
-    -> Bool backend
+       BlockId context
+    -> Input context
+    -> PublicInputWitness context
+    -> Bool context
 publicInputIsValid _ _ = undefined

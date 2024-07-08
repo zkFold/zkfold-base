@@ -5,8 +5,8 @@ import           Prelude                               hiding (Bool, Eq, length,
 import           ZkFold.Symbolic.Ledger.Types.Basic
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
 
-data Token backend
+data Token context
 
-type MintingPolicy tx w backend = Contract tx (Token backend) w backend
+type MintingPolicy tx w context = Contract tx (Token context) w context
 
-data Value backend = Value (ContractId backend) (Token backend) (UInt64 backend)
+data Value context = Value (ContractId context) (Token context) (UInt64 context)

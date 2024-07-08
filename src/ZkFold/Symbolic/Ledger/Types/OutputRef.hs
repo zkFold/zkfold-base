@@ -5,10 +5,10 @@ import           Prelude                            hiding (Bool, Eq, length, sp
 import           ZkFold.Symbolic.Ledger.Types.Basic
 import           ZkFold.Symbolic.Ledger.Types.Hash  (Hash)
 
-type TransactionId a    = Hash a
-type OutputIndex backend = UInt32 backend
+type TransactionId context = Hash context
+type OutputIndex context   = UInt32 context
 
-data OutputRef backend = OutputRef
-    { refId  :: TransactionId backend
-    , refIdx :: OutputIndex backend
+data OutputRef context = OutputRef
+    { refId  :: TransactionId context
+    , refIdx :: OutputIndex context
     }

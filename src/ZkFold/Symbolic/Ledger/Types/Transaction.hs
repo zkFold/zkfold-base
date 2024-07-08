@@ -9,15 +9,15 @@ import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 import           ZkFold.Symbolic.Ledger.Types.Output    (Output)
 import           ZkFold.Symbolic.Ledger.Types.Value     (Value)
 
-data Transaction backend = Transaction
-    { txInputs           :: [Input backend]
-    , txPublicInputs     :: [Input backend]
-    , txOutputs          :: [Output backend]
-    , txPublicOutputs    :: [Output backend]
-    , txMint             :: [Value backend]
-    , txContractData     :: [(ContractId backend, ContractData backend)]
-    , txValidityInterval :: (UTCTime backend, UTCTime backend)
+data Transaction context = Transaction
+    { txInputs           :: [Input context]
+    , txPublicInputs     :: [Input context]
+    , txOutputs          :: [Output context]
+    , txPublicOutputs    :: [Output context]
+    , txMint             :: [Value context]
+    , txContractData     :: [(ContractId context, ContractData context)]
+    , txValidityInterval :: (UTCTime context, UTCTime context)
     }
 
-txId :: Transaction backend -> TransactionId backend
+txId :: Transaction context -> TransactionId context
 txId = undefined

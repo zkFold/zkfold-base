@@ -4,8 +4,8 @@ import           Prelude                               hiding (Bool, Eq, length,
 
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
 
-data Datum backend
+data Datum context
 
-type SpendingPolicy tx w backend = Contract tx (Datum backend) w backend
+type SpendingPolicy tx w context = Contract tx (Datum context) w context
 
-type Address backend = ContractId backend
+type Address context = ContractId context

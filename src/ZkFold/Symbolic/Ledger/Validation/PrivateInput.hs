@@ -5,26 +5,26 @@ import           Prelude                         hiding (Bool, Eq, length, split
 import           ZkFold.Symbolic.Data.Bool       (BoolType (..))
 import           ZkFold.Symbolic.Ledger.Types
 
-data PrivateInputWitness backend
+data PrivateInputWitness context
 
 privateInputExisted ::
-       BlockId backend
-    -> Input backend
-    -> PrivateInputWitness backend
-    -> Bool backend
+       BlockId context
+    -> Input context
+    -> PrivateInputWitness context
+    -> Bool context
 privateInputExisted _ _ _ = undefined
 
 privateInputNotSpent ::
-       BlockId backend
-    -> Input backend
-    -> PrivateInputWitness backend
-    -> Bool backend
+       BlockId context
+    -> Input context
+    -> PrivateInputWitness context
+    -> Bool context
 privateInputNotSpent _ _ _ = undefined
 
 privateInputIsValid ::
-    BoolType (Bool backend)
-    => BlockId backend
-    -> Input backend
-    -> PrivateInputWitness backend
-    -> Bool backend
+    BoolType (Bool context)
+    => BlockId context
+    -> Input context
+    -> PrivateInputWitness context
+    -> Bool context
 privateInputIsValid s i w = privateInputExisted s i w && privateInputNotSpent s i w
