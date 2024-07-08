@@ -9,6 +9,7 @@ import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit)
 import qualified ZkFold.Symbolic.Data.Bool                   as Symbolic
 import qualified ZkFold.Symbolic.Data.ByteString             as Symbolic
 import qualified ZkFold.Symbolic.Data.UInt                   as Symbolic
+import qualified ZkFold.Symbolic.Data.UTCTime                as Symbolic
 
 type F = Zp BLS12_381_Scalar
 
@@ -18,6 +19,8 @@ type FieldElementBits context = context 256 F
 type Bool context = Symbolic.Bool (FieldElement context)
 
 type UInt n context = Symbolic.UInt n context F
+
+type UTCTime context = Symbolic.UTCTime context F
 
 type ByteString n context = Symbolic.ByteString n context F
 

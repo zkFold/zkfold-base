@@ -12,14 +12,13 @@ import           ZkFold.Symbolic.Cardano.Types.Output (Output)
 import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
 import           ZkFold.Symbolic.Compiler
 import qualified ZkFold.Symbolic.Data.FieldElement    as FE
-import           ZkFold.Symbolic.Data.UTCTime
 
 newtype Transaction inputs rinputs outputs tokens mint datum context = Transaction
     ( Vector rinputs (Input tokens datum context)
     , (Vector inputs (Input tokens datum context)
     , (Vector outputs (Output tokens datum context)
     , (Value mint context
-    , (UTCTime context F, UTCTime context F)
+    , (UTCTime context, UTCTime context)
     ))))
 
 -- TODO: Think how to prettify this abomination
