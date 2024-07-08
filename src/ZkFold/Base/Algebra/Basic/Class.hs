@@ -551,11 +551,8 @@ instance Field Rational where
     rootOfUnity 1 = Just (-1)
     rootOfUnity _ = Nothing
 
-truncate :: Rational -> Integer
-truncate = Haskell.truncate
-
-truncateN :: Rational -> Natural
-truncateN = Haskell.truncate
+floorN :: Rational -> Natural
+floorN = Haskell.floor
 
 --------------------------------------------------------------------------------
 

@@ -55,7 +55,7 @@ instance (KnownNat p, Finite (Zp q), ToConstant (Zp p) c) => ToConstant (FFA p V
             gs = zipWith mod gs0 mods
             sigma = ceiling (log2 $ value @Size) + 1 :: Natural
             binary g m = (fromConstant g * 2 ^ sigma) `div` fromConstant m
-            residue = truncateN (3 % 4 + sum (zipWith binary gs mods) % 2 ^ sigma)
+            residue = floorN (3 % 4 + sum (zipWith binary gs mods) % 2 ^ sigma)
          in vectorDotProduct gs (mis @(Zp q) @p) -! mprod @(Zp q) @p * residue
 
 instance (FromConstant c (Zp p), Finite (Zp q)) => FromConstant c (FFA p Vector (Zp q)) where
