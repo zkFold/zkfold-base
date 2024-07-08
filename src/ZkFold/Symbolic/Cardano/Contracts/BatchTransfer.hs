@@ -13,50 +13,51 @@ import           ZkFold.Base.Data.Vector                        (Vector, fromVec
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Compiler.Arithmetizable        (Arithmetic)
-import           ZkFold.Symbolic.Data.Bool                      (Bool, BoolType (..), all)
-import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Data.UInt                      (StrictConv(..))
 import           ZkFold.Symbolic.Types                          (Symbolic)
 
 type Tokens = 10
-type TxOut b a = Output Tokens () b a
-type TxIn b a  = Input Tokens () b a
-type Tx b a = Transaction 6 0 11 Tokens 0 () b a
+type TxOut context = Output Tokens () context
+type TxIn context  = Input Tokens () context
+type Tx context = Transaction 6 0 11 Tokens 0 () context
 
-hash :: forall a b x . (Arithmetic a, MiMCHash a b x) => x -> b 1 a
-hash = mimcHash @a mimcConstants zero
+hash :: forall context x . MiMCHash F context x => x -> FieldElement context
+hash = mimcHash mimcConstants zero
 
-type Sig b a =
-    ( Arithmetic a
-    , StrictConv (b 1 a) (UInt 256 b a)
-    , FromConstant Natural (UInt 256 b a)
-    , MultiplicativeSemigroup (UInt 256 b a)
-    , AdditiveMonoid (b 1 a)
-    , Symbolic (b 1 a)
-    , MiMCHash a b (TxOut b a, TxOut b a)
-    , Eq (Bool (b 1 a)) (UInt 256 b a)
-    , Eq (Bool (b 1 a)) (TxOut b a)
-    , Iso (UInt 256 b a) (ByteString 256 b a)
-    , Extend (ByteString 224 b a) (ByteString 256 b a))
+type Sig context =
+    ( StrictConv (FieldElement context) (UInt 256 context)
+    , FromConstant Natural (UInt 256 context)
+    , MultiplicativeSemigroup (UInt 256 context)
+    , AdditiveMonoid (FieldElement context)
+    , Symbolic (FieldElement context)
+    , MiMCHash F context (TxOut context, TxOut context)
+    , Eq (Bool context) (UInt 256 context)
+    , Eq (Bool context) (TxOut context)
+    , Iso (UInt 256 context) (ByteString 256 context)
+    , Extend (ByteString 224 context) (ByteString 256 context))
 
 verifySignature ::
-    forall b a . Sig b a =>
-    ByteString 224 b a ->
-    (TxOut b a, TxOut b a) ->
-    ByteString 256 b a ->
-    Bool (b 1 a)
-verifySignature pub (pay, change) sig = (from sig * base) == (strictConv mimc * from (extend pub :: ByteString 256 b a))
+    forall context . Sig context =>
+    ByteString 224 context ->
+    (TxOut context, TxOut context) ->
+    ByteString 256 context ->
+    Bool context
+verifySignature pub (pay, change) sig = (from sig * base) == (strictConv mimc * from (extend pub :: ByteString 256 context))
     where
-        base :: UInt 256 b a
+        base :: UInt 256 context
         base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)
 
-        mimc :: b 1 a
+        mimc :: FieldElement context
         mimc = hash (pay, change)
 
-batchTransfer :: forall b a .  Sig b a => Tx b a -> Vector 5 (TxOut b a, TxOut b a, ByteString 256 b a) -> Bool (b 1 a)
+batchTransfer ::
+    forall context.  Sig context
+    => Tx context
+    -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)
+    -> Bool context
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures
         pkhs       = fromJust $ toVector @5 $ map (paymentCredential . txoAddress . txiOutput) $ init $ fromVector $ txInputs tx

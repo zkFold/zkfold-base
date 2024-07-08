@@ -3,25 +3,23 @@
 
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
-import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Base.Data.Vector           (Vector)
+import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString   (ByteString)
-import           ZkFold.Symbolic.Data.FieldElement (FieldElementData)
-import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Data.FieldElement   (FieldElementData)
 
-type TxRefId b a = ByteString 256 b a
-type TxRedIndex b a = UInt 32 b a
+type TxRefId context = ByteString 256 context
+type TxRefIndex context = UInt 32 context
 
-newtype OutputRef b a = OutputRef (TxRefId b a, TxRedIndex b a)
+newtype OutputRef context = OutputRef (TxRefId context, TxRefIndex context)
 
-deriving instance Arithmetic a => FieldElementData a Vector (OutputRef Vector a)
+deriving instance FieldElementData F CtxEvaluation (OutputRef CtxEvaluation)
 
-deriving instance Arithmetic a => SymbolicData a (OutputRef ArithmeticCircuit a)
+deriving instance SymbolicData F (OutputRef CtxCompilation)
 
-outputRefId :: OutputRef b a -> TxRefId b a
+outputRefId :: OutputRef context -> TxRefId context
 outputRefId (OutputRef (x, _)) = x
 
-outputRefIndex :: OutputRef b a -> TxRedIndex b a
+outputRefIndex :: OutputRef context -> TxRefIndex context
 outputRefIndex (OutputRef (_, i)) = i
