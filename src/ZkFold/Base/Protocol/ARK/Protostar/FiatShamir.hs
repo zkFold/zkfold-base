@@ -15,7 +15,7 @@ import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractive
 
 data FiatShamir f a = FiatShamir a (SpS.Input f a)
 
-fsChallenge :: forall f a c . (Binary (SpS.Input f a), Binary (VerifierMessage f a))
+fsChallenge :: forall f a c . (Binary (SpS.Input f a), Binary (VerifierMessage f a), Binary c, Binary (ProverMessage f a))
       => FiatShamir f (CommitOpen f c a)
       -> SpecialSoundTranscript f (CommitOpen f c a) -> ProverMessage f (CommitOpen f c a) -> VerifierMessage f a
 fsChallenge (FiatShamir _ ip) []           c =
@@ -24,14 +24,17 @@ fsChallenge (FiatShamir _ ip) []           c =
 fsChallenge _                 ((_, r) : _) c = fst $ challenge @ByteString $ toTranscript r <> toTranscript c
 
 instance (SpS.SpecialSoundProtocol f a, Eq c, Binary (SpS.Input f a), Binary (VerifierMessage f a),
-            Binary c, Binary (VerifierMessage f a)) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) where
+            Binary c, Binary (ProverMessage f a)) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) where
       type Transcript (FiatShamir f (CommitOpen f c a)) = ByteString
-      type Setup (FiatShamir f (CommitOpen f c a))      = FiatShamir f (CommitOpen f c a)
+      type SetupProve (FiatShamir f (CommitOpen f c a))      = FiatShamir f (CommitOpen f c a)
+      type SetupVerify (FiatShamir f (CommitOpen f c a))      = FiatShamir f (CommitOpen f c a)
       type Witness (FiatShamir f (CommitOpen f c a))    = SpS.Witness f a
       type Input (FiatShamir f (CommitOpen f c a))      = (SpS.Input f a, [c])
       type Proof (FiatShamir f (CommitOpen f c a))      = [ProverMessage f a]
 
-      setup x = x
+      setupProve x = x
+
+      setupVerify x = x
 
       prove fs@(FiatShamir a ip) w =
             let (ms, ts) = opening a w ip (fsChallenge fs)

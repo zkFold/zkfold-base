@@ -113,10 +113,13 @@ library
       ZkFold.Base.Protocol.ARK.Plonk.Relation
       ZkFold.Base.Protocol.ARK.Protostar
       ZkFold.Base.Protocol.ARK.Protostar.Accumulator
+      ZkFold.Base.Protocol.ARK.Protostar.AccumulatorScheme
       ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
+      ZkFold.Base.Protocol.ARK.Protostar.FiatShamir
       ZkFold.Base.Protocol.ARK.Protostar.Internal
       ZkFold.Base.Protocol.ARK.Protostar.Gate
       ZkFold.Base.Protocol.ARK.Protostar.Lookup
+      ZkFold.Base.Protocol.ARK.Protostar.Oracle
       ZkFold.Base.Protocol.ARK.Protostar.Permutation
       ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
       ZkFold.Base.Protocol.Commitment.KZG
@@ -200,6 +203,7 @@ library
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
+      lens                                       ,
       mtl                                   < 2.4,
       optics                                < 0.5,
       parallel                          < 3.2.3.0,

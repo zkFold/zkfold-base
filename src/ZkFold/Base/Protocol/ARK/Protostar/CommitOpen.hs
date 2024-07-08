@@ -38,6 +38,8 @@ instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen 
             | otherwise               = Open ms
 
       -- TODO: Implement this
+      -- make in an AC and use only it
+      -- decider is also AC
       verifier' = undefined
 
       verifier (CommitOpen cm a) i ((Open ms, _) : ts) = map cm ms == map f ts && verifier @f a i (zip ms $ map snd ts)
@@ -50,6 +52,8 @@ commits = map f
       where f (Commit c, _) = c
             f _             = error "Invalid message"
 
+-- TODO: looks like Fiat-Shamir transform itself
+-- Why is it called opening?
 opening :: forall f a c . (SpecialSoundProtocol f a, Eq c)
         => CommitOpen f c a
         -> Witness f a
