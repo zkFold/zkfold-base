@@ -12,5 +12,7 @@ type BlockId context = Hash context
 -- | Block of transactions.
 data Block context = Block
     { blockTransactions :: [(ContractId context, Transaction context)]
+    -- ^ List of transactions in the block
     , blockReference    :: BlockId context
+    -- ^ Reference to the previous block
     }

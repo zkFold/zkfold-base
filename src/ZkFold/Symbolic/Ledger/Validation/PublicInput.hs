@@ -10,7 +10,10 @@ data PublicInputWitness context
 -- | Checks if the public input is valid.
 publicInputIsValid ::
        BlockId context
+    -- ^ The id of the current block.
     -> Input context
+    -- ^ The transaction input to check.
     -> PublicInputWitness context
+    -- ^ The witness data for the public input.
     -> Bool context
 publicInputIsValid _ _ = undefined

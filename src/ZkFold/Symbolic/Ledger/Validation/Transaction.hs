@@ -11,8 +11,11 @@ data TransactionInputsWitness context
 -- | Checks if the inputs of a transaction are valid.
 transactionInputsAreValid ::
        BlockId context
+    -- ^ The id of the current block.
     -> Transaction context
+    -- ^ The transaction to check.
     -> TransactionInputsWitness context
+    -- ^ The witness data for the inputs of the transaction.
     -> Bool context
 transactionInputsAreValid _ _ _ = undefined
 
@@ -28,8 +31,11 @@ transactionContractsSucceed _ = undefined
 transactionIsValid ::
        BoolType (Bool context)
     => BlockId context
+    -- ^ The id of the current block.
     -> Transaction context
+    -- ^ The transaction to check.
     -> TransactionInputsWitness context
+    -- ^ The witness data for the inputs of the transaction.
     -> Bool context
 transactionIsValid s t w =
        transactionInputsAreValid s t w

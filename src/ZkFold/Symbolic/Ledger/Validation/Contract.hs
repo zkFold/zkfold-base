@@ -8,6 +8,9 @@ import           ZkFold.Symbolic.Ledger.Types
 contractStateTransition ::
     Hashable context (ContractState context, TransactionId context)
     => ContractState context
+    -- ^ The current state of the contract.
     -> TransactionId context
+    -- ^ The transaction id.
     -> ContractState context
+    -- ^ The new state of the contract.
 contractStateTransition s i = hash (s, i)

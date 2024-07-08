@@ -10,7 +10,10 @@ data BlockWitness context
 -- | Checks if the new block is valid.
 newBlockIsValid ::
        BlockId context
+    -- ^ The id of the current block.
     -> Block context
+    -- ^ The new block to check.
     -> BlockWitness context
+    -- ^ The witness data for the new block.
     -> Bool context
 newBlockIsValid _ _ _ = undefined
