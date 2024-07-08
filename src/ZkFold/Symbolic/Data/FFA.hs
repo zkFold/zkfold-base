@@ -4,11 +4,14 @@
 
 module ZkFold.Symbolic.Data.FFA where
 
-import           Data.Function                                             (($), (.))
+import           Control.Monad                                             (return, (>>=))
+import           Data.Foldable                                             (foldl')
+import           Data.Function                                             (const, ($), (.))
 import           Data.Functor                                              ((<$>))
 import           Data.Maybe                                                (fromJust)
 import           Data.Ratio                                                ((%))
 import           Data.Traversable                                          (for)
+import           Data.Tuple                                                (fst, snd)
 import           Data.Zip                                                  (zipWith)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   (Integer, ceiling, error)
@@ -17,8 +20,10 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, inv)
 import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat, value)
 import           ZkFold.Base.Data.Vector
+import           ZkFold.Prelude                                            (iterateM)
 import           ZkFold.Symbolic.Compiler                                  (Arithmetic, ArithmeticCircuit)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (circuitN, newAssigned, runCircuit)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitN, newAssigned,
+                                                                            runCircuit)
 import           ZkFold.Symbolic.Data.Combinators                          (log2, maxBitsPerFieldElement)
 
 type Size = 5
@@ -29,6 +34,9 @@ newtype FFA (p :: Natural) b a = FFA (b Size a)
 coprimes :: forall a. Finite a => Vector Size Natural
 coprimes = let n = 2 ^ (maxBitsPerFieldElement @a `div` 2)
             in fromJust $ toVector [n, n -! 1, n -! 3, n -! 5, n -! 9]
+
+sigma :: Natural
+sigma = ceiling (log2 $ value @Size) + 1 :: Natural
 
 mprod0 :: forall a. Finite a => Natural
 mprod0 = product (coprimes @a)
@@ -53,7 +61,6 @@ instance (KnownNat p, Finite (Zp q), ToConstant (Zp p) c) => ToConstant (FFA p V
         let mods = coprimes @(Zp q)
             gs0 = zipWith (\x y -> toConstant x * y) xs $ minv @(Zp q)
             gs = zipWith mod gs0 mods
-            sigma = ceiling (log2 $ value @Size) + 1 :: Natural
             binary g m = (fromConstant g * 2 ^ sigma) `div` fromConstant m
             residue = floorN (3 % 4 + sum (zipWith binary gs mods) % 2 ^ sigma)
          in vectorDotProduct gs (mis @(Zp q) @p) -! mprod @(Zp q) @p * residue
@@ -70,8 +77,32 @@ instance (FromConstant c (Zp p), Arithmetic a) => FromConstant c (FFA p Arithmet
       impl :: Natural -> ArithmeticCircuit Size a
       impl x = circuitN $ for (coprimes @a) $ \m -> newAssigned (fromConstant (x `mod` m))
 
-cast :: Vector Size i -> m (Vector Size i)
-cast = error "TODO"
+condSubOF :: Natural -> i -> m (i, i)
+condSubOF = error "TODO"
+
+condSub :: MonadBlueprint i a m => Natural -> i -> m i
+condSub m x = fst <$> condSubOF m x
+
+smallCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
+smallCut = zipWithM condSub $ coprimes @a
+
+bigCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
+bigCut = zipWithM (\m x -> trimPow m x >>= trimPow m >>= condSub m) $ coprimes @a
+  where trimPow _ _ = error "TODO"
+
+cast :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
+cast xs = do
+  gs <- zipWithM (\i m -> newAssigned (\x -> x i * fromConstant m)) xs (minv @a) >>= bigCut
+  zi <- newAssigned (const zero)
+  let binary g m = snd <$> iterateM sigma (binstep m) (g, zi)
+      binstep m (i, ci) = do
+        (i', j) <- newAssigned (\x -> x i + x i) >>= condSubOF @i @m m
+        ci' <- newAssigned (\x -> x ci + x j)
+        return (i', ci')
+  base <- newAssigned (const $ fromConstant (3 * 2 ^ (sigma -! 2) :: Natural))
+  let ms = coprimes @a
+  _ <- zipWithM binary gs ms >>= foldl' (error "TODO") (return base) >>= error "TODO"
+  error "TODO"
 
 instance (Finite (Zp p), Finite (Zp q)) => MultiplicativeSemigroup (FFA p Vector (Zp q)) where
   x * y = fromConstant (toConstant x * toConstant y :: Zp p)
@@ -81,7 +112,7 @@ instance Arithmetic a => MultiplicativeSemigroup (FFA p ArithmeticCircuit a) whe
     xs <- runCircuit q
     ys <- runCircuit r
     zs <- zipWithM (\i j -> newAssigned (($ i) * ($ j))) xs ys
-    cast zs
+    bigCut zs >>= cast
 
 instance (Finite (Zp p), Finite (Zp q)) => Exponent (FFA p Vector (Zp q)) Natural where
   x ^ a = fromConstant (toConstant x ^ a :: Zp p)
@@ -103,7 +134,7 @@ instance Arithmetic a => AdditiveSemigroup (FFA p ArithmeticCircuit a) where
     xs <- runCircuit q
     ys <- runCircuit r
     zs <- zipWithM (\i j -> newAssigned (($ i) + ($ j))) xs ys
-    cast zs
+    smallCut zs >>= cast
 
 instance (Finite (Zp p), Scale c (Zp p), Finite (Zp q)) => Scale c (FFA p Vector (Zp q)) where
   scale k x = fromConstant (scale k one :: Zp p) * x
