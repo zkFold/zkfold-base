@@ -135,4 +135,4 @@ embedVarIndexV :: (Arithmetic a, KnownNat n) => Natural -> ArithmeticCircuit n a
 embedVarIndexV n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure n}
 
 getAllVars :: MultiplicativeMonoid a => Circuit a -> [Natural]
-getAllVars ac = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)
+getAllVars ac = nubOrd $ sort $ 0 : acInput ac ++ concatMap (toList . variables) (elems $ acSystem ac)

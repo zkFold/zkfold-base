@@ -173,12 +173,12 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
 -- TODO: make a proper implementation of Arbitrary
 instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit 1 a) where
     arbitrary = do
-        k <- integerToNatural <$> chooseInteger (0, 5)
+        k <- integerToNatural <$> chooseInteger (0, 100)
         let ac = ArithmeticCircuit { acCircuit = mempty {acInput = [1..k]}, acOutput = pure k }
         arbitrary' ac 0
 
 arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => ArithmeticCircuit 1 a -> Natural -> Gen (ArithmeticCircuit 1 a)
-arbitrary' ac 3 = return ac
+arbitrary' ac 20 = return ac
 arbitrary' ac iter = do
     let vars = getAllVars . acCircuit $ ac
     li <- oneof $ fmap return vars
