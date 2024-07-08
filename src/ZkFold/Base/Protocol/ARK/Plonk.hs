@@ -2,8 +2,6 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
-{-# OPTIONS_GHC -Wno-unused-matches #-}
 
 module ZkFold.Base.Protocol.ARK.Plonk where
 
@@ -59,9 +57,9 @@ instance (KnownNat d, KnownNat n) => Arbitrary (Plonk d n t) where
             genSubset :: Gen [Natural] -> Natural -> Natural -> Gen [Natural]
             genSubset arr maxPub maxInp = do
                 len <- length <$> arr
-                case maxPub == len of
-                    true -> arr
-                    _    -> do
+                if maxPub == len 
+                    then arr
+                    else do
                         newNat <- integerToNatural <$> chooseInteger (0, toInteger maxInp)
                         let arr' = toList . S.fromList . (newNat : ) <$> arr
                         genSubset arr' maxPub maxInp

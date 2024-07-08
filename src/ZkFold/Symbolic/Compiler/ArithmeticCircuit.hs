@@ -25,7 +25,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         acValue,
         acPrint,
         -- Variable mapping functions
-        mapVarArithmeticCircuit,
+        mapVarArithmeticCircuitTest,
         mapVarWitness,
         -- Arithmetization type fields
         acWitness,

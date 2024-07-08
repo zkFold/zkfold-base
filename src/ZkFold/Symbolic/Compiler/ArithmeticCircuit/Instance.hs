@@ -4,7 +4,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans     #-}
-{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
@@ -18,13 +17,13 @@ import qualified Data.Zip                                                  as Z
 import           GHC.Natural                                               (naturalToInteger)
 import           GHC.Num                                                   (integerToInt)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, const, fmap, id, max, otherwise,
-                                                                            pure, return, show, toInteger, type (~),
-                                                                            zip, ($), (++), (.), (<$>), (>>=))
+import           Prelude                                                   (Integer, const, fmap, id, mempty,
+                                                                            pure, return, show, type (~),
+                                                                            zip, ($), (++), (.), (<$>), (>>=), Show)
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, frequency,
-                                                                            oneof, vector)
+import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen,
+                                                                            oneof, vector, chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
@@ -32,10 +31,9 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381               (BLS12_381_Scalar)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (chooseNatural, length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, embedVarIndex,
-                                                                            embedVarIndexV, expansion, foldCircuit,
-                                                                            horner, invertC, isZeroC)
+import           ZkFold.Prelude                                            (length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, foldCircuit,
+                                                                            horner, invertC, isZeroC, getAllVars)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
@@ -43,6 +41,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
+import GHC.Num.Integer (integerToNatural)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -172,52 +171,31 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
                 V.zipWithM (\x y -> newAssigned $ \p -> p bs * (p x - p y) + p y) ts fs
 
 -- TODO: make a proper implementation of Arbitrary
-instance (Arithmetic a, KnownNat n, Arbitrary a) => Arbitrary (ArithmeticCircuit n a) where
-    arbitrary = (ArithmeticCircuit { acCircuit = mempty {acInput = [ 1 ]}, acOutput = pure 1} * ) <$> arbitrary' 0 0 (value @n)
+instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit 1 a) where
+    arbitrary = do 
+        k <- integerToNatural <$> chooseInteger (0, 5)
+        let ac = ArithmeticCircuit { acCircuit = mempty {acInput = [1..k]}, acOutput = pure k }
+        arbitrary' ac 0
 
-arbitrary' :: forall a n . (Arithmetic a, KnownNat n, Arbitrary a, FromConstant a a) => Natural -> Natural ->  Natural -> Gen (ArithmeticCircuit n a)
-arbitrary' inp out outMax
-    | out Haskell.== outMax = return $ ArithmeticCircuit { acCircuit = mempty, acOutput = pure outMax}
-    | otherwise  = let
-        arbVar = do
-            arbInp <- chooseNatural (0 , inp)
-            arbOut <- chooseNatural (0 , out)
-            return $ (embedVarIndex arbInp) { acOutput    = pure arbOut}
-        newInp = embedVarIndexV $ inp + 1
-        newOut = withOutputs mempty (pure $ out + 1)
-        constant = embedV . V.unsafeToVector <$> vector (integerToInt . toInteger $ value @n)
-
-        newVars = [
-            newInp
-            , newOut
-            ]
-
-        la = frequency $ (1, arbVar) : (1, constant) : fmap ((3, ) . return) newVars
-
-        in do
-            l <- la
-            let inp' =  max (length $ inputVariables l) inp
-            let out' =  max (length $ acOutput l) out
-            r <- arbitrary' inp' out' outMax
-            oneof $ fmap return [
-                l + r
-                , l * r
-                , l - r
-                , r - l
-                , l // r
-                , r // l
-                ]
-
-
-
-
-        -- | Haskell.otherwise  = return ArithmeticCircuit { acCircuit = mempty, acOutput = pure $ integerToNatural outMax}
-
-
-
+arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => ArithmeticCircuit 1 a -> Natural -> Gen (ArithmeticCircuit 1 a)
+arbitrary' ac 3 = return ac
+arbitrary' ac iter = do
+    let vars = getAllVars . acCircuit $ ac
+    li <- oneof $ fmap return vars
+    ri <- oneof $ fmap return vars
+    let (l, r) =( ac { acOutput = pure li }, ac { acOutput = pure ri })
+    ac' <- oneof $ fmap return [
+        l + r
+        , l * r
+        , l - r
+        , r - l
+        , l // r
+        , r // l
+        ]
+    arbitrary' ac' (iter + 1)
 
 -- TODO: make it more readable
-instance (FiniteField a, Haskell.Eq a, Haskell.Show a) => Haskell.Show (ArithmeticCircuit n a) where
+instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuit n a) where
     show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = "
         ++ show (acInput r) ++ ", acSystem = " ++ show (acSystem r) ++ ", acOutput = " ++ show o ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
@@ -248,14 +226,18 @@ instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
             pure ArithmeticCircuit{..}
 
 type F = Zp BLS12_381_Scalar
-data (Arithmetic a, KnownNat n) => ArithmeticCircuitTest n a = ArithmeticCircuitTest
+data ArithmeticCircuitTest n a = ArithmeticCircuitTest
     {
         arithmeticCircuit :: ArithmeticCircuit n a
-        , witnessInput    :: Map.Map Natural F
-    }
+        , witnessInput    :: Map.Map Natural a
+    } 
 
-instance (Arithmetic a, KnownNat n, Arbitrary a) => Arbitrary (ArithmeticCircuitTest n a) where
-    arbitrary :: Gen (ArithmeticCircuitTest n a)
+instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuitTest n a) where
+    show (ArithmeticCircuitTest ac wi) = "ArithmeticCircuit: " ++ show ac 
+        ++ ",\nwitnessInput: " ++ show wi
+
+instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuitTest 1 a) where
+    arbitrary :: Gen (ArithmeticCircuitTest 1 a)
     arbitrary = do
         ac <- arbitrary
         let keysAC = inputVariables ac

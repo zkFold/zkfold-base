@@ -14,6 +14,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk             (Plonk (Plonk), Plon
 import           ZkFold.Base.Protocol.NonInteractiveProof   (NonInteractiveProof (..))
 import           ZkFold.Prelude                             (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (inputVariables)
+import           ZkFold.Base.Protocol.Commitment.KZG (KZG)
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
@@ -23,15 +24,13 @@ instance (Show a, Show (Input a), Show (Witness a)) =>
     Show (NonInteractiveProofTestData a) where
     show (TestData a w) = "TestData: \n" ++ show a ++ "\n" ++ show w
 
-instance {-# INCOHERENT #-}
-    (NonInteractiveProof a, Arbitrary a, Arbitrary (Witness a)) =>
-    Arbitrary (NonInteractiveProofTestData a) where
+instance (NonInteractiveProof (KZG c1 c2 t f d), Arbitrary (KZG c1 c2 t f d), Arbitrary (Witness (KZG c1 c2 t f d))) =>
+    Arbitrary (NonInteractiveProofTestData (KZG c1 c2 t f d)) where
     arbitrary = TestData <$> arbitrary <*> arbitrary
 
-instance {-# OVERLAPPING #-}
-    Arbitrary (NonInteractiveProofTestData (PlonkBS 1) ) where
+instance Arbitrary (NonInteractiveProofTestData (PlonkBS 2) ) where
     arbitrary = do
-        rbPlonk@(Plonk _ _ _ _ ac _) <- arbitrary :: Gen (PlonkBS 1)
+        rbPlonk@(Plonk _ _ _ _ ac _) <- arbitrary :: Gen (PlonkBS 2)
         let keysAC = inputVariables ac
         values <- vector . integerToInt . naturalToInteger . length  $ keysAC
         let wi = fromList $ zip keysAC values

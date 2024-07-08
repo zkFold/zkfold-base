@@ -3,7 +3,6 @@
 
 module Tests.Arithmetization (specArithmetization) where
 
-import           Data.Map                                    (fromList)
 import           Prelude
 import           Test.Hspec
 import           Test.QuickCheck
@@ -16,15 +15,17 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Types                       (Symbolic)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest(..))
+import ZkFold.Base.Algebra.Basic.Class (MultiplicativeMonoid)
 
-propCircuitInvariance :: Arithmetic a => (ArithmeticCircuit 1 a, a, a) -> Bool
-propCircuitInvariance (ac, x, y) =
-    let ac' = mapVarArithmeticCircuit ac
-        v   = ac `eval` fromList [(0, x), (1, y)]
-        v'  = ac' `eval` fromList [(0, x), (1, y)]
+propCircuitInvariance :: (MultiplicativeMonoid a, Eq a) => ArithmeticCircuitTest 1 a -> Bool
+propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
+    let ArithmeticCircuitTest ac' wi' = mapVarArithmeticCircuitTest act
+        v   = ac `eval` wi
+        v'  = ac' `eval` wi'
     in v == v'
 
-specArithmetization' :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a) => IO ()
+specArithmetization' :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a, Show (ArithmeticCircuitTest 1 a)) => IO ()
 specArithmetization' = hspec $ do
     describe "Arithmetization specification" $ do
         describe "Variable mapping" $ do

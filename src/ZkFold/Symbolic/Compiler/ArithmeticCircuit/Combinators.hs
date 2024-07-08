@@ -16,7 +16,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     splitCircuit,
     foldCircuit,
     embedVarIndex,
-    embedVarIndexV
+    embedVarIndexV,
+    getAllVars
 ) where
 
 import           Control.Monad                                             (replicateM)
@@ -33,11 +34,16 @@ import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (splitAt, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..), acInput,
-                                                                            joinCircuits)
+                                                                            joinCircuits, Circuit (acSystem))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool)
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq                                   (Eq (..))
+import Data.Map ( elems )
+import ZkFold.Base.Algebra.Polynomials.Multivariate (variables)
+import           GHC.IsList                                          (IsList (..))
+import           Data.List                                           (sort)
+import           Data.Containers.ListUtils                           (nubOrd)
 
 boolCheckC :: Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
@@ -123,7 +129,10 @@ runInvert r = do
       isZero x = bool @(Bool a) zero one (x == zero)
 
 embedVarIndex :: Arithmetic a => Natural -> ArithmeticCircuit 1 a
-embedVarIndex n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure 1}
+embedVarIndex n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure n}
 
 embedVarIndexV :: (Arithmetic a, KnownNat n) => Natural -> ArithmeticCircuit n a
-embedVarIndexV n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure 1}
+embedVarIndexV n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure n}
+
+getAllVars :: MultiplicativeMonoid a => Circuit a -> [Natural]
+getAllVars ac = nubOrd $ sort $ 0 : concatMap (toList . variables) (elems $ acSystem ac)

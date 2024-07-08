@@ -91,6 +91,6 @@ specPlonk = hspec $ do
         describe "Conversion to Plonk constraints and back" $ do
             it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @F
         describe "Plonk constraint satisfaction" $ do
-            it "should hold" $ property $ propPlonkConstraintSatisfaction @1
+            it "should hold" $ property $ propPlonkConstraintSatisfaction @2
         describe "Plonk polynomial identity" $ do
-            it "should hold" $ property $ propPlonkPolyIdentity @1
+            it "should hold" $ property $ propPlonkPolyIdentity @2

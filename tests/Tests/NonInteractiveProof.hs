@@ -1,7 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE IncoherentInstances  #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Tests.NonInteractiveProof (specNonInteractiveProof) where
 
@@ -28,26 +26,16 @@ propNonInteractiveProof (TestData a w) =
 
 specNonInteractiveProof' :: forall a . (Typeable a, NonInteractiveProof a,
     Show a, Show (Input a), Show (Witness a),
-    Arbitrary a, Arbitrary (Witness a)) => IO ()
+    Arbitrary (NonInteractiveProofTestData a)) => IO ()
 specNonInteractiveProof' = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
             describe "All correct proofs" $ do
                 it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @a
 
-
-type PlonkBS1 = PlonkBS 1
-
-specNonInteractiveProofPlonk' ::  IO ()
-specNonInteractiveProofPlonk' = hspec $ do
-    describe "Non-interactive proof protocol specification" $ do
-        describe ("Type: " ++ show (typeRep (Proxy :: Proxy (PlonkBS 1)))) $ do
-            describe "All correct proofs" $ do
-                it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @PlonkBS1
-
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) 32)
 
     specPlonk
-    specNonInteractiveProofPlonk'
+    specNonInteractiveProof' @(PlonkBS 2)
