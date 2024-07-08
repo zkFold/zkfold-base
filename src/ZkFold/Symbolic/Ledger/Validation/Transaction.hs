@@ -1,8 +1,8 @@
 module ZkFold.Symbolic.Ledger.Validation.Transaction where
 
-import           Prelude                         hiding (Bool, Eq, length, splitAt, (*), (+), (==), (&&))
+import           Prelude                      hiding (Bool, Eq, length, splitAt, (&&), (*), (+), (==))
 
-import           ZkFold.Symbolic.Data.Bool       (BoolType (..))
+import           ZkFold.Symbolic.Data.Bool    (BoolType (..))
 import           ZkFold.Symbolic.Ledger.Types
 
 -- | Witness data for the inputs of a transaction.

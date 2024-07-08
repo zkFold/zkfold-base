@@ -1,9 +1,9 @@
 module ZkFold.Symbolic.Ledger.Types.Contract where
 
-import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Ledger.Types.Basic
-import           ZkFold.Symbolic.Ledger.Types.Hash (Hash)
+import           ZkFold.Symbolic.Ledger.Types.Hash  (Hash)
 
 -- | A contract is a specification on a transaction.
 -- A contract must be valid if the corresponding triggering condition holds for the transaction.

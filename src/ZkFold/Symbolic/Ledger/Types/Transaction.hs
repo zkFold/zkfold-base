@@ -5,8 +5,8 @@ import           Prelude                                hiding (Bool, Eq, length
 import           ZkFold.Symbolic.Ledger.Types.Basic
 import           ZkFold.Symbolic.Ledger.Types.Contract
 import           ZkFold.Symbolic.Ledger.Types.Input     (Input)
-import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 import           ZkFold.Symbolic.Ledger.Types.Output    (Output)
+import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 import           ZkFold.Symbolic.Ledger.Types.Value     (Value)
 
 -- | zkFold ledger transaction.
