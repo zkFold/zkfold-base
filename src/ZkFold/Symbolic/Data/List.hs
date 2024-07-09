@@ -1,5 +1,3 @@
-{-# LANGUAGE DerivingStrategies   #-}
-
 module ZkFold.Symbolic.Data.List where
 
 import           Data.Kind                                              (Type)
@@ -7,7 +5,6 @@ import           GHC.TypeNats                                           (Natural
 import           Prelude                                                (undefined)
 
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
-import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.FieldElement                      (FieldElementData(..))
 
 data List (context :: Natural -> Type -> Type) (a :: Type) x = List (context (TypeSize a context x) a) (context 1 a)
@@ -24,9 +21,3 @@ head xs = let (x, _) = uncons xs in x
 
 tail :: List context a x -> List context a x
 tail xs = let (_, xs') = uncons xs in xs'
-
-null :: List context a x -> Bool (context 1 a)
-null = undefined
-
-foldl :: (x -> a -> x) -> x -> List context a x -> x
-foldl = undefined
