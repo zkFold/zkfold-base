@@ -8,6 +8,8 @@ import           ZkFold.Symbolic.Ledger.Types
 -- | Witness data for the inputs of a transaction.
 data TransactionInputsWitness context
 
+type TransactionWitness context = TransactionInputsWitness context
+
 -- | Checks if the inputs of a transaction are valid.
 transactionInputsAreValid ::
        BlockId context
@@ -34,8 +36,8 @@ transactionIsValid ::
     -- ^ The id of the current block.
     -> Transaction context
     -- ^ The transaction to check.
-    -> TransactionInputsWitness context
-    -- ^ The witness data for the inputs of the transaction.
+    -> TransactionWitness context
+    -- ^ The witness data for the transaction.
     -> Bool context
 transactionIsValid s t w =
        transactionInputsAreValid s t w
