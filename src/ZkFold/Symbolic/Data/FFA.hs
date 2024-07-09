@@ -5,9 +5,9 @@
 module ZkFold.Symbolic.Data.FFA where
 
 import           Control.Monad                                             (return, (>>=))
-import           Data.Foldable                                             (foldl')
+import           Data.Foldable                                             (foldlM)
 import           Data.Function                                             (const, ($), (.))
-import           Data.Functor                                              ((<$>))
+import           Data.Functor                                              (fmap, (<$>))
 import           Data.Maybe                                                (fromJust)
 import           Data.Ratio                                                ((%))
 import           Data.Traversable                                          (for)
@@ -22,9 +22,11 @@ import           ZkFold.Base.Algebra.Basic.Number                          (Know
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                                            (iterateM)
 import           ZkFold.Symbolic.Compiler                                  (Arithmetic, ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitN, newAssigned,
                                                                             runCircuit)
 import           ZkFold.Symbolic.Data.Combinators                          (log2, maxBitsPerFieldElement)
+import           ZkFold.Symbolic.Data.Ord                                  (blueprintGE)
 
 type Size = 5
 
@@ -77,10 +79,16 @@ instance (FromConstant c (Zp p), Arithmetic a) => FromConstant c (FFA p Arithmet
       impl :: Natural -> ArithmeticCircuit Size a
       impl x = circuitN $ for (coprimes @a) $ \m -> newAssigned (fromConstant (x `mod` m))
 
-condSubOF :: Natural -> i -> m (i, i)
-condSubOF = error "TODO"
+condSubOF :: forall i a m . (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m (i, i)
+condSubOF m i = do
+  m' <- newAssigned (const $ fromConstant m)
+  bm <- expansion (numberOfBits @a) m'
+  bi <- expansion (numberOfBits @a) i
+  ovf <- blueprintGE @i @a @m @(NumberOfBits a) (fromJust $ toVector bi) (fromJust $ toVector bm)
+  res <- newAssigned (\x -> x i - x ovf * fromConstant m)
+  return (res, ovf)
 
-condSub :: MonadBlueprint i a m => Natural -> i -> m i
+condSub :: (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m i
 condSub m x = fst <$> condSubOF m x
 
 smallCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
@@ -88,7 +96,10 @@ smallCut = zipWithM condSub $ coprimes @a
 
 bigCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
 bigCut = zipWithM (\m x -> trimPow m x >>= trimPow m >>= condSub m) $ coprimes @a
-  where trimPow _ _ = error "TODO"
+  where trimPow m i = do
+          let s = ceiling (log2 m) :: Natural
+          (l, h) <- splitExpansion s (numberOfBits @a -! s) i
+          newAssigned (\x -> x l + x h * fromConstant (2 ^ s -! m))
 
 cast :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
 cast xs = do
@@ -96,12 +107,14 @@ cast xs = do
   zi <- newAssigned (const zero)
   let binary g m = snd <$> iterateM sigma (binstep m) (g, zi)
       binstep m (i, ci) = do
-        (i', j) <- newAssigned (\x -> x i + x i) >>= condSubOF @i @m m
+        (i', j) <- newAssigned (\x -> x i + x i) >>= condSubOF @i @a @m m
         ci' <- newAssigned (\x -> x ci + x j)
         return (i', ci')
   base <- newAssigned (const $ fromConstant (3 * 2 ^ (sigma -! 2) :: Natural))
   let ms = coprimes @a
-  _ <- zipWithM binary gs ms >>= foldl' (error "TODO") (return base) >>= error "TODO"
+  _ <- zipWithM binary gs ms
+        >>= foldlM (\i j -> newAssigned (($ i) + ($ j))) base
+        >>= fmap snd . splitExpansion sigma (numberOfBits @a -! sigma)
   error "TODO"
 
 instance (Finite (Zp p), Finite (Zp q)) => MultiplicativeSemigroup (FFA p Vector (Zp q)) where

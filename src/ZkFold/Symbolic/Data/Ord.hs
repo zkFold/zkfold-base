@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), circuitGE, circuitGT, getBitsBE) where
+module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), blueprintGE, circuitGE, circuitGT, getBitsBE) where
 
 import           Control.Monad                                             (foldM)
 import qualified Data.Bool                                                 as Haskell
@@ -93,26 +93,26 @@ getBitsBE x = let expansion = binaryExpansion $ pieces @a @x x
 
 circuitGE :: forall a n . Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a -> Bool (ArithmeticCircuit 1 a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
-circuitGE xs ys = Bool $ circuit solve
-    where
-        solve :: MonadBlueprint i a m => m i
-        solve = do
-            (_, hasNegOne) <- circuitDelta xs ys
-            newAssigned $ \p -> one - p hasNegOne
+circuitGE xs ys = Bool $ circuit $ do
+  is <- runCircuit xs
+  js <- runCircuit ys
+  blueprintGE is js
+
+blueprintGE :: MonadBlueprint i a m => V.Vector n i -> V.Vector n i -> m i
+blueprintGE xs ys = do
+  (_, hasNegOne) <- circuitDelta xs ys
+  newAssigned $ \p -> one - p hasNegOne
 
 circuitGT :: forall a n . Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a -> Bool (ArithmeticCircuit 1 a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
-circuitGT xs ys = Bool $ circuit solve
-    where
-        solve :: MonadBlueprint i a m => m i
-        solve = do
-            (hasOne, hasNegOne) <- circuitDelta xs ys
-            newAssigned $ \p -> p hasOne * (one - p hasNegOne)
+circuitGT xs ys = Bool $ circuit $ do
+  is <- runCircuit xs
+  js <- runCircuit ys
+  (hasOne, hasNegOne) <- circuitDelta is js
+  newAssigned $ \p -> p hasOne * (one - p hasNegOne)
 
-circuitDelta :: forall i a m n . MonadBlueprint i a m => ArithmeticCircuit n a -> ArithmeticCircuit n a -> m (i, i)
-circuitDelta xs ys = do
-    l <- runCircuit xs
-    r <- runCircuit ys
+circuitDelta :: forall i a m n . MonadBlueprint i a m => V.Vector n i -> V.Vector n i -> m (i, i)
+circuitDelta l r = do
     z1 <- newAssigned (Haskell.const zero)
     z2 <- newAssigned (Haskell.const zero)
     foldM update (z1, z2) $ Z.zip l r
@@ -127,6 +127,3 @@ circuitDelta xs ys = do
                 z1' <- newAssigned $ \p -> p z1 + (one - p z1) * (one - p z2) * (one - p y) * p x
                 z2' <- newAssigned $ \p -> p z2 + (one - p z1) * (one - p z2) * (one - p x) * p y
                 Haskell.return (z1', z2')
-
-
-
