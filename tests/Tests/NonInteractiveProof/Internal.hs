@@ -33,14 +33,9 @@ instance (NonInteractiveProof (KZG c1 c2 t f d), Arbitrary (KZG c1 c2 t f d), Ar
 instance Arbitrary (NonInteractiveProofTestData (PlonkBS 2) ) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 F)
-
-        let fullInp = length . inputVariables $ ac
-        vecPubInp <- genSubset (return []) 2 fullInp
+        let inputLen = length . inputVariables $ ac
+        vecPubInp <- genSubset (return []) 2 inputLen
         let (omega, k1, k2) = getParams 2
-
-        let wi' = fromList $ [(k, wi ! k) | k <- vecPubInp]
-
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
-
-        return $ TestData pl (PlonkWitnessInput wi', secret)
+        return $ TestData pl (PlonkWitnessInput wi, secret)
