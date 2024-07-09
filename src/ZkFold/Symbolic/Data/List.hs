@@ -21,3 +21,6 @@ head xs = let (x, _) = uncons xs in x
 
 tail :: List context a x -> List context a x
 tail xs = let (_, xs') = uncons xs in xs'
+
+(++) :: List context a x -> List context a x -> List context a x
+_ ++ _ = undefined

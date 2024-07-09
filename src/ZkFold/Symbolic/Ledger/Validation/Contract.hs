@@ -8,9 +8,9 @@ import           ZkFold.Symbolic.Ledger.Types
 data ContractWitness context
 
 -- | Checks if a contract is satisfied.
--- TODO: transaction should be provided as an argument
 contractIsSatisfied ::
-        ContractId context
-     -> ContractWitness context
-     -> Bool context
+       Transaction context
+    -> ContractId context
+    -> ContractWitness context
+    -> Bool context
 contractIsSatisfied _ _ = undefined
