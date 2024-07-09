@@ -118,7 +118,7 @@ instance Prime p => Field (Zp p) where
               in bool (rootOfUnity' g') x' (x' ^ (n `Haskell.div` 2) /= one)
 
 inv :: Integer -> Natural -> Natural
-inv a p = fromIntegral $ snd $ egcd (a, 1) (fromConstant p, 0)
+inv a p = fromIntegral $ snd (egcd (a, 1) (fromConstant p, 0)) `Haskell.mod` fromConstant p
   where
     egcd (x, y) (0, _) = (x, y)
     egcd (x, y) (x', y') = egcd (x', y') (x - q * x', y - q * y')
