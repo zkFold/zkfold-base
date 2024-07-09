@@ -22,4 +22,5 @@ newBlockIsValid ::
     -> Bool context
 newBlockIsValid curBlockId Block {..} w =
         blockReference == curBlockId
+        -- TODO: what if the list lengths are different?
      && all (uncurry (transactionIsValid curBlockId)) (zip blockTransactions w)
