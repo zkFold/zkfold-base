@@ -62,7 +62,7 @@ genSubset arr maxLength maxValue = do
         else do
             newNat <- integerToNatural <$> chooseInteger (1, toInteger maxValue)
             let arr' = toList . S.fromList . (newNat : ) <$> arr
-            genSubset arr' maxLength maxValue 
+            genSubset arr' maxLength maxValue
 
 type PlonkPermutationSize d = 3 * d
 

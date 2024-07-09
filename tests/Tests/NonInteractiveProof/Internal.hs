@@ -3,19 +3,20 @@
 
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
-import           Data.ByteString                            (ByteString)
-import           Prelude                                    hiding (Fractional (..), Num (..), length)
-import           Test.QuickCheck                            (Arbitrary (arbitrary), Gen)
+import           Data.ByteString                                     (ByteString)
+import           Data.Map                                            (fromList, (!))
+import           Prelude                                             hiding (Fractional (..), Num (..), length)
+import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen)
 
-import ZkFold.Base.Protocol.ARK.Plonk ( Plonk(Plonk), PlonkWitnessInput(..), genSubset, F )
-import           ZkFold.Base.Protocol.Commitment.KZG        (KZG)
-import           ZkFold.Base.Protocol.NonInteractiveProof   (NonInteractiveProof (..))
-import           ZkFold.Prelude                             (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (inputVariables)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest(..))
+import           ZkFold.Base.Data.Vector                             (Vector (..))
+import           ZkFold.Base.Protocol.ARK.Plonk                      (F, Plonk (Plonk), PlonkWitnessInput (..),
+                                                                      genSubset)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
-import ZkFold.Base.Data.Vector (Vector(..))
-import Data.Map ( fromList, (!) )
+import           ZkFold.Base.Protocol.Commitment.KZG                 (KZG)
+import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInteractiveProof (..))
+import           ZkFold.Prelude                                      (length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit          (inputVariables)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
