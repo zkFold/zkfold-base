@@ -230,6 +230,7 @@ test-suite zkfold-base-test
       Tests.Binary
       Tests.Blake2b
       Tests.ByteString
+      Tests.FFA
       Tests.Field
       Tests.GroebnerBasis
       Tests.Group
