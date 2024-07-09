@@ -95,7 +95,7 @@ smallCut = zipWithM condSub $ coprimes @a
 
 bigSub :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m i
 bigSub m j = trimPow j >>= trimPow >>= condSub m
-  where 
+  where
     s = ceiling (log2 m) :: Natural
     trimPow i = do
       (l, h) <- splitExpansion s (numberOfBits @a -! s) i
