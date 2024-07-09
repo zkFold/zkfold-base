@@ -10,11 +10,11 @@ import           Data.Function                                             (cons
 import           Data.Functor                                              (fmap, (<$>))
 import           Data.Maybe                                                (fromJust)
 import           Data.Ratio                                                ((%))
-import           Data.Traversable                                          (for)
+import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (fst, snd)
 import           Data.Zip                                                  (zipWith)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, ceiling, error)
+import           Prelude                                                   (Integer, ceiling)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, inv)
@@ -58,12 +58,11 @@ minv = zipWith (\x p -> fromConstant x `inv` p) (mis0 @a) (coprimes @a)
 instance (KnownNat p, Finite (Zp q), ToConstant (Zp p) c) => ToConstant (FFA p Vector (Zp q)) c where
   toConstant = (toConstant :: Zp p -> c) . fromConstant . impl
     where
-      impl :: FFA p Vector (Zp q) -> Natural
+      mods = coprimes @(Zp q)
+      binary g m = (fromConstant g * 2 ^ sigma) `div` fromConstant m
       impl (FFA xs) =
-        let mods = coprimes @(Zp q)
-            gs0 = zipWith (\x y -> toConstant x * y) xs $ minv @(Zp q)
+        let gs0 = zipWith (\x y -> toConstant x * y) xs $ minv @(Zp q)
             gs = zipWith mod gs0 mods
-            binary g m = (fromConstant g * 2 ^ sigma) `div` fromConstant m
             residue = floorN (3 % 4 + sum (zipWith binary gs mods) % 2 ^ sigma)
          in vectorDotProduct gs (mis @(Zp q) @p) -! mprod @(Zp q) @p * residue
 
@@ -94,14 +93,18 @@ condSub m x = fst <$> condSubOF m x
 smallCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
 smallCut = zipWithM condSub $ coprimes @a
 
-bigCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
-bigCut = zipWithM (\m x -> trimPow m x >>= trimPow m >>= condSub m) $ coprimes @a
-  where trimPow m i = do
-          let s = ceiling (log2 m) :: Natural
-          (l, h) <- splitExpansion s (numberOfBits @a -! s) i
-          newAssigned (\x -> x l + x h * fromConstant (2 ^ s -! m))
+bigSub :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m i
+bigSub m j = trimPow j >>= trimPow >>= condSub m
+  where 
+    s = ceiling (log2 m) :: Natural
+    trimPow i = do
+      (l, h) <- splitExpansion s (numberOfBits @a -! s) i
+      newAssigned (\x -> x l + x h * fromConstant (2 ^ s -! m))
 
-cast :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
+bigCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
+bigCut = zipWithM bigSub $ coprimes @a
+
+cast :: forall p i a m. (KnownNat p, Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
 cast xs = do
   gs <- zipWithM (\i m -> newAssigned (\x -> x i * fromConstant m)) xs (minv @a) >>= bigCut
   zi <- newAssigned (const zero)
@@ -112,20 +115,25 @@ cast xs = do
         return (i', ci')
   base <- newAssigned (const $ fromConstant (3 * 2 ^ (sigma -! 2) :: Natural))
   let ms = coprimes @a
-  _ <- zipWithM binary gs ms
+  residue <- zipWithM binary gs ms
         >>= foldlM (\i j -> newAssigned (($ i) + ($ j))) base
         >>= fmap snd . splitExpansion sigma (numberOfBits @a -! sigma)
-  error "TODO"
+  for ms $ \m -> do
+    dot <- zipWithM (\i x -> newAssigned (\w -> w i * fromConstant (x `mod` m))) gs (mis @a @p)
+            >>= traverse (bigSub m)
+            >>= foldlM (\i j -> newAssigned (($ i) + ($ j))) zi
+    newAssigned (\w -> w dot - fromConstant (mprod @a @p `mod` m) * w residue)
+        >>= bigSub m
 
 instance (Finite (Zp p), Finite (Zp q)) => MultiplicativeSemigroup (FFA p Vector (Zp q)) where
   x * y = fromConstant (toConstant x * toConstant y :: Zp p)
 
-instance Arithmetic a => MultiplicativeSemigroup (FFA p ArithmeticCircuit a) where
+instance (KnownNat p, Arithmetic a) => MultiplicativeSemigroup (FFA p ArithmeticCircuit a) where
   FFA q * FFA r = FFA $ circuitN $ do
     xs <- runCircuit q
     ys <- runCircuit r
     zs <- zipWithM (\i j -> newAssigned (($ i) * ($ j))) xs ys
-    bigCut zs >>= cast
+    bigCut zs >>= cast @p
 
 instance (Finite (Zp p), Finite (Zp q)) => Exponent (FFA p Vector (Zp q)) Natural where
   x ^ a = fromConstant (toConstant x ^ a :: Zp p)
@@ -142,12 +150,12 @@ instance (Finite (Zp p), Arithmetic a) => MultiplicativeMonoid (FFA p Arithmetic
 instance (Finite (Zp p), Finite (Zp q)) => AdditiveSemigroup (FFA p Vector (Zp q)) where
   x + y = fromConstant (toConstant x + toConstant y :: Zp p)
 
-instance Arithmetic a => AdditiveSemigroup (FFA p ArithmeticCircuit a) where
+instance (KnownNat p, Arithmetic a) => AdditiveSemigroup (FFA p ArithmeticCircuit a) where
   FFA q + FFA r = FFA $ circuitN $ do
     xs <- runCircuit q
     ys <- runCircuit r
     zs <- zipWithM (\i j -> newAssigned (($ i) + ($ j))) xs ys
-    smallCut zs >>= cast
+    smallCut zs >>= cast @p
 
 instance (Finite (Zp p), Scale c (Zp p), Finite (Zp q)) => Scale c (FFA p Vector (Zp q)) where
   scale k x = fromConstant (scale k one :: Zp p) * x
@@ -165,7 +173,7 @@ instance (Finite (Zp p), Arithmetic a) => AdditiveGroup (FFA p ArithmeticCircuit
   negate (FFA q) = FFA $ circuitN $ do
     xs <- runCircuit q
     ys <- zipWithM (\i m -> newAssigned (\w -> fromConstant m - w i)) xs $ coprimes @a
-    cast ys
+    cast @p ys
 
 instance (MultiplicativeMonoid (FFA p b a), AdditiveMonoid (FFA p b a), FromConstant Natural (FFA p b a)) => Semiring (FFA p b a)
 
