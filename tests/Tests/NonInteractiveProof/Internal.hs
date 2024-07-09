@@ -4,17 +4,18 @@
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
 import           Data.ByteString                            (ByteString)
-import           Data.Map                                   (fromList)
-import           GHC.Natural                                (naturalToInteger)
-import           GHC.Num                                    (integerToInt)
 import           Prelude                                    hiding (Fractional (..), Num (..), length)
-import           Test.QuickCheck                            (Arbitrary (arbitrary), Gen, vector)
+import           Test.QuickCheck                            (Arbitrary (arbitrary), Gen)
 
-import           ZkFold.Base.Protocol.ARK.Plonk             (Plonk (Plonk), PlonkWitnessInput (..))
+import ZkFold.Base.Protocol.ARK.Plonk ( Plonk(Plonk), PlonkWitnessInput(..), genSubset, F )
 import           ZkFold.Base.Protocol.Commitment.KZG        (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof   (NonInteractiveProof (..))
 import           ZkFold.Prelude                             (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (inputVariables)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest(..))
+import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
+import ZkFold.Base.Data.Vector (Vector(..))
+import Data.Map ( fromList, (!) )
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
@@ -30,9 +31,15 @@ instance (NonInteractiveProof (KZG c1 c2 t f d), Arbitrary (KZG c1 c2 t f d), Ar
 
 instance Arbitrary (NonInteractiveProofTestData (PlonkBS 2) ) where
     arbitrary = do
-        rbPlonk@(Plonk _ _ _ _ ac _) <- arbitrary :: Gen (PlonkBS 2)
-        let keysAC = inputVariables ac
-        values <- vector . integerToInt . naturalToInteger . length  $ keysAC
-        let wi = fromList $ zip keysAC values
+        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 F)
+
+        let fullInp = length . inputVariables $ ac
+        vecPubInp <- genSubset (return []) 2 fullInp
+        let (omega, k1, k2) = getParams 2
+
+        let wi' = fromList $ [(k, wi ! k) | k <- vecPubInp]
+
+        pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
-        return $ TestData rbPlonk (PlonkWitnessInput wi, secret)
+
+        return $ TestData pl (PlonkWitnessInput wi', secret)

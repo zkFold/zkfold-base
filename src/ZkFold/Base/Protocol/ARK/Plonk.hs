@@ -53,16 +53,16 @@ instance (KnownNat d, KnownNat n) => Arbitrary (Plonk d n t) where
         vecPubInp <- genSubset (return []) (value @n) fullInp
         let (omega, k1, k2) = getParams $ value @n
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
-        where
-            genSubset :: Gen [Natural] -> Natural -> Natural -> Gen [Natural]
-            genSubset arr maxPub maxInp = do
-                len <- length <$> arr
-                if maxPub == len
-                    then arr
-                    else do
-                        newNat <- integerToNatural <$> chooseInteger (0, toInteger maxInp)
-                        let arr' = toList . S.fromList . (newNat : ) <$> arr
-                        genSubset arr' maxPub maxInp
+
+genSubset :: Gen [Natural] -> Natural -> Natural -> Gen [Natural]
+genSubset arr maxLength maxValue = do
+    len <- length <$> arr
+    if len == maxLength
+        then arr
+        else do
+            newNat <- integerToNatural <$> chooseInteger (1, toInteger maxValue)
+            let arr' = toList . S.fromList . (newNat : ) <$> arr
+            genSubset arr' maxLength maxValue 
 
 type PlonkPermutationSize d = 3 * d
 

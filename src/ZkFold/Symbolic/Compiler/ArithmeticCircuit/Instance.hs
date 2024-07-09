@@ -188,9 +188,7 @@ arbitrary' ac iter = do
         l + r
         , l * r
         , l - r
-        , r - l
         , l // r
-        , r // l
         ]
     arbitrary' ac' (iter + 1)
 
@@ -241,8 +239,7 @@ instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuitTest 1 a) wh
     arbitrary = do
         ac <- arbitrary
         let keysAC = inputVariables ac
-        let len = length keysAC
-        values <- vector (integerToInt $ naturalToInteger len)
+        values <- vector . integerToInt . naturalToInteger . length  $ keysAC
         let wi = fromList $ zip keysAC values
         return ArithmeticCircuitTest {
             arithmeticCircuit = ac
