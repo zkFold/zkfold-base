@@ -3,35 +3,32 @@
 
 module ZkFold.Symbolic.Cardano.Types.Address where
 
-import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Base.Data.Vector            (Vector)
+import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool          (Bool)
-import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Eq            (Eq)
+import           ZkFold.Symbolic.Data.Eq             (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
-import           ZkFold.Symbolic.Data.FieldElement  (FieldElementData)
+import           ZkFold.Symbolic.Data.FieldElement   (FieldElementData)
 
-type AddressType b a = ByteString 4 b a
-type PaymentCredential b a = ByteString 224 b a
-type StakingCredential b a = ByteString 224 b a
+type AddressType context = ByteString 4 context
+type PaymentCredential context = ByteString 224 context
+type StakingCredential context = ByteString 224 context
 
-newtype Address b a = Address (AddressType b a, (PaymentCredential b a, StakingCredential b a))
+newtype Address context = Address (AddressType context, (PaymentCredential context, StakingCredential context))
 
-deriving instance Arithmetic a => FieldElementData a Vector (Address Vector a)
+deriving instance FieldElementData F CtxEvaluation (Address CtxEvaluation)
 
-deriving instance Arithmetic a => SymbolicData a (Address ArithmeticCircuit a)
+deriving instance SymbolicData F (Address CtxCompilation)
 
-deriving via (Structural (Address ArithmeticCircuit a))
-         instance Arithmetic a =>
-         Eq (Bool (ArithmeticCircuit 1 a)) (Address ArithmeticCircuit a)
+deriving via (Structural (Address CtxCompilation))
+         instance Eq (Bool CtxCompilation) (Address CtxCompilation)
 
-addressType :: Address b a -> AddressType b a
+addressType :: Address context -> AddressType context
 addressType (Address (t, _)) = t
 
-paymentCredential :: Address b a -> PaymentCredential b a
+paymentCredential :: Address context -> PaymentCredential context
 paymentCredential (Address (_, (pc, _))) = pc
 
-stakingCredential :: Address b a -> StakingCredential b a
+stakingCredential :: Address context -> StakingCredential context
 stakingCredential (Address (_, (_, sc))) = sc
