@@ -22,7 +22,8 @@ import           Prelude                                                   (Inte
                                                                             (++), (.), (<$>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, oneof, vector, chooseInteger)
+import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
+                                                                            oneof, vector)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)

@@ -7,8 +7,8 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial where
 import           Control.DeepSeq                 (NFData)
 import           Data.Aeson                      (FromJSON, ToJSON)
 import           Data.List                       (intercalate)
-import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, isSubmapOfBy,
-                                                  lookup, mapKeys, unionWith, fromListWith)
+import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, fromListWith,
+                                                  isSubmapOfBy, lookup, mapKeys, unionWith)
 import qualified Data.Map.Strict                 as Map
 import           GHC.Generics                    (Generic)
 import           GHC.IsList                      (IsList (..))
