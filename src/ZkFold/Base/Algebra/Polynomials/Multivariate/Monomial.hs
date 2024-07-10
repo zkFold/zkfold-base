@@ -104,4 +104,4 @@ lcmM :: Monomial i j => Mono i j -> Mono i j -> Mono i j
 lcmM (M l) (M r) = M $ unionWith max l r
 
 gcdM :: Monomial i j => Mono i j -> Mono i j -> Mono i j
-gcdM (M al) (M ar) = M (intersectionWith min al ar)
+gcdM (M l) (M r) = M (intersectionWith min l r)

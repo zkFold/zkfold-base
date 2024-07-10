@@ -1,12 +1,14 @@
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Groebner where
 
 import           Data.Bool                                               (bool)
+import           Data.List                                               (sortBy)
 import           Prelude                                                 hiding (Num (..), drop, lcm, length, sum, take,
                                                                           (!!), (/))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
+import           ZkFold.Prelude                                          (length, (!!))
 
 reducable :: Polynomial c i j  => Poly c i j -> Poly c i j -> Bool
 reducable l r = dividable (lt l) (lt r)
@@ -74,3 +76,15 @@ makeSPoly l r =
     in if null as
         then zero
         else r' - l'
+
+groebnerStep ::
+        (Ring j, Polynomial c i j)
+    => [Poly c i j]
+    -> [Poly c i j]
+groebnerStep ps =
+    let n = length ps
+        inds = [(i, j) | i <- [0 .. n-!1], j <- [0 .. n-!1], i < j]
+        ss   = map (\(i, j) -> makeSPoly (ps !! i) (ps !! j) `reduceMany` ps) inds
+        ss'  = filter (not . zeroP) ss
+        ps'  = sortBy (flip compare) (ss' ++ ps)
+    in systemReduce ps'
