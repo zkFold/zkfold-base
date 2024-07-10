@@ -36,7 +36,7 @@ instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (Plon
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 F)
         let inputLen = length . inputVariables $ ac
         vecPubInp <- genSubset (return []) (value @n) inputLen
-        let (omega, k1, k2) = getParams 32
+        let (omega, k1, k2) = getParams 5
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
         return $ TestData pl (PlonkWitnessInput wi, secret)

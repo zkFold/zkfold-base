@@ -51,7 +51,7 @@ instance (KnownNat d, KnownNat n) => Arbitrary (Plonk d n t) where
         ac <- arbitrary
         let fullInp = length . inputVariables $ ac
         vecPubInp <- genSubset (return []) (value @n) fullInp
-        let (omega, k1, k2) = getParams $ value @d
+        let (omega, k1, k2) = getParams $ ceiling @Double @Natural $ logBase 2 $ fromIntegral (value @d)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
 
 genSubset :: Gen [Natural] -> Natural -> Natural -> Gen [Natural]
