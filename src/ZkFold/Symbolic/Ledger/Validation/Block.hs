@@ -14,13 +14,13 @@ type BlockWitness context = List context (Transaction context, TransactionWitnes
 newBlockIsValid ::
       Signature context
    => BlockId context
-   -- ^ The id of the current block.
+   -- ^ The id of the latest valid block.
    -> Block context
    -- ^ The new block to check.
    -> BlockWitness context
    -- ^ The witness data for the new block.
    -> Bool context
-newBlockIsValid curBlockId Block {..} ws =
-        blockReference == curBlockId
-     && all (uncurry (transactionIsValid curBlockId)) ws
+newBlockIsValid lastBlockId Block {..} ws =
+        lastBlockId == blockReference
+     && all (uncurry (transactionIsValid blockReference)) ws
      && blockTransactions == fmap fst ws

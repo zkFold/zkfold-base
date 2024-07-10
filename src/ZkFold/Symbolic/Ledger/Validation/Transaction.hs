@@ -35,13 +35,13 @@ transactionInputsAreValid ::
    -> TransactionInputsWitness context
    -- ^ The witness data for the inputs of the transaction.
    -> Bool context
-transactionInputsAreValid blockId tx (wPrv, wPub) =
+transactionInputsAreValid bId tx (wPrv, wPub) =
    let privateInputs = txInputs tx
        publicInputs = txPublicInputs tx
 
-   in all (uncurry $ privateInputIsValid blockId) wPrv
+   in all (uncurry $ privateInputIsValid bId) wPrv
    && privateInputs == fmap fst wPrv
-   && all (uncurry $ publicInputIsValid blockId) wPub
+   && all (uncurry $ publicInputIsValid bId) wPub
    && publicInputs == fmap fst wPub
 
 -- | Checks if the balance of a transaction is correct.
@@ -81,7 +81,7 @@ transactionIsValid ::
    -> TransactionWitness context
    -- ^ The witness data for the inputs of the transaction.
    -> Bool context
-transactionIsValid blockId tx (wInputs, wContracts) =
-       transactionInputsAreValid blockId tx wInputs
+transactionIsValid bId tx (wInputs, wContracts) =
+       transactionInputsAreValid bId tx wInputs
     && transactionBalanceIsCorrect tx
     && transactionContractsAreSatisfied tx wContracts
