@@ -4,13 +4,26 @@ import           Prelude                      hiding (Bool, Eq, length, splitAt,
 
 import           ZkFold.Symbolic.Ledger.Types
 
--- | Witness data for a contract.
-data ContractWitness context
+-- | Witness data for a spending contract.
+data SpendingContractWitness context
+
+-- | Witness data for a minting contract.
+data MintingContractWitness context
 
 -- | Checks if a contract is satisfied.
-contractIsSatisfied ::
+spendingContractIsSatisfied ::
        Transaction context
     -> ContractId context
-    -> ContractWitness context
+    -> Datum context
+    -> SpendingContractWitness context
     -> Bool context
-contractIsSatisfied _ _ = undefined
+spendingContractIsSatisfied _ _ = undefined
+
+-- | Checks if a minting contract is satisfied.
+mintingContractIsSatisfied ::
+       Transaction context
+    -> ContractId context
+    -> Token context
+    -> MintingContractWitness context
+    -> Bool context
+mintingContractIsSatisfied _ _ = undefined

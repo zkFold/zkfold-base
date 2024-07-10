@@ -5,7 +5,6 @@ import           Prelude                                        hiding (Bool, Eq
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Eq                        (Eq(..))
-import           ZkFold.Symbolic.Data.List                      ((++))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Contract
 import           ZkFold.Symbolic.Ledger.Validation.PrivateInput
@@ -18,7 +17,10 @@ type TransactionInputsWitness context =
       )
 
 -- | Witness data for a transaction satisfies the included contracts.
-type TransactionContractsWitness context = List context (ContractId context, ContractWitness context)
+type TransactionContractsWitness context = 
+      ( List context ((ContractId context, Datum context), SpendingContractWitness context)
+      , List context ((ContractId context, Token context), MintingContractWitness context)
+      )
 
 -- | Witness data for a transaction.
 type TransactionWitness context = (TransactionInputsWitness context, TransactionContractsWitness context)
@@ -55,19 +57,19 @@ transactionBalanceIsCorrect tx =
    in producing == spending + minting
 
 -- | Checks if a transaction satisfies the included contracts.
--- TODO: make sure that contracts are supplied with the correct public inputs.
 transactionContractsAreSatisfied ::
       Signature context
    => Transaction context
    -> TransactionContractsWitness context
    -> Bool context
-transactionContractsAreSatisfied tx ws =
-   let spendingContracts = txoAddress . txiOutput <$> txInputs tx
-       mintingContracts = (\(Value cId _ _) -> cId) <$> txMint tx
-       contracts = spendingContracts ++ mintingContracts
+transactionContractsAreSatisfied tx (wSpend, wMint) =
+   let spendingContracts = (\(Output addr _ datum) -> (addr, datum)) . txiOutput <$> txInputs tx
+       mintingContracts = (\(Value cId token _) -> (cId, token)) <$> txMint tx
 
-   in all (uncurry $ contractIsSatisfied tx) ws
-   && contracts == fmap fst ws
+   in all (\((addr, datum), w) -> spendingContractIsSatisfied tx addr datum w) wSpend
+   && spendingContracts == fmap fst wSpend
+   && all (\((cId, token), w) -> mintingContractIsSatisfied tx cId token w) wMint
+   && mintingContracts == fmap fst wMint
 
 -- | Checks if a transaction is valid.
 transactionIsValid ::
