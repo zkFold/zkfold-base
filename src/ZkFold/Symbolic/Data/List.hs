@@ -1,12 +1,12 @@
 module ZkFold.Symbolic.Data.List where
 
-import           Data.Kind                                              (Type)
-import           GHC.TypeNats                                           (Natural)
-import           Prelude                                                (undefined, (.), flip)
+import           Data.Foldable                     (Foldable(..))
+import           Data.Kind                         (Type)
+import           GHC.TypeNats                      (Natural)
+import           Prelude                           (undefined, (.), flip)
 
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
-import           ZkFold.Symbolic.Data.FieldElement                      (FieldElementData(..))
-import Data.Foldable (Foldable(..))
+import           ZkFold.Symbolic.Data.Bool         (Bool)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElementData(..))
 
 data List (context :: Natural -> Type -> Type) (a :: Type) x = List (context (TypeSize a context x) a) (context 1 a)
 
@@ -39,3 +39,9 @@ last = head . reverse
 
 (++) :: List context a x -> List context a x -> List context a x
 _ ++ _ = undefined
+
+filter :: 
+       (x -> Bool (context 1 a))
+    -> List context a x
+    -> List context a x
+filter = undefined

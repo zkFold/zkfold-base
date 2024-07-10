@@ -53,6 +53,7 @@ type Signature context =
     , Eq (Bool context) (List context (Address context, Datum context))
     , Eq (Bool context) (List context (ContractId context, Token context))
     , Eq (Bool context) (List context (Input context))
+    , Eq (Bool context) (List context (Address context, TransactionId context))
     , Eq (Bool context) (List context (Transaction context))
     , Foldable (List context)
     , Functor (List context)

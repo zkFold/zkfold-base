@@ -2,6 +2,7 @@ module ZkFold.Symbolic.Ledger.Types.Basic where
 
 import           Prelude                   hiding (Bool, Eq, length, splitAt, (*), (+))
 
+import qualified ZkFold.Symbolic.Data.Bool as Symbolic
 import qualified ZkFold.Symbolic.Data.List as Symbolic
 
 {-
@@ -12,7 +13,7 @@ import qualified ZkFold.Symbolic.Data.List as Symbolic
 data F
 
 -- | Boolean.
-data Bool context
+type Bool context = Symbolic.Bool (context 1 F)
 
 -- | Unsigned 32-bit integer.
 data UInt32 context
