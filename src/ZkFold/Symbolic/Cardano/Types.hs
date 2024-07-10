@@ -1,5 +1,6 @@
 module ZkFold.Symbolic.Cardano.Types (
     module ZkFold.Symbolic.Cardano.Types.Address,
+    module ZkFold.Symbolic.Cardano.Types.Basic,
     module ZkFold.Symbolic.Cardano.Types.Input,
     module ZkFold.Symbolic.Cardano.Types.Output,
     module ZkFold.Symbolic.Cardano.Types.OutputRef,
@@ -10,6 +11,7 @@ module ZkFold.Symbolic.Cardano.Types (
 import           Prelude                                   hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Cardano.Types.Address
+import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Input
 import           ZkFold.Symbolic.Cardano.Types.Output
 import           ZkFold.Symbolic.Cardano.Types.OutputRef
