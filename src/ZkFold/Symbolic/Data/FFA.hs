@@ -1,44 +1,56 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.FFA where
 
 import           Control.Monad                                             (return, (>>=))
-import           Data.Foldable                                             (foldlM)
+import           Data.Foldable                                             (any, foldlM)
 import           Data.Function                                             (const, ($), (.))
 import           Data.Functor                                              (fmap, (<$>))
+import           Data.List                                                 (dropWhile, (++))
 import           Data.Maybe                                                (fromJust)
 import           Data.Ratio                                                ((%))
 import           Data.Traversable                                          (for, traverse)
-import           Data.Tuple                                                (fst, snd)
+import           Data.Tuple                                                (fst, snd, uncurry)
 import           Data.Zip                                                  (zipWith)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, ceiling)
+import           Prelude                                                   (Integer, error)
+import qualified Prelude                                                   as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, inv)
 import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat, value)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                                            (iterateM)
-import           ZkFold.Symbolic.Compiler                                  (Arithmetic, ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitN, newAssigned,
                                                                             runCircuit)
 import           ZkFold.Symbolic.Data.Combinators                          (log2, maxBitsPerFieldElement)
 import           ZkFold.Symbolic.Data.Ord                                  (blueprintGE)
 
-type Size = 5
+type Size = 7
 
 -- | Foreign-field arithmetic based on https://cr.yp.to/papers/mmecrt.pdf
 newtype FFA (p :: Natural) b a = FFA (b Size a)
 
+deriving newtype instance Arithmetic a => SymbolicData a (FFA p ArithmeticCircuit a)
+deriving newtype instance Arithmetic a => Arithmetizable a (FFA p ArithmeticCircuit a)
+
+coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
+coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])
+  where
+    step ans xs =
+      case dropWhile (\x -> any ((Haskell./= 1) . Haskell.gcd x) ans) xs of
+        []      -> error "no options left"
+        (x:xs') -> (x, (ans ++ [x], xs'))
+
 coprimes :: forall a. Finite a => Vector Size Natural
-coprimes = let n = 2 ^ (maxBitsPerFieldElement @a `div` 2)
-            in fromJust $ toVector [n, n -! 1, n -! 3, n -! 5, n -! 9]
+coprimes = coprimesDownFrom @Size $ 2 ^ (maxBitsPerFieldElement @a `div` 2)
 
 sigma :: Natural
-sigma = ceiling (log2 $ value @Size) + 1 :: Natural
+sigma = Haskell.ceiling (log2 $ value @Size) + 1 :: Natural
 
 mprod0 :: forall a. Finite a => Natural
 mprod0 = product (coprimes @a)
@@ -96,7 +108,7 @@ smallCut = zipWithM condSub $ coprimes @a
 bigSub :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m i
 bigSub m j = trimPow j >>= trimPow >>= condSub m
   where
-    s = ceiling (log2 m) :: Natural
+    s = Haskell.ceiling (log2 m) :: Natural
     trimPow i = do
       (l, h) <- splitExpansion s (numberOfBits @a -! s) i
       newAssigned (\x -> x l + x h * fromConstant (2 ^ s -! m))
