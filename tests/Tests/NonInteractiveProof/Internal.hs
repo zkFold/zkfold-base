@@ -4,6 +4,7 @@
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
 import           Data.ByteString                                     (ByteString)
+import           GHC.Natural                                         (Natural)
 import           GHC.TypeNats                                        (KnownNat)
 import           Prelude                                             hiding (Fractional (..), Num (..), length)
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen)
@@ -16,7 +17,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
 import           ZkFold.Base.Protocol.Commitment.KZG                 (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInteractiveProof (..))
 import           ZkFold.Prelude                                      (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit          (inputVariables)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit          (inputVariables, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
@@ -36,7 +37,7 @@ instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (Plon
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 F)
         let inputLen = length . inputVariables $ ac
         vecPubInp <- genSubset (return []) (value @n) inputLen
-        let (omega, k1, k2) = getParams 5
+        let (omega, k1, k2) = getParams $ ceiling @Double @Natural $ logBase 2 $ fromIntegral $ value @PlonkSizeBS
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
-        return $ TestData pl (PlonkWitnessInput wi, secret)
+        return $ TestData pl (PlonkWitnessInput $ witnessGenerator ac wi, secret)

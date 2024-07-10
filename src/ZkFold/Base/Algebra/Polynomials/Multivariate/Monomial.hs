@@ -8,7 +8,7 @@ import           Control.DeepSeq                 (NFData)
 import           Data.Aeson                      (FromJSON, ToJSON)
 import           Data.List                       (intercalate)
 import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, isSubmapOfBy,
-                                                  lookup, mapKeys, unionWith)
+                                                  lookup, mapKeys, unionWith, fromListWith)
 import qualified Data.Map.Strict                 as Map
 import           GHC.Generics                    (Generic)
 import           GHC.IsList                      (IsList (..))
@@ -55,7 +55,7 @@ mapVarMonomial m (M as) = M $ mapKeys (mapVar m) as
 instance Monomial i j => IsList (Mono i j) where
     type Item (Mono i j) = (i, j)
     toList (M m) = toList m
-    fromList m = M $ fromList m
+    fromList m = M $ fromListWith (+) m
 
 instance (Show i, Show j, Monomial i j) => Show (Mono i j) where
     show (M m) = intercalate "∙" . map showVar $ toList m

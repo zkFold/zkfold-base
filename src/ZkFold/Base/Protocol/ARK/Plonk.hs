@@ -43,8 +43,10 @@ type G2 = Point BLS12_381_G2
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
 
+-- TODO: disallow `d` that are not powers of 2
 data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (ArithmeticCircuit 1 F) F
     deriving (Show)
+
 -- TODO (Issue #25): make a proper implementation of Arbitrary
 instance (KnownNat d, KnownNat n) => Arbitrary (Plonk d n t) where
     arbitrary = do

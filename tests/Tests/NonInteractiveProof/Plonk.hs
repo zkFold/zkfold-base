@@ -4,11 +4,12 @@
 module Tests.NonInteractiveProof.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSizeBS, specPlonk) where
 
 import           Data.ByteString                            (ByteString)
-import           Data.List                                  (sort, transpose)
+import           Data.List                                  (transpose)
 import           Data.Map                                   ((!))
 import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
 import           GHC.IsList                                 (IsList (..))
+import           GHC.Natural                                (Natural)
 import           Prelude                                    hiding (Fractional (..), Num (..), drop, length, replicate,
                                                              take)
 import           Test.Hspec
@@ -20,11 +21,11 @@ import           ZkFold.Base.Algebra.Basic.Class            (AdditiveGroup (..),
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, value)
 import           ZkFold.Base.Algebra.Polynomials.Univariate (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
                                                              polyVecLinear, polyVecZero, toPolyVec)
+import           ZkFold.Base.Data.Vector                    (fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof   (NonInteractiveProof (..))
-import           ZkFold.Prelude                             (replicate, take)
 
 type PlonkSizeBS = 32
 type PlonkBS n = Plonk PlonkSizeBS n ByteString
@@ -34,14 +35,13 @@ propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint a -> B
 propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
-propPlonkConstraintSatisfaction :: forall n . KnownNat n => PlonkBS n -> NonInteractiveProofTestData (PlonkBS n) -> Bool
-propPlonkConstraintSatisfaction (Plonk _ _ _ iPub ac _) (TestData _ w) =
+propPlonkConstraintSatisfaction :: forall n . KnownNat n => NonInteractiveProofTestData (PlonkBS n) -> Bool
+propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
     let pr   = fromJust $ toPlonkRelation @PlonkSizeBS iPub ac
         (PlonkWitnessInput wInput, _) = w
         (w1', w2', w3') = wmap pr wInput
 
-        input = take (value @n) $ fmap (negate . snd) (sort $ toList wInput)
-        wPub  = input ++ replicate (value @PlonkSizeBS -! (value @n)) zero
+        wPub = toPolyVec @_ @PlonkSizeBS $ fmap (negate . (wInput !)) $ fromList @(V.Vector Natural) $ fromVector iPub
 
         qm' = V.toList $ fromPolyVec $ qM pr
         ql' = V.toList $ fromPolyVec $ qL pr
@@ -53,7 +53,7 @@ propPlonkConstraintSatisfaction (Plonk _ _ _ iPub ac _) (TestData _ w) =
             qlX * w1X + qrX * w2X + qoX * w3X + qmX * w1X * w2X + qcX + wPubX
         f _ = error "impossible"
 
-    in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', toList $ fromPolyVec w1', toList $ fromPolyVec w2', toList $ fromPolyVec w3', wPub]
+    in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', toList $ fromPolyVec w1', toList $ fromPolyVec w2', toList $ fromPolyVec w3', toList $ fromPolyVec wPub]
 
 propPlonkPolyIdentity :: forall n . KnownNat n => NonInteractiveProofTestData (PlonkBS n) -> Bool
 propPlonkPolyIdentity (TestData plonk w) =
@@ -65,8 +65,8 @@ propPlonkPolyIdentity (TestData plonk w) =
         PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
         (w1, w2, w3) = wmap wInput
 
-        input = fmap (negate . (wInput !)) iPub'
-        pubPoly = polyVecInLagrangeBasis @F @PlonkSizeBS @PlonkMaxPolyDegreeBS omega' $ toPolyVec @F @PlonkSizeBS input
+        wPub = fmap (negate . (wInput !)) iPub'
+        pubPoly = polyVecInLagrangeBasis @F @PlonkSizeBS @PlonkMaxPolyDegreeBS omega' $ toPolyVec @F @PlonkSizeBS wPub
 
         a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega' w1
         b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega' w2

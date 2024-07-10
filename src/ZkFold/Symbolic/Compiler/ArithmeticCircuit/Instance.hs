@@ -15,14 +15,14 @@ import qualified Data.Map                                                  as Ma
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           GHC.Natural                                               (naturalToInteger)
-import           GHC.Num                                                   (integerToInt)
+import           GHC.Num                                                   (integerToInt, integerToNatural)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   (Integer, Show, const, fmap, id, mempty,
                                                                             pure, return, show, type (~), zip, ($),
                                                                             (++), (.), (<$>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, oneof, vector)
+import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, oneof, vector, chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
@@ -168,16 +168,14 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
                 bs <- V.item <$> runCircuit b
                 V.zipWithM (\x y -> newAssigned $ \p -> p bs * (p x - p y) + p y) ts fs
 
--- TODO: make a proper implementation of Arbitrary
 instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit 1 a) where
     arbitrary = do
-        -- k <- integerToNatural <$> chooseInteger (2, 10)
-        let k = 10
+        k <- integerToNatural <$> chooseInteger (2, 10)
         let ac = ArithmeticCircuit { acCircuit = mempty {acInput = [1..k]}, acOutput = pure k }
-        arbitrary' ac 0
+        arbitrary' ac 10
 
 arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => ArithmeticCircuit 1 a -> Natural -> Gen (ArithmeticCircuit 1 a)
-arbitrary' ac 5 = return ac
+arbitrary' ac 0 = return ac
 arbitrary' ac iter = do
     let vars = getAllVars . acCircuit $ ac
     li <- oneof $ fmap return vars
@@ -189,7 +187,7 @@ arbitrary' ac iter = do
         , l - r
         , l // r
         ]
-    arbitrary' ac' (iter + 1)
+    arbitrary' ac' (iter -! 1)
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuit n a) where
