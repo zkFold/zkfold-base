@@ -1,41 +1,40 @@
-{-# LANGUAGE
-AllowAmbiguousTypes
-, DerivingStrategies
-, QuantifiedConstraints
-, TypeOperators
-#-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module ZkFold.Symbolic.Compiler.Circuit where
 
-import Control.Applicative
-import Control.Category
-import Data.Foldable
-import Data.Function (($))
-import Data.Functor
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.Monoid
-import Data.Semigroup
-import Data.Traversable
-import Data.Type.Equality
-import GHC.Generics
-import Numeric.Natural (Natural)
-
+import           Control.Applicative
+import           Control.Category
+import           Data.Foldable
+import           Data.Function                                (($))
+import           Data.Functor
+import           Data.Map.Strict                              (Map)
+import qualified Data.Map.Strict                              as Map
+import           Data.Monoid
+import           Data.Semigroup
+import           Data.Sequence                                (Seq)
+import qualified Data.Sequence                                as Seq
+import           Data.Traversable
+import           Data.Type.Equality
+import           GHC.Generics
+import           Numeric.Natural                              (Natural)
+import           Prelude                                      (Integer)
 import qualified Prelude
-import Prelude (Integer)
 
-import ZkFold.Base.Algebra.Polynomials.Multivariate (Poly)
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.VectorSpace
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.VectorSpace
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, var)
 
 -- The input variables are numbered in decreasing order n..1
 -- which is maintained as an invariant of the circuit.
 data Circuit i o a = Circuit
-  { systemC   :: Map Natural (Poly a Natural Integer)
+  { systemC  :: Seq (Poly a Integer Natural)
     -- ^ The system of polynomial constraints,
     -- each polynomial constitutes a "multi-edge"
     -- of the circuit graph.
-  , witnessC  :: Map Integer (i a -> a)
+  , witnessC :: Map Integer (i a -> a)
     -- ^ The witness generation function
   , outputC  :: o Integer
     -- ^ The output variables
@@ -78,7 +77,7 @@ concatC cs =
 evalC
   :: forall i o a. Functor o
   => Circuit i o a -> i a -> o a
-evalC c i = fmap (\var -> (witnessC c Map.! var) i) (outputC c)
+evalC c i = fmap (\v -> (witnessC c Map.! v) i) (outputC c)
 
 applyC :: i a -> Circuit (i :*: j) o a -> Circuit j o a
 applyC i c = c {witnessC = fmap (. ((:*:) i)) (witnessC c) }
@@ -106,9 +105,15 @@ class (forall i j. Functor (m i j))
       ) => m j (i :*: j) (i Integer)
     eval :: (Traversable i, VectorSpace a i, Functor o) => m i i (o Integer) -> i a -> o a
     runCircuit :: Circuit i o a -> m i i (o Integer)
+    constraint :: ClosedPoly Integer a -> m i i ()
+    newConstrained :: NewConstraint Integer a -> ((Integer -> a) -> a) -> m i i Integer
+
+type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
+
+type NewConstraint i a = forall x . Algebra a x => (i -> x) -> i -> x
 
 circuit
-  :: (Traversable i, VectorSpace a i)
+  :: (Traversable i, VectorSpace a i, Field a, Prelude.Eq a)
   => (forall m. MonadCircuit a m => m i i (o Integer))
   -> Circuit i o a
 circuit x =
@@ -118,11 +123,11 @@ newtype Blueprint a i j x = Blueprint
   {runBlueprint :: Circuit i U1 a -> (x, Circuit j U1 a)}
   deriving Functor
 
-instance Applicative (Blueprint a i i) where
+instance (Field a, Prelude.Eq a) => Applicative (Blueprint a i i) where
   pure = return
   (<*>) = (<¢>)
 
-instance MonadCircuit a (Blueprint a) where
+instance (Field a, Prelude.Eq a) => MonadCircuit a (Blueprint a) where
   return x = Blueprint $ \c -> (x,c)
   m >>= f = Blueprint $ \c ->
     let
@@ -142,3 +147,9 @@ instance MonadCircuit a (Blueprint a) where
     (o, c) -> evalC (c {outputC = o}) i
   runCircuit c = Blueprint $ \c' ->
     (outputC c, c {outputC = U1} <> c')
+  constraint p = Blueprint $ \c ->
+    ((), c { systemC = p var Seq.<| systemC c })
+  newConstrained p w = Blueprint $ \c ->
+    let index = maximum (Map.keysSet $ witnessC c) + 1
+     in (index, c { systemC = p var index Seq.<| systemC c
+                  , witnessC = Map.insert index (\i -> w ((($ i) <$> witnessC c) Map.!)) $ witnessC c })
