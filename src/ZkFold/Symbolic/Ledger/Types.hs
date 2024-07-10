@@ -45,6 +45,8 @@ import           ZkFold.Symbolic.Data.Eq         (Eq)
 type Signature context =
     ( AdditiveMonoid (Value context)
     , Eq (Bool context) (Hash context)
+    , Eq (Bool context) (Address context, Datum context)
+    , Eq (Bool context) (CurrencySymbol context, Token context)
     , Eq (Bool context) (Value context)
     , Eq (Bool context) (List context (Address context, Datum context))
     , Eq (Bool context) (List context (ContractId context, Token context))

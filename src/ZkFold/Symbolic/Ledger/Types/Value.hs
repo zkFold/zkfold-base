@@ -12,7 +12,10 @@ data Token context
 -- In order to mint or burn tokens, the transaction must satisfy the minting contract.
 type MintingContract tx w context = Contract tx (Token context) w context
 
+-- | A currency symbol is a hash of the minting contract that mints the tokens.
+type CurrencySymbol context = ContractId context
+
 -- | A value represents the amount of tokens that is contained in a transaction output.
 -- The `ContractId` corresponds to the contract that minted the tokens with the `Token` containing the input data.
 -- The `UInt64` contains the amount of tokens.
-data Value context = Value (ContractId context) (Token context) (UInt64 context)
+data Value context = Value (CurrencySymbol context) (Token context) (UInt64 context)

@@ -9,7 +9,7 @@ import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 -- | A contract is a specification on a transaction.
 -- A contract must be valid if the corresponding triggering condition holds for the transaction.
 -- See definitions of `SpendingContract` and `MintingContract` for details.
-newtype Contract tx pub prv context = Contract (tx -> pub -> prv -> Bool context)
+type Contract tx pub prv context = tx -> pub -> prv -> Bool context
 
 type ContractId context = Hash context
 
