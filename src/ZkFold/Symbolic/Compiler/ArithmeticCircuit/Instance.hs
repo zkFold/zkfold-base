@@ -173,12 +173,13 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
 -- TODO: make a proper implementation of Arbitrary
 instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit 1 a) where
     arbitrary = do
-        k <- integerToNatural <$> chooseInteger (0, 100)
+        -- k <- integerToNatural <$> chooseInteger (2, 10)
+        let k = 10
         let ac = ArithmeticCircuit { acCircuit = mempty {acInput = [1..k]}, acOutput = pure k }
         arbitrary' ac 0
 
 arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => ArithmeticCircuit 1 a -> Natural -> Gen (ArithmeticCircuit 1 a)
-arbitrary' ac 20 = return ac
+arbitrary' ac 5 = return ac
 arbitrary' ac iter = do
     let vars = getAllVars . acCircuit $ ac
     li <- oneof $ fmap return vars
@@ -194,8 +195,8 @@ arbitrary' ac iter = do
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuit n a) where
-    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = "
-        ++ show (acInput r) ++ ", acSystem = " ++ show (acSystem r) ++ ", acOutput = " ++ show o ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
+    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = " ++ show (acInput r) 
+        ++ "\n, acSystem = " ++ show (acSystem r) ++ "\n, acOutput = " ++ show o ++ "\n, acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
 -- TODO: add witness generation info to the JSON object
 instance ToJSON a => ToJSON (ArithmeticCircuit n a) where

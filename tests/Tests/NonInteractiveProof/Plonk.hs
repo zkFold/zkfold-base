@@ -24,6 +24,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof   (NonInteractiveProof (..))
 import           ZkFold.Prelude                             (replicate, take)
+import Data.Map ((!))
 
 type PlonkSizeBS = 32
 type PlonkBS n = Plonk PlonkSizeBS n ByteString
@@ -64,7 +65,7 @@ propPlonkPolyIdentity (TestData plonk w) =
         PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
         (w1, w2, w3) = wmap wInput
 
-        input   = V.fromList $ take 2 $ fmap (negate . snd) (sort $ toList wInput)
+        input = fmap (negate . (wInput !)) iPub'
         pubPoly = polyVecInLagrangeBasis @F @PlonkSizeBS @PlonkMaxPolyDegreeBS omega' $ toPolyVec @F @PlonkSizeBS input
 
         a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega' w1

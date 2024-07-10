@@ -4,7 +4,6 @@
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
 import           Data.ByteString                                     (ByteString)
-import           Data.Map                                            (fromList, (!))
 import           Prelude                                             hiding (Fractional (..), Num (..), length)
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen)
 
@@ -17,6 +16,8 @@ import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInterac
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit          (inputVariables)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (..))
+import GHC.TypeNats (KnownNat)
+import ZkFold.Base.Algebra.Basic.Number (value)
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
@@ -30,12 +31,12 @@ instance (NonInteractiveProof (KZG c1 c2 t f d), Arbitrary (KZG c1 c2 t f d), Ar
     Arbitrary (NonInteractiveProofTestData (KZG c1 c2 t f d)) where
     arbitrary = TestData <$> arbitrary <*> arbitrary
 
-instance Arbitrary (NonInteractiveProofTestData (PlonkBS 2) ) where
+instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (PlonkBS n) ) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 F)
         let inputLen = length . inputVariables $ ac
-        vecPubInp <- genSubset (return []) 2 inputLen
-        let (omega, k1, k2) = getParams 2
+        vecPubInp <- genSubset (return []) (value @n) inputLen
+        let (omega, k1, k2) = getParams 32
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
         return $ TestData pl (PlonkWitnessInput wi, secret)

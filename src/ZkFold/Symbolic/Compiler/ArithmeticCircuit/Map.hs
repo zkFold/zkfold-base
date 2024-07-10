@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
-        mapVarArithmeticCircuitTest,
+        mapVarArithmeticCircuit,
         mapVarWitness
     ) where
 
@@ -24,8 +24,8 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithme
 mapVarWitness :: [Natural] -> (Map Natural a -> Map Natural a)
 mapVarWitness vars = mapKeys (mapVar $ Map.fromList $ zip vars [0..])
 
-mapVarArithmeticCircuitTest :: MultiplicativeMonoid a => ArithmeticCircuitTest n a -> ArithmeticCircuitTest n a
-mapVarArithmeticCircuitTest (ArithmeticCircuitTest ac wi) =
+mapVarArithmeticCircuit :: MultiplicativeMonoid a => ArithmeticCircuitTest n a -> ArithmeticCircuitTest n a
+mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
     let ct = acCircuit ac
         vars = getAllVars ct
         mappedCircuit = ct

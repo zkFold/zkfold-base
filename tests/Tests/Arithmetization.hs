@@ -20,7 +20,7 @@ import           ZkFold.Symbolic.Types                               (Symbolic)
 
 propCircuitInvariance :: (MultiplicativeMonoid a, Eq a) => ArithmeticCircuitTest 1 a -> Bool
 propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
-    let ArithmeticCircuitTest ac' wi' = mapVarArithmeticCircuitTest act
+    let ArithmeticCircuitTest ac' wi' = mapVarArithmeticCircuit act
         v   = ac `eval` wi
         v'  = ac' `eval` wi'
     in v == v'
