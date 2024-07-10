@@ -3,27 +3,35 @@
 
 module ZkFold.Symbolic.Cardano.Types.Value where
 
-import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
+import           GHC.Natural                         (Natural)
+import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector
+import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString
-import qualified ZkFold.Symbolic.Data.FieldElement as FE
-import           ZkFold.Symbolic.Data.UInt
+import qualified ZkFold.Symbolic.Data.FieldElement   as FE
 
-type PolicyId b a    = ByteString 224 b a
-type AssetName b a   = ByteString 256 b a
-type SingleAsset b a = (PolicyId b a, (AssetName b a, UInt 64 b a))
+type PolicyId context    = ByteString 224 context
+type AssetName context   = ByteString 256 context
+type SingleAsset context = (PolicyId context, (AssetName context, UInt 64 context))
 
-newtype Value n b a = Value { getValue :: Vector n (SingleAsset b a) }
+newtype Value n context = Value { getValue :: Vector n (SingleAsset context) }
 
-deriving instance
-    ( Arithmetic a
-    , KnownNat (FE.TypeSize a Vector (ByteString 224 Vector a, (ByteString 256 Vector a, UInt 64 Vector a)))
-    ) => FE.FieldElementData a Vector (Value n Vector a)
+deriving instance FE.FieldElementData F CtxEvaluation (Value n CtxEvaluation)
 
-deriving instance
-    ( Arithmetic a
-    , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
-    ) => SymbolicData a (Value n ArithmeticCircuit a)
+deriving instance SymbolicData F (Value n CtxCompilation)
+
+-- TODO
+instance Semigroup (Value n context) where
+    (<>) = undefined
+
+-- TODO
+instance Monoid (Value n context) where
+    mempty = undefined
+
+instance AdditiveSemigroup (Value n context) where
+    (+) = (<>)
+
+instance Scale Natural (Value n context) => AdditiveMonoid (Value n context) where
+    zero = mempty

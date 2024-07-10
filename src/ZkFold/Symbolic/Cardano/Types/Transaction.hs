@@ -1,6 +1,4 @@
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module ZkFold.Symbolic.Cardano.Types.Transaction where
 
@@ -8,59 +6,51 @@ import           Prelude                              hiding (Bool, Eq, length, 
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
+import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
 import           ZkFold.Symbolic.Cardano.Types.Output (Output)
-import           ZkFold.Symbolic.Cardano.Types.Value  (SingleAsset, Value)
+import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators
 import qualified ZkFold.Symbolic.Data.FieldElement    as FE
-import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Data.UTCTime
 
-newtype Transaction inputs rinputs outputs tokens datum b a = Transaction
-    ( Vector rinputs (Input tokens datum b a)
-    , (Vector inputs (Input tokens datum b a)
-    , (Vector outputs (Output tokens datum b a)
-    , (Value 1 b a
-    , (UTCTime b a, UTCTime b a)
+newtype Transaction inputs rinputs outputs tokens mint datum context = Transaction
+    ( Vector rinputs (Input tokens datum context)
+    , (Vector inputs (Input tokens datum context)
+    , (Vector outputs (Output tokens datum context)
+    , (Value mint context
+    , (UTCTime context, UTCTime context)
     ))))
-
-deriving instance
-    ( Arithmetic a
-    , KnownNat (FE.TypeSize a Vector (UTCTime Vector a))
-    , KnownNat (FE.TypeSize a Vector (Value tokens Vector a))
-    , KnownNat (FE.TypeSize a Vector (Output tokens datum Vector a))
-    , KnownNat (FE.TypeSize a Vector (Vector outputs (Output tokens datum Vector a)))
-    , KnownNat (FE.TypeSize a Vector (Input tokens datum Vector a))
-    , KnownNat (FE.TypeSize a Vector (Vector inputs (Input tokens datum Vector a)))
-    , KnownNat (FE.TypeSize a Vector (Vector rinputs (Input tokens datum Vector a)))
-    , KnownNat (256 + NumberOfRegisters a 32)
-    , KnownNat (FE.TypeSize a Vector (ByteString 224 Vector a, (ByteString 256 Vector a, UInt 64 Vector a)))
-    ) => FE.FieldElementData a Vector (Transaction inputs rinputs outputs tokens datum Vector a)
 
 -- TODO: Think how to prettify this abomination
 deriving instance
-    ( Arithmetic a
-    , KnownNat (TypeSize a (UTCTime ArithmeticCircuit a))
-    , KnownNat (TypeSize a (Value tokens ArithmeticCircuit a))
-    , KnownNat (TypeSize a (Output tokens datum ArithmeticCircuit a))
-    , KnownNat (TypeSize a (Vector outputs (Output tokens datum ArithmeticCircuit a)))
-    , KnownNat (TypeSize a (Input tokens datum ArithmeticCircuit a))
-    , KnownNat (TypeSize a (Vector inputs (Input tokens datum ArithmeticCircuit a)))
-    , KnownNat (TypeSize a (Vector rinputs (Input tokens datum ArithmeticCircuit a)))
-    , KnownNat (TypeSize a (SingleAsset ArithmeticCircuit a))
-    , KnownNat (256 + NumberOfRegisters a 32)
-    ) => SymbolicData a (Transaction inputs rinputs outputs tokens datum ArithmeticCircuit a)
+    ( KnownNat (FE.TypeSize F CtxEvaluation (Value tokens CtxEvaluation))
+    , KnownNat (FE.TypeSize F CtxEvaluation (Output tokens datum CtxEvaluation))
+    , KnownNat (FE.TypeSize F CtxEvaluation (Vector outputs (Output tokens datum CtxEvaluation)))
+    , KnownNat (FE.TypeSize F CtxEvaluation (Input tokens datum CtxEvaluation))
+    , KnownNat (FE.TypeSize F CtxEvaluation (Vector inputs (Input tokens datum CtxEvaluation)))
+    , KnownNat (FE.TypeSize F CtxEvaluation (Vector rinputs (Input tokens datum CtxEvaluation)))
+    , KnownNat (FE.TypeSize F CtxEvaluation (Value mint CtxEvaluation))
+    ) => FE.FieldElementData F Vector (Transaction inputs rinputs outputs tokens mint datum CtxEvaluation)
 
-txRefInputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector rinputs (Input tokens datum b a)
+-- TODO: Think how to prettify this abomination
+deriving instance
+    ( KnownNat (TypeSize F (Value tokens CtxCompilation))
+    , KnownNat (TypeSize F (Output tokens datum CtxCompilation))
+    , KnownNat (TypeSize F (Vector outputs (Output tokens datum CtxCompilation)))
+    , KnownNat (TypeSize F (Input tokens datum CtxCompilation))
+    , KnownNat (TypeSize F (Vector inputs (Input tokens datum CtxCompilation)))
+    , KnownNat (TypeSize F (Vector rinputs (Input tokens datum CtxCompilation)))
+    , KnownNat (TypeSize F (Value mint CtxCompilation))
+    ) => SymbolicData F (Transaction inputs rinputs outputs tokens mint datum CtxCompilation)
+
+txRefInputs :: Transaction inputs rinputs outputs tokens mint datum context -> Vector rinputs (Input tokens datum context)
 txRefInputs (Transaction (ris, _)) = ris
 
-txInputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector inputs (Input tokens datum b a)
+txInputs :: Transaction inputs rinputs outputs tokens mint datum context -> Vector inputs (Input tokens datum context)
 txInputs (Transaction (_, (is, _))) = is
 
-txOutputs :: Transaction inputs rinputs outputs tokens datum b a -> Vector outputs (Output tokens datum b a)
+txOutputs :: Transaction inputs rinputs outputs tokens mint datum context -> Vector outputs (Output tokens datum context)
 txOutputs (Transaction (_, (_, (os, _)))) = os
 
-txMint :: Transaction inputs rinputs outputs tokens datum b a -> Value 1 b a
+txMint :: Transaction inputs rinputs outputs tokens mint datum context -> Value mint context
 txMint (Transaction (_, (_, (_, (mint, _))))) = mint

@@ -9,42 +9,34 @@ import           Prelude                                 hiding (Bool, Eq, lengt
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                 (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
+import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
 import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString         (ByteString)
-import           ZkFold.Symbolic.Data.Combinators        (NumberOfRegisters)
 import qualified ZkFold.Symbolic.Data.FieldElement       as FE
-import           ZkFold.Symbolic.Data.UInt               (UInt)
 
-newtype Input tokens datum b a = Input (OutputRef b a, Output tokens datum b a)
-
-deriving instance
-    ( Arithmetic a
-    , KnownNat (FE.TypeSize a Vector (Value tokens Vector a))
-    , KnownNat (256 + NumberOfRegisters a 32)
-    , KnownNat (FE.TypeSize a Vector (ByteString 224 Vector a, (ByteString 256 Vector a, UInt 64 Vector a)))
-    ) => FE.FieldElementData a Vector (Input tokens datum Vector a)
+newtype Input tokens datum context = Input (OutputRef context, Output tokens datum context)
 
 deriving instance
-    ( Arithmetic a
-    , KnownNat (TypeSize a (Value tokens ArithmeticCircuit a))
-    , KnownNat (256 + NumberOfRegisters a 32)
-    , KnownNat (TypeSize a (ByteString 224 ArithmeticCircuit a, (ByteString 256 ArithmeticCircuit a, UInt 64 ArithmeticCircuit a)))
-    ) => SymbolicData a (Input tokens datum ArithmeticCircuit a)
+    KnownNat (FE.TypeSize F Vector (Value tokens CtxEvaluation))
+    => FE.FieldElementData F CtxEvaluation (Input tokens datum CtxEvaluation)
 
-txiOutputRef :: Input tokens datum b a -> OutputRef b a
+deriving instance
+    KnownNat (TypeSize F (Value tokens CtxCompilation))
+    => SymbolicData F (Input tokens datum CtxCompilation)
+
+txiOutputRef :: Input tokens datum context -> OutputRef context
 txiOutputRef (Input (ref, _)) = ref
 
-txiOutput :: Input tokens datum b a -> Output tokens datum b a
+txiOutput :: Input tokens datum context -> Output tokens datum context
 txiOutput (Input (_, txo)) = txo
 
-txiAddress :: Input tokens datum b a -> Address b a
+txiAddress :: Input tokens datum context -> Address context
 txiAddress (Input (_, txo)) = txoAddress txo
 
-txiTokens :: Input tokens datum b a -> Value tokens b a
+txiTokens :: Input tokens datum context -> Value tokens context
 txiTokens (Input (_, txo)) = txoTokens txo
 
-txiDatumHash :: Input tokens datum b a -> DatumHash b a
+txiDatumHash :: Input tokens datum context -> DatumHash context
 txiDatumHash (Input (_, txo)) = txoDatumHash txo
