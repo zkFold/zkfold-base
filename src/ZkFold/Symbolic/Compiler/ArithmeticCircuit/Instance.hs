@@ -16,14 +16,13 @@ import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           GHC.Natural                                               (naturalToInteger)
 import           GHC.Num                                                   (integerToInt)
-import           GHC.Num.Integer                                           (integerToNatural)
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   (Integer, Show, const, fmap, id, mempty,
                                                                             pure, return, show, type (~), zip, ($),
                                                                             (++), (.), (<$>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
+import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen,
                                                                             oneof, vector)
 
 import           ZkFold.Base.Algebra.Basic.Class
