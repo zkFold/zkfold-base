@@ -1,10 +1,11 @@
 module ZkFold.Symbolic.Ledger.Validation.Transaction where
 
-import           Prelude                                        hiding (Bool, Eq, length, splitAt, (&&), (*), (+), (==), (++), all, sum)
+import           Prelude                                        hiding (Bool, Eq, all, length, splitAt, sum, (&&), (*),
+                                                                 (+), (++), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
-import           ZkFold.Symbolic.Data.Eq                        (Eq(..))
+import           ZkFold.Symbolic.Data.Eq                        (Eq (..))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Contract
 import           ZkFold.Symbolic.Ledger.Validation.PrivateInput
@@ -17,7 +18,7 @@ type TransactionInputsWitness context =
       )
 
 -- | Witness data for a transaction satisfies the included contracts.
-type TransactionContractsWitness context = 
+type TransactionContractsWitness context =
       ( List context ((ContractId context, Datum context), SpendingContractWitness context)
       , List context ((ContractId context, Token context), MintingContractWitness context)
       )

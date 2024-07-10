@@ -1,9 +1,10 @@
 module ZkFold.Symbolic.Ledger.Validation.Block where
 
-import           Prelude                                       hiding (Bool, Eq(..), length, splitAt, (*), (+), (==), all, (&&), zip)
+import           Prelude                                       hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
+                                                                (*), (+), (==))
 
-import           ZkFold.Symbolic.Data.Bool                     (BoolType(..), all)
-import           ZkFold.Symbolic.Data.Eq                       (Eq(..))
+import           ZkFold.Symbolic.Data.Bool                     (BoolType (..), all)
+import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction
 

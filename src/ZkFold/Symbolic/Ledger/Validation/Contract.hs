@@ -1,6 +1,6 @@
 module ZkFold.Symbolic.Ledger.Validation.Contract where
 
-import           Prelude                      hiding (Bool, Eq, length, splitAt, (*), (+), (==), (&&))
+import           Prelude                      hiding (Bool, Eq, length, splitAt, (&&), (*), (+), (==))
 
 import           ZkFold.Symbolic.Data.Bool    ((&&))
 import           ZkFold.Symbolic.Data.Eq      ((==))

@@ -3,11 +3,11 @@ module ZkFold.Symbolic.Ledger.Types.Block where
 import           Prelude                                  hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Ledger.Types.Basic
+import           ZkFold.Symbolic.Ledger.Types.Contract    (ContractId)
 import           ZkFold.Symbolic.Ledger.Types.Hash        (Hash)
 import           ZkFold.Symbolic.Ledger.Types.Input       (Input)
 import           ZkFold.Symbolic.Ledger.Types.OutputRef   (TransactionId)
 import           ZkFold.Symbolic.Ledger.Types.Transaction (Transaction)
-import           ZkFold.Symbolic.Ledger.Types.Contract    (ContractId)
 
 -- | Block hash.
 type BlockId context = Hash context

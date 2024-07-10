@@ -1,10 +1,11 @@
 module ZkFold.Symbolic.Ledger.Validation.PublicInput where
 
-import           Prelude                      hiding (Bool, Eq, length, splitAt, (*), (+), (&&), (==), (/=), tail, init, head, any, all, last)
+import           Prelude                      hiding (Bool, Eq, all, any, head, init, last, length, splitAt, tail, (&&),
+                                               (*), (+), (/=), (==))
 
-import           ZkFold.Symbolic.Data.Bool    ((&&), any, all)
+import           ZkFold.Symbolic.Data.Bool    (all, any, (&&))
 import           ZkFold.Symbolic.Data.Eq      (Eq (..))
-import           ZkFold.Symbolic.Data.List    ((.:), init, last)
+import           ZkFold.Symbolic.Data.List    (init, last, (.:))
 import           ZkFold.Symbolic.Ledger.Types
 
 -- | Witness data that is required to prove the validity of a public transaction input.

@@ -1,12 +1,13 @@
 module ZkFold.Symbolic.Ledger.Validation.PrivateInput where
 
 import           Data.Bifunctor               (second)
-import           Prelude                      hiding (Bool, Eq, length, splitAt, (*), (+), (&&), (==), (/=), tail, init, head, any, all, last, filter)
+import           Prelude                      hiding (Bool, Eq, all, any, filter, head, init, last, length, splitAt,
+                                               tail, (&&), (*), (+), (/=), (==))
 
-import           ZkFold.Symbolic.Data.Bool    (any, (&&), all)
-import           ZkFold.Symbolic.Data.Eq      (Eq(..))
+import           ZkFold.Symbolic.Data.Bool    (all, any, (&&))
+import           ZkFold.Symbolic.Data.Eq      (Eq (..))
+import           ZkFold.Symbolic.Data.List    (filter, init, last, (.:))
 import           ZkFold.Symbolic.Ledger.Types
-import           ZkFold.Symbolic.Data.List    (last, init, (.:), filter)
 
 -- | Witness data that is required to prove the validity of a private transaction input.
 type PrivateInputWitness context =
