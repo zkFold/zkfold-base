@@ -272,6 +272,7 @@ test-suite zkfold-base-examples
       Examples.ByteString
       Examples.Conditional
       Examples.Eq
+      Examples.FFA
       Examples.Fibonacci
       Examples.LEQ
       Examples.MiMCHash

@@ -7,6 +7,7 @@ import           Examples.BatchTransfer (exampleBatchTransfer)
 import           Examples.ByteString    (exampleByteStringAnd, exampleByteStringExtend, exampleByteStringOr)
 import           Examples.Conditional   (exampleConditional)
 import           Examples.Eq            (exampleEq)
+import           Examples.FFA           (examplesFFA)
 import           Examples.Fibonacci     (exampleFibonacci)
 import           Examples.LEQ           (exampleLEQ)
 import           Examples.MiMCHash      (exampleMiMC)
@@ -29,6 +30,7 @@ main = do
     exampleUIntAdd @500
     exampleUIntMul @32
     exampleUIntMul @500
+    examplesFFA
     exampleUIntStrictAdd @32
     exampleUIntStrictAdd @500
     exampleUIntStrictMul @32
