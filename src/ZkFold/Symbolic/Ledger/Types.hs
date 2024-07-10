@@ -8,9 +8,17 @@ module ZkFold.Symbolic.Ledger.Types (
     module ZkFold.Symbolic.Ledger.Types.Output,
     module ZkFold.Symbolic.Ledger.Types.OutputRef,
     module ZkFold.Symbolic.Ledger.Types.Transaction,
-    module ZkFold.Symbolic.Ledger.Types.Value
+    module ZkFold.Symbolic.Ledger.Types.Value,
+    Signature
 ) where
 
+-- Re-exports
+import           Data.Foldable                            (Foldable)
+import           Data.Functor                             (Functor)
+import           Data.Zip                                 (Zip)
+
+import           ZkFold.Base.Algebra.Basic.Class          (AdditiveMonoid)
+import           ZkFold.Symbolic.Data.Eq                  (Eq)
 import           ZkFold.Symbolic.Ledger.Types.Address
 import           ZkFold.Symbolic.Ledger.Types.Basic
 import           ZkFold.Symbolic.Ledger.Types.Block
@@ -31,3 +39,21 @@ import           ZkFold.Symbolic.Ledger.Types.Value
 
     - Stake delegation and governance is implemented through contracts.
 -}
+
+type Signature context =
+    ( AdditiveMonoid (Value context)
+    , Eq (Bool context) (Hash context)
+    , Eq (Bool context) (Input context)
+    , Eq (Bool context) (Address context, Datum context)
+    , Eq (Bool context) (CurrencySymbol context, Token context)
+    , Eq (Bool context) (Value context)
+    , Eq (Bool context) (List context (Hash context))
+    , Eq (Bool context) (List context (Address context, Datum context))
+    , Eq (Bool context) (List context (ContractId context, Token context))
+    , Eq (Bool context) (List context (Input context))
+    , Eq (Bool context) (List context (Address context, TransactionId context))
+    , Eq (Bool context) (List context (Transaction context))
+    , Foldable (List context)
+    , Functor (List context)
+    , Zip (List context)
+    )
