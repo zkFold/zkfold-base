@@ -1,7 +1,8 @@
 module ZkFold.Symbolic.Ledger.Validation.Transaction where
 
-import           Prelude                                    hiding (Bool, Eq, length, splitAt, (&&), (*), (+), (==), (++), all)
+import           Prelude                                    hiding (Bool, Eq, length, splitAt, (&&), (*), (+), (==), (++), all, sum)
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Data.Bool                  (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Eq                    (Eq(..))
 import           ZkFold.Symbolic.Data.List                  ((++))
@@ -29,15 +30,20 @@ transactionInputsAreValid ::
 transactionInputsAreValid _ _ _ = undefined
 
 -- | Checks if the balance of a transaction is correct.
-transactionBalanceIsCorrect :: Transaction context -> Bool context
-transactionBalanceIsCorrect _ = undefined
+transactionBalanceIsCorrect ::
+      Signature context
+   => Transaction context
+   -> Bool context
+transactionBalanceIsCorrect tx =
+   let spending  = sum (txoValue . txiOutput <$> txInputs tx)
+       minting   = sum $ txMint tx
+       producing = sum $ txoValue <$> txOutputs tx
+   in producing == spending + minting
 
 -- | Checks if a transaction satisfies the included contracts.
 -- TODO: make sure that contracts are supplied with the correct public inputs.
 transactionContractsAreSatisfied ::
-      Eq (Bool context) (List context (ContractId context))
-   => Functor (List context)
-   => Foldable (List context)
+      Signature context
    => Transaction context
    -> TransactionContractsWitness context
    -> Bool context
@@ -50,9 +56,7 @@ transactionContractsAreSatisfied tx ws =
 
 -- | Checks if a transaction is valid.
 transactionIsValid ::
-      Eq (Bool context) (List context (ContractId context))
-   => Functor (List context)
-   => Foldable (List context)
+      Signature context
    => BlockId context
    -- ^ The id of the current block.
    -> Transaction context

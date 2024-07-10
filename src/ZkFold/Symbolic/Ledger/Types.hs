@@ -8,9 +8,11 @@ module ZkFold.Symbolic.Ledger.Types (
     module ZkFold.Symbolic.Ledger.Types.Output,
     module ZkFold.Symbolic.Ledger.Types.OutputRef,
     module ZkFold.Symbolic.Ledger.Types.Transaction,
-    module ZkFold.Symbolic.Ledger.Types.Value
+    module ZkFold.Symbolic.Ledger.Types.Value,
+    Signature
 ) where
 
+-- Re-exports
 import           ZkFold.Symbolic.Ledger.Types.Address
 import           ZkFold.Symbolic.Ledger.Types.Basic
 import           ZkFold.Symbolic.Ledger.Types.Block
@@ -22,6 +24,14 @@ import           ZkFold.Symbolic.Ledger.Types.OutputRef
 import           ZkFold.Symbolic.Ledger.Types.Transaction
 import           ZkFold.Symbolic.Ledger.Types.Value
 
+-- Imports
+import           Data.Foldable                   (Foldable)
+import           Data.Functor                    (Functor)
+import           Data.Zip                        (Zip)
+
+import           ZkFold.Base.Algebra.Basic.Class (AdditiveMonoid)
+import           ZkFold.Symbolic.Data.Eq         (Eq)
+
 {-
     zkFold's ledger is a UTXO-based ledger. The architecture of the ledger is mostly similar to the Cardano ledger with some key differences:
 
@@ -31,3 +41,14 @@ import           ZkFold.Symbolic.Ledger.Types.Value
 
     - Stake delegation and governance is implemented through contracts.
 -}
+
+type Signature context =
+    ( AdditiveMonoid (Value context)
+    , Eq (Bool context) (Hash context)
+    , Eq (Bool context) (Value context)
+    , Eq (Bool context) (List context (ContractId context))
+    , Eq (Bool context) (List context (Transaction context))
+    , Foldable (List context)
+    , Functor (List context)
+    , Zip (List context)
+    )
