@@ -5,6 +5,7 @@ module Tests.NonInteractiveProof.Plonk (PlonkBS, PlonkMaxPolyDegreeBS, PlonkSize
 
 import           Data.ByteString                            (ByteString)
 import           Data.List                                  (sort, transpose)
+import           Data.Map                                   ((!))
 import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
 import           GHC.IsList                                 (IsList (..))
@@ -24,7 +25,6 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof   (NonInteractiveProof (..))
 import           ZkFold.Prelude                             (replicate, take)
-import Data.Map ((!))
 
 type PlonkSizeBS = 32
 type PlonkBS n = Plonk PlonkSizeBS n ByteString

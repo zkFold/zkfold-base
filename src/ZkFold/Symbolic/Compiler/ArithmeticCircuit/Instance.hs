@@ -195,7 +195,7 @@ arbitrary' ac iter = do
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuit n a) where
-    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = " ++ show (acInput r) 
+    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = " ++ show (acInput r)
         ++ "\n, acSystem = " ++ show (acSystem r) ++ "\n, acOutput = " ++ show o ++ "\n, acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
 -- TODO: add witness generation info to the JSON object

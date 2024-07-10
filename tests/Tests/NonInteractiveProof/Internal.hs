@@ -4,9 +4,11 @@
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
 import           Data.ByteString                                     (ByteString)
+import           GHC.TypeNats                                        (KnownNat)
 import           Prelude                                             hiding (Fractional (..), Num (..), length)
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen)
 
+import           ZkFold.Base.Algebra.Basic.Number                    (value)
 import           ZkFold.Base.Data.Vector                             (Vector (..))
 import           ZkFold.Base.Protocol.ARK.Plonk                      (F, Plonk (Plonk), PlonkWitnessInput (..),
                                                                       genSubset)
@@ -16,8 +18,6 @@ import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInterac
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit          (inputVariables)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (..))
-import GHC.TypeNats (KnownNat)
-import ZkFold.Base.Algebra.Basic.Number (value)
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
