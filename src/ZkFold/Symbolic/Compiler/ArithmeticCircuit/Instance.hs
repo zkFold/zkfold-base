@@ -15,9 +15,9 @@ import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           GHC.Num                                                   (integerToNatural)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, Show, const, id, mempty,
-                                                                            pure, return, show, type (~), ($),
-                                                                            (++), (.), (<$>), (>>=))
+import           Prelude                                                   (Integer, Show, const, id, mempty, pure,
+                                                                            return, show, type (~), ($), (++), (.),
+                                                                            (<$>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
