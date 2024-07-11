@@ -74,7 +74,7 @@ instance (KnownNat p, Finite (Zp q), ToConstant (Zp p) c) => ToConstant (FFA p V
       impl (FFA xs) =
         let gs0 = zipWith (\x y -> toConstant x * y) xs $ minv @(Zp q)
             gs = zipWith mod gs0 mods
-            residue = floorN (3 % 4 + sum (zipWith binary gs mods) % 2 ^ sigma)
+            residue = floorN ((3 % 4) + sum (zipWith binary gs mods) % (2 ^ sigma))
          in vectorDotProduct gs (mis @(Zp q) @p) -! mprod @(Zp q) @p * residue
 
 instance (FromConstant c (Zp p), Finite (Zp q)) => FromConstant c (FFA p Vector (Zp q)) where
@@ -91,12 +91,12 @@ instance (FromConstant c (Zp p), Arithmetic a) => FromConstant c (FFA p Arithmet
 
 condSubOF :: forall i a m . MonadBlueprint i a m => Natural -> i -> m (i, i)
 condSubOF m i = do
-  m' <- newAssigned (const $ fromConstant m)
-  let w = length (binaryExpansion m) + 1
-  bm <- expansion w m'
-  bi <- expansion w i
-  ovf <- blueprintGE bi bm
-  res <- newAssigned (\x -> x i - x ovf * fromConstant m)
+  z <- newAssigned zero
+  o <- newAssigned one
+  let bm = (\x -> if x Haskell.== 0 then z else o) <$> (binaryExpansion m ++ [0])
+  bi <- expansion (length bm) i
+  ovf <- blueprintGE (Haskell.reverse bi) (Haskell.reverse bm)
+  res <- newAssigned (($ i) - ($ ovf) * fromConstant m)
   return (res, ovf)
 
 condSub :: MonadBlueprint i a m => Natural -> i -> m i
@@ -111,30 +111,30 @@ bigSub m j = trimPow j >>= trimPow >>= condSub m
     s = Haskell.ceiling (log2 m) :: Natural
     trimPow i = do
       (l, h) <- splitExpansion s (numberOfBits @a -! s) i
-      newAssigned (\x -> x l + x h * fromConstant (2 ^ s -! m))
+      newAssigned (($ l) + ($ h) * fromConstant ((2 ^ s) -! m))
 
 bigCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
 bigCut = zipWithM bigSub $ coprimes @a
 
 cast :: forall p i a m. (KnownNat p, Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
 cast xs = do
-  gs <- zipWithM (\i m -> newAssigned (\x -> x i * fromConstant m)) xs (minv @a) >>= bigCut
+  gs <- zipWithM (\i m -> newAssigned $ ($ i) * fromConstant m) xs (minv @a) >>= bigCut
   zi <- newAssigned (const zero)
   let binary g m = snd <$> iterateM sigma (binstep m) (g, zi)
       binstep m (i, ci) = do
-        (i', j) <- newAssigned (\x -> x i + x i) >>= condSubOF @i @a @m m
-        ci' <- newAssigned (\x -> x ci + x j)
+        (i', j) <- newAssigned (($ i) + ($ i)) >>= condSubOF @i @a @m m
+        ci' <- newAssigned (($ ci) + ($ ci) + ($ j))
         return (i', ci')
-  base <- newAssigned (const $ fromConstant (3 * 2 ^ (sigma -! 2) :: Natural))
+  base <- newAssigned (fromConstant (3 * (2 ^ (sigma -! 2)) :: Natural))
   let ms = coprimes @a
   residue <- zipWithM binary gs ms
         >>= foldlM (\i j -> newAssigned (($ i) + ($ j))) base
-        >>= fmap snd . splitExpansion sigma (numberOfBits @a -! sigma)
+        >>= (fmap snd . splitExpansion sigma (numberOfBits @a -! sigma))
   for ms $ \m -> do
-    dot <- zipWithM (\i x -> newAssigned (\w -> w i * fromConstant (x `mod` m))) gs (mis @a @p)
+    dot <- zipWithM (\i x -> newAssigned (($ i) * fromConstant (x `mod` m))) gs (mis @a @p)
             >>= traverse (bigSub m)
             >>= foldlM (\i j -> newAssigned (($ i) + ($ j))) zi
-    newAssigned (\w -> w dot - fromConstant (mprod @a @p `mod` m) * w residue)
+    newAssigned (fromConstant m + ($ dot) - fromConstant (mprod @a @p `mod` m) * ($ residue))
         >>= bigSub m
 
 instance (Finite (Zp p), Finite (Zp q)) => MultiplicativeSemigroup (FFA p Vector (Zp q)) where
@@ -182,9 +182,9 @@ instance (Finite (Zp p), Finite (Zp q)) => AdditiveGroup (FFA p Vector (Zp q)) w
   negate = fromConstant . negate @(Zp p) . toConstant
 
 instance (Finite (Zp p), Arithmetic a) => AdditiveGroup (FFA p ArithmeticCircuit a) where
-  negate (FFA q) = FFA $ circuitN $ do
-    xs <- runCircuit q
-    ys <- zipWithM (\i m -> newAssigned (\w -> fromConstant m - w i)) xs $ coprimes @a
+  negate (FFA r) = FFA $ circuitN $ do
+    xs <- runCircuit r
+    ys <- zipWithM (\i m -> newAssigned $ fromConstant m - ($ i)) xs $ coprimes @a
     cast @p ys
 
 instance (MultiplicativeMonoid (FFA p b a), AdditiveMonoid (FFA p b a), FromConstant Natural (FFA p b a)) => Semiring (FFA p b a)
