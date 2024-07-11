@@ -11,19 +11,17 @@ import           Control.Monad                                             (fold
 import           Data.Aeson                                                hiding (Bool)
 import           Data.Map                                                  hiding (drop, foldl, foldl', foldr, map,
                                                                             null, splitAt, take)
-import qualified Data.Map                                                  as Map
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
-import           GHC.Natural                                               (naturalToInteger)
-import           GHC.Num                                                   (integerToInt, integerToNatural)
+import           GHC.Num                                                   (integerToNatural)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, Show, const, fmap, id, mempty,
-                                                                            pure, return, show, type (~), zip, ($),
+import           Prelude                                                   (Integer, Show, const, id, mempty,
+                                                                            pure, return, show, type (~), ($),
                                                                             (++), (.), (<$>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
-                                                                            oneof, vector)
+                                                                            elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -177,10 +175,10 @@ arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => Arithm
 arbitrary' ac 0 = return ac
 arbitrary' ac iter = do
     let vars = getAllVars . acCircuit $ ac
-    li <- oneof $ fmap return vars
-    ri <- oneof $ fmap return vars
+    li <- elements vars
+    ri <- elements vars
     let (l, r) =( ac { acOutput = pure li }, ac { acOutput = pure ri })
-    ac' <- oneof $ fmap return [
+    ac' <- elements [
         l + r
         , l * r
         , l - r
@@ -219,25 +217,3 @@ instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
                 acOutput  = Vector outs
                 acCircuit = Circuit{..}
             pure ArithmeticCircuit{..}
-
-data ArithmeticCircuitTest n a = ArithmeticCircuitTest
-    {
-        arithmeticCircuit :: ArithmeticCircuit n a
-        , witnessInput    :: Map.Map Natural a
-    }
-
-instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuitTest n a) where
-    show (ArithmeticCircuitTest ac wi) = "ArithmeticCircuit: " ++ show ac
-        ++ ",\nwitnessInput: " ++ show wi
-
-instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuitTest 1 a) where
-    arbitrary :: Gen (ArithmeticCircuitTest 1 a)
-    arbitrary = do
-        ac <- arbitrary
-        let keysAC = inputVariables ac
-        values <- vector . integerToInt . naturalToInteger . length  $ keysAC
-        let wi = fromList $ zip keysAC values
-        return ArithmeticCircuitTest {
-            arithmeticCircuit = ac
-            , witnessInput = wi
-            }

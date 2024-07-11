@@ -7,15 +7,13 @@ module ZkFold.Base.Protocol.ARK.Plonk where
 
 import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (fromJust)
-import qualified Data.Set                                            as S
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
-import           GHC.Num                                             (integerToNatural)
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P hiding (length)
-import           Test.QuickCheck                                     (Arbitrary (..), Gen, chooseInteger)
+import           Test.QuickCheck                                     (Arbitrary (..), Gen, shuffle)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (Zp)
@@ -29,7 +27,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                                      (length, (!))
+import           ZkFold.Prelude                                      (length, (!), take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), inputVariables)
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
@@ -52,19 +50,12 @@ instance (KnownNat d, KnownNat n) => Arbitrary (Plonk d n t) where
     arbitrary = do
         ac <- arbitrary
         let fullInp = length . inputVariables $ ac
-        vecPubInp <- genSubset (return []) (value @n) fullInp
+        vecPubInp <- genSubset (value @n) fullInp
         let (omega, k1, k2) = getParams $ ceiling @Double @Natural $ logBase 2 $ fromIntegral (value @d)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
 
-genSubset :: Gen [Natural] -> Natural -> Natural -> Gen [Natural]
-genSubset arr maxLength maxValue = do
-    len <- length <$> arr
-    if len == maxLength
-        then arr
-        else do
-            newNat <- integerToNatural <$> chooseInteger (1, toInteger maxValue)
-            let arr' = toList . S.fromList . (newNat : ) <$> arr
-            genSubset arr' maxLength maxValue
+genSubset :: Natural -> Natural -> Gen [Natural]
+genSubset maxLength maxValue = take maxLength <$> shuffle [1..maxValue]
 
 type PlonkPermutationSize d = 3 * d
 
