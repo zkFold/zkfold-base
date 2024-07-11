@@ -1,4 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
@@ -11,18 +11,19 @@ import           Data.Map                                               hiding (
                                                                          splitAt, take, toList)
 import qualified Data.Map                                               as Map
 import           GHC.IsList                                             (IsList (..))
+import           GHC.Natural                                            (naturalToInteger)
+import           GHC.Num                                                (integerToInt)
 import           Numeric.Natural                                        (Natural)
 import           Prelude                                                hiding (Num (..), drop, length, product,
                                                                          splitAt, sum, take, (!!), (^))
+import           Test.QuickCheck                                        (Arbitrary (arbitrary), Gen, vector)
 
 import           ZkFold.Base.Algebra.Basic.Class                        (MultiplicativeMonoid (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
+import           ZkFold.Prelude                                         (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (getAllVars)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (ArithmeticCircuit (..), Circuit (..), Arithmetic, inputVariables)
-import Test.QuickCheck (Arbitrary (arbitrary), Gen, vector)
-import GHC.Natural (naturalToInteger)
-import           GHC.Num                                                   (integerToInt)
-import           ZkFold.Prelude                                            (length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..),
+                                                                         Circuit (..), inputVariables)
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
