@@ -30,7 +30,6 @@ main = do
     exampleUIntAdd @500
     exampleUIntMul @32
     exampleUIntMul @500
-    examplesFFA
     exampleUIntStrictAdd @32
     exampleUIntStrictAdd @500
     exampleUIntStrictMul @32
@@ -42,3 +41,4 @@ main = do
     exampleByteStringExtend @1 @512
 
     exampleBatchTransfer
+    examplesFFA
