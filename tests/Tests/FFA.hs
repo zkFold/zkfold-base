@@ -8,7 +8,7 @@ import           Data.Function                               (($))
 import           Data.List                                   ((++))
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (describe, hspec)
-import           Test.QuickCheck                             (Property, (===), withMaxSuccess)
+import           Test.QuickCheck                             (Property, withMaxSuccess, (===))
 import           Tests.ArithmeticCircuit                     (it)
 import           Text.Show                                   (show)
 
