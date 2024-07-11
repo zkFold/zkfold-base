@@ -3,7 +3,6 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         mapVarArithmeticCircuit,
-        mapVarWitness,
         ArithmeticCircuitTest(..)
     ) where
 
@@ -48,20 +47,18 @@ instance (Arithmetic a, Arbitrary a, Arbitrary (ArithmeticCircuit 1 a)) => Arbit
             , witnessInput = wi
             }
 
-mapVarWitness :: [Natural] -> (Map Natural a -> Map Natural a)
-mapVarWitness vars = mapKeys (mapVar $ Map.fromList $ zip vars [0..])
-
 mapVarArithmeticCircuit :: MultiplicativeMonoid a => ArithmeticCircuitTest n a -> ArithmeticCircuitTest n a
 mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
     let ct = acCircuit ac
         vars = getAllVars ct
+        forward = Map.fromAscList $ zip vars [0..]
+        backward = Map.fromAscList $ zip [0..] vars
         mappedCircuit = ct
             {
-                acSystem  = fromList $ zip [0..] $ mapVarPolynomial (Map.fromList $ zip vars [0..]) <$> elems (acSystem ct),
+                acSystem  = fromList $ zip [0..] $ mapVarPolynomial forward <$> elems (acSystem ct),
                 -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
-                acWitness = mapVarWitness vars . acWitness ct
+                acWitness = (`Map.compose` backward) $ (. (`Map.compose` forward)) <$> acWitness ct
             }
-        mappedOutputs = mapVar (Map.fromList $ zip vars [0..]) <$> acOutput ac
-        wi' =  mapVarWitness vars wi
+        mappedOutputs = mapVar forward <$> acOutput ac
+        wi' = wi `Map.compose` backward
     in ArithmeticCircuitTest (ArithmeticCircuit mappedCircuit mappedOutputs) wi'
-
