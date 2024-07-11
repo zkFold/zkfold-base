@@ -15,8 +15,8 @@ import           ZkFold.Base.Algebra.Basic.Class                     (Multiplica
 import           ZkFold.Base.Algebra.Basic.Field                     (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Types                               (Symbolic)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircuitTest(..))
 
 propCircuitInvariance :: (MultiplicativeMonoid a, Eq a) => ArithmeticCircuitTest 1 a -> Bool
 propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =

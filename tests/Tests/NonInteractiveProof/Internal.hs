@@ -18,7 +18,7 @@ import           ZkFold.Base.Protocol.Commitment.KZG                 (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInteractiveProof (..))
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit          (inputVariables, witnessGenerator)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance (ArithmeticCircuitTest (..))
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircuitTest(..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
@@ -36,7 +36,7 @@ instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (Plon
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 F)
         let inputLen = length . inputVariables $ ac
-        vecPubInp <- genSubset (return []) (value @n) inputLen
+        vecPubInp <- genSubset (value @n) inputLen
         let (omega, k1, k2) = getParams $ ceiling @Double @Natural $ logBase 2 $ fromIntegral $ value @PlonkSizeBS
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
