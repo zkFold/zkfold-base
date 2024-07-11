@@ -1,85 +1,75 @@
-{-# LANGUAGE TypeApplications #-}
-
 module Tests.GroebnerBasis (specGroebner) where
 
-import           Data.Map                                    (fromList)
-import           Prelude                                     hiding (Eq (..), Num (..), (/), (^))
+import           Data.Map                                     (fromList, empty)
+import           GHC.Natural                                  (Natural)
+import           Prelude                                      hiding (Eq (..), Num (..), (/), (^))
 import           Test.Hspec
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Symbolic.GroebnerBasis
 
-testPoly :: PrimeField (Zp p) => [Polynomial p]
-testPoly = map polynomial [
-        [monomial 1 (fromList [(1, variable 1), (2, variable 1)]),
-         monomial 1 (fromList [(1, variable 1), (2, variable 1), (3, variable 1)])],
-        [monomial 1 (fromList [(2, variable 1)]),
-         monomial 1 (fromList [(3, variable 1)])],
-        [monomial 1 (fromList [(1, variable 1)]),
-         monomial 1 (fromList [(1, variable 1), (3, variable 1)])]
+import           ZkFold.Base.Algebra.Polynomials.Multivariate
+
+testPoly :: [Poly Fr Integer Integer]
+testPoly = [
+        var 1 * var 2 + var 1 * var 2 * var 3,
+        var 2 + var 3,
+        var 1 + var 1 * var 3
     ]
 
 specGroebner :: IO ()
 specGroebner = hspec $ do
     describe "Groebner basis specification" $ do
-        describe "Monomial zero test" $ do
+        describe "Monomial is 1 test" $ do
             it "should pass" $ do
-                zeroM (monomial @(Order Fr) zero $ fromList [(1, variable 1), (2, variable 2), (3, variable 3)])
-                    `shouldBe` True
-        describe "Polynomial zero test" $ do
+                oneM (monomial @Fr @Natural empty)
+                `shouldBe` True
+        describe "Polynomial is 0 test" $ do
             it "should pass" $ do
-                zeroP (polynomial @(Order Fr) [monomial zero $ fromList [(1, variable 1), (2, variable 2), (3, variable 3)],
-                    monomial zero $ fromList [(1, variable 1), (2, variable 2), (3, variable 3)]])
+                zeroP (polynomial @Fr @Natural @Natural [(zero, monomial $ fromList [(1, 1), (2, 2), (3, 3)]),
+                    (zero, monomial $ fromList [(1, 1), (2, 2), (3, 3)])])
                     `shouldBe` True
-        describe "Similar monomials" $ do
+        describe "Dividable monomials" $ do
             it "should be equal" $ do
-                similarM (monomial @(Order Fr) zero $ fromList [(1, variable 1), (2, variable 2), (3, variable 3)])
-                    (monomial one $ fromList [(1, variable 1), (2, variable 2), (3, variable 3)])
+                monomial @Natural @Natural (fromList [(1, 1), (2, 2), (3, 3)])
+                `dividable` monomial (fromList [(2, 1), (3, 1), (1, 1)])
                     `shouldBe` True
         describe "Monomials comparisons" $ do
             it "should be correct" $ do
-                compare (monomial @(Order Fr) zero $ fromList [(1, variable 1), (2, variable 3), (3, variable 2)])
-                    (monomial one $ fromList [(1, variable 1), (2, variable 2), (3, variable 3)])
-                    `shouldBe` LT
-                compare (monomial @(Order Fr) one $ fromList [(1, variable 1), (3, variable 1)])
-                    (monomial one $ fromList [(1, variable 1), (2, variable 1), (3, variable 1)])
+                compare (monomial @Natural @Natural $ fromList [(1, 1), (3, 2), (2, 3)])
+                    (monomial $ fromList [(1, 1), (2, 2), (3, 3)])
+                    `shouldBe` GT
+                compare (monomial @Natural @Natural $ fromList [(1, 1), (3, 1)])
+                    (monomial $ fromList [(1, 1), (2, 1), (3, 1)])
                     `shouldBe` LT
                 compare
-                    (polynomial [monomial @(Order Fr) one $ fromList [(1, variable 1), (2, variable 1)],
-                        monomial one $ fromList [(1, variable 1), (2, variable 1), (3, variable 1)]])
-                    (polynomial [monomial one $ fromList [(1, variable 1), (2, variable 1), (3, variable 1)],
-                        monomial one $ fromList [(1, variable 1), (3, variable 1)]])
+                    (polynomial @Fr [(1, monomial @Natural @Natural $ fromList [(1, 1), (2, 1)]),
+                        (1, monomial $ fromList [(1, 1), (2, 1), (3, 1)])])
+                    (polynomial [(1, monomial $ fromList [(1, 1), (2, 1), (3, 1)]),
+                        (1, monomial $ fromList [(1, 1), (3, 1)])])
                     `shouldBe` GT
         describe "Polynomial multiplication test" $ do
             it "should pass" $ do
-                (testPoly @(Order Fr) !! 0) * (testPoly !! 1)
-                    `shouldBe` polynomial [monomial one $ fromList [(1, variable 1), (2, variable 2), (3, variable 1)],
-                        monomial one $ fromList [(1, variable 1), (2, variable 2)],
-                        monomial one $ fromList [(1, variable 1), (2, variable 1), (3, variable 2)],
-                        monomial one $ fromList [(1, variable 1), (2, variable 1), (3, variable 1)]]
+                head testPoly * (testPoly !! 1)
+                    `shouldBe` polynomial [(1, monomial $ fromList [(1, 1), (2, 2), (3, 1)]),
+                        (1, monomial $ fromList [(1, 1), (2, 2)]),
+                        (1, monomial $ fromList [(1, 1), (2, 1), (3, 2)]),
+                        (1, monomial $ fromList [(1, 1), (2, 1), (3, 1)])]
         describe "Leading term test" $ do
             it "should pass" $ do
-                map (lt . (testPoly @(Order Fr) !!)) [0..2]
-                    `shouldBe` [monomial one $ fromList [(1, variable 1), (2, variable 1), (3, variable 1)],
-                        monomial one $ fromList [(2, variable 1)],
-                        monomial one $ fromList [(1, variable 1), (3, variable 1)]]
+                map (snd . lt . (testPoly !!)) [0..2]
+                    `shouldBe` [monomial $ fromList [(1, 1), (2, 1), (3, 1)],
+                        monomial $ fromList [(2, 1)],
+                        monomial $ fromList [(1, 1), (3, 1)]]
         describe "S-polynomial test" $ do
             it "should pass" $ do
-                let s = makeSPoly (testPoly @(Order Fr) !! 0) (testPoly !! 1)
-                s `shouldBe` polynomial [monomial one $ fromList [(1, variable 1), (2, variable 1)],
-                    monomial (negate one) $ fromList [(1, variable 1), (3, variable 2)]]
+                let s = makeSPoly (head testPoly) (testPoly !! 1)
+                s `shouldBe` polynomial [(negate one, monomial $ fromList [(1, 1), (2, 1)]),
+                    (1, monomial $ fromList [(1, 1), (3, 2)])]
                 s `fullReduceMany` [testPoly !! 2]
-                    `shouldBe` polynomial [monomial one $ fromList [(1, variable 1), (2, variable 1)],
-                        monomial (negate one) $ fromList [(1, variable 1)]]
+                    `shouldBe` polynomial [(negate one, monomial $ fromList [(1, 1), (2, 1)]),
+                        (1, monomial $ fromList [(1, 1)])]
         describe "Groebner basis test" $ do
             it "should pass" $ do
-                let p0 = polynomial @(Order Fr) [monomial one $ fromList [(1, variable 1)]]
-                    gs = snd $ foldl (\args _ -> uncurry groebnerStep args) (p0, testPoly) [1::Integer ..200]
-                    gs' = filter (not . zeroP) $ foldr (\p ps -> fullReduceMany p ps : ps) [] gs
-                gs' `shouldBe` [polynomial [monomial one $ fromList [(2, variable 1)],
-                        monomial one $ fromList [(3, variable 1)]],
-                    polynomial [monomial one $ fromList [(1, variable 1), (3, variable 1)],
-                        monomial one $ fromList [(1, variable 1)]]]
-
+                groebner (GroebnerParams 5 (const True)) testPoly
+                    `shouldBe` [var 1 * var 3 + var 1, var 2 + var 3]

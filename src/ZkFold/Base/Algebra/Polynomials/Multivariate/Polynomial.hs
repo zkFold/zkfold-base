@@ -121,9 +121,9 @@ instance Polynomial c i j => Ring (Poly c i j)
 var :: Polynomial c i j => i -> Poly c i j
 var x = polynomial [(one, monomial $ fromList [(x, one)])]
 
-lt :: Poly c i j -> Mono i j
-lt (P [])         = M empty
-lt (P ((_, m):_)) = m
+lt :: Polynomial c i j => Poly c i j -> (c, Mono i j)
+lt (P [])    = (zero, M empty)
+lt (P (m:_)) = m
 
 zeroP :: Poly c i j -> Bool
 zeroP (P []) = True

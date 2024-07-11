@@ -94,8 +94,8 @@ instance (Monomial i j, Ring j) => MultiplicativeGroup (Mono i j) where
     M l / M r = M $ differenceWith f l r
         where f a b = if a == b then Nothing else Just (a - b)
 
-zeroM :: Mono i j -> Bool
-zeroM (M m) = Map.null m
+oneM :: Mono i j -> Bool
+oneM (M m) = Map.null m
 
 dividable :: forall i j . Monomial i j => Mono i j -> Mono i j -> Bool
 dividable (M l) (M r) = isSubmapOfBy (<=) r l

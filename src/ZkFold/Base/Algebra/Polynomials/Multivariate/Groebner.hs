@@ -12,16 +12,19 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
 import           ZkFold.Prelude                                          (length, (!!))
 
 reducable :: Polynomial c i j  => Poly c i j -> Poly c i j -> Bool
-reducable l r = dividable (lt l) (lt r)
+reducable l r = dividable (snd $ lt l) (snd $ lt r)
+
+-- TODO: refactor reduction methods so that they never applied to non-reducible polynomials
 
 reduce ::
     forall c i j . (Ring j, Polynomial c i j)
-    => Poly c i j
+    =>Poly c i j
     -> Poly c i j
     -> Poly c i j
 reduce l r =
-    let q = P [(one, lt l / lt r)]
-    in l - q * r
+    let (cl, ml) = lt l
+        (cr, mr) = lt r
+    in l -  scaleM (cl // cr, ml / mr) r
 
 reduceMany ::
        forall c i j . (Ring j, Polynomial c i j)
@@ -71,14 +74,17 @@ makeSPoly ::
     -> Poly c i j
     -> Poly c i j
 makeSPoly l r =
-    let M as = gcdM (lt l) (lt r)
-        lcm = lcmM (lt l) (lt r)
+    let (cl, ml) = lt l
+        (cr, mr) = lt r
 
-        ra  = lcm / lt l
-        la  = lcm / lt r
+        M as = gcdM ml mr
+        lcm = lcmM ml mr
 
-        l'  = (one, ra) `scaleM` l
-        r'  = (one, la) `scaleM` r
+        ra  = lcm / ml
+        la  = lcm / mr
+
+        l'  = (cr, ra) `scaleM` l
+        r'  = (cl, la) `scaleM` r
     in if null as
         then zero
         else r' - l'
