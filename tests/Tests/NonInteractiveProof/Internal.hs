@@ -3,22 +3,21 @@
 
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
-import           Data.ByteString                                     (ByteString)
-import           GHC.Natural                                         (Natural)
-import           GHC.TypeNats                                        (KnownNat)
-import           Prelude                                             hiding (Fractional (..), Num (..), length)
-import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen)
+import           Data.ByteString                                (ByteString)
+import           GHC.Natural                                    (Natural)
+import           GHC.TypeNats                                   (KnownNat)
+import           Prelude                                        hiding (Fractional (..), Num (..), length)
+import           Test.QuickCheck                                (Arbitrary (arbitrary), Gen)
 
-import           ZkFold.Base.Algebra.Basic.Number                    (value)
-import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Base.Protocol.ARK.Plonk                      (F, Plonk (Plonk), PlonkWitnessInput (..),
-                                                                      genSubset)
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
-import           ZkFold.Base.Protocol.Commitment.KZG                 (KZG)
-import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInteractiveProof (..))
-import           ZkFold.Prelude                                      (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit          (inputVariables, witnessGenerator)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircuitTest(..))
+import           ZkFold.Base.Algebra.Basic.Number               (value)
+import           ZkFold.Base.Data.Vector                        (Vector (..))
+import           ZkFold.Base.Protocol.ARK.Plonk                 (F, Plonk (Plonk), PlonkWitnessInput (..), genSubset)
+import           ZkFold.Base.Protocol.ARK.Plonk.Internal        (getParams)
+import           ZkFold.Base.Protocol.Commitment.KZG            (KZG)
+import           ZkFold.Base.Protocol.NonInteractiveProof       (NonInteractiveProof (..))
+import           ZkFold.Prelude                                 (length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit     (inputVariables, witnessGenerator)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircuitTest (..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
