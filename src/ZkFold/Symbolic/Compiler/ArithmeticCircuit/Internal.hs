@@ -56,6 +56,8 @@ data Circuit a = Circuit
     {
         acSystem   :: Map Natural (Constraint a),
         -- ^ The system of polynomial constraints
+        acRange    :: Map Natural a,
+        -- ^ The range constraints [0, a] for the selected variables
         acInput    :: [Natural],
         -- ^ The input variables
         acWitness  :: Map Natural a -> Map Natural a,
@@ -92,6 +94,7 @@ instance Eq a => Semigroup (Circuit a) where
         Circuit
            {
                acSystem   = {-# SCC system_union #-}    acSystem c1 `union` acSystem c2
+            ,  acRange    = {-# SCC range_union #-}     acRange c1 `union` acRange c2
                -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
                -- We need a way to ensure the correct order no matter how `(<>)` is used.
            ,   acInput    = {-# SCC input_union #-}     nubConcat (acInput c1) (acInput c2)
@@ -110,6 +113,7 @@ instance (Eq a, MultiplicativeMonoid a) => Monoid (Circuit a) where
         Circuit
            {
                acSystem   = empty,
+               acRange    = empty,
                acInput    = [],
                acWitness  = insert 0 one,
                acVarOrder = empty,
