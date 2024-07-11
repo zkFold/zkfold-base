@@ -98,7 +98,7 @@ circuitGE xs ys = Bool $ circuit $ do
   js <- runCircuit ys
   blueprintGE is js
 
-blueprintGE :: MonadBlueprint i a m => V.Vector n i -> V.Vector n i -> m i
+blueprintGE :: (MonadBlueprint i a m, Z.Zip f, Haskell.Foldable f) => f i -> f i -> m i
 blueprintGE xs ys = do
   (_, hasNegOne) <- circuitDelta xs ys
   newAssigned $ \p -> one - p hasNegOne
@@ -111,7 +111,7 @@ circuitGT xs ys = Bool $ circuit $ do
   (hasOne, hasNegOne) <- circuitDelta is js
   newAssigned $ \p -> p hasOne * (one - p hasNegOne)
 
-circuitDelta :: forall i a m n . MonadBlueprint i a m => V.Vector n i -> V.Vector n i -> m (i, i)
+circuitDelta :: forall i a m f . (MonadBlueprint i a m, Z.Zip f, Haskell.Foldable f) => f i -> f i -> m (i, i)
 circuitDelta l r = do
     z1 <- newAssigned (Haskell.const zero)
     z2 <- newAssigned (Haskell.const zero)

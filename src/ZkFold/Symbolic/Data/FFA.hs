@@ -9,7 +9,6 @@ import           Data.Foldable                                             (any,
 import           Data.Function                                             (const, ($), (.))
 import           Data.Functor                                              (fmap, (<$>))
 import           Data.List                                                 (dropWhile, (++))
-import           Data.Maybe                                                (fromJust)
 import           Data.Ratio                                                ((%))
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (fst, snd, uncurry)
@@ -22,7 +21,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, inv)
 import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat, value)
 import           ZkFold.Base.Data.Vector
-import           ZkFold.Prelude                                            (iterateM)
+import           ZkFold.Prelude                                            (iterateM, length)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitN, newAssigned,
@@ -90,16 +89,17 @@ instance (FromConstant c (Zp p), Arithmetic a) => FromConstant c (FFA p Arithmet
       impl :: Natural -> ArithmeticCircuit Size a
       impl x = circuitN $ for (coprimes @a) $ \m -> newAssigned (fromConstant (x `mod` m))
 
-condSubOF :: forall i a m . (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m (i, i)
+condSubOF :: forall i a m . MonadBlueprint i a m => Natural -> i -> m (i, i)
 condSubOF m i = do
   m' <- newAssigned (const $ fromConstant m)
-  bm <- expansion (numberOfBits @a) m'
-  bi <- expansion (numberOfBits @a) i
-  ovf <- blueprintGE @i @a @m @(NumberOfBits a) (fromJust $ toVector bi) (fromJust $ toVector bm)
+  let w = length (binaryExpansion m) + 1
+  bm <- expansion w m'
+  bi <- expansion w i
+  ovf <- blueprintGE bi bm
   res <- newAssigned (\x -> x i - x ovf * fromConstant m)
   return (res, ovf)
 
-condSub :: (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m i
+condSub :: MonadBlueprint i a m => Natural -> i -> m i
 condSub m x = fst <$> condSubOF m x
 
 smallCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
