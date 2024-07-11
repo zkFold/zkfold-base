@@ -26,9 +26,7 @@ import           Test.QuickCheck                                           (Arbi
                                                                             oneof, vector)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381               (BLS12_381_Scalar)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (length)
@@ -221,7 +219,6 @@ instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
                 acCircuit = Circuit{..}
             pure ArithmeticCircuit{..}
 
-type F = Zp BLS12_381_Scalar
 data ArithmeticCircuitTest n a = ArithmeticCircuitTest
     {
         arithmeticCircuit :: ArithmeticCircuit n a
