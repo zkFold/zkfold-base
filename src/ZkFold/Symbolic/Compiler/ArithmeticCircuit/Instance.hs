@@ -119,7 +119,7 @@ instance Arithmetic a => BinaryExpansion (ArithmeticCircuit 1 a) where
     type Bits (ArithmeticCircuit 1 a) = ArithmeticCircuit (NumberOfBits a) a
     binaryExpansion r = circuitN $ do
         output <- runCircuit r
-        bits <- expansion (numberOfBits @a) . V.item $ output
+        bits   <- expansion (numberOfBits @a) . V.item $ output
         pure $ V.unsafeToVector bits
     fromBinary bits = circuit $ runCircuit bits >>= horner . V.fromVector
 
@@ -208,14 +208,15 @@ instance ToJSON a => ToJSON (ArithmeticCircuit n a) where
 instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
-            acSystem <- v .: "system"
-            acInput <- v .: "input"
-            let acWitness = const empty
-            outs <- v .: "output"
-            guard (length v == (value @n))
-            let acOutput = Vector outs
+            acSystem   <- v .: "system"
+            acRange    <- v .: "range"
+            acInput    <- v .: "input"
             acVarOrder <- v .: "order"
-            let acRNG = mkStdGen 0
+            outs       <- v .: "output"
+            guard (length v == (value @n))
+            let acWitness = const empty
+                acRNG     = mkStdGen 0
+                acOutput  = Vector outs
                 acCircuit = Circuit{..}
             pure ArithmeticCircuit{..}
 
