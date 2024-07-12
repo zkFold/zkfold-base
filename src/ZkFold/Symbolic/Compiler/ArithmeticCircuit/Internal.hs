@@ -31,7 +31,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
-import           Control.Monad.State                          (MonadState (..), State, modify)
+import           Control.Monad.State                          (MonadState (..), State, gets, modify)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
 import qualified Data.Set                                     as S
 import           GHC.Generics
@@ -60,8 +60,8 @@ data Circuit a = Circuit
         -- ^ The range constraints [0, a] for the selected variables
         acInput    :: [Natural],
         -- ^ The input variables
-        acWitness  :: Map Natural a -> Map Natural a,
-        -- ^ The witness generation function
+        acWitness  :: Map Natural (Map Natural a -> a),
+        -- ^ The witness generation functions
         acVarOrder :: Map (Natural, Natural) Natural,
         -- ^ The order of variable assignments
         acRNG      :: StdGen
@@ -82,7 +82,10 @@ inputVariables :: ArithmeticCircuit n a -> [Natural]
 inputVariables = acInput . acCircuit
 
 witnessGenerator :: ArithmeticCircuit n a -> Map Natural a -> Map Natural a
-witnessGenerator = acWitness . acCircuit
+witnessGenerator circuit inputs =
+  let srcs = acWitness (acCircuit circuit)
+      witness = ($ witness) <$> (srcs `union` fmap const inputs)
+   in witness
 
 varOrder :: ArithmeticCircuit n a -> Map (Natural, Natural) Natural
 varOrder = acVarOrder . acCircuit
@@ -98,7 +101,7 @@ instance Eq a => Semigroup (Circuit a) where
                -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
                -- We need a way to ensure the correct order no matter how `(<>)` is used.
            ,   acInput    = {-# SCC input_union #-}     nubConcat (acInput c1) (acInput c2)
-           ,   acWitness  = {-# SCC witness_union #-}   union <$> acWitness c1 <*> acWitness c2
+           ,   acWitness  = {-# SCC witness_union #-}   acWitness c1 `union` acWitness c2
            ,   acVarOrder = {-# SCC var_order_union #-} acVarOrder c1 `union` acVarOrder c2
            ,   acRNG      = {-# SCC rng_union #-}       mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
            }
@@ -115,7 +118,7 @@ instance (Eq a, MultiplicativeMonoid a) => Monoid (Circuit a) where
                acSystem   = empty,
                acRange    = empty,
                acInput    = [],
-               acWitness  = insert 0 one,
+               acWitness  = singleton 0 one,
                acVarOrder = empty,
                acRNG      = mkStdGen 0
            }
@@ -185,7 +188,7 @@ forceZero = mapM_ (constraint . var)
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
 assignment :: Natural -> (Map Natural a -> a) -> State (Circuit a) ()
-assignment i f = zoom #acWitness . modify $ (.) (\m -> insert i (f m) m)
+assignment i f = zoom #acWitness . modify $ insert i f
 
 -- | Adds a new input variable to the arithmetic circuit.
 input :: forall a . State (Circuit a) Natural
@@ -199,15 +202,11 @@ input = do
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
 eval1 :: ArithmeticCircuit 1 a -> Map Natural a -> a
-eval1 ctx i = witness ! (V.item $ acOutput ctx)
-    where
-        witness = acWitness (acCircuit ctx) i
+eval1 ctx i = witnessGenerator ctx i ! V.item (acOutput ctx)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
 eval :: forall a n . ArithmeticCircuit n a -> Map Natural a -> Vector n a
-eval ctx i = V.parFmap (witness !) $ acOutput ctx
-    where
-        witness = acWitness (acCircuit ctx) i
+eval ctx i = V.parFmap (witnessGenerator ctx i !) $ acOutput ctx
 
 -- | Evaluates the arithmetic circuit with no inputs and one output using the supplied input map.
 exec1 :: ArithmeticCircuit 1 a -> a
@@ -221,9 +220,9 @@ exec ac = eval ac empty
 -- TODO: make this safe
 apply :: [a] -> State (Circuit a) ()
 apply xs = do
-    inputs <- acInput <$> get
+    inputs <- gets acInput
     zoom #acInput . put $ drop (length xs) inputs
-    zoom #acWitness . modify $ (. union (fromList $ zip inputs xs))
+    zoom #acWitness . modify . union . fromList $ zip inputs (map const xs)
 
 -- TODO: Add proper symbolic application functions
 

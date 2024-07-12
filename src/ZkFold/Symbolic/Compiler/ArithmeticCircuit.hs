@@ -26,7 +26,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         acPrint,
         -- Variable mapping functions
         mapVarArithmeticCircuit,
-        mapVarWitness,
         -- Arithmetization type fields
         acWitness,
         acVarOrder,
@@ -91,7 +90,7 @@ acPrint :: forall a n . Show a => ArithmeticCircuit n a -> IO ()
 acPrint ac@(ArithmeticCircuit r o) = do
     let m = elems (acSystem r)
         i = acInput r
-        w = acWitness r empty
+        w = witnessGenerator ac empty
         v = acValue ac
         vo = acVarOrder r
     putStr "System size: "
@@ -121,9 +120,9 @@ checkClosedCircuit
     => Show a
     => ArithmeticCircuit n a
     -> Property
-checkClosedCircuit (ArithmeticCircuit r _) = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem r) ]
+checkClosedCircuit c@(ArithmeticCircuit r _) = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem r) ]
     where
-        w = acWitness r empty
+        w = witnessGenerator c empty
         testPoly p = evalPolynomial evalMonomial (w !) p === zero
 
 checkCircuit
@@ -135,9 +134,9 @@ checkCircuit
     => Show a
     => ArithmeticCircuit n a
     -> Property
-checkCircuit (ArithmeticCircuit r _) = conjoin [ property (testPoly p) | p <- elems (acSystem r) ]
+checkCircuit c@(ArithmeticCircuit r _) = conjoin [ property (testPoly p) | p <- elems (acSystem r) ]
     where
         testPoly p = do
             ins <- vector . fromIntegral $ length (acInput r)
-            let w = acWitness r . fromList $ zip (acInput r) ins
+            let w = witnessGenerator c . fromList $ zip (acInput r) ins
             return $ evalPolynomial evalMonomial (w !) p === zero
