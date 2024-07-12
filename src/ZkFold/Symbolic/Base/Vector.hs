@@ -63,7 +63,6 @@ tuple of numbers @(x1,..,xn)@.
 class
   ( Field a
   , Traversable v
-  , Eq (Basis a v)
   , Ord (Basis a v)
   ) => VectorSpace a v where
     {- | The `Basis` for a `VectorSpace`. More accurately,
