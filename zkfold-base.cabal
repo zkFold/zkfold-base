@@ -158,6 +158,7 @@ library
       ZkFold.Symbolic.Data.Ed25519
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.Eq.Structural
+      ZkFold.Symbolic.Data.FFA
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Ord
@@ -226,6 +227,7 @@ test-suite zkfold-base-test
       Tests.Binary
       Tests.Blake2b
       Tests.ByteString
+      Tests.FFA
       Tests.Field
       Tests.GroebnerBasis
       Tests.Group
@@ -267,6 +269,7 @@ test-suite zkfold-base-examples
       Examples.ByteString
       Examples.Conditional
       Examples.Eq
+      Examples.FFA
       Examples.Fibonacci
       Examples.LEQ
       Examples.MiMCHash

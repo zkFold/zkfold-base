@@ -40,6 +40,9 @@ toVector as
 unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector
 
+unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
+unfold f = Vector . ZP.take (value @size) . List.unfoldr (Just . f)
+
 fromVector :: Vector size a -> [a]
 fromVector (Vector as) = as
 

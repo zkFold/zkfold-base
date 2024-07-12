@@ -13,13 +13,15 @@ import           Data.Map                                                  hidin
                                                                             null, splitAt, take)
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
+import           GHC.Num                                                   (integerToNatural)
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   (Integer, const, id, mempty, pure, return,
-                                                                            show, type (~), ($), (++), (.), (<$>),
-                                                                            (>>=))
+import           Prelude                                                   (Integer, Show, const, id, mempty, pure,
+                                                                            return, show, type (~), ($), (++), (.),
+                                                                            (<$>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
-import           Test.QuickCheck                                           (Arbitrary (..))
+import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
+                                                                            elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -27,7 +29,7 @@ import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, foldCircuit,
-                                                                            horner, invertC, isZeroC)
+                                                                            getAllVars, horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
@@ -115,7 +117,7 @@ instance Arithmetic a => BinaryExpansion (ArithmeticCircuit 1 a) where
     type Bits (ArithmeticCircuit 1 a) = ArithmeticCircuit (NumberOfBits a) a
     binaryExpansion r = circuitN $ do
         output <- runCircuit r
-        bits <- expansion (numberOfBits @a) . V.item $ output
+        bits   <- expansion (numberOfBits @a) . V.item $ output
         pure $ V.unsafeToVector bits
     fromBinary bits = circuit $ runCircuit bits >>= horner . V.fromVector
 
@@ -163,19 +165,31 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
                 bs <- V.item <$> runCircuit b
                 V.zipWithM (\x y -> newAssigned $ \p -> p bs * (p x - p y) + p y) ts fs
 
--- TODO: make a proper implementation of Arbitrary
-instance (Arithmetic a, KnownNat n) => Arbitrary (ArithmeticCircuit n a) where
-    arbitrary = return $ c1 * c2
-        where
-            c1, c2 :: ArithmeticCircuit n a
-            c1 = ArithmeticCircuit { acCircuit = mempty, acOutput = pure 1}
-            c2 = ArithmeticCircuit { acCircuit = mempty, acOutput = pure 2}
+instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit 1 a) where
+    arbitrary = do
+        k <- integerToNatural <$> chooseInteger (2, 10)
+        let ac = ArithmeticCircuit { acCircuit = mempty {acInput = [1..k]}, acOutput = pure k }
+        arbitrary' ac 10
 
+arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => ArithmeticCircuit 1 a -> Natural -> Gen (ArithmeticCircuit 1 a)
+arbitrary' ac 0 = return ac
+arbitrary' ac iter = do
+    let vars = getAllVars . acCircuit $ ac
+    li <- elements vars
+    ri <- elements vars
+    let (l, r) =( ac { acOutput = pure li }, ac { acOutput = pure ri })
+    ac' <- elements [
+        l + r
+        , l * r
+        , l - r
+        , l // r
+        ]
+    arbitrary' ac' (iter -! 1)
 
 -- TODO: make it more readable
-instance (FiniteField a, Haskell.Eq a, Haskell.Show a) => Haskell.Show (ArithmeticCircuit n a) where
-    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acSystem = " ++ show (acSystem r) ++ ", acInput = "
-        ++ show (acInput r) ++ ", acOutput = " ++ show o ++ ", acVarOrder = " ++ show (acVarOrder r) ++ " }"
+instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuit n a) where
+    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = " ++ show (acInput r)
+        ++ "\n, acSystem = " ++ show (acSystem r) ++ "\n, acOutput = " ++ show o ++ "\n, acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
 -- TODO: add witness generation info to the JSON object
 instance ToJSON a => ToJSON (ArithmeticCircuit n a) where
@@ -192,13 +206,14 @@ instance ToJSON a => ToJSON (ArithmeticCircuit n a) where
 instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
-            acSystem <- v .: "system"
-            acInput <- v .: "input"
-            let acWitness = const empty
-            outs <- v .: "output"
-            guard (length v == (value @n))
-            let acOutput = Vector outs
+            acSystem   <- v .: "system"
+            acRange    <- v .: "range"
+            acInput    <- v .: "input"
             acVarOrder <- v .: "order"
-            let acRNG = mkStdGen 0
+            outs       <- v .: "output"
+            guard (length v == (value @n))
+            let acWitness = const empty
+                acRNG     = mkStdGen 0
+                acOutput  = Vector outs
                 acCircuit = Circuit{..}
             pure ArithmeticCircuit{..}
