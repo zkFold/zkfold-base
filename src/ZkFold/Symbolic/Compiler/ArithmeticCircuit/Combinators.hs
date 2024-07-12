@@ -14,24 +14,32 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     invertC,
     joinCircuits,
     splitCircuit,
-    foldCircuit
+    foldCircuit,
+    embedVarIndex,
+    embedVarIndexV,
+    getAllVars
 ) where
 
 import           Control.Monad                                             (replicateM)
+import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Foldable                                             (foldlM)
+import           Data.List                                                 (sort)
+import           Data.Map                                                  (elems)
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
+import           GHC.IsList                                                (IsList (..))
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Bool, Eq (..), negate, splitAt, (!!),
                                                                             (*), (+), (-), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Polynomials.Multivariate              (variables)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (splitAt, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..),
-                                                                            joinCircuits)
+                                                                            Circuit (acSystem), acInput, joinCircuits)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool)
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
@@ -119,3 +127,12 @@ runInvert r = do
     where
       isZero :: forall a . (Ring a, Eq (Bool a) a, Conditional (Bool a) a) => a -> a
       isZero x = bool @(Bool a) zero one (x == zero)
+
+embedVarIndex :: Arithmetic a => Natural -> ArithmeticCircuit 1 a
+embedVarIndex n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure n}
+
+embedVarIndexV :: (Arithmetic a, KnownNat n) => Natural -> ArithmeticCircuit n a
+embedVarIndexV n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure n}
+
+getAllVars :: MultiplicativeMonoid a => Circuit a -> [Natural]
+getAllVars ac = nubOrd $ sort $ 0 : acInput ac ++ concatMap (toList . variables) (elems $ acSystem ac)

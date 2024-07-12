@@ -26,7 +26,7 @@ propNonInteractiveProof (TestData a w) =
 
 specNonInteractiveProof' :: forall a . (Typeable a, NonInteractiveProof a,
     Show a, Show (Input a), Show (Witness a),
-    Arbitrary a, Arbitrary (Witness a)) => IO ()
+    Arbitrary (NonInteractiveProofTestData a)) => IO ()
 specNonInteractiveProof' = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do

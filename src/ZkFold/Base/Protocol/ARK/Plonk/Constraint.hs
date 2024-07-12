@@ -6,7 +6,7 @@ module ZkFold.Base.Protocol.ARK.Plonk.Constraint where
 import           Control.Monad                                (guard)
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.List                                    (find, permutations, sort)
-import           Data.Map                                     (Map, empty)
+import           Data.Map                                     (Map, empty, fromListWith)
 import           Data.Maybe                                   (mapMaybe)
 import           GHC.IsList                                   (IsList (..))
 import           Numeric.Natural                              (Natural)
@@ -64,7 +64,7 @@ toPlonkConstraint p =
                 xc = [(c, 1)]
                 xaxb = [(a, 1), (b, 1)]
 
-                qm = getCoef $ fromList xaxb
+                qm = getCoef $ fromListWith (+) xaxb
                 ql = getCoef $ fromList xa
                 qr = getCoef $ fromList xb
                 qo = getCoef $ fromList xc

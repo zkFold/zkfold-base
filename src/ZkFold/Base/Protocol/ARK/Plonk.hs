@@ -12,8 +12,8 @@ import           GHC.IsList                                          (IsList (..
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
-import qualified Prelude                                             as P
-import           Test.QuickCheck                                     (Arbitrary (..))
+import qualified Prelude                                             as P hiding (length)
+import           Test.QuickCheck                                     (Arbitrary (..), Gen, shuffle)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (Zp)
@@ -27,8 +27,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                                      ((!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
+import           ZkFold.Prelude                                      (length, take, (!))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), inputVariables)
 
 -- TODO (Issue #25): make this module generic in the elliptic curve with pairing
 
@@ -41,14 +41,21 @@ type G2 = Point BLS12_381_G2
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
 
+-- TODO: disallow `d` that are not powers of 2
 data Plonk (d :: Natural) (n :: Natural) t = Plonk F F F (Vector n Natural) (ArithmeticCircuit 1 F) F
     deriving (Show)
+
 -- TODO (Issue #25): make a proper implementation of Arbitrary
-instance Arbitrary (Plonk d n t) where
+instance (KnownNat d, KnownNat n) => Arbitrary (Plonk d n t) where
     arbitrary = do
-        let (omega, k1, k2) = getParams 5
         ac <- arbitrary
-        Plonk omega k1 k2 (Vector [1, 2]) ac <$> arbitrary
+        let fullInp = length . inputVariables $ ac
+        vecPubInp <- genSubset (value @n) fullInp
+        let (omega, k1, k2) = getParams $ ceiling @Double @Natural $ logBase 2 $ fromIntegral (value @d)
+        Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+
+genSubset :: Natural -> Natural -> Gen [Natural]
+genSubset maxLength maxValue = take maxLength <$> shuffle [1..maxValue]
 
 type PlonkPermutationSize d = 3 * d
 
@@ -115,12 +122,7 @@ newtype PlonkWitnessMap d = PlonkWitnessMap (Map.Map Natural F -> (PolyVec F d, 
 newtype PlonkWitnessInput = PlonkWitnessInput (Map.Map Natural F)
 -- TODO (Issue #25): make a proper implementation of Show
 instance Show PlonkWitnessInput where
-    show _ = "PlonkWitnessInput"
--- TODO (Issue #25): make a proper implementation of Arbitrary
-instance Arbitrary PlonkWitnessInput where
-    arbitrary = do
-        x <- arbitrary
-        return $ PlonkWitnessInput $ fromList [(1, x), (2, 15//x)]
+    show (PlonkWitnessInput m) = "Witness Input: " ++ show m
 
 data PlonkProverSecret = PlonkProverSecret F F F F F F F F F F F
     deriving (Show)
