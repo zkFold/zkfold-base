@@ -1,12 +1,10 @@
-{-# LANGUAGE
-AllowAmbiguousTypes
-, DerivingStrategies
-, DerivingVia
-, QuantifiedConstraints
-, RankNTypes
-, TypeOperators
-, UndecidableInstances
-#-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE DerivingVia           #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module ZkFold.Symbolic.Base.Circuit
   ( Circuit (..)
@@ -18,28 +16,28 @@ module ZkFold.Symbolic.Base.Circuit
   , applyC
   ) where
 
-import Control.Applicative
-import Control.Category
-import Data.Either
-import Data.Eq
-import Data.Function (($))
-import Data.Functor
-import Data.IntMap (IntMap)
-import qualified Data.IntMap as IntMap
-import Data.Maybe
-import Data.Monoid
-import Data.Ord
-import Data.Semigroup
-import Data.Set (Set)
-import qualified Data.Set as Set
-import Data.Type.Equality
+import           Control.Applicative
+import           Control.Category
+import           Data.Either
+import           Data.Eq
+import           Data.Function                   (($))
+import           Data.Functor
+import           Data.IntMap                     (IntMap)
+import qualified Data.IntMap                     as IntMap
+import           Data.Maybe
+import           Data.Monoid
+import           Data.Ord
+import           Data.Semigroup
+import           Data.Set                        (Set)
+import qualified Data.Set                        as Set
+import           Data.Type.Equality
 
-import ZkFold.Symbolic.Base.Num
-import ZkFold.Symbolic.Base.Polynomial
-import ZkFold.Symbolic.Base.Vector
+import           ZkFold.Symbolic.Base.Num
+import           ZkFold.Symbolic.Base.Polynomial
+import           ZkFold.Symbolic.Base.Vector
 
 data Circuit x i o = Circuit
-  { systemC :: Set (Poly (SysVar x i) Natural x)
+  { systemC  :: Set (Poly (SysVar x i) Natural x)
     -- ^ The system of polynomial constraints,
     -- each polynomial constitutes a "multi-edge" of the circuit graph,
     -- whose "vertices" are variables.
@@ -49,7 +47,7 @@ data Circuit x i o = Circuit
     -- ^ The witness generation map,
     -- witness functions for new variables.
     -- Input and constant variables don't need witness functions.
-  , outputC :: o (OutVar x i)
+  , outputC  :: o (OutVar x i)
     -- ^ The output variables,
     -- they can be input, constant or new variables.
   }

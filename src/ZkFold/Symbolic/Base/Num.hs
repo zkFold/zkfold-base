@@ -1,11 +1,9 @@
-{-# LANGUAGE
-AllowAmbiguousTypes
-, DerivingStrategies
-, MagicHash
-, TypeOperators
-, UndecidableInstances
-, UndecidableSuperClasses
-#-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE DerivingStrategies      #-}
+{-# LANGUAGE MagicHash               #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module ZkFold.Symbolic.Base.Num
   ( -- * Numeric types
@@ -56,23 +54,23 @@ module ZkFold.Symbolic.Base.Num
   , evalMonoN
   ) where
 
-import Control.Category
-import Control.Applicative
-import Data.Bool
-import Data.Eq
-import Data.Foldable hiding (product, sum, toList)
-import Data.Functor
-import Data.Kind
-import Data.Type.Bool
-import Data.Type.Equality
-import GHC.Exts (proxy#)
-import Data.Ord
-import Data.Ratio
-import GHC.TypeLits (ErrorMessage (..), TypeError)
-import GHC.TypeNats hiding (Mod)
-import qualified GHC.TypeNats as Type
+import           Control.Applicative
+import           Control.Category
+import           Data.Bool
+import           Data.Eq
+import           Data.Foldable       hiding (product, sum, toList)
+import           Data.Functor
+import           Data.Kind
+import           Data.Ord
+import           Data.Ratio
+import           Data.Type.Bool
+import           Data.Type.Equality
+import           GHC.Exts            (proxy#)
+import           GHC.TypeLits        (ErrorMessage (..), TypeError)
+import           GHC.TypeNats        hiding (Mod)
+import qualified GHC.TypeNats        as Type
+import           Prelude             (Int, Integer)
 import qualified Prelude
-import Prelude (Int, Integer)
 
 -- Arithmetic algebras should include:
 -- PrimeField x => Arithmetic x x
