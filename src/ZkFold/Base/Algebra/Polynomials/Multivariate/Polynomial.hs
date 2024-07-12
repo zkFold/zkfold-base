@@ -7,7 +7,6 @@ module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial where
 import           Control.DeepSeq                                       (NFData)
 import           Data.Aeson                                            (FromJSON, ToJSON)
 import           Data.Bifunctor                                        (Bifunctor (..))
-import           Data.Bool                                             (bool)
 import           Data.Functor                                          ((<&>))
 import           Data.List                                             (foldl', intercalate)
 import           Data.Map.Strict                                       (Map, empty)
@@ -103,8 +102,7 @@ instance Polynomial c i j => AdditiveGroup (Poly c i j) where
     negate (P p) = P $ map (first negate) p
 
 instance Polynomial c i j => MultiplicativeSemigroup (Poly c i j) where
-    P l * r = foldl' (+) (P []) $ map (f r) l
-        where f (P p) (c, m) = P $ map (bimap (* c) (* m)) p
+    P l * r = foldl' (+) (P []) $ map (`scaleM` r) l
 
 instance Polynomial c i j => Exponent (Poly c i j) Natural where
     (^) = natPow
@@ -123,59 +121,13 @@ instance Polynomial c i j => Ring (Poly c i j)
 var :: Polynomial c i j => i -> Poly c i j
 var x = polynomial [(one, monomial $ fromList [(x, one)])]
 
-lt :: Poly c i j -> Mono i j
-lt (P [])         = M empty
-lt (P ((_, m):_)) = m
+lt :: Polynomial c i j => Poly c i j -> (c, Mono i j)
+lt (P [])    = (zero, M empty)
+lt (P (m:_)) = m
 
 zeroP :: Poly c i j -> Bool
 zeroP (P []) = True
 zeroP _      = False
 
-reducable :: Polynomial c i j  => Poly c i j -> Poly c i j -> Bool
-reducable l r = dividable (lt l) (lt r)
-
-reduce ::
-    forall c i j . (Ring j, Polynomial c i j)
-    => Poly c i j
-    -> Poly c i j
-    -> Poly c i j
-reduce l r =
-    let q = P [(one, lt l / lt r)]
-    in l - q * r
-
-reduceMany ::
-       forall c i j . (Ring j, Polynomial c i j)
-    => Poly c i j
-    -> [Poly c i j]
-    -> Poly c i j
-reduceMany h fs = if reduced then reduceMany h' fs else h'
-  where
-    (h', reduced) = reduceStep h fs False
-    reduceStep p (q:qs) r
-      | zeroP p   = (h, r)
-      | otherwise =
-        if reducable p q
-          then (reduce p q, True)
-          else reduceStep p qs r
-    reduceStep p [] r = (p, r)
-
-fullReduceMany ::
-       forall c i j . (Ring j, Polynomial c i j)
-    => Poly c i j
-    -> [Poly c i j]
-    -> Poly c i j
-fullReduceMany h fs =
-    let h' = reduceMany h fs
-    in case h' of
-        P []         -> h'
-        P ((c, m):_) -> P [(c, m)] + fullReduceMany (h' - P [(c, m)]) fs
-
-systemReduce ::
-       forall c i j . (Ring j, Polynomial c i j)
-    => [Poly c i j]
-    -> [Poly c i j]
-systemReduce = foldr f []
-    where
-        f p ps =
-            let p' = fullReduceMany p ps
-            in bool ps (p' : ps) (not $ zeroP p')
+scaleM :: Polynomial c i j => (c, Mono i j) -> Poly c i j -> Poly c i j
+scaleM (c, m) (P p) = P $ map (bimap (* c) (* m)) p

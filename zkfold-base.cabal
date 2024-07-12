@@ -92,6 +92,7 @@ library
       ZkFold.Base.Algebra.EllipticCurve.Ed25519
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.Polynomials.Multivariate
+      ZkFold.Base.Algebra.Polynomials.Multivariate.Groebner
       ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
@@ -164,11 +165,6 @@ library
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.FieldElement
-      ZkFold.Symbolic.GroebnerBasis
-      ZkFold.Symbolic.GroebnerBasis.Internal
-      ZkFold.Symbolic.GroebnerBasis.Internal.Reduction
-      ZkFold.Symbolic.GroebnerBasis.Internal.Types
-      ZkFold.Symbolic.GroebnerBasis.Types
       ZkFold.Symbolic.Ledger.Types
       ZkFold.Symbolic.Ledger.Types.Address
       ZkFold.Symbolic.Ledger.Types.Basic
