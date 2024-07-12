@@ -57,14 +57,14 @@ data Circuit x i o = Circuit
 data SysVar x i
   = InVar (Basis x i)
   | NewVar Int
-deriving stock instance Eq (Basis x i) => Eq (SysVar x i)
-deriving stock instance Ord (Basis x i) => Ord (SysVar x i)
+deriving stock instance VectorSpace x i => Eq (SysVar x i)
+deriving stock instance VectorSpace x i => Ord (SysVar x i)
 
 data OutVar x i
   = SysVar (SysVar x i)
   | ConstVar x
-deriving stock instance (Eq x, Eq (Basis x i)) => Eq (OutVar x i)
-deriving stock instance (Ord x, Ord (Basis x i)) => Ord (OutVar x i)
+deriving stock instance (Eq x, VectorSpace x i) => Eq (OutVar x i)
+deriving stock instance (Ord x, VectorSpace x i) => Ord (OutVar x i)
 
 witnessIndex
   :: VectorSpace x i
