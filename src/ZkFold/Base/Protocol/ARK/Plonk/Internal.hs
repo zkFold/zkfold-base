@@ -181,7 +181,7 @@ instance Arbitrary (ScalarField c) => Arbitrary (PlonkProverSecret c) where
         arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
         <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
-newtype PlonkInput c = PlonkInput (V.Vector (ScalarField c))
+newtype PlonkInput c = PlonkInput { unPlonkInput :: V.Vector (ScalarField c) }
 instance Show (ScalarField c) => Show (PlonkInput c) where
     show (PlonkInput v) = "Input: " ++ show v
 

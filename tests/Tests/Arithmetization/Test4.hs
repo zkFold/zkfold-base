@@ -14,7 +14,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1)
 import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..),
-                                                              plonkVerifierInput)
+                                                              plonkVerifierInput, PlonkInput(..))
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
@@ -41,22 +41,40 @@ testDifferentValue targetValue otherValue =
         b       = Bool $ acValue (applyArgs ac [otherValue])
     in b == false
 
-testZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
-testZKP x ps targetValue =
+testOnlyOutputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
+testOnlyOutputZKP x ps targetValue =
     let Bool ac = compile @F (lockedByTxId @ArithmeticCircuit @F targetValue) :: Bool (ArithmeticCircuit 1 F)
 
         (omega, k1, k2) = getParams 32
-        inputs  = fromList [(1, targetValue), (V.item $ acOutput ac, 1)]
-        plonk   = Plonk @32 omega k1 k2 (acOutput ac) ac x
+        witnessInputs   = fromList [(1, targetValue), (V.item $ acOutput ac, 1)]
+        indexOutputBool = acOutput ac
+        plonk   = Plonk @32 omega k1 k2 indexOutputBool ac x
         setupP  = setupProve @(PlonkBS N) plonk
         setupV  = setupVerify @(PlonkBS N) plonk
-        witness = (PlonkWitnessInput inputs, ps)
-        (_, proof) = prove @(PlonkBS N) setupP witness
+        witness = (PlonkWitnessInput witnessInputs, ps)
+        (input, proof) = prove @(PlonkBS N) setupP witness
 
         -- `one` corresponds to `True`
         circuitOutputsTrue = plonkVerifierInput $ V.singleton one
 
-    in verify @(PlonkBS N) setupV circuitOutputsTrue proof
+    in unPlonkInput input == unPlonkInput circuitOutputsTrue && verify @(PlonkBS N) setupV circuitOutputsTrue proof
+
+testOneInputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
+testOneInputZKP x ps targetValue =
+    let Bool ac = compile @F (lockedByTxId @ArithmeticCircuit @F targetValue) :: Bool (ArithmeticCircuit 1 F)
+
+        (omega, k1, k2) = getParams 32
+        witnessInputs  = fromList [(1, targetValue), (V.item $ acOutput ac, 1)]
+        indexTargetValue = V.Vector [1]
+        plonk   = Plonk @32 omega k1 k2 indexTargetValue ac x
+        setupP  = setupProve @(PlonkBS N) plonk
+        setupV  = setupVerify @(PlonkBS N) plonk
+        witness = (PlonkWitnessInput witnessInputs, ps)
+        (input, proof) = prove @(PlonkBS N) setupP witness
+
+        onePublicInput = plonkVerifierInput $ V.singleton targetValue
+
+    in unPlonkInput input == unPlonkInput onePublicInput && verify @(PlonkBS N) setupV onePublicInput proof
 
 specArithmetization4 :: Spec
 specArithmetization4 = do
@@ -64,5 +82,7 @@ specArithmetization4 = do
         it "should pass" $ property testSameValue
     describe "LockedByTxId arithmetization test 2" $ do
         it "should pass" $ property $ \x y -> x /= y ==> testDifferentValue x y
-    describe "LockedByTxId ZKP test" $ do
-        it "should pass" $ withMaxSuccess 10 $ property testZKP
+    describe "LockedByTxId ZKP test only output" $ do
+        it "should pass" $ withMaxSuccess 10 $ property testOnlyOutputZKP
+    describe "LockedByTxId ZKP test one public input" $ do
+       it "should pass" $ withMaxSuccess 10 $ property testOneInputZKP
