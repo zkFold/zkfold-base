@@ -7,24 +7,23 @@
 
 module Tests.Univariate.PolyVec (specUnivariatePolyVec) where
 
-import           Data.Bool                                  (bool)
-import           Data.Data                                  (Typeable, typeOf)
-import           Data.List                                  ((\\))
-import qualified Data.Vector                                as V
-import qualified Data.Vector.Algorithms.Intro               as VA
-import           Numeric.Natural                            (Natural)
-import           Prelude                                    hiding (Fractional (..), Num (..), drop, length, take, (!!),
-                                                             (^))
-import           Prelude                                    (abs)
+import           Data.Bool                                   (bool)
+import           Data.Data                                   (Typeable, typeOf)
+import           Data.List                                   ((\\))
+import qualified Data.Vector                                 as V
+import qualified Data.Vector.Algorithms.Intro                as VA
+import           Numeric.Natural                             (Natural)
+import           Prelude                                     hiding (Fractional (..), Num (..), drop, length, take, (!!),
+                                                              (^))
+import           Prelude                                     (abs)
 import           Test.Hspec
 import           Test.QuickCheck
-import           Tests.NonInteractiveProof.Plonk            (PlonkMaxPolyDegreeBS, PlonkSizeBS)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Protocol.ARK.Plonk             (F)
-import           ZkFold.Prelude                             (length, take)
+import           ZkFold.Prelude                              (length, take)
 
 propToPolyVec :: forall c s .
     (Ring c, KnownNat s) =>
@@ -132,4 +131,4 @@ specUnivariatePolyVec' = hspec $ do
 
 specUnivariatePolyVec :: IO ()
 specUnivariatePolyVec = do
-    specUnivariatePolyVec' @F @PlonkSizeBS @PlonkMaxPolyDegreeBS
+    specUnivariatePolyVec' @Fr @32 @135

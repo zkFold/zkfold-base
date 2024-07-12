@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
@@ -10,9 +11,10 @@ import           Prelude                                        hiding (Fraction
 import           Test.QuickCheck                                (Arbitrary (arbitrary), Gen)
 
 import           ZkFold.Base.Algebra.Basic.Number               (value)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381    (BLS12_381_G1, BLS12_381_G2)
+import           ZkFold.Base.Algebra.EllipticCurve.Class        (EllipticCurve(..))
 import           ZkFold.Base.Data.Vector                        (Vector (..))
-import           ZkFold.Base.Protocol.ARK.Plonk                 (F, Plonk (Plonk), PlonkWitnessInput (..), genSubset)
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal        (getParams)
+import           ZkFold.Base.Protocol.ARK.Plonk                 (Plonk (Plonk), PlonkWitnessInput (..), genSubset, getParams)
 import           ZkFold.Base.Protocol.Commitment.KZG            (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof       (NonInteractiveProof (..))
 import           ZkFold.Prelude                                 (length)
@@ -21,19 +23,19 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircu
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
 type PlonkSizeBS = 32
-type PlonkBS n = Plonk PlonkSizeBS n ByteString
+type PlonkBS n = Plonk PlonkSizeBS n BLS12_381_G1 BLS12_381_G2 ByteString
 
 instance (Show a, Show (Input a), Show (Witness a)) =>
     Show (NonInteractiveProofTestData a) where
     show (TestData a w) = "TestData: \n" ++ show a ++ "\n" ++ show w
 
-instance (NonInteractiveProof (KZG c1 c2 t f d), Arbitrary (KZG c1 c2 t f d), Arbitrary (Witness (KZG c1 c2 t f d))) =>
-    Arbitrary (NonInteractiveProofTestData (KZG c1 c2 t f d)) where
+instance (KZG c1 c2 d ~ kzg, NonInteractiveProof kzg, Arbitrary kzg, Arbitrary (Witness kzg)) =>
+    Arbitrary (NonInteractiveProofTestData (KZG c1 c2 d)) where
     arbitrary = TestData <$> arbitrary <*> arbitrary
 
-instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (PlonkBS n) ) where
+instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (PlonkBS n)) where
     arbitrary = do
-        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 F)
+        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 (ScalarField BLS12_381_G1))
         let inputLen = length . inputVariables $ ac
         vecPubInp <- genSubset (value @n) inputLen
         let (omega, k1, k2) = getParams $ ceiling @Double @Natural $ logBase 2 $ fromIntegral $ value @PlonkSizeBS

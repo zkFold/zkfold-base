@@ -10,7 +10,6 @@ import           Test.QuickCheck                             (Arbitrary, Testabl
 import           Tests.NonInteractiveProof.Internal          (NonInteractiveProofTestData (..))
 import           Tests.NonInteractiveProof.Plonk             (PlonkBS, specPlonk)
 
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
@@ -35,7 +34,7 @@ specNonInteractiveProof' = hspec $ do
 
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
-    specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 BLS12_381_GT (Zp BLS12_381_Scalar) 32)
+    specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32)
 
     specPlonk
     specNonInteractiveProof' @(PlonkBS 2)
