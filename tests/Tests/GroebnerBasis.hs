@@ -1,13 +1,12 @@
 module Tests.GroebnerBasis (specGroebner) where
 
-import           Data.Map                                     (fromList, empty)
+import           Data.Map                                     (empty, fromList)
 import           GHC.Natural                                  (Natural)
 import           Prelude                                      hiding (Eq (..), Num (..), (/), (^))
 import           Test.Hspec
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 
 testPoly :: [Poly Fr Natural Integer]
@@ -26,7 +25,7 @@ specGroebner = hspec $ do
                 `shouldBe` True
         describe "Polynomial is 0 test" $ do
             it "should pass" $ do
-                zeroP @Fr @Natural @Natural (polynomial 
+                zeroP @Fr @Natural @Natural (polynomial
                     [ (zero, monomial $ fromList [(1, 1), (2, 2), (3, 3)]),
                     (zero, monomial $ fromList [(1, 1), (2, 2), (3, 3)])]
                     ) `shouldBe` True

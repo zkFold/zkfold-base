@@ -10,7 +10,7 @@ import qualified Prelude                                     as Haskell
 import           Test.Hspec
 import           Test.QuickCheck                             (property)
 
-import           ZkFold.Base.Algebra.Basic.Class             (Bits, BinaryExpansion)
+import           ZkFold.Base.Algebra.Basic.Class             (BinaryExpansion, Bits)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
