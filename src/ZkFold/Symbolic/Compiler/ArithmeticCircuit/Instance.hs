@@ -212,7 +212,7 @@ instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
             acVarOrder <- v .: "order"
             outs       <- v .: "output"
             guard (length v == (value @n))
-            let acWitness = const empty
+            let acWitness = empty
                 acRNG     = mkStdGen 0
                 acOutput  = Vector outs
                 acCircuit = Circuit{..}
