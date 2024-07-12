@@ -45,7 +45,7 @@ testZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
 testZKP x ps targetValue =
     let Bool ac = compile @F (lockedByTxId @ArithmeticCircuit @F targetValue) :: Bool (ArithmeticCircuit 1 F)
 
-        (omega, k1, k2) = getParams 5
+        (omega, k1, k2) = getParams 32
         inputs  = fromList [(1, targetValue), (V.item $ acOutput ac, 1)]
         plonk   = Plonk @32 omega k1 k2 (acOutput ac) ac x
         setupP  = setupProve @(PlonkBS N) plonk

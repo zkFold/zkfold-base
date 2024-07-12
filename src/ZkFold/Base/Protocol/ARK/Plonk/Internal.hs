@@ -22,12 +22,13 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Prelude                             (take)
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
-getParams l = findK' $ mkStdGen 0
+getParams n = findK' $ mkStdGen 0
     where
-        omega = case rootOfUnity @a l of
+        q = ceiling @Double @Natural $ logBase 2 $ fromIntegral n
+        omega = case rootOfUnity @a q of
                   Just o -> o
                   _      -> error "impossible"
-        hGroup = map (omega^) [1 .. 2^l-!1]
+        hGroup = map (omega^) [0 .. n-!1]
         hGroup' k = map (k*) hGroup
 
         findK' :: RandomGen g => g -> (a, a, a)
@@ -41,12 +42,12 @@ getParams l = findK' $ mkStdGen 0
 genSubset :: Natural -> Natural -> Gen [Natural]
 genSubset maxLength maxValue = take maxLength <$> shuffle [1..maxValue]
 
-type PlonkPermutationSize d = 3 * d
+type PlonkPermutationSize n = 3 * n
 
--- TODO (Issue #25): check that the extended polynomials are of the right size
-type PlonkMaxPolyDegree d = 4 * d + 7
+-- The maximum degree of the polynomials we need in the protocol is `4 * n + 5`.
+type PlonkPolyExtendedLength n = 4 * n + 6
 
-type PlonkPolyExtended d c = PolyVec (ScalarField c) (PlonkMaxPolyDegree d)
+type PlonkPolyExtended n c = PolyVec (ScalarField c) (PlonkPolyExtendedLength n)
 
 data PlonkSetupParamsProve c1 c2 = PlonkSetupParamsProve {
         omega'  :: ScalarField c1,
@@ -90,25 +91,25 @@ instance (Show (ScalarField c1), Show (BaseField c1), Show (BaseField c2),
         ++ show h1'' ++ " "
         ++ show pow''
 
-data PlonkPermutation d c = PlonkPermutation {
-        s1 :: PolyVec (ScalarField c) d,
-        s2 :: PolyVec (ScalarField c) d,
-        s3 :: PolyVec (ScalarField c) d
+data PlonkPermutation n c = PlonkPermutation {
+        s1 :: PolyVec (ScalarField c) n,
+        s2 :: PolyVec (ScalarField c) n,
+        s3 :: PolyVec (ScalarField c) n
     }
-instance Show (ScalarField c) => Show (PlonkPermutation d c) where
+instance Show (ScalarField c) => Show (PlonkPermutation n c) where
     show (PlonkPermutation s1 s2 s3) = "Permutation: " ++ show s1 ++ " " ++ show s2 ++ " " ++ show s3
 
-data PlonkCircuitPolynomials d c = PlonkCircuitPolynomials {
-        ql     :: PlonkPolyExtended d c,
-        qr     :: PlonkPolyExtended d c,
-        qo     :: PlonkPolyExtended d c,
-        qm     :: PlonkPolyExtended d c,
-        qc     :: PlonkPolyExtended d c,
-        sigma1 :: PlonkPolyExtended d c,
-        sigma2 :: PlonkPolyExtended d c,
-        sigma3 :: PlonkPolyExtended d c
+data PlonkCircuitPolynomials n c = PlonkCircuitPolynomials {
+        ql     :: PlonkPolyExtended n c,
+        qr     :: PlonkPolyExtended n c,
+        qo     :: PlonkPolyExtended n c,
+        qm     :: PlonkPolyExtended n c,
+        qc     :: PlonkPolyExtended n c,
+        sigma1 :: PlonkPolyExtended n c,
+        sigma2 :: PlonkPolyExtended n c,
+        sigma3 :: PlonkPolyExtended n c
     }
-instance Show (ScalarField c) => Show (PlonkCircuitPolynomials d c) where
+instance Show (ScalarField c) => Show (PlonkCircuitPolynomials n c) where
     show (PlonkCircuitPolynomials ql qr qo qm qc sigma1 sigma2 sigma3) =
         "Circuit Polynomials: "
         ++ show ql ++ " "
@@ -142,8 +143,8 @@ instance (Show (BaseField c), EllipticCurve c) => Show (PlonkCircuitCommitments 
         ++ show cmS2 ++ " "
         ++ show cmS3
 
-newtype PlonkWitnessMap d c = PlonkWitnessMap
-    (Map.Map Natural (ScalarField c) -> (PolyVec (ScalarField c) d, PolyVec (ScalarField c) d, PolyVec (ScalarField c) d))
+newtype PlonkWitnessMap n c = PlonkWitnessMap
+    (Map.Map Natural (ScalarField c) -> (PolyVec (ScalarField c) n, PolyVec (ScalarField c) n, PolyVec (ScalarField c) n))
 
 newtype PlonkWitnessInput c = PlonkWitnessInput (Map.Map Natural (ScalarField c))
 instance Show (ScalarField c) => Show (PlonkWitnessInput c) where

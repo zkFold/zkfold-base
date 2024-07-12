@@ -5,7 +5,6 @@
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
 import           Data.ByteString                                (ByteString)
-import           GHC.Natural                                    (Natural)
 import           GHC.TypeNats                                   (KnownNat)
 import           Prelude                                        hiding (Fractional (..), Num (..), length)
 import           Test.QuickCheck                                (Arbitrary (arbitrary), Gen)
@@ -38,7 +37,7 @@ instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (Plon
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 (ScalarField BLS12_381_G1))
         let inputLen = length . inputVariables $ ac
         vecPubInp <- genSubset (value @n) inputLen
-        let (omega, k1, k2) = getParams $ ceiling @Double @Natural $ logBase 2 $ fromIntegral $ value @PlonkSizeBS
+        let (omega, k1, k2) = getParams $ value @PlonkSizeBS
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
         return $ TestData pl (PlonkWitnessInput $ witnessGenerator ac wi, secret)
