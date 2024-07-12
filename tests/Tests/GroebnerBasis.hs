@@ -10,7 +10,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 
-testPoly :: [Poly Fr Integer Integer]
+testPoly :: [Poly Fr Natural Integer]
 testPoly = [
         var 1 * var 2 + var 1 * var 2 * var 3,
         var 2 + var 3,
@@ -26,9 +26,10 @@ specGroebner = hspec $ do
                 `shouldBe` True
         describe "Polynomial is 0 test" $ do
             it "should pass" $ do
-                zeroP (polynomial @Fr @Natural @Natural [(zero, monomial $ fromList [(1, 1), (2, 2), (3, 3)]),
-                    (zero, monomial $ fromList [(1, 1), (2, 2), (3, 3)])])
-                    `shouldBe` True
+                zeroP @Fr @Natural @Natural (polynomial 
+                    [ (zero, monomial $ fromList [(1, 1), (2, 2), (3, 3)]),
+                    (zero, monomial $ fromList [(1, 1), (2, 2), (3, 3)])]
+                    ) `shouldBe` True
         describe "Dividable monomials" $ do
             it "should be equal" $ do
                 monomial @Natural @Natural (fromList [(1, 1), (2, 2), (3, 3)])
@@ -53,7 +54,7 @@ specGroebner = hspec $ do
                 head testPoly * (testPoly !! 1)
                     `shouldBe` polynomial [(1, monomial $ fromList [(1, 1), (2, 2), (3, 1)]),
                         (1, monomial $ fromList [(1, 1), (2, 2)]),
-                        (1, monomial $ fromList [(1, 1), (2, 1), (3, 2)]),
+                        (1, monomial $ fromList [(1, 1), (3, 2), (2, 1)]),
                         (1, monomial $ fromList [(1, 1), (2, 1), (3, 1)])]
         describe "Leading term test" $ do
             it "should pass" $ do
