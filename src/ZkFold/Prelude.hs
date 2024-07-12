@@ -24,6 +24,10 @@ drop _ []     = error "ZkFold.Prelude.drop: empty list"
 splitAt :: Natural -> [a] -> ([a], [a])
 splitAt n xs = (take n xs, drop n xs)
 
+iterateM :: Monad m => Natural -> (a -> m a) -> a -> m a
+iterateM 0 _ x = return x
+iterateM n f x = f x >>= iterateM (n - 1) f
+
 replicate :: Natural -> a -> [a]
 replicate n x
     | n == 0    = []

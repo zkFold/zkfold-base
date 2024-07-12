@@ -507,6 +507,55 @@ instance Ring Integer
 
 --------------------------------------------------------------------------------
 
+-- TODO: Roll out our own Ratio type
+
+instance MultiplicativeSemigroup Rational where
+    (*) = (Haskell.*)
+
+instance Exponent Rational Natural where
+    (^) = (Haskell.^)
+
+instance MultiplicativeMonoid Rational where
+    one = 1
+
+instance AdditiveSemigroup Rational where
+    (+) = (Haskell.+)
+
+instance Scale Natural Rational
+
+instance AdditiveMonoid Rational where
+    zero = 0
+
+instance Scale Integer Rational
+
+instance AdditiveGroup Rational where
+    negate = Haskell.negate
+    (-) = (Haskell.-)
+
+instance FromConstant Natural Rational where
+    fromConstant = Haskell.fromIntegral
+
+instance Semiring Rational
+
+instance FromConstant Integer Rational where
+    fromConstant = Haskell.fromIntegral
+
+instance Ring Rational
+
+instance Exponent Rational Integer where
+    (^) = (Haskell.^^)
+
+instance Field Rational where
+    finv = Haskell.recip
+    rootOfUnity 0 = Just 1
+    rootOfUnity 1 = Just (-1)
+    rootOfUnity _ = Nothing
+
+floorN :: Rational -> Natural
+floorN = Haskell.floor
+
+--------------------------------------------------------------------------------
+
 instance MultiplicativeSemigroup Bool where
     (*) = (&&)
 

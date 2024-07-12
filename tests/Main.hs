@@ -6,6 +6,7 @@ import           Tests.Arithmetization     (specArithmetization)
 import           Tests.Binary              (specBinary)
 import           Tests.Blake2b             (specBlake2b)
 import           Tests.ByteString          (specByteString)
+import           Tests.FFA                 (specFFA)
 import           Tests.Field               (specField)
 import           Tests.GroebnerBasis       (specGroebner)
 import           Tests.Group               (specAdditiveGroup)
@@ -31,6 +32,7 @@ main = do
 
     -- Symbolic types and operations
     specUInt
+    specFFA
     specByteString
     --TODO: implement a proper blake2b test
     specBlake2b
