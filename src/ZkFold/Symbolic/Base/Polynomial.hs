@@ -17,6 +17,7 @@ module ZkFold.Symbolic.Base.Polynomial
   ) where
 
 import Control.Category
+import Data.Bifunctor
 import Data.Eq
 import Data.Ord
 import Data.Either
@@ -154,9 +155,8 @@ mapPoly f varPoly = fromList
   [
     let
       (coefs, varList) = partitionEithers
-        [(,p) <$> f v0 | (v0,p) <- toList varMono]
+        [bimap (^p) (,p) (f v0) | (v0,p) <- toList varMono]
     in
       (c * product coefs, fromList varList)
-
   | (c, varMono) <- toList varPoly
   ]
