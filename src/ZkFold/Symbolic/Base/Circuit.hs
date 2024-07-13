@@ -79,6 +79,14 @@ data OutVar x i
 deriving stock instance (Eq x, VectorSpace x i) => Eq (OutVar x i)
 deriving stock instance (Ord x, VectorSpace x i) => Ord (OutVar x i)
 
+evalConst
+  :: (Ord x, VectorSpace x i)
+  => Poly (OutVar x i) Natural x
+  -> Poly (SysVar x i) Natural x
+evalConst = mapPoly $ \case
+  ConstVar x -> Left x
+  SysVar v -> Right v
+  
 witnessIndex
   :: VectorSpace x i
   => i x -> IntMap (i x -> x) -> OutVar x i -> x
@@ -105,7 +113,7 @@ class Monad m
     input = return (fmap (SysVar . InVar) (basisV @x))
     constraint
       :: VectorSpace x i
-      => (forall a. Algebra x a => (SysVar x i -> a) -> a)
+      => (forall a. Algebra x a => (OutVar x i -> a) -> a)
       -> m ()
     newConstrained
       :: VectorSpace x i
@@ -150,18 +158,16 @@ instance (Field x, Ord x, Monad m)
       (outputC c, c {outputC = U1} <> c')
 
     constraint p = UnsafeCircuitIx $ \c -> return
-      ((), c {systemC = Set.insert (p var) (systemC c)})
+      ((), c {systemC = Set.insert (evalConst (p var)) (systemC c)})
 
     newConstrained p w = UnsafeCircuitIx $ \c -> return $
       let
         maxIndexMaybe = IntMap.lookupMax (witnessC c)
         newIndex = maybe 0 ((1 +) . Prelude.fst) maxIndexMaybe
         newWitness i = w (witnessIndex i (witnessC c))
-        evalConst = mapPoly $ \case
-          ConstVar x -> Left x
-          SysVar v -> Right v
         outVar = SysVar (NewVar newIndex)
-        newSystemC = Set.insert (evalConst (p var outVar)) (systemC c)
+        newConstraint = evalConst (p var outVar)
+        newSystemC = Set.insert newConstraint (systemC c)
         newWitnessC = IntMap.insert newIndex newWitness (witnessC c)
       in
         (outVar, c {systemC = newSystemC, witnessC = newWitnessC})
