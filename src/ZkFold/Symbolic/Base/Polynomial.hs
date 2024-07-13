@@ -112,11 +112,14 @@ instance (Ord var, Ord pow, Semiring pow, Semiring coef, Ord coef)
 instance (Ord var, Ord pow, Semiring pow, Semiring x, Eq x)
   => Scalar x (Poly var pow x) where
     scale c = if c == zero then Prelude.const zero else fmap (c *)
-    combine polys = product [scale c p | (c,p) <- polys]
-    -- TODO: consider how to optimize combine
-    -- using an additional Scalar x x constraint
-    -- since then we can hopefully applicatively apply combine
-    -- to monomials...
+    combine polys =
+      let
+        -- TODO: calculate more efficiently.
+        -- try to collect like monomials with
+        -- their inner and outer coefficients.
+        -- Then apply combine to their coefficients.
+      in
+        sum [scale c p | (c,p) <- polys]
 instance (Ord var, Ord pow, Semiring x, Eq x)
   => Scalar Natural (Poly var pow x) where
     scale c = if c == zero then Prelude.const zero else fmap (from c *)
@@ -140,11 +143,11 @@ varSet
   . Map.keysSet
   . fromCombo
 
--- evaluate a polynomial in its field of coefficients
+-- evaluate a polynomial in its semiring of coefficients
 evalPoly :: (Ord x, Semiring x) => Poly x Natural x -> x
 evalPoly x = combine [(c, evalMono (toList m)) | (c,m) <- toList x]
 
--- map a polynomial to new variables and evaluate some variables
+-- map a polynomial to new variables, evaluating some variables
 mapPoly
   :: (Eq x, Ord var0, Ord var1, Semiring x)
   => (var0 -> Either x var1)
