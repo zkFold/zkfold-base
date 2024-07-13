@@ -105,12 +105,12 @@ condSub m x = fst <$> condSubOF m x
 smallCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
 smallCut = zipWithM condSub $ coprimes @a
 
-bigSub :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m i
+bigSub :: MonadBlueprint i a m => Natural -> i -> m i
 bigSub m j = trimPow j >>= trimPow >>= condSub m
   where
     s = Haskell.ceiling (log2 m) :: Natural
     trimPow i = do
-      (l, h) <- splitExpansion s (numberOfBits @a -! s) i
+      (l, h) <- splitExpansion s s i
       newAssigned (($ l) + ($ h) * fromConstant ((2 ^ s) -! m))
 
 bigCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
@@ -134,7 +134,7 @@ cast xs = do
     dot <- zipWithM (\i x -> newAssigned (($ i) * fromConstant (x `mod` m))) gs (mis @a @p)
             >>= traverse (bigSub m)
             >>= foldlM (\i j -> newAssigned (($ i) + ($ j))) zi
-    newAssigned (fromConstant m + ($ dot) - fromConstant (mprod @a @p `mod` m) * ($ residue))
+    newAssigned (($ dot) + fromConstant (m -! (mprod @a @p `mod` m)) * ($ residue))
         >>= bigSub m
 
 instance (Finite (Zp p), Finite (Zp q)) => MultiplicativeSemigroup (FFA p Vector (Zp q)) where
