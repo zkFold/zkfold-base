@@ -15,7 +15,7 @@ module ZkFold.Symbolic.Base.Circuit
   , OutVar (..)
   , MonadCircuit (..)
   , IxMonadCircuit (..)
-  , Blueprint (..)
+  , CircuitIx (..)
   ) where
 
 import Control.Applicative
@@ -61,7 +61,7 @@ circuit
   :: (Ord x, VectorSpace x i)
   => (forall t m. (IxMonadCircuit x t, Monad m) => t i i m (o (OutVar x i)))
   -> Circuit x i o
-circuit m = case unPar1 (runBlueprint m mempty) of
+circuit m = case unPar1 (runCircuitIx m mempty) of
   (o, c) -> c {outputC = o}
 
 evalC :: (VectorSpace x i, Functor o) => Circuit x i o -> i x -> o x
@@ -105,12 +105,18 @@ class Monad m
     input = return (fmap (SysVar . InVar) (basisV @x))
     constraint
       :: VectorSpace x i
-      => (forall a. Algebra x a => (SysVar x i -> a) -> a) -> m ()
+      => (forall a. Algebra x a => (SysVar x i -> a) -> a)
+      -> m ()
     newConstrained
       :: VectorSpace x i
-      => (forall a. Algebra x a => (Int -> a) -> Int -> a)
-      -> ((Int -> x) -> x)
+      => (forall a. Algebra x a => (OutVar x i -> a) -> OutVar x i -> a)
+      -> ((OutVar x i -> x) -> x)
       -> m (OutVar x i)
+    newAssigned
+      :: VectorSpace x i
+      => (forall a. Algebra x a => (OutVar x i -> a) -> a)
+      -> m (OutVar x i)
+    newAssigned p = newConstrained (\x i -> p x - x i) p
 
 class
   ( forall i m. Monad m => MonadCircuit x i (t i i m)
@@ -123,53 +129,57 @@ class
       :: (VectorSpace x i, VectorSpace x j, Monad m)
       => t j (i :*: j) m ()
 
-newtype Blueprint x i j m r = Blueprint
-  {runBlueprint :: Circuit x i U1 -> m (r, Circuit x j U1)}
+newtype CircuitIx x i j m r = UnsafeCircuitIx
+  {runCircuitIx :: Circuit x i U1 -> m (r, Circuit x j U1)}
   deriving Functor
 
 instance (Field x, Ord x, Monad m)
-  => Applicative (Blueprint x i i m) where
-    pure x = Blueprint $ \c -> return (x,c)
+  => Applicative (CircuitIx x i i m) where
+    pure x = UnsafeCircuitIx $ \c -> return (x,c)
     (<*>) = apIx
 
 instance (Field x, Ord x, Monad m)
-  => Monad (Blueprint x i i m) where
+  => Monad (CircuitIx x i i m) where
     return = pure
     (>>=) = Prelude.flip bindIx
 
 instance (Field x, Ord x, Monad m)
-  => MonadCircuit x i (Blueprint x i i m) where
+  => MonadCircuit x i (CircuitIx x i i m) where
 
-    runCircuit c = Blueprint $ \c' -> return
+    runCircuit c = UnsafeCircuitIx $ \c' -> return
       (outputC c, c {outputC = U1} <> c')
 
-    constraint p = Blueprint $ \c -> return
+    constraint p = UnsafeCircuitIx $ \c -> return
       ((), c {systemC = Set.insert (p var) (systemC c)})
 
-    newConstrained p w = Blueprint $ \c ->
+    newConstrained p w = UnsafeCircuitIx $ \c ->
       let
         (maxIndex, _) = IntMap.findMax (witnessC c)
         newIndex = maxIndex + 1
-        newWitness i = w (fromMaybe zero . ((($ i) <$> witnessC c) IntMap.!?))
+        newWitness i = w (witnessIndex i (witnessC c))
+        varF = \case
+          ConstVar x -> Left x
+          SysVar v -> Right v
+        outVar = SysVar (NewVar newIndex)
       in return
-        ( SysVar (NewVar newIndex)
-        , c { systemC = Set.insert (p (var . NewVar) newIndex) (systemC c)
+        ( outVar
+        , c { systemC = Set.insert (mapPoly varF (p var outVar)) (systemC c)
             , witnessC = IntMap.insert newIndex newWitness (witnessC c)
             }
         )
 
 instance (i ~ j, Ord x, Field x)
-  => MonadTrans (Blueprint x i j) where
-    lift m = Blueprint $ \c -> (, c) <$> m
+  => MonadTrans (CircuitIx x i j) where
+    lift m = UnsafeCircuitIx $ \c -> (, c) <$> m
 
-instance (Field x, Ord x) => IxMonadTrans (Blueprint x) where
-  joinIx (Blueprint f) = Blueprint $ \c -> do
-    (Blueprint g, c') <- f c
+instance (Field x, Ord x) => IxMonadTrans (CircuitIx x) where
+  joinIx (UnsafeCircuitIx f) = UnsafeCircuitIx $ \c -> do
+    (UnsafeCircuitIx g, c') <- f c
     g c'
 
 instance (Field x, Ord x)
-  => IxMonadCircuit x (Blueprint x) where
-    apply i = Blueprint $ \c -> return
+  => IxMonadCircuit x (CircuitIx x) where
+    apply i = UnsafeCircuitIx $ \c -> return
       ( ()
       , c { systemC = Set.map (mapPoly sysF) (systemC c)
           , witnessC = fmap witF (witnessC c)
@@ -182,7 +192,7 @@ instance (Field x, Ord x)
             NewVar n -> Right (NewVar n)
           witF f j = f (i :*: j)
 
-    newInput = Blueprint $ \c -> return
+    newInput = UnsafeCircuitIx $ \c -> return
       ( ()
       , c { systemC = Set.map (mapPoly sysF) (systemC c)
           , witnessC = fmap witF (witnessC c)
@@ -194,3 +204,15 @@ instance (Field x, Ord x)
             InVar bj -> Right (InVar (Right bj))
             NewVar n -> Right (NewVar n)
           witF f (_ :*: j) = f j
+
+instance (Ord x, VectorSpace x i)
+  => From x (Circuit x i Par1) where
+    from x = mempty { outputC = Par1 (ConstVar x) }
+
+instance (Ord x, VectorSpace x i)
+  => AdditiveMonoid (Circuit x i Par1) where
+    zero = from @x zero
+    c0 + c1 = circuit $ do
+      Par1 v0 <- runCircuit c0
+      Par1 v1 <- runCircuit c1
+      Par1 <$> newAssigned (\x -> x v0 + x v1)
