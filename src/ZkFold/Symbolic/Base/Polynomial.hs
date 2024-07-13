@@ -22,6 +22,7 @@ import           Data.Foldable            hiding (product, sum, toList)
 import           Data.Functor
 import           Data.Map.Strict          (Map)
 import qualified Data.Map.Strict          as Map
+import           Data.Monoid
 import           Data.Ord
 import           Data.Set                 (Set)
 import qualified Data.Set                 as Set
@@ -109,17 +110,17 @@ instance (Ord var, Ord pow, Semiring pow, Semiring coef, Ord coef)
   => Exponent Natural (Poly var pow coef) where
     exponent x p = evalMono [(x,p)]
     evalMono = evalMonoN
-instance (Ord var, Ord pow, Semiring pow, Semiring x, Eq x)
+instance (Ord var, Ord pow, Semiring x, Eq x)
   => Scalar x (Poly var pow x) where
     scale c = if c == zero then Prelude.const zero else fmap (c *)
     combine polys =
       let
-        -- TODO: calculate more efficiently.
-        -- try to collect like monomials with
-        -- their inner and outer coefficients.
-        -- Then apply combine to their coefficients.
+        monos =
+          [(m,(c,c')) | (c,p) <- polys, (c',m) <- toList p]
+        insertCoefs mMap (m,cs) = Map.insertWith (<>) m [cs] mMap
+        monoMap = foldl' insertCoefs Map.empty monos
       in
-        sum [scale c p | (c,p) <- polys]
+        combo (fmap combine monoMap)
 instance (Ord var, Ord pow, Semiring x, Eq x)
   => Scalar Natural (Poly var pow x) where
     scale c = if c == zero then Prelude.const zero else fmap (from c *)
