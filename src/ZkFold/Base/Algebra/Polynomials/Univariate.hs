@@ -312,19 +312,19 @@ castPolyVec (PV cs)
     | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
 
 -- p(x) = x^n - 1
-polyVecZero :: forall c size size' . (Field c, KnownNat size, KnownNat size', Eq c) => PolyVec c size'
-polyVecZero = poly2vec $ scaleP one (value @size) one - one
+polyVecZero :: forall c n size . (Field c, KnownNat n, KnownNat size, Eq c) => PolyVec c size
+polyVecZero = poly2vec $ scaleP one (value @n) one - one
 
 -- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
-polyVecLagrange :: forall c size size' . (Field c, Eq c, KnownNat size, KnownNat size') =>
-    Natural -> c -> PolyVec c size'
-polyVecLagrange i omega = scalePV (omega^i // fromConstant (value @size)) $ (polyVecZero @c @size @size' - one) `polyVecDiv` polyVecLinear (negate $ omega^i) one
+polyVecLagrange :: forall c n size . (Field c, Eq c, KnownNat n, KnownNat size) =>
+    Natural -> c -> PolyVec c size
+polyVecLagrange i omega = scalePV (omega^i // fromConstant (value @n)) $ (polyVecZero @c @n @size - one) `polyVecDiv` polyVecLinear (negate $ omega^i) one
 
 -- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
-polyVecInLagrangeBasis :: forall c size size' . (Field c, Eq c, KnownNat size, KnownNat size') =>
-    c -> PolyVec c size -> PolyVec c size'
+polyVecInLagrangeBasis :: forall c n size . (Field c, Eq c, KnownNat n, KnownNat size) =>
+    c -> PolyVec c n -> PolyVec c size
 polyVecInLagrangeBasis omega (PV cs) =
-    let ls = fmap (\i -> polyVecLagrange @c @size @size' i omega) (V.generate (V.length cs) (fromIntegral . succ))
+    let ls = fmap (\i -> polyVecLagrange @c @n @size i omega) (V.generate (V.length cs) (fromIntegral . succ))
     in sum $ V.zipWith scalePV cs ls
 
 polyVecGrandProduct :: forall c size . (Field c, KnownNat size) =>
