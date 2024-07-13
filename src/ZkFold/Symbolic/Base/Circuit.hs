@@ -152,21 +152,21 @@ instance (Field x, Ord x, Monad m)
     constraint p = UnsafeCircuitIx $ \c -> return
       ((), c {systemC = Set.insert (p var) (systemC c)})
 
-    newConstrained p w = UnsafeCircuitIx $ \c ->
+    newConstrained p w = UnsafeCircuitIx $ \c -> return $
       let
-        (maxIndex, _) = IntMap.findMax (witnessC c)
-        newIndex = maxIndex + 1
+        maxIndexMaybe = IntMap.lookupMax (witnessC c)
+        newIndex = maybe 0 ((1 +) . Prelude.fst) maxIndexMaybe
         newWitness i = w (witnessIndex i (witnessC c))
-        varF = \case
+        evalConst = \case
           ConstVar x -> Left x
           SysVar v -> Right v
         outVar = SysVar (NewVar newIndex)
-      in return
-        ( outVar
-        , c { systemC = Set.insert (mapPoly varF (p var outVar)) (systemC c)
-            , witnessC = IntMap.insert newIndex newWitness (witnessC c)
-            }
-        )
+        newSystemC =
+          Set.insert (mapPoly evalConst (p var outVar)) (systemC c)
+        newWitnessC =
+          IntMap.insert newIndex newWitness (witnessC c)
+      in
+        (outVar, c {systemC = newSystemC, witnessC = newWitnessC})
 
 instance (i ~ j, Ord x, Field x)
   => MonadTrans (CircuitIx x i j) where
