@@ -157,14 +157,12 @@ instance (Field x, Ord x, Monad m)
         maxIndexMaybe = IntMap.lookupMax (witnessC c)
         newIndex = maybe 0 ((1 +) . Prelude.fst) maxIndexMaybe
         newWitness i = w (witnessIndex i (witnessC c))
-        evalConst = \case
+        evalConst = mapPoly $ \case
           ConstVar x -> Left x
           SysVar v -> Right v
         outVar = SysVar (NewVar newIndex)
-        newSystemC =
-          Set.insert (mapPoly evalConst (p var outVar)) (systemC c)
-        newWitnessC =
-          IntMap.insert newIndex newWitness (witnessC c)
+        newSystemC = Set.insert (evalConst (p var outVar)) (systemC c)
+        newWitnessC = IntMap.insert newIndex newWitness (witnessC c)
       in
         (outVar, c {systemC = newSystemC, witnessC = newWitnessC})
 
