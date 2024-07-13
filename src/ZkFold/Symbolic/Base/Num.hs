@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Base.Num
   , Natural
   , Rational
   , Int
+  , Mod
     -- * Arithmetic constraints
   , Arithmetic
   , PrimeField
