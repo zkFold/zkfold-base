@@ -200,6 +200,7 @@ library
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
       distributive                          < 0.7,
+      indexed-transformers                  < 0.2,
       mtl                                   < 2.4,
       optics                                < 0.5,
       parallel                          < 3.2.3.0,

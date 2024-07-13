@@ -6,24 +6,26 @@ AllowAmbiguousTypes
 , RankNTypes
 , TypeOperators
 , UndecidableInstances
+, UndecidableSuperClasses
 #-}
 
 module ZkFold.Symbolic.Base.Circuit
-  ( Circuit (..)
+  ( Circuit (..), circuit, evalC
   , SysVar (..)
   , OutVar (..)
   , MonadCircuit (..)
-  , evalC
-  , idC
-  , applyC
+  , IxMonadCircuit (..)
+  , Blueprint (..)
   ) where
 
 import Control.Applicative
 import Control.Category
+import Control.Monad
+import Control.Monad.Trans
+import Control.Monad.Trans.Indexed
 import Data.Either
 import Data.Eq
 import Data.Function (($))
-import Data.Functor
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.Maybe
@@ -33,6 +35,7 @@ import Data.Semigroup
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Type.Equality
+import qualified Prelude
 
 import ZkFold.Symbolic.Base.Num
 import ZkFold.Symbolic.Base.Polynomial
@@ -53,6 +56,16 @@ data Circuit x i o = Circuit
     -- ^ The output variables,
     -- they can be input, constant or new variables.
   }
+
+circuit
+  :: (Ord x, VectorSpace x i)
+  => (forall t m. (IxMonadCircuit x t, Monad m) => t i i m (o (OutVar x i)))
+  -> Circuit x i o
+circuit m = case unPar1 (runBlueprint m mempty) of
+  (o, c) -> c {outputC = o}
+
+evalC :: (VectorSpace x i, Functor o) => Circuit x i o -> i x -> o x
+evalC c i = fmap (witnessIndex i (witnessC c)) (outputC c)
 
 data SysVar x i
   = InVar (Basis x i)
@@ -83,106 +96,101 @@ instance (Ord x, VectorSpace x i, o ~ U1) => Semigroup (Circuit x i o) where
     , outputC = U1
     }
 
-evalC :: (VectorSpace x i, Functor o) => Circuit x i o -> i x -> o x
-evalC c i = fmap (witnessIndex i (witnessC c)) (outputC c)
-
-applyC
-  :: (Ord x, Algebra x x, VectorSpace x i, VectorSpace x j, Functor o)
-  => i x -> Circuit x (i :*: j) o -> Circuit x j o
-applyC i c = c
-  { systemC = Set.map (mapPoly sysF) (systemC c)
-  , witnessC = fmap witF (witnessC c)
-  , outputC = fmap outF (outputC c)
-  } where
-      sysF = \case
-        InVar (Left bi) -> Left (indexV i bi)
-        InVar (Right bj) -> Right (InVar bj)
-        NewVar n -> Right (NewVar n)
-      witF f j = f (i :*: j)
-      outF = \case
-        SysVar (InVar (Left bi)) -> ConstVar (indexV i bi)
-        SysVar (InVar (Right bj)) -> SysVar (InVar bj)
-        SysVar (NewVar n) -> SysVar (NewVar n)
-        ConstVar x -> ConstVar x
-
-newInputC
-  :: (Ord x, Algebra x x, VectorSpace x i, VectorSpace x j, Functor o)
-  => Circuit x j o -> Circuit x (i :*: j) o
-newInputC c = c
-  { systemC = Set.map (mapPoly sysF) (systemC c)
-  , witnessC = fmap witF (witnessC c)
-  , outputC = fmap outF (outputC c)
-  } where
-    sysF = \case
-      InVar bj -> Right (InVar (Right bj))
-      NewVar n -> Right (NewVar n)
-    witF f (_ :*: j) = f j
-    outF = \case
-      SysVar (InVar bj) -> SysVar (InVar (Right bj))
-      SysVar (NewVar n) -> SysVar (NewVar n)
-      ConstVar k -> ConstVar k
-
-inputC :: forall x i. VectorSpace x i => i (OutVar x i)
-inputC = fmap (SysVar . InVar) (basisV @x)
-
-idC :: forall x i. (Ord x, VectorSpace x i) => Circuit x i i
-idC = mempty {outputC = inputC}
-
-class (forall i j. Functor (m i j))
-  => MonadCircuit x m | m -> x where
-    apply :: (VectorSpace x i, VectorSpace x j) => i x -> m (i :*: j) j ()
-    newInput :: (VectorSpace x i, VectorSpace x j) => m j (i :*: j) ()
-    return :: r -> m i i r
-    (>>=) :: m i j r -> (r -> m j k s) -> m i k s
-    (>>) :: m i j r -> m j k s -> m i k s
-    x >> y = x >>= \_ -> y
-    (<¢>) :: m i j (r -> s) -> m j k r -> m i k s
-    f <¢> x = f >>= (<$> x)
-    input :: VectorSpace x i => m i i (i (OutVar x i))
-    input = return (inputC @x)
-    eval :: (VectorSpace x i, Functor o) => m i i (o (OutVar x i)) -> i x -> o x
-    runCircuit :: VectorSpace x i => Circuit x i o -> m i i (o (OutVar x i))
+class Monad m
+  => MonadCircuit x i m | m -> x, m -> i where
+    runCircuit
+      :: VectorSpace x i
+      => Circuit x i o -> m (o (OutVar x i))
+    input :: VectorSpace x i => m (i (OutVar x i))
+    input = return (fmap (SysVar . InVar) (basisV @x))
     constraint
       :: VectorSpace x i
-      => (forall a. Algebra x a => (SysVar x i -> a) -> a)
-      -> m i i ()
+      => (forall a. Algebra x a => (SysVar x i -> a) -> a) -> m ()
     newConstrained
       :: VectorSpace x i
       => (forall a. Algebra x a => (Int -> a) -> Int -> a)
       -> ((Int -> x) -> x)
-      -> m i i (OutVar x i)
+      -> m (OutVar x i)
 
-newtype Blueprint x i j r = Blueprint
-  {runBlueprint :: Circuit x i U1 -> (r, Circuit x j U1)}
+class
+  ( forall i m. Monad m => MonadCircuit x i (t i i m)
+  , IxMonadTrans t
+  ) => IxMonadCircuit x t | t -> x where
+    apply
+      :: (VectorSpace x i, VectorSpace x j, Monad m)
+      => i x -> t (i :*: j) j m ()
+    newInput
+      :: (VectorSpace x i, VectorSpace x j, Monad m)
+      => t j (i :*: j) m ()
+
+newtype Blueprint x i j m r = Blueprint
+  {runBlueprint :: Circuit x i U1 -> m (r, Circuit x j U1)}
   deriving Functor
 
-instance (Algebra x x, Ord x) => Applicative (Blueprint x i i) where
-  pure = return
-  (<*>) = (<¢>)
+instance (Field x, Ord x, Monad m)
+  => Applicative (Blueprint x i i m) where
+    pure x = Blueprint $ \c -> return (x,c)
+    (<*>) = apIx
 
-instance (Algebra x x, Ord x) => MonadCircuit x (Blueprint x) where
-  return x = Blueprint $ \c -> (x,c)
-  m >>= f = Blueprint $ \c ->
-    let
-      (x, c') = runBlueprint m c
-    in
-      runBlueprint (f x) c'
-  apply i = Blueprint $ \c -> ((), applyC i c)
-  newInput = Blueprint $ \c -> ((), newInputC c)
-  eval x i = case runBlueprint x mempty of
-    (o, c) -> evalC (c {outputC = o}) i
-  runCircuit c = Blueprint $ \c' ->
-    (outputC c, c {outputC = U1} <> c')
-  constraint p = Blueprint $ \c ->
-    ((), c { systemC = Set.insert (p var) (systemC c) })
-  newConstrained p w = Blueprint $ \c ->
-    let
-      (maxIndex, _) = IntMap.findMax (witnessC c)
-      newIndex = maxIndex + 1
-      newWitness i = w (fromMaybe zero . ((($ i) <$> witnessC c) IntMap.!?))
-     in
-      ( SysVar (NewVar newIndex)
-      , c { systemC = Set.insert (p (var . NewVar) newIndex) (systemC c)
-          , witnessC = IntMap.insert newIndex newWitness (witnessC c)
+instance (Field x, Ord x, Monad m)
+  => Monad (Blueprint x i i m) where
+    return = pure
+    (>>=) = Prelude.flip bindIx
+
+instance (Field x, Ord x, Monad m)
+  => MonadCircuit x i (Blueprint x i i m) where
+
+    runCircuit c = Blueprint $ \c' -> return
+      (outputC c, c {outputC = U1} <> c')
+
+    constraint p = Blueprint $ \c -> return
+      ((), c {systemC = Set.insert (p var) (systemC c)})
+
+    newConstrained p w = Blueprint $ \c ->
+      let
+        (maxIndex, _) = IntMap.findMax (witnessC c)
+        newIndex = maxIndex + 1
+        newWitness i = w (fromMaybe zero . ((($ i) <$> witnessC c) IntMap.!?))
+      in return
+        ( SysVar (NewVar newIndex)
+        , c { systemC = Set.insert (p (var . NewVar) newIndex) (systemC c)
+            , witnessC = IntMap.insert newIndex newWitness (witnessC c)
+            }
+        )
+
+instance (i ~ j, Ord x, Field x)
+  => MonadTrans (Blueprint x i j) where
+    lift m = Blueprint $ \c -> (, c) <$> m
+
+instance (Field x, Ord x) => IxMonadTrans (Blueprint x) where
+  joinIx (Blueprint f) = Blueprint $ \c -> do
+    (Blueprint g, c') <- f c
+    g c'
+
+instance (Field x, Ord x)
+  => IxMonadCircuit x (Blueprint x) where
+    apply i = Blueprint $ \c -> return
+      ( ()
+      , c { systemC = Set.map (mapPoly sysF) (systemC c)
+          , witnessC = fmap witF (witnessC c)
+          , outputC = U1
+          }
+      ) where
+          sysF = \case
+            InVar (Left bi) -> Left (indexV i bi)
+            InVar (Right bj) -> Right (InVar bj)
+            NewVar n -> Right (NewVar n)
+          witF f j = f (i :*: j)
+
+    newInput = Blueprint $ \c -> return
+      ( ()
+      , c { systemC = Set.map (mapPoly sysF) (systemC c)
+          , witnessC = fmap witF (witnessC c)
+          , outputC = U1
           }
       )
+      where
+          sysF = \case
+            InVar bj -> Right (InVar (Right bj))
+            NewVar n -> Right (NewVar n)
+          witF f (_ :*: j) = f j
