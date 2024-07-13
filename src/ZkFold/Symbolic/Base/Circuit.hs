@@ -41,7 +41,7 @@ import           ZkFold.Symbolic.Base.Num
 import           ZkFold.Symbolic.Base.Polynomial
 import           ZkFold.Symbolic.Base.Vector
 
-data Circuit x i o = Circuit
+data Circuit x i o = UnsafeCircuit
   { systemC  :: Set (Poly (SysVar x i) Natural x)
     -- ^ The system of polynomial constraints,
     -- each polynomial constitutes a "multi-edge" of the circuit graph,
@@ -88,9 +88,9 @@ witnessIndex inp witnessMap = \case
   ConstVar x -> x
 
 instance (Ord x, VectorSpace x i, o ~ U1) => Monoid (Circuit x i o) where
-  mempty = Circuit mempty mempty U1
+  mempty = UnsafeCircuit mempty mempty U1
 instance (Ord x, VectorSpace x i, o ~ U1) => Semigroup (Circuit x i o) where
-  c0 <> c1 = Circuit
+  c0 <> c1 = UnsafeCircuit
     { systemC = systemC c0 <> systemC c1
     , witnessC = witnessC c0 <> witnessC c1
     , outputC = U1
