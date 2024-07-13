@@ -96,6 +96,7 @@ type PrimeField x =
   )
 
 class AdditiveMonoid a where
+  infixl 6 +
   (+) :: a -> a -> a
   zero :: a
 
@@ -104,9 +105,11 @@ sum = foldl' (+) zero
 
 class AdditiveMonoid a => AdditiveGroup a where
   negate :: a -> a
+  infixl 6 -
   (-) :: a -> a -> a
 
 class MultiplicativeMonoid a where
+  infixl 7 *
   (*) :: a -> a -> a
   one :: a
 
@@ -114,6 +117,7 @@ product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
 product = foldl' (*) one
 
 class MultiplicativeMonoid a => MultiplicativeGroup a where
+  infixl 7 /
   (/) :: a -> a -> a
 
 -- from @Natural is the unique homomorphism from the free Semiring
@@ -689,9 +693,11 @@ class (Semiring pow, MultiplicativeMonoid a)
     exponent :: a -> pow -> a
     evalMono :: [(a,pow)] -> a
 
+infixr 8 ^
 (^) :: (Exponent Natural a, Into Natural pow) => a -> pow -> a
 a ^ b = exponent @Natural a (to b)
 
+infixr 8 ^^
 (^^) :: (Exponent Integer a, Into Integer pow) => a -> pow -> a
 a ^^ b = exponent @Integer a (to b)
 
