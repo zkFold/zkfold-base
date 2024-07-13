@@ -71,7 +71,7 @@ instance (Ord var, Semiring coef, Eq coef)
 instance (Ord var, Ring coef, Eq coef)
   => AdditiveGroup (Combo var coef) where
     negate (UnsafeCombo x) = UnsafeCombo (Map.map negate x)
-    UnsafeCombo x - UnsafeCombo y = combo (Map.unionWith (-) x y)
+    x - y = x + negate y
 
 instance (Ord var, AdditiveMonoid coef, Eq coef)
   => IsList (Combo var coef) where
