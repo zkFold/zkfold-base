@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.ARK.Plonk.Internal where
@@ -15,8 +15,6 @@ import           Test.QuickCheck                            (Arbitrary (..), Gen
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-
-
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Prelude                             (take)
@@ -50,13 +48,13 @@ type PlonkPolyExtendedLength n = 4 * n + 6
 type PlonkPolyExtended n c = PolyVec (ScalarField c) (PlonkPolyExtendedLength n)
 
 data PlonkSetupParamsProve c1 c2 = PlonkSetupParamsProve {
-        omega'  :: ScalarField c1,
-        k1'     :: ScalarField c1,
-        k2'     :: ScalarField c1,
-        gs'     :: V.Vector (Point c1),
-        h0'     :: Point c2,
-        h1'     :: Point c2,
-        iPub'   :: V.Vector Natural
+        omega' :: ScalarField c1,
+        k1'    :: ScalarField c1,
+        k2'    :: ScalarField c1,
+        gs'    :: V.Vector (Point c1),
+        h0'    :: Point c2,
+        h1'    :: Point c2,
+        iPub'  :: V.Vector Natural
     }
 instance (Show (ScalarField c1), Show (BaseField c1), Show (BaseField c2),
         EllipticCurve c1, EllipticCurve c2) => Show (PlonkSetupParamsProve c1 c2) where

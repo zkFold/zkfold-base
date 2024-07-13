@@ -11,7 +11,7 @@ import           Tests.NonInteractiveProof.Plonk             (PlonkBS)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve(..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..),
                                                               plonkVerifierInput)

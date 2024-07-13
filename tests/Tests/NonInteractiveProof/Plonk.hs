@@ -20,7 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..)
                                                               MultiplicativeSemigroup (..), negate, zero, (-!))
 import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, value)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_G2)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve(..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
                                                               polyVecLinear, polyVecZero, toPolyVec)
 import           ZkFold.Base.Data.Vector                     (fromVector)

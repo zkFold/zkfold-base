@@ -11,9 +11,10 @@ import           Test.QuickCheck                                (Arbitrary (arbi
 
 import           ZkFold.Base.Algebra.Basic.Number               (value)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381    (BLS12_381_G1, BLS12_381_G2)
-import           ZkFold.Base.Algebra.EllipticCurve.Class        (EllipticCurve(..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class        (EllipticCurve (..))
 import           ZkFold.Base.Data.Vector                        (Vector (..))
-import           ZkFold.Base.Protocol.ARK.Plonk                 (Plonk (Plonk), PlonkWitnessInput (..), genSubset, getParams)
+import           ZkFold.Base.Protocol.ARK.Plonk                 (Plonk (Plonk), PlonkWitnessInput (..), genSubset,
+                                                                 getParams)
 import           ZkFold.Base.Protocol.Commitment.KZG            (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof       (NonInteractiveProof (..))
 import           ZkFold.Prelude                                 (length)

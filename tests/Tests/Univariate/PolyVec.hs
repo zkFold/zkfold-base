@@ -13,8 +13,8 @@ import           Data.List                                   ((\\))
 import qualified Data.Vector                                 as V
 import qualified Data.Vector.Algorithms.Intro                as VA
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     hiding (Fractional (..), Num (..), drop, length, take, (!!),
-                                                              (^))
+import           Prelude                                     hiding (Fractional (..), Num (..), drop, length, take,
+                                                              (!!), (^))
 import           Prelude                                     (abs)
 import           Test.Hspec
 import           Test.QuickCheck

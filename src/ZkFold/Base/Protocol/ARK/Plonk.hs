@@ -11,27 +11,27 @@ module ZkFold.Base.Protocol.ARK.Plonk (
     plonkVerifierInput
 ) where
 
-import           Data.Maybe                                          (fromJust)
-import qualified Data.Vector                                         as V
-import           GHC.IsList                                          (IsList (..))
-import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
-                                                                      sum, take, (!!), (/), (^))
-import qualified Prelude                                             as P hiding (length)
-import           Test.QuickCheck                                     (Arbitrary (..))
+import           Data.Maybe                                 (fromJust)
+import qualified Data.Vector                                as V
+import           GHC.IsList                                 (IsList (..))
+import           Numeric.Natural                            (Natural)
+import           Prelude                                    hiding (Num (..), div, drop, length, replicate, sum, take,
+                                                             (!!), (/), (^))
+import qualified Prelude                                    as P hiding (length)
+import           Test.QuickCheck                            (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Permutations              (fromPermutation)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
-import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
+import           ZkFold.Base.Algebra.Basic.Permutations     (fromPermutation)
+import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Pairing (..), Point)
+import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
+import           ZkFold.Base.Data.Vector                    (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal
-import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
-import           ZkFold.Base.Protocol.Commitment.KZG                 (com)
+import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
+import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                                      (length, (!))
-import           ZkFold.Symbolic.Compiler                            (Arithmetic, ArithmeticCircuit, inputVariables)
+import           ZkFold.Prelude                             (length, (!))
+import           ZkFold.Symbolic.Compiler                   (Arithmetic, ArithmeticCircuit, inputVariables)
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
