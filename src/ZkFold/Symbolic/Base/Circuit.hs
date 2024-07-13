@@ -11,11 +11,11 @@ AllowAmbiguousTypes
 
 module ZkFold.Symbolic.Base.Circuit
   ( Circuit (..), circuit, evalC
-  , SysVar (..)
-  , OutVar (..)
   , MonadCircuit (..)
   , IxMonadCircuit (..)
   , CircuitIx (..)
+  , SysVar (..)
+  , OutVar (..)
   ) where
 
 import Control.Applicative
@@ -198,10 +198,10 @@ instance (Field x, Ord x)
           }
       )
       where
-          sysF = \case
-            InVar bj -> Right (InVar (Right bj))
-            NewVar n -> Right (NewVar n)
-          witF f (_ :*: j) = f j
+        sysF = \case
+          InVar bj -> Right (InVar (Right bj))
+          NewVar n -> Right (NewVar n)
+        witF f (_ :*: j) = f j
 
 instance (Ord x, VectorSpace x i)
   => From x (Circuit x i Par1) where
@@ -214,3 +214,11 @@ instance (Ord x, VectorSpace x i)
       Par1 v0 <- runCircuit c0
       Par1 v1 <- runCircuit c1
       Par1 <$> newAssigned (\x -> x v0 + x v1)
+
+instance (Ord x, VectorSpace x i)
+  => MultiplicativeMonoid (Circuit x i Par1) where
+    one = from @x one
+    c0 * c1 = circuit $ do
+      Par1 v0 <- runCircuit c0
+      Par1 v1 <- runCircuit c1
+      Par1 <$> newAssigned (\x -> x v0 * x v1)
