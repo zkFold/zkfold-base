@@ -1,8 +1,10 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DerivingStrategies   #-}
-{-# LANGUAGE DerivingVia          #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE QuantifiedConstraints, UndecidableInstances, UndecidableSuperClasses #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE DerivingStrategies      #-}
+{-# LANGUAGE DerivingVia             #-}
+{-# LANGUAGE QuantifiedConstraints   #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module ZkFold.Symbolic.Base.Vector
   ( -- * VectorSpace
@@ -26,29 +28,29 @@ module ZkFold.Symbolic.Base.Vector
   , dotV
   ) where
 
-import Control.Category
-import Control.Monad
-import Data.Bool
-import Data.Distributive
-import Data.Either
-import Data.Eq
-import Data.Ord
-import Data.Foldable hiding (sum)
-import Data.Function (const, ($))
-import Data.Functor
-import Data.Functor.Rep
-import Data.Traversable
-import Data.Kind (Type)
-import Data.IntMap (IntMap)
-import qualified Data.IntMap as IntMap
-import Data.Maybe
-import Data.Type.Equality
-import qualified Data.Vector as V
-import Data.Void
-import qualified GHC.Generics as Gen
+import           Control.Category
+import           Control.Monad
+import           Data.Bool
+import           Data.Distributive
+import           Data.Either
+import           Data.Eq
+import           Data.Foldable            hiding (sum)
+import           Data.Function            (const, ($))
+import           Data.Functor
+import           Data.Functor.Rep
+import           Data.IntMap              (IntMap)
+import qualified Data.IntMap              as IntMap
+import           Data.Kind                (Type)
+import           Data.Maybe
+import           Data.Ord
+import           Data.Traversable
+import           Data.Type.Equality
+import qualified Data.Vector              as V
+import           Data.Void
+import qualified GHC.Generics             as Gen
 import qualified Prelude
 
-import ZkFold.Symbolic.Base.Num
+import           ZkFold.Symbolic.Base.Num
 
 {- |
 Class of vector spaces with a basis.

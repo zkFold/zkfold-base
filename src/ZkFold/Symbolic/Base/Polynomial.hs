@@ -1,10 +1,8 @@
-{-# LANGUAGE
-AllowAmbiguousTypes
-, DerivingStrategies
-, TypeOperators
-, UndecidableInstances
-, UndecidableSuperClasses
-#-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE DerivingStrategies      #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module ZkFold.Symbolic.Base.Polynomial
   ( Poly
@@ -16,22 +14,22 @@ module ZkFold.Symbolic.Base.Polynomial
   , mapPoly
   ) where
 
-import Control.Category
-import Data.Bifunctor
-import Data.Eq
-import Data.Ord
-import Data.Either
-import Data.Foldable hiding (toList, sum, product)
-import Data.Functor
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.Set (Set)
-import qualified Data.Set as Set
+import           Control.Category
+import           Data.Bifunctor
+import           Data.Either
+import           Data.Eq
+import           Data.Foldable            hiding (product, sum, toList)
+import           Data.Functor
+import           Data.Map.Strict          (Map)
+import qualified Data.Map.Strict          as Map
+import           Data.Ord
+import           Data.Set                 (Set)
+import qualified Data.Set                 as Set
+import           GHC.IsList
+import           GHC.TypeNats
 import qualified Prelude
-import GHC.IsList
-import GHC.TypeNats
 
-import ZkFold.Symbolic.Base.Num
+import           ZkFold.Symbolic.Base.Num
 
 newtype Mono var pow = UnsafeMono {fromMono :: Map var pow}
   deriving (Eq, Ord, Functor)

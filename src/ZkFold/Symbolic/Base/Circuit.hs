@@ -37,12 +37,12 @@ import qualified Data.Set as Set
 import Data.Type.Equality
 import qualified Prelude
 
-import ZkFold.Symbolic.Base.Num
-import ZkFold.Symbolic.Base.Polynomial
-import ZkFold.Symbolic.Base.Vector
+import           ZkFold.Symbolic.Base.Num
+import           ZkFold.Symbolic.Base.Polynomial
+import           ZkFold.Symbolic.Base.Vector
 
 data Circuit x i o = Circuit
-  { systemC :: Set (Poly (SysVar x i) Natural x)
+  { systemC  :: Set (Poly (SysVar x i) Natural x)
     -- ^ The system of polynomial constraints,
     -- each polynomial constitutes a "multi-edge" of the circuit graph,
     -- whose "vertices" are variables.
@@ -52,7 +52,7 @@ data Circuit x i o = Circuit
     -- ^ The witness generation map,
     -- witness functions for new variables.
     -- Input and constant variables don't need witness functions.
-  , outputC :: o (OutVar x i)
+  , outputC  :: o (OutVar x i)
     -- ^ The output variables,
     -- they can be input, constant or new variables.
   }
