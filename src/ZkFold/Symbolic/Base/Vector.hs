@@ -186,13 +186,6 @@ newtype Vector (n :: Natural) a = UnsafeV (V.Vector a)
   deriving stock
     (Functor, Foldable, Traversable, Eq, Ord)
 
-instance (KnownNat n, Prelude.Show a)
-  => Prelude.Show (Vector n a) where
-    showsPrec d v
-      = Prelude.showParen (d > 10)
-      $ Prelude.showString "fromV "
-      . Prelude.showsPrec 11 (toList v)
-
 instance KnownNat n => Representable (Vector n) where
   type Rep (Vector n) = Prelude.Int
   index (UnsafeV v) i = v V.! i
@@ -213,17 +206,7 @@ instance (Field a, KnownNat n) => VectorSpace a (Vector n) where
 newtype SparseV (n :: Natural) a =
   UnsafeSparseV {fromSparseV :: IntMap a}
     deriving stock
-      (Functor, Traversable, Eq, Ord)
-
-instance Foldable (SparseV n) where
-  foldMap f v = foldMap f (fromSparseV v)
-  toList _ = Prelude.error "toList @(SparseV _) is an error, use `toListV`."
-
-instance Prelude.Show a => Prelude.Show (SparseV n a) where
-  showsPrec d v
-    = Prelude.showParen (d > 10)
-    $ Prelude.showString "sparseV "
-    . Prelude.showsPrec 11 (fromSparseV v)
+      (Functor, Foldable, Traversable, Eq, Ord)
 
 sparseV :: forall a n. (Eq a, Field a, KnownNat n) => IntMap a -> SparseV n a
 sparseV intMap = UnsafeSparseV (IntMap.foldMapWithKey sparsify intMap) where
