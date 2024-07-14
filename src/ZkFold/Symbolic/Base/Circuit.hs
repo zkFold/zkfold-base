@@ -69,7 +69,7 @@ circuit m = case unPar1 (runCircuitIx m mempty) of
   (o, c) -> c {outputC = o}
 
 evalC :: (VectorSpace x i, Functor o) => Circuit x i o -> i x -> o x
-evalC c i = fmap (indexW i (witnessC c)) (outputC c)
+evalC c i = fmap (indexW (witnessC c) i) (outputC c)
 
 data SysVar x i
   = InVar (Basis x i)
@@ -93,8 +93,8 @@ evalConst = mapPoly $ \case
   
 indexW
   :: VectorSpace x i
-  => i x -> IntMap (i x -> x) -> OutVar x i -> x
-indexW inp witnessMap = \case
+  => IntMap (i x -> x) -> i x -> OutVar x i -> x
+indexW witnessMap inp = \case
   SysVar (InVar basisIx) -> indexV inp basisIx
   SysVar (NewVar ix) -> fromMaybe zero (($ inp) <$> witnessMap IntMap.!? ix)
   ConstVar x -> x
@@ -168,7 +168,7 @@ instance (Field x, Ord x, Monad m)
       let
         maxIndexMaybe = IntMap.lookupMax (witnessC c)
         newIndex = maybe 0 ((1 +) . Prelude.fst) maxIndexMaybe
-        newWitness i = w (indexW i (witnessC c))
+        newWitness = w . indexW (witnessC c)
         outVar = SysVar (NewVar newIndex)
         newConstraint = evalConst (p var outVar)
         newSystemC = Set.insert newConstraint (systemC c)
