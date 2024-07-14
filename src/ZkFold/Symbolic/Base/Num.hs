@@ -174,8 +174,18 @@ type Algebra x a = (Ring x, Ring a, From x a, Scalar x a)
 class Semiring a => Euclidean a where
   absDiff :: a -> a -> a
   divMod :: a -> a -> (a,a)
+  div :: a -> a -> a
+  div a b = let (divisor,_) = divMod a b in divisor
+  mod :: a -> a -> a
+  mod a b = let (_,modulus) = divMod a b in modulus
   quotRem :: a -> a -> (a,a)
+  quot :: a -> a -> a
+  quot a b = let (quotient,_) = quotRem a b in quotient
+  rem :: a -> a -> a
+  rem a b = let (_,remainder) = quotRem a b in remainder
   eea :: a -> a -> (a,a,a)
+
+  -- TODO: Fix & test
   default eea :: SemiIntegral a => a -> a -> (a,a,a)
   eea = xEuclid one zero zero one where
     xEuclid x0 y0 x1 y1 u v
@@ -189,18 +199,6 @@ class Semiring a => Euclidean a where
           xEuclid x1 y1 x2 y2 v r
   gcd :: a -> a -> a
   gcd a b = let (d,_,_) = eea a b in d
-
-  div :: a -> a -> a
-  div a b = let (divisor,_) = divMod a b in divisor
-
-  mod :: a -> a -> a
-  mod a b = let (_,modulus) = divMod a b in modulus
-
-  quot :: a -> a -> a
-  quot a b = let (quotient,_) = quotRem a b in quotient
-
-  rem :: a -> a -> a
-  rem a b = let (_,remainder) = quotRem a b in remainder
 
 even :: SemiIntegral a => a -> Bool
 even a = a `mod` (from @Natural 2) == zero
@@ -557,10 +555,6 @@ residue :: forall n int. (Euclidean int, KnownNat n) => int -> int
 residue int = int `mod` from (knownNat @n)
 
 instance From (Mod int n) (Mod int n)
-
-instance (Euclidean int, KnownNat n)
-  => From int (Mod int n) where
-    from = UnsafeMod . residue @n
 
 instance (From Natural int, Euclidean int, KnownNat n)
   => From Natural (Mod int n) where
