@@ -187,7 +187,9 @@ newtype Vector (n :: Natural) a = UnsafeV {fromV :: V.Vector a}
   deriving stock
     (Functor, Foldable, Traversable, Eq, Ord)
 
-vector :: forall a n. (AdditiveMonoid a, KnownNat n) => V.Vector a -> Vector n a
+vector
+  :: forall a n. (AdditiveMonoid a, KnownNat n)
+  => V.Vector a -> Vector n a
 vector v =
   let
     len = V.length v
