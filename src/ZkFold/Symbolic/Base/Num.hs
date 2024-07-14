@@ -24,17 +24,16 @@ module ZkFold.Symbolic.Base.Num
   , Ring
   , Field
   , Algebra
+  , Euclidean (..)
   , Real
   , SemiIntegral
   , Integral
   , Modular
-  , Euclidean (..)
   , Discrete (..)
   , Comparable (..)
     -- * Algebraic inter-constraints
   , From (..)
   , Into (..)
-  , fromSemiIntegral
   , Exponent (..), (^), (^^), (**)
   , Scalar (..)
     -- * Type level numbers
@@ -47,6 +46,7 @@ module ZkFold.Symbolic.Base.Num
   , product
   , even
   , odd
+  , fromSemiIntegral
   , knownNat
   , order
   , characteristic
@@ -172,7 +172,7 @@ type Field a =
 type Algebra x a = (Ring x, Ring a, From x a, Scalar x a)
 
 class Semiring a => Euclidean a where
-  diff :: a -> a -> a
+  absDiff :: a -> a -> a
   divMod :: a -> a -> (a,a)
   quotRem :: a -> a -> (a,a)
   eea :: a -> a -> (a,a,a)
@@ -183,8 +183,8 @@ class Semiring a => Euclidean a where
       | otherwise =
         let
           (q , r) = u `divMod` v
-          x2 = x0 `diff` (q * x1)
-          y2 = y0 `diff` (q * y1)
+          x2 = x0 `absDiff` (q * x1)
+          y2 = y0 `absDiff` (q * y1)
         in
           xEuclid x1 y1 x2 y2 v r
   gcd :: a -> a -> a
@@ -378,7 +378,7 @@ instance Discrete Integer
 instance Comparable Integer
 
 instance Euclidean Integer where
-  diff = (Prelude.-)
+  absDiff = (Prelude.-)
   divMod = Prelude.divMod
   quotRem = Prelude.quotRem
 
@@ -406,7 +406,7 @@ instance Into Rational Natural where to = Prelude.toRational
 instance Into Natural Natural
 
 instance Euclidean Natural where
-  diff a b = case compare a b of
+  absDiff a b = case compare a b of
     LT -> b Prelude.- a
     EQ -> 0
     GT -> a Prelude.- b
@@ -453,7 +453,7 @@ instance Discrete Int
 instance Comparable Int
 
 instance Euclidean Int where
-  diff = (Prelude.-)
+  absDiff = (Prelude.-)
   divMod = Prelude.divMod
   quotRem = Prelude.quotRem
 
@@ -541,7 +541,7 @@ instance (SemiIntegral int, Prime p)
 
 instance (SemiIntegral int, KnownNat n)
   => Euclidean (Mod int n) where
-    diff a b = from (diff (to @Natural a) (to b))
+    absDiff a b = from (absDiff (to @Natural a) (to b))
     divMod a b = case divMod (to @Natural a) (to b) of
       (d,m) -> (from d, from m)
     quotRem a b = case quotRem (to @Natural a) (to b) of
@@ -568,8 +568,7 @@ instance (SemiIntegral int, Prime p)
   => From Rational (Mod int p) where
     from q = from (numerator q) / from (denominator q)
 
-instance Into (Mod int n) (Mod int n) where
-  to = id
+instance Into (Mod int n) (Mod int n)
 
 instance Into int (Mod int n) where
   to = fromMod
@@ -582,18 +581,9 @@ instance Into Integer int
   => Into Integer (Mod int n) where
     to = to . fromMod
 
-instance (SemiIntegral int, KnownNat n)
+instance SemiIntegral int
   => Into Natural (Mod int n) where
-    to r =
-      let
-        int = to @Integer r
-        n = from (knownNat @n)
-        zToN = Prelude.fromIntegral
-      in
-        case compare int zero of
-          LT -> zToN (n + int)
-          EQ -> zero
-          GT -> zToN (n - int)
+    to = Prelude.fromInteger . to
 
 instance (SemiIntegral int, KnownNat n)
   => Scalar Natural (Mod int n) where
