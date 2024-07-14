@@ -197,7 +197,6 @@ vector v =
       EQ -> UnsafeV v
       GT -> UnsafeV (V.take n v)
       LT -> UnsafeV (v <> V.replicate (n - len) zero)
-    
 
 instance KnownNat n => Representable (Vector n) where
   type Rep (Vector n) = Prelude.Int
