@@ -552,34 +552,21 @@ residue int = int `mod` from (knownNat @n)
 
 instance From (Mod int n) (Mod int n) where from = id
 
-instance (Euclidean int, KnownNat n) => From int (Mod int n) where
-  from int = UnsafeMod (residue @n int)
+instance (Euclidean int, KnownNat n)
+  => From int (Mod int n) where
+    from = UnsafeMod . residue @n
 
 instance (From Natural int, Euclidean int, KnownNat n)
   => From Natural (Mod int n) where
-    from nat = UnsafeMod (residue @n (from nat))
+    from = UnsafeMod . residue @n . from
 
 instance (SemiIntegral int, KnownNat n)
   => From Integer (Mod int n) where
-    from int =
-      let
-        r = residue @n (to @Integer int)
-        n = from (knownNat @n)
-        zToN = from @Natural . Prelude.fromIntegral
-      in
-        case compare r zero of
-          LT -> zToN (n + r)
-          EQ -> zero
-          GT -> zToN (n - r)
+    from = UnsafeMod . from @Natural . Prelude.fromIntegral . residue @n
 
 instance (SemiIntegral int, Prime p)
   => From Rational (Mod int p) where
-    from q =
-      let
-        top = numerator q
-        bot = denominator q
-      in
-        from top / from bot
+    from q = from (numerator q) / from (denominator q)
 
 instance Into (Mod int n) (Mod int n) where
   to = id
