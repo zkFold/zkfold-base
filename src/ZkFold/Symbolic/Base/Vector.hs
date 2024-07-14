@@ -10,7 +10,7 @@ module ZkFold.Symbolic.Base.Vector
   ( -- * VectorSpace
     VectorSpace (..)
     -- * Vector types
-  , Vector (..)
+  , Vector (..), vector
   , SparseV (..), sparseV
   , Gen.U1 (..)
   , Gen.Par1 (..)
@@ -42,6 +42,7 @@ import           Data.IntMap              (IntMap)
 import qualified Data.IntMap              as IntMap
 import           Data.Kind                (Type)
 import           Data.Maybe
+import           Data.Monoid
 import           Data.Ord
 import           Data.Traversable
 import           Data.Type.Equality
@@ -182,9 +183,21 @@ instance
       (basisV @a @v <&> \bv -> basisV @a @u <&> \bu -> (bv,bu))
 
 -- | concrete vectors
-newtype Vector (n :: Natural) a = UnsafeV (V.Vector a)
+newtype Vector (n :: Natural) a = UnsafeV {fromV :: V.Vector a}
   deriving stock
     (Functor, Foldable, Traversable, Eq, Ord)
+
+vector :: forall a n. (AdditiveMonoid a, KnownNat n) => V.Vector a -> Vector n a
+vector v =
+  let
+    len = V.length v
+    n = from (knownNat @n)
+  in
+    case compare len n of
+      EQ -> UnsafeV v
+      GT -> UnsafeV (V.take n v)
+      LT -> UnsafeV (v <> V.replicate (n - len) zero)
+    
 
 instance KnownNat n => Representable (Vector n) where
   type Rep (Vector n) = Prelude.Int
