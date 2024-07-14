@@ -20,8 +20,8 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, deg, eval
 import           ZkFold.Base.Protocol.Commitment.KZG         (com)
 
 propVerificationKZG
-    :: forall c1 c2 t f
-    .  Pairing c1 c2 t
+    :: forall c1 c2 f
+    .  Pairing c1 c2
     => f ~ ScalarField c1
     => f ~ ScalarField c2
     => Field f
@@ -49,11 +49,11 @@ propVerificationKZG x p z =
     in pairing v0 h0 == pairing w h1
 
 specPairing'
-    :: forall (c1 :: Type) (c2 :: Type) t f
+    :: forall (c1 :: Type) (c2 :: Type) f
     .  Typeable c1
     => Typeable c2
-    => Typeable t
-    => Pairing c1 c2 t
+    => Typeable (TargetGroup c1 c2)
+    => Pairing c1 c2
     => f ~ ScalarField c1
     => Field f
     => Eq f

@@ -57,8 +57,10 @@ instance (EllipticCurve curve, Arbitrary (ScalarField curve)) => Arbitrary (Poin
     arbitrary = arbitrary <&> (`mul` gen)
 
 class (EllipticCurve curve1, EllipticCurve curve2, ScalarField curve1 ~ ScalarField curve2,
-        Eq t, MultiplicativeGroup t, Exponent t (ScalarField curve1)) => Pairing curve1 curve2 t | curve1 curve2 -> t where
-    pairing :: Point curve1 -> Point curve2 -> t
+        Eq (TargetGroup curve1 curve2), MultiplicativeGroup (TargetGroup curve1 curve2),
+        Exponent (TargetGroup curve1 curve2) (ScalarField curve1)) => Pairing curve1 curve2 where
+    type TargetGroup curve1 curve2 :: Type
+    pairing :: Point curve1 -> Point curve2 -> TargetGroup curve1 curve2
 
 pointAdd
     :: Field (BaseField curve)

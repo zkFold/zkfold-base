@@ -266,7 +266,8 @@ deriving via (NonZero Fq12) instance MultiplicativeGroup BLS12_381_GT
 instance Finite BLS12_381_GT where
     type Order BLS12_381_GT = BLS12_381_Scalar
 
-instance Pairing BLS12_381_G1 BLS12_381_G2 BLS12_381_GT where
+instance Pairing BLS12_381_G1 BLS12_381_G2 where
+    type TargetGroup BLS12_381_G1 BLS12_381_G2 = BLS12_381_GT
     pairing a b = BLS12_381_GT (pairingBLS a b)
 
 -- Adapted from https://github.com/nccgroup/pairing-bls12381/blob/master/Crypto/Pairing_bls12381.hs
