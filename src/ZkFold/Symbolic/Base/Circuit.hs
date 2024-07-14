@@ -14,6 +14,7 @@ module ZkFold.Symbolic.Base.Circuit
   , MonadCircuit (..)
   , IxMonadCircuit (..)
   , CircuitIx (..)
+  , Blueprint
   , SysVar (..)
   , OutVar (..)
   ) where
@@ -57,9 +58,12 @@ data Circuit x i o = UnsafeCircuit
     -- they can be input, constant or new variables.
   }
 
+type Blueprint x i o =
+  forall t m. (IxMonadCircuit x t, Monad m) => t i i m (o (OutVar x i))
+
 circuit
   :: (Ord x, VectorSpace x i)
-  => (forall t m. (IxMonadCircuit x t, Monad m) => t i i m (o (OutVar x i)))
+  => Blueprint x i o
   -> Circuit x i o
 circuit m = case unPar1 (runCircuitIx m mempty) of
   (o, c) -> c {outputC = o}
