@@ -196,6 +196,12 @@ class Semiring a => Euclidean a where
   mod :: a -> a -> a
   mod a b = let (_,modulus) = divMod a b in modulus
 
+  quot :: a -> a -> a
+  quot a b = let (quotient,_) = quotRem a b in quotient
+
+  rem :: a -> a -> a
+  rem a b = let (_,remainder) = quotRem a b in remainder
+
 even :: SemiIntegral a => a -> Bool
 even a = a `mod` (from @Natural 2) == zero
 
