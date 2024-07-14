@@ -550,7 +550,7 @@ instance (SemiIntegral int, KnownNat n)
 residue :: forall n int. (Euclidean int, KnownNat n) => int -> int
 residue int = int `mod` from (knownNat @n)
 
-instance From (Mod int n) (Mod int n) where from = id
+instance From (Mod int n) (Mod int n)
 
 instance (Euclidean int, KnownNat n)
   => From int (Mod int n) where
