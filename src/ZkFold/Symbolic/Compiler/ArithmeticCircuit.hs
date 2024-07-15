@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         -- high-level functions
         applyArgs,
         optimize,
+        desugarRanges,
         -- low-level functions
         eval,
         eval1,
@@ -35,25 +36,27 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         checkClosedCircuit
     ) where
 
-import           Control.Monad.State                                 (execState)
-import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                      take)
-import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
-                                                                      sum, take, (!!), (^))
-import           Test.QuickCheck                                     (Arbitrary, Property, conjoin, property, vector,
-                                                                      withMaxSuccess, (===))
-import           Text.Pretty.Simple                                  (pPrint)
+import           Control.Monad.State                                    (execState)
+import           Data.Map                                               hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                         take)
+import           Numeric.Natural                                        (Natural)
+import           Prelude                                                hiding (Num (..), drop, length, product,
+                                                                         splitAt, sum, take, (!!), (^))
+import           Test.QuickCheck                                        (Arbitrary, Property, conjoin, property, vector,
+                                                                         withMaxSuccess, (===))
+import           Text.Pretty.Simple                                     (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial)
-import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Prelude                                      (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Circuit (..),
-                                                                      Constraint, apply, constraintSystem, eval, eval1,
-                                                                      exec, exec1, forceZero, inputVariables, varOrder,
-                                                                      withOutputs, witnessGenerator)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate           (evalMonomial, evalPolynomial)
+import           ZkFold.Base.Data.Vector                                (Vector)
+import           ZkFold.Prelude                                         (length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (desugarRange)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..),
+                                                                         Circuit (..), Constraint, apply,
+                                                                         constraintSystem, eval, eval1, exec, exec1,
+                                                                         forceZero, inputVariables, varOrder,
+                                                                         withOutputs, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 
 --------------------------------- High-level functions --------------------------------
@@ -67,6 +70,12 @@ applyArgs r args = r { acCircuit = execState (apply args) (acCircuit r) }
 -- TODO: Implement nontrivial optimizations.
 optimize :: forall a n . ArithmeticCircuit n a -> ArithmeticCircuit n a
 optimize = id
+
+-- | Desugars range constraints into polynomial constraints
+desugarRanges :: forall a n . Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a
+desugarRanges c@(ArithmeticCircuit r _) =
+  let r' = flip execState r . traverse (uncurry desugarRange) $ toList (acRange r)
+   in c { acCircuit = r' { acRange = mempty } }
 
 ----------------------------------- Information -----------------------------------
 
