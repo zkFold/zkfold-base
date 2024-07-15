@@ -99,7 +99,9 @@ class Monad m => MonadBlueprint i a m | m -> i, m -> a where
     -- | Adds the supplied circuit to the blueprint and returns its output variable.
     runCircuit :: ArithmeticCircuit n a -> m (Vector n i)
 
-    -- | Creates new variable given an upper bound on a value and a witness.
+    -- | Creates new variable given an inclusive upper bound on a value and a witness.
+    -- e.g., @newRanged b (\\x -> x i - one)@ creates new variable whose value
+    -- is equal to @x i - one@ and which is expected to be in range @[0..b]@.
     newRanged :: a -> Witness i a -> m i
 
     -- | Creates new variable given a constraint polynomial and a witness.
@@ -120,9 +122,9 @@ instance Arithmetic a => MonadBlueprint Natural a (State (Circuit a)) where
     newRanged upperBound witness = do
         let s   = sources @a witness
             -- | A wild (and obviously incorrect) approximation of
-            -- x (x - 1) ... (x - (upperBound - 1))
+            -- x (x - 1) ... (x - upperBound)
             -- It's ok because we only use it for variable generation anyway.
-            p i = var i * (var i - one) * (var i - fromConstant upperBound + one)
+            p i = var i * (var i - fromConstant upperBound)
         i <- addVariable =<< newVariableWithSource (Set.toList s) p
         I.rangeConstraint i upperBound
         assignment i (\m -> witness (m !))

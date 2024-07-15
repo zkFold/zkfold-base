@@ -114,19 +114,20 @@ horner xs = case reverse xs of
     (b : bs) -> foldlM (\a i -> newAssigned (\x -> let xa = x a in x i + xa + xa)) b bs
 
 desugarRange :: (Arithmetic a, MonadBlueprint i a m) => i -> a -> m ()
-desugarRange i b = do
+desugarRange i b
+  | b == negate one = return ()
+  | otherwise = do
     let bs = binaryExpansion b
     is <- expansion (length bs) i
-    let ds = dropWhile ((== zero) . fst) (zip bs is)
-    y <- case ds of
-        [] -> newAssigned zero
-        ((_, k0):ds') -> do
-            z <- newAssigned (one - ($ k0))
-            foldM (\j (c, k) -> newAssigned $ forceGT j c k) z ds'
-    constraint (($ y) - one)
-    where forceGT j c k
-            | c == zero = ($ j) * (one - ($ k))
-            | otherwise = one + ($ k) * (($ j) - one)
+    case dropWhile ((== one) . fst) (zip bs is) of
+      [] -> return ()
+      ((_, k0):ds) -> do
+        z <- newAssigned (one - ($ k0))
+        ge <- foldM (\j (c, k) -> newAssigned $ forceGE j c k) z ds
+        constraint (($ ge) - one)
+  where forceGE j c k
+          | c == zero = ($ j) * (one - ($ k))
+          | otherwise = one + ($ k) * (($ j) - one)
 
 isZeroC :: Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a
 isZeroC r = circuitN $ fst <$> runInvert r
