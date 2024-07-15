@@ -7,6 +7,7 @@ import           Data.Bifunctor                             (first)
 import           Data.Bool                                  (bool)
 import qualified Data.Map                                   as Map
 import qualified Data.Vector                                as V
+import           GHC.Generics                               (Generic)
 import           GHC.IsList                                 (IsList (..))
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
@@ -160,7 +161,8 @@ data PlonkProverSecret c = PlonkProverSecret {
         b9  :: ScalarField c,
         b10 :: ScalarField c,
         b11 :: ScalarField c
-    }
+    } deriving Generic
+
 instance Show (ScalarField c) => Show (PlonkProverSecret c) where
     show (PlonkProverSecret b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11) =
         "Prover Secret: "
