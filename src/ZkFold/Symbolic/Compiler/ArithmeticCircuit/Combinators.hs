@@ -10,6 +10,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     expansion,
     splitExpansion,
     horner,
+    desugarRange,
     isZeroC,
     invertC,
     joinCircuits,
@@ -20,7 +21,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     getAllVars
 ) where
 
-import           Control.Monad                                             (replicateM)
+import           Control.Monad                                             (foldM, replicateM)
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Foldable                                             (foldlM)
 import           Data.List                                                 (sort)
@@ -29,15 +30,15 @@ import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           GHC.IsList                                                (IsList (..))
 import           Numeric.Natural                                           (Natural)
-import           Prelude                                                   hiding (Bool, Eq (..), negate, splitAt, (!!),
-                                                                            (*), (+), (-), (^))
+import           Prelude                                                   hiding (Bool, Eq (..), length, negate,
+                                                                            splitAt, (!!), (*), (+), (-), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate              (variables)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (splitAt, (!!))
+import           ZkFold.Prelude                                            (length, splitAt, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..),
                                                                             Circuit (acSystem), acInput, joinCircuits)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
@@ -111,6 +112,22 @@ horner :: MonadBlueprint i a m => [i] -> m i
 horner xs = case reverse xs of
     []       -> newAssigned (const zero)
     (b : bs) -> foldlM (\a i -> newAssigned (\x -> let xa = x a in x i + xa + xa)) b bs
+
+desugarRange :: (Arithmetic a, MonadBlueprint i a m) => i -> a -> m ()
+desugarRange i b
+  | b == negate one = return ()
+  | otherwise = do
+    let bs = binaryExpansion b
+    is <- expansion (length bs) i
+    case dropWhile ((== one) . fst) (zip bs is) of
+      [] -> return ()
+      ((_, k0):ds) -> do
+        z <- newAssigned (one - ($ k0))
+        ge <- foldM (\j (c, k) -> newAssigned $ forceGE j c k) z ds
+        constraint (($ ge) - one)
+  where forceGE j c k
+          | c == zero = ($ j) * (one - ($ k))
+          | otherwise = one + ($ k) * (($ j) - one)
 
 isZeroC :: Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a
 isZeroC r = circuitN $ fst <$> runInvert r

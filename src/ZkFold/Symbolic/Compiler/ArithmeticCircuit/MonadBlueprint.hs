@@ -15,14 +15,19 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
     circuits
 ) where
 
+import           Control.Applicative                                 (pure)
+import           Control.Monad                                       (Monad, return, (=<<))
 import           Control.Monad.State                                 (State, modify, runState)
-import           Data.Functor                                        (($>))
+import           Data.Foldable                                       (maximum)
+import           Data.Function                                       (($), (.))
+import           Data.Functor                                        (Functor, fmap, ($>), (<$>))
 import           Data.Map                                            ((!))
+import           Data.Monoid                                         (mempty, (<>))
+import           Data.Ord                                            (Ord)
 import           Data.Set                                            (Set)
 import qualified Data.Set                                            as Set
+import           Data.Type.Equality                                  (type (~))
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Bool (..), Eq (..), replicate, (*), (+),
-                                                                      (-))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Sources
@@ -94,6 +99,11 @@ class Monad m => MonadBlueprint i a m | m -> i, m -> a where
     -- | Adds the supplied circuit to the blueprint and returns its output variable.
     runCircuit :: ArithmeticCircuit n a -> m (Vector n i)
 
+    -- | Creates new variable given an inclusive upper bound on a value and a witness.
+    -- e.g., @newRanged b (\\x -> x i - one)@ creates new variable whose value
+    -- is equal to @x i - one@ and which is expected to be in range @[0..b]@.
+    newRanged :: a -> Witness i a -> m i
+
     -- | Creates new variable given a constraint polynomial and a witness.
     newConstrained :: NewConstraint i a -> Witness i a -> m i
 
@@ -108,6 +118,17 @@ instance Arithmetic a => MonadBlueprint Natural a (State (Circuit a)) where
     input = I.input
 
     runCircuit r = modify (<> acCircuit r) $> acOutput r
+
+    newRanged upperBound witness = do
+        let s   = sources @a witness
+            -- | A wild (and obviously incorrect) approximation of
+            -- x (x - 1) ... (x - upperBound)
+            -- It's ok because we only use it for variable generation anyway.
+            p i = var i * (var i - fromConstant upperBound)
+        i <- addVariable =<< newVariableWithSource (Set.toList s) p
+        I.rangeConstraint i upperBound
+        assignment i (\m -> witness (m !))
+        return i
 
     newConstrained
         :: NewConstraint Natural a
