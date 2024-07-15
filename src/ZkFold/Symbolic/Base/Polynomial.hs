@@ -153,12 +153,12 @@ mapPoly
   :: (Eq x, Ord var0, Ord var1, Semiring x)
   => (var0 -> Either x var1)
   -> Poly var0 Natural x -> Poly var1 Natural x
-mapPoly f varPoly = fromList
+mapPoly f polynomial = fromList
   [
     let
-      (coefs, varList) = partitionEithers
-        [bimap (^p) (,p) (f v0) | (v0,p) <- toList varMono]
+      (coefMono, varMono) = partitionEithers
+        [bimap (,p) (,p) (f v0) | (v0,p) <- toList monomial]
     in
-      (c * product coefs, fromList varList)
-  | (c, varMono) <- toList varPoly
+      (c * evalMono coefMono, fromList varMono)
+  | (c, monomial) <- toList polynomial
   ]
