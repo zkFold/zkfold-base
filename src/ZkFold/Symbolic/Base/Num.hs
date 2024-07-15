@@ -81,7 +81,7 @@ type Arithmetic x a =
   ( Algebra x a
   , Comparable a
   , FiniteChr a
-  , 3 <= Chr x
+  , 3 <= Chr a
   )
 
 -- Prime fields should only include:
@@ -92,7 +92,6 @@ type PrimeField x =
   , Arithmetic x x
   , Finite x
   , Field x
-  , FiniteChr x
   , Order x ~ Chr x
   )
 
