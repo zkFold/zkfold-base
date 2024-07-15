@@ -13,8 +13,8 @@ import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..),
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1)
 import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
 import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkProverSecret, PlonkWitnessInput (..),
-                                                              plonkVerifierInput, PlonkInput(..))
+import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkInput (..), PlonkProverSecret,
+                                                              PlonkWitnessInput (..), plonkVerifierInput)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
