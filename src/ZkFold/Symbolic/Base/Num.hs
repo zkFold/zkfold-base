@@ -26,7 +26,6 @@ module ZkFold.Symbolic.Base.Num
   , Algebra
   , SemiEuclidean (..)
   , Euclidean (..)
-  , Real
   , SemiIntegral
   , Integral
   , Modular
@@ -35,7 +34,7 @@ module ZkFold.Symbolic.Base.Num
     -- * Algebraic inter-constraints
   , From (..)
   , Into (..)
-  , Exponent (..), (^), (^^), (**)
+  , Exponent (..), (^), (^^)
   , Scalar (..)
     -- * Type level numbers
   , KnownNat
@@ -232,12 +231,6 @@ class Into y a where
   default to :: y ~ a => a -> y
   to = id
 
--- e.g. `Rational`, `Integer`, `Natural`, `Mod int`
-type Real a =
-  ( Prelude.Ord a
-  , Semiring a
-  , Into Rational a
-  )
 -- e.g. `Integer`, `Natural`, `Mod int`
 type SemiIntegral a =
   ( Prelude.Ord a
@@ -706,9 +699,6 @@ a ^ b = exponent @Natural a (to b)
 infixr 8 ^^
 (^^) :: (Exponent Integer a, Into Integer pow) => a -> pow -> a
 a ^^ b = exponent @Integer a (to b)
-
-(**) :: (Exponent Rational a, Into Rational pow) => a -> pow -> a
-a ** b = exponent @Rational a (to b)
 
 evalMonoN
   :: (Into Natural p, MultiplicativeMonoid a)
