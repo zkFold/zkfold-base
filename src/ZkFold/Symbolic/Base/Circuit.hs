@@ -108,27 +108,26 @@ instance (Ord x, VectorSpace x i, o ~ U1) => Semigroup (Circuit x i o) where
     , outputC = U1
     }
 
-class Monad m
-  => MonadCircuit x i m | m -> x, m -> i where
-    runCircuit
-      :: VectorSpace x i
-      => Circuit x i o -> m (o (OutVar x i))
-    input :: VectorSpace x i => m (i (OutVar x i))
-    input = return (fmap (SysVar . InVar) (basisV @x))
-    constraint
-      :: VectorSpace x i
-      => (forall a. Algebra x a => (OutVar x i -> a) -> a)
-      -> m ()
-    newConstrained
-      :: VectorSpace x i
-      => (forall a. Algebra x a => (OutVar x i -> a) -> OutVar x i -> a)
-      -> ((OutVar x i -> x) -> x)
-      -> m (OutVar x i)
-    newAssigned
-      :: VectorSpace x i
-      => (forall a. Algebra x a => (OutVar x i -> a) -> a)
-      -> m (OutVar x i)
-    newAssigned p = newConstrained (\x i -> p x - x i) p
+class Monad m => MonadCircuit x i m | m -> x, m -> i where
+  runCircuit
+    :: VectorSpace x i
+    => Circuit x i o -> m (o (OutVar x i))
+  input :: VectorSpace x i => m (i (OutVar x i))
+  input = return (fmap (SysVar . InVar) (basisV @x))
+  constraint
+    :: VectorSpace x i
+    => (forall a. Algebra x a => (OutVar x i -> a) -> a)
+    -> m ()
+  newConstrained
+    :: VectorSpace x i
+    => (forall a. Algebra x a => (OutVar x i -> a) -> OutVar x i -> a)
+    -> ((OutVar x i -> x) -> x)
+    -> m (OutVar x i)
+  newAssigned
+    :: VectorSpace x i
+    => (forall a. Algebra x a => (OutVar x i -> a) -> a)
+    -> m (OutVar x i)
+  newAssigned p = newConstrained (\x i -> p x - x i) p
 
 class
   ( forall i m. Monad m => MonadCircuit x i (t i i m)
