@@ -133,6 +133,7 @@ library
       ZkFold.Symbolic.Cardano.Types.Basic
       ZkFold.Symbolic.Cardano.Types.Input
       ZkFold.Symbolic.Cardano.Types.Output
+      ZkFold.Symbolic.Cardano.Types.Output.Datum
       ZkFold.Symbolic.Cardano.Types.OutputRef
       ZkFold.Symbolic.Cardano.Types.Transaction
       ZkFold.Symbolic.Cardano.Types.Value

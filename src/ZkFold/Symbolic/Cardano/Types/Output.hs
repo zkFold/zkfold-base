@@ -3,30 +3,25 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
-module ZkFold.Symbolic.Cardano.Types.Output where
+module ZkFold.Symbolic.Cardano.Types.Output (
+    module ZkFold.Symbolic.Cardano.Types.Output.Datum,
+    Output(..),
+    txoAddress,
+    txoTokens,
+    txoDatumHash
+) where
 
-import           GHC.Natural                           (Natural)
-import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                                   hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Base.Algebra.Basic.Class       (FromConstant)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Cardano.Types.Address (Address)
+import           ZkFold.Symbolic.Cardano.Types.Address     (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
-import           ZkFold.Symbolic.Cardano.Types.Value   (Value)
+import           ZkFold.Symbolic.Cardano.Types.Output.Datum
+import           ZkFold.Symbolic.Cardano.Types.Value        (Value)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString       (emptyByteString)
-import           ZkFold.Symbolic.Data.Combinators      (Extend (..))
-import           ZkFold.Symbolic.Data.Eq               (Eq)
+import           ZkFold.Symbolic.Data.Eq                    (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
-import qualified ZkFold.Symbolic.Data.FieldElement     as FE
-
-type DatumHash context = ByteString 256 context
-
-emptyDatumHash :: forall context .
-    ( FromConstant Natural (ByteString 0 context)
-    , Extend (ByteString 0 context) (DatumHash context)
-    ) => DatumHash context
-emptyDatumHash = extend $ emptyByteString @F @context
+import qualified ZkFold.Symbolic.Data.FieldElement          as FE
 
 newtype Output tokens datum context = Output (Address context, (Value tokens context, DatumHash context))
 
