@@ -46,6 +46,7 @@ module ZkFold.Symbolic.Base.Num
   , product
   , even
   , odd
+  , fromInteger
   , fromSemiIntegral
   , knownNat
   , order
@@ -255,6 +256,9 @@ type Modular a =
 
 fromSemiIntegral :: (SemiIntegral a, From Integer b) => a -> b
 fromSemiIntegral = from . to @Integer
+
+fromInteger :: From Integer b => Integer -> b
+fromInteger = from
 
 -- Type level numbers ---------------------------------------------------------
 
