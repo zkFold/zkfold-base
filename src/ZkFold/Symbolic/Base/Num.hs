@@ -232,14 +232,34 @@ class Into y a where
   default to :: y ~ a => a -> y
   to = id
 
--- e.g. `Rational`, `Integer`, `Natural`, `Zp p`
-type Real a = (Prelude.Ord a, Semiring a, Into Rational a)
--- e.g. `Integer`, `Natural`, `Zp p`
-type SemiIntegral a = (Real a, SemiEuclidean a, Into Integer a)
--- e.g. `Integer`, `Zp p`
-type Integral a = (SemiIntegral a, Euclidean a)
--- `Zp p` and its newtypes, also `Word8`, `Word16`, `Word32` and `Word64`
-type Modular a = (Integral a, Into Natural a)
+-- e.g. `Rational`, `Integer`, `Natural`, `Mod int`
+type Real a =
+  ( Prelude.Ord a
+  , Semiring a
+  , Into Rational a
+  )
+-- e.g. `Integer`, `Natural`, `Mod int`
+type SemiIntegral a =
+  ( Prelude.Ord a
+  , SemiEuclidean a
+  , Into Rational a
+  , Into Integer a
+  )
+-- e.g. `Integer`, `Mod int`
+type Integral a =
+  ( Prelude.Ord a
+  , Euclidean a
+  , Into Rational a
+  , Into Integer a
+  )
+-- e.g. `Mod int` & fixed-width unsigned integer types
+type Modular a =
+  ( Prelude.Ord a
+  , Euclidean a
+  , Into Rational a
+  , Into Integer a
+  , Into Natural a
+  )
 
 fromSemiIntegral :: (SemiIntegral a, From Integer b) => a -> b
 fromSemiIntegral = from . to @Integer
@@ -550,6 +570,14 @@ instance (SemiIntegral int, KnownNat n)
       (d,m) -> (from d, from m)
     quotRem a b = case quotRem (to @Natural a) (to b) of
       (q,r) -> (from q, from r)
+
+instance (SemiIntegral int, KnownNat n)
+  => Euclidean (Mod int n) where
+    eea a b =
+      let
+        (d,b0,b1) = eea (to @Integer a) (to b)
+      in
+        (from d, from b0, from b1)
 
 residue :: forall n int. (SemiEuclidean int, KnownNat n) => int -> int
 residue int = int `mod` from (knownNat @n)
