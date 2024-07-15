@@ -16,6 +16,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         varOrder,
         -- low-level functions
         constraint,
+        rangeConstraint,
         assignment,
         addVariable,
         newVariableWithSource,
@@ -180,6 +181,9 @@ type Constraint c = Poly c Natural Natural
 -- | Adds a constraint to the arithmetic circuit.
 constraint :: Arithmetic a => Constraint a -> State (Circuit a) ()
 constraint c = zoom #acSystem . modify $ insert (toVar [] c) c
+
+rangeConstraint :: Natural -> a -> State (Circuit a) ()
+rangeConstraint i b = zoom #acRange . modify $ insert i b
 
 -- | Forces the provided variables to be zero.
 forceZero :: forall n a . Arithmetic a => Vector n Natural -> State (Circuit a) ()
