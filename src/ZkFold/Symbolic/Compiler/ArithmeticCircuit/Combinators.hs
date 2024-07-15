@@ -21,7 +21,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     getAllVars
 ) where
 
-import           Control.Monad                                             (replicateM, foldM)
+import           Control.Monad                                             (foldM, replicateM)
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Foldable                                             (foldlM)
 import           Data.List                                                 (sort)
