@@ -662,7 +662,7 @@ class (Semiring c, AdditiveMonoid a)
     scale = (*)
     combine :: [(c,a)] -> a
     default combine :: c ~ a => [(c,a)] -> a
-    combine = product . fmap (Prelude.uncurry (*))
+    combine = sum . fmap (Prelude.uncurry (*))
 
 combineN
   :: (Into Natural c, AdditiveMonoid a)
