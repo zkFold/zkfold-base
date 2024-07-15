@@ -24,6 +24,7 @@ module ZkFold.Symbolic.Base.Num
   , Ring
   , Field
   , Algebra
+  , SemiEuclidean (..)
   , Euclidean (..)
   , Real
   , SemiIntegral
@@ -106,8 +107,10 @@ sum = foldl' (+) zero
 
 class AdditiveMonoid a => AdditiveGroup a where
   negate :: a -> a
+  negate a = zero - a
   infixl 6 -
   (-) :: a -> a -> a
+  a - b = a + negate b
 
 class MultiplicativeMonoid a where
   infixl 7 *
@@ -118,8 +121,11 @@ product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
 product = foldl' (*) one
 
 class MultiplicativeMonoid a => MultiplicativeGroup a where
+  recip :: a -> a
+  recip a = one / a
   infixl 7 /
   (/) :: a -> a -> a
+  a / b = a * recip b
 
 -- from @Natural is the unique homomorphism from the free Semiring
 -- from @Integer is the unique homomorphism from the free Ring
@@ -171,8 +177,7 @@ type Field a =
 
 type Algebra x a = (Ring x, Ring a, From x a, Scalar x a)
 
-class Semiring a => Euclidean a where
-  absDiff :: a -> a -> a
+class Semiring a => SemiEuclidean a where
   divMod :: a -> a -> (a,a)
   div :: a -> a -> a
   div a b = let (divisor,_) = divMod a b in divisor
@@ -183,18 +188,18 @@ class Semiring a => Euclidean a where
   quot a b = let (quotient,_) = quotRem a b in quotient
   rem :: a -> a -> a
   rem a b = let (_,remainder) = quotRem a b in remainder
-  eea :: a -> a -> (a,a,a)
 
-  -- TODO: Fix & test
-  default eea :: SemiIntegral a => a -> a -> (a,a,a)
+class (SemiEuclidean a, Ring a) => Euclidean a where
+  eea :: a -> a -> (a,a,a)
+  default eea :: Eq a => a -> a -> (a,a,a)
   eea = xEuclid one zero zero one where
     xEuclid x0 y0 x1 y1 u v
       | v == zero = (u,x0,y0)
       | otherwise =
         let
           (q , r) = u `divMod` v
-          x2 = x0 `absDiff` (q * x1)
-          y2 = y0 `absDiff` (q * y1)
+          x2 = x0 - q * x1
+          y2 = y0 - q * y1
         in
           xEuclid x1 y1 x2 y2 v r
   gcd :: a -> a -> a
@@ -230,9 +235,9 @@ class Into y a where
 -- e.g. `Rational`, `Integer`, `Natural`, `Zp p`
 type Real a = (Prelude.Ord a, Semiring a, Into Rational a)
 -- e.g. `Integer`, `Natural`, `Zp p`
-type SemiIntegral a = (Real a, Euclidean a, Into Integer a)
+type SemiIntegral a = (Real a, SemiEuclidean a, Into Integer a)
 -- e.g. `Integer`, `Zp p`
-type Integral a = (SemiIntegral a, Ring a)
+type Integral a = (SemiIntegral a, Euclidean a)
 -- `Zp p` and its newtypes, also `Word8`, `Word16`, `Word32` and `Word64`
 type Modular a = (Integral a, Into Natural a)
 
@@ -381,10 +386,10 @@ instance Into Integer Integer
 instance Discrete Integer
 instance Comparable Integer
 
-instance Euclidean Integer where
-  absDiff = (Prelude.-)
+instance SemiEuclidean Integer where
   divMod = Prelude.divMod
   quotRem = Prelude.quotRem
+instance Euclidean Integer
 
 -- Natural --------------------------------------------------------------------
 
@@ -409,11 +414,7 @@ instance Into Integer Natural where to = Prelude.toInteger
 instance Into Rational Natural where to = Prelude.toRational
 instance Into Natural Natural
 
-instance Euclidean Natural where
-  absDiff a b = case compare a b of
-    LT -> b Prelude.- a
-    EQ -> 0
-    GT -> a Prelude.- b
+instance SemiEuclidean Natural where
   divMod = Prelude.divMod
   quotRem = Prelude.quotRem
 
@@ -456,10 +457,10 @@ instance Into Int Int
 instance Discrete Int
 instance Comparable Int
 
-instance Euclidean Int where
-  absDiff = (Prelude.-)
+instance SemiEuclidean Int where
   divMod = Prelude.divMod
   quotRem = Prelude.quotRem
+instance Euclidean Int
 
 -- Function -------------------------------------------------------------------
 
@@ -540,23 +541,22 @@ instance (SemiIntegral int, KnownNat n)
 
 instance (SemiIntegral int, Prime p)
   => MultiplicativeGroup (Mod int p) where
-    a / b = case eea (to @Integer a) (to b) of
+    recip a = case eea (to @Integer a) (from (knownNat @p)) of
       (_,q,_) -> from q
 
 instance (SemiIntegral int, KnownNat n)
-  => Euclidean (Mod int n) where
-    absDiff a b = from (absDiff (to @Natural a) (to b))
+  => SemiEuclidean (Mod int n) where
     divMod a b = case divMod (to @Natural a) (to b) of
       (d,m) -> (from d, from m)
     quotRem a b = case quotRem (to @Natural a) (to b) of
       (q,r) -> (from q, from r)
 
-residue :: forall n int. (Euclidean int, KnownNat n) => int -> int
+residue :: forall n int. (SemiEuclidean int, KnownNat n) => int -> int
 residue int = int `mod` from (knownNat @n)
 
 instance From (Mod int n) (Mod int n)
 
-instance (From Natural int, Euclidean int, KnownNat n)
+instance (From Natural int, SemiEuclidean int, KnownNat n)
   => From Natural (Mod int n) where
     from = UnsafeMod . residue @n . from
 
