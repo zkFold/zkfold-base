@@ -14,6 +14,8 @@ import           ZkFold.Base.Data.Vector                             (Vector (..
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
 
+newtype FieldElement a = FieldElement a
+
 -- | A class for serializing data types into containers holding finite field elements.
 -- Type `a` is the finite field.
 -- Type `b` is the container type.
@@ -38,6 +40,13 @@ instance Arithmetic a => FieldElementData a Vector () where
     toFieldElements () = V.empty
 
     fromFieldElements _ = ()
+
+instance Arithmetic a => FieldElementData a Vector (FieldElement a) where
+    type TypeSize a Vector (FieldElement a) = 1
+
+    toFieldElements (FieldElement x) = V.singleton x
+
+    fromFieldElements = FieldElement . V.head
 
 instance
     ( FieldElementData a Vector x
