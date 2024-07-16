@@ -11,7 +11,7 @@ import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Conditional            (Conditional (..))
 
 type F = Zp BLS12_381_Scalar
-type A = ArithmeticCircuit F 1
+type A = ArithmeticCircuit F
 type B = Bool A
 
 exampleConditional :: IO ()
@@ -20,4 +20,4 @@ exampleConditional = do
 
     putStrLn "\nExample: conditional\n"
 
-    compileIO @F file (bool @B @A)
+    compileIO @F file (bool @B @(A 1))

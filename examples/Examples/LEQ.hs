@@ -10,10 +10,9 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Ord                    (Ord (..))
-import           ZkFold.Symbolic.Types                       (Symbolic)
 
 -- | (<=) operation
-leq :: forall a . Symbolic a => a -> a -> Bool a
+leq :: Ord (Bool b) (b 1) => b 1 -> b 1 -> Bool b
 leq x y = x <= y
 
 exampleLEQ :: IO ()
@@ -22,4 +21,4 @@ exampleLEQ = do
 
     putStrLn "\nExample: (<=) operation\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file (leq @(ArithmeticCircuit (Zp BLS12_381_Scalar) 1))
+    compileIO @(Zp BLS12_381_Scalar) file (leq @(ArithmeticCircuit (Zp BLS12_381_Scalar)))

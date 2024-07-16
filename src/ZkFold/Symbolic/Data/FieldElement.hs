@@ -11,7 +11,7 @@ import           Prelude                                             hiding (Num
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
 import           ZkFold.Symbolic.Interpreter                         (Interpreter (..))
 
@@ -38,14 +38,14 @@ class FieldElementData c x where
 typeSize :: forall c x . KnownNat (TypeSize c x) => Natural
 typeSize = value @(TypeSize c x)
 
-instance Arithmetic a => FieldElementData (Interpreter a) () where
+instance FieldElementData (Interpreter a) () where
     type TypeSize (Interpreter a) () = 0
 
     toFieldElements () = Interpreter V.empty
 
     fromFieldElements _ = ()
 
-instance Arithmetic a => FieldElementData (Interpreter a) (FieldElement (Interpreter a)) where
+instance FieldElementData (Interpreter a) (FieldElement (Interpreter a)) where
     type TypeSize (Interpreter a) (FieldElement (Interpreter a)) = 1
 
     toFieldElements (FieldElement x) = x

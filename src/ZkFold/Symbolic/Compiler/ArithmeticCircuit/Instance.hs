@@ -4,6 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans     #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
@@ -33,7 +34,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embe
                                                                             getAllVars, horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN)
-import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
+import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..), Arithmetizable)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
@@ -50,6 +51,9 @@ instance Arithmetic a => SymbolicData a (ArithmeticCircuit a n) where
     pieces = id
 
     restore = ArithmeticCircuit
+
+deriving newtype instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a))
+deriving newtype instance Arithmetic a => Arithmetizable a (Bool (ArithmeticCircuit a))
 
 -- TODO: I had to add these constraints and I don't like them
 instance
@@ -141,21 +145,16 @@ instance Arithmetic a => TrichotomyField (ArithmeticCircuit a 1) where
         in
             foldCircuit reverseLexicographical comparedBits
 
-instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a n)) where
-    type TypeSize a (Bool (ArithmeticCircuit a n)) = n
-    pieces (Bool b) = pieces b
-    restore c = Bool Haskell.. restore c
-
-instance (Arithmetic a, KnownNat n, 1 <= n) => DiscreteField (Bool (ArithmeticCircuit a 1)) (ArithmeticCircuit a n) where
+instance (Arithmetic a, KnownNat n, 1 <= n) => DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a n) where
     isZero x = Bool $ circuit $ do
         bools <- runCircuit $ isZeroC x
         foldM (\i j -> newAssigned (\p -> p i * p j)) (V.head bools) (V.tail bools)
 
-instance (Arithmetic a, KnownNat n, 1 <= n) => Eq (Bool (ArithmeticCircuit a 1)) (ArithmeticCircuit a n) where
+instance (Arithmetic a, KnownNat n, 1 <= n) => Eq (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a n) where
     x == y = isZero (x - y)
     x /= y = not $ isZero (x - y)
 
-instance (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit a 1)) x where
+instance (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit a)) x where
     bool brFalse brTrue (Bool b) = restore c o
         where
             f' = pieces brFalse

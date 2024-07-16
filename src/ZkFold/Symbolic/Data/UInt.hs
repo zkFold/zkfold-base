@@ -135,8 +135,8 @@ eea
     .  EuclideanDomain (UInt n b)
     => KnownNat n
     => AdditiveGroup (UInt n b)
-    => Eq (Bool (b 1)) (UInt n b)
-    => Conditional (Bool (b 1)) (UInt n b, UInt n b, UInt n b)
+    => Eq (Bool b) (UInt n b)
+    => Conditional (Bool b) (UInt n b, UInt n b, UInt n b)
     => UInt n b -> UInt n b -> (UInt n b, UInt n b, UInt n b)
 eea a b = eea' 1 a b one zero zero one
     where
@@ -146,7 +146,7 @@ eea a b = eea' 1 a b one zero zero one
         eea' :: Natural -> UInt n b -> UInt n b -> UInt n b -> UInt n b -> UInt n b -> UInt n b -> (UInt n b, UInt n b, UInt n b)
         eea' iteration oldR r oldS s oldT t
           | iteration Haskell.== iterations = (oldS, oldT, oldR)
-          | otherwise = bool @(Bool (b 1)) rec (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR) (r == zero)
+          | otherwise = bool @(Bool b) rec (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR) (r == zero)
             where
                 quotient = oldR `div` r
 
@@ -160,11 +160,11 @@ instance (Finite (Zp p), KnownNat n, KnownNat m, n <= m) => Extend (UInt n (Inte
 instance (Finite (Zp p), KnownNat n, KnownNat m, m <= n) => Shrink (UInt n (Interpreter (Zp p))) (UInt m (Interpreter (Zp p))) where
     shrink = fromConstant @Natural . toConstant
 
-instance (Finite (Zp p), KnownNat n) => Eq (Bool (Interpreter (Zp p) 1)) (UInt n (Interpreter (Zp p))) where
+instance (Finite (Zp p), KnownNat n) => Eq (Bool (Interpreter (Zp p))) (UInt n (Interpreter (Zp p))) where
     x == y = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.== toConstant y
     x /= y = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell./= toConstant y
 
-instance (Finite (Zp p), KnownNat n) => Ord (Bool (Interpreter (Zp p) 1)) (UInt n (Interpreter (Zp p))) where
+instance (Finite (Zp p), KnownNat n) => Ord (Bool (Interpreter (Zp p))) (UInt n (Interpreter (Zp p))) where
     x <= y = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.<= toConstant y
     x < y  = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.< toConstant y
     x >= y = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.>= toConstant y
@@ -263,20 +263,20 @@ instance
     , KnownNat (r - 1)
     , KnownNat (r + r)
     , r ~ NumberOfRegisters (BaseField b) n
-    , Ord (Bool (b 1)) (UInt n b)
+    , Ord (Bool b) (UInt n b)
     , AdditiveGroup (UInt n b)
     , Semiring (UInt n b)
     , MultiplicativeMonoid (UInt n b)
     , FromConstant Natural (UInt n b)
     , BitState ByteString n b
     , Iso (ByteString n b) (UInt n b)
-    , Eq (Bool (b 1)) (UInt n b)
-    , Conditional (Bool (b 1)) (UInt n b)
-    , Conditional (Bool (b 1)) (UInt n b, UInt n b)
+    , Eq (Bool b) (UInt n b)
+    , Conditional (Bool b) (UInt n b)
+    , Conditional (Bool b) (UInt n b, UInt n b)
     , 1 + (r - 1) ~ r
     , 1 <= r
     ) => EuclideanDomain (UInt n b) where
-    divMod numerator d = bool @(Bool (b 1)) (q, r) (zero, zero) (d == zero)
+    divMod numerator d = bool @(Bool b) (q, r) (zero, zero) (d == zero)
         where
             (q, r) = Haskell.foldl longDivisionStep (zero, zero) [value @n -! 1, value @n -! 2 .. 0]
 
@@ -284,7 +284,7 @@ instance
             numeratorBits = from numerator
 
             addBit :: UInt n b -> Natural -> UInt n b
-            addBit ui bs = ui + bool @(Bool (b 1)) zero one (isSet numeratorBits bs)
+            addBit ui bs = ui + bool @(Bool b) zero one (isSet numeratorBits bs)
 
             longDivisionStep
                 :: (UInt n b, UInt n b)
@@ -292,9 +292,9 @@ instance
                 -> (UInt n b, UInt n b)
             longDivisionStep (q', r') i =
                 let rs = addBit (r' + r') (value @n -! i -! 1)
-                 in bool @(Bool (b 1)) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
+                 in bool @(Bool b) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
-instance (Arithmetic a, KnownNat n, KnownNat (NumberOfRegisters a n)) => Ord (Bool (ArithmeticCircuit a 1)) (UInt n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n, KnownNat (NumberOfRegisters a n)) => Ord (Bool (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a)) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -309,9 +309,9 @@ instance (Arithmetic a, KnownNat n, KnownNat (NumberOfRegisters a n)) => Ord (Bo
             ByteString rs2 = from u2 :: ByteString n (ArithmeticCircuit a)
          in circuitGT rs1 rs2
 
-    max x y = bool @(Bool (ArithmeticCircuit a 1)) x y $ x < y
+    max x y = bool @(Bool (ArithmeticCircuit a)) x y $ x < y
 
-    min x y = bool @(Bool (ArithmeticCircuit a 1)) x y $ x > y
+    min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
 
 instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (UInt n (ArithmeticCircuit a)) where
@@ -464,7 +464,7 @@ instance
 
 deriving via (Structural (UInt n (ArithmeticCircuit a)))
          instance (Arithmetic a, KnownNat r, r ~ NumberOfRegisters a n, 1 <= r) =>
-         Eq (Bool (ArithmeticCircuit a 1)) (UInt n (ArithmeticCircuit a))
+         Eq (Bool (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a))
 
 instance (Arithmetic a, KnownNat n) => Arbitrary (UInt n (ArithmeticCircuit a)) where
     arbitrary = do

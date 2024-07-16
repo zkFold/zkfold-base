@@ -1,4 +1,5 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Bool (
     BoolType(..),
@@ -8,12 +9,18 @@ module ZkFold.Symbolic.Data.Bool (
     any
 ) where
 
-import           Prelude                                 hiding (Bool, Num (..), all, any, not, (&&), (/), (||))
-import qualified Prelude                                 as Haskell
+import           Prelude                                                   hiding (Bool, Num (..), all, any, not, (&&),
+                                                                            (/), (||))
+import qualified Prelude                                                   as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                 (Vector)
-import           ZkFold.Symbolic.Compiler.Arithmetizable
+import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
+import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat)
+import           ZkFold.Base.Data.Vector                                   (item, singleton)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit, Arithmetic)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (newAssigned, runCircuit),
+                                                                            circuit)
+import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
 
 class BoolType b where
     true  :: b
@@ -44,39 +51,55 @@ instance BoolType Haskell.Bool where
     xor = xor
 
 -- TODO (Issue #18): hide this constructor
-newtype Bool x = Bool x
-    deriving (Eq)
+newtype Bool b = Bool (b 1)
 
-deriving newtype instance Arithmetizable a x => Arithmetizable a (Bool x)
+deriving instance Eq (b 1) => Eq (Bool b)
 
-instance (Field x, Eq x) => Show (Bool x) where
-    show (Bool x) = if x == one then "True" else "False"
+instance KnownNat p => Show (Bool (Interpreter (Zp p))) where
+    show (fromBool -> x) = if x == one then "True" else "False"
 
-instance {-# OVERLAPPABLE #-} (Ring x) => BoolType (Bool x) where
-    true = Bool one
+instance Arithmetic a => BoolType (Bool (ArithmeticCircuit a)) where
+    true = Bool $ circuit $ newAssigned one
 
-    false = Bool zero
+    false = Bool $ circuit $ newAssigned zero
 
-    not (Bool b) = Bool $ one - b
+    not (Bool b) = Bool $ circuit $ do
+      v <- item <$> runCircuit b
+      newAssigned (one - ($ v))
 
-    (&&) (Bool b1) (Bool b2) = Bool $ b1 * b2
+    Bool b1 && Bool b2 = Bool $ circuit $ do
+      v1 <- item <$> runCircuit b1
+      v2 <- item <$> runCircuit b2
+      newAssigned (($ v1) * ($ v2))
 
-    (||) (Bool b1) (Bool b2) = Bool $ b1 + b2 - b1 * b2
+    Bool b1 || Bool b2 = Bool $ circuit $ do
+      v1 <- item <$> runCircuit b1
+      v2 <- item <$> runCircuit b2
+      newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - x1 * x2)
 
-    xor (Bool b1) (Bool b2) = Bool $ b1 + b2 - (b1 * b2 + b1 * b2)
+    Bool b1 `xor` Bool b2 = Bool $ circuit $ do
+      v1 <- item <$> runCircuit b1
+      v2 <- item <$> runCircuit b2
+      newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
 
-instance (Ring x) => BoolType (Bool (Vector 1 x)) where
-    true = Bool $ pure one
+fromBool :: Bool (Interpreter a) -> a
+fromBool (Bool (Interpreter (item -> b))) = b
 
-    false = Bool $ pure zero
+toBool :: a -> Bool (Interpreter a)
+toBool = Bool . Interpreter . singleton
 
-    not (Bool b) = Bool $ (one -) <$> b
+instance Arithmetic a => BoolType (Bool (Interpreter a)) where
+    true = Bool $ Interpreter $ singleton one
 
-    (&&) (Bool b1) (Bool b2) = Bool $ (*) <$> b1 <*> b2
+    false = Bool $ Interpreter $ singleton zero
 
-    (||) (Bool b1) (Bool b2) = Bool $ (\x y -> x + y - x * y) <$> b1 <*> b2
+    not (fromBool -> b) = Bool $ Interpreter $ singleton $ one - b
 
-    xor (Bool b1) (Bool b2) = Bool $ (\x y -> x + y - (x * y + x * y)) <$> b1 <*> b2
+    (fromBool -> b1) && (fromBool -> b2) = toBool $ b1 * b2
+
+    (fromBool -> b1) || (fromBool -> b2) = toBool $ b1 + b2 - b1 * b2
+
+    (fromBool -> b1) `xor` (fromBool -> b2) = toBool $ b1 + b2 - (one + one) * b1 * b2
 
 all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true
