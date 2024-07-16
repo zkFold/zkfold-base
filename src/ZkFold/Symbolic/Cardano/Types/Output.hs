@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Cardano.Types.Output (
 ) where
 
 import           Prelude                                   hiding (Bool, Eq, length, splitAt, (*), (+))
+import qualified Prelude                                   as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address     (Address)
@@ -24,6 +25,12 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import qualified ZkFold.Symbolic.Data.FieldElement          as FE
 
 newtype Output tokens datum context = Output (Address context, (Value tokens context, DatumHash context))
+
+deriving instance
+    ( Haskell.Eq (Address context)
+    , Haskell.Eq (Value tokens context)
+    , Haskell.Eq (DatumHash context)
+    ) => Haskell.Eq (Output tokens datum context)
 
 deriving instance
     KnownNat (FE.TypeSize F CtxEvaluation (Value tokens CtxEvaluation))

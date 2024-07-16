@@ -5,6 +5,7 @@ module ZkFold.Symbolic.Cardano.Types.Value where
 
 import           GHC.Natural                         (Natural)
 import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
+import qualified Prelude                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector
@@ -17,6 +18,9 @@ type AssetName context   = ByteString 256 context
 type SingleAsset context = (PolicyId context, (AssetName context, UInt 64 context))
 
 newtype Value n context = Value { getValue :: Vector n (SingleAsset context) }
+
+deriving instance (Haskell.Eq (ByteString 224 context), Haskell.Eq (ByteString 256 context), Haskell.Eq (UInt 64 context))
+    => Haskell.Eq (Value n context)
 
 deriving instance FE.FieldElementData F CtxEvaluation (Value n CtxEvaluation)
 

@@ -3,6 +3,7 @@
 module ZkFold.Symbolic.Cardano.Types.Transaction where
 
 import           Prelude                              hiding (Bool, Eq, length, splitAt, (*), (+))
+import qualified Prelude                              as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
@@ -20,6 +21,14 @@ newtype Transaction inputs rinputs outputs tokens mint datum context = Transacti
     , (Value mint context
     , (UTCTime context, UTCTime context)
     ))))
+
+deriving instance
+    ( Haskell.Eq (Vector rinputs (Input tokens datum context))
+    , Haskell.Eq (Vector inputs (Input tokens datum context))
+    , Haskell.Eq (Vector outputs (Output tokens datum context))
+    , Haskell.Eq (Value mint context)
+    , Haskell.Eq (UTCTime context)
+    ) => Haskell.Eq (Transaction inputs rinputs outputs tokens mint datum context)
 
 -- TODO: Think how to prettify this abomination
 deriving instance
