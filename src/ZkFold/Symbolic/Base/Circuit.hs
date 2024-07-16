@@ -225,9 +225,83 @@ instance (Ord x, VectorSpace x i)
       Par1 <$> newAssigned (\x -> x v0 + x v1)
 
 instance (Ord x, VectorSpace x i)
+  => AdditiveGroup (Circuit x i Par1) where
+    negate c = circuit $ do
+      Par1 v <- runCircuit c
+      Par1 <$> newAssigned (\x -> negate (x v))
+    c0 - c1 = circuit $ do
+      Par1 v0 <- runCircuit c0
+      Par1 v1 <- runCircuit c1
+      Par1 <$> newAssigned (\x -> x v0 - x v1)
+
+instance (Ord x, VectorSpace x i)
+  => From Natural (Circuit x i Par1) where
+    from = from @x . from
+
+instance (Ord x, VectorSpace x i)
+  => From Integer (Circuit x i Par1) where
+    from = from @x . from
+
+instance (Ord x, VectorSpace x i)
+  => From Rational (Circuit x i Par1) where
+    from = from @x . from
+
+instance (Ord x, VectorSpace x i)
   => MultiplicativeMonoid (Circuit x i Par1) where
     one = from @x one
     c0 * c1 = circuit $ do
       Par1 v0 <- runCircuit c0
       Par1 v1 <- runCircuit c1
       Par1 <$> newAssigned (\x -> x v0 * x v1)
+
+instance (Ord x, Discrete x, VectorSpace x i)
+  => MultiplicativeGroup (Circuit x i Par1) where
+    recip c = let c'@(UnsafeCircuit _ _ (_ :*: i)) = invertC c in c' { outputC = i }
+
+instance From (Circuit x i Par1) (Circuit x i Par1)
+
+instance (Ord x, VectorSpace x i)
+  => Scalar Natural (Circuit x i Par1) where
+    scale = scale @x . from
+    combine = combineN
+
+instance (Ord x, VectorSpace x i)
+  => Scalar Integer (Circuit x i Par1) where
+    scale = scale @x . from
+    combine = combineZ
+
+instance (Ord x, VectorSpace x i)
+  => Scalar Rational (Circuit x i Par1) where
+    scale = scale @x . from
+    combine xs = sum [ scale k x | (k, x) <- xs ]
+
+instance (Ord x, VectorSpace x i)
+  => Scalar x (Circuit x i Par1) where
+    scale k c = circuit $ do
+      Par1 v <- runCircuit c
+      Par1 <$> newAssigned (\x -> k `scale` x v)
+    combine xs = sum [ scale k x | (k, x) <- xs ]
+
+instance (Ord x, VectorSpace x i)
+  => Scalar (Circuit x i Par1) (Circuit x i Par1)
+
+instance (Ord x, VectorSpace x i)
+  => Exponent Natural (Circuit x i Par1) where
+    exponent x p = evalMono [(x, p)]
+    evalMono = evalMonoN
+
+instance (Ord x, Discrete x, VectorSpace x i)
+  => Discrete (Circuit x i Par1) where
+    dichotomy x y = isZero (x - y)
+    isZero c = let c'@(UnsafeCircuit _ _ (z :*: _)) = invertC c in c' { outputC = z }
+
+invertC :: (Ord x, Discrete x, VectorSpace x i) => Circuit x i Par1 -> Circuit x i (Par1 :*: Par1)
+invertC c = circuit $ do
+  Par1 v <- runCircuit c
+  isZ <- newConstrained
+    (\x i -> let xi = x i in xi * (xi - one))
+    (\x -> isZero (x v))
+  inv <- newConstrained
+    (\x i -> x i * x v + x isZ - one)
+    (\x -> recip (x v))
+  return (Par1 isZ :*: Par1 inv)

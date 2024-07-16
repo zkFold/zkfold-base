@@ -214,6 +214,9 @@ class Ring a => Discrete a where
   dichotomy :: a -> a -> a
   default dichotomy :: Eq a => a -> a -> a
   dichotomy a b = if a == b then one else zero
+  isZero :: a -> a
+  default isZero :: a -> a
+  isZero = dichotomy zero
 
 class Discrete a => Comparable a where
   trichotomy :: a -> a -> a
