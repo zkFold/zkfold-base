@@ -68,27 +68,27 @@ data Circuit a = Circuit
         acRNG      :: StdGen
     } deriving (Generic, NFData)
 
-data ArithmeticCircuit n a = ArithmeticCircuit
+data ArithmeticCircuit a n = ArithmeticCircuit
   { acCircuit :: Circuit a
   , acOutput  :: Vector n Natural
   } deriving (Generic, NFData)
 
-withOutputs :: Circuit a -> Vector n Natural -> ArithmeticCircuit n a
+withOutputs :: Circuit a -> Vector n Natural -> ArithmeticCircuit a n
 withOutputs = ArithmeticCircuit
 
-constraintSystem :: ArithmeticCircuit n a -> Map Natural (Constraint a)
+constraintSystem :: ArithmeticCircuit a n -> Map Natural (Constraint a)
 constraintSystem = acSystem . acCircuit
 
-inputVariables :: ArithmeticCircuit n a -> [Natural]
+inputVariables :: ArithmeticCircuit a n -> [Natural]
 inputVariables = acInput . acCircuit
 
-witnessGenerator :: ArithmeticCircuit n a -> Map Natural a -> Map Natural a
+witnessGenerator :: ArithmeticCircuit a n -> Map Natural a -> Map Natural a
 witnessGenerator circuit inputs =
   let srcs = acWitness (acCircuit circuit)
       witness = ($ witness) <$> (srcs `union` fmap const inputs)
    in witness
 
-varOrder :: ArithmeticCircuit n a -> Map (Natural, Natural) Natural
+varOrder :: ArithmeticCircuit a n -> Map (Natural, Natural) Natural
 varOrder = acVarOrder . acCircuit
 
 ----------------------------------- Circuit monoid ----------------------------------
@@ -124,7 +124,7 @@ instance (Eq a, MultiplicativeMonoid a) => Monoid (Circuit a) where
                acRNG      = mkStdGen 0
            }
 
-joinCircuits :: Eq a => ArithmeticCircuit ol a -> ArithmeticCircuit or a -> ArithmeticCircuit (ol + or) a
+joinCircuits :: Eq a => ArithmeticCircuit a ol -> ArithmeticCircuit a or -> ArithmeticCircuit a (ol + or)
 joinCircuits r1 r2 =
     ArithmeticCircuit
         {
@@ -132,7 +132,7 @@ joinCircuits r1 r2 =
         ,   acOutput = acOutput r1 `V.append` acOutput r2
         }
 
-concatCircuits :: (Eq a, MultiplicativeMonoid a) => Vector n (ArithmeticCircuit m a) -> ArithmeticCircuit (n * m) a
+concatCircuits :: (Eq a, MultiplicativeMonoid a) => Vector n (ArithmeticCircuit a m) -> ArithmeticCircuit a (n * m)
 concatCircuits cs =
     ArithmeticCircuit
         {
@@ -152,7 +152,7 @@ toField = toZp . fromConstant . fromBinary @Natural . castBits . binaryExpansion
 type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a, Bits a ~ [a])
 
 -- TODO: Remove the hardcoded constant.
-toVar :: forall a . Arithmetic a => [Natural] -> Constraint a -> Natural
+toVar :: Arithmetic a => [Natural] -> Constraint a -> Natural
 toVar srcs c = force $ fromZp ex
     where
         r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
@@ -186,7 +186,7 @@ rangeConstraint :: Natural -> a -> State (Circuit a) ()
 rangeConstraint i b = zoom #acRange . modify $ insert i b
 
 -- | Forces the provided variables to be zero.
-forceZero :: forall n a . Arithmetic a => Vector n Natural -> State (Circuit a) ()
+forceZero :: Arithmetic a => Vector n Natural -> State (Circuit a) ()
 forceZero = mapM_ (constraint . var)
 
 -- | Adds a new variable assignment to the arithmetic circuit.
@@ -195,7 +195,7 @@ assignment :: Natural -> (Map Natural a -> a) -> State (Circuit a) ()
 assignment i f = zoom #acWitness . modify $ insert i f
 
 -- | Adds a new input variable to the arithmetic circuit.
-input :: forall a . State (Circuit a) Natural
+input :: State (Circuit a) Natural
 input = do
   inputs <- zoom #acInput get
   let s = if null inputs then 1 else maximum inputs + 1
@@ -205,19 +205,19 @@ input = do
   return s
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
-eval1 :: ArithmeticCircuit 1 a -> Map Natural a -> a
+eval1 :: ArithmeticCircuit a 1 -> Map Natural a -> a
 eval1 ctx i = witnessGenerator ctx i ! V.item (acOutput ctx)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: forall a n . ArithmeticCircuit n a -> Map Natural a -> Vector n a
+eval :: ArithmeticCircuit a n -> Map Natural a -> Vector n a
 eval ctx i = V.parFmap (witnessGenerator ctx i !) $ acOutput ctx
 
 -- | Evaluates the arithmetic circuit with no inputs and one output using the supplied input map.
-exec1 :: ArithmeticCircuit 1 a -> a
+exec1 :: ArithmeticCircuit a 1 -> a
 exec1 ac = eval1 ac empty
 
 -- | Evaluates the arithmetic circuit with no inputs using the supplied input map.
-exec :: forall a n . ArithmeticCircuit n a -> Vector n a
+exec :: ArithmeticCircuit a n -> Vector n a
 exec ac = eval ac empty
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.

@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module ZkFold.Symbolic.Cardano.Types.Input where
@@ -7,7 +7,6 @@ module ZkFold.Symbolic.Cardano.Types.Input where
 import           Prelude                                 hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                 (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
@@ -19,8 +18,8 @@ import qualified ZkFold.Symbolic.Data.FieldElement       as FE
 newtype Input tokens datum context = Input (OutputRef context, Output tokens datum context)
 
 deriving instance
-    KnownNat (FE.TypeSize F Vector (Value tokens CtxEvaluation))
-    => FE.FieldElementData F CtxEvaluation (Input tokens datum CtxEvaluation)
+    KnownNat (FE.TypeSize CtxEvaluation (Value tokens CtxEvaluation))
+    => FE.FieldElementData CtxEvaluation (Input tokens datum CtxEvaluation)
 
 deriving instance
     KnownNat (TypeSize F (Value tokens CtxCompilation))

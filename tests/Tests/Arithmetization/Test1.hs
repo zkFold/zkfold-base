@@ -26,12 +26,12 @@ testFunc x y =
         g3 = c 2 // x
     in (g3 == y :: Bool a) ? g1 $ g2
 
-testResult :: forall a . (Symbolic a, Haskell.Eq a) => ArithmeticCircuit 1 a -> a -> a -> Haskell.Bool
+testResult :: forall a . (Symbolic a, Haskell.Eq a) => ArithmeticCircuit a 1 -> a -> a -> Haskell.Bool
 testResult r x y = V.item (acValue (applyArgs r [x, y])) Haskell.== testFunc @a x y
 
 specArithmetization1 :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a) => Spec
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do
-            let ac = compile @a (testFunc @(ArithmeticCircuit 1 a)) :: ArithmeticCircuit 1 a
+            let ac = compile @a (testFunc @(ArithmeticCircuit a 1)) :: ArithmeticCircuit a 1
             property $ \x y -> testResult ac x y

@@ -17,7 +17,7 @@ type StakingCredential context = ByteString 224 context
 
 newtype Address context = Address (AddressType context, (PaymentCredential context, StakingCredential context))
 
-deriving instance FieldElementData F CtxEvaluation (Address CtxEvaluation)
+deriving instance FieldElementData CtxEvaluation (Address CtxEvaluation)
 
 deriving instance SymbolicData F (Address CtxCompilation)
 

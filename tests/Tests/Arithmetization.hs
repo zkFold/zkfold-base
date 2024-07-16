@@ -18,14 +18,14 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Types                          (Symbolic)
 
-propCircuitInvariance :: (MultiplicativeMonoid a, Eq a) => ArithmeticCircuitTest 1 a -> Bool
+propCircuitInvariance :: (MultiplicativeMonoid a, Eq a) => ArithmeticCircuitTest a 1 -> Bool
 propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
     let ArithmeticCircuitTest ac' wi' = mapVarArithmeticCircuit act
         v   = ac `eval` wi
         v'  = ac' `eval` wi'
     in v == v'
 
-specArithmetization' :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a, Show (ArithmeticCircuitTest 1 a)) => IO ()
+specArithmetization' :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a, Show (ArithmeticCircuitTest a 1)) => IO ()
 specArithmetization' = hspec $ do
     describe "Arithmetization specification" $ do
         describe "Variable mapping" $ do

@@ -13,79 +13,90 @@ import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
+import           ZkFold.Symbolic.Interpreter                         (Interpreter (..))
 
 -- | A class for serializing data types into containers holding finite field elements.
--- Type `a` is the finite field.
 -- Type `b` is the container type.
 -- Type `x` represents the data type.
-class Arithmetic a => FieldElementData a b x where
+class FieldElementData b x where
 
-    type TypeSize a b x :: Natural
+    type TypeSize b x :: Natural
 
     -- | Returns the representation of `x` as a container of finite field elements.
-    toFieldElements :: x -> b (TypeSize a b x) a
+    toFieldElements :: x -> b (TypeSize b x)
 
     -- | Restores `x` from its representation as a container of finite field elements.
-    fromFieldElements :: b (TypeSize a b x) a -> x
+    fromFieldElements :: b (TypeSize b x) -> x
 
 -- | Returns the number of finite field elements needed to describe `x`.
-typeSize :: forall a b x . KnownNat (TypeSize a b x) => Natural
-typeSize = value @(TypeSize a b x)
+typeSize :: forall b x . KnownNat (TypeSize b x) => Natural
+typeSize = value @(TypeSize b x)
 
-instance Arithmetic a => FieldElementData a Vector () where
-    type TypeSize a Vector () = 0
+instance Arithmetic a => FieldElementData (Interpreter a) () where
+    type TypeSize (Interpreter a) () = 0
 
-    toFieldElements () = V.empty
+    toFieldElements () = Interpreter V.empty
 
     fromFieldElements _ = ()
 
 instance
-    ( FieldElementData a Vector x
-    , FieldElementData a Vector y
-    , m ~ TypeSize a Vector x
+    ( FieldElementData (Interpreter a) x
+    , FieldElementData (Interpreter a) y
+    , m ~ TypeSize (Interpreter a) x
     , KnownNat m
-    ) => FieldElementData a Vector (x, y) where
+    ) => FieldElementData (Interpreter a) (x, y) where
 
-    type TypeSize a Vector (x, y) = TypeSize a Vector x + TypeSize a Vector y
+    type TypeSize (Interpreter a) (x, y) =
+        TypeSize (Interpreter a) x + TypeSize (Interpreter a) y
 
-    toFieldElements (a, b) = toFieldElements a `V.append` toFieldElements b
+    toFieldElements (a, b) = Interpreter $
+        runInterpreter (toFieldElements a)
+        `V.append` runInterpreter (toFieldElements b)
 
-    fromFieldElements v = (fromFieldElements v1, fromFieldElements v2)
+    fromFieldElements (Interpreter v) =
+        (fromFieldElements (Interpreter v1), fromFieldElements (Interpreter v2))
         where
             (v1, v2) = V.splitAt @m v
 
 instance
-    ( FieldElementData a Vector x
-    , FieldElementData a Vector y
-    , FieldElementData a Vector z
-    , m ~ TypeSize a Vector x
-    , n ~ TypeSize a Vector y
+    ( FieldElementData (Interpreter a) x
+    , FieldElementData (Interpreter a) y
+    , FieldElementData (Interpreter a) z
+    , m ~ TypeSize (Interpreter a) x
+    , n ~ TypeSize (Interpreter a) y
     , KnownNat m
     , KnownNat n
-    ) => FieldElementData a Vector (x, y, z) where
+    ) => FieldElementData (Interpreter a) (x, y, z) where
 
-    type TypeSize a Vector (x, y, z) = TypeSize a Vector x + TypeSize a Vector y + TypeSize a Vector z
+    type TypeSize (Interpreter a) (x, y, z) =
+        TypeSize (Interpreter a) x + TypeSize (Interpreter a) y + TypeSize (Interpreter a) z
 
-    toFieldElements (a, b, c) = toFieldElements a `V.append` toFieldElements b `V.append` toFieldElements c
+    toFieldElements (a, b, c) = Interpreter $
+        runInterpreter (toFieldElements a)
+        `V.append` runInterpreter (toFieldElements b)
+        `V.append` runInterpreter (toFieldElements c)
 
-    fromFieldElements v = (fromFieldElements v1, fromFieldElements v2, fromFieldElements v3)
+    fromFieldElements (Interpreter v) =
+        (fromFieldElements (Interpreter v1)
+        , fromFieldElements (Interpreter v2)
+        , fromFieldElements (Interpreter v3))
         where
             (v1, v2, v3) = V.splitAt3 @m @n v
 
 instance
-    ( FieldElementData a Vector x
-    , m ~ TypeSize a Vector x
+    ( FieldElementData (Interpreter a) x
+    , m ~ TypeSize (Interpreter a) x
     , KnownNat m
-    ) => FieldElementData a Vector (Vector n x) where
+    ) => FieldElementData (Interpreter a) (Vector n x) where
 
-    type TypeSize a Vector (Vector n x) = n * TypeSize a Vector x
+    type TypeSize (Interpreter a) (Vector n x) = n * TypeSize (Interpreter a) x
 
-    toFieldElements xs = V.concat $ toFieldElements <$> xs
+    toFieldElements xs = Interpreter . V.concat $ runInterpreter . toFieldElements <$> xs
 
-    fromFieldElements v = fromFieldElements <$> V.chunks v
+    fromFieldElements (Interpreter v) = fromFieldElements . Interpreter <$> V.chunks v
 
-instance A.SymbolicData a x => FieldElementData a ArithmeticCircuit x where
-    type TypeSize a ArithmeticCircuit x = A.TypeSize a x
+instance A.SymbolicData a x => FieldElementData (ArithmeticCircuit a) x where
+    type TypeSize (ArithmeticCircuit a) x = A.TypeSize a x
 
     toFieldElements = A.pieces
 

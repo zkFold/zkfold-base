@@ -23,14 +23,14 @@ newtype Transaction inputs rinputs outputs tokens mint datum context = Transacti
 
 -- TODO: Think how to prettify this abomination
 deriving instance
-    ( KnownNat (FE.TypeSize F CtxEvaluation (Value tokens CtxEvaluation))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Output tokens datum CtxEvaluation))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Vector outputs (Output tokens datum CtxEvaluation)))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Input tokens datum CtxEvaluation))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Vector inputs (Input tokens datum CtxEvaluation)))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Vector rinputs (Input tokens datum CtxEvaluation)))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Value mint CtxEvaluation))
-    ) => FE.FieldElementData F Vector (Transaction inputs rinputs outputs tokens mint datum CtxEvaluation)
+    ( KnownNat (FE.TypeSize CtxEvaluation (Value tokens CtxEvaluation))
+    , KnownNat (FE.TypeSize CtxEvaluation (Output tokens datum CtxEvaluation))
+    , KnownNat (FE.TypeSize CtxEvaluation (Vector outputs (Output tokens datum CtxEvaluation)))
+    , KnownNat (FE.TypeSize CtxEvaluation (Input tokens datum CtxEvaluation))
+    , KnownNat (FE.TypeSize CtxEvaluation (Vector inputs (Input tokens datum CtxEvaluation)))
+    , KnownNat (FE.TypeSize CtxEvaluation (Vector rinputs (Input tokens datum CtxEvaluation)))
+    , KnownNat (FE.TypeSize CtxEvaluation (Value mint CtxEvaluation))
+    ) => FE.FieldElementData CtxEvaluation (Transaction inputs rinputs outputs tokens mint datum CtxEvaluation)
 
 -- TODO: Think how to prettify this abomination
 deriving instance

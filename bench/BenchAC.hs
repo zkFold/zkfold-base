@@ -1,9 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes          #-}
-{-# LANGUAGE DeriveAnyClass               #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables          #-}
 {-# LANGUAGE TypeApplications             #-}
-{-# LANGUAGE TypeOperators                #-}
+
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Main where
@@ -27,48 +26,47 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.UInt
 
-evalBS :: forall a n . ByteString n ArithmeticCircuit a -> Vector n a
+evalBS :: forall a n . ByteString n (ArithmeticCircuit a) -> Vector n a
 evalBS (ByteString xs) = eval xs M.empty
 
-evalUInt :: forall a n . UInt n ArithmeticCircuit a -> Vector (NumberOfRegisters a n) a
+evalUInt :: forall a n . UInt n (ArithmeticCircuit a) -> Vector (NumberOfRegisters a n) a
 evalUInt (UInt xs) = eval xs M.empty
 
 
 hashCircuit
     :: forall n p
     .  PrimeField (Zp p)
-    => SHA2 "SHA256" ArithmeticCircuit (Zp p) n
-    => IO (ByteString 256 ArithmeticCircuit (Zp p))
+    => SHA2 "SHA256" (ArithmeticCircuit (Zp p)) n
+    => IO (ByteString 256 (ArithmeticCircuit (Zp p)))
 hashCircuit = do
     x <- randomIO
-    let acX = fromConstant (x :: Integer) :: ByteString n ArithmeticCircuit (Zp p)
-        h = sha2 @"SHA256" @ArithmeticCircuit acX
+    let acX = fromConstant (x :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
+        h = sha2 @"SHA256" @(ArithmeticCircuit (Zp p)) acX
 
     evaluate . force $ h
 
 -- | Generate random addition circuit of given size
 --
-additionCircuit :: forall n p. (KnownNat n, PrimeField (Zp p)) => IO (ByteString n ArithmeticCircuit (Zp p))
+additionCircuit :: forall n p. (KnownNat n, PrimeField (Zp p)) => IO (ByteString n (ArithmeticCircuit (Zp p)))
 additionCircuit = do
     x <- randomIO
     y <- randomIO
-    let acX = fromConstant (x :: Integer) :: ByteString n ArithmeticCircuit (Zp p)
-        acY = fromConstant (y :: Integer) :: ByteString n ArithmeticCircuit (Zp p)
-
-        acZ = from (from acX + from acY :: UInt n ArithmeticCircuit (Zp p))
+    let acX = fromConstant (x :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
+        acY = fromConstant (y :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
+        acZ = from (from acX + from acY :: UInt n (ArithmeticCircuit (Zp p)))
 
     evaluate . force $ acZ
 
 benchOps :: forall n p. (KnownNat n, PrimeField (Zp p)) => Benchmark
-benchOps = env (additionCircuit @n @p) $ \ ~ac ->
+benchOps = env (additionCircuit @n @p) $ \ac ->
     bench ("Adding ByteStrings of size " <> show (value @n) <> " via UInt") $ nf evalBS ac
 
 benchHash
     :: forall n p
     .  PrimeField (Zp p)
-    => SHA2 "SHA256" ArithmeticCircuit (Zp p) n
+    => SHA2 "SHA256" (ArithmeticCircuit (Zp p)) n
     => Benchmark
-benchHash = env (hashCircuit @n @p) $ \ ~ac ->
+benchHash = env (hashCircuit @n @p) $ \ac ->
     bench ("Calculating SHA2 512/364 of a bytestring of length " <> show (value @n)) $ nf evalBS ac
 
 main :: IO ()
