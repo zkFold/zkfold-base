@@ -673,7 +673,7 @@ combineN combination = combineNat naturalized where
   combineNat terms =
     let
       halves = combineNat [(c `div` 2, a) | (c,a) <- terms, c > 1]
-      halveNots = sum [a | (c,a) <- terms, Prelude.odd c]
+      halveNots = sum [a | (c,a) <- terms, odd c]
     in
       halves + halves + halveNots
 
@@ -712,6 +712,6 @@ evalMonoN monomial = evalMonoNat naturalized where
   evalMonoNat factors =
     let
       sqrts = evalMonoNat [(a,p `div` 2) | (a,p) <- factors, p > 1]
-      sqrtNots = product [a | (a,p) <- factors, Prelude.odd p]
+      sqrtNots = product [a | (a,p) <- factors, odd p]
     in
       sqrts * sqrts * sqrtNots
