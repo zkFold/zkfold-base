@@ -130,7 +130,7 @@ instance (Arithmetizable a f, KnownNat n, KnownNat (InputSize a f)) => Arithmeti
     type OutputSize a (Vector n f) = n * OutputSize a f
     arithmetize v (ArithmeticCircuit c o) = concatCircuits results
         where
-            inputs  = (ArithmeticCircuit c) <$> V.chunks @n @(InputSize a f) o
+            inputs  = ArithmeticCircuit c <$> V.chunks @n @(InputSize a f) o
             results = arithmetize <$> v <*> inputs
 
 instance

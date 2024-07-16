@@ -23,6 +23,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
 
 import           Control.Monad                                             (foldM, replicateM)
 import           Data.Containers.ListUtils                                 (nubOrd)
+import           Data.Eq                                                   ((==))
 import           Data.Foldable                                             (foldlM)
 import           Data.List                                                 (sort)
 import           Data.Map                                                  (elems)
@@ -42,9 +43,6 @@ import           ZkFold.Prelude                                            (leng
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..),
                                                                             Circuit (acSystem), acInput, joinCircuits)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-import           ZkFold.Symbolic.Data.Bool                                 (Bool)
-import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
-import           ZkFold.Symbolic.Data.Eq                                   (Eq (..))
 
 boolCheckC :: Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
@@ -138,12 +136,9 @@ invertC r = circuitN $ snd <$> runInvert r
 runInvert :: MonadBlueprint i a m => ArithmeticCircuit n a -> m (Vector n i, Vector n i)
 runInvert r = do
     is <- runCircuit r
-    js <- for is $ \i -> newConstrained (\x j -> x i * x j) (isZero . ($ i))
+    js <- for is $ \i -> newConstrained (\x j -> x i * x j) (\x -> let xi = x i in one - xi // xi)
     ks <- for (Z.zip is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv . ($ i))
     return (js, ks)
-    where
-      isZero :: forall a . (Ring a, Eq (Bool a) a, Conditional (Bool a) a) => a -> a
-      isZero x = bool @(Bool a) zero one (x == zero)
 
 embedVarIndex :: Arithmetic a => Natural -> ArithmeticCircuit 1 a
 embedVarIndex n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure n}

@@ -27,7 +27,7 @@ testFunc x y =
     in (g3 == y :: Bool a) ? g1 $ g2
 
 testResult :: forall a . (Symbolic a, Haskell.Eq a) => ArithmeticCircuit 1 a -> a -> a -> Haskell.Bool
-testResult r x y = V.item (acValue (applyArgs r [x, y])) == testFunc @a x y
+testResult r x y = V.item (acValue (applyArgs r [x, y])) Haskell.== testFunc @a x y
 
 specArithmetization1 :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a) => Spec
 specArithmetization1 = do

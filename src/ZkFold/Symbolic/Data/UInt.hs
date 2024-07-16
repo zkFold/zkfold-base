@@ -109,7 +109,7 @@ cast n =
         r = numberOfRegisters @a @n -! 1
      in case greedySplitAt r registers of
         (lo, hi:rest) -> (lo, hi, rest)
-        (lo, [])      -> ((lo ++ replicate (r -! length lo) zero), zero, [])
+        (lo, [])      -> (lo ++ replicate (r -! length lo) zero, zero, [])
     where
         greedySplitAt 0 xs = ([], xs)
         greedySplitAt _ [] = ([], [])
@@ -144,7 +144,7 @@ eea a b = eea' 1 a b one zero zero one
 
         eea' :: Natural -> UInt n b a -> UInt n b a -> UInt n b a -> UInt n b a -> UInt n b a -> UInt n b a -> (UInt n b a, UInt n b a, UInt n b a)
         eea' iteration oldR r oldS s oldT t
-          | iteration == iterations = (oldS, oldT, oldR)
+          | iteration Haskell.== iterations = (oldS, oldT, oldR)
           | otherwise = bool @(Bool (b 1 a)) rec (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR) (r == zero)
             where
                 quotient = oldR `div` r
@@ -206,11 +206,10 @@ instance (Finite (Zp p), KnownNat n) => Arbitrary (UInt n Vector (Zp p)) where
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 instance (Finite (Zp p), KnownNat n) => Iso (ByteString n Vector (Zp p)) (UInt n Vector (Zp p)) where
-    from bs = fromConstant @Natural . toConstant $ bs
+    from = fromConstant @Natural . toConstant
 
 instance (Finite (Zp p), KnownNat n) => Iso (UInt n Vector (Zp p)) (ByteString n Vector (Zp p)) where
-    from ui = fromConstant @Natural . toConstant $ ui
-
+    from = fromConstant @Natural . toConstant
 
 --------------------------------------------------------------------------------
 
@@ -285,7 +284,7 @@ instance
             numeratorBits = from numerator
 
             addBit :: UInt n b a -> Natural -> UInt n b a
-            addBit ui bs = ui + (bool @(Bool (b 1 a)) zero one (isSet numeratorBits bs))
+            addBit ui bs = ui + bool @(Bool (b 1 a)) zero one (isSet numeratorBits bs)
 
             longDivisionStep
                 :: (UInt n b a, UInt n b a)
@@ -383,7 +382,7 @@ instance
                 ys = replicate (numberOfRegisters @a @n -! 2) (2 ^ registerSize @a @n -! 1)
                 y' = 2 ^ highRegisterSize @a @n -! 1
                 ns
-                  | numberOfRegisters @a @n == 1 = V.unsafeToVector [y' + 1]
+                  | numberOfRegisters @a @n Haskell.== 1 = V.unsafeToVector [y' + 1]
                   | otherwise = V.unsafeToVector $ (y : ys) <> [y']
              in UInt (negateN ns x)
 

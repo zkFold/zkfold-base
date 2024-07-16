@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
+
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module Tests.UInt (specUInt) where
@@ -58,7 +59,7 @@ specUInt'
     .  PrimeField (Zp p)
     => KnownNat n
     => KnownNat (2 * n)
-    => n <= (2 * n)
+    => n <= 2 * n
     => r ~ NumberOfRegisters (Zp p) n
     => r2n ~ NumberOfRegisters (Zp p) (2 * n)
     => 1 <= r
@@ -111,8 +112,8 @@ specUInt' = hspec $ do
         it "calculates Bezout coefficients correctly" $ withMaxSuccess 10 $ do
             x' <- toss m
             y' <- toss m
-            let x = x' `P.div` (P.gcd x' y')
-                y = y' `P.div` (P.gcd x' y')
+            let x = x' `P.div` P.gcd x' y'
+                y = y' `P.div` P.gcd x' y'
 
                 -- We will test Bezout coefficients by multiplying two UInts less than 2^n, hence we need 2^(2n) bits to store the result
                 zpX = fromConstant x :: UInt (2 * n) Vector (Zp p)
@@ -146,17 +147,17 @@ specUInt' = hspec $ do
         it "checks equality" $ do
             x <- toss m
             let acUint = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
-            return $ evalBool @(Zp p) (acUint == acUint) === (Bool one)
+            return $ evalBool @(Zp p) (acUint == acUint) === Bool one
 
         it "checks inequality" $ do
             x <- toss m
             y' <- toss m
-            let y = if y' == x then x + 1 else y'
+            let y = if y' P.== x then x + 1 else y'
 
             let acUint1 = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
                 acUint2 = fromConstant y :: UInt n ArithmeticCircuit (Zp p)
 
-            return $ evalBool @(Zp p) (acUint1 == acUint2) === (Bool zero)
+            return $ evalBool @(Zp p) (acUint1 == acUint2) === Bool zero
 
         it "checks greater than" $ do
             x <- toss m

@@ -26,7 +26,7 @@ testTautology :: forall a . (Symbolic a, BinaryExpansion a, Haskell.Eq a, Bits a
 testTautology x y =
     let Bool ac = compile @a (tautology @ArithmeticCircuit @a)
         b       = Bool $ acValue (applyArgs ac [x, y])
-    in b == true
+    in b Haskell.== true
 
 specArithmetization2 :: Spec
 specArithmetization2 = do

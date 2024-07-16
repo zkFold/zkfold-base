@@ -50,7 +50,7 @@ instance Arithmetic a => SymbolicData a (ArithmeticCircuit n a) where
 -- TODO: I had to add these constraints and I don't like them
 instance
     ( KnownNat (n * Order a)
-    , KnownNat (Log2 ((n * Order a) - 1) + 1)
+    , KnownNat (Log2 (n * Order a - 1) + 1)
     ) => Finite (ArithmeticCircuit n a) where
     type Order (ArithmeticCircuit n a) = n * Order a
 
@@ -151,7 +151,7 @@ instance (Arithmetic a, KnownNat n, 1 <= n) => Eq (Bool (ArithmeticCircuit 1 a))
     x == y = isZero (x - y)
     x /= y = not $ isZero (x - y)
 
-instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit 1 a)) x where
+instance (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit 1 a)) x where
     bool brFalse brTrue (Bool b) = restore c o
         where
             f' = pieces brFalse
@@ -211,7 +211,7 @@ instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
             acInput    <- v .: "input"
             acVarOrder <- v .: "order"
             outs       <- v .: "output"
-            guard (length v == (value @n))
+            guard (length v Haskell.== value @n)
             let acWitness = empty
                 acRNG     = mkStdGen 0
                 acOutput  = Vector outs
