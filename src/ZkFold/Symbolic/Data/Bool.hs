@@ -17,7 +17,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat)
 import           ZkFold.Base.Data.Vector                                   (item, singleton)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit, Arithmetic)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (newAssigned, runCircuit),
                                                                             circuit)
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))

@@ -1,7 +1,7 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.Data.Maybe (
     Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, find

@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans     #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies   #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
@@ -34,7 +34,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embe
                                                                             getAllVars, horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitN)
-import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..), Arithmetizable)
+import           ZkFold.Symbolic.Compiler.Arithmetizable                   (Arithmetizable, SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
