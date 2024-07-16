@@ -34,8 +34,14 @@ instance (FromConstant Natural (UInt 64 context), MultiplicativeSemigroup (UInt 
     n `scale` Value v = Value $ fmap (\(pid, (aname, q)) -> (pid, (aname, n `scale` q))) v
 
 -- TODO
-instance Semigroup (Value n context) where
-    (<>) = undefined
+instance 
+    ( KnownNat n
+    , FromConstant Natural (UInt 64 context)
+    , Concat (ByteString 8 context) (ByteString 224 context)
+    , Concat (ByteString 8 context) (ByteString 256 context)
+    , FromConstant Natural (ByteString 8 context)
+    ) => Semigroup (Value n context) where
+    (<>) _ _ = Value $ Vector $ replicate (value @n) ("", ("", fromConstant @Natural 1))
 
 -- TODO
 instance
@@ -47,7 +53,13 @@ instance
     ) => Monoid (Value n context) where
     mempty = Value $ Vector $ replicate (value @n) ("", ("", fromConstant @Natural 0))
 
-instance AdditiveSemigroup (Value n context) where
+instance 
+    ( KnownNat n
+    , FromConstant Natural (UInt 64 context)
+    , Concat (ByteString 8 context) (ByteString 224 context)
+    , Concat (ByteString 8 context) (ByteString 256 context)
+    , FromConstant Natural (ByteString 8 context)
+    ) => AdditiveSemigroup (Value n context) where
     (+) = (<>)
 
 instance 
