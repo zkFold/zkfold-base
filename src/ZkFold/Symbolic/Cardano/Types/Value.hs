@@ -18,7 +18,7 @@ type SingleAsset context = (PolicyId context, (AssetName context, UInt 64 contex
 
 newtype Value n context = Value { getValue :: Vector n (SingleAsset context) }
 
-deriving instance FE.FieldElementData F CtxEvaluation (Value n CtxEvaluation)
+deriving instance FE.FieldElementData CtxEvaluation (Value n CtxEvaluation)
 
 deriving instance SymbolicData F (Value n CtxCompilation)
 

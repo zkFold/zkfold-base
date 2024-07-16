@@ -1,28 +1,26 @@
-module ZkFold.Symbolic.Cardano.Types.Basic where
+module ZkFold.Symbolic.Cardano.Types.Basic (
+    FieldElement, FieldElementBits, Bool, ByteString, UInt, UTCTime,
+    F,
+    CtxCompilation, CtxEvaluation
+    ) where
 
 import           Prelude                                     hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit)
 import qualified ZkFold.Symbolic.Data.Bool                   as Symbolic
-import qualified ZkFold.Symbolic.Data.ByteString             as Symbolic
-import qualified ZkFold.Symbolic.Data.UInt                   as Symbolic
-import qualified ZkFold.Symbolic.Data.UTCTime                as Symbolic
+import           ZkFold.Symbolic.Data.ByteString             (ByteString)
+import           ZkFold.Symbolic.Data.UInt                   (UInt)
+import           ZkFold.Symbolic.Data.UTCTime                (UTCTime)
+import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
-type F = Zp BLS12_381_Scalar
-
-type FieldElement context     = context 1 F
-type FieldElementBits context = context 256 F
+type FieldElement context     = context 1
+type FieldElementBits context = context 256
 
 type Bool context = Symbolic.Bool (FieldElement context)
 
-type UInt n context = Symbolic.UInt n context F
+type F = Zp BLS12_381_Scalar
 
-type UTCTime context = Symbolic.UTCTime context F
-
-type ByteString n context = Symbolic.ByteString n context F
-
-type CtxCompilation = ArithmeticCircuit
-type CtxEvaluation  = Vector
+type CtxCompilation = ArithmeticCircuit F
+type CtxEvaluation  = Interpreter F

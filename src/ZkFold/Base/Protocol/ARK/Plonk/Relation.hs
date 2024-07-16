@@ -1,3 +1,4 @@
+{-# LANGUAGE NoStarIsType  #-}
 {-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.ARK.Plonk.Relation where
@@ -37,7 +38,7 @@ toPlonkRelation :: forall n l a .
     => Scale a a
     => FromConstant a a
     => Vector l Natural
-    -> ArithmeticCircuit 1 a
+    -> ArithmeticCircuit a 1
     -> Maybe (PlonkRelation n l a)
 toPlonkRelation xPub ac0 =
     let ac = desugarRanges ac0

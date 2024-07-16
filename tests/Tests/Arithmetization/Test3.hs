@@ -13,7 +13,7 @@ import           ZkFold.Symbolic.Data.Bool       (Bool (..))
 import           ZkFold.Symbolic.Data.Ord        (Ord (..))
 import           ZkFold.Symbolic.Types           (Symbolic)
 
-type R = ArithmeticCircuit 1 (Zp 97)
+type R = ArithmeticCircuit (Zp 97) 1
 
 -- A comparison test
 testFunc :: forall a . Symbolic a => a -> a -> Bool a

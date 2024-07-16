@@ -16,7 +16,7 @@ type Contract tx redeemer context = tx context -> redeemer context -> Bool conte
 
 -- | Wrap the contract, exposing the transaction hash as the single public input.
 symbolicContractWrapper :: forall inputs rinputs outputs tokens mint datum redeemer context .
-    Eq (Bool context) (TxHash context)
+    (BoolType (Bool context), Eq (Bool context) (TxHash context))
     => Contract (Transaction inputs rinputs outputs tokens mint datum) redeemer context
     -> TxHash context
     -> Transaction inputs rinputs outputs tokens mint datum context

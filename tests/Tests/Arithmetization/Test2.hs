@@ -18,13 +18,13 @@ import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Types                       (Symbolic)
 
 -- A true statement.
-tautology :: forall c a . Eq (Bool (c 1 a)) (c 1 a) => c 1 a -> c 1 a -> Bool (c 1 a)
+tautology :: (BoolType (Bool (c 1)), Eq (Bool (c 1)) (c 1)) => c 1 -> c 1 -> Bool (c 1)
 tautology x y = (x /= y) || (x == y)
 
 testTautology :: forall a . (Symbolic a, BinaryExpansion a, Haskell.Eq a, Bits a ~ [a])
     => a -> a -> Haskell.Bool
 testTautology x y =
-    let Bool ac = compile @a (tautology @ArithmeticCircuit @a)
+    let Bool ac = compile @a (tautology @(ArithmeticCircuit a))
         b       = Bool $ acValue (applyArgs ac [x, y])
     in b Haskell.== true
 

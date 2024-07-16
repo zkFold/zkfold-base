@@ -26,24 +26,24 @@ type N = 1
 type C = BLS12_381_G1
 type F = ScalarField C
 
-lockedByTxId :: forall b a a' . (FromConstant a' (b 1 a), Eq (Bool (b 1 a)) (b 1 a)) => a' -> b 1 a -> Bool (b 1 a)
+lockedByTxId :: forall a b . (FromConstant a (b 1), Eq (Bool (b 1)) (b 1)) => a -> b 1 -> Bool (b 1)
 lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 
 testSameValue :: F -> Haskell.Bool
 testSameValue targetValue =
-    let Bool ac = compile @F (lockedByTxId @ArithmeticCircuit @F targetValue) :: Bool (ArithmeticCircuit 1 F)
+    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F 1)
         b       = Bool $ acValue (applyArgs ac [targetValue])
     in b Haskell.== true
 
 testDifferentValue :: F -> F -> Haskell.Bool
 testDifferentValue targetValue otherValue =
-    let Bool ac = compile @F (lockedByTxId @ArithmeticCircuit @F targetValue) :: Bool (ArithmeticCircuit 1 F)
+    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F 1)
         b       = Bool $ acValue (applyArgs ac [otherValue])
     in b Haskell.== false
 
 testZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
 testZKP x ps targetValue =
-    let Bool ac = compile @F (lockedByTxId @ArithmeticCircuit @F targetValue) :: Bool (ArithmeticCircuit 1 F)
+    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F 1)
 
         (omega, k1, k2) = getParams 32
         inputs  = fromList [(1, targetValue), (V.item $ acOutput ac, 1)]

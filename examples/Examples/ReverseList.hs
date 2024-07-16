@@ -21,5 +21,4 @@ exampleReverseList = do
 
     putStrLn "\nExample: Reverse List function\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file (reverseList @(ArithmeticCircuit 1 (Zp BLS12_381_Scalar)) @32)
-
+    compileIO @(Zp BLS12_381_Scalar) file (reverseList @(ArithmeticCircuit (Zp BLS12_381_Scalar) 1) @32)

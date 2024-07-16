@@ -26,13 +26,13 @@ emptyDatumHash :: forall context .
     ( FromConstant Natural (ByteString 0 context)
     , Extend (ByteString 0 context) (DatumHash context)
     ) => DatumHash context
-emptyDatumHash = extend $ emptyByteString @F @context
+emptyDatumHash = extend $ emptyByteString @context
 
 newtype Output tokens datum context = Output (Address context, (Value tokens context, DatumHash context))
 
 deriving instance
-    KnownNat (FE.TypeSize F CtxEvaluation (Value tokens CtxEvaluation))
-    => FE.FieldElementData F CtxEvaluation (Output tokens datum CtxEvaluation)
+    KnownNat (FE.TypeSize CtxEvaluation (Value tokens CtxEvaluation))
+    => FE.FieldElementData CtxEvaluation (Output tokens datum CtxEvaluation)
 
 deriving instance
     KnownNat (TypeSize F (Value tokens CtxCompilation))

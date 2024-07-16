@@ -26,17 +26,17 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithme
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
-data ArithmeticCircuitTest n a = ArithmeticCircuitTest
+data ArithmeticCircuitTest a n = ArithmeticCircuitTest
     {
-        arithmeticCircuit :: ArithmeticCircuit n a
+        arithmeticCircuit :: ArithmeticCircuit a n
         , witnessInput    :: Map.Map Natural a
     }
 
-instance (Show (ArithmeticCircuit n a), Show a) => Show (ArithmeticCircuitTest n a) where
+instance (Show (ArithmeticCircuit a n), Show a) => Show (ArithmeticCircuitTest a n) where
     show (ArithmeticCircuitTest ac wi) = show ac ++ ",\nwitnessInput: " ++ show wi
 
-instance (Arithmetic a, Arbitrary a, Arbitrary (ArithmeticCircuit 1 a)) => Arbitrary (ArithmeticCircuitTest 1 a) where
-    arbitrary :: Gen (ArithmeticCircuitTest 1 a)
+instance (Arithmetic a, Arbitrary a, Arbitrary (ArithmeticCircuit a 1)) => Arbitrary (ArithmeticCircuitTest a 1) where
+    arbitrary :: Gen (ArithmeticCircuitTest a 1)
     arbitrary = do
         ac <- arbitrary
         let keysAC = inputVariables ac
@@ -47,7 +47,7 @@ instance (Arithmetic a, Arbitrary a, Arbitrary (ArithmeticCircuit 1 a)) => Arbit
             , witnessInput = wi
             }
 
-mapVarArithmeticCircuit :: MultiplicativeMonoid a => ArithmeticCircuitTest n a -> ArithmeticCircuitTest n a
+mapVarArithmeticCircuit :: MultiplicativeMonoid a => ArithmeticCircuitTest a n -> ArithmeticCircuitTest a n
 mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
     let ct = acCircuit ac
         vars = getAllVars ct

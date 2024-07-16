@@ -14,7 +14,7 @@ type TxRefIndex context = UInt 32 context
 
 newtype OutputRef context = OutputRef (TxRefId context, TxRefIndex context)
 
-deriving instance FieldElementData F CtxEvaluation (OutputRef CtxEvaluation)
+deriving instance FieldElementData CtxEvaluation (OutputRef CtxEvaluation)
 
 deriving instance SymbolicData F (OutputRef CtxCompilation)
 

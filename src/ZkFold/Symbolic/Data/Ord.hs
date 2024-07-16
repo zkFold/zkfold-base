@@ -68,11 +68,11 @@ newtype Lexicographical a = Lexicographical a
 
 deriving newtype instance SymbolicData a x => SymbolicData a (Lexicographical x)
 
-deriving via (Lexicographical (ArithmeticCircuit 1 a))
-    instance Arithmetic a => Ord (Bool (ArithmeticCircuit 1 a)) (ArithmeticCircuit 1 a)
+deriving via (Lexicographical (ArithmeticCircuit a 1))
+    instance Arithmetic a => Ord (Bool (ArithmeticCircuit a 1)) (ArithmeticCircuit a 1)
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
-instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit 1 a)) (Lexicographical x) where
+instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a 1)) (Lexicographical x) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -81,17 +81,17 @@ instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit 1 
 
     x > y = circuitGT (getBitsBE x) (getBitsBE y)
 
-    max x y = bool @(Bool (ArithmeticCircuit 1 a)) x y $ x < y
+    max x y = bool @(Bool (ArithmeticCircuit a 1)) x y $ x < y
 
-    min x y = bool @(Bool (ArithmeticCircuit 1 a)) x y $ x > y
+    min x y = bool @(Bool (ArithmeticCircuit a 1)) x y $ x > y
 
-getBitsBE :: forall a x . (SymbolicData a x, TypeSize a x ~ 1) => x -> ArithmeticCircuit (NumberOfBits a) a
+getBitsBE :: forall a x . (SymbolicData a x, TypeSize a x ~ 1) => x -> ArithmeticCircuit a (NumberOfBits a)
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
 getBitsBE x = let expansion = binaryExpansion $ pieces @a @x x
                in expansion { acOutput = V.reverse $ acOutput expansion }
 
-circuitGE :: forall a n . Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a -> Bool (ArithmeticCircuit 1 a)
+circuitGE :: forall a n . Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n -> Bool (ArithmeticCircuit a 1)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
 circuitGE xs ys = Bool $ circuit $ do
   is <- runCircuit xs
@@ -103,7 +103,7 @@ blueprintGE xs ys = do
   (_, hasNegOne) <- circuitDelta xs ys
   newAssigned $ \p -> one - p hasNegOne
 
-circuitGT :: forall a n . Arithmetic a => ArithmeticCircuit n a -> ArithmeticCircuit n a -> Bool (ArithmeticCircuit 1 a)
+circuitGT :: forall a n . Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n -> Bool (ArithmeticCircuit a 1)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
 circuitGT xs ys = Bool $ circuit $ do
   is <- runCircuit xs
