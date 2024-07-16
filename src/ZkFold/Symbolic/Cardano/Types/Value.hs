@@ -22,6 +22,10 @@ deriving instance FE.FieldElementData F CtxEvaluation (Value n CtxEvaluation)
 
 deriving instance SymbolicData F (Value n CtxCompilation)
 
+instance (FromConstant Natural (UInt 64 context), MultiplicativeSemigroup (UInt 64 context))
+        => Scale Natural (Value n context) where
+    n `scale` Value v = Value $ fmap (\(pid, (aname, q)) -> (pid, (aname, n `scale` q))) v
+
 -- TODO
 instance Semigroup (Value n context) where
     (<>) = undefined
