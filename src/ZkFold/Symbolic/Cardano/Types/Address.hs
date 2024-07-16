@@ -4,6 +4,7 @@
 module ZkFold.Symbolic.Cardano.Types.Address where
 
 import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
+import qualified Prelude                             as Haskell
 
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Compiler
@@ -16,6 +17,9 @@ type PaymentCredential context = ByteString 224 context
 type StakingCredential context = ByteString 224 context
 
 newtype Address context = Address (AddressType context, (PaymentCredential context, StakingCredential context))
+
+deriving instance (Haskell.Eq (ByteString 4 context), Haskell.Eq (ByteString 224 context))
+    => Haskell.Eq (Address context)
 
 deriving instance FieldElementData F CtxEvaluation (Address CtxEvaluation)
 
