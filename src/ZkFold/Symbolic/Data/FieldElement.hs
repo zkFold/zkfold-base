@@ -15,6 +15,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
 
 newtype FieldElement c a = FieldElement (c 1 a)
+    deriving (Eq, Show)
 
 -- | A class for serializing data types into containers holding finite field elements.
 -- Type `a` is the finite field.
