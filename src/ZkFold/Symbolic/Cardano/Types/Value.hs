@@ -4,13 +4,16 @@
 module ZkFold.Symbolic.Cardano.Types.Value where
 
 import           GHC.Natural                         (Natural)
-import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                             hiding (Bool, Eq, length, splitAt, replicate, (*), (+))
 import qualified Prelude                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number    (KnownNat, value)
 import           ZkFold.Base.Data.Vector
+import           ZkFold.Prelude                      (replicate)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.ByteString     (Concat)
 import qualified ZkFold.Symbolic.Data.FieldElement   as FE
 
 type PolicyId context    = ByteString 224 context
@@ -35,11 +38,24 @@ instance Semigroup (Value n context) where
     (<>) = undefined
 
 -- TODO
-instance Monoid (Value n context) where
-    mempty = undefined
+instance
+    ( KnownNat n
+    , FromConstant Natural (UInt 64 context)
+    , Concat (ByteString 8 context) (ByteString 224 context)
+    , Concat (ByteString 8 context) (ByteString 256 context)
+    , FromConstant Natural (ByteString 8 context)
+    ) => Monoid (Value n context) where
+    mempty = Value $ Vector $ replicate (value @n) ("", ("", fromConstant @Natural 0))
 
 instance AdditiveSemigroup (Value n context) where
     (+) = (<>)
 
-instance Scale Natural (Value n context) => AdditiveMonoid (Value n context) where
+instance 
+    ( KnownNat n
+    , FromConstant Natural (UInt 64 context)
+    , Concat (ByteString 8 context) (ByteString 224 context)
+    , Concat (ByteString 8 context) (ByteString 256 context)
+    , FromConstant Natural (ByteString 8 context)
+    , Scale Natural (Value n context)
+     ) => AdditiveMonoid (Value n context) where
     zero = mempty
