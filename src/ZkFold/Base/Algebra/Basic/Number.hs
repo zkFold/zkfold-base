@@ -4,7 +4,22 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Algebra.Basic.Number (KnownNat, Prime, KnownPrime, IsPrime, Log2, Mod, Div, value, type (<=), type (*), type (+), type (-), type (^)) where
+module ZkFold.Base.Algebra.Basic.Number 
+    ( Natural
+    , KnownNat
+    , Prime
+    , KnownPrime
+    , IsPrime
+    , Log2
+    , Mod
+    , Div
+    , value
+    , type (<=)
+    , type (*)
+    , type (+)
+    , type (-)
+    , type (^)
+    ) where
 
 import           Data.Kind      (Constraint)
 import           Data.Type.Bool (If, type (&&))

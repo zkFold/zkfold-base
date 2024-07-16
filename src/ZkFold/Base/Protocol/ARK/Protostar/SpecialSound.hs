@@ -11,8 +11,9 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable      (Arithmetic)
 
 type SpecialSoundTranscript t a = [(ProverMessage t a, VerifierMessage t a)]
 
-{--
-Section 3.1
+type LMap l f = Vector l (Poly f Natural Natural)
+
+{-- | Section 3.1
 
 The protocol Πsps has 3 essential parameters k, d, l ∈ N, meaning that Πsps is a (2k − 1)-
 move protocol with verifier degree d and output length l (i.e. the verifier checks l degree
@@ -39,10 +40,18 @@ class Arithmetic f => SpecialSoundProtocol f a where
 
       prover :: a -> Witness f a -> Input f a -> SpecialSoundTranscript f a -> ProverMessage f a
 
--- TODO: Why two verifiers?
---
-      verifier' :: a -> Input f a -> SpecialSoundTranscript Natural a
-            -> Vector (Dimension a) (Poly f Natural Natural)
+      algebraicMap 
+          :: a 
+          -> Input f a 
+          -> [ProverMessage Natural a] 
+          -> [VerifierMessage Natural a] 
+          -> LMap (Dimension a) f
+      -- ^ the algebraic map V_sps computed by the verifier. 
+      -- The j-th element of the vector is a homogeneous degree-j algebraic map that outputs a vector of @Dimension a@ field elements.
+      -- Variables have natural indices from @0@ to @2k@:
+      -- Variable @0@ is public input
+      -- Variables @1@ to @k@ are prover messages from the transcript
+      -- Variables @k+1@ to @2k@ are random challenges from the verifier
 
-      verifier :: a -> Input f a -> SpecialSoundTranscript f a -> Bool
+      verifier :: a -> Input f a -> [ProverMessage f a] -> [VerifierMessage f a] -> Bool
 

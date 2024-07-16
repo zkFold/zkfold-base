@@ -121,8 +121,8 @@ acPrint ac@(ArithmeticCircuit r o) = do
 ---------------------------------- Testing -------------------------------------
 
 checkClosedCircuit
-    :: Arithmetic a
-    => FromConstant a a
+    :: forall a n
+     . Arithmetic a
     => Scale a a
     => Show a
     => ArithmeticCircuit a n
@@ -135,7 +135,6 @@ checkClosedCircuit c@(ArithmeticCircuit r _) = withMaxSuccess 1 $ conjoin [ test
 checkCircuit
     :: Arbitrary a
     => Arithmetic a
-    => FromConstant a a
     => Scale a a
     => Show a
     => ArithmeticCircuit a n

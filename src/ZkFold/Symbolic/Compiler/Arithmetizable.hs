@@ -14,7 +14,6 @@ module ZkFold.Symbolic.Compiler.Arithmetizable (
     ) where
 
 import           Data.Typeable                                       (Typeable)
-import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Bool, Num (..), drop, length, product,
                                                                       splitAt, sum, take, (!!), (^))
 

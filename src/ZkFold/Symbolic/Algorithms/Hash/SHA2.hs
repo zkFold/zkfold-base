@@ -16,7 +16,7 @@ import           Data.Type.Bool                                 (If)
 import qualified Data.Vector                                    as V
 import qualified Data.Vector.Mutable                            as VM
 import           GHC.TypeLits                                   (Symbol)
-import           GHC.TypeNats                                   (Natural, natVal, type (<=?))
+import           GHC.TypeNats                                   (natVal, type (<=?))
 import           Prelude                                        (Int, id, pure, zip, ($!), ($), (.), (>>=))
 import qualified Prelude                                        as P
 

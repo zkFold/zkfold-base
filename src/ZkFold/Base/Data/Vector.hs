@@ -14,7 +14,6 @@ import           Data.List.Split                  (chunksOf)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
-import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (drop, head, length, mod, replicate, sum, tail, take, zip,
                                                    zipWith, (*))
 import qualified Prelude                          as P
@@ -40,6 +39,9 @@ toVector as
 
 unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector
+
+generate :: forall size a . KnownNat size => (Natural -> a) -> Vector size a
+generate f = Vector $ f <$> [0 .. value @size -! 1]
 
 unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
 unfold f = Vector . ZP.take (value @size) . List.unfoldr (Just . f)

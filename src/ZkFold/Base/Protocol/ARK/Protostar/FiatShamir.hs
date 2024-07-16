@@ -43,4 +43,5 @@ instance (SpS.SpecialSoundProtocol f a, Eq c, Binary (SpS.Input f a), Binary (Ve
       verify fs@(FiatShamir a _) (ip, cs) ms =
             let ts' = foldl (\acc c -> acc ++ [(c, fsChallenge fs acc c)]) [] $ map Commit cs
                 ts  = ts' ++ [(Open ms, fsChallenge fs ts' $ Open ms)]
-            in verifier a ip ts
+                (ri, ci) = unzip ts
+            in verifier a ip ri ci

@@ -15,7 +15,6 @@ import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Par1)
 import           GHC.IsList                                 (IsList (..))
-import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), div, drop, length, replicate, sum, take,
                                                              (!!), (/), (^))
 import qualified Prelude                                    as P hiding (length)

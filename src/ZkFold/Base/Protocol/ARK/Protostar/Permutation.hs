@@ -6,9 +6,10 @@ import           Prelude                                         hiding (Num (..
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Poly, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate    (var)
 import           ZkFold.Base.Data.Vector                         (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
+                                                                  SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
@@ -35,18 +36,20 @@ instance Arithmetic f => SpecialSoundProtocol f (ProtostarPermutation n) where
            -> ProverMessage f (ProtostarPermutation n)
     prover _ w _ _ = w
 
-    verifier' :: ProtostarPermutation n
-              -> Input f (ProtostarPermutation n)
-              -> SpecialSoundTranscript Natural (ProtostarPermutation n)
-              -> Vector (Dimension (ProtostarPermutation n)) (Poly f Natural Natural)
-    verifier' _ sigma [(w, _)] = zipWith (-) (applyPermutation sigma wX) wX
+    algebraicMap :: ProtostarPermutation n
+                 -> Input f (ProtostarPermutation n)
+                 -> [ProverMessage Natural (ProtostarPermutation n)]
+                 -> [VerifierMessage Natural (ProtostarPermutation n)]
+                 -> LMap (Dimension (ProtostarPermutation n)) f
+    algebraicMap _ sigma [w] _ = zipWith (-) (applyPermutation sigma wX) wX
       where wX = fmap var w
-    verifier' _ _ _ = error "Invalid transcript"
+    algebraicMap _ _ _ _ = error "Invalid transcript"
 
 
     verifier :: ProtostarPermutation n
              -> Input f (ProtostarPermutation n)
-             -> SpecialSoundTranscript f (ProtostarPermutation n)
+             -> [ProverMessage f (ProtostarPermutation n)]
+             -> [VerifierMessage f (ProtostarPermutation n)]
              -> Bool
-    verifier _ sigma [(w, _)] = applyPermutation sigma w == w
-    verifier _ _     _        = error "Invalid transcript"
+    verifier _ sigma [w] _ = applyPermutation sigma w == w
+    verifier _ _     _   _ = error "Invalid transcript"

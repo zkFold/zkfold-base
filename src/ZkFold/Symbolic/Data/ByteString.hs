@@ -30,7 +30,7 @@ import           Data.String                                               (IsSt
 import           Data.Traversable                                          (for)
 import           GHC.Generics                                              (Generic, Par1 (..))
 import           GHC.Natural                                               (naturalFromInteger)
-import           GHC.TypeNats                                              (Natural, natVal)
+import           GHC.TypeNats                                              (natVal)
 import           Prelude                                                   (Integer, drop, fmap, otherwise, pure, take,
                                                                             type (~), ($), (.), (<$>), (<), (<>), (==),
                                                                             (>=))

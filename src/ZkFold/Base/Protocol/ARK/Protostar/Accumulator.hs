@@ -3,10 +3,8 @@
 
 module ZkFold.Base.Protocol.ARK.Protostar.Accumulator where
 
-import           Control.Lens.Combinators        (makeLenses)
-import           Prelude                         hiding (length)
-
-import           ZkFold.Base.Algebra.Basic.Class
+import           Control.Lens.Combinators (makeLenses)
+import           Prelude                  hiding (length)
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance f c = AccumulatorInstance {
@@ -19,16 +17,13 @@ data AccumulatorInstance f c = AccumulatorInstance {
 
 makeLenses ''AccumulatorInstance
 
--- Page 19, Accumulator witness
-newtype AccumulatorWitness m = AccumulatorWitness { accMessages :: [m] }
-
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
 data Accumulator f c m
     = Accumulator
         { _x :: AccumulatorInstance f c
-        , _w :: AccumulatorWitness m
+        , _w :: [m]
         }
 
 makeLenses ''Accumulator

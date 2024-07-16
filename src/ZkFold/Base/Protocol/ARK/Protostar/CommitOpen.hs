@@ -9,7 +9,7 @@ import           ZkFold.Base.Data.ByteString
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Prelude                                  (length)
 
-data CommitOpen f c a = CommitOpen (ProverMessage f a -> c) a
+data CommitOpen f c a = CommitOpen ([ProverMessage f a] -> c) a
 
 data CommitOpenProverMessage t c a = Commit c | Open [ProverMessage t a]
 instance (Binary c, Binary (ProverMessage t a)) => Binary (CommitOpenProverMessage t c a) where
@@ -34,18 +34,18 @@ instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen 
 
       prover (CommitOpen cm a) (w, ms) i ts
             | length ts /= length ms  = error "Invalid transcript length"
-            | length ts < rounds @f a = Commit $ cm $ prover @f a w i $ zip ms $ map snd ts
+            | length ts < rounds @f a = Commit $ cm [prover @f a w i $ zip ms $ map snd ts]
             | otherwise               = Open ms
 
       -- TODO: Implement this
       -- make in an AC and use only it
       -- decider is also AC
-      verifier' = undefined
+      algebraicMap = undefined
 
-      verifier (CommitOpen cm a) i ((Open ms, _) : ts) = map cm ms == map f ts && verifier @f a i (zip ms $ map snd ts)
-            where f (Commit c, _) = c
-                  f _             = error "Invalid message"
-      verifier _ _ _ = error "Invalid transcript"
+      verifier (CommitOpen cm a) i ((Open ms):mss) (_:ts) = map (cm . pure) ms == map f mss && verifier @f a i ms ts
+            where f (Commit c) = c
+                  f _          = error "Invalid message"
+      verifier _ _ _ _ = error "Invalid transcript"
 
 commits :: SpecialSoundTranscript t (CommitOpen f c a) -> [c]
 commits = map f

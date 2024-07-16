@@ -11,7 +11,6 @@ import           Data.Kind                                  (Type)
 import           Data.Map.Strict                            (Map, fromList, insert, keys, toList, (!))
 import qualified Data.Vector                                as V
 import           Data.Vector.Binary                         ()
-import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), length, sum, (/), (^))
 import           Test.QuickCheck                            (Arbitrary (..), chooseInt)
 

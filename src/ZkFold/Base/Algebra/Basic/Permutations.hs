@@ -14,7 +14,6 @@ module ZkFold.Base.Algebra.Basic.Permutations (
 import           Data.Map                         (Map, elems, empty, singleton, union)
 import           Data.Maybe                       (fromJust)
 import qualified Data.Vector                      as V
-import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (Num (..), drop, length, mod, (!!))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..))

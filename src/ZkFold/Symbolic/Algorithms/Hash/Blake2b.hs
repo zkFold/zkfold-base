@@ -10,7 +10,6 @@ import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
 import qualified Data.Vector                                       as V
 import           GHC.IsList                                        (IsList (..))
-import           GHC.Natural                                       (Natural)
 import qualified GHC.Num                                           as GHC
 import           Prelude                                           hiding (Num (..), concat, divMod, length, mod,
                                                                     replicate, splitAt, truncate, (!!), (&&), (^))

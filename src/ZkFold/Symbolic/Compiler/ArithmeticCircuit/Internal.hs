@@ -31,9 +31,9 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
 import           Control.DeepSeq                              (NFData, force)
 import           Control.Monad.State                          (MonadState (..), State, gets, modify)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
+import qualified Data.Map.Strict                              as M
 import qualified Data.Set                                     as S
 import           GHC.Generics                                 (Generic, Par1 (..))
-import           Numeric.Natural                              (Natural)
 import           Optics
 import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum,
                                                                take, (!!), (^))
@@ -42,6 +42,7 @@ import           System.Random                                (StdGen, mkStdGen,
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
 import           ZkFold.Base.Control.HApplicative
@@ -114,14 +115,14 @@ instance Eq a => Semigroup (Circuit a) where
     c1 <> c2 =
         Circuit
            {
-               acSystem   = {-# SCC system_union #-}    acSystem c1 `union` acSystem c2
-            ,  acRange    = {-# SCC range_union #-}     acRange c1 `union` acRange c2
+               acSystem   = acSystem c1 `union` acSystem c2
+            ,  acRange    = acRange c1 `union` acRange c2
                -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
                -- We need a way to ensure the correct order no matter how `(<>)` is used.
-           ,   acInput    = {-# SCC input_union #-}     nubConcat (acInput c1) (acInput c2)
-           ,   acWitness  = {-# SCC witness_union #-}   acWitness c1 `union` acWitness c2
-           ,   acVarOrder = {-# SCC var_order_union #-} acVarOrder c1 `union` acVarOrder c2
-           ,   acRNG      = {-# SCC rng_union #-}       mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
+           ,   acInput    = nubConcat (acInput c1) (acInput c2)
+           ,   acWitness  = acWitness c1 `union` acWitness c2
+           ,   acVarOrder = acVarOrder c1 `union` acVarOrder c2
+           ,   acRNG      = mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
            }
 
 nubConcat :: Ord a => [a] -> [a] -> [a]
@@ -169,7 +170,7 @@ newVariableWithSource srcs con = toVar srcs . con . fst <$> do
 addVariable :: Natural -> State (Circuit a) Natural
 addVariable x = do
     zoom #acVarOrder . modify
-        $ \vo -> insert (length vo, x) x vo
+        $ \vo -> insert (Haskell.fromIntegral $ M.size vo, x) x vo
     pure x
 
 ---------------------------------- Low-level functions --------------------------------

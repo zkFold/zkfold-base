@@ -11,7 +11,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Poly, evalMono
 import           ZkFold.Base.Data.Matrix                         (Matrix (..), outer, sum1, transpose)
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProtostar (..))
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
+                                                                  SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler.Arithmetizable         (Arithmetic)
 
 data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
@@ -38,23 +39,25 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
           -> ProverMessage f (ProtostarGate m n c d)
     prover _ w _ _ = w
 
-    verifier' :: ProtostarGate m n c d
-              -> Input f (ProtostarGate m n c d)
-              -> SpecialSoundTranscript Natural (ProtostarGate m n c d)
-              -> Vector (Dimension (ProtostarGate m n c d)) (Poly f Natural Natural)
-    verifier' _ (s, g) [(w, _)] =
+    algebraicMap :: ProtostarGate m n c d
+                 -> Input f (ProtostarGate m n c d)
+                 -> [ProverMessage Natural (ProtostarGate m n c d)]
+                 -> [VerifierMessage Natural (ProtostarGate m n c d)]
+                 -> LMap (Dimension (ProtostarGate m n c d)) f
+    algebraicMap _ (s, g) [w] _ =
       let w' = fmap ((var .) . subs) w :: Vector n (Zp c -> Poly f Natural Natural)
           z  = transpose $ outer (evalPolynomial evalMonomial) w' $ fmap (\(PolynomialProtostar p) -> p) g
       in sum1 $ zipWith scale s z
-    verifier' _ _ _ = error "Invalid transcript"
+    algebraicMap _ _ _ _ = error "Invalid transcript"
 
     verifier :: ProtostarGate m n c d
              -> Input f (ProtostarGate m n c d)
-             -> SpecialSoundTranscript f (ProtostarGate m n c d)
+             -> [ProverMessage f (ProtostarGate m n c d)]
+             -> [VerifierMessage f (ProtostarGate m n c d)]
              -> Bool
-    verifier _ (s, g) [(w, _)] =
+    verifier _ (s, g) [w] _ =
       let w' = fmap subs w :: Vector n (Zp c -> f)
           z  = transpose $ outer (evalPolynomial evalMonomial) w' $ fmap (\(PolynomialProtostar p) -> p) g
       in all (== zero) $ sum1 $ zipWith (*) s z
-    verifier _ _ _ = error "Invalid transcript"
+    verifier _ _ _ _ = error "Invalid transcript"
 
