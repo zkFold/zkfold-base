@@ -14,25 +14,25 @@ import           ZkFold.Base.Data.Vector                             (Vector (..
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
 
-newtype FieldElement a = FieldElement a
+newtype FieldElement c a = FieldElement (c 1 a)
 
 -- | A class for serializing data types into containers holding finite field elements.
 -- Type `a` is the finite field.
 -- Type `b` is the container type.
 -- Type `x` represents the data type.
-class Arithmetic a => FieldElementData a b x where
+class Arithmetic a => FieldElementData a c x where
 
-    type TypeSize a b x :: Natural
+    type TypeSize a c x :: Natural
 
     -- | Returns the representation of `x` as a container of finite field elements.
-    toFieldElements :: x -> b (TypeSize a b x) a
+    toFieldElements :: x -> c (TypeSize a c x) a
 
     -- | Restores `x` from its representation as a container of finite field elements.
-    fromFieldElements :: b (TypeSize a b x) a -> x
+    fromFieldElements :: c (TypeSize a c x) a -> x
 
 -- | Returns the number of finite field elements needed to describe `x`.
-typeSize :: forall a b x . KnownNat (TypeSize a b x) => Natural
-typeSize = value @(TypeSize a b x)
+typeSize :: forall a c x . KnownNat (TypeSize a c x) => Natural
+typeSize = value @(TypeSize a c x)
 
 instance Arithmetic a => FieldElementData a Vector () where
     type TypeSize a Vector () = 0
@@ -41,12 +41,12 @@ instance Arithmetic a => FieldElementData a Vector () where
 
     fromFieldElements _ = ()
 
-instance Arithmetic a => FieldElementData a Vector (FieldElement a) where
-    type TypeSize a Vector (FieldElement a) = 1
+instance Arithmetic a => FieldElementData a Vector (FieldElement Vector a) where
+    type TypeSize a Vector (FieldElement Vector a) = 1
 
-    toFieldElements (FieldElement x) = V.singleton x
+    toFieldElements (FieldElement x) = V.singleton $ V.item x
 
-    fromFieldElements = FieldElement . V.head
+    fromFieldElements = FieldElement . V.singleton . V.head
 
 instance
     ( FieldElementData a Vector x
