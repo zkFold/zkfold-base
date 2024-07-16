@@ -26,6 +26,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Indexed
 import Data.Either
 import Data.Eq
+import Data.Foldable hiding (sum, product)
 import Data.Function (($))
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
@@ -90,7 +91,7 @@ evalConst
 evalConst = mapPoly $ \case
   ConstVar x -> Left x
   SysVar v -> Right v
-  
+
 indexW
   :: VectorSpace x i
   => IntMap (i x -> x) -> i x -> OutVar x i -> x
@@ -254,10 +255,6 @@ instance (Ord x, VectorSpace x i)
       Par1 v1 <- runCircuit c1
       Par1 <$> newAssigned (\x -> x v0 * x v1)
 
-instance (Ord x, Discrete x, VectorSpace x i)
-  => MultiplicativeGroup (Circuit x i Par1) where
-    recip c = let c'@(UnsafeCircuit _ _ (_ :*: i)) = invertC c in c' { outputC = i }
-
 instance From (Circuit x i Par1) (Circuit x i Par1)
 
 instance (Ord x, VectorSpace x i)
@@ -290,12 +287,9 @@ instance (Ord x, VectorSpace x i)
     exponent x p = evalMono [(x, p)]
     evalMono = evalMonoN
 
-instance (Ord x, Discrete x, VectorSpace x i)
-  => Discrete (Circuit x i Par1) where
-    dichotomy x y = isZero (x - y)
-    isZero c = let c'@(UnsafeCircuit _ _ (z :*: _)) = invertC c in c' { outputC = z }
-
-invertC :: (Ord x, Discrete x, VectorSpace x i) => Circuit x i Par1 -> Circuit x i (Par1 :*: Par1)
+invertC
+  :: (Ord x, Discrete x, VectorSpace x i)
+  => Circuit x i Par1 -> Circuit x i (Par1 :*: Par1)
 invertC c = circuit $ do
   Par1 v <- runCircuit c
   isZ <- newConstrained
@@ -305,3 +299,28 @@ invertC c = circuit $ do
     (\x i -> x i * x v + x isZ - one)
     (\x -> recip (x v))
   return (Par1 isZ :*: Par1 inv)
+
+instance (Ord x, Discrete x, VectorSpace x i)
+  => Discrete (Circuit x i Par1) where
+    dichotomy x y = isZero (x - y)
+      let
+        cInv = invertC c
+        oZ :*: _ = outputC cInv
+      in
+        cInv { outputC = oZ }
+
+instance (Ord x, Discrete x, VectorSpace x i)
+  => MultiplicativeGroup (Circuit x i Par1) where
+    recip c =
+      let
+        cInv = invertC c
+        _ :*: oInv = outputC cInv
+      in
+        cInv { outputC = oInv }
+
+horner :: (VectorSpace x i, MonadCircuit x i m) => [OutVar x i] -> m (OutVar x i)
+-- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
+-- Horner's scheme.
+horner xs = case Prelude.reverse xs of
+  []       -> newAssigned (Prelude.const zero)
+  (b : bs) -> foldlM (\a i -> newAssigned (\x -> let xa = x a in x i + xa + xa)) b bs
