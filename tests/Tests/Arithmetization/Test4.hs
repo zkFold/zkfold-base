@@ -33,13 +33,13 @@ testSameValue :: F -> Haskell.Bool
 testSameValue targetValue =
     let Bool ac = compile @F (lockedByTxId @ArithmeticCircuit @F targetValue) :: Bool (ArithmeticCircuit 1 F)
         b       = Bool $ acValue (applyArgs ac [targetValue])
-    in b == true
+    in b Haskell.== true
 
 testDifferentValue :: F -> F -> Haskell.Bool
 testDifferentValue targetValue otherValue =
     let Bool ac = compile @F (lockedByTxId @ArithmeticCircuit @F targetValue) :: Bool (ArithmeticCircuit 1 F)
         b       = Bool $ acValue (applyArgs ac [otherValue])
-    in b == false
+    in b Haskell.== false
 
 testZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
 testZKP x ps targetValue =
@@ -63,6 +63,6 @@ specArithmetization4 = do
     describe "LockedByTxId arithmetization test 1" $ do
         it "should pass" $ property testSameValue
     describe "LockedByTxId arithmetization test 2" $ do
-        it "should pass" $ property $ \x y -> x /= y ==> testDifferentValue x y
+        it "should pass" $ property $ \x y -> x Haskell./= y ==> testDifferentValue x y
     describe "LockedByTxId ZKP test" $ do
         it "should pass" $ withMaxSuccess 10 $ property testZKP
