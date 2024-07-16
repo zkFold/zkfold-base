@@ -4,8 +4,10 @@
 
 module ZkFold.Symbolic.Data.UTCTime where
 
+import           GHC.Natural                             (Natural)
 import           Prelude
 
+import           ZkFold.Base.Algebra.Basic.Class         (FromConstant)
 import           ZkFold.Base.Data.Vector                 (Vector)
 import           ZkFold.Symbolic.Compiler                (ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.Arithmetizable
@@ -19,3 +21,5 @@ deriving newtype instance Eq (UInt 11 b a) => Eq (UTCTime b a)
 deriving newtype instance Arithmetic a => FieldElementData a Vector (UTCTime Vector a)
 
 deriving newtype instance Arithmetic a => SymbolicData a (UTCTime ArithmeticCircuit a)
+
+deriving newtype instance FromConstant Natural (UInt 11 b a) => FromConstant Natural (UTCTime b a)
