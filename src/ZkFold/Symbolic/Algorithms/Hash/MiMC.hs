@@ -11,7 +11,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector                                (fromVector, singleton)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
-import           ZkFold.Symbolic.Data.FieldElement                      (FieldElementData (..), FieldElement(..))
+import           ZkFold.Symbolic.Data.FieldElement                      (FieldElement (..), FieldElementData (..))
 import           ZkFold.Symbolic.Interpreter                            (Interpreter (..))
 
 -- | MiMC-2n/n (Feistel) hash function.

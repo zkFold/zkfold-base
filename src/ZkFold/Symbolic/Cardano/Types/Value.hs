@@ -4,7 +4,7 @@
 module ZkFold.Symbolic.Cardano.Types.Value where
 
 import           GHC.Natural                         (Natural)
-import           Prelude                             hiding (Bool, Eq, length, splitAt, replicate, (*), (+))
+import           Prelude                             hiding (Bool, Eq, length, replicate, splitAt, (*), (+))
 import qualified Prelude                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -34,7 +34,7 @@ instance (FromConstant Natural (UInt 64 context), MultiplicativeSemigroup (UInt 
     n `scale` Value v = Value $ fmap (\(pid, (aname, q)) -> (pid, (aname, n `scale` q))) v
 
 -- TODO
-instance 
+instance
     ( KnownNat n
     , FromConstant Natural (UInt 64 context)
     , Concat (ByteString 8 context) (ByteString 224 context)
@@ -53,7 +53,7 @@ instance
     ) => Monoid (Value n context) where
     mempty = Value $ Vector $ replicate (value @n) ("", ("", fromConstant @Natural 0))
 
-instance 
+instance
     ( KnownNat n
     , FromConstant Natural (UInt 64 context)
     , Concat (ByteString 8 context) (ByteString 224 context)
@@ -62,7 +62,7 @@ instance
     ) => AdditiveSemigroup (Value n context) where
     (+) = (<>)
 
-instance 
+instance
     ( KnownNat n
     , FromConstant Natural (UInt 64 context)
     , Concat (ByteString 8 context) (ByteString 224 context)

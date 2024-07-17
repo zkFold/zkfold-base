@@ -11,11 +11,11 @@ module ZkFold.Symbolic.Cardano.Types.Output (
     txoDatumHash
 ) where
 
-import           Prelude                                   hiding (Bool, Eq, length, splitAt, (*), (+))
-import qualified Prelude                                   as Haskell
+import           Prelude                                    hiding (Bool, Eq, length, splitAt, (*), (+))
+import qualified Prelude                                    as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Cardano.Types.Address     (Address)
+import           ZkFold.Symbolic.Cardano.Types.Address      (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Output.Datum
 import           ZkFold.Symbolic.Cardano.Types.Value        (Value)

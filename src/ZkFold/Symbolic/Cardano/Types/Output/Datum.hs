@@ -5,11 +5,12 @@ module ZkFold.Symbolic.Cardano.Types.Output.Datum where
 import           GHC.Natural                             (Natural)
 import           Prelude                                 hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Base.Algebra.Basic.Class         (FromConstant, AdditiveGroup, MultiplicativeMonoid)
+import           ZkFold.Base.Algebra.Basic.Class         (AdditiveGroup, FromConstant, MultiplicativeMonoid)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b (blake2b_256)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Data.Bool               (BoolType)
-import           ZkFold.Symbolic.Data.ByteString         (emptyByteString, ToWords, Truncate, ShiftBits, Concat, ReverseEndianness)
+import           ZkFold.Symbolic.Data.ByteString         (Concat, ReverseEndianness, ShiftBits, ToWords, Truncate,
+                                                          emptyByteString)
 import           ZkFold.Symbolic.Data.Combinators        (Extend (..), Iso)
 
 type DatumHash context = ByteString 256 context
