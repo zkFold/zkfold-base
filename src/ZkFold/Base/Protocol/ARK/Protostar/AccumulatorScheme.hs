@@ -85,7 +85,7 @@ instance
 
           ixToPoly :: Natural -> PU.Poly f
           ixToPoly n
-            | n == 0    = PU.toPoly $ DV.fromList [acc^.x^.pi, pubi]                                 -- X * pi + pi'
+            | n == 0    = PU.toPoly $ DV.fromList [acc^.x^.pi, pubi]                                   -- X * pi + pi'
             | n <= k    = PU.toPoly $ DV.fromList [(acc^.w) !! (n -! 1), pi_w !! (n -! 1)]             -- X * mi + mi'
             | otherwise = PU.toPoly $ DV.fromList [(acc^.x^.r) !! (n -! k -! 1), r_i !! (n -! k -! 1)] -- X * ri + ri'
 
@@ -142,16 +142,40 @@ instance
           -- Fig 4, step 5
           eEq = acc'^.e == acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf)
 
-  decider (FiatShamir (CommitOpen cm _) _) acc = commitsEq && eEq
+  decider sps@(FiatShamir (CommitOpen cm _) _) acc = commitsEq && eEq
       where
+          d :: Natural
+          d = value @(Dimension (FiatShamir f (CommitOpen f c a)))
+
+          k :: Natural
+          k = rounds @f sps
+
+
           -- Fig. 5, step 1
           commitsEq = P.and $ P.zipWith (\cl m -> cm [m] == cl) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
-          err = P.undefined
+          f_sps = mulDeg (acc^.x^.mu) d <$> algebraicMap @f sps (acc^.x^.pi) (acc^.x^.r) (acc^.w)
+
+          ixToVal :: Natural -> f
+          ixToVal n
+            | n == 0    = acc^.x^.pi                   -- pi
+            | n <= k    = (acc^.w) !! (n -! 1)         -- mi
+            | otherwise = (acc^.x^.r) !! (n -! k -! 1) -- ri
+
+          err = V.fromVector $ PM.evalPolynomial PM.evalMonomial ixToVal <$> f_sps
 
           -- Fig. 5, step 3
           eEq = acc^.x^.e == cm err
+
+mulDeg
+    :: MultiplicativeSemigroup f
+    => Exponent f Natural
+    => f
+    -> Natural
+    -> PM.Poly f Natural Natural
+    -> PM.Poly f Natural Natural
+mulDeg f d (PM.P monomials) = PM.P $ (\(coeff, m) -> (f ^ (d -! deg m) * coeff, m)) <$> monomials
 
 -- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @n@
 --
@@ -164,5 +188,5 @@ degreeDecomposition lmap = V.generate degree_j
         leaveDeg :: Natural -> PM.Poly f Natural Natural -> PM.Poly f Natural Natural
         leaveDeg j (PM.P monomials) = PM.P $ P.filter (\(_, m) -> deg m == j) monomials
 
-        deg :: PM.Mono Natural Natural -> Natural
-        deg (PM.M m) = sum m
+deg :: PM.Mono Natural Natural -> Natural
+deg (PM.M m) = sum m
