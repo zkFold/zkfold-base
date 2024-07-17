@@ -21,7 +21,7 @@ newtype Address context = Address (AddressType context, (PaymentCredential conte
 deriving instance (Haskell.Eq (ByteString 4 context), Haskell.Eq (ByteString 224 context))
     => Haskell.Eq (Address context)
 
-deriving instance FieldElementData F CtxEvaluation (Address CtxEvaluation)
+deriving instance FieldElementData CtxEvaluation (Address CtxEvaluation)
 
 deriving instance SymbolicData F (Address CtxCompilation)
 

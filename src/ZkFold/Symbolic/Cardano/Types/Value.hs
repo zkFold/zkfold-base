@@ -25,7 +25,7 @@ newtype Value n context = Value { getValue :: Vector n (SingleAsset context) }
 deriving instance (Haskell.Eq (ByteString 224 context), Haskell.Eq (ByteString 256 context), Haskell.Eq (UInt 64 context))
     => Haskell.Eq (Value n context)
 
-deriving instance FE.FieldElementData F CtxEvaluation (Value n CtxEvaluation)
+deriving instance FE.FieldElementData CtxEvaluation (Value n CtxEvaluation)
 
 deriving instance SymbolicData F (Value n CtxCompilation)
 

@@ -9,11 +9,8 @@ import qualified ZkFold.Symbolic.Data.List as Symbolic
   Base types for used in the zkFold's ledger.
 -}
 
--- | Finite field element.
-data F
-
 -- | Boolean.
-type Bool context = Symbolic.Bool (context 1 F)
+type Bool context = Symbolic.Bool (context 1)
 
 -- | Unsigned 32-bit integer.
 data UInt32 context
@@ -25,4 +22,4 @@ data UInt64 context
 data UTCTime context
 
 -- | List of elements of type `x`.
-type List context = Symbolic.List context F
+type List context = Symbolic.List context

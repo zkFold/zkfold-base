@@ -31,7 +31,7 @@ class Arithmetic a => SymbolicData a x where
     type TypeSize a x :: Natural
 
     -- | Returns the circuit that makes up `x`.
-    pieces :: x -> ArithmeticCircuit (TypeSize a x) a
+    pieces :: x -> ArithmeticCircuit a (TypeSize a x)
 
     -- | Restores `x` from the circuit's outputs.
     restore :: Circuit a -> Vector (TypeSize a x) Natural -> x
@@ -113,16 +113,16 @@ class Arithmetic a => Arithmetizable a x where
 
     -- | Given a list of circuits computing inputs, return a list of circuits
     -- computing the result of `x`.
-    arithmetize :: x -> ArithmeticCircuit (InputSize a x) a -> ArithmeticCircuit (OutputSize a x) a
+    arithmetize :: x -> ArithmeticCircuit a (InputSize a x) -> ArithmeticCircuit a (OutputSize a x)
 
 -- A wrapper for `Arithmetizable` types.
 data SomeArithmetizable a where
     SomeArithmetizable :: (Typeable t, Arithmetizable a t) => t -> SomeArithmetizable a
 
 -- | TODO: Overlapping instance doesn't work anymore (conflicting family instance declarations)
-instance (SymbolicData a (ArithmeticCircuit n a)) => Arithmetizable a (ArithmeticCircuit n a) where
-    type InputSize a (ArithmeticCircuit n a) = 0
-    type OutputSize a (ArithmeticCircuit n a) = TypeSize a (ArithmeticCircuit n a)
+instance (SymbolicData a (ArithmeticCircuit a n)) => Arithmetizable a (ArithmeticCircuit a n) where
+    type InputSize a (ArithmeticCircuit a n) = 0
+    type OutputSize a (ArithmeticCircuit a n) = TypeSize a (ArithmeticCircuit a n)
     arithmetize x _ = pieces x
 
 instance (Arithmetizable a f, KnownNat n, KnownNat (InputSize a f)) => Arithmetizable a (Vector n f) where
@@ -130,7 +130,7 @@ instance (Arithmetizable a f, KnownNat n, KnownNat (InputSize a f)) => Arithmeti
     type OutputSize a (Vector n f) = n * OutputSize a f
     arithmetize v (ArithmeticCircuit c o) = concatCircuits results
         where
-            inputs  = (ArithmeticCircuit c) <$> V.chunks @n @(InputSize a f) o
+            inputs  = ArithmeticCircuit c <$> V.chunks @n @(InputSize a f) o
             results = arithmetize <$> v <*> inputs
 
 instance

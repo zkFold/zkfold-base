@@ -26,7 +26,7 @@ type TxIn context  = Input Tokens () context
 type Tx context = Transaction 6 0 11 Tokens 0 () context
 
 hash :: forall context x . MiMCHash F context x => x -> FieldElement context
-hash = mimcHash mimcConstants zero
+hash = mimcHash @F mimcConstants zero
 
 type Sig context =
     ( StrictConv (context 1 F) (UInt 256 context)
@@ -66,12 +66,12 @@ batchTransfer tx transfers =
         outputs    = zip [0..] . init . fromVector $ txOutputs tx
 
         -- Extract the payments from the transaction and validate them
-        payments   = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> even @Integer i) $ outputs
+        payments   = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> even @Integer i) outputs
 
         condition2 = all (\(p', (p, _, _)) -> p' == p) $ zip payments transfers
 
         -- Extract the changes from the transaction and validate them
-        changes    = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> odd @Integer i) $ outputs
+        changes    = fromJust $ toVector @5 $ map snd $ filter (\(i, _) -> odd @Integer i) outputs
         condition3 = all (\(c', (_, c, _)) -> c' == c) $ zip changes transfers
 
     in condition1 && condition2 && condition3

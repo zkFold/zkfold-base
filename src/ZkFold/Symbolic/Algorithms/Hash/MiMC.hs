@@ -8,10 +8,11 @@ import           Prelude                                                hiding (
                                                                          (!!), (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                                (Vector, fromVector, singleton)
+import           ZkFold.Base.Data.Vector                                (fromVector, singleton)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
 import           ZkFold.Symbolic.Data.FieldElement                      (FieldElementData (..), FieldElement(..))
+import           ZkFold.Symbolic.Interpreter                            (Interpreter (..))
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5
@@ -39,7 +40,7 @@ class MiMCHash a b x where
     mimcHash :: [a] -> a -> x -> FieldElement b a
 
 instance FieldElementData a Vector x => MiMCHash a Vector x where
-    mimcHash xs k = FieldElement . singleton . mimcHashN xs k . fromVector . toFieldElements
+    mimcHash xs k = FieldElement . singleton . mimcHashN xs k . fromVector . runInterpreter . toFieldElements
 
 instance FieldElementData a ArithmeticCircuit x => MiMCHash a ArithmeticCircuit x where
-    mimcHash xs k = FieldElement . mimcHashN xs k . fromVector . splitCircuit . toFieldElements @a
+    mimcHash xs k = FieldElement . Interpreter . mimcHashN xs k . fromVector . splitCircuit . toFieldElements @a

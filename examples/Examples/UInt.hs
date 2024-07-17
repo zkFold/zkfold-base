@@ -64,7 +64,7 @@ exampleUIntStrictMul = makeExample @n "strictMul" "strict_mul" strictMul
 
 type Binary a = a -> a -> a
 
-type UBinary n = Binary (UInt n ArithmeticCircuit (Zp BLS12_381_Scalar))
+type UBinary n = Binary (UInt n (ArithmeticCircuit (Zp BLS12_381_Scalar)))
 
 makeExample
     :: forall n r

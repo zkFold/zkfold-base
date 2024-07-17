@@ -143,6 +143,7 @@ library
       ZkFold.Symbolic.Cardano.UPLC.Inference.Internal
       ZkFold.Symbolic.Cardano.UPLC.Term
       ZkFold.Symbolic.Cardano.UPLC.Type
+      ZkFold.Symbolic.Class
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Compiler.ArithmeticCircuit
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
@@ -166,6 +167,7 @@ library
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.FieldElement
+      ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.Ledger.Types
       ZkFold.Symbolic.Ledger.Types.Address
       ZkFold.Symbolic.Ledger.Types.Basic

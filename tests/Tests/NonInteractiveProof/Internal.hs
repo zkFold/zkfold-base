@@ -35,7 +35,7 @@ instance (KZG c1 c2 d ~ kzg, NonInteractiveProof kzg, Arbitrary kzg, Arbitrary (
 
 instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (PlonkBS n)) where
     arbitrary = do
-        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest 1 (ScalarField BLS12_381_G1))
+        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField BLS12_381_G1) 1)
         let inputLen = length . inputVariables $ ac
         vecPubInp <- genSubset (value @n) inputLen
         let (omega, k1, k2) = getParams $ value @PlonkSizeBS

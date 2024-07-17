@@ -20,7 +20,7 @@ deriving instance
     , Haskell.Eq (TxRefIndex context)
     ) => Haskell.Eq (OutputRef context)
 
-deriving instance FieldElementData F CtxEvaluation (OutputRef CtxEvaluation)
+deriving instance FieldElementData CtxEvaluation (OutputRef CtxEvaluation)
 
 deriving instance SymbolicData F (OutputRef CtxCompilation)
 
