@@ -296,9 +296,9 @@ instance (Ord x, Discrete x, VectorSpace x i)
     recip c =
       let
         cInv = invertC c
-        _ :*: oInv = outputC cInv
+        _ :*: inv = outputC cInv
       in
-        cInv { outputC = oInv }
+        cInv { outputC = inv }
 
 instance (Ord x, Discrete x, VectorSpace x i)
   => Discrete (Circuit x i Par1) where
@@ -325,7 +325,7 @@ invertC c = circuit $ do
 
 -- A list of bits whose length is the number of bits
 -- needed to represent an element of
--- the arithmetic field of a symbolic field extension.
+-- the Arithmetic field of a Symbolic field extension.
 newtype Register a = UnsafeRegister {fromRegister :: V.Vector a}
   deriving stock (Functor, Foldable, Traversable)
 instance Symbolic a => VectorSpace a Register where
