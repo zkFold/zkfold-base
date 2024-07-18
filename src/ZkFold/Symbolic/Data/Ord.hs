@@ -17,8 +17,8 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit)
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
+import           ZkFold.Symbolic.Data.FieldElement                         (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
