@@ -13,7 +13,7 @@ module ZkFold.Symbolic.Base.Num
   , Int
   , Mod
     -- * Arithmetic constraints
-  , Arithmetic
+  , Symbolic (..)
   , PrimeField
     -- * Algebraic constraints
   , AdditiveMonoid (..)
@@ -50,6 +50,7 @@ module ZkFold.Symbolic.Base.Num
   , fromSemiIntegral
   , knownNat
   , order
+  , numberOfBits
   , characteristic
   , combineN
   , combineZ
@@ -74,26 +75,30 @@ import qualified GHC.TypeNats        as Type
 import           Prelude             (Int, Integer)
 import qualified Prelude
 
--- Arithmetic algebras should include:
--- PrimeField x => Arithmetic x x
--- PrimeField x => Arithmetic x (i -> x)
--- PrimeField x => Arithmetic x (Circuit x i Par1)
-type Arithmetic x a =
-  ( Algebra x a
+-- Symbolic field extensions [Arithmetic a : a] should include:
+-- PrimeField x => Symbolic x
+-- PrimeField x => Symbolic (i -> x)
+-- PrimeField x => Symbolic (Circuit x i Par1)
+class
+  ( Field a
   , Comparable a
   , FiniteChr a
   , 3 <= Chr a
-  )
+  , PrimeField (Arithmetic a)
+  , Algebra (Arithmetic a) a
+  , Chr a ~ Order (Arithmetic a)
+  ) => Symbolic a where
+  type Arithmetic a
 
 -- Prime fields should only include:
 -- (SemiIntegral int, Prime p) => PrimeField (int `Mod` p)
 -- and newtypes of int `Mod` p.
+-- p = 2 is ruled out to allow/require trichotomy.
 type PrimeField x =
   ( Modular x
-  , Arithmetic x x
+  , Arithmetic x ~ x
   , Finite x
-  , Field x
-  , Order x ~ Chr x
+  , Symbolic x
   )
 
 class AdditiveMonoid a where
@@ -270,11 +275,17 @@ knownNat = natVal' (proxy# @n)
 
 class
   ( KnownNat (Order a)
+  , KnownNat (NumberOfBits a)
   ) => Finite a where
     type Order a :: Natural
 
 order :: forall a. Finite a => Natural
 order = knownNat @(Order a)
+
+type NumberOfBits a = Log2 (Order a - 1) + 1
+
+numberOfBits :: forall a. Finite a => Natural
+numberOfBits = knownNat @(NumberOfBits a)
 
 class
   ( KnownNat (Chr a)
