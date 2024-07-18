@@ -13,7 +13,6 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
 import           ZkFold.Symbolic.Data.FieldElement                      (FieldElement (..), FieldElementData (..))
 import           ZkFold.Symbolic.Interpreter                            (Interpreter (..))
--- import ZkFold.Symbolic.Cardano.Types.Basic (CtxCompilation, CtxEvaluation)
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5
