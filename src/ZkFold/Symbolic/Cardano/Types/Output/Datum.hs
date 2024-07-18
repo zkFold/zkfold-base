@@ -31,4 +31,4 @@ emptyDatumHash :: forall context .
     , ToWords (ByteString 1024 context) (ByteString 64 context)
     , Truncate (ByteString 512 context) (ByteString 256 context)
     ) => DatumHash context
-emptyDatumHash = blake2b_256 @0 $ emptyByteString @F @context
+emptyDatumHash = blake2b_256 @0 $ emptyByteString @context

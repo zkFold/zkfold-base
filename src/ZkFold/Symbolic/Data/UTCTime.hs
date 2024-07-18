@@ -8,19 +8,18 @@ import           GHC.Natural                             (Natural)
 import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class         (FromConstant)
-import           ZkFold.Base.Data.Vector                 (Vector)
 import           ZkFold.Symbolic.Compiler                (ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.Arithmetizable
 import           ZkFold.Symbolic.Data.FieldElement       (FieldElementData)
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter             (Interpreter)
 
-newtype UTCTime b = UTCTime (UInt 11 b)
+newtype UTCTime c = UTCTime (UInt 11 c)
 
-deriving newtype instance Eq (UInt 11 b) => Eq (UTCTime b)
+deriving newtype instance Eq (UInt 11 c) => Eq (UTCTime c)
 
 deriving newtype instance Arithmetic a => FieldElementData (Interpreter a) (UTCTime (Interpreter a))
 
-deriving newtype instance Arithmetic a => SymbolicData a (UTCTime ArithmeticCircuit a)
+deriving newtype instance Arithmetic a => SymbolicData a (UTCTime (ArithmeticCircuit a))
 
-deriving newtype instance FromConstant Natural (UInt 11 b a) => FromConstant Natural (UTCTime b a)
+deriving newtype instance FromConstant Natural (UInt 11 c) => FromConstant Natural (UTCTime c)

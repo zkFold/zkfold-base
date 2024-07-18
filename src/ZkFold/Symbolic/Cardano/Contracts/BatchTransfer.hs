@@ -29,11 +29,11 @@ hash :: forall context x . MiMCHash F context x => x -> FieldElement context
 hash = mimcHash @F mimcConstants zero
 
 type Sig context =
-    ( StrictConv (context 1 F) (UInt 256 context)
+    ( StrictConv (context 1) (UInt 256 context)
     , FromConstant Natural (UInt 256 context)
     , MultiplicativeSemigroup (UInt 256 context)
-    , AdditiveMonoid (context 1 F)
-    , Symbolic (context 1 F)
+    , AdditiveMonoid (context 1)
+    , Symbolic (context 1)
     , MiMCHash F context (TxOut context, TxOut context)
     , Eq (Bool context) (UInt 256 context)
     , Eq (Bool context) (TxOut context)

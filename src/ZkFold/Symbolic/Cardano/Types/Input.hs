@@ -24,8 +24,8 @@ deriving instance
     ) => Haskell.Eq (Input tokens datum context)
 
 deriving instance
-    KnownNat (FE.TypeSize F Vector (Value tokens CtxEvaluation))
-    => FE.FieldElementData F CtxEvaluation (Input tokens datum CtxEvaluation)
+    KnownNat (FE.TypeSize CtxEvaluation (Value tokens CtxEvaluation))
+    => FE.FieldElementData CtxEvaluation (Input tokens datum CtxEvaluation)
 
 deriving instance
     KnownNat (TypeSize F (Value tokens CtxCompilation))

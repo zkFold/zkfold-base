@@ -1,5 +1,5 @@
 module ZkFold.Symbolic.Cardano.Types.Basic (
-    FieldElement, FieldElementBits, Bool, ByteString, UInt, UTCTime,
+    FieldElement, FieldElementBits, Bool, Symbolic.ByteString, Symbolic.UInt, Symbolic.UTCTime,
     F,
     CtxCompilation, CtxEvaluation
     ) where
@@ -14,15 +14,14 @@ import qualified ZkFold.Symbolic.Data.ByteString             as Symbolic
 import qualified ZkFold.Symbolic.Data.FieldElement           as Symbolic
 import qualified ZkFold.Symbolic.Data.UInt                   as Symbolic
 import qualified ZkFold.Symbolic.Data.UTCTime                as Symbolic
+import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
 type F = Zp BLS12_381_Scalar
 
-type FieldElement context     = Symbolic.FieldElement context F
-type FieldElementBits context = context 256 F
+type FieldElement context     = Symbolic.FieldElement context
+type FieldElementBits context = context 256
 
-type Bool context = Symbolic.Bool (context 1 F)
-
-type F = Zp BLS12_381_Scalar
+type Bool context = Symbolic.Bool (context 1)
 
 type CtxCompilation = ArithmeticCircuit F
 type CtxEvaluation  = Interpreter F

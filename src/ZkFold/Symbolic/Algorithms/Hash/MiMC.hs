@@ -13,6 +13,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
 import           ZkFold.Symbolic.Data.FieldElement                      (FieldElement (..), FieldElementData (..))
 import           ZkFold.Symbolic.Interpreter                            (Interpreter (..))
+-- import ZkFold.Symbolic.Cardano.Types.Basic (CtxCompilation, CtxEvaluation)
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5
@@ -36,11 +37,11 @@ mimcHashN xs k = go
       [zL, zR]    -> mimcHash2 xs k zL zR
       (zL:zR:zs') -> go (mimcHash2 xs k zL zR : zs')
 
-class MiMCHash a b x where
-    mimcHash :: [a] -> a -> x -> FieldElement b a
+class MiMCHash a c x where
+    mimcHash :: [a] -> a -> x -> FieldElement c
 
-instance FieldElementData a Vector x => MiMCHash a Vector x where
-    mimcHash xs k = FieldElement . singleton . mimcHashN xs k . fromVector . runInterpreter . toFieldElements
+instance (Ring a, FieldElementData (Interpreter a) x) => MiMCHash a (Interpreter a) x where
+    mimcHash xs k = FieldElement . Interpreter . singleton . mimcHashN xs k . fromVector . runInterpreter . toFieldElements
 
-instance FieldElementData a ArithmeticCircuit x => MiMCHash a ArithmeticCircuit x where
-    mimcHash xs k = FieldElement . Interpreter . mimcHashN xs k . fromVector . splitCircuit . toFieldElements @a
+instance (Arithmetic a, FieldElementData (ArithmeticCircuit a) x) => MiMCHash a (ArithmeticCircuit a) x where
+    mimcHash xs k = FieldElement  . mimcHashN xs k . fromVector . splitCircuit . toFieldElements

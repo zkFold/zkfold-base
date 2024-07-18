@@ -18,11 +18,11 @@
 
 module RustFfi (hello, add) where
 
-import           Data.Int
-import           Data.Word
-import           Foreign.C.String
-import           Foreign.C.Types
-import           Foreign.Ptr
+import Data.Int
+import Data.Word
+import Foreign.C.String
+import Foreign.C.Types
+import Foreign.Ptr
 
 foreign import ccall safe "__c_hello" hello :: CString -> IO (())
 foreign import ccall safe "__c_add" add :: CUInt -> CUInt -> IO (CUInt)

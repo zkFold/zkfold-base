@@ -15,8 +15,11 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
 import           ZkFold.Symbolic.Interpreter                         (Interpreter (..))
 
-newtype FieldElement c a = FieldElement { fromFieldElement :: c 1 a }
-    deriving (Eq, Show)
+newtype FieldElement c = FieldElement { fromFieldElement :: c 1 }
+
+deriving instance Show (c 1) => Show (FieldElement c)
+
+deriving instance Eq (c 1) => Eq (FieldElement c)
 
 -- | A class for serializing data types into containers holding finite field elements.
 -- Type `c` is the container type.
@@ -42,12 +45,12 @@ instance Arithmetic a => FieldElementData (Interpreter a) () where
 
     fromFieldElements _ = ()
 
-instance Arithmetic a => FieldElementData (Interpreter a) (FieldElement Vector a) where
-    type TypeSize (Interpreter a) (FieldElement Vector a) = 1
+instance Arithmetic a => FieldElementData (Interpreter a) (FieldElement (Interpreter a)) where
+    type TypeSize (Interpreter a) (FieldElement (Interpreter a)) = 1
 
-    toFieldElements (FieldElement x) = V.singleton $ V.item x
+    toFieldElements (FieldElement x) = x
 
-    fromFieldElements = FieldElement . V.singleton . V.head
+    fromFieldElements = FieldElement
 
 instance
     ( FieldElementData (Interpreter a) x
