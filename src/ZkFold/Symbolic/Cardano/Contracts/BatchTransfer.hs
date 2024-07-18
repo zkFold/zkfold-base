@@ -16,6 +16,7 @@ import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.FieldElement              (fromFieldElement)
 import           ZkFold.Symbolic.Data.UInt                      (StrictConv (..))
 import           ZkFold.Symbolic.Types                          (Symbolic)
 
@@ -28,11 +29,11 @@ hash :: forall context x . MiMCHash F context x => x -> FieldElement context
 hash = mimcHash @F mimcConstants zero
 
 type Sig context =
-    ( StrictConv (FieldElement context) (UInt 256 context)
+    ( StrictConv (context 1) (UInt 256 context)
     , FromConstant Natural (UInt 256 context)
     , MultiplicativeSemigroup (UInt 256 context)
-    , AdditiveMonoid (FieldElement context)
-    , Symbolic (FieldElement context)
+    , AdditiveMonoid (context 1)
+    , Symbolic (context 1)
     , MiMCHash F context (TxOut context, TxOut context)
     , Eq (Bool context) (UInt 256 context)
     , Eq (Bool context) (TxOut context)
@@ -45,7 +46,7 @@ verifySignature ::
     (TxOut context, TxOut context) ->
     ByteString 256 context ->
     Bool context
-verifySignature pub (pay, change) sig = (from sig * base) == (strictConv mimc * from (extend pub :: ByteString 256 context))
+verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (extend pub :: ByteString 256 context))
     where
         base :: UInt 256 context
         base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)

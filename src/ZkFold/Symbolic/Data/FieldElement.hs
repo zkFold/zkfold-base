@@ -15,22 +15,28 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
 import           ZkFold.Symbolic.Interpreter                         (Interpreter (..))
 
--- | A class for serializing data types into containers holding finite field elements.
--- Type `b` is the container type.
--- Type `x` represents the data type.
-class FieldElementData b x where
+newtype FieldElement c = FieldElement { fromFieldElement :: c 1 }
 
-    type TypeSize b x :: Natural
+deriving instance Show (c 1) => Show (FieldElement c)
+
+deriving instance Eq (c 1) => Eq (FieldElement c)
+
+-- | A class for serializing data types into containers holding finite field elements.
+-- Type `c` is the container type.
+-- Type `x` represents the data type.
+class FieldElementData c x where
+
+    type TypeSize c x :: Natural
 
     -- | Returns the representation of `x` as a container of finite field elements.
-    toFieldElements :: x -> b (TypeSize b x)
+    toFieldElements :: x -> c (TypeSize c x)
 
     -- | Restores `x` from its representation as a container of finite field elements.
-    fromFieldElements :: b (TypeSize b x) -> x
+    fromFieldElements :: c (TypeSize c x) -> x
 
 -- | Returns the number of finite field elements needed to describe `x`.
-typeSize :: forall b x . KnownNat (TypeSize b x) => Natural
-typeSize = value @(TypeSize b x)
+typeSize :: forall c x . KnownNat (TypeSize c x) => Natural
+typeSize = value @(TypeSize c x)
 
 instance Arithmetic a => FieldElementData (Interpreter a) () where
     type TypeSize (Interpreter a) () = 0
@@ -38,6 +44,13 @@ instance Arithmetic a => FieldElementData (Interpreter a) () where
     toFieldElements () = Interpreter V.empty
 
     fromFieldElements _ = ()
+
+instance Arithmetic a => FieldElementData (Interpreter a) (FieldElement (Interpreter a)) where
+    type TypeSize (Interpreter a) (FieldElement (Interpreter a)) = 1
+
+    toFieldElements (FieldElement x) = x
+
+    fromFieldElements = FieldElement
 
 instance
     ( FieldElementData (Interpreter a) x
