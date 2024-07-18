@@ -10,9 +10,10 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 -- | (==) operation
-eq :: Eq (Bool b) (b 1) => b 1 -> b 1 -> Bool b
+eq :: Eq (Bool c) (FieldElement c) => FieldElement c -> FieldElement c -> Bool c
 eq x y = x == y
 
 exampleEq :: IO ()

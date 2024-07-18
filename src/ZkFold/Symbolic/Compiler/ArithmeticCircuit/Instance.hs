@@ -1,10 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans     #-}
-{-# LANGUAGE DerivingStrategies   #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 

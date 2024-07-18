@@ -11,12 +11,13 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional            (Conditional, bool)
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 -- | The Fibonacci index function. If `x` is a Fibonacci number, returns its index (up until `nMax`). Otherwise, returns `0`.
-fibonacciIndex :: forall c . (Ring (c 1), Eq (Bool c) (c 1), Conditional (Bool c) (c 1)) => Integer -> c 1 -> c 1
-fibonacciIndex nMax x = foldl (\m k -> bool m (fromConstant @Integer @(c 1) k) (fib k one one == x :: Bool c)) zero [1..nMax]
+fibonacciIndex :: forall c . (Ring (FieldElement c), Eq (Bool c) (FieldElement c), Conditional (Bool c) (FieldElement c)) => Integer -> FieldElement c -> FieldElement c
+fibonacciIndex nMax x = foldl (\m k -> bool m (fromConstant @Integer @(FieldElement c) k) (fib k one one == x :: Bool c)) zero [1..nMax]
     where
-        fib :: Integer -> c 1 -> c 1 -> c 1
+        fib :: Integer -> FieldElement c -> FieldElement c -> FieldElement c
         fib 1 x1 _  = x1
         fib n x1 x2 = fib (n - 1) x2 (x1 + x2)
 

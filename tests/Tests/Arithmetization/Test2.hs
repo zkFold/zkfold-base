@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Arithmetization.Test2 (specArithmetization2) where
 
@@ -16,9 +15,10 @@ import           ZkFold.Base.Data.Vector                     (item)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 -- A true statement.
-tautology :: (BoolType (Bool c), Eq (Bool c) (c 1)) => c 1 -> c 1 -> Bool c
+tautology :: (BoolType (Bool c), Eq (Bool c) (FieldElement c)) => FieldElement c -> FieldElement c -> Bool c
 tautology x y = (x /= y) || (x == y)
 
 testTautology :: forall a . Arithmetic a => a -> a -> Haskell.Bool

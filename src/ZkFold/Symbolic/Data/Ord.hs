@@ -18,6 +18,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (Mona
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
@@ -70,6 +71,9 @@ deriving newtype instance SymbolicData a x => SymbolicData a (Lexicographical x)
 
 deriving via (Lexicographical (ArithmeticCircuit a 1))
     instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a 1)
+
+deriving newtype instance (Arithmetic a, Haskell.Ord a) => Ord (Bool (Interpreter a)) (FieldElement (Interpreter a))
+deriving newtype instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (FieldElement (ArithmeticCircuit a))
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
 instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x) where

@@ -78,7 +78,7 @@ instance
             partialRestore = restore c
             (x, y) = (partialRestore piecesX, partialRestore piecesY)
 
-instance (BoolType (Bool (b a)), Eq (Bool (b a)) (BaseField (Ed25519 b a))) => Eq (Bool (b a)) (Point (Ed25519 b a)) where
+instance (BoolType (Bool (c a)), Eq (Bool (c a)) (BaseField (Ed25519 c a))) => Eq (Bool (c a)) (Point (Ed25519 c a)) where
     Inf == Inf                     = true
     Inf == _                       = false
     _ == Inf                       = false

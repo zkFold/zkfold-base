@@ -51,9 +51,9 @@ instance BoolType Haskell.Bool where
     xor = xor
 
 -- TODO (Issue #18): hide this constructor
-newtype Bool b = Bool (b 1)
+newtype Bool c = Bool (c 1)
 
-deriving instance Eq (b 1) => Eq (Bool b)
+deriving instance Eq (c 1) => Eq (Bool c)
 
 instance KnownNat p => Show (Bool (Interpreter (Zp p))) where
     show (fromBool -> x) = if x == one then "True" else "False"

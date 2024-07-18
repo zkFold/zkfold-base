@@ -20,13 +20,14 @@ import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProo
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 type N = 1
 
 type C = BLS12_381_G1
 type F = ScalarField C
 
-lockedByTxId :: forall a b . (FromConstant a (b 1), Eq (Bool b) (b 1)) => a -> b 1 -> Bool b
+lockedByTxId :: forall a c . (FromConstant a (FieldElement c), Eq (Bool c) (FieldElement c)) => a -> FieldElement c -> Bool c
 lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 
 testSameValue :: F -> Haskell.Bool
