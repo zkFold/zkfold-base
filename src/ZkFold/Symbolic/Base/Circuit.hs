@@ -19,6 +19,9 @@ module ZkFold.Symbolic.Base.Circuit
   , Var (..)
   , Register (..)
   , binaryExpansion
+  , compileC
+  , desolderC
+  , solderC
   ) where
 
 import Control.Applicative
@@ -43,6 +46,7 @@ import Data.Type.Equality
 import qualified Data.Vector as V
 import qualified Prelude
 
+import           ZkFold.Symbolic.Base.Function
 import           ZkFold.Symbolic.Base.Num
 import           ZkFold.Symbolic.Base.Polynomial
 import           ZkFold.Symbolic.Base.Vector
@@ -375,3 +379,28 @@ expansion n k = do
     k' <- horner bits
     constraint (\x -> x k - x k')
     return bits
+
+solderC
+  :: (Ord x, VectorSpace x i, Functor o, Foldable o)
+  => o (Circuit x i Par1)
+  -> Circuit x i o
+solderC cs = (fold (fmap (\c -> c {outputC = U1}) cs))
+  { outputC = fmap (unPar1 . outputC) cs }
+
+desolderC
+  :: (Functor o)
+  => Circuit x i o
+  -> o (Circuit x i Par1)
+desolderC c = fmap (\o -> c {outputC = Par1 o}) (outputC c)
+
+compileC
+  :: ( FunctionSpace (Circuit x i Par1) f
+     , i ~ InputSpace (Circuit x i Par1) f
+     , o ~ OutputSpace (Circuit x i Par1) f
+     , VectorSpace x i
+     , Functor o
+     , Foldable o
+     , Ord x
+     )
+  => f -> Circuit x i o
+compileC f = solderC (uncurryF f (desolderC (circuit input)))
