@@ -13,7 +13,7 @@ module ZkFold.Symbolic.Base.Num
   , Int
   , Mod
     -- * Arithmetic constraints
-  , Symbolic (..)
+  , Symbolic
   , PrimeField
     -- * Algebraic constraints
   , AdditiveMonoid (..)
@@ -84,11 +84,10 @@ class
   , Comparable a
   , FiniteChr a
   , 3 <= Chr a
-  , PrimeField (Arithmetic a)
-  , Algebra (Arithmetic a) a
-  , Chr a ~ Order (Arithmetic a)
-  ) => Symbolic a where
-  type Arithmetic a
+  , PrimeField x
+  , Algebra x a
+  , Chr a ~ Order x
+  ) => Symbolic x a | x -> a where
 
 -- Prime fields should only include:
 -- (SemiIntegral int, Prime p) => PrimeField (int `Mod` p)
@@ -96,9 +95,8 @@ class
 -- p = 2 is ruled out to allow/require trichotomy.
 type PrimeField x =
   ( Modular x
-  , Arithmetic x ~ x
   , Finite x
-  , Symbolic x
+  , Symbolic x x
   )
 
 class AdditiveMonoid a where

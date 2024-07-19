@@ -332,12 +332,12 @@ invertC c = circuit $ do
 -- the Arithmetic field of a Symbolic field extension.
 newtype Register a = UnsafeRegister {fromRegister :: V.Vector a}
   deriving stock (Functor, Foldable, Traversable)
-instance Symbolic a => VectorSpace a Register where
+instance Symbolic x a => VectorSpace a Register where
   type Basis a Register = Int
   indexV (UnsafeRegister v) ix = fromMaybe zero (v V.!? ix)
-  dimV = numberOfBits @(Arithmetic a)
-  basisV = UnsafeRegister (V.generate (from (dimV @a @Register)) id)
-  tabulateV f = UnsafeRegister (V.generate (from (dimV @a @Register)) f)
+  dimV = numberOfBits @x
+  basisV = UnsafeRegister (V.generate (from (numberOfBits @x)) id)
+  tabulateV f = UnsafeRegister (V.generate (from (numberOfBits @x)) f)
 
 binaryExpansion
   :: forall x i. (PrimeField x, VectorSpace x i)
@@ -388,7 +388,7 @@ solderC cs = (fold (fmap (\c -> c {outputC = U1}) cs))
   { outputC = fmap (unPar1 . outputC) cs }
 
 desolderC
-  :: (Functor o)
+  :: Functor o
   => Circuit x i o
   -> o (Circuit x i Par1)
 desolderC c = fmap (\o -> c {outputC = Par1 o}) (outputC c)
