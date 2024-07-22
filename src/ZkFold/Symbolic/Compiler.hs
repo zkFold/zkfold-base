@@ -34,10 +34,10 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 -}
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
-solder :: forall a f . (Arithmetizable a f, KnownNat (InputSize a f)) => f -> ArithmeticCircuit (OutputSize a f) a
+solder :: forall a f . (Arithmetizable a f, KnownNat (InputSize a f)) => f -> ArithmeticCircuit a (OutputSize a f)
 solder f = arithmetize f inputC
     where
-        inputC :: ArithmeticCircuit (InputSize a f) a
+        inputC :: ArithmeticCircuit a (InputSize a f)
         inputC = circuitN $ Vector <$> replicateA (value @(InputSize a f)) input
 
 -- | Compiles function `f` into an arithmetic circuit.
@@ -55,7 +55,7 @@ compile f = restore @a c o
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO :: forall a f . (ToJSON a, Arithmetizable a f, KnownNat (InputSize a f)) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
-    let ac = optimize (solder @a f) :: ArithmeticCircuit (OutputSize a f) a
+    let ac = optimize (solder @a f) :: ArithmeticCircuit a (OutputSize a f)
 
     putStrLn "\nCompiling the script...\n"
 

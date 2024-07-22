@@ -24,13 +24,13 @@ data BuiltinFunctions =
 -- TODO: use shortcuts to make these definitions more readable
 instance forall a . (Arithmetic a, Typeable a) => PlutusBuiltinFunction a BuiltinFunctions where
     builtinFunctionType AddField =
-          SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit 1 a))
-        $ SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit 1 a))
-        $ SomeSym $ SomeData $ Proxy @(ArithmeticCircuit 1 a)
+          SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a 1))
+        $ SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a 1))
+        $ SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a 1)
     builtinFunctionType MulField =
-        SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit 1 a))
-        $ SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit 1 a))
-        $ SomeSym $ SomeData $ Proxy @(ArithmeticCircuit 1 a)
+        SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a 1))
+        $ SomeFunction (SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a 1))
+        $ SomeSym $ SomeData $ Proxy @(ArithmeticCircuit a 1)
 
-    builtinFunctionRep AddField = SomeArithmetizable $ \(x :: ArithmeticCircuit 1 a) (y :: ArithmeticCircuit 1 a) -> x + y
-    builtinFunctionRep MulField = SomeArithmetizable $ \(x :: ArithmeticCircuit 1 a) (y :: ArithmeticCircuit 1 a) -> x * y
+    builtinFunctionRep AddField = SomeArithmetizable $ \(x :: ArithmeticCircuit a 1) (y :: ArithmeticCircuit a 1) -> x + y
+    builtinFunctionRep MulField = SomeArithmetizable $ \(x :: ArithmeticCircuit a 1) (y :: ArithmeticCircuit a 1) -> x * y

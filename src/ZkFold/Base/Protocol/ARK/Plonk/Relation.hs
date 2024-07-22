@@ -1,3 +1,4 @@
+{-# LANGUAGE NoStarIsType  #-}
 {-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.ARK.Plonk.Relation where
@@ -33,15 +34,15 @@ toPlonkRelation :: forall n l a .
        KnownNat n
     => KnownNat (3 * n)
     => KnownNat l
-    => Eq a
-    => FiniteField a
+    => Arithmetic a
     => Scale a a
     => FromConstant a a
     => Vector l Natural
-    -> ArithmeticCircuit 1 a
+    -> ArithmeticCircuit a 1
     -> Maybe (PlonkRelation n l a)
-toPlonkRelation xPub ac =
-    let evalX0 = evalPolynomial evalMonomial (\x -> if x == 0 then one else var x)
+toPlonkRelation xPub ac0 =
+    let ac = desugarRanges ac0
+        evalX0 = evalPolynomial evalMonomial (\x -> if x == 0 then one else var x)
 
         pubInputConstraints = map var (fromVector xPub)
         acConstraints       = map evalX0 $ elems (constraintSystem ac)

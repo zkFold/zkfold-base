@@ -33,7 +33,7 @@ exampleFFAmul = makeExample @p "*" "mul" (*)
 
 type Binary a = a -> a -> a
 
-makeExample :: forall p. KnownNat p => String -> String -> Binary (FFA p ArithmeticCircuit (Zp BLS12_381_Scalar)) -> IO ()
+makeExample :: forall p. KnownNat p => String -> String -> Binary (FFA p (ArithmeticCircuit (Zp BLS12_381_Scalar))) -> IO ()
 makeExample shortName name op = do
     let p = show $ value @p
     putStrLn $ "\nExample: (" ++ shortName ++ ") operation on FFA " ++ p

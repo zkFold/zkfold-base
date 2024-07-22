@@ -15,8 +15,8 @@ newtype Structural a = Structural a
 instance
     ( SymbolicData a x
     , n ~ TypeSize a x
-    , Eq (Bool (ArithmeticCircuit 1 a)) (ArithmeticCircuit n a)
-    ) => Eq (Bool (ArithmeticCircuit 1 a)) (Structural x) where
+    , Eq (Bool (ArithmeticCircuit a 1)) (ArithmeticCircuit a n)
+    ) => Eq (Bool (ArithmeticCircuit a 1)) (Structural x) where
 
     Structural x == Structural y =
         let x' = pieces @a x
@@ -26,4 +26,4 @@ instance
     Structural x /= Structural y =
         let x' = pieces @a x
             y' = pieces y
-         in not (x' == y')
+         in x' /= y'

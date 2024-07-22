@@ -34,18 +34,18 @@ just = Maybe one
 
 nothing
     :: forall a u k
-    .  SymbolicData a (u (ArithmeticCircuit 1 a))
-    => k ~ TypeSize a (u (ArithmeticCircuit 1 a))
+    .  SymbolicData a (u (ArithmeticCircuit a 1))
+    => k ~ TypeSize a (u (ArithmeticCircuit a 1))
     => KnownNat k
-    => Maybe u (ArithmeticCircuit 1 a)
+    => Maybe u (ArithmeticCircuit a 1)
 nothing = Maybe zero (let ArithmeticCircuit c o = embedV $ Haskell.pure @(Vector k) (zero @a) in restore c o)
 
 fromMaybe
-    :: SymbolicData a (u (ArithmeticCircuit 1 a))
-    => 1 ~ TypeSize a (u (ArithmeticCircuit 1 a))
-    => u (ArithmeticCircuit 1 a)
-    -> Maybe u (ArithmeticCircuit 1 a)
-    -> u (ArithmeticCircuit 1 a)
+    :: SymbolicData a (u (ArithmeticCircuit a 1))
+    => 1 ~ TypeSize a (u (ArithmeticCircuit a 1))
+    => u (ArithmeticCircuit a 1)
+    -> Maybe u (ArithmeticCircuit a 1)
+    -> u (ArithmeticCircuit a 1)
 fromMaybe a (Maybe h t) =
   let
     as = pieces a
@@ -62,12 +62,12 @@ isJust :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
 isJust = not Haskell.. isNothing
 
 instance
-    ( SymbolicData a (u (ArithmeticCircuit 1 a))
-    , k ~ TypeSize a (u (ArithmeticCircuit 1 a))
+    ( SymbolicData a (u (ArithmeticCircuit a 1))
+    , k ~ TypeSize a (u (ArithmeticCircuit a 1))
     , k1 ~ 1 + k
     , (k1 - 1) ~ k)
-  => SymbolicData a (Maybe u (ArithmeticCircuit 1 a)) where
-    type TypeSize a (Maybe u (ArithmeticCircuit 1 a)) = 1 + TypeSize a (u (ArithmeticCircuit 1 a))
+  => SymbolicData a (Maybe u (ArithmeticCircuit a 1)) where
+    type TypeSize a (Maybe u (ArithmeticCircuit a 1)) = 1 + TypeSize a (u (ArithmeticCircuit a 1))
     pieces (Maybe h t) = h `joinCircuits` pieces t
     restore c o = Maybe (c `withOutputs` V.take @1 o) (restore c (V.drop @1 o))
 
@@ -84,4 +84,4 @@ find :: forall a f t .
     DiscreteField (Bool a) a =>
     (f a -> Bool a) -> t (f a) -> Maybe f a
 find p = let n = Maybe zero zero in
-    foldr (\i r -> maybe (bool @(Bool a) n (just i) $ p i) (Haskell.const r) $ r) n
+    foldr (\i r -> maybe (bool @(Bool a) n (just i) $ p i) (Haskell.const r) r) n

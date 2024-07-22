@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         -- high-level functions
         applyArgs,
         optimize,
+        desugarRanges,
         -- low-level functions
         eval,
         eval1,
@@ -35,58 +36,66 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         checkClosedCircuit
     ) where
 
-import           Control.Monad.State                                 (execState)
-import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                      take)
-import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
-                                                                      sum, take, (!!), (^))
-import           Test.QuickCheck                                     (Arbitrary, Property, conjoin, property, vector,
-                                                                      withMaxSuccess, (===))
-import           Text.Pretty.Simple                                  (pPrint)
+import           Control.Monad.State                                    (execState)
+import           Data.Map                                               hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                         take)
+import           Numeric.Natural                                        (Natural)
+import           Prelude                                                hiding (Num (..), drop, length, product,
+                                                                         splitAt, sum, take, (!!), (^))
+import           Test.QuickCheck                                        (Arbitrary, Property, conjoin, property, vector,
+                                                                         withMaxSuccess, (===))
+import           Text.Pretty.Simple                                     (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial)
-import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Prelude                                      (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Circuit (..),
-                                                                      Constraint, apply, constraintSystem, eval, eval1,
-                                                                      exec, exec1, forceZero, inputVariables, varOrder,
-                                                                      withOutputs, witnessGenerator)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate           (evalMonomial, evalPolynomial)
+import           ZkFold.Base.Data.Vector                                (Vector)
+import           ZkFold.Prelude                                         (length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (desugarRange)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..),
+                                                                         Circuit (..), Constraint, apply,
+                                                                         constraintSystem, eval, eval1, exec, exec1,
+                                                                         forceZero, inputVariables, varOrder,
+                                                                         withOutputs, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 
 --------------------------------- High-level functions --------------------------------
 
 -- TODO: make this work for different input types.
-applyArgs :: forall a n . ArithmeticCircuit n a -> [a] -> ArithmeticCircuit n a
+applyArgs :: ArithmeticCircuit a n -> [a] -> ArithmeticCircuit a n
 applyArgs r args = r { acCircuit = execState (apply args) (acCircuit r) }
 
 -- | Optimizes the constraint system.
 --
 -- TODO: Implement nontrivial optimizations.
-optimize :: forall a n . ArithmeticCircuit n a -> ArithmeticCircuit n a
+optimize :: ArithmeticCircuit a n -> ArithmeticCircuit a n
 optimize = id
+
+-- | Desugars range constraints into polynomial constraints
+desugarRanges :: Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n
+desugarRanges c@(ArithmeticCircuit r _) =
+  let r' = flip execState r . traverse (uncurry desugarRange) $ toList (acRange r)
+   in c { acCircuit = r' { acRange = mempty } }
 
 ----------------------------------- Information -----------------------------------
 
 -- | Calculates the number of constraints in the system.
-acSizeN :: forall a n . ArithmeticCircuit n a -> Natural
+acSizeN :: ArithmeticCircuit a n -> Natural
 acSizeN = length . acSystem . acCircuit
 
 -- | Calculates the number of variables in the system.
 -- The constant `1` is not counted.
-acSizeM :: forall a n . ArithmeticCircuit n a -> Natural
+acSizeM :: ArithmeticCircuit a n -> Natural
 acSizeM = length . acVarOrder . acCircuit
 
-acValue :: forall a n . ArithmeticCircuit n a -> Vector n a
+acValue :: ArithmeticCircuit a n -> Vector n a
 acValue r = eval r mempty
 
 -- | Prints the constraint system, the witness, and the output.
 --
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
-acPrint :: forall a n . Show a => ArithmeticCircuit n a -> IO ()
+acPrint :: Show a => ArithmeticCircuit a n -> IO ()
 acPrint ac@(ArithmeticCircuit r o) = do
     let m = elems (acSystem r)
         i = acInput r
@@ -113,12 +122,11 @@ acPrint ac@(ArithmeticCircuit r o) = do
 ---------------------------------- Testing -------------------------------------
 
 checkClosedCircuit
-    :: forall a n
-     . Arithmetic a
+    :: Arithmetic a
     => FromConstant a a
     => Scale a a
     => Show a
-    => ArithmeticCircuit n a
+    => ArithmeticCircuit a n
     -> Property
 checkClosedCircuit c@(ArithmeticCircuit r _) = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem r) ]
     where
@@ -126,13 +134,12 @@ checkClosedCircuit c@(ArithmeticCircuit r _) = withMaxSuccess 1 $ conjoin [ test
         testPoly p = evalPolynomial evalMonomial (w !) p === zero
 
 checkCircuit
-    :: forall a n
-     . Arbitrary a
+    :: Arbitrary a
     => Arithmetic a
     => FromConstant a a
     => Scale a a
     => Show a
-    => ArithmeticCircuit n a
+    => ArithmeticCircuit a n
     -> Property
 checkCircuit c@(ArithmeticCircuit r _) = conjoin [ property (testPoly p) | p <- elems (acSystem r) ]
     where

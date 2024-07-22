@@ -22,11 +22,12 @@ type TxIn context  = Input Tokens () context
 type Tx context = Transaction 1 0 2 Tokens 1 () context
 
 hash :: forall context x . MiMCHash F context x => x -> FieldElement context
-hash = mimcHash mimcConstants zero
+hash = mimcHash @F mimcConstants zero
 
 type Sig context =
     ( FromConstant F (FieldElement context)
     , MultiplicativeMonoid (UInt 64 context)
+    , BoolType (Bool context)
     , Eq (Bool context) (FieldElement context)
     , Eq (Bool context) (UInt 64 context)
     , Eq (Bool context) (ByteString 224 context)

@@ -35,43 +35,43 @@ import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 -- | BLAKE2b Cryptographic hash. Reference:
 -- https://tools.ietf.org/html/rfc7693
 
-type Blake2bSig b a =
-    ( Iso (UInt 64 b a) (ByteString 64 b a)
-    , ShiftBits (ByteString 64 b a)
-    , Concat (ByteString 64 b a) (ByteString 512 b a)
-    , ReverseEndianness 64 (ByteString 512 b a)
-    , BoolType (ByteString 64 b a)
-    , AdditiveGroup (UInt 64 b a)
-    , FromConstant Natural (UInt 64 b a)
-    , MultiplicativeMonoid (UInt 64 b a)
+type Blake2bSig b =
+    ( Iso (UInt 64 b) (ByteString 64 b)
+    , ShiftBits (ByteString 64 b)
+    , Concat (ByteString 64 b) (ByteString 512 b)
+    , ReverseEndianness 64 (ByteString 512 b)
+    , BoolType (ByteString 64 b)
+    , AdditiveGroup (UInt 64 b)
+    , FromConstant Natural (UInt 64 b)
+    , MultiplicativeMonoid (UInt 64 b)
     )
 
 pow2 :: forall a . FromConstant Natural a => Natural -> a
 pow2 = fromConstant @Natural . (2 ^)
 
-shiftUIntR :: forall b a . Blake2bSig b a => UInt 64 b a -> Natural -> UInt 64 b a
-shiftUIntR u n = from @_ @(UInt 64 b a) $ from @_ @(ByteString 64 b a) u `shiftBitsR` n
+shiftUIntR :: forall b . Blake2bSig b => UInt 64 b -> Natural -> UInt 64 b
+shiftUIntR u n = from @_ @(UInt 64 b) $ from @_ @(ByteString 64 b) u `shiftBitsR` n
 
-shiftUIntL :: forall b a . Blake2bSig b a => UInt 64 b a -> Natural -> UInt 64 b a
+shiftUIntL :: forall b . Blake2bSig b => UInt 64 b -> Natural -> UInt 64 b
 shiftUIntL u n = u * pow2 n
 
-xorUInt :: forall a b . Blake2bSig b a => UInt 64 b a ->  UInt 64 b a ->  UInt 64 b a
-xorUInt u1 u2 = from @(ByteString 64 b a) @(UInt 64 b a) $ from u1 `xor` from u2
+xorUInt :: forall b . Blake2bSig b => UInt 64 b ->  UInt 64 b ->  UInt 64 b
+xorUInt u1 u2 = from @(ByteString 64 b) @(UInt 64 b) $ from u1 `xor` from u2
 
 -- | state context
-data Blake2bCtx a b = Blake2bCtx
-   { h :: V.Vector (UInt 64 b a) -- chained state 8
-   , m :: V.Vector (UInt 64 b a) -- input buffer 16
+data Blake2bCtx b = Blake2bCtx
+   { h :: V.Vector (UInt 64 b) -- chained state 8
+   , m :: V.Vector (UInt 64 b) -- input buffer 16
    , t :: (Natural, Natural)     -- total number of bytes
    }
 
 -- | Cyclic right rotation.
-rotr64 :: Blake2bSig b a => (UInt 64 b a, Natural) -> UInt 64 b a
+rotr64 :: Blake2bSig b => (UInt 64 b, Natural) -> UInt 64 b
 rotr64 (x, y) = (x `shiftUIntR` y) `xorUInt` (x `shiftUIntL` (64 -! y))
 
 -- | Little-endian byte access.
-b2b_g :: forall b a . Blake2bSig b a =>
-    V.Vector (UInt 64 b a) -> (Int, Int, Int, Int, UInt 64 b a, UInt 64 b a) -> V.Vector (UInt 64 b a)
+b2b_g :: forall b . Blake2bSig b =>
+    V.Vector (UInt 64 b) -> (Int, Int, Int, Int, UInt 64 b, UInt 64 b) -> V.Vector (UInt 64 b)
 b2b_g v (a, b, c, d, x, y) =
     let va1 = (v ! a) + (v ! b) + x                 -- v[a] = v[a] + v[b] + x;         \
         vd1 = rotr64 ((v ! d) `xorUInt` va1, 32)    -- v[d] = ROTR64(v[d] ^ v[a], 32); \
@@ -84,8 +84,8 @@ b2b_g v (a, b, c, d, x, y) =
     in v // [(a, va2), (b, vb2), (c, vc2), (d, vd2)]
 
 -- | Compression function. "last" flag indicates the last block.
-blake2b_compress :: forall a b . Blake2bSig b a =>
-    Blake2bCtx a b -> Bool -> V.Vector (UInt 64 b a)
+blake2b_compress :: forall b . Blake2bSig b =>
+    Blake2bCtx b -> Bool -> V.Vector (UInt 64 b)
 blake2b_compress Blake2bCtx{h, m, t} lastBlock =
     let v'  = h V.++ blake2b_iv -- init work variables
         v'' = v' V.// [ (12, (v' ! 12) `xorUInt` fromConstant (fst t))  -- low word of the offset
@@ -110,14 +110,14 @@ blake2b_compress Blake2bCtx{h, m, t} lastBlock =
         v1 = V.foldl hashRound v0 $ fromList [0..11] -- twelve rounds
     in fmap (\(i, hi) -> hi `xorUInt` (v1 ! i) `xorUInt` (v1 ! (i GHC.+ 8))) (V.zip (fromList [0..7]) h)
 
-blake2b' :: forall bb' kk' ll' nn' a b .
+blake2b' :: forall bb' kk' ll' nn' b .
     ( KnownNat bb'
     , KnownNat kk'
     , KnownNat ll'
     , KnownNat nn'
-    , Truncate (ByteString 512 b a) (ByteString (8 * nn') b a)
-    , Blake2bSig b a
-    ) => [V.Vector (UInt 64 b a)] -> ByteString (8 * nn') b a
+    , Truncate (ByteString 512 b) (ByteString (8 * nn') b)
+    , Blake2bSig b
+    ) => [V.Vector (UInt 64 b)] -> ByteString (8 * nn') b
 blake2b' d =
     let bb = value @bb'
         ll = value @ll'
@@ -128,7 +128,7 @@ blake2b' d =
         toOffset :: forall x . (FromConstant Natural x) => Natural -> (x, x)
         toOffset x = let (hi, lo) = x `divMod` pow2 64 in (fromConstant lo, fromConstant hi)
 
-        h = blake2b_iv :: V.Vector (UInt 64 b a)
+        h = blake2b_iv :: V.Vector (UInt 64 b)
 
         -- Parameter block p[0]
         h' = h // [(0, (h ! 0) `xorUInt` fromConstant @Natural 0x01010000 `xorUInt` (fromConstant kk `shiftUIntR` 8) `xorUInt` fromConstant nn)]
@@ -143,31 +143,31 @@ blake2b' d =
             then blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll)) True
             else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
-        bs = reverseEndianness @64 $ concat @(ByteString 64 b a) $ map from $ toList h''' :: ByteString (64 * 8) b a
+        bs = reverseEndianness @64 $ concat @(ByteString 64 b) $ map from $ toList h''' :: ByteString (64 * 8) b
     in truncate bs
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
-type ExtendedInputByteString inputLen b a = ByteString (8 * inputLen + ExtensionBits inputLen) b a
+type ExtendedInputByteString inputLen b = ByteString (8 * inputLen + ExtensionBits inputLen) b
 
-blake2b :: forall keyLen inputLen outputLen a b .
+blake2b :: forall keyLen inputLen outputLen b .
     ( KnownNat keyLen
     , KnownNat inputLen
     , KnownNat outputLen
     , KnownNat (ExtensionBits inputLen)
-    , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
-    , ShiftBits (ExtendedInputByteString inputLen  b a)
-    , ReverseEndianness 64 (ExtendedInputByteString inputLen b a)
-    , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
-    , Truncate (ByteString 512 b a) (ByteString (8 * outputLen) b a)
-    , Blake2bSig b a
-    ) => Natural -> ByteString (8 * inputLen) b a -> ByteString (8 * outputLen) b a
+    , Extend (ByteString (8 * inputLen) b) (ExtendedInputByteString inputLen b)
+    , ShiftBits (ExtendedInputByteString inputLen b)
+    , ReverseEndianness 64 (ExtendedInputByteString inputLen b)
+    , ToWords (ExtendedInputByteString inputLen b) (ByteString 64 b)
+    , Truncate (ByteString 512 b) (ByteString (8 * outputLen) b)
+    , Blake2bSig b
+    ) => Natural -> ByteString (8 * inputLen) b -> ByteString (8 * outputLen) b
 blake2b key input =
     let input' = map from (toWords $
             reverseEndianness @64 $
             flip rotateBitsL (value @(ExtensionBits inputLen)) $
-            extend @_ @(ExtendedInputByteString inputLen b a) input :: [ByteString 64 b a])
+            extend @_ @(ExtendedInputByteString inputLen b) input :: [ByteString 64 b])
 
-        key'    = fromConstant @_ key :: UInt 64 b a
+        key'    = fromConstant @_ key :: UInt 64 b
         input'' = if value @keyLen > 0
             then key' : input'
             else input'
@@ -187,40 +187,40 @@ blake2b key input =
         d
 
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
-blake2b_224 :: forall inputLen b a .
+blake2b_224 :: forall inputLen b .
     ( KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
-    , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
-    , ShiftBits (ExtendedInputByteString inputLen  b a)
-    , ReverseEndianness 64 (ExtendedInputByteString inputLen b a)
-    , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
-    , Truncate (ByteString 512 b a) (ByteString 224 b a)
-    , Blake2bSig b a
-    ) => ByteString (8 * inputLen) b a -> ByteString 224 b a
+    , Extend (ByteString (8 * inputLen) b) (ExtendedInputByteString inputLen b)
+    , ShiftBits (ExtendedInputByteString inputLen b)
+    , ReverseEndianness 64 (ExtendedInputByteString inputLen b)
+    , ToWords (ExtendedInputByteString inputLen b) (ByteString 64 b)
+    , Truncate (ByteString 512 b) (ByteString 224 b)
+    , Blake2bSig b
+    ) => ByteString (8 * inputLen) b -> ByteString 224 b
 blake2b_224 = blake2b @0 @inputLen @28 (fromConstant @Natural 0)
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_256 :: forall inputLen b a .
+blake2b_256 :: forall inputLen b .
     ( KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
-    , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
-    , ShiftBits (ExtendedInputByteString inputLen  b a)
-    , ReverseEndianness 64 (ExtendedInputByteString inputLen b a)
-    , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
-    , Truncate (ByteString 512 b a) (ByteString 256 b a)
-    , Blake2bSig b a
-    ) => ByteString (8 * inputLen) b a -> ByteString 256 b a
+    , Extend (ByteString (8 * inputLen) b) (ExtendedInputByteString inputLen b)
+    , ShiftBits (ExtendedInputByteString inputLen b)
+    , ReverseEndianness 64 (ExtendedInputByteString inputLen b)
+    , ToWords (ExtendedInputByteString inputLen b) (ByteString 64 b)
+    , Truncate (ByteString 512 b) (ByteString 256 b)
+    , Blake2bSig b
+    ) => ByteString (8 * inputLen) b -> ByteString 256 b
 blake2b_256 = blake2b @0 @inputLen @32 (fromConstant @Natural 0)
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_512 :: forall inputLen b a .
+blake2b_512 :: forall inputLen b .
     ( KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
-    , Extend (ByteString (8 * inputLen) b a) (ExtendedInputByteString inputLen b a)
-    , ShiftBits (ExtendedInputByteString inputLen  b a)
-    , ReverseEndianness 64 (ExtendedInputByteString inputLen b a)
-    , ToWords (ExtendedInputByteString inputLen b a) (ByteString 64 b a)
-    , Truncate (ByteString 512 b a) (ByteString 512 b a)
-    , Blake2bSig b a
-    ) => ByteString (8 * inputLen) b a -> ByteString 512 b a
+    , Extend (ByteString (8 * inputLen) b) (ExtendedInputByteString inputLen b)
+    , ShiftBits (ExtendedInputByteString inputLen b)
+    , ReverseEndianness 64 (ExtendedInputByteString inputLen b)
+    , ToWords (ExtendedInputByteString inputLen b) (ByteString 64 b)
+    , Truncate (ByteString 512 b) (ByteString 512 b)
+    , Blake2bSig b
+    ) => ByteString (8 * inputLen) b -> ByteString 512 b
 blake2b_512 = blake2b @0 @inputLen @64 (fromConstant @Natural 0)

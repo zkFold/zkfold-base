@@ -4,6 +4,7 @@
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
 import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
+import qualified Prelude                             as Haskell
 
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Compiler
@@ -14,7 +15,12 @@ type TxRefIndex context = UInt 32 context
 
 newtype OutputRef context = OutputRef (TxRefId context, TxRefIndex context)
 
-deriving instance FieldElementData F CtxEvaluation (OutputRef CtxEvaluation)
+deriving instance
+    ( Haskell.Eq (TxRefId context)
+    , Haskell.Eq (TxRefIndex context)
+    ) => Haskell.Eq (OutputRef context)
+
+deriving instance FieldElementData CtxEvaluation (OutputRef CtxEvaluation)
 
 deriving instance SymbolicData F (OutputRef CtxCompilation)
 

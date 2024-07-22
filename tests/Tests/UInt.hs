@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
+
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module Tests.UInt (specUInt) where
@@ -30,27 +31,28 @@ import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Numbe
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-evalBool :: forall a . Bool (ArithmeticCircuit 1 a) -> Bool a
+evalBool :: forall a . Bool (ArithmeticCircuit a 1) -> Bool a
 evalBool (Bool ac) = Bool $ exec1 ac
 
-evalBoolVec :: forall a . Bool (Vector 1 a) -> Bool a
-evalBoolVec (Bool v) = Bool $ item v
+evalBoolVec :: forall a . Bool (Interpreter a 1) -> Bool a
+evalBoolVec (Bool (Interpreter v)) = Bool $ item v
 
-execAcUint :: forall a n . UInt n ArithmeticCircuit a -> Vector (NumberOfRegisters a n) a
+execAcUint :: forall a n . UInt n (ArithmeticCircuit a) -> Vector (NumberOfRegisters a n) a
 execAcUint (UInt v) = exec v
 
-execZpUint :: forall a n . UInt n Vector a -> Vector (NumberOfRegisters a n) a
-execZpUint (UInt v) = v
+execZpUint :: forall a n . UInt n (Interpreter a) -> Vector (NumberOfRegisters a n) a
+execZpUint (UInt (Interpreter v)) = v
 
 type Binary a = a -> a -> a
 
-type UBinary n b a = Binary (UInt n b a)
+type UBinary n b = Binary (UInt n b)
 
-isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n Vector (Zp p) -> UBinary n ArithmeticCircuit (Zp p) -> Natural -> Natural -> Property
+isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n (Interpreter (Zp p)) -> UBinary n (ArithmeticCircuit (Zp p)) -> Natural -> Natural -> Property
 isHom f g x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (fromConstant x `f` fromConstant y)
 
 specUInt'
@@ -58,7 +60,7 @@ specUInt'
     .  PrimeField (Zp p)
     => KnownNat n
     => KnownNat (2 * n)
-    => n <= (2 * n)
+    => n <= 2 * n
     => r ~ NumberOfRegisters (Zp p) n
     => r2n ~ NumberOfRegisters (Zp p) (2 * n)
     => 1 <= r
@@ -78,8 +80,8 @@ specUInt' = hspec $ do
     describe ("UInt" ++ show n ++ " specification") $ do
         it "Zp embeds Integer" $ do
             x <- toss m
-            return $ toConstant @(UInt n Vector (Zp p)) (fromConstant x) === x
-        it "Integer embeds Zp" $ \(x :: UInt n Vector (Zp p)) ->
+            return $ toConstant @(UInt n (Interpreter (Zp p))) (fromConstant x) === x
+        it "Integer embeds Zp" $ \(x :: UInt n (Interpreter (Zp p))) ->
             fromConstant (toConstant @_ @Natural x) === x
         it "AC embeds Integer" $ do
             x <- toss m
@@ -105,17 +107,17 @@ specUInt' = hspec $ do
         it "calculates gcd correctly" $ withMaxSuccess 10 $ do
             x <- toss m
             y <- toss m
-            let (_, _, r) = eea (fromConstant x :: UInt n Vector (Zp p)) (fromConstant y)
-                ans = fromConstant (P.gcd x y) :: UInt n Vector (Zp p)
+            let (_, _, r) = eea (fromConstant x :: UInt n (Interpreter (Zp p))) (fromConstant y)
+                ans = fromConstant (P.gcd x y) :: UInt n (Interpreter (Zp p))
             return $ r === ans
         it "calculates Bezout coefficients correctly" $ withMaxSuccess 10 $ do
             x' <- toss m
             y' <- toss m
-            let x = x' `P.div` (P.gcd x' y')
-                y = y' `P.div` (P.gcd x' y')
+            let x = x' `P.div` P.gcd x' y'
+                y = y' `P.div` P.gcd x' y'
 
                 -- We will test Bezout coefficients by multiplying two UInts less than 2^n, hence we need 2^(2n) bits to store the result
-                zpX = fromConstant x :: UInt (2 * n) Vector (Zp p)
+                zpX = fromConstant x :: UInt (2 * n) (Interpreter (Zp p))
                 zpY = fromConstant y
                 (s, t, _) = eea zpX zpY
             -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
@@ -133,38 +135,38 @@ specUInt' = hspec $ do
 
         it "extends correctly" $ do
             x <- toss m
-            let acUint = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
-                zpUint = fromConstant x :: UInt (2 * n) Vector (Zp p)
-            return $ execAcUint @(Zp p) (extend acUint :: UInt (2 * n) ArithmeticCircuit (Zp p)) === execZpUint zpUint
+            let acUint = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
+                zpUint = fromConstant x :: UInt (2 * n) (Interpreter (Zp p))
+            return $ execAcUint @(Zp p) (extend acUint :: UInt (2 * n) (ArithmeticCircuit (Zp p))) === execZpUint zpUint
 
         it "shrinks correctly" $ do
             x <- toss (m * m)
-            let acUint = fromConstant x :: UInt (2 * n) ArithmeticCircuit (Zp p)
-                zpUint = fromConstant x :: UInt n Vector (Zp p)
-            return $ execAcUint @(Zp p) (shrink acUint :: UInt n ArithmeticCircuit (Zp p)) === execZpUint zpUint
+            let acUint = fromConstant x :: UInt (2 * n) (ArithmeticCircuit (Zp p))
+                zpUint = fromConstant x :: UInt n (Interpreter (Zp p))
+            return $ execAcUint @(Zp p) (shrink acUint :: UInt n (ArithmeticCircuit (Zp p))) === execZpUint zpUint
 
         it "checks equality" $ do
             x <- toss m
-            let acUint = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
-            return $ evalBool @(Zp p) (acUint == acUint) === (Bool one)
+            let acUint = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
+            return $ evalBool @(Zp p) (acUint == acUint) === Bool one
 
         it "checks inequality" $ do
             x <- toss m
             y' <- toss m
-            let y = if y' == x then x + 1 else y'
+            let y = if y' P.== x then x + 1 else y'
 
-            let acUint1 = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
-                acUint2 = fromConstant y :: UInt n ArithmeticCircuit (Zp p)
+            let acUint1 = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
+                acUint2 = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
 
-            return $ evalBool @(Zp p) (acUint1 == acUint2) === (Bool zero)
+            return $ evalBool @(Zp p) (acUint1 == acUint2) === Bool zero
 
         it "checks greater than" $ do
             x <- toss m
             y <- toss m
-            let x' = fromConstant x  :: UInt n Vector (Zp p)
-                y' = fromConstant y  :: UInt n Vector (Zp p)
-                x'' = fromConstant x :: UInt n ArithmeticCircuit (Zp p)
-                y'' = fromConstant y :: UInt n ArithmeticCircuit (Zp p)
+            let x' = fromConstant x  :: UInt n (Interpreter (Zp p))
+                y' = fromConstant y  :: UInt n (Interpreter (Zp p))
+                x'' = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
+                y'' = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
                 gt' = evalBoolVec $ x' > y'
                 gt'' = evalBool @(Zp p) (x'' > y'')
             return $ gt' === gt''

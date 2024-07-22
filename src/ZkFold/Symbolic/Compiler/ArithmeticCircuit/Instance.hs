@@ -28,6 +28,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (length)
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, foldCircuit,
                                                                             getAllVars, horner, invertC, isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
@@ -40,8 +41,11 @@ import           ZkFold.Symbolic.Data.Eq
 
 ------------------------------------- Instances -------------------------------------
 
-instance Arithmetic a => SymbolicData a (ArithmeticCircuit n a) where
-    type TypeSize a (ArithmeticCircuit n a) = n
+instance Symbolic (ArithmeticCircuit a) where
+    type BaseField (ArithmeticCircuit a) = a
+
+instance Arithmetic a => SymbolicData a (ArithmeticCircuit a n) where
+    type TypeSize a (ArithmeticCircuit a n) = n
 
     pieces = id
 
@@ -50,25 +54,25 @@ instance Arithmetic a => SymbolicData a (ArithmeticCircuit n a) where
 -- TODO: I had to add these constraints and I don't like them
 instance
     ( KnownNat (n * Order a)
-    , KnownNat (Log2 ((n * Order a) - 1) + 1)
-    ) => Finite (ArithmeticCircuit n a) where
-    type Order (ArithmeticCircuit n a) = n * Order a
+    , KnownNat (Log2 (n * Order a - 1) + 1)
+    ) => Finite (ArithmeticCircuit a n) where
+    type Order (ArithmeticCircuit a n) = n * Order a
 
-instance Arithmetic a => AdditiveSemigroup (ArithmeticCircuit n a) where
+instance Arithmetic a => AdditiveSemigroup (ArithmeticCircuit a n) where
     r1 + r2 = circuitN $ do
         is <- runCircuit r1
         js <- runCircuit r2
         for (Z.zip is js) $ \(i, j) -> newAssigned (\x -> x i + x j)
 
-instance (Arithmetic a, Scale c a) => Scale c (ArithmeticCircuit n a) where
+instance (Arithmetic a, Scale c a) => Scale c (ArithmeticCircuit a n) where
     scale c r = circuitN $ do
         is <- runCircuit r
         for is $ \i -> newAssigned (\x -> (c `scale` one :: a) `scale` x i)
 
-instance (Arithmetic a, KnownNat n) => AdditiveMonoid (ArithmeticCircuit n a) where
+instance (Arithmetic a, KnownNat n) => AdditiveMonoid (ArithmeticCircuit a n) where
     zero = circuitN $ Vector <$> replicateM (Haskell.fromIntegral $ value @n) (newAssigned (const zero))
 
-instance (Arithmetic a, KnownNat n) => AdditiveGroup (ArithmeticCircuit n a) where
+instance (Arithmetic a, KnownNat n) => AdditiveGroup (ArithmeticCircuit a n) where
     negate r = circuitN $ do
         is <- runCircuit r
         for is $ \i -> newAssigned (\x -> negate (x i))
@@ -78,30 +82,30 @@ instance (Arithmetic a, KnownNat n) => AdditiveGroup (ArithmeticCircuit n a) whe
         js <- runCircuit r2
         for (Z.zip is js) $ \(i, j) -> newAssigned (\x -> x i - x j)
 
-instance Arithmetic a => MultiplicativeSemigroup (ArithmeticCircuit n a) where
+instance Arithmetic a => MultiplicativeSemigroup (ArithmeticCircuit a n) where
     r1 * r2 = circuitN $ do
         is <- runCircuit r1
         js <- runCircuit r2
         for (Z.zip is js) $ \(i, j) -> newAssigned (\x -> x i * x j)
 
-instance (Arithmetic a, KnownNat n) => Exponent (ArithmeticCircuit n a) Natural where
+instance (Arithmetic a, KnownNat n) => Exponent (ArithmeticCircuit a n) Natural where
     (^) = natPow
 
-instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (ArithmeticCircuit n a) where
+instance (Arithmetic a, KnownNat n) => MultiplicativeMonoid (ArithmeticCircuit a n) where
     one = embedV (pure one)
 
 -- TODO: The constant will be replicated in all outputs. Is this the desired behaviour?
-instance (Arithmetic a, FromConstant b a, KnownNat n) => FromConstant b (ArithmeticCircuit n a) where
+instance (Arithmetic a, FromConstant b a, KnownNat n) => FromConstant b (ArithmeticCircuit a n) where
     fromConstant c = embedAll (fromConstant c)
 
-instance (Arithmetic a, KnownNat n) => Semiring (ArithmeticCircuit n a)
+instance (Arithmetic a, KnownNat n) => Semiring (ArithmeticCircuit a n)
 
-instance (Arithmetic a, KnownNat n) => Ring (ArithmeticCircuit n a)
+instance (Arithmetic a, KnownNat n) => Ring (ArithmeticCircuit a n)
 
-instance (Arithmetic a, KnownNat n) => Exponent (ArithmeticCircuit n a) Integer where
+instance (Arithmetic a, KnownNat n) => Exponent (ArithmeticCircuit a n) Integer where
     (^) = intPowF
 
-instance (Arithmetic a, KnownNat n) => Field (ArithmeticCircuit n a) where
+instance (Arithmetic a, KnownNat n) => Field (ArithmeticCircuit a n) where
     finv = invertC
     rootOfUnity n = embedAll <$> rootOfUnity n
 
@@ -113,18 +117,18 @@ instance (Arithmetic a, KnownNat n) => Field (ArithmeticCircuit n a) where
 --
 -- Ideally, we want to return another ArithmeticCircuit with a number of outputs corresponding to the number of bits.
 -- This does not align well with the type of @binaryExpansion@
-instance Arithmetic a => BinaryExpansion (ArithmeticCircuit 1 a) where
-    type Bits (ArithmeticCircuit 1 a) = ArithmeticCircuit (NumberOfBits a) a
+instance Arithmetic a => BinaryExpansion (ArithmeticCircuit a 1) where
+    type Bits (ArithmeticCircuit a 1) = ArithmeticCircuit a (NumberOfBits a)
     binaryExpansion r = circuitN $ do
         output <- runCircuit r
         bits   <- expansion (numberOfBits @a) . V.item $ output
         pure $ V.unsafeToVector bits
     fromBinary bits = circuit $ runCircuit bits >>= horner . V.fromVector
 
-instance (Arithmetic a, KnownNat n) => DiscreteField' (ArithmeticCircuit n a) where
+instance (Arithmetic a, KnownNat n) => DiscreteField' (ArithmeticCircuit a n) where
     equal r1 r2 = isZeroC (r1 - r2)
 
-instance Arithmetic a => TrichotomyField (ArithmeticCircuit 1 a) where
+instance Arithmetic a => TrichotomyField (ArithmeticCircuit a 1) where
     trichotomy r1 r2 =
         let
             bits1 = binaryExpansion r1
@@ -137,21 +141,21 @@ instance Arithmetic a => TrichotomyField (ArithmeticCircuit 1 a) where
         in
             foldCircuit reverseLexicographical comparedBits
 
-instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit n a)) where
-    type TypeSize a (Bool (ArithmeticCircuit n a)) = n
+instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a n)) where
+    type TypeSize a (Bool (ArithmeticCircuit a n)) = n
     pieces (Bool b) = pieces b
     restore c = Bool Haskell.. restore c
 
-instance (Arithmetic a, KnownNat n, 1 <= n) => DiscreteField (Bool (ArithmeticCircuit 1 a)) (ArithmeticCircuit n a) where
+instance (Arithmetic a, KnownNat n, 1 <= n) => DiscreteField (Bool (ArithmeticCircuit a 1)) (ArithmeticCircuit a n) where
     isZero x = Bool $ circuit $ do
         bools <- runCircuit $ isZeroC x
         foldM (\i j -> newAssigned (\p -> p i * p j)) (V.head bools) (V.tail bools)
 
-instance (Arithmetic a, KnownNat n, 1 <= n) => Eq (Bool (ArithmeticCircuit 1 a)) (ArithmeticCircuit n a) where
+instance (Arithmetic a, KnownNat n, 1 <= n) => Eq (Bool (ArithmeticCircuit a 1)) (ArithmeticCircuit a n) where
     x == y = isZero (x - y)
     x /= y = not $ isZero (x - y)
 
-instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit 1 a)) x where
+instance (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit a 1)) x where
     bool brFalse brTrue (Bool b) = restore c o
         where
             f' = pieces brFalse
@@ -165,13 +169,13 @@ instance {-# OVERLAPPING #-} (SymbolicData a x, n ~ TypeSize a x, KnownNat n) =>
                 bs <- V.item <$> runCircuit b
                 V.zipWithM (\x y -> newAssigned $ \p -> p bs * (p x - p y) + p y) ts fs
 
-instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit 1 a) where
+instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit a 1) where
     arbitrary = do
         k <- integerToNatural <$> chooseInteger (2, 10)
         let ac = ArithmeticCircuit { acCircuit = mempty {acInput = [1..k]}, acOutput = pure k }
         arbitrary' ac 10
 
-arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => ArithmeticCircuit 1 a -> Natural -> Gen (ArithmeticCircuit 1 a)
+arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => ArithmeticCircuit a 1 -> Natural -> Gen (ArithmeticCircuit a 1)
 arbitrary' ac 0 = return ac
 arbitrary' ac iter = do
     let vars = getAllVars . acCircuit $ ac
@@ -187,12 +191,12 @@ arbitrary' ac iter = do
     arbitrary' ac' (iter -! 1)
 
 -- TODO: make it more readable
-instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuit n a) where
+instance (FiniteField a, Haskell.Eq a, Show a) => Show (ArithmeticCircuit a n) where
     show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = " ++ show (acInput r)
         ++ "\n, acSystem = " ++ show (acSystem r) ++ "\n, acOutput = " ++ show o ++ "\n, acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
 -- TODO: add witness generation info to the JSON object
-instance ToJSON a => ToJSON (ArithmeticCircuit n a) where
+instance ToJSON a => ToJSON (ArithmeticCircuit a n) where
     toJSON (ArithmeticCircuit r o) = object
         [
             "system" .= acSystem r,
@@ -203,7 +207,7 @@ instance ToJSON a => ToJSON (ArithmeticCircuit n a) where
 
 -- TODO: properly restore the witness generation function
 -- TODO: Check that there are exactly N outputs
-instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
+instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit a n) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"
@@ -211,7 +215,7 @@ instance (FromJSON a, KnownNat n) => FromJSON (ArithmeticCircuit n a) where
             acInput    <- v .: "input"
             acVarOrder <- v .: "order"
             outs       <- v .: "output"
-            guard (length v == (value @n))
+            guard (length v Haskell.== value @n)
             let acWitness = empty
                 acRNG     = mkStdGen 0
                 acOutput  = Vector outs

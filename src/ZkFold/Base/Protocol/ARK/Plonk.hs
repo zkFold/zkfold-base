@@ -43,7 +43,7 @@ data Plonk (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
         iPub  :: Vector l Natural,
-        ac    :: ArithmeticCircuit 1 (ScalarField curve1),
+        ac    :: ArithmeticCircuit (ScalarField curve1) 1,
         x     :: ScalarField curve1
     }
 instance (Show (ScalarField c1), Arithmetic (ScalarField c1)) => Show (Plonk n l c1 c2 t) where
