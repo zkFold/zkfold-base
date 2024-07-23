@@ -3,6 +3,7 @@
 module Tests.Arithmetization.Test4 (specArithmetization4) where
 
 import           Data.Map                                    (fromList)
+import           GHC.Generics                                (Par1 (unPar1))
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (Spec, describe, it)
@@ -21,7 +22,6 @@ import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit 
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-import GHC.Generics (Par1(unPar1))
 
 type N = 1
 

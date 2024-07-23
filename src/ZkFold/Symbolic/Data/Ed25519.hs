@@ -7,6 +7,7 @@
 module ZkFold.Symbolic.Data.Ed25519  where
 
 import           Data.Void                                              (Void)
+import           GHC.Generics                                           ((:*:) (..))
 import           GHC.TypeNats                                           (Natural)
 import           Prelude                                                (type (~), ($), (.))
 import qualified Prelude                                                as P
@@ -27,7 +28,6 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter
-import GHC.Generics ((:*:)(..))
 
 zpToEd :: (Finite (Zp p)) => Point (Ed25519 UInt (Zp p)) -> Point (Ed25519 Void Void)
 zpToEd Inf         = Inf

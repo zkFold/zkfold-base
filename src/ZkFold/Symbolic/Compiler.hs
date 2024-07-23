@@ -14,7 +14,7 @@ import           Prelude                                             (FilePath, 
                                                                       putStrLn, type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                             (unsafeToVector, Vector)
+import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
 import           ZkFold.Prelude                                      (writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), Circuit (acInput))

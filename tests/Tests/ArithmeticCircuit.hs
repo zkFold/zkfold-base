@@ -5,6 +5,7 @@
 module Tests.ArithmeticCircuit (exec1, it, specArithmeticCircuit) where
 
 import           Data.Bool                                              (bool)
+import           GHC.Generics                                           (Par1)
 import           Prelude                                                (IO, Show, String, id, ($))
 import qualified Prelude                                                as Haskell
 import qualified Test.Hspec
@@ -20,7 +21,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
-import GHC.Generics (Par1)
 
 correctHom0 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a

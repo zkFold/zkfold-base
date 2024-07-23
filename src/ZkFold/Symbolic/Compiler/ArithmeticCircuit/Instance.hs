@@ -31,8 +31,9 @@ import           ZkFold.Base.Data.Par1                                     ()
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedAll, embedV, expansion, foldCircuit,
-                                                                            getAllVars, horner, invertC, isZeroC, embed)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, embedAll, embedV, expansion,
+                                                                            foldCircuit, getAllVars, horner, invertC,
+                                                                            isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitF)
 import           ZkFold.Symbolic.Compiler.Arithmetizable                   (Arithmetizable, SymbolicData (..))
