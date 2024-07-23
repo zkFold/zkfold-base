@@ -29,7 +29,7 @@ import           ZkFold.Symbolic.Data.UInt
 evalBS :: forall a n . ByteString n (ArithmeticCircuit a) -> Vector n a
 evalBS (ByteString xs) = eval xs M.empty
 
-evalUInt :: forall a n . UInt n (ArithmeticCircuit a) -> Vector (NumberOfRegisters a n) a
+evalUInt :: forall a n r . UInt n (ArithmeticCircuit a) r -> Vector (NumberOfRegisters a n r) a
 evalUInt (UInt xs) = eval xs M.empty
 
 
@@ -47,18 +47,18 @@ hashCircuit = do
 
 -- | Generate random addition circuit of given size
 --
-additionCircuit :: forall n p. (KnownNat n, PrimeField (Zp p)) => IO (ByteString n (ArithmeticCircuit (Zp p)))
+additionCircuit :: forall n p r . (KnownNat n, PrimeField (Zp p), KnownRegisterSize r) => IO (ByteString n (ArithmeticCircuit (Zp p)))
 additionCircuit = do
     x <- randomIO
     y <- randomIO
     let acX = fromConstant (x :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
         acY = fromConstant (y :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
-        acZ = from (from acX + from acY :: UInt n (ArithmeticCircuit (Zp p)))
+        acZ = from (from acX + from acY :: UInt n (ArithmeticCircuit (Zp p)) r)
 
     evaluate . force $ acZ
 
-benchOps :: forall n p. (KnownNat n, PrimeField (Zp p)) => Benchmark
-benchOps = env (additionCircuit @n @p) $ \ac ->
+benchOps :: forall n p r . (KnownNat n, PrimeField (Zp p), KnownRegisterSize r) => Benchmark
+benchOps = env (additionCircuit @n @p @r) $ \ac ->
     bench ("Adding ByteStrings of size " <> show (value @n) <> " via UInt") $ nf evalBS ac
 
 benchHash
@@ -124,11 +124,11 @@ mainHash = do
 
 mainSumBS :: IO ()
 mainSumBS = do
-  ByteString ac32 <- additionCircuit @32 @BLS12_381_Scalar
-  ByteString ac64 <- additionCircuit @64 @BLS12_381_Scalar
-  ByteString ac128 <- additionCircuit @128 @BLS12_381_Scalar
-  ByteString ac256 <- additionCircuit @256 @BLS12_381_Scalar
-  ByteString ac512 <- additionCircuit @512 @BLS12_381_Scalar
+  ByteString ac32 <- additionCircuit @32 @BLS12_381_Scalar @Auto
+  ByteString ac64 <- additionCircuit @64 @BLS12_381_Scalar @Auto
+  ByteString ac128 <- additionCircuit @128 @BLS12_381_Scalar @Auto
+  ByteString ac256 <- additionCircuit @256 @BLS12_381_Scalar @Auto
+  ByteString ac512 <- additionCircuit @512 @BLS12_381_Scalar @Auto
 
   print $ acSizeM ac32
   print $ acSizeM ac64
@@ -137,10 +137,10 @@ mainSumBS = do
   print $ acSizeM ac512
 
   defaultMain
-      [ benchOps @32 @BLS12_381_Scalar
-      , benchOps @64 @BLS12_381_Scalar
-      , benchOps @128 @BLS12_381_Scalar
-      , benchOps @256 @BLS12_381_Scalar
-      , benchOps @512 @BLS12_381_Scalar
+      [ benchOps @32 @BLS12_381_Scalar @Auto
+      , benchOps @64 @BLS12_381_Scalar @Auto
+      , benchOps @128 @BLS12_381_Scalar @Auto
+      , benchOps @256 @BLS12_381_Scalar @Auto
+      , benchOps @512 @BLS12_381_Scalar @Auto
       ]
 

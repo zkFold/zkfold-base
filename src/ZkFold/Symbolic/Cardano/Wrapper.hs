@@ -5,8 +5,9 @@ import           Prelude                       hiding (Bool, Eq (..), length, sp
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Data.Bool     (BoolType (..))
 import           ZkFold.Symbolic.Data.Eq       (Eq ((==)))
+import           ZkFold.Symbolic.Data.Combinators        (RegisterSize(..))
 
-type TxHash context = UInt 64 context
+type TxHash context = UInt 64 context Auto
 
 -- TODO: implement transaction hashing
 hashFunction :: Transaction inputs rinputs outputs tokens mint datum context -> TxHash context

@@ -9,9 +9,10 @@ import qualified Prelude                             as Haskell
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.FieldElement   (FieldElementData)
+import           ZkFold.Symbolic.Data.Combinators        (RegisterSize(..))
 
 type TxRefId context = ByteString 256 context
-type TxRefIndex context = UInt 32 context
+type TxRefIndex context = UInt 32 context Auto
 
 newtype OutputRef context = OutputRef (TxRefId context, TxRefIndex context)
 

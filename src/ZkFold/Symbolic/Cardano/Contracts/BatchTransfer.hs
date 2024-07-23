@@ -29,15 +29,15 @@ hash :: forall context x . MiMCHash F context x => x -> FieldElement context
 hash = mimcHash @F mimcConstants zero
 
 type Sig context =
-    ( StrictConv (context 1) (UInt 256 context)
-    , FromConstant Natural (UInt 256 context)
-    , MultiplicativeSemigroup (UInt 256 context)
+    ( StrictConv (context 1) (UInt 256 context Auto)
+    , FromConstant Natural (UInt 256 context Auto)
+    , MultiplicativeSemigroup (UInt 256 context Auto)
     , AdditiveMonoid (context 1)
     , Symbolic (context 1)
     , MiMCHash F context (TxOut context, TxOut context)
-    , Eq (Bool context) (UInt 256 context)
+    , Eq (Bool context) (UInt 256 context Auto)
     , Eq (Bool context) (TxOut context)
-    , Iso (UInt 256 context) (ByteString 256 context)
+    , Iso (UInt 256 context Auto) (ByteString 256 context)
     , Extend (ByteString 224 context) (ByteString 256 context))
 
 verifySignature ::
@@ -48,7 +48,7 @@ verifySignature ::
     Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (extend pub :: ByteString 256 context))
     where
-        base :: UInt 256 context
+        base :: UInt 256 context Auto
         base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)
 
         mimc :: FieldElement context
