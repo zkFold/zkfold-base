@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
 import           Data.Maybe                                     (fromJust)
 import           Data.Zip                                       (zip)
+import           GHC.Generics                                   (Par1)
 import           Numeric.Natural                                (Natural)
 import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
                                                                  (*), (+))
@@ -28,10 +29,10 @@ hash :: forall context x . MiMCHash F context x => x -> FieldElement context
 hash = mimcHash @F mimcConstants zero
 
 type Sig context =
-    ( StrictConv (context 1) (UInt 256 context)
+    ( StrictConv (context Par1) (UInt 256 context)
     , FromConstant Natural (UInt 256 context)
     , MultiplicativeSemigroup (UInt 256 context)
-    , AdditiveMonoid (context 1)
+    , AdditiveMonoid (context Par1)
     , MiMCHash F context (TxOut context, TxOut context)
     , BoolType (Bool context)
     , Eq (Bool context) (UInt 256 context)

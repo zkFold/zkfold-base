@@ -20,6 +20,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
+import GHC.Generics (Par1)
 
 correctHom0 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a
@@ -45,19 +46,19 @@ specArithmeticCircuit' = hspec $ do
         it "inverts nonzero correctly" $ correctHom1 @a finv
         it "inverts zero correctly" $ correctHom0 @a (finv zero)
         it "checks isZero(nonzero)" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a 1) = isZero (embed x)
+          let Bool (r :: ArithmeticCircuit a Par1) = isZero (embed x)
            in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== zero)
         it "checks isZero(0)" $
-          let Bool (r :: ArithmeticCircuit a 1) = isZero (zero :: ArithmeticCircuit a 1)
+          let Bool (r :: ArithmeticCircuit a Par1) = isZero (zero :: ArithmeticCircuit a Par1)
            in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === one
         it "computes binary expansion" $ \(x :: a) ->
           let rs = binaryExpansion (embed x)
            in checkClosedCircuit rs .&&. V.fromVector (exec rs) === padBits (numberOfBits @a) (binaryExpansion x)
         it "internalizes equality" $ \(x :: a) (y :: a) ->
-          let Bool (r :: ArithmeticCircuit a 1) = embed x == embed y
+          let Bool (r :: ArithmeticCircuit a Par1) = embed x == embed y
            in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a 1) = embed x == embed x
+          let Bool (r :: ArithmeticCircuit a Par1) = embed x == embed x
            in checkClosedCircuit r .&&. exec1 r === one
 
 specArithmeticCircuit :: IO ()

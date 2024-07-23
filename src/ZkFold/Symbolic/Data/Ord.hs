@@ -7,13 +7,17 @@ module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), blueprintGE, ci
 
 import           Control.Monad                                             (foldM)
 import qualified Data.Bool                                                 as Haskell
+import           Data.Foldable                                             (Foldable)
+import           Data.Function                                             ((.))
 import qualified Data.Zip                                                  as Z
+import           GHC.Generics                                              (Par1 (..))
 import           Prelude                                                   (type (~), ($))
 import qualified Prelude                                                   as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (mapOutputs)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit)
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
@@ -49,13 +53,13 @@ instance Haskell.Ord a => Ord Haskell.Bool a where
 
     min = Haskell.min
 
-toValue :: Interpreter a 1 -> a
-toValue (Interpreter (V.item -> v)) = v
+toValue :: Interpreter a Par1 -> a
+toValue (Interpreter (Par1 v)) = v
 
-fromValue :: a -> Interpreter a 1
-fromValue = Interpreter Haskell.. V.singleton
+fromValue :: a -> Interpreter a Par1
+fromValue = Interpreter Haskell.. Par1
 
-instance (Arithmetic a, Haskell.Ord a) => Ord (Bool (Interpreter a)) (Interpreter a 1) where
+instance (Arithmetic a, Haskell.Ord a) => Ord (Bool (Interpreter a)) (Interpreter a Par1) where
     (toValue -> x) <= (toValue -> y) = Haskell.bool false true (x Haskell.<= y)
     (toValue -> x) <  (toValue -> y) = Haskell.bool false true (x Haskell.<  y)
     (toValue -> x) >= (toValue -> y) = Haskell.bool false true (x Haskell.>= y)
@@ -69,8 +73,8 @@ newtype Lexicographical a = Lexicographical a
 
 deriving newtype instance SymbolicData a x => SymbolicData a (Lexicographical x)
 
-deriving via (Lexicographical (ArithmeticCircuit a 1))
-    instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a 1)
+deriving via (Lexicographical (ArithmeticCircuit a Par1))
+    instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a Par1)
 
 deriving newtype instance (Arithmetic a, Haskell.Ord a) => Ord (Bool (Interpreter a)) (FieldElement (Interpreter a))
 deriving newtype instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (FieldElement (ArithmeticCircuit a))
@@ -89,25 +93,25 @@ instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a)
 
     min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
-getBitsBE :: forall a x . (SymbolicData a x, TypeSize a x ~ 1) => x -> ArithmeticCircuit a (NumberOfBits a)
+getBitsBE :: forall a x . (SymbolicData a x, TypeSize a x ~ 1) => x -> ArithmeticCircuit a (V.Vector (NumberOfBits a))
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = let expansion = binaryExpansion $ pieces @a @x x
+getBitsBE x = let expansion = binaryExpansion $ mapOutputs (Par1 . V.item) (pieces @a @x x)
                in expansion { acOutput = V.reverse $ acOutput expansion }
 
-circuitGE :: forall a n . Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n -> Bool (ArithmeticCircuit a)
+circuitGE :: forall a f . (Arithmetic a, Z.Zip f, Foldable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f -> Bool (ArithmeticCircuit a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
 circuitGE xs ys = Bool $ circuit $ do
   is <- runCircuit xs
   js <- runCircuit ys
   blueprintGE is js
 
-blueprintGE :: (MonadBlueprint i a m, Z.Zip f, Haskell.Foldable f) => f i -> f i -> m i
+blueprintGE :: (MonadBlueprint i a m, Z.Zip f, Foldable f) => f i -> f i -> m i
 blueprintGE xs ys = do
   (_, hasNegOne) <- circuitDelta xs ys
   newAssigned $ \p -> one - p hasNegOne
 
-circuitGT :: forall a n . Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n -> Bool (ArithmeticCircuit a)
+circuitGT :: forall a f . (Arithmetic a, Z.Zip f, Foldable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f -> Bool (ArithmeticCircuit a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
 circuitGT xs ys = Bool $ circuit $ do
   is <- runCircuit xs
@@ -115,7 +119,7 @@ circuitGT xs ys = Bool $ circuit $ do
   (hasOne, hasNegOne) <- circuitDelta is js
   newAssigned $ \p -> p hasOne * (one - p hasNegOne)
 
-circuitDelta :: forall i a m f . (MonadBlueprint i a m, Z.Zip f, Haskell.Foldable f) => f i -> f i -> m (i, i)
+circuitDelta :: forall i a m f . (MonadBlueprint i a m, Z.Zip f, Foldable f) => f i -> f i -> m (i, i)
 circuitDelta l r = do
     z1 <- newAssigned (Haskell.const zero)
     z2 <- newAssigned (Haskell.const zero)

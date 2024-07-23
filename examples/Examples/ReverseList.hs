@@ -3,6 +3,7 @@
 
 module Examples.ReverseList (exampleReverseList) where
 
+import           GHC.Generics                                (Par1)
 import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -21,4 +22,4 @@ exampleReverseList = do
 
     putStrLn "\nExample: Reverse List function\n"
 
-    compileIO @(Zp BLS12_381_Scalar) file (reverseList @(ArithmeticCircuit (Zp BLS12_381_Scalar) 1) @32)
+    compileIO @(Zp BLS12_381_Scalar) file (reverseList @(ArithmeticCircuit (Zp BLS12_381_Scalar) Par1) @32)

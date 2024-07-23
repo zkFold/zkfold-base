@@ -9,6 +9,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
 import           Data.Map                                               hiding (drop, foldl, foldr, fromList, map, null,
                                                                          splitAt, take, toList)
 import qualified Data.Map                                               as Map
+import           GHC.Generics                                           (Par1)
 import           GHC.IsList                                             (IsList (..))
 import           GHC.Natural                                            (naturalToInteger)
 import           GHC.Num                                                (integerToInt)
@@ -26,17 +27,17 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithme
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
-data ArithmeticCircuitTest a n = ArithmeticCircuitTest
+data ArithmeticCircuitTest a f = ArithmeticCircuitTest
     {
-        arithmeticCircuit :: ArithmeticCircuit a n
+        arithmeticCircuit :: ArithmeticCircuit a f
         , witnessInput    :: Map.Map Natural a
     }
 
-instance (Show (ArithmeticCircuit a n), Show a) => Show (ArithmeticCircuitTest a n) where
+instance (Show (ArithmeticCircuit a f), Show a) => Show (ArithmeticCircuitTest a f) where
     show (ArithmeticCircuitTest ac wi) = show ac ++ ",\nwitnessInput: " ++ show wi
 
-instance (Arithmetic a, Arbitrary a, Arbitrary (ArithmeticCircuit a 1)) => Arbitrary (ArithmeticCircuitTest a 1) where
-    arbitrary :: Gen (ArithmeticCircuitTest a 1)
+instance (Arithmetic a, Arbitrary a, Arbitrary (ArithmeticCircuit a Par1)) => Arbitrary (ArithmeticCircuitTest a Par1) where
+    arbitrary :: Gen (ArithmeticCircuitTest a Par1)
     arbitrary = do
         ac <- arbitrary
         let keysAC = inputVariables ac
@@ -47,7 +48,7 @@ instance (Arithmetic a, Arbitrary a, Arbitrary (ArithmeticCircuit a 1)) => Arbit
             , witnessInput = wi
             }
 
-mapVarArithmeticCircuit :: MultiplicativeMonoid a => ArithmeticCircuitTest a n -> ArithmeticCircuitTest a n
+mapVarArithmeticCircuit :: (MultiplicativeMonoid a, Functor f) => ArithmeticCircuitTest a f -> ArithmeticCircuitTest a f
 mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
     let ct = acCircuit ac
         vars = getAllVars ct

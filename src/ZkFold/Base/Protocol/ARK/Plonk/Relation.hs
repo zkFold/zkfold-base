@@ -4,6 +4,7 @@
 module ZkFold.Base.Protocol.ARK.Plonk.Relation where
 
 import           Data.Map                                     (Map, elems, (!))
+import           GHC.Generics                                 (Par1)
 import           GHC.IsList                                   (IsList (..))
 import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (Num (..), drop, length, replicate, sum, take,
@@ -38,7 +39,7 @@ toPlonkRelation :: forall n l a .
     => Scale a a
     => FromConstant a a
     => Vector l Natural
-    -> ArithmeticCircuit a 1
+    -> ArithmeticCircuit a Par1
     -> Maybe (PlonkRelation n l a)
 toPlonkRelation xPub ac0 =
     let ac = desugarRanges ac0

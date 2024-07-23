@@ -5,6 +5,7 @@
 
 module ZkFold.Symbolic.Data.FieldElement where
 
+import           GHC.Generics                                        (Par1 (..))
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Bool, Eq, Num (..), Ord, drop, length,
                                                                       product, splitAt, sum, take, (!!), (^))
@@ -14,52 +15,52 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), withOutputs)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), mapOutputs, withOutputs)
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
 import           ZkFold.Symbolic.Data.Bool                           (Bool)
 import           ZkFold.Symbolic.Data.Eq                             (Eq)
-import           ZkFold.Symbolic.Interpreter                         (Interpreter (..))
+import           ZkFold.Symbolic.Interpreter                         (Interpreter (..), mapInterpreter)
 
-newtype FieldElement c = FieldElement { fromFieldElement :: c 1 }
+newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
 
-deriving instance Show (c 1) => Show (FieldElement c)
+deriving instance Show (c Par1) => Show (FieldElement c)
 
-deriving instance Haskell.Eq (c 1) => Haskell.Eq (FieldElement c)
+deriving instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
 
 instance A.Arithmetic a => A.SymbolicData a (FieldElement (ArithmeticCircuit a)) where
     type TypeSize a (FieldElement (ArithmeticCircuit a)) = 1
-    pieces (FieldElement x) = x
-    restore c = FieldElement . withOutputs c
+    pieces (FieldElement x) = mapOutputs (V.singleton . unPar1) x
+    restore c = FieldElement . withOutputs c . Par1 . V.item
 
 instance A.Arithmetic a => A.Arithmetizable a (FieldElement (ArithmeticCircuit a)) where
     type InputSize a (FieldElement (ArithmeticCircuit a)) = 0
     type OutputSize a (FieldElement (ArithmeticCircuit a)) = 1
-    arithmetize (FieldElement x) _ = x
+    arithmetize (FieldElement x) _ = mapOutputs (V.singleton . unPar1) x
 
-deriving newtype instance FromConstant k (c 1) => FromConstant k (FieldElement c)
+deriving newtype instance FromConstant k (c Par1) => FromConstant k (FieldElement c)
 
-instance (MultiplicativeSemigroup p, Exponent (c 1) p) => Exponent (FieldElement c) p where
+instance (MultiplicativeSemigroup p, Exponent (c Par1) p) => Exponent (FieldElement c) p where
     FieldElement x ^ a = FieldElement (x ^ a)
 
-deriving newtype instance (MultiplicativeMonoid k, Scale k (c 1)) => Scale k (FieldElement c)
+deriving newtype instance (MultiplicativeMonoid k, Scale k (c Par1)) => Scale k (FieldElement c)
 
-deriving newtype instance MultiplicativeSemigroup (c 1) => MultiplicativeSemigroup (FieldElement c)
+deriving newtype instance MultiplicativeSemigroup (c Par1) => MultiplicativeSemigroup (FieldElement c)
 
-deriving newtype instance MultiplicativeMonoid (c 1) => MultiplicativeMonoid (FieldElement c)
+deriving newtype instance MultiplicativeMonoid (c Par1) => MultiplicativeMonoid (FieldElement c)
 
-deriving newtype instance AdditiveSemigroup (c 1) => AdditiveSemigroup (FieldElement c)
+deriving newtype instance AdditiveSemigroup (c Par1) => AdditiveSemigroup (FieldElement c)
 
-deriving newtype instance AdditiveMonoid (c 1) => AdditiveMonoid (FieldElement c)
+deriving newtype instance AdditiveMonoid (c Par1) => AdditiveMonoid (FieldElement c)
 
-deriving newtype instance AdditiveGroup (c 1) => AdditiveGroup (FieldElement c)
+deriving newtype instance AdditiveGroup (c Par1) => AdditiveGroup (FieldElement c)
 
-deriving newtype instance Semiring (c 1) => Semiring (FieldElement c)
+deriving newtype instance Semiring (c Par1) => Semiring (FieldElement c)
 
-deriving newtype instance Ring (c 1) => Ring (FieldElement c)
+deriving newtype instance Ring (c Par1) => Ring (FieldElement c)
 
-deriving newtype instance Field (c 1) => Field (FieldElement c)
+deriving newtype instance Field (c Par1) => Field (FieldElement c)
 
-deriving newtype instance Eq (Bool c) (c 1) => Eq (Bool c) (FieldElement c)
+deriving newtype instance Eq (Bool c) (c Par1) => Eq (Bool c) (FieldElement c)
 
 -- | A class for serializing data types into containers holding finite field elements.
 -- Type `c` is the container type.
@@ -69,10 +70,10 @@ class FieldElementData c x where
     type TypeSize c x :: Natural
 
     -- | Returns the representation of `x` as a container of finite field elements.
-    toFieldElements :: x -> c (TypeSize c x)
+    toFieldElements :: x -> c (Vector (TypeSize c x))
 
     -- | Restores `x` from its representation as a container of finite field elements.
-    fromFieldElements :: c (TypeSize c x) -> x
+    fromFieldElements :: c (Vector (TypeSize c x)) -> x
 
 -- | Returns the number of finite field elements needed to describe `x`.
 typeSize :: forall c x . KnownNat (TypeSize c x) => Natural
@@ -88,9 +89,9 @@ instance FieldElementData (Interpreter a) () where
 instance FieldElementData (Interpreter a) (FieldElement (Interpreter a)) where
     type TypeSize (Interpreter a) (FieldElement (Interpreter a)) = 1
 
-    toFieldElements (FieldElement x) = x
+    toFieldElements (FieldElement x) = mapInterpreter (V.singleton . unPar1) x
 
-    fromFieldElements = FieldElement
+    fromFieldElements = FieldElement . mapInterpreter (Par1 . V.item)
 
 instance
     ( FieldElementData (Interpreter a) x

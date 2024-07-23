@@ -19,6 +19,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Symbolic.Compiler                               hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (joinCircuits)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (mapOutputs)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
@@ -26,6 +27,7 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter
+import GHC.Generics ((:*:)(..))
 
 zpToEd :: (Finite (Zp p)) => Point (Ed25519 UInt (Zp p)) -> Point (Ed25519 Void Void)
 zpToEd Inf         = Inf
@@ -69,8 +71,8 @@ instance
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
     -- We can encode the point at infinity as (0, 0), therefore.
-    pieces Inf         = pieces (zero :: UInt 256 (ArithmeticCircuit a)) `joinCircuits` pieces (zero :: UInt 256 (ArithmeticCircuit a))
-    pieces (Point x y) = pieces x `joinCircuits` pieces y
+    pieces Inf         = mapOutputs (\(q :*: r) -> q `V.append` r) $ pieces (zero :: UInt 256 (ArithmeticCircuit a)) `joinCircuits` pieces (zero :: UInt 256 (ArithmeticCircuit a))
+    pieces (Point x y) = mapOutputs (\(q :*: r) -> q `V.append` r) $ pieces x `joinCircuits` pieces y
 
     restore c o = bool @(Bool (ArithmeticCircuit a)) @(Point (Ed25519 ArithmeticCircuit a)) (Point x y) Inf ((x == zero) && (y == zero))
         where

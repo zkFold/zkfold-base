@@ -21,6 +21,7 @@ import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit 
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import GHC.Generics (Par1(unPar1))
 
 type N = 1
 
@@ -33,13 +34,13 @@ lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 testSameValue :: F -> Haskell.Bool
 testSameValue targetValue =
     let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
-        b       = V.item $ acValue (applyArgs ac [targetValue])
+        b       = unPar1 $ acValue (applyArgs ac [targetValue])
     in b Haskell.== one
 
 testDifferentValue :: F -> F -> Haskell.Bool
 testDifferentValue targetValue otherValue =
     let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
-        b       = V.item $ acValue (applyArgs ac [otherValue])
+        b       = unPar1 $ acValue (applyArgs ac [otherValue])
     in b Haskell.== zero
 
 testZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
@@ -47,8 +48,8 @@ testZKP x ps targetValue =
     let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
 
         (omega, k1, k2) = getParams 32
-        inputs  = fromList [(1, targetValue), (V.item $ acOutput ac, 1)]
-        plonk   = Plonk @32 omega k1 k2 (acOutput ac) ac x
+        inputs  = fromList [(1, targetValue), (unPar1 $ acOutput ac, 1)]
+        plonk   = Plonk @32 omega k1 k2 (V.singleton $ unPar1 $ acOutput ac) ac x
         setupP  = setupProve @(PlonkBS N) plonk
         setupV  = setupVerify @(PlonkBS N) plonk
         witness = (PlonkWitnessInput inputs, ps)

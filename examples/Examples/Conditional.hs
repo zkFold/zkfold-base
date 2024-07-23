@@ -2,6 +2,7 @@
 
 module Examples.Conditional (exampleConditional) where
 
+import           GHC.Generics                                (Par1)
 import           Prelude                                     (IO, putStrLn)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -20,4 +21,4 @@ exampleConditional = do
 
     putStrLn "\nExample: conditional\n"
 
-    compileIO @F file (bool @B @(A 1))
+    compileIO @F file (bool @B @(A Par1))
