@@ -27,7 +27,8 @@ import           ZkFold.Base.Data.Vector                     (Vector, item)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (Extend (..), NumberOfRegisters, Shrink (..), RegisterSize(..), KnownRegisterSize)
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), KnownRegisterSize, NumberOfRegisters,
+                                                              RegisterSize (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -176,6 +177,6 @@ specUInt :: IO ()
 specUInt = do
     specUInt' @BLS12_381_Scalar @32 @_ @_ @Auto
     specUInt' @BLS12_381_Scalar @500 @_ @_ @Auto
-    
+
     specUInt' @BLS12_381_Scalar @32 @_ @_ @(Fixed 10)
     specUInt' @BLS12_381_Scalar @500 @_ @_ @(Fixed 10)

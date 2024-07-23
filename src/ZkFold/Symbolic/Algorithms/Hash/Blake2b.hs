@@ -27,7 +27,7 @@ import           ZkFold.Symbolic.Data.Bool                         (BoolType (..
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Concat (..),
                                                                     ReverseEndianness (..), ShiftBits (..),
                                                                     ToWords (..), Truncate (..))
-import           ZkFold.Symbolic.Data.Combinators                  (Extend, Iso (..), extend, RegisterSize(..))
+import           ZkFold.Symbolic.Data.Combinators                  (Extend, Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 
 -- TODO: This module is not finished yet. The hash computation is not correct.

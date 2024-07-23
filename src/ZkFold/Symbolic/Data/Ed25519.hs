@@ -3,7 +3,7 @@
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 
 module ZkFold.Symbolic.Data.Ed25519  where
 
@@ -65,7 +65,7 @@ instance
     , 1 <= r
     ) => SymbolicData a (Point (Ed25519 ArithmeticCircuit a)) where
 
-    type TypeSize a (Point (Ed25519 ArithmeticCircuit a)) = 
+    type TypeSize a (Point (Ed25519 ArithmeticCircuit a)) =
         TypeSize a (UInt 256 (ArithmeticCircuit a) Auto) + TypeSize a (UInt 256 (ArithmeticCircuit a) Auto)
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.

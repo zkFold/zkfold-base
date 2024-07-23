@@ -11,8 +11,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..))
 import qualified ZkFold.Symbolic.Data.FieldElement   as FE
-import           ZkFold.Symbolic.Data.Combinators    (RegisterSize(..))
 
 type PolicyId context    = ByteString 224 context
 type AssetName context   = ByteString 256 context

@@ -1,11 +1,11 @@
 module ZkFold.Symbolic.Cardano.Wrapper where
 
-import           Prelude                       hiding (Bool, Eq (..), length, splitAt, (&&), (*), (+))
+import           Prelude                          hiding (Bool, Eq (..), length, splitAt, (&&), (*), (+))
 
 import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Data.Bool     (BoolType (..))
-import           ZkFold.Symbolic.Data.Eq       (Eq ((==)))
-import           ZkFold.Symbolic.Data.Combinators        (RegisterSize(..))
+import           ZkFold.Symbolic.Data.Bool        (BoolType (..))
+import           ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
+import           ZkFold.Symbolic.Data.Eq          (Eq ((==)))
 
 type TxHash context = UInt 64 context Auto
 

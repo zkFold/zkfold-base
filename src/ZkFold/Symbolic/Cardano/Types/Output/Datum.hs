@@ -11,7 +11,7 @@ import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Data.Bool               (BoolType)
 import           ZkFold.Symbolic.Data.ByteString         (Concat, ReverseEndianness, ShiftBits, ToWords, Truncate,
                                                           emptyByteString)
-import           ZkFold.Symbolic.Data.Combinators        (Extend (..), Iso, RegisterSize(..))
+import           ZkFold.Symbolic.Data.Combinators        (Extend (..), Iso, RegisterSize (..))
 
 type DatumHash context = ByteString 256 context
 

@@ -29,7 +29,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), Concat (..), ShiftBits (..),
                                                                  ToWords (..), Truncate (..))
-import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize(..))
+import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.

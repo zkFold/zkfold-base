@@ -10,10 +10,10 @@ import           Prelude
 import           ZkFold.Base.Algebra.Basic.Class         (FromConstant)
 import           ZkFold.Symbolic.Compiler                (ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.Arithmetizable
+import           ZkFold.Symbolic.Data.Combinators        (RegisterSize (..))
 import           ZkFold.Symbolic.Data.FieldElement       (FieldElementData)
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter             (Interpreter)
-import           ZkFold.Symbolic.Data.Combinators        (RegisterSize(..))
 
 newtype UTCTime c = UTCTime (UInt 11 c Auto)
 

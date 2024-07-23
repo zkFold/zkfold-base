@@ -13,6 +13,7 @@ import           Data.List.Split                                           (chun
 import           Data.Maybe                                                (fromMaybe)
 import           Data.Proxy                                                (Proxy (..))
 import           Data.Ratio                                                ((%))
+import           Data.Type.Bool                                            (If)
 import           Data.Type.Ord
 import           GHC.TypeNats
 import           Prelude                                                   (error, head, pure, tail, ($), (.), (<$>),
@@ -21,10 +22,9 @@ import qualified Prelude                                                   as Ha
 import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number                          (value)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, horner)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-import ZkFold.Base.Algebra.Basic.Number (value)
-import Data.Type.Bool (If)
 
 -- | A class for isomorphic types.
 -- The @Iso b a@ context ensures that transformations in both directions are defined
@@ -98,7 +98,7 @@ highRegisterSize = getNatural @n -! registerSize @a @n @r * (numberOfRegisters @
 
 registerSize  :: forall a n r. (Finite a, KnownNat n, KnownRegisterSize r) => Natural
 registerSize = case regSize @r of
-    Auto -> Haskell.ceiling (getNatural @n % numberOfRegisters @a @n @r)
+    Auto     -> Haskell.ceiling (getNatural @n % numberOfRegisters @a @n @r)
     Fixed rs -> rs
 
 type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize ) :: Natural where

@@ -55,7 +55,7 @@ import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
 
 -- TODO (Issue #18): hide this constructor
-newtype UInt (n :: Natural) (backend :: Natural -> Type) (r :: RegisterSize) = UInt (backend (NumberOfRegisters (BaseField backend) n r)) 
+newtype UInt (n :: Natural) (backend :: Natural -> Type) (r :: RegisterSize) = UInt (backend (NumberOfRegisters (BaseField backend) n r))
 
 deriving instance Generic (UInt n backend r)
 deriving instance (NFData (backend (NumberOfRegisters (BaseField backend) n r))) => NFData (UInt n backend r)
@@ -414,7 +414,7 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters 
 
             solve1 :: MonadBlueprint i a m => i -> i -> m [i]
             solve1 i j = do
-                (z, _) <- newAssigned (\v -> v i * v j) >>= splitExpansion (highRegisterSize @a @n @rs) (maxOverflow @a @n @rs) 
+                (z, _) <- newAssigned (\v -> v i * v j) >>= splitExpansion (highRegisterSize @a @n @rs) (maxOverflow @a @n @rs)
                 return [z]
 
             solveN :: MonadBlueprint i a m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
