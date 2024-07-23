@@ -184,7 +184,6 @@ library
       ZkFold.Symbolic.Ledger.Validation.PrivateInput
       ZkFold.Symbolic.Ledger.Validation.PublicInput
       ZkFold.Symbolic.Ledger.Validation.Transaction
-      ZkFold.Symbolic.Types
     build-depends:
       base                          >= 4.9 && < 5,
       adjunctions                           < 4.5,

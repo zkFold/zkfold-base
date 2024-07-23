@@ -36,11 +36,11 @@ import           ZkFold.Symbolic.Interpreter                 (Interpreter (Inter
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-evalBool :: forall a . Bool (ArithmeticCircuit a 1) -> Bool a
-evalBool (Bool ac) = Bool $ exec1 ac
+evalBool :: forall a . Bool (ArithmeticCircuit a) -> a
+evalBool (Bool ac) = exec1 ac
 
-evalBoolVec :: forall a . Bool (Interpreter a 1) -> Bool a
-evalBoolVec (Bool (Interpreter v)) = Bool $ item v
+evalBoolVec :: forall a . Bool (Interpreter a) -> a
+evalBoolVec (Bool (Interpreter v)) = item v
 
 execAcUint :: forall a n . UInt n (ArithmeticCircuit a) -> Vector (NumberOfRegisters a n) a
 execAcUint (UInt v) = exec v
@@ -148,7 +148,7 @@ specUInt' = hspec $ do
         it "checks equality" $ do
             x <- toss m
             let acUint = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
-            return $ evalBool @(Zp p) (acUint == acUint) === Bool one
+            return $ evalBool @(Zp p) (acUint == acUint) === one
 
         it "checks inequality" $ do
             x <- toss m
@@ -158,7 +158,7 @@ specUInt' = hspec $ do
             let acUint1 = fromConstant x :: UInt n (ArithmeticCircuit (Zp p))
                 acUint2 = fromConstant y :: UInt n (ArithmeticCircuit (Zp p))
 
-            return $ evalBool @(Zp p) (acUint1 == acUint2) === Bool zero
+            return $ evalBool @(Zp p) (acUint1 == acUint2) === zero
 
         it "checks greater than" $ do
             x <- toss m

@@ -12,13 +12,13 @@ import           Prelude                                                   (type
 import qualified Prelude                                                   as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                          (Prime)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit)
-import           ZkFold.Symbolic.Data.Bool                                 (Bool (..))
+import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
+import           ZkFold.Symbolic.Data.FieldElement                         (FieldElement (..))
+import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
@@ -49,18 +49,19 @@ instance Haskell.Ord a => Ord Haskell.Bool a where
 
     min = Haskell.min
 
-instance {-# OVERLAPPABLE #-} (Prime p, Haskell.Ord x) => Ord (Bool (Zp p)) x where
-    x <= y = Bool $ Haskell.bool zero one (x Haskell.<= y)
+toValue :: Interpreter a 1 -> a
+toValue (Interpreter (V.item -> v)) = v
 
-    x <  y = Bool $ Haskell.bool zero one (x Haskell.<  y)
+fromValue :: a -> Interpreter a 1
+fromValue = Interpreter Haskell.. V.singleton
 
-    x >= y = Bool $ Haskell.bool zero one (x Haskell.>= y)
-
-    x >  y = Bool $ Haskell.bool zero one (x Haskell.>  y)
-
-    max x y = Haskell.bool x y $ x <= y
-
-    min x y = Haskell.bool x y $ x >= y
+instance (Arithmetic a, Haskell.Ord a) => Ord (Bool (Interpreter a)) (Interpreter a 1) where
+    (toValue -> x) <= (toValue -> y) = Haskell.bool false true (x Haskell.<= y)
+    (toValue -> x) <  (toValue -> y) = Haskell.bool false true (x Haskell.<  y)
+    (toValue -> x) >= (toValue -> y) = Haskell.bool false true (x Haskell.>= y)
+    (toValue -> x) >  (toValue -> y) = Haskell.bool false true (x Haskell.>  y)
+    (toValue -> x) `max` (toValue -> y) = fromValue $ Haskell.max x y
+    (toValue -> x) `min` (toValue -> y) = fromValue $ Haskell.min x y
 
 newtype Lexicographical a = Lexicographical a
 -- ^ A newtype wrapper for easy definition of Ord instances
@@ -69,10 +70,13 @@ newtype Lexicographical a = Lexicographical a
 deriving newtype instance SymbolicData a x => SymbolicData a (Lexicographical x)
 
 deriving via (Lexicographical (ArithmeticCircuit a 1))
-    instance Arithmetic a => Ord (Bool (ArithmeticCircuit a 1)) (ArithmeticCircuit a 1)
+    instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a 1)
+
+deriving newtype instance (Arithmetic a, Haskell.Ord a) => Ord (Bool (Interpreter a)) (FieldElement (Interpreter a))
+deriving newtype instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (FieldElement (ArithmeticCircuit a))
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
-instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a 1)) (Lexicographical x) where
+instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -81,9 +85,9 @@ instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a 
 
     x > y = circuitGT (getBitsBE x) (getBitsBE y)
 
-    max x y = bool @(Bool (ArithmeticCircuit a 1)) x y $ x < y
+    max x y = bool @(Bool (ArithmeticCircuit a)) x y $ x < y
 
-    min x y = bool @(Bool (ArithmeticCircuit a 1)) x y $ x > y
+    min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
 getBitsBE :: forall a x . (SymbolicData a x, TypeSize a x ~ 1) => x -> ArithmeticCircuit a (NumberOfBits a)
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
@@ -91,7 +95,7 @@ getBitsBE :: forall a x . (SymbolicData a x, TypeSize a x ~ 1) => x -> Arithmeti
 getBitsBE x = let expansion = binaryExpansion $ pieces @a @x x
                in expansion { acOutput = V.reverse $ acOutput expansion }
 
-circuitGE :: forall a n . Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n -> Bool (ArithmeticCircuit a 1)
+circuitGE :: forall a n . Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n -> Bool (ArithmeticCircuit a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
 circuitGE xs ys = Bool $ circuit $ do
   is <- runCircuit xs
@@ -103,7 +107,7 @@ blueprintGE xs ys = do
   (_, hasNegOne) <- circuitDelta xs ys
   newAssigned $ \p -> one - p hasNegOne
 
-circuitGT :: forall a n . Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n -> Bool (ArithmeticCircuit a 1)
+circuitGT :: forall a n . Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n -> Bool (ArithmeticCircuit a)
 -- ^ Given two lists of bits of equal length, compares them lexicographically.
 circuitGT xs ys = Bool $ circuit $ do
   is <- runCircuit xs

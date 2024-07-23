@@ -148,8 +148,8 @@ class Truncate a b where
 -- | Allows to check state of bits in a container @c@ of size @n@ with computational backend @b@
 --
 class BitState c n b where
-    isSet :: c n b -> Natural -> Bool (b 1)
-    isUnset :: c n b -> Natural -> Bool (b 1)
+    isSet :: c n b -> Natural -> Bool b
+    isUnset :: c n b -> Natural -> Bool b
 
 
 instance ToConstant (ByteString n (Interpreter (Zp p))) Natural where

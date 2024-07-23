@@ -18,7 +18,6 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement              (fromFieldElement)
 import           ZkFold.Symbolic.Data.UInt                      (StrictConv (..))
-import           ZkFold.Symbolic.Types                          (Symbolic)
 
 type Tokens = 10
 type TxOut context = Output Tokens () context
@@ -33,8 +32,8 @@ type Sig context =
     , FromConstant Natural (UInt 256 context)
     , MultiplicativeSemigroup (UInt 256 context)
     , AdditiveMonoid (context 1)
-    , Symbolic (context 1)
     , MiMCHash F context (TxOut context, TxOut context)
+    , BoolType (Bool context)
     , Eq (Bool context) (UInt 256 context)
     , Eq (Bool context) (TxOut context)
     , Iso (UInt 256 context) (ByteString 256 context)
