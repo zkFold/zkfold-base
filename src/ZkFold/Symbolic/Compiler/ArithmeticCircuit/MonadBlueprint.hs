@@ -89,9 +89,6 @@ class Monad m => MonadBlueprint i a m | m -> i, m -> a where
     -- * That introduced polynomial constraints are supported by the zk-SNARK
     --   utilized for later proving.
 
-    -- | Creates new input variable.
-    input :: m i
-
     -- | Adds the supplied circuit to the blueprint and returns its output variable.
     runCircuit :: ArithmeticCircuit a n -> m (Vector n i)
 
@@ -111,8 +108,6 @@ class Monad m => MonadBlueprint i a m | m -> i, m -> a where
     newAssigned p = newConstrained (\x i -> p x - x i) p
 
 instance Arithmetic a => MonadBlueprint Natural a (State (Circuit a)) where
-    input = I.input
-
     runCircuit r = modify (<> acCircuit r) $> acOutput r
 
     newRanged upperBound witness = do

@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -14,8 +15,8 @@ module ZkFold.Symbolic.Compiler.Arithmetizable (
 
 import           Data.Typeable                                       (Typeable)
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
-                                                                      sum, take, (!!), (^))
+import           Prelude                                             hiding (Bool, Num (..), drop, length, product,
+                                                                      splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                             as V

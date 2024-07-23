@@ -1,25 +1,65 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.FieldElement where
 
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
-                                                                      sum, take, (!!), (^))
+import           Prelude                                             hiding (Bool, Eq, Num (..), Ord, drop, length,
+                                                                      product, splitAt, sum, take, (!!), (^))
+import qualified Prelude                                             as Haskell
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), withOutputs)
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
+import           ZkFold.Symbolic.Data.Bool                           (Bool)
+import           ZkFold.Symbolic.Data.Eq                             (Eq)
 import           ZkFold.Symbolic.Interpreter                         (Interpreter (..))
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c 1 }
 
 deriving instance Show (c 1) => Show (FieldElement c)
 
-deriving instance Eq (c 1) => Eq (FieldElement c)
+deriving instance Haskell.Eq (c 1) => Haskell.Eq (FieldElement c)
+
+instance A.Arithmetic a => A.SymbolicData a (FieldElement (ArithmeticCircuit a)) where
+    type TypeSize a (FieldElement (ArithmeticCircuit a)) = 1
+    pieces (FieldElement x) = x
+    restore c = FieldElement . withOutputs c
+
+instance A.Arithmetic a => A.Arithmetizable a (FieldElement (ArithmeticCircuit a)) where
+    type InputSize a (FieldElement (ArithmeticCircuit a)) = 0
+    type OutputSize a (FieldElement (ArithmeticCircuit a)) = 1
+    arithmetize (FieldElement x) _ = x
+
+deriving newtype instance FromConstant k (c 1) => FromConstant k (FieldElement c)
+
+instance (MultiplicativeSemigroup p, Exponent (c 1) p) => Exponent (FieldElement c) p where
+    FieldElement x ^ a = FieldElement (x ^ a)
+
+deriving newtype instance (MultiplicativeMonoid k, Scale k (c 1)) => Scale k (FieldElement c)
+
+deriving newtype instance MultiplicativeSemigroup (c 1) => MultiplicativeSemigroup (FieldElement c)
+
+deriving newtype instance MultiplicativeMonoid (c 1) => MultiplicativeMonoid (FieldElement c)
+
+deriving newtype instance AdditiveSemigroup (c 1) => AdditiveSemigroup (FieldElement c)
+
+deriving newtype instance AdditiveMonoid (c 1) => AdditiveMonoid (FieldElement c)
+
+deriving newtype instance AdditiveGroup (c 1) => AdditiveGroup (FieldElement c)
+
+deriving newtype instance Semiring (c 1) => Semiring (FieldElement c)
+
+deriving newtype instance Ring (c 1) => Ring (FieldElement c)
+
+deriving newtype instance Field (c 1) => Field (FieldElement c)
+
+deriving newtype instance Eq (Bool c) (c 1) => Eq (Bool c) (FieldElement c)
 
 -- | A class for serializing data types into containers holding finite field elements.
 -- Type `c` is the container type.
@@ -38,14 +78,14 @@ class FieldElementData c x where
 typeSize :: forall c x . KnownNat (TypeSize c x) => Natural
 typeSize = value @(TypeSize c x)
 
-instance Arithmetic a => FieldElementData (Interpreter a) () where
+instance FieldElementData (Interpreter a) () where
     type TypeSize (Interpreter a) () = 0
 
     toFieldElements () = Interpreter V.empty
 
     fromFieldElements _ = ()
 
-instance Arithmetic a => FieldElementData (Interpreter a) (FieldElement (Interpreter a)) where
+instance FieldElementData (Interpreter a) (FieldElement (Interpreter a)) where
     type TypeSize (Interpreter a) (FieldElement (Interpreter a)) = 1
 
     toFieldElements (FieldElement x) = x

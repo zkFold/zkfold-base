@@ -11,12 +11,11 @@ import           Tests.Arithmetization.Test2                    (specArithmetiza
 import           Tests.Arithmetization.Test3                    (specArithmetization3)
 import           Tests.Arithmetization.Test4                    (specArithmetization4)
 
-import           ZkFold.Base.Algebra.Basic.Class                (MultiplicativeMonoid)
+import           ZkFold.Base.Algebra.Basic.Class                (FromConstant, MultiplicativeMonoid)
 import           ZkFold.Base.Algebra.Basic.Field                (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircuitTest (..))
-import           ZkFold.Symbolic.Types                          (Symbolic)
 
 propCircuitInvariance :: (MultiplicativeMonoid a, Eq a) => ArithmeticCircuitTest a 1 -> Bool
 propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
@@ -25,7 +24,7 @@ propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
         v'  = ac' `eval` wi'
     in v == v'
 
-specArithmetization' :: forall a . (Symbolic a, Arithmetic a, Arbitrary a, Show a, Show (ArithmeticCircuitTest a 1)) => IO ()
+specArithmetization' :: forall a . (FromConstant a a, Arithmetic a, Arbitrary a, Show a, Show (ArithmeticCircuitTest a 1)) => IO ()
 specArithmetization' = hspec $ do
     describe "Arithmetization specification" $ do
         describe "Variable mapping" $ do

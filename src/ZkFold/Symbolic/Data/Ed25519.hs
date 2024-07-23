@@ -73,13 +73,13 @@ instance
     pieces Inf         = pieces (zero :: UInt 256 (ArithmeticCircuit a) Auto) `joinCircuits` pieces (zero :: UInt 256 (ArithmeticCircuit a) Auto)
     pieces (Point x y) = pieces x `joinCircuits` pieces y
 
-    restore c o = bool @(Bool (ArithmeticCircuit a 1)) @(Point (Ed25519 ArithmeticCircuit a)) (Point x y) Inf ((x == zero) && (y == zero))
+    restore c o = bool @(Bool (ArithmeticCircuit a)) @(Point (Ed25519 ArithmeticCircuit a)) (Point x y) Inf ((x == zero) && (y == zero))
         where
             (piecesX, piecesY) = V.splitAt @(TypeSize a (UInt 256 (ArithmeticCircuit a) Auto)) o
             partialRestore = restore c
             (x, y) = (partialRestore piecesX, partialRestore piecesY)
 
-instance (Ring (b a 1), Eq (Bool (b a 1)) (BaseField (Ed25519 b a))) => Eq (Bool (b a 1)) (Point (Ed25519 b a)) where
+instance (BoolType (Bool (c a)), Eq (Bool (c a)) (BaseField (Ed25519 c a))) => Eq (Bool (c a)) (Point (Ed25519 c a)) where
     Inf == Inf                     = true
     Inf == _                       = false
     _ == Inf                       = false
@@ -117,12 +117,12 @@ instance
             (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
             (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
 
-    add x y = bool @(Bool (ArithmeticCircuit a 1)) @(Point (Ed25519 ArithmeticCircuit a)) (acAdd25519 x y) (acDouble25519 x) (x == y)
+    add x y = bool @(Bool (ArithmeticCircuit a)) @(Point (Ed25519 ArithmeticCircuit a)) (acAdd25519 x y) (acDouble25519 x) (x == y)
 
     -- pointMul uses natScale which converts the scale to Natural.
     -- We can't convert arithmetic circuits to Natural, so we can't use pointMul either.
     --
-    mul sc x = sum $ P.zipWith (\b p -> bool @(Bool (ArithmeticCircuit a 1)) zero p (isSet bits b)) [255, 254 .. 0] (P.iterate (\e -> e + e) x)
+    mul sc x = sum $ P.zipWith (\b p -> bool @(Bool (ArithmeticCircuit a)) zero p (isSet bits b)) [255, 254 .. 0] (P.iterate (\e -> e + e) x)
         where
             bits :: ByteString 256 (ArithmeticCircuit a)
             bits = from sc

@@ -9,16 +9,15 @@ module ZkFold.Symbolic.Compiler (
     compileIO
 ) where
 
-import           Data.Aeson                                                (ToJSON)
-import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, type (~),
-                                                                            ($), (++), (<$>))
+import           Data.Aeson                                          (ToJSON)
+import           Prelude                                             (FilePath, IO, Monoid (mempty), Show (..),
+                                                                      putStrLn, type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (replicateA, writeFileJSON)
+import           ZkFold.Base.Data.Vector                             (unsafeToVector)
+import           ZkFold.Prelude                                      (writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), Circuit (acInput))
 import           ZkFold.Symbolic.Compiler.Arithmetizable
 
 {-
@@ -37,8 +36,8 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 solder :: forall a f . (Arithmetizable a f, KnownNat (InputSize a f)) => f -> ArithmeticCircuit a (OutputSize a f)
 solder f = arithmetize f inputC
     where
-        inputC :: ArithmeticCircuit a (InputSize a f)
-        inputC = circuitN $ Vector <$> replicateA (value @(InputSize a f)) input
+        inputList = [1..(value @(InputSize a f))]
+        inputC = withOutputs (mempty { acInput = inputList }) (unsafeToVector inputList)
 
 -- | Compiles function `f` into an arithmetic circuit.
 compile

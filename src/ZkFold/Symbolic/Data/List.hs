@@ -41,7 +41,7 @@ last = head . reverse
 _ ++ _ = undefined
 
 filter ::
-       (x -> Bool (context 1))
+       (x -> Bool context)
     -> List context x
     -> List context x
 filter = undefined

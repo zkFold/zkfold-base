@@ -27,7 +27,7 @@ type F = Zp BLS12_381_Scalar
 type FieldElement context     = Symbolic.FieldElement context
 type FieldElementBits context = context 256
 
-type Bool context = Symbolic.Bool (context 1)
+type Bool context = Symbolic.Bool context
 
 type CtxCompilation = ArithmeticCircuit F
 type CtxEvaluation  = Interpreter F
