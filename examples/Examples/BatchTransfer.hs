@@ -1,19 +1,16 @@
-{-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
+{-# LANGUAGE TypeOperators #-}
 
 module Examples.BatchTransfer (exampleBatchTransfer) where
 
-import           Prelude                                         hiding (Eq (..), Num (..), any, not, (!!), (/), (^),
-                                                                  (||))
+import           Data.Type.Equality                              (type (~))
 
-import           ZkFold.Symbolic.Cardano.Contracts.BatchTransfer (batchTransfer)
-import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Compiler                        (compileIO)
+import           ZkFold.Base.Data.Vector                         (Vector)
+import           ZkFold.Symbolic.Cardano.Contracts.BatchTransfer (Tx, TxOut, batchTransfer)
+import           ZkFold.Symbolic.Cardano.Types                   (Bool, ByteString, F)
+import           ZkFold.Symbolic.Class                           (Symbolic (BaseField))
+import           ZkFold.Symbolic.Data.Eq                         (Eq)
 
-exampleBatchTransfer :: IO ()
-exampleBatchTransfer = do
-    let file = "compiled_scripts/batch-transfer.json"
-
-    putStrLn "\nExample: Batch Transfer smart contract\n"
-
-    compileIO @F file (batchTransfer @CtxCompilation)
+exampleBatchTransfer ::
+  (Symbolic c, BaseField c ~ F, Eq (Bool c) (TxOut c)) =>
+  Tx c -> Vector 5 (TxOut c, TxOut c, ByteString 256 c) -> Bool c
+exampleBatchTransfer = batchTransfer
