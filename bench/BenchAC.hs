@@ -15,17 +15,17 @@ import           Prelude                                     hiding (not, sum, (
 import           System.Random                               (randomIO)
 import           Test.Tasty.Bench
 
-import           ZkFold.Prelude
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector
+import           ZkFold.Prelude
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.UInt
 
 evalBS :: forall a n . ByteString n (ArithmeticCircuit a) -> Vector n a
