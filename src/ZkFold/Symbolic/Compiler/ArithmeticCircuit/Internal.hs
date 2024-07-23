@@ -20,7 +20,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         assignment,
         addVariable,
         newVariableWithSource,
-        input,
         eval,
         eval1,
         exec,
@@ -193,16 +192,6 @@ forceZero = mapM_ (constraint . var)
 -- TODO: forbid reassignment of variables
 assignment :: Natural -> (Map Natural a -> a) -> State (Circuit a) ()
 assignment i f = zoom #acWitness . modify $ insert i f
-
--- | Adds a new input variable to the arithmetic circuit.
-input :: State (Circuit a) Natural
-input = do
-  inputs <- zoom #acInput get
-  let s = if null inputs then 1 else maximum inputs + 1
-  zoom #acInput $ modify (++ [s])
-  zoom #acVarOrder . modify
-      $ \vo -> insert (length vo, s) s vo
-  return s
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
 eval1 :: ArithmeticCircuit a 1 -> Map Natural a -> a
