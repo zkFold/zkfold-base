@@ -2,13 +2,14 @@ module ZkFold.Symbolic.Data.List where
 
 import           Data.Foldable                     (Foldable (..))
 import           Data.Kind                         (Type)
-import           GHC.TypeNats                      (Natural)
+import           GHC.Generics                      (Par1)
 import           Prelude                           (flip, undefined, (.))
 
+import           ZkFold.Base.Data.Vector           (Vector)
 import           ZkFold.Symbolic.Data.Bool         (Bool)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElementData (..))
 
-data List (context :: Natural -> Type) x = List (context (TypeSize context x)) (context 1)
+data List (context :: (Type -> Type) -> Type) x = List (context (Vector (TypeSize context x))) (context Par1)
 
 emptyList :: List context x
 emptyList = undefined

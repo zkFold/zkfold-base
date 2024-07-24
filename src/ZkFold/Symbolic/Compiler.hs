@@ -14,7 +14,7 @@ import           Prelude                                             (FilePath, 
                                                                       putStrLn, type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                             (unsafeToVector)
+import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
 import           ZkFold.Prelude                                      (writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), Circuit (acInput))
@@ -33,7 +33,7 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
 -}
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
-solder :: forall a f . (Arithmetizable a f, KnownNat (InputSize a f)) => f -> ArithmeticCircuit a (OutputSize a f)
+solder :: forall a f . (Arithmetizable a f, KnownNat (InputSize a f)) => f -> ArithmeticCircuit a (Vector (OutputSize a f))
 solder f = arithmetize f inputC
     where
         inputList = [1..(value @(InputSize a f))]
@@ -54,7 +54,7 @@ compile f = restore @a c o
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO :: forall a f . (ToJSON a, Arithmetizable a f, KnownNat (InputSize a f)) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
-    let ac = optimize (solder @a f) :: ArithmeticCircuit a (OutputSize a f)
+    let ac = optimize (solder @a f) :: ArithmeticCircuit a (Vector (OutputSize a f))
 
     putStrLn "\nCompiling the script...\n"
 

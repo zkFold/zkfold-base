@@ -9,6 +9,7 @@ module ZkFold.Symbolic.Data.Bool (
     any
 ) where
 
+import           GHC.Generics                                              (Par1 (..))
 import           Prelude                                                   hiding (Bool, Num (..), all, any, not, (&&),
                                                                             (/), (||))
 import qualified Prelude                                                   as Haskell
@@ -16,7 +17,6 @@ import qualified Prelude                                                   as Ha
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat)
-import           ZkFold.Base.Data.Vector                                   (item, singleton)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (newAssigned, runCircuit),
                                                                             circuit)
@@ -51,9 +51,9 @@ instance BoolType Haskell.Bool where
     xor = xor
 
 -- TODO (Issue #18): hide this constructor
-newtype Bool c = Bool (c 1)
+newtype Bool c = Bool (c Par1)
 
-deriving instance Eq (c 1) => Eq (Bool c)
+deriving instance Eq (c Par1) => Eq (Bool c)
 
 instance KnownNat p => Show (Bool (Interpreter (Zp p))) where
     show (fromBool -> x) = if x == one then "True" else "False"
@@ -64,36 +64,36 @@ instance Arithmetic a => BoolType (Bool (ArithmeticCircuit a)) where
     false = Bool $ circuit $ newAssigned zero
 
     not (Bool b) = Bool $ circuit $ do
-      v <- item <$> runCircuit b
+      v <- unPar1 <$> runCircuit b
       newAssigned (one - ($ v))
 
     Bool b1 && Bool b2 = Bool $ circuit $ do
-      v1 <- item <$> runCircuit b1
-      v2 <- item <$> runCircuit b2
+      v1 <- unPar1 <$> runCircuit b1
+      v2 <- unPar1 <$> runCircuit b2
       newAssigned (($ v1) * ($ v2))
 
     Bool b1 || Bool b2 = Bool $ circuit $ do
-      v1 <- item <$> runCircuit b1
-      v2 <- item <$> runCircuit b2
+      v1 <- unPar1 <$> runCircuit b1
+      v2 <- unPar1 <$> runCircuit b2
       newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - x1 * x2)
 
     Bool b1 `xor` Bool b2 = Bool $ circuit $ do
-      v1 <- item <$> runCircuit b1
-      v2 <- item <$> runCircuit b2
+      v1 <- unPar1 <$> runCircuit b1
+      v2 <- unPar1 <$> runCircuit b2
       newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
 
 fromBool :: Bool (Interpreter a) -> a
-fromBool (Bool (Interpreter (item -> b))) = b
+fromBool (Bool (Interpreter (Par1 b))) = b
 
 toBool :: a -> Bool (Interpreter a)
-toBool = Bool . Interpreter . singleton
+toBool = Bool . Interpreter . Par1
 
 instance Arithmetic a => BoolType (Bool (Interpreter a)) where
-    true = Bool $ Interpreter $ singleton one
+    true = Bool $ Interpreter $ Par1 one
 
-    false = Bool $ Interpreter $ singleton zero
+    false = Bool $ Interpreter $ Par1 zero
 
-    not (fromBool -> b) = Bool $ Interpreter $ singleton $ one - b
+    not (fromBool -> b) = Bool $ Interpreter $ Par1 $ one - b
 
     (fromBool -> b1) && (fromBool -> b2) = toBool $ b1 * b2
 

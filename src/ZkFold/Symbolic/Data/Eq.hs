@@ -6,6 +6,7 @@ module ZkFold.Symbolic.Data.Eq (
 import           Data.Bool                               (bool)
 import qualified Data.Eq                                 as Haskell
 import           Data.Foldable                           (Foldable)
+import           GHC.Generics                            (Par1)
 
 import           ZkFold.Symbolic.Compiler.Arithmetizable (Arithmetic)
 import           ZkFold.Symbolic.Data.Bool               (Bool, BoolType (..), any)
@@ -21,6 +22,6 @@ class Eq b a where
 elem :: (BoolType b, Eq b a, Foldable t) => a -> t a -> b
 elem x = any (== x)
 
-instance Arithmetic a => Eq (Bool (Interpreter a)) (Interpreter a 1) where
+instance Arithmetic a => Eq (Bool (Interpreter a)) (Interpreter a Par1) where
     x == y = bool false true (x Haskell.== y)
     x /= y = bool false true (x Haskell./= y)

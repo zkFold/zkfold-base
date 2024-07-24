@@ -11,7 +11,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (
     Witness,
     WitnessField,
     circuit,
-    circuitN,
+    circuitF,
     circuits
 ) where
 
@@ -27,12 +27,12 @@ import           Data.Ord                                            (Ord)
 import           Data.Set                                            (Set)
 import qualified Data.Set                                            as Set
 import           Data.Type.Equality                                  (type (~))
+import           GHC.Generics                                        (Par1)
 import           Numeric.Natural                                     (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
-import           ZkFold.Base.Data.Vector
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal as I
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
 
@@ -90,7 +90,7 @@ class Monad m => MonadBlueprint i a m | m -> i, m -> a where
     --   utilized for later proving.
 
     -- | Adds the supplied circuit to the blueprint and returns its output variable.
-    runCircuit :: ArithmeticCircuit a n -> m (Vector n i)
+    runCircuit :: ArithmeticCircuit a f -> m (f i)
 
     -- | Creates new variable given an inclusive upper bound on a value and a witness.
     -- e.g., @newRanged b (\\x -> x i - one)@ creates new variable whose value
@@ -138,19 +138,19 @@ instance Arithmetic a => MonadBlueprint Natural a (State (Circuit a)) where
 
     constraint p = I.constraint (p var)
 
-circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> ArithmeticCircuit a 1
+circuit :: Arithmetic a => (forall i m . MonadBlueprint i a m => m i) -> ArithmeticCircuit a Par1
 -- ^ Builds a circuit from blueprint. A blueprint is a function which, given an
 -- arbitrary type of variables @i@ and a monad @m@ supporting the 'MonadBlueprint'
 -- API, computes the output variable of a future circuit.
-circuit b = circuitN (pure <$> b)
+circuit b = circuitF (pure <$> b)
 
-circuitN :: forall a n . Arithmetic a => (forall i m . MonadBlueprint i a m => m (Vector n i)) -> ArithmeticCircuit a n
+circuitF :: forall a f . Arithmetic a => (forall i m . MonadBlueprint i a m => m (f i)) -> ArithmeticCircuit a f
 -- TODO: I should really rethink this...
-circuitN b = let (os, r) = runState b (mempty :: Circuit a)
+circuitF b = let (os, r) = runState b (mempty :: Circuit a)
               in ArithmeticCircuit { acCircuit = r, acOutput = os }
 
 -- TODO: kept for compatibility with @binaryExpansion@ only. Perhaps remove it in the future?
-circuits :: forall a f . (Arithmetic a, Functor f) => (forall i m . MonadBlueprint i a m => m (f i)) -> f (ArithmeticCircuit a 1)
+circuits :: forall a f . (Arithmetic a, Functor f) => (forall i m . MonadBlueprint i a m => m (f i)) -> f (ArithmeticCircuit a Par1)
 -- ^ Builds a collection of circuits from one blueprint. A blueprint is a function
 -- which, given an arbitrary type of variables @i@ and a monad @m@ supporting the
 -- 'MonadBlueprint' API, computes the collection of output variables of future circuits.

@@ -11,6 +11,7 @@ import           Test.Hspec
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString             (ByteString, Concat, ReverseEndianness, ShiftBits,
@@ -30,7 +31,7 @@ blake2bSimple :: forall b .
     , Concat (ByteString 8 b) (ByteString 512 b)
     , FromConstant Natural (ByteString 0 b)
     , FromConstant Natural (ByteString 8 b)
-    , Eq (b 512)
+    , Eq (b (Vector 512))
     ) => Spec
 blake2bSimple =
     let a = blake2b_512 $ fromConstant @Natural @(ByteString 0 b) 0

@@ -35,7 +35,7 @@ import           ZkFold.Symbolic.Data.UInt                      (UInt)
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
 --
-class AlgorithmSetup (algorithm :: Symbol) (backend :: Natural -> Type) where
+class AlgorithmSetup (algorithm :: Symbol) (backend :: (Type -> Type) -> Type) where
     type WordSize algorithm :: Natural
     -- ^ The length of words the algorithm operates internally, in bits.
 
@@ -247,7 +247,7 @@ type SHA2N algorithm backend =
 -- Only used for testing.
 --
 sha2Natural
-    :: forall (algorithm :: Symbol) (backend :: Natural -> Type)
+    :: forall (algorithm :: Symbol) (backend :: (Type -> Type) -> Type)
     .  SHA2N algorithm backend
     => Natural -> Natural -> ByteString (ResultSize algorithm) backend
 sha2Natural numBits messageBits = sha2Blocks @algorithm @backend chunks
@@ -281,7 +281,7 @@ sha2Natural numBits messageBits = sha2Blocks @algorithm @backend chunks
 -- Even 16 GB of RAM is not enough.
 --
 sha2Blocks
-    :: forall algorithm (backend :: Natural -> Type)
+    :: forall algorithm (backend :: (Type -> Type) -> Type)
     .  AlgorithmSetup algorithm backend
     => NFData (ByteString (WordSize algorithm) backend)
     => Iso (ByteString (WordSize algorithm) backend) (UInt (WordSize algorithm) backend Auto)

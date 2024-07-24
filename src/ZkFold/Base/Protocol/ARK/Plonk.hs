@@ -13,6 +13,7 @@ module ZkFold.Base.Protocol.ARK.Plonk (
 
 import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
+import           GHC.Generics                               (Par1)
 import           GHC.IsList                                 (IsList (..))
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), div, drop, length, replicate, sum, take,
@@ -43,7 +44,7 @@ data Plonk (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
         iPub  :: Vector l Natural,
-        ac    :: ArithmeticCircuit (ScalarField curve1) 1,
+        ac    :: ArithmeticCircuit (ScalarField curve1) Par1,
         x     :: ScalarField curve1
     }
 instance (Show (ScalarField c1), Arithmetic (ScalarField c1)) => Show (Plonk n l c1 c2 t) where
