@@ -9,8 +9,8 @@ module Main where
 
 import           Control.DeepSeq                             (force)
 import           Control.Exception                           (evaluate)
-import qualified Data.Map                                    as M
 import           Data.Aeson                                  (ToJSON)
+import qualified Data.Map                                    as M
 import           Data.Time.Clock                             (getCurrentTime)
 import           Prelude                                     hiding (not, sum, (&&), (*), (+), (-), (/), (^), (||))
 import           System.Random                               (randomIO)
