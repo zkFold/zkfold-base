@@ -10,6 +10,7 @@ module Main where
 import           Control.DeepSeq                             (force)
 import           Control.Exception                           (evaluate)
 import qualified Data.Map                                    as M
+import           Data.Aeson                                  (ToJSON)
 import           Data.Time.Clock                             (getCurrentTime)
 import           Prelude                                     hiding (not, sum, (&&), (*), (+), (-), (/), (^), (||))
 import           System.Random                               (randomIO)
@@ -66,10 +67,15 @@ printCircuitSize crct = crct
     >>= evaluate . force
     >>= print . acSizeM . toFieldElements @(ArithmeticCircuit (Zp p))
 
+benchCompilation :: forall a f .
+   (ToJSON a, Arithmetizable a f, KnownNat (InputSize a f)) =>
+   String -> FilePath -> f -> Benchmark
+benchCompilation title fp =
+    bench title . nfIO . writeFileJSON fp . optimize . solder @a
+
 main :: IO ()
 main = do
     mainSumBS
-    -- mainHash
 
 mainHash :: IO ()
 mainHash = do
