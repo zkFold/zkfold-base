@@ -85,7 +85,7 @@ instance
     , KnownRegisterSize r
     ) => FromConstant Natural (UInt n (ArithmeticCircuit a) r) where
     fromConstant c =
-        let (lo, hi, _) = cast @a @n @r. (`Haskell.mod` (2 ^ getNatural @n)) $ c
+        let (lo, hi, _) = cast @a @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
          in UInt $ embedV $ Vector $ fromConstant <$> (lo <> [hi])
 
 instance
@@ -320,16 +320,22 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegis
 
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n (ArithmeticCircuit a) r) where
-    UInt x + UInt y = UInt (circuitN solve)
+    UInt x + UInt y = UInt (circuitN $ V.unsafeToVector <$> solve)
         where
-            solve :: MonadBlueprint i a m => m (Vector (NumberOfRegisters a n r) i)
+            solve :: MonadBlueprint i a m => m [i]
             solve = do
-                xs <- runCircuit x
-                ys <- runCircuit y
-                z <- newAssigned (Haskell.const zero)
-                (zs, _) <- flip runStateT z $ traverse StateT $
-                    Z.zipWith (fullAdder $ registerSize @a @n @r) xs ys
-                return zs
+                j <- newAssigned (Haskell.const zero)
+                xs <- V.fromVector <$> runCircuit x
+                ys <- V.fromVector <$> runCircuit y
+                let midx = Haskell.init xs
+                    z    = Haskell.last xs
+                    midy = Haskell.init ys
+                    w    = Haskell.last ys
+                (zs, c) <- flip runStateT j $ traverse StateT $
+                    Haskell.zipWith (fullAdder $ registerSize @a @n @r) midx midy
+                k <- fullAdded z w c
+                (ks, _) <- splitExpansion (highRegisterSize @a @n @r) 1 k
+                return (zs ++ [ks])
 
 instance
     ( Arithmetic a
