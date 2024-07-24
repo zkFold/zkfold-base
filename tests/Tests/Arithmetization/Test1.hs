@@ -3,6 +3,7 @@
 
 module Tests.Arithmetization.Test1 (specArithmetization1) where
 
+import           GHC.Generics                      (Par1 (unPar1))
 import           Numeric.Natural                   (Natural)
 import           Prelude                           hiding (Bool, Eq (..), Num (..), not, replicate, (/), (>), (^), (||))
 import qualified Prelude                           as Haskell
@@ -10,7 +11,6 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector           (item)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
 import           ZkFold.Symbolic.Data.Conditional  (Conditional (..))
@@ -27,13 +27,13 @@ testFunc x y =
         g3 = c 2 // x
     in (g3 == y :: Bool c) ? g1 $ g2
 
-testResult :: forall a . (FromConstant a a, Arithmetic a) => ArithmeticCircuit a 1 -> a -> a -> Haskell.Bool
-testResult r x y = fromConstant (item $ acValue $ applyArgs r [x, y]) Haskell.==
+testResult :: forall a . (FromConstant a a, Arithmetic a) => ArithmeticCircuit a Par1 -> a -> a -> Haskell.Bool
+testResult r x y = fromConstant (unPar1 $ acValue $ applyArgs r [x, y]) Haskell.==
     testFunc @(Interpreter a) (fromConstant x) (fromConstant y)
 
 specArithmetization1 :: forall a . (FromConstant a a, Arithmetic a, Arbitrary a, Show a) => Spec
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do
-            let ac = compile @a (testFunc @(ArithmeticCircuit a)) :: ArithmeticCircuit a 1
+            let ac = compile @a (testFunc @(ArithmeticCircuit a)) :: ArithmeticCircuit a Par1
             property $ \x y -> testResult ac x y

@@ -3,12 +3,13 @@
 module ZkFold.Symbolic.Algorithms.Hash.MiMC where
 
 import           Data.List.NonEmpty                                     (NonEmpty ((:|)), nonEmpty)
+import           GHC.Generics                                           (Par1 (Par1))
 import           Numeric.Natural                                        (Natural)
 import           Prelude                                                hiding (Eq (..), Num (..), any, length, not,
                                                                          (!!), (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                                (fromVector, singleton)
+import           ZkFold.Base.Data.Vector                                (fromVector)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
 import           ZkFold.Symbolic.Data.FieldElement                      (FieldElement (..), FieldElementData (..))
@@ -40,7 +41,7 @@ class MiMCHash a c x where
     mimcHash :: [a] -> a -> x -> FieldElement c
 
 instance (Ring a, FieldElementData (Interpreter a) x) => MiMCHash a (Interpreter a) x where
-    mimcHash xs k = FieldElement . Interpreter . singleton . mimcHashN xs k . fromVector . runInterpreter . toFieldElements
+    mimcHash xs k = FieldElement . Interpreter . Par1 . mimcHashN xs k . fromVector . runInterpreter . toFieldElements
 
 instance (Arithmetic a, FieldElementData (ArithmeticCircuit a) x) => MiMCHash a (ArithmeticCircuit a) x where
     mimcHash xs k = FieldElement  . mimcHashN xs k . fromVector . splitCircuit . toFieldElements

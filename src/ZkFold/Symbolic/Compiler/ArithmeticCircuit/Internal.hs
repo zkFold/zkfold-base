@@ -14,6 +14,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         inputVariables,
         witnessGenerator,
         varOrder,
+        mapOutputs,
         -- low-level functions
         constraint,
         rangeConstraint,
@@ -44,10 +45,8 @@ import           System.Random                                (StdGen, mkStdGen,
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
-import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
-import qualified ZkFold.Base.Data.Vector                      as V
 import           ZkFold.Base.Data.Vector                      (Vector (..))
 import           ZkFold.Prelude                               (drop, length)
 
@@ -67,28 +66,33 @@ data Circuit a = Circuit
         acRNG      :: StdGen
     } deriving (Generic, NFData)
 
-data ArithmeticCircuit a n = ArithmeticCircuit
+data ArithmeticCircuit a f = ArithmeticCircuit
   { acCircuit :: Circuit a
-  , acOutput  :: Vector n Natural
-  } deriving (Generic, NFData)
+  , acOutput  :: f Natural
+  } deriving (Generic)
 
-withOutputs :: Circuit a -> Vector n Natural -> ArithmeticCircuit a n
+deriving instance (NFData a, NFData (f Natural)) => NFData (ArithmeticCircuit a f)
+
+withOutputs :: Circuit a -> f Natural -> ArithmeticCircuit a f
 withOutputs = ArithmeticCircuit
 
-constraintSystem :: ArithmeticCircuit a n -> Map Natural (Constraint a)
+constraintSystem :: ArithmeticCircuit a f -> Map Natural (Constraint a)
 constraintSystem = acSystem . acCircuit
 
-inputVariables :: ArithmeticCircuit a n -> [Natural]
+inputVariables :: ArithmeticCircuit a f -> [Natural]
 inputVariables = acInput . acCircuit
 
-witnessGenerator :: ArithmeticCircuit a n -> Map Natural a -> Map Natural a
+witnessGenerator :: ArithmeticCircuit a f -> Map Natural a -> Map Natural a
 witnessGenerator circuit inputs =
   let srcs = acWitness (acCircuit circuit)
       witness = ($ witness) <$> (srcs `union` fmap const inputs)
    in witness
 
-varOrder :: ArithmeticCircuit a n -> Map (Natural, Natural) Natural
+varOrder :: ArithmeticCircuit a f -> Map (Natural, Natural) Natural
 varOrder = acVarOrder . acCircuit
+
+mapOutputs :: (forall i . f i -> g i) -> ArithmeticCircuit a f -> ArithmeticCircuit a g
+mapOutputs f (ArithmeticCircuit ac o) = ArithmeticCircuit ac (f o)
 
 ----------------------------------- Circuit monoid ----------------------------------
 
@@ -123,20 +127,20 @@ instance (Eq a, MultiplicativeMonoid a) => Monoid (Circuit a) where
                acRNG      = mkStdGen 0
            }
 
-joinCircuits :: Eq a => ArithmeticCircuit a ol -> ArithmeticCircuit a or -> ArithmeticCircuit a (ol + or)
+joinCircuits :: Eq a => ArithmeticCircuit a ol -> ArithmeticCircuit a or -> ArithmeticCircuit a (ol :*: or)
 joinCircuits r1 r2 =
     ArithmeticCircuit
         {
             acCircuit = acCircuit r1 <> acCircuit r2
-        ,   acOutput = acOutput r1 `V.append` acOutput r2
+        ,   acOutput = acOutput r1 :*: acOutput r2
         }
 
-concatCircuits :: (Eq a, MultiplicativeMonoid a) => Vector n (ArithmeticCircuit a m) -> ArithmeticCircuit a (n * m)
+concatCircuits :: (Eq a, MultiplicativeMonoid a, Foldable f, Functor f) => f (ArithmeticCircuit a g) -> ArithmeticCircuit a (f :.: g)
 concatCircuits cs =
     ArithmeticCircuit
         {
-            acCircuit = mconcat . V.fromVector $ acCircuit <$> cs
-        ,   acOutput = V.concat $ acOutput <$> cs
+            acCircuit = foldMap acCircuit cs
+        ,   acOutput = Comp1 (acOutput <$> cs)
         }
 
 ------------------------------------- Variables -------------------------------------
@@ -194,19 +198,19 @@ assignment :: Natural -> (Map Natural a -> a) -> State (Circuit a) ()
 assignment i f = zoom #acWitness . modify $ insert i f
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
-eval1 :: ArithmeticCircuit a 1 -> Map Natural a -> a
-eval1 ctx i = witnessGenerator ctx i ! V.item (acOutput ctx)
+eval1 :: ArithmeticCircuit a Par1 -> Map Natural a -> a
+eval1 ctx i = witnessGenerator ctx i ! unPar1 (acOutput ctx)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: ArithmeticCircuit a n -> Map Natural a -> Vector n a
-eval ctx i = V.parFmap (witnessGenerator ctx i !) $ acOutput ctx
+eval :: Functor f => ArithmeticCircuit a f -> Map Natural a -> f a
+eval ctx i = (witnessGenerator ctx i !) <$> acOutput ctx
 
 -- | Evaluates the arithmetic circuit with no inputs and one output using the supplied input map.
-exec1 :: ArithmeticCircuit a 1 -> a
+exec1 :: ArithmeticCircuit a Par1 -> a
 exec1 ac = eval1 ac empty
 
 -- | Evaluates the arithmetic circuit with no inputs using the supplied input map.
-exec :: ArithmeticCircuit a n -> Vector n a
+exec :: Functor f => ArithmeticCircuit a f -> f a
 exec ac = eval ac empty
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.

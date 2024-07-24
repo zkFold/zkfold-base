@@ -11,6 +11,7 @@ import           Control.Monad                               (return)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
+import           GHC.Generics                                (Par1 (Par1))
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (show, type (~))
 import qualified Prelude                                     as P
@@ -23,7 +24,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Data.Vector                     (Vector, item)
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
@@ -40,7 +41,7 @@ evalBool :: forall a . Bool (ArithmeticCircuit a) -> a
 evalBool (Bool ac) = exec1 ac
 
 evalBoolVec :: forall a . Bool (Interpreter a) -> a
-evalBoolVec (Bool (Interpreter v)) = item v
+evalBoolVec (Bool (Interpreter (Par1 v))) = v
 
 execAcUint :: forall a n . UInt n (ArithmeticCircuit a) -> Vector (NumberOfRegisters a n) a
 execAcUint (UInt v) = exec v
@@ -71,6 +72,7 @@ specUInt'
     => KnownNat (r2n + r2n)
     => KnownNat (r - 1)
     => KnownNat (r2n - 1)
+    => (r - 1) + 1 ~ r
     => 1 + (r - 1) ~ r
     => 1 + (r2n - 1) ~ r2n
     => IO ()

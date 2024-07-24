@@ -7,6 +7,7 @@ module ZkFold.Base.Data.Vector where
 import           Control.DeepSeq                  (NFData)
 import qualified Control.Monad                    as M
 import           Control.Parallel.Strategies      (parMap, rpar)
+import           Data.Aeson                       (ToJSON (..))
 import           Data.Bifunctor                   (first)
 import qualified Data.List                        as List
 import           Data.List.Split                  (chunksOf)
@@ -169,3 +170,6 @@ instance (Random a, KnownNat size) => Random (Vector size a) where
                 let (a, g'') = randomR (P.head xs', P.head ys') g'
                 in ((as' ++ [a], g''), (P.tail xs', P.tail ys'))) (([], g), (xs, ys)) [1..value @size]
         in first Vector as
+
+instance ToJSON a => ToJSON (Vector n a) where
+    toJSON (Vector xs) = toJSON xs

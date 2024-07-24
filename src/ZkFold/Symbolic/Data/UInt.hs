@@ -22,10 +22,10 @@ import           Data.Functor                                              ((<$>
 import           Data.Kind                                                 (Type)
 import           Data.List                                                 (unfoldr, zip)
 import           Data.Map                                                  (fromList, (!))
-import           Data.Traversable                                          (for, traverse)
+import           Data.Traversable                                          (Traversable, for, traverse)
 import           Data.Tuple                                                (swap)
 import qualified Data.Zip                                                  as Z
-import           GHC.Generics                                              (Generic)
+import           GHC.Generics                                              (Generic, Par1 (..), type (:*:) (..))
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Natural)
 import           Prelude                                                   (Integer, error, flip, otherwise, return,
@@ -43,6 +43,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, joinCircuits,
                                                                             splitExpansion)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (mapOutputs)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -55,12 +56,12 @@ import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
 
 -- TODO (Issue #18): hide this constructor
-newtype UInt (n :: Natural) (backend :: Natural -> Type) = UInt (backend (NumberOfRegisters (BaseField backend) n))
+newtype UInt (n :: Natural) (backend :: (Type -> Type) -> Type) = UInt (backend (Vector (NumberOfRegisters (BaseField backend) n)))
 
 deriving instance Generic (UInt n backend)
-deriving instance (NFData (backend (NumberOfRegisters (BaseField backend) n))) => NFData (UInt n backend)
-deriving instance (Haskell.Eq (backend (NumberOfRegisters (BaseField backend) n))) => Haskell.Eq (UInt n backend)
-deriving instance (Haskell.Show (BaseField backend), Haskell.Show (backend (NumberOfRegisters (BaseField backend) n))) => Haskell.Show (UInt n backend)
+deriving instance (NFData (backend (Vector (NumberOfRegisters (BaseField backend) n)))) => NFData (UInt n backend)
+deriving instance (Haskell.Eq (backend (Vector (NumberOfRegisters (BaseField backend) n)))) => Haskell.Eq (UInt n backend)
+deriving instance (Haskell.Show (BaseField backend), Haskell.Show (backend (Vector (NumberOfRegisters (BaseField backend) n)))) => Haskell.Show (UInt n backend)
 deriving newtype instance Arithmetic a => Arithmetizable a (UInt n (ArithmeticCircuit a))
 
 instance Arithmetic a => FieldElementData (Interpreter a) (UInt n (Interpreter a)) where
@@ -161,14 +162,14 @@ instance (Finite (Zp p), KnownNat n, KnownNat m, m <= n) => Shrink (UInt n (Inte
     shrink = fromConstant @Natural . toConstant
 
 instance (Finite (Zp p), KnownNat n) => Eq (Bool (Interpreter (Zp p))) (UInt n (Interpreter (Zp p))) where
-    x == y = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.== toConstant y
-    x /= y = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell./= toConstant y
+    x == y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.== toConstant y
+    x /= y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell./= toConstant y
 
 instance (Finite (Zp p), KnownNat n) => Ord (Bool (Interpreter (Zp p))) (UInt n (Interpreter (Zp p))) where
-    x <= y = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.<= toConstant y
-    x < y  = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.< toConstant y
-    x >= y = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.>= toConstant y
-    x > y  = Bool . Interpreter . V.singleton . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.> toConstant y
+    x <= y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.<= toConstant y
+    x < y  = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.< toConstant y
+    x >= y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.>= toConstant y
+    x > y  = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.> toConstant y
     max x y = fromConstant $ Haskell.max (toConstant @_ @Natural x) (toConstant y)
     min x y = fromConstant $ Haskell.min (toConstant @_ @Natural x) (toConstant y)
 
@@ -230,7 +231,7 @@ instance
     , from ~ NumberOfRegisters a n
     , to ~ NumberOfRegisters a k
     ) => Extend (UInt n (ArithmeticCircuit a)) (UInt k (ArithmeticCircuit a)) where
-    extend (UInt ac) = UInt (circuitN solve)
+    extend (UInt ac) = UInt (circuitF solve)
         where
             solve :: forall i m. MonadBlueprint i a m => m (Vector to i)
             solve = do
@@ -248,7 +249,7 @@ instance
     , from ~ NumberOfRegisters a n
     , to ~ NumberOfRegisters a k
     ) => Shrink (UInt n (ArithmeticCircuit a)) (UInt k (ArithmeticCircuit a)) where
-    shrink (UInt ac) = UInt (circuitN solve)
+    shrink (UInt ac) = UInt (circuitF solve)
         where
             solve :: forall i m. MonadBlueprint i a m => m (Vector to i)
             solve = do
@@ -315,7 +316,7 @@ instance (Arithmetic a, KnownNat n, KnownNat (NumberOfRegisters a n)) => Ord (Bo
 
 
 instance (Arithmetic a, KnownNat n) => AdditiveSemigroup (UInt n (ArithmeticCircuit a)) where
-    UInt x + UInt y = UInt (circuitN solve)
+    UInt x + UInt y = UInt (circuitF solve)
         where
             solve :: MonadBlueprint i a m => m (Vector (NumberOfRegisters a n) i)
             solve = do
@@ -339,7 +340,7 @@ instance
     , KnownNat (NumberOfRegisters a n)
     ) => AdditiveGroup (UInt n (ArithmeticCircuit a)) where
 
-        UInt x - UInt y = UInt $ circuitN (V.unsafeToVector <$> solve)
+        UInt x - UInt y = UInt $ circuitF (V.unsafeToVector <$> solve)
             where
                 t :: a
                 t = (one + one) ^ registerSize @a @n - one
@@ -386,13 +387,13 @@ instance
                   | otherwise = V.unsafeToVector $ (y : ys) <> [y']
              in UInt (negateN ns x)
 
-negateN :: Arithmetic a => Vector n Natural -> ArithmeticCircuit a n -> ArithmeticCircuit a n
-negateN ns r = circuitN $ do
+negateN :: (Arithmetic a, Z.Zip f, Traversable f) => f Natural -> ArithmeticCircuit a f -> ArithmeticCircuit a f
+negateN ns r = circuitF $ do
     is <- runCircuit r
     for (Z.zip is ns) $ \(i, n) -> newAssigned (\v -> fromConstant n - v i)
 
 instance (Arithmetic a, KnownNat n, r ~ NumberOfRegisters a n) => MultiplicativeSemigroup (UInt n (ArithmeticCircuit a)) where
-    UInt x * UInt y = UInt (circuitN $ V.unsafeToVector <$> solve)
+    UInt x * UInt y = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: MonadBlueprint i a m => m [i]
             solve = do
@@ -440,10 +441,10 @@ instance
     , KnownNat n
     , KnownNat (NumberOfRegisters a n)
     , KnownNat (NumberOfRegisters a n - 1)
-    , 1 + (NumberOfRegisters a n - 1) ~ NumberOfRegisters a n
+    , (NumberOfRegisters a n - 1) + 1 ~ NumberOfRegisters a n
     ) => MultiplicativeMonoid (UInt n (ArithmeticCircuit a)) where
 
-    one = UInt $ (one :: ArithmeticCircuit a 1) `joinCircuits` (zero :: ArithmeticCircuit a (NumberOfRegisters a n - 1))
+    one = UInt $ mapOutputs (\(Par1 h :*: t) -> h V..: t) $ (one :: ArithmeticCircuit a Par1) `joinCircuits` (zero :: ArithmeticCircuit a (Vector (NumberOfRegisters a n - 1)))
 
 
 instance
@@ -451,7 +452,7 @@ instance
     , KnownNat n
     , KnownNat (NumberOfRegisters a n)
     , KnownNat (NumberOfRegisters a n - 1)
-    , 1 + (NumberOfRegisters a n - 1) ~ NumberOfRegisters a n
+    , (NumberOfRegisters a n - 1) + 1 ~ NumberOfRegisters a n
     ) => Semiring (UInt n (ArithmeticCircuit a))
 
 instance
@@ -459,7 +460,7 @@ instance
     , KnownNat n
     , KnownNat (NumberOfRegisters a n)
     , KnownNat (NumberOfRegisters a n - 1)
-    , 1 + (NumberOfRegisters a n - 1) ~ NumberOfRegisters a n
+    , (NumberOfRegisters a n - 1) + 1 ~ NumberOfRegisters a n
     ) => Ring (UInt n (ArithmeticCircuit a))
 
 deriving via (Structural (UInt n (ArithmeticCircuit a)))
@@ -475,7 +476,7 @@ instance (Arithmetic a, KnownNat n) => Arbitrary (UInt n (ArithmeticCircuit a)) 
             toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 instance (Arithmetic a, KnownNat n) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a)) where
-    from (ByteString bits) = UInt (circuitN $ V.unsafeToVector <$> solve)
+    from (ByteString bits) = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
             solve = do
@@ -483,7 +484,7 @@ instance (Arithmetic a, KnownNat n) => Iso (ByteString n (ArithmeticCircuit a)) 
                 Haskell.reverse <$> fromBits (highRegisterSize @a @n) (registerSize @a @n) bsBits
 
 instance (Arithmetic a, KnownNat n) => Iso (UInt n (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
-    from (UInt ac) = ByteString $ circuitN $ Vector <$> solve
+    from (UInt ac) = ByteString $ circuitF $ Vector <$> solve
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
             solve = do
@@ -512,15 +513,15 @@ instance (Finite (Zp p), KnownNat n) => StrictConv (Zp p) (UInt n (Interpreter (
 instance (Finite (Zp p), Prime p, KnownNat n) => StrictConv (Zp p) (UInt n (ArithmeticCircuit (Zp p))) where
     strictConv = strictConv . toConstant @_ @Natural
 
-instance (Arithmetic a, KnownNat n, NumberOfBits a <= n) => StrictConv (ArithmeticCircuit a 1) (UInt n (ArithmeticCircuit a)) where
-    strictConv a = UInt (circuitN $ V.unsafeToVector <$> solve)
+instance (Arithmetic a, KnownNat n, NumberOfBits a <= n) => StrictConv (ArithmeticCircuit a Par1) (UInt n (ArithmeticCircuit a)) where
+    strictConv a = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             requiredBits :: Natural
             requiredBits = (numberOfRegisters @a @n -! 1) * (registerSize @a @n) + (highRegisterSize @a @n)
 
             solve :: MonadBlueprint i a m => m [i]
             solve = do
-                i <- V.item <$> runCircuit a
+                i <- unPar1 <$> runCircuit a
                 bits <- Haskell.reverse <$> expansion requiredBits i
                 fromBits (highRegisterSize @a @n) (registerSize @a @n) bits
 
@@ -536,7 +537,7 @@ instance (Finite (Zp p), KnownNat n) => StrictNum (UInt n (Interpreter (Zp p))) 
     strictMul x y = strictConv $ toConstant x * toConstant @_ @Natural y
 
 instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) where
-    strictAdd (UInt x) (UInt y) = UInt (circuitN $ V.unsafeToVector <$> solve)
+    strictAdd (UInt x) (UInt y) = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: MonadBlueprint i a m => m [i]
             solve = do
@@ -554,7 +555,7 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                 return (zs <> [k])
 
 
-    strictSub (UInt x) (UInt y) = UInt (circuitN $ V.unsafeToVector <$> solve)
+    strictSub (UInt x) (UInt y) = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             t :: a
             t = (one + one) ^ registerSize @a @n - one
@@ -593,7 +594,7 @@ instance (Arithmetic a, KnownNat n) => StrictNum (UInt n (ArithmeticCircuit a)) 
                 s <- newAssigned (\v -> v k + v b + fromConstant t)
                 splitExpansion (registerSize @a @n) 1 s
 
-    strictMul (UInt x) (UInt y) = UInt (circuitN $ V.unsafeToVector <$> solve)
+    strictMul (UInt x) (UInt y) = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: MonadBlueprint i a m => m [i]
             solve = do

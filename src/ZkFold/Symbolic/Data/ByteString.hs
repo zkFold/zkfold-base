@@ -28,7 +28,7 @@ import           Data.Maybe                                                (Mayb
 import           Data.Proxy                                                (Proxy (..))
 import           Data.String                                               (IsString (..))
 import           Data.Traversable                                          (for)
-import           GHC.Generics                                              (Generic)
+import           GHC.Generics                                              (Generic, Par1 (..))
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Natural, natVal)
 import           Prelude                                                   (Integer, drop, fmap, otherwise, pure, take,
@@ -56,10 +56,12 @@ import           ZkFold.Symbolic.Interpreter                               (Inte
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
-newtype ByteString (n :: Natural) (backend :: Natural -> Type) = ByteString (backend n)
-    deriving (Haskell.Show, Haskell.Eq, Generic)
+newtype ByteString (n :: Natural) (backend :: (Type -> Type) -> Type) = ByteString (backend (Vector n))
+    deriving (Generic)
 
-deriving anyclass instance NFData (b n) => NFData (ByteString n b)
+deriving stock instance Haskell.Show (b (Vector n)) => Haskell.Show (ByteString n b)
+deriving stock instance Haskell.Eq (b (Vector n)) => Haskell.Eq (ByteString n b)
+deriving anyclass instance NFData (b (Vector n)) => NFData (ByteString n b)
 deriving newtype instance Arithmetic a => Arithmetizable a (ByteString n (ArithmeticCircuit a))
 
 instance Arithmetic a => FieldElementData (Interpreter a) (ByteString n (Interpreter a)) where
@@ -349,7 +351,7 @@ instance
     extend = fromConstant @Natural . toConstant
 
 instance Finite (Zp p) => BitState ByteString n (Interpreter (Zp p)) where
-    isSet (ByteString (Interpreter v)) ix = Bool (Interpreter . V.singleton . (!! ix) . V.fromVector $ v)
+    isSet (ByteString (Interpreter v)) ix = Bool (Interpreter . Par1 . (!! ix) . V.fromVector $ v)
     isUnset bs ix = let Bool (Interpreter zp) = isSet bs ix
                      in Bool (Interpreter $ (one -) <$> zp)
 
@@ -366,7 +368,7 @@ instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircui
     shiftBits bs@(ByteString oldBits) s
       | s == 0 = bs
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
-      | otherwise = ByteString $ circuitN solve
+      | otherwise = ByteString $ circuitF solve
       where
         solve :: forall i m. MonadBlueprint i a m => m (Vector n i)
         solve = do
@@ -402,7 +404,7 @@ bitwiseOperation
     -> ByteString n (ArithmeticCircuit a)
     -> (forall i. i -> i -> ClosedPoly i a)
     -> ByteString n (ArithmeticCircuit a)
-bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circuitN solve
+bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circuitF solve
   where
     solve :: forall i m. MonadBlueprint i a m => m (Vector n i)
     solve = do
@@ -421,7 +423,7 @@ instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit
 
     not (ByteString bits) = ByteString (flipBits bits)
         where
-            flipBits r = circuitN $ do
+            flipBits r = circuitF $ do
                 is <- runCircuit r
                 for is $ \i -> newAssigned (\p -> one - p i)
 
@@ -472,7 +474,7 @@ instance
   , Arithmetic a
   ) => Extend (ByteString m (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
 
-    extend (ByteString oldBits) = ByteString $ circuitN (Vector <$> solve)
+    extend (ByteString oldBits) = ByteString $ circuitF (Vector <$> solve)
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do

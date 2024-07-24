@@ -14,6 +14,7 @@ module ZkFold.Symbolic.Compiler.Arithmetizable (
     ) where
 
 import           Data.Typeable                                       (Typeable)
+import           GHC.Generics                                        (type (:*:) (..), (:.:) (unComp1))
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Bool, Num (..), drop, length, product,
                                                                       splitAt, sum, take, (!!), (^))
@@ -22,7 +23,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Circuit,
-                                                                      concatCircuits, joinCircuits)
+                                                                      concatCircuits, joinCircuits, mapOutputs)
 
 -- | A class for Symbolic data types.
 -- Type `a` is the finite field of the arithmetic circuit.
@@ -32,7 +33,7 @@ class Arithmetic a => SymbolicData a x where
     type TypeSize a x :: Natural
 
     -- | Returns the circuit that makes up `x`.
-    pieces :: x -> ArithmeticCircuit a (TypeSize a x)
+    pieces :: x -> ArithmeticCircuit a (Vector (TypeSize a x))
 
     -- | Restores `x` from the circuit's outputs.
     restore :: Circuit a -> Vector (TypeSize a x) Natural -> x
@@ -62,7 +63,7 @@ instance
 
     type TypeSize a (x, y) = TypeSize a x + TypeSize a y
 
-    pieces (a, b) = pieces a `joinCircuits` pieces b
+    pieces (a, b) = mapOutputs (\(o1 :*: o2) -> o1 `V.append` o2) $ pieces a `joinCircuits` pieces b
 
     restore c rs = (restore c rsX, restore c rsY)
         where
@@ -80,7 +81,7 @@ instance
 
     type TypeSize a (x, y, z) = TypeSize a x + TypeSize a y + TypeSize a z
 
-    pieces (a, b, c) = pieces a `joinCircuits` pieces b `joinCircuits` pieces c
+    pieces (a, b, c) = mapOutputs (\(o1 :*: o2 :*: o3) -> o1 `V.append` o2 `V.append` o3) $ pieces a `joinCircuits` (pieces b `joinCircuits` pieces c)
 
     restore c rs = (restore c rsX, restore c rsY, restore c rsZ)
         where
@@ -94,7 +95,7 @@ instance
 
     type TypeSize a (Vector n x) = n * TypeSize a x
 
-    pieces xs = concatCircuits $ pieces <$> xs
+    pieces xs = mapOutputs (V.concat . unComp1) $ concatCircuits (pieces <$> xs)
 
     restore c rs = restoreElem <$> V.chunks rs
         where
@@ -114,7 +115,7 @@ class Arithmetic a => Arithmetizable a x where
 
     -- | Given a list of circuits computing inputs, return a list of circuits
     -- computing the result of `x`.
-    arithmetize :: x -> ArithmeticCircuit a (InputSize a x) -> ArithmeticCircuit a (OutputSize a x)
+    arithmetize :: x -> ArithmeticCircuit a (Vector (InputSize a x)) -> ArithmeticCircuit a (Vector (OutputSize a x))
 
 -- A wrapper for `Arithmetizable` types.
 data SomeArithmetizable a where
@@ -129,7 +130,7 @@ instance (SymbolicData a (ArithmeticCircuit a n)) => Arithmetizable a (Arithmeti
 instance (Arithmetizable a f, KnownNat n, KnownNat (InputSize a f)) => Arithmetizable a (Vector n f) where
     type InputSize a (Vector n f) = n * InputSize a f
     type OutputSize a (Vector n f) = n * OutputSize a f
-    arithmetize v (ArithmeticCircuit c o) = concatCircuits results
+    arithmetize v (ArithmeticCircuit c o) = mapOutputs (V.concat . unComp1) (concatCircuits results)
         where
             inputs  = ArithmeticCircuit c <$> V.chunks @n @(InputSize a f) o
             results = arithmetize <$> v <*> inputs
