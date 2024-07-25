@@ -29,7 +29,7 @@ import           ZkFold.Symbolic.Data.UInt
 evalBS :: forall a n . ByteString n (ArithmeticCircuit a) -> Vector n a
 evalBS (ByteString xs) = eval xs M.empty
 
-evalUInt :: forall a n r . UInt n (ArithmeticCircuit a) r -> Vector (NumberOfRegisters a n r) a
+evalUInt :: forall a n r . UInt n r (ArithmeticCircuit a) -> Vector (NumberOfRegisters a n r) a
 evalUInt (UInt xs) = eval xs M.empty
 
 
@@ -53,7 +53,7 @@ additionCircuit = do
     y <- randomIO
     let acX = fromConstant (x :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
         acY = fromConstant (y :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
-        acZ = from (from acX + from acY :: UInt n (ArithmeticCircuit (Zp p)) r)
+        acZ = from (from acX + from acY :: UInt n r (ArithmeticCircuit (Zp p)))
 
     evaluate . force $ acZ
 

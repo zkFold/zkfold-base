@@ -166,7 +166,7 @@ specByteString' = hspec $ do
             let acX :: ByteString n (ArithmeticCircuit (Zp p)) = fromConstant x
                 acY :: ByteString n (ArithmeticCircuit (Zp p)) = fromConstant y
 
-                acSum :: ByteString n (ArithmeticCircuit (Zp p)) = from $ from acX + (from acY :: UInt n (ArithmeticCircuit (Zp p)) Auto)
+                acSum :: ByteString n (ArithmeticCircuit (Zp p)) = from $ from acX + (from acY :: UInt n Auto (ArithmeticCircuit (Zp p)))
 
                 zpSum :: ByteString n (Interpreter (Zp p)) = fromConstant $ x + y
 

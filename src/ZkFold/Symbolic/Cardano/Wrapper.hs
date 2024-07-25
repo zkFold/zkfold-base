@@ -7,7 +7,7 @@ import           ZkFold.Symbolic.Data.Bool        (BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq          (Eq ((==)))
 
-type TxHash context = UInt 64 context Auto
+type TxHash context = UInt 64 Auto context
 
 -- TODO: implement transaction hashing
 hashFunction :: Transaction inputs rinputs outputs tokens mint datum context -> TxHash context

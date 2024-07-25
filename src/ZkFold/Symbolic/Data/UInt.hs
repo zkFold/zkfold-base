@@ -56,27 +56,27 @@ import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
 
 -- TODO (Issue #18): hide this constructor
-newtype UInt (n :: Natural) (backend :: (Type -> Type) -> Type) (r :: RegisterSize) = UInt (backend (Vector (NumberOfRegisters (BaseField backend) n r)))
+newtype UInt (n :: Natural) (r :: RegisterSize) (backend :: (Type -> Type) -> Type) = UInt (backend (Vector (NumberOfRegisters (BaseField backend) n r)))
 
-deriving instance Generic (UInt n backend r)
-deriving instance (NFData (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => NFData (UInt n backend r)
-deriving instance (Haskell.Eq (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => Haskell.Eq (UInt n backend r)
-deriving instance (Haskell.Show (BaseField backend), Haskell.Show (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => Haskell.Show (UInt n backend r)
-deriving newtype instance Arithmetic a => Arithmetizable a (UInt n (ArithmeticCircuit a) r)
+deriving instance Generic (UInt n r backend)
+deriving instance (NFData (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => NFData (UInt n r backend)
+deriving instance (Haskell.Eq (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => Haskell.Eq (UInt n r backend)
+deriving instance (Haskell.Show (BaseField backend), Haskell.Show (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => Haskell.Show (UInt n r backend)
+deriving newtype instance Arithmetic a => Arithmetizable a (UInt n r (ArithmeticCircuit a))
 
-instance Arithmetic a => FieldElementData (Interpreter a) (UInt n (Interpreter a) r) where
-    type TypeSize (Interpreter a) (UInt n (Interpreter a) r) = NumberOfRegisters a n r
+instance Arithmetic a => FieldElementData (Interpreter a) (UInt n r (Interpreter a)) where
+    type TypeSize (Interpreter a) (UInt n r (Interpreter a)) = NumberOfRegisters a n r
 
     toFieldElements (UInt c) = c
 
     fromFieldElements = UInt
 
-instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Natural (UInt n (Interpreter (Zp p)) r) where
+instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Natural (UInt n r (Interpreter (Zp p))) where
     fromConstant c =
         let (lo, hi, _) = cast @(Zp p) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
          in UInt $ Interpreter $ V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
 
-instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Integer (UInt n (Interpreter (Zp p)) r) where
+instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Integer (UInt n r (Interpreter (Zp p))) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
 instance
@@ -84,7 +84,7 @@ instance
     , Arithmetic a
     , KnownNat n
     , KnownRegisterSize r
-    ) => FromConstant Natural (UInt n (ArithmeticCircuit a) r) where
+    ) => FromConstant Natural (UInt n r (ArithmeticCircuit a)) where
     fromConstant c =
         let (lo, hi, _) = cast @a @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
          in UInt $ embedV $ Vector $ fromConstant <$> (lo <> [hi])
@@ -94,14 +94,14 @@ instance
     , Arithmetic a
     , KnownNat n
     , KnownRegisterSize r
-    ) => FromConstant Integer (UInt n (ArithmeticCircuit a) r) where
+    ) => FromConstant Integer (UInt n r (ArithmeticCircuit a)) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
-instance (FromConstant Natural (UInt n b r), KnownNat n, MultiplicativeSemigroup (UInt n b r)) => Scale Natural (UInt n b r)
+instance (FromConstant Natural (UInt n r b), KnownNat n, MultiplicativeSemigroup (UInt n r b)) => Scale Natural (UInt n r b)
 
-instance (FromConstant Integer (UInt n b r), KnownNat n, MultiplicativeSemigroup (UInt n b r)) => Scale Integer (UInt n b r)
+instance (FromConstant Integer (UInt n r b), KnownNat n, MultiplicativeSemigroup (UInt n r b)) => Scale Integer (UInt n r b)
 
-instance MultiplicativeMonoid (UInt n b r) => Exponent (UInt n b r) Natural where
+instance MultiplicativeMonoid (UInt n r b) => Exponent (UInt n r b) Natural where
     (^) = natPow
 
 cast :: forall a n r . (Finite a, KnownNat n, KnownRegisterSize r) => Natural -> ([Natural], Natural, [Natural])
@@ -135,18 +135,18 @@ cast n =
 --
 eea
     :: forall n b r
-    .  EuclideanDomain (UInt n b r)
+    .  EuclideanDomain (UInt n r b)
     => KnownNat n
-    => AdditiveGroup (UInt n b r)
-    => Eq (Bool b) (UInt n b r)
-    => Conditional (Bool b) (UInt n b r, UInt n b r, UInt n b r)
-    => UInt n b r -> UInt n b r -> (UInt n b r, UInt n b r, UInt n b r)
+    => AdditiveGroup (UInt n r b)
+    => Eq (Bool b) (UInt n r b)
+    => Conditional (Bool b) (UInt n r b, UInt n r b, UInt n r b)
+    => UInt n r b -> UInt n r b -> (UInt n r b, UInt n r b, UInt n r b)
 eea a b = eea' 1 a b one zero zero one
     where
         iterations :: Natural
         iterations = value @n * 2 + 1
 
-        eea' :: Natural -> UInt n b r -> UInt n b r -> UInt n b r -> UInt n b r -> UInt n b r -> UInt n b r -> (UInt n b r, UInt n b r, UInt n b r)
+        eea' :: Natural -> UInt n r b -> UInt n r b -> UInt n r b -> UInt n r b -> UInt n r b -> UInt n r b -> (UInt n r b, UInt n r b, UInt n r b)
         eea' iteration oldR r oldS s oldT t
           | iteration Haskell.== iterations = (oldS, oldT, oldR)
           | otherwise = bool @(Bool b) rec (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR) (r == zero)
@@ -157,17 +157,17 @@ eea a b = eea' 1 a b one zero zero one
 
 --------------------------------------------------------------------------------
 
-instance (Finite (Zp p), KnownNat n, KnownNat m, n <= m, KnownRegisterSize r) => Extend (UInt n (Interpreter (Zp p)) r) (UInt m (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownNat m, n <= m, KnownRegisterSize r) => Extend (UInt n r (Interpreter (Zp p))) (UInt m r (Interpreter (Zp p))) where
     extend = fromConstant @Natural . toConstant
 
-instance (Finite (Zp p), KnownNat n, KnownNat m, m <= n, KnownRegisterSize r) => Shrink (UInt n (Interpreter (Zp p)) r) (UInt m (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownNat m, m <= n, KnownRegisterSize r) => Shrink (UInt n r (Interpreter (Zp p))) (UInt m r (Interpreter (Zp p))) where
     shrink = fromConstant @Natural . toConstant
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Eq (Bool (Interpreter (Zp p))) (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Eq (Bool (Interpreter (Zp p))) (UInt n r (Interpreter (Zp p))) where
     x == y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.== toConstant y
     x /= y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell./= toConstant y
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Ord (Bool (Interpreter (Zp p))) (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Ord (Bool (Interpreter (Zp p))) (UInt n r (Interpreter (Zp p))) where
     x <= y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.<= toConstant y
     x < y  = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.< toConstant y
     x >= y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.>= toConstant y
@@ -175,50 +175,50 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Ord (Bool (Interpre
     max x y = fromConstant $ Haskell.max (toConstant @_ @Natural x) (toConstant y)
     min x y = fromConstant $ Haskell.min (toConstant @_ @Natural x) (toConstant y)
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n (Interpreter (Zp p)) r) Natural where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Natural where
     toConstant (UInt (Interpreter xs)) = foldr (\p y -> fromZp p + base * y) 0 xs
         where base = 2 ^ registerSize @(Zp p) @n @r
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n (Interpreter (Zp p)) r) Integer where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Integer where
     toConstant = Haskell.fromIntegral @Natural . toConstant
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r (Interpreter (Zp p))) where
     x + y = fromConstant $ toConstant x + toConstant @_ @Natural y
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => AdditiveMonoid (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => AdditiveMonoid (UInt n r (Interpreter (Zp p))) where
     zero = fromConstant (0 :: Natural)
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => AdditiveGroup (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => AdditiveGroup (UInt n r (Interpreter (Zp p))) where
     x - y = fromConstant $ toConstant x + 2 ^ getNatural @n -! toConstant y
     negate x = fromConstant $ 2 ^ getNatural @n -! toConstant x
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => MultiplicativeSemigroup (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => MultiplicativeSemigroup (UInt n r (Interpreter (Zp p))) where
     x * y = fromConstant $ toConstant x * toConstant @_ @Natural y
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (UInt n r (Interpreter (Zp p))) where
     one = fromConstant (1 :: Natural)
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Semiring (UInt n (Interpreter (Zp p)) r)
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Semiring (UInt n r (Interpreter (Zp p)))
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Ring (UInt n (Interpreter (Zp p)) r)
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Ring (UInt n r (Interpreter (Zp p)))
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r (Interpreter (Zp p))) where
     arbitrary = do
         lo <- replicateA (numberOfRegisters @(Zp p) @n @r -! 1) (toss $ registerSize @(Zp p) @n @r)
         hi <- toss (highRegisterSize @(Zp p) @n @r)
         return $ UInt $ Interpreter $ V.unsafeToVector (lo <> [hi])
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Iso (ByteString n (Interpreter (Zp p))) (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Iso (ByteString n (Interpreter (Zp p))) (UInt n r (Interpreter (Zp p))) where
     from = fromConstant @Natural . toConstant
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Iso (UInt n (Interpreter (Zp p)) r) (ByteString n (Interpreter (Zp p))) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Iso (UInt n r (Interpreter (Zp p))) (ByteString n (Interpreter (Zp p))) where
     from = fromConstant @Natural . toConstant
 
 --------------------------------------------------------------------------------
 
-instance Arithmetic a => SymbolicData a (UInt n (ArithmeticCircuit a) r) where
-    type TypeSize a (UInt n (ArithmeticCircuit a) r) = NumberOfRegisters a n r
+instance Arithmetic a => SymbolicData a (UInt n r (ArithmeticCircuit a)) where
+    type TypeSize a (UInt n r (ArithmeticCircuit a)) = NumberOfRegisters a n r
 
     pieces (UInt c) = c
 
@@ -233,7 +233,7 @@ instance
     , n <= k
     , from ~ NumberOfRegisters a n r
     , to ~ NumberOfRegisters a k r
-    ) => Extend (UInt n (ArithmeticCircuit a) r) (UInt k (ArithmeticCircuit a) r) where
+    ) => Extend (UInt n r (ArithmeticCircuit a)) (UInt k r (ArithmeticCircuit a)) where
     extend (UInt ac) = UInt (circuitF solve)
         where
             solve :: forall i m. MonadBlueprint i a m => m (Vector to i)
@@ -252,7 +252,7 @@ instance
     , k <= n
     , from ~ NumberOfRegisters a n r
     , to ~ NumberOfRegisters a k r
-    ) => Shrink (UInt n (ArithmeticCircuit a) r) (UInt k (ArithmeticCircuit a) r) where
+    ) => Shrink (UInt n r (ArithmeticCircuit a)) (UInt k r (ArithmeticCircuit a)) where
     shrink (UInt ac) = UInt (circuitF solve)
         where
             solve :: forall i m. MonadBlueprint i a m => m (Vector to i)
@@ -269,19 +269,19 @@ instance
     , KnownNat (r + r)
     , KnownRegisterSize rs
     , r ~ NumberOfRegisters (BaseField b) n rs
-    , Ord (Bool b) (UInt n b rs)
-    , AdditiveGroup (UInt n b rs)
-    , Semiring (UInt n b rs)
-    , MultiplicativeMonoid (UInt n b rs)
-    , FromConstant Natural (UInt n b rs)
+    , Ord (Bool b) (UInt n rs b)
+    , AdditiveGroup (UInt n rs b)
+    , Semiring (UInt n rs b)
+    , MultiplicativeMonoid (UInt n rs b)
+    , FromConstant Natural (UInt n rs b)
     , BitState ByteString n b
-    , Iso (ByteString n b) (UInt n b rs)
-    , Eq (Bool b) (UInt n b rs)
-    , Conditional (Bool b) (UInt n b rs)
-    , Conditional (Bool b) (UInt n b rs, UInt n b rs)
+    , Iso (ByteString n b) (UInt n rs b)
+    , Eq (Bool b) (UInt n rs b)
+    , Conditional (Bool b) (UInt n rs b)
+    , Conditional (Bool b) (UInt n rs b, UInt n rs b)
     , 1 + (r - 1) ~ r
     , 1 <= r
-    ) => EuclideanDomain (UInt n b rs) where
+    ) => EuclideanDomain (UInt n rs b) where
     divMod numerator d = bool @(Bool b) (q, r) (zero, zero) (d == zero)
         where
             (q, r) = Haskell.foldl longDivisionStep (zero, zero) [value @n -! 1, value @n -! 2 .. 0]
@@ -289,18 +289,18 @@ instance
             numeratorBits :: ByteString n b
             numeratorBits = from numerator
 
-            addBit :: UInt n b rs -> Natural -> UInt n b rs
+            addBit :: UInt n rs b -> Natural -> UInt n rs b
             addBit ui bs = ui + bool @(Bool b) zero one (isSet numeratorBits bs)
 
             longDivisionStep
-                :: (UInt n b rs, UInt n b rs)
+                :: (UInt n rs b, UInt n rs b)
                 -> Natural
-                -> (UInt n b rs, UInt n b rs)
+                -> (UInt n rs b, UInt n rs b)
             longDivisionStep (q', r') i =
                 let rs = addBit (r' + r') (value @n -! i -! 1)
                  in bool @(Bool b) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegisters a n r)) => Ord (Bool (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a) r) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegisters a n r)) => Ord (Bool (ArithmeticCircuit a)) (UInt n r (ArithmeticCircuit a)) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -320,7 +320,7 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegis
     min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n (ArithmeticCircuit a) r) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r (ArithmeticCircuit a)) where
     UInt x + UInt y = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: MonadBlueprint i a m => m [i]
@@ -343,7 +343,7 @@ instance
     , KnownNat n
     , KnownNat (NumberOfRegisters a n r)
     , KnownRegisterSize r
-    ) => AdditiveMonoid (UInt n (ArithmeticCircuit a) r) where
+    ) => AdditiveMonoid (UInt n r (ArithmeticCircuit a)) where
     zero = UInt zero
 
 instance
@@ -351,7 +351,7 @@ instance
     , KnownNat n
     , KnownRegisterSize r
     , KnownNat (NumberOfRegisters a n r)
-    ) => AdditiveGroup (UInt n (ArithmeticCircuit a) r) where
+    ) => AdditiveGroup (UInt n r (ArithmeticCircuit a)) where
 
         UInt x - UInt y = UInt $ circuitF (V.unsafeToVector <$> solve)
             where
@@ -405,7 +405,7 @@ negateN ns r = circuitF $ do
     is <- runCircuit r
     for (Z.zip is ns) $ \(i, n) -> newAssigned (\v -> fromConstant n - v i)
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => MultiplicativeSemigroup (UInt n (ArithmeticCircuit a) rs) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => MultiplicativeSemigroup (UInt n rs (ArithmeticCircuit a)) where
     UInt x * UInt y = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: MonadBlueprint i a m => m [i]
@@ -456,7 +456,7 @@ instance
     , KnownNat (NumberOfRegisters a n r - 1)
     , KnownRegisterSize r
     , (NumberOfRegisters a n r - 1) + 1 ~ NumberOfRegisters a n r
-    ) => MultiplicativeMonoid (UInt n (ArithmeticCircuit a) r) where
+    ) => MultiplicativeMonoid (UInt n r (ArithmeticCircuit a)) where
 
     one = UInt $ mapOutputs (\(Par1 h :*: t) -> h V..: t) $ (one :: ArithmeticCircuit a Par1) `joinCircuits` (zero :: ArithmeticCircuit a (Vector (NumberOfRegisters a n r - 1)))
 
@@ -468,7 +468,7 @@ instance
     , KnownNat (NumberOfRegisters a n r - 1)
     , KnownRegisterSize r
     , (NumberOfRegisters a n r - 1) + 1 ~ NumberOfRegisters a n r
-    ) => Semiring (UInt n (ArithmeticCircuit a) r)
+    ) => Semiring (UInt n r (ArithmeticCircuit a))
 
 instance
     ( Arithmetic a
@@ -477,13 +477,13 @@ instance
     , KnownNat (NumberOfRegisters a n r - 1)
     , KnownRegisterSize r
     , (NumberOfRegisters a n r - 1) + 1 ~ NumberOfRegisters a n r
-    ) => Ring (UInt n (ArithmeticCircuit a) r)
+    ) => Ring (UInt n r (ArithmeticCircuit a))
 
-deriving via (Structural (UInt n (ArithmeticCircuit a) rs))
+deriving via (Structural (UInt n rs (ArithmeticCircuit a)))
          instance (Arithmetic a, KnownNat r, r ~ NumberOfRegisters a n rs, 1 <= r) =>
-         Eq (Bool (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a) rs)
+         Eq (Bool (ArithmeticCircuit a)) (UInt n rs (ArithmeticCircuit a))
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n (ArithmeticCircuit a) r) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r (ArithmeticCircuit a)) where
     arbitrary = do
         lows <- replicateA (numberOfRegisters @a @n @r -! 1) (toss $ registerSize @a @n @r)
         hi <- toss (highRegisterSize @a @n @r)
@@ -491,7 +491,7 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n (A
         where
             toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n (ArithmeticCircuit a) r) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n r (ArithmeticCircuit a)) where
     from (ByteString bits) = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
@@ -499,7 +499,7 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Iso (ByteString n (A
                 bsBits <- V.fromVector <$> runCircuit bits
                 Haskell.reverse <$> fromBits (highRegisterSize @a @n @r) (registerSize @a @n @r) bsBits
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Iso (UInt n (ArithmeticCircuit a) r) (ByteString n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Iso (UInt n r (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
     from (UInt ac) = ByteString $ circuitF $ Vector <$> solve
         where
             solve :: forall i m. MonadBlueprint i a m => m [i]
@@ -513,23 +513,23 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Iso (UInt n (Arithme
 class StrictConv b a where
     strictConv :: b -> a
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv Natural (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv Natural (UInt n r (Interpreter (Zp p))) where
     strictConv n = case cast @(Zp p) @n @r n of
         (lo, hi, []) -> UInt $ Interpreter $ V.unsafeToVector $ (toZp . Haskell.fromIntegral <$> lo) <> [toZp . Haskell.fromIntegral $ hi]
         _            -> error "strictConv: overflow"
 
-instance (FromConstant Natural a, Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => StrictConv Natural (UInt n (ArithmeticCircuit a) rs) where
+instance (FromConstant Natural a, Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => StrictConv Natural (UInt n rs (ArithmeticCircuit a)) where
     strictConv n = case cast @a @n @rs n of
         (lo, hi, []) -> UInt $ embedV $ V.unsafeToVector $ fromConstant <$> (lo <> [hi])
         _            -> error "strictConv: overflow"
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r (Interpreter (Zp p))) where
     strictConv = strictConv . toConstant @_ @Natural
 
-instance (Finite (Zp p), Prime p, KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n (ArithmeticCircuit (Zp p)) r ) where
+instance (Finite (Zp p), Prime p, KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r (ArithmeticCircuit (Zp p))) where
     strictConv = strictConv . toConstant @_ @Natural
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r, NumberOfBits a <= n) => StrictConv (ArithmeticCircuit a Par1) (UInt n (ArithmeticCircuit a) r) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r, NumberOfBits a <= n) => StrictConv (ArithmeticCircuit a Par1) (UInt n r (ArithmeticCircuit a)) where
     strictConv a = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             requiredBits :: Natural
@@ -547,12 +547,12 @@ class StrictNum a where
     strictSub :: a -> a -> a
     strictMul :: a -> a -> a
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictNum (UInt n (Interpreter (Zp p)) r) where
+instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r (Interpreter (Zp p))) where
     strictAdd x y = strictConv $ toConstant x + toConstant @_ @Natural y
     strictSub x y = strictConv $ toConstant x -! toConstant y
     strictMul x y = strictConv $ toConstant x * toConstant @_ @Natural y
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n (ArithmeticCircuit a) r) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r (ArithmeticCircuit a)) where
     strictAdd (UInt x) (UInt y) = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: MonadBlueprint i a m => m [i]

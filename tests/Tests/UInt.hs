@@ -44,17 +44,17 @@ evalBool (Bool ac) = exec1 ac
 evalBoolVec :: forall a . Bool (Interpreter a) -> a
 evalBoolVec (Bool (Interpreter (Par1 v))) = v
 
-execAcUint :: forall a n r . UInt n (ArithmeticCircuit a) r -> Vector (NumberOfRegisters a n r) a
+execAcUint :: forall a n r . UInt n r (ArithmeticCircuit a)-> Vector (NumberOfRegisters a n r) a
 execAcUint (UInt v) = exec v
 
-execZpUint :: forall a n r . UInt n (Interpreter a) r -> Vector (NumberOfRegisters a n r) a
+execZpUint :: forall a n r . UInt n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
 execZpUint (UInt (Interpreter v)) = v
 
 type Binary a = a -> a -> a
 
 type UBinary n b r = Binary (UInt n b r)
 
-isHom :: (KnownNat n, PrimeField (Zp p), KnownRegisterSize r) => UBinary n (Interpreter (Zp p)) r -> UBinary n (ArithmeticCircuit (Zp p)) r -> Natural -> Natural -> Property
+isHom :: (KnownNat n, PrimeField (Zp p), KnownRegisterSize r) => UBinary n r (Interpreter (Zp p)) -> UBinary n r (ArithmeticCircuit (Zp p)) -> Natural -> Natural -> Property
 isHom f g x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (fromConstant x `f` fromConstant y)
 
 specUInt'
@@ -84,8 +84,8 @@ specUInt' = hspec $ do
     describe ("UInt" ++ show n ++ " specification") $ do
         it "Zp embeds Integer" $ do
             x <- toss m
-            return $ toConstant @(UInt n (Interpreter (Zp p)) rs) (fromConstant x) === x
-        it "Integer embeds Zp" $ \(x :: UInt n (Interpreter (Zp p)) rs) ->
+            return $ toConstant @(UInt n rs (Interpreter (Zp p))) (fromConstant x) === x
+        it "Integer embeds Zp" $ \(x :: UInt n rs (Interpreter (Zp p))) ->
             fromConstant (toConstant @_ @Natural x) === x
         it "AC embeds Integer" $ do
             x <- toss m
@@ -111,8 +111,8 @@ specUInt' = hspec $ do
         it "calculates gcd correctly" $ withMaxSuccess 10 $ do
             x <- toss m
             y <- toss m
-            let (_, _, r) = eea (fromConstant x :: UInt n (Interpreter (Zp p)) rs) (fromConstant y)
-                ans = fromConstant (P.gcd x y) :: UInt n (Interpreter (Zp p)) rs
+            let (_, _, r) = eea (fromConstant x :: UInt n rs (Interpreter (Zp p))) (fromConstant y)
+                ans = fromConstant (P.gcd x y) :: UInt n rs (Interpreter (Zp p))
             return $ r === ans
         it "calculates Bezout coefficients correctly" $ withMaxSuccess 10 $ do
             x' <- toss m
@@ -121,7 +121,7 @@ specUInt' = hspec $ do
                 y = y' `P.div` P.gcd x' y'
 
                 -- We will test Bezout coefficients by multiplying two UInts less than 2^n, hence we need 2^(2n) bits to store the result
-                zpX = fromConstant x :: UInt (2 * n) (Interpreter (Zp p)) rs
+                zpX = fromConstant x :: UInt (2 * n) rs (Interpreter (Zp p))
                 zpY = fromConstant y
                 (s, t, _) = eea zpX zpY
             -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
@@ -139,19 +139,19 @@ specUInt' = hspec $ do
 
         it "extends correctly" $ do
             x <- toss m
-            let acUint = fromConstant x :: UInt n (ArithmeticCircuit (Zp p)) rs
-                zpUint = fromConstant x :: UInt (2 * n) (Interpreter (Zp p)) rs
-            return $ execAcUint @(Zp p) (extend acUint :: UInt (2 * n) (ArithmeticCircuit (Zp p)) rs) === execZpUint zpUint
+            let acUint = fromConstant x :: UInt n rs (ArithmeticCircuit (Zp p))
+                zpUint = fromConstant x :: UInt (2 * n) rs (Interpreter (Zp p))
+            return $ execAcUint @(Zp p) (extend acUint :: UInt (2 * n) rs (ArithmeticCircuit (Zp p))) === execZpUint zpUint
 
         it "shrinks correctly" $ do
             x <- toss (m * m)
-            let acUint = fromConstant x :: UInt (2 * n) (ArithmeticCircuit (Zp p)) rs
-                zpUint = fromConstant x :: UInt n (Interpreter (Zp p)) rs
-            return $ execAcUint @(Zp p) (shrink acUint :: UInt n (ArithmeticCircuit (Zp p)) rs) === execZpUint zpUint
+            let acUint = fromConstant x :: UInt (2 * n) rs (ArithmeticCircuit (Zp p))
+                zpUint = fromConstant x :: UInt n rs (Interpreter (Zp p))
+            return $ execAcUint @(Zp p) (shrink acUint :: UInt n rs (ArithmeticCircuit (Zp p))) === execZpUint zpUint
 
         it "checks equality" $ do
             x <- toss m
-            let acUint = fromConstant x :: UInt n (ArithmeticCircuit (Zp p)) rs
+            let acUint = fromConstant x :: UInt n rs (ArithmeticCircuit (Zp p))
             return $ evalBool @(Zp p) (acUint == acUint) === one
 
         it "checks inequality" $ do
@@ -159,18 +159,18 @@ specUInt' = hspec $ do
             y' <- toss m
             let y = if y' P.== x then x + 1 else y'
 
-            let acUint1 = fromConstant x :: UInt n (ArithmeticCircuit (Zp p)) rs
-                acUint2 = fromConstant y :: UInt n (ArithmeticCircuit (Zp p)) rs
+            let acUint1 = fromConstant x :: UInt n rs (ArithmeticCircuit (Zp p))
+                acUint2 = fromConstant y :: UInt n rs (ArithmeticCircuit (Zp p))
 
             return $ evalBool @(Zp p) (acUint1 == acUint2) === zero
 
         it "checks greater than" $ do
             x <- toss m
             y <- toss m
-            let x' = fromConstant x  :: UInt n (Interpreter (Zp p)) rs
-                y' = fromConstant y  :: UInt n (Interpreter (Zp p)) rs
-                x'' = fromConstant x :: UInt n (ArithmeticCircuit (Zp p)) rs
-                y'' = fromConstant y :: UInt n (ArithmeticCircuit (Zp p)) rs
+            let x' = fromConstant x  :: UInt n rs (Interpreter (Zp p))
+                y' = fromConstant y  :: UInt n rs (Interpreter (Zp p))
+                x'' = fromConstant x :: UInt n rs (ArithmeticCircuit (Zp p))
+                y'' = fromConstant y :: UInt n rs (ArithmeticCircuit (Zp p))
                 gt' = evalBoolVec $ x' > y'
                 gt'' = evalBool @(Zp p) (x'' > y'')
             return $ gt' === gt''

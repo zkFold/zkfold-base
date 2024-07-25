@@ -12,7 +12,7 @@ import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..))
 import           ZkFold.Symbolic.Data.FieldElement   (FieldElementData)
 
 type TxRefId context = ByteString 256 context
-type TxRefIndex context = UInt 32 context Auto
+type TxRefIndex context = UInt 32 Auto context
 
 newtype OutputRef context = OutputRef (TxRefId context, TxRefIndex context)
 
