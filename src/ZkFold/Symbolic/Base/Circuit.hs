@@ -296,6 +296,11 @@ instance (Ord x, VectorSpace x i)
     evalMono = evalMonoN
 
 instance (Ord x, Discrete x, VectorSpace x i)
+  => Exponent Integer (Circuit x i Par1) where
+    exponent x p = evalMono [(x, p)]
+    evalMono = evalMonoZ
+
+instance (Ord x, Discrete x, VectorSpace x i)
   => MultiplicativeGroup (Circuit x i Par1) where
     recip c =
       let
@@ -326,6 +331,23 @@ invertC c = circuit $ do
     (\x i -> x i * x v + x isZ - one)
     (\x -> recip (x v))
   return (Par1 isZ :*: Par1 inv)
+
+instance (PrimeField x, VectorSpace x i)
+  => Comparable (Circuit x i Par1) where
+    trichotomy c0 c1 = circuit $ do
+      UnsafeRegister v0 <- runCircuit (binaryExpansion c0)
+      UnsafeRegister v1 <- runCircuit (binaryExpansion c1)
+      let reverseLexicographical a b = b * b * (b - a) + a
+      v <- newAssigned $ \x ->
+        V.foldl reverseLexicographical zero
+          (V.zipWith (\i0 i1 -> x i0 - x i1) v0 v1)
+      return (Par1 v)
+
+instance (Ord x, FiniteChr x, VectorSpace x i)
+  => FiniteChr (Circuit x i Par1) where
+    type Chr (Circuit x i Par1) = Chr x
+
+instance (PrimeField x, VectorSpace x i) => Symbolic x (Circuit x i Par1)
 
 -- A list of bits whose length is the number of bits
 -- needed to represent an element of
