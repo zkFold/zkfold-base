@@ -26,10 +26,10 @@ hash = mimcHash @F mimcConstants zero
 
 type Sig context =
     ( FromConstant F (FieldElement context)
-    , MultiplicativeMonoid (UInt 64 context)
+    , MultiplicativeMonoid (UInt 64 Auto context)
     , BoolType (Bool context)
     , Eq (Bool context) (FieldElement context)
-    , Eq (Bool context) (UInt 64 context)
+    , Eq (Bool context) (UInt 64 Auto context)
     , Eq (Bool context) (ByteString 224 context)
     , Eq (Bool context) (ByteString 256 context)
     , Extend (ByteString 224 context) (ByteString 256 context)

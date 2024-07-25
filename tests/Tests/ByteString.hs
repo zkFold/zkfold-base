@@ -25,7 +25,7 @@ import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..))
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 
@@ -166,7 +166,7 @@ specByteString' = hspec $ do
             let acX :: ByteString n (ArithmeticCircuit (Zp p)) = fromConstant x
                 acY :: ByteString n (ArithmeticCircuit (Zp p)) = fromConstant y
 
-                acSum :: ByteString n (ArithmeticCircuit (Zp p)) = from $ from acX + (from acY :: UInt n (ArithmeticCircuit (Zp p)))
+                acSum :: ByteString n (ArithmeticCircuit (Zp p)) = from $ from acX + (from acY :: UInt n Auto (ArithmeticCircuit (Zp p)))
 
                 zpSum :: ByteString n (Interpreter (Zp p)) = fromConstant $ x + y
 
