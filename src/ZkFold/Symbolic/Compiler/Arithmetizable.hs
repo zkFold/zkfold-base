@@ -14,16 +14,16 @@ module ZkFold.Symbolic.Compiler.Arithmetizable (
     ) where
 
 import           Data.Typeable                                       (Typeable)
-import           GHC.Generics                                        (type (:*:) (..), (:.:) (unComp1))
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Bool, Num (..), drop, length, product,
                                                                       splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Control.HApplicative                    (hliftA2)
+import           ZkFold.Base.Data.Package                            (packWith)
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Circuit,
-                                                                      concatCircuits, joinCircuits, mapOutputs)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Circuit)
 
 -- | A class for Symbolic data types.
 -- Type `a` is the finite field of the arithmetic circuit.
@@ -63,7 +63,7 @@ instance
 
     type TypeSize a (x, y) = TypeSize a x + TypeSize a y
 
-    pieces (a, b) = mapOutputs (\(o1 :*: o2) -> o1 `V.append` o2) $ pieces a `joinCircuits` pieces b
+    pieces (a, b) = hliftA2 V.append (pieces a) (pieces b)
 
     restore c rs = (restore c rsX, restore c rsY)
         where
@@ -81,7 +81,7 @@ instance
 
     type TypeSize a (x, y, z) = TypeSize a x + TypeSize a y + TypeSize a z
 
-    pieces (a, b, c) = mapOutputs (\(o1 :*: o2 :*: o3) -> o1 `V.append` o2 `V.append` o3) $ pieces a `joinCircuits` (pieces b `joinCircuits` pieces c)
+    pieces (a, b, c) = hliftA2 V.append (hliftA2 V.append (pieces a) (pieces b)) (pieces c)
 
     restore c rs = (restore c rsX, restore c rsY, restore c rsZ)
         where
@@ -95,7 +95,7 @@ instance
 
     type TypeSize a (Vector n x) = n * TypeSize a x
 
-    pieces xs = mapOutputs (V.concat . unComp1) $ concatCircuits (pieces <$> xs)
+    pieces xs = packWith V.concat (pieces <$> xs)
 
     restore c rs = restoreElem <$> V.chunks rs
         where
@@ -130,7 +130,7 @@ instance (SymbolicData a (ArithmeticCircuit a n)) => Arithmetizable a (Arithmeti
 instance (Arithmetizable a f, KnownNat n, KnownNat (InputSize a f)) => Arithmetizable a (Vector n f) where
     type InputSize a (Vector n f) = n * InputSize a f
     type OutputSize a (Vector n f) = n * OutputSize a f
-    arithmetize v (ArithmeticCircuit c o) = mapOutputs (V.concat . unComp1) (concatCircuits results)
+    arithmetize v (ArithmeticCircuit c o) = packWith V.concat results
         where
             inputs  = ArithmeticCircuit c <$> V.chunks @n @(InputSize a f) o
             results = arithmetize <$> v <*> inputs

@@ -8,12 +8,14 @@ module ZkFold.Symbolic.Data.Maybe (
 ) where
 
 import           Data.Function                                          ((.))
-import           GHC.Generics                                           (Par1 (..), type (:*:) (..))
+import           GHC.Generics                                           (Par1 (..))
 import           Prelude                                                (foldr, type (~), ($))
 import qualified Prelude                                                as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Control.HApplicative                       (hliftA2)
+import           ZkFold.Base.Data.HFunctor                              (hmap)
 import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Base.Data.Vector                                (Vector)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embedV)
@@ -53,7 +55,7 @@ fromMaybe a (Maybe h t) =
   let
     as = pieces a
     ts = pieces t
-    ArithmeticCircuit c o = (ts - as) * mapOutputs (V.singleton . unPar1) h + as
+    ArithmeticCircuit c o = (ts - as) * hmap (V.singleton . unPar1) h + as
   in
     restore c o
 
@@ -70,7 +72,7 @@ instance
     , (k1 - 1) ~ k)
   => SymbolicData a (Maybe u (ArithmeticCircuit a Par1)) where
     type TypeSize a (Maybe u (ArithmeticCircuit a Par1)) = TypeSize a (u (ArithmeticCircuit a Par1)) + 1
-    pieces (Maybe h t) = mapOutputs (\(Par1 h' :*: t') -> h' V..: t') $ h `joinCircuits` pieces t
+    pieces (Maybe h t) = hliftA2 (\(Par1 h') t' -> h' V..: t') h (pieces t)
     restore c o = Maybe (c `withOutputs` Par1 (V.head o)) (restore c (V.tail o))
 
 maybe :: forall a b bool f .

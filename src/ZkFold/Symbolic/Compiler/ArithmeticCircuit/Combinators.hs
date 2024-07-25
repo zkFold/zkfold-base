@@ -13,7 +13,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     desugarRange,
     isZeroC,
     invertC,
-    joinCircuits,
     splitCircuit,
     foldCircuit,
     embedVarIndex,
@@ -42,7 +41,7 @@ import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (length, splitAt, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..),
-                                                                            Circuit (acSystem), acInput, joinCircuits)
+                                                                            Circuit (acSystem), acInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 
 boolCheckC :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f

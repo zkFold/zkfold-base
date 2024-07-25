@@ -15,9 +15,9 @@ import           Prelude                                                   (type
 import qualified Prelude                                                   as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.HFunctor                                 (hmap)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (mapOutputs)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit)
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
@@ -96,7 +96,7 @@ instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a)
 getBitsBE :: forall a x . (SymbolicData a x, TypeSize a x ~ 1) => x -> ArithmeticCircuit a (V.Vector (NumberOfBits a))
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = let expansion = binaryExpansion $ mapOutputs (Par1 . V.item) (pieces @a @x x)
+getBitsBE x = let expansion = binaryExpansion $ hmap (Par1 . V.item) (pieces @a @x x)
                in expansion { acOutput = V.reverse $ acOutput expansion }
 
 circuitGE :: forall a f . (Arithmetic a, Z.Zip f, Foldable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f -> Bool (ArithmeticCircuit a)

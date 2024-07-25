@@ -25,7 +25,7 @@ import           Data.Map                                                  (from
 import           Data.Traversable                                          (Traversable, for, traverse)
 import           Data.Tuple                                                (swap)
 import qualified Data.Zip                                                  as Z
-import           GHC.Generics                                              (Generic, Par1 (..), type (:*:) (..))
+import           GHC.Generics                                              (Generic, Par1 (..))
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (Natural)
 import           Prelude                                                   (Integer, error, flip, otherwise, return,
@@ -36,14 +36,13 @@ import           Test.QuickCheck                                           (Arbi
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Control.HApplicative                          (hliftA2)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, joinCircuits,
-                                                                            splitExpansion)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (mapOutputs)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -458,7 +457,7 @@ instance
     , (NumberOfRegisters a n r - 1) + 1 ~ NumberOfRegisters a n r
     ) => MultiplicativeMonoid (UInt n r (ArithmeticCircuit a)) where
 
-    one = UInt $ mapOutputs (\(Par1 h :*: t) -> h V..: t) $ (one :: ArithmeticCircuit a Par1) `joinCircuits` (zero :: ArithmeticCircuit a (Vector (NumberOfRegisters a n r - 1)))
+    one = UInt $ hliftA2 (\(Par1 h) t -> h V..: t) (one :: ArithmeticCircuit a Par1) (zero :: ArithmeticCircuit a (Vector (NumberOfRegisters a n r - 1)))
 
 
 instance
