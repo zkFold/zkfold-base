@@ -55,6 +55,7 @@ module ZkFold.Symbolic.Base.Num
   , combineN
   , combineZ
   , evalMonoN
+  , evalMonoZ
   ) where
 
 import           Control.Applicative
@@ -87,7 +88,7 @@ class
   , PrimeField x
   , Algebra x a
   , Chr a ~ Order x
-  ) => Symbolic x a | x -> a where
+  ) => Symbolic x a | a -> x where
 
 -- Prime fields should only include:
 -- (SemiIntegral int, Prime p) => PrimeField (int `Mod` p)
@@ -364,14 +365,7 @@ instance Exponent Natural Rational where
   evalMono = evalMonoN
 instance Exponent Integer Rational where
   exponent = (Prelude.^^)
-  evalMono = evalMonoN . fmap absPow where
-    absPow (a,p) =
-      let
-        pZ = to @Integer p
-      in
-        if pZ >= 0
-        then (a, Prelude.fromIntegral pZ :: Natural)
-        else (one / a, Prelude.fromIntegral (negate pZ))
+  evalMono = evalMonoZ
 
 instance From Rational Rational
 instance From Natural Rational where from = Prelude.fromIntegral
@@ -606,9 +600,6 @@ instance (SemiIntegral int, Prime p)
 
 instance Into (Mod int n) (Mod int n)
 
-instance Into int (Mod int n) where
-  to = fromMod
-
 instance Into Rational int
   => Into Rational (Mod int n) where
     to = to . fromMod
@@ -665,6 +656,17 @@ instance (SemiIntegral int, KnownNat n)
 
 instance (SemiIntegral int, KnownNat n) => Discrete (Mod int n)
 instance (SemiIntegral int, KnownNat n) => Comparable (Mod int n)
+
+instance (KnownNat n, KnownNat (Log2 (n - 1) + 1))
+  => Finite (Mod int n) where
+    type Order (Mod int n) = n
+
+instance (SemiIntegral int, KnownNat n)
+  => FiniteChr (Mod int n) where
+    type Chr (Mod int n) = n
+
+instance (SemiIntegral int, Prime p, KnownNat (Log2 (p - 1) + 1), 3 <= p)
+  => Symbolic (Mod int p) (Mod int p)
 
 -- Scalar ------------------------------------------------------------------
 class (Semiring c, AdditiveMonoid a)
@@ -727,3 +729,15 @@ evalMonoN monomial = evalMonoNat naturalized where
       sqrtNots = product [a | (a,p) <- factors, odd p]
     in
       sqrts * sqrts * sqrtNots
+
+evalMonoZ
+  :: (Into Integer p, MultiplicativeGroup a)
+  => [(a,p)] -> a
+evalMonoZ = evalMonoN . fmap absPow where
+  absPow (a,p) =
+    let
+      pZ = to @Integer p
+    in
+      if pZ >= 0
+      then (a, Prelude.fromIntegral pZ :: Natural)
+      else (one / a, Prelude.fromIntegral (negate pZ))
