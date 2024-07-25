@@ -55,7 +55,6 @@ instance
     , Input m (FiatShamir m (CommitOpen m c a)) ~ m
     , ProverMessage Natural (FiatShamir m (CommitOpen m c a)) ~ m
     , VerifierMessage Natural (FiatShamir m (CommitOpen m c a)) ~ m
-    , KnownNat (Dimension (FiatShamir f (CommitOpen f c a)))
     , KnownNat (Degree (FiatShamir f (CommitOpen f c a)))
     , SpecialSoundProtocol f (FiatShamir f (CommitOpen f c a))
     , RandomOracle (f, c) f                                  -- Random oracle ρ_NARK
@@ -78,7 +77,7 @@ instance
           xMu = PU.toPoly $ DV.fromList [acc^.x^.mu, one]
 
           d :: Natural
-          d = value @(Dimension (FiatShamir f (CommitOpen f c a)))
+          d = outputLength @f sps
 
           k :: Natural
           k = rounds @f sps
@@ -91,10 +90,10 @@ instance
 
           -- The @lxd@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
-          e_uni :: V.Vector (Dimension (FiatShamir f (CommitOpen f c a))) (PU.Poly f)
+          e_uni :: [PU.Poly f]
           e_uni = P.foldl (P.liftA2 (+)) (P.pure zero) $ V.mapWithIx (\j p -> ((xMu ^ (d -! j)) *) <$> p) $ fmap (PM.evalPolynomial PM.evalMonomial ixToPoly) <$> f_sps
 
-          e_all = V.fromVector $ (DV.toList . PU.fromPoly) <$> e_uni
+          e_all = (DV.toList . PU.fromPoly) <$> e_uni
 
           e_j :: [[f]]
           e_j = P.tail e_all
@@ -145,7 +144,7 @@ instance
   decider sps@(FiatShamir (CommitOpen cm _) _) acc = commitsEq && eEq
       where
           d :: Natural
-          d = value @(Dimension (FiatShamir f (CommitOpen f c a)))
+          d = outputLength @f sps
 
           k :: Natural
           k = rounds @f sps
@@ -163,7 +162,7 @@ instance
             | n <= k    = (acc^.w) !! (n -! 1)         -- mi
             | otherwise = (acc^.x^.r) !! (n -! k -! 1) -- ri
 
-          err = V.fromVector $ PM.evalPolynomial PM.evalMonomial ixToVal <$> f_sps
+          err = PM.evalPolynomial PM.evalMonomial ixToVal <$> f_sps
 
           -- Fig. 5, step 3
           eEq = acc^.x^.e == cm err
@@ -179,10 +178,10 @@ mulDeg f d (PM.P monomials) = PM.P $ (\(coeff, m) -> (f ^ (d -! deg m) * coeff, 
 
 -- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @n@
 --
-degreeDecomposition :: forall n d f . KnownNat n => LMap d f -> V.Vector n (LMap d f)
+degreeDecomposition :: forall n f . KnownNat n => LMap f -> V.Vector n (LMap f)
 degreeDecomposition lmap = V.generate degree_j
     where
-        degree_j :: Natural -> LMap d f
+        degree_j :: Natural -> LMap f
         degree_j j = P.fmap (leaveDeg j) lmap
 
         leaveDeg :: Natural -> PM.Poly f Natural Natural -> PM.Poly f Natural Natural

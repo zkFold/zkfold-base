@@ -21,7 +21,7 @@ data ProtostarLookup (l :: Natural) (sizeT :: Natural)
 
 data ProtostarLookupParams f sizeT = ProtostarLookupParams (Zp sizeT -> f) (f -> [Zp sizeT])
 
-instance (Arithmetic f, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
+instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
     type Witness f (ProtostarLookup l sizeT)         = Vector l f
     -- ^ w in the paper
     type Input f (ProtostarLookup l sizeT)           = ProtostarLookupParams f sizeT
@@ -30,8 +30,9 @@ instance (Arithmetic f, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLook
     -- ^ (w, m) or (h, g) in the paper
     type VerifierMessage t (ProtostarLookup l sizeT) = t
 
-    type Dimension (ProtostarLookup l sizeT)         = l + sizeT + 1
     type Degree (ProtostarLookup l sizeT)            = 2
+
+    outputLength _ = value @l + (value @sizeT) + 1
 
     rounds :: ProtostarLookup l sizeT -> Natural
     rounds _ = 2
@@ -55,7 +56,7 @@ instance (Arithmetic f, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLook
                  -> Input f (ProtostarLookup l sizeT)
                  -> [ProverMessage Natural (ProtostarLookup l sizeT)]
                  -> [VerifierMessage Natural (ProtostarLookup l sizeT)]
-                 -> LMap (Dimension (ProtostarLookup l sizeT)) f
+                 -> LMap f
     algebraicMap = undefined
 
     verifier :: ProtostarLookup l sizeT

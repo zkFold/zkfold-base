@@ -1,10 +1,12 @@
 {-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.ARK.Protostar.CommitOpen where
 
 import           Prelude                                         hiding (length)
 
+import           ZkFold.Base.Algebra.Basic.Class                 (Bits)
 import           ZkFold.Base.Data.ByteString
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Prelude                                  (length)
@@ -21,14 +23,15 @@ instance (Binary c, Binary (ProverMessage t a)) => Binary (CommitOpenProverMessa
             else if flag == 1 then Open <$> get
             else fail ("Binary (CommitOpenProverMessage t c a): unexpected flag " <> show flag)
 
-instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen f c a) where
+instance (SpecialSoundProtocol f a, Eq c, Bits a ~ [a]) => SpecialSoundProtocol f (CommitOpen f c a) where
       type Witness f (CommitOpen f c a)         = (Witness f a, [ProverMessage f a])
       type Input f (CommitOpen f c a)           = Input f a
       type ProverMessage t (CommitOpen f c a)   = CommitOpenProverMessage t c a
       type VerifierMessage t (CommitOpen f c a) = VerifierMessage t a
 
-      type Dimension (CommitOpen f c a)         = Dimension a
       type Degree (CommitOpen f c a)            = Degree a
+
+      outputLength (CommitOpen _ a) = outputLength @f a
 
       rounds a = rounds @f a + 1
 
@@ -54,7 +57,7 @@ commits = map f
 
 -- TODO: looks like Fiat-Shamir transform itself
 -- Why is it called opening?
-opening :: forall f a c . (SpecialSoundProtocol f a, Eq c)
+opening :: forall f a c . (SpecialSoundProtocol f a, Eq c, Bits a ~ [a])
         => CommitOpen f c a
         -> Witness f a
         -> Input f a

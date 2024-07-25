@@ -6,9 +6,10 @@ import           Prelude                                         hiding (Num (..
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                (KnownNat)
+import           ZkFold.Base.Algebra.Basic.Number                (KnownNat, value)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Poly, evalMonomial, evalPolynomial, subs, var)
 import           ZkFold.Base.Data.Matrix                         (Matrix (..), outer, sum1, transpose)
+import qualified ZkFold.Base.Data.Vector                         as V
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProtostar (..))
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
@@ -26,8 +27,9 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
     -- ^ same as Witness
     type VerifierMessage t (ProtostarGate m n c d) = ()
 
-    type Dimension (ProtostarGate m n c d)        = n
     type Degree (ProtostarGate m n c d)           = d
+
+    outputLength _ = value @n
 
     rounds :: ProtostarGate m n c d -> Natural
     rounds _ = 1
@@ -43,11 +45,11 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
                  -> Input f (ProtostarGate m n c d)
                  -> [ProverMessage Natural (ProtostarGate m n c d)]
                  -> [VerifierMessage Natural (ProtostarGate m n c d)]
-                 -> LMap (Dimension (ProtostarGate m n c d)) f
+                 -> LMap f
     algebraicMap _ (s, g) [w] _ =
       let w' = fmap ((var .) . subs) w :: Vector n (Zp c -> Poly f Natural Natural)
           z  = transpose $ outer (evalPolynomial evalMonomial) w' $ fmap (\(PolynomialProtostar p) -> p) g
-      in sum1 $ zipWith scale s z
+      in V.fromVector $ sum1 $ zipWith scale s z
     algebraicMap _ _ _ _ = error "Invalid transcript"
 
     verifier :: ProtostarGate m n c d

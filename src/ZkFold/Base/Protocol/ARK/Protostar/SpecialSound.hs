@@ -11,7 +11,7 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable      (Arithmetic)
 
 type SpecialSoundTranscript t a = [(ProverMessage t a, VerifierMessage t a)]
 
-type LMap l f = Vector l (Poly f Natural Natural)
+type LMap f = [Poly f Natural Natural]
 
 {-- | Section 3.1
 
@@ -30,10 +30,11 @@ class Arithmetic f => SpecialSoundProtocol f a where
       type ProverMessage t a
       type VerifierMessage t a
 
-      type Dimension a :: Natural
-      -- ^ l in the paper
       type Degree a :: Natural
-      -- ^ d in the paper
+      -- ^ d in the paper, the verifier degree
+
+      outputLength :: a -> Natural
+      -- ^ l in the paper, the number of algebraic equations checked by the verifier
 
       rounds :: a -> Natural
       -- ^ k in the paper
@@ -45,7 +46,7 @@ class Arithmetic f => SpecialSoundProtocol f a where
           -> Input f a 
           -> [ProverMessage Natural a] 
           -> [VerifierMessage Natural a] 
-          -> LMap (Dimension a) f
+          -> LMap f
       -- ^ the algebraic map V_sps computed by the verifier. 
       -- The j-th element of the vector is a homogeneous degree-j algebraic map that outputs a vector of @Dimension a@ field elements.
       -- Variables have natural indices from @0@ to @2k@:

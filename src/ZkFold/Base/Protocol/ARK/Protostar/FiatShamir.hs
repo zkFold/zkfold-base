@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.ARK.Protostar.FiatShamir where
@@ -6,6 +7,7 @@ module ZkFold.Base.Protocol.ARK.Protostar.FiatShamir where
 import           Data.ByteString                                 (ByteString)
 import           Prelude                                         hiding (length)
 
+import           ZkFold.Base.Algebra.Basic.Class                 (Bits)
 import           ZkFold.Base.Data.ByteString                     (Binary (..))
 import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
 import qualified ZkFold.Base.Protocol.ARK.Protostar.SpecialSound as SpS
@@ -24,7 +26,7 @@ fsChallenge (FiatShamir _ ip) []           c =
 fsChallenge _                 ((_, r) : _) c = fst $ challenge @ByteString $ toTranscript r <> toTranscript c
 
 instance (SpS.SpecialSoundProtocol f a, Eq c, Binary (SpS.Input f a), Binary (VerifierMessage f a),
-            Binary c, Binary (ProverMessage f a)) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) where
+            Binary c, Binary (ProverMessage f a), Bits a ~ [a]) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) where
       type Transcript (FiatShamir f (CommitOpen f c a)) = ByteString
       type SetupProve (FiatShamir f (CommitOpen f c a))      = FiatShamir f (CommitOpen f c a)
       type SetupVerify (FiatShamir f (CommitOpen f c a))      = FiatShamir f (CommitOpen f c a)
