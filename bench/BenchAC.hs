@@ -10,9 +10,7 @@ module Main where
 import           Control.DeepSeq                             (force)
 import           Control.Exception                           (evaluate)
 import           Data.Aeson                                  (ToJSON)
-import qualified Data.Map                                    as M
-import           Data.Time.Clock                             (getCurrentTime)
-import           Prelude                                     hiding (not, sum, (&&), (*), (+), (-), (/), (^), (||))
+import           Prelude                                     hiding (Bool (..), Eq (..), Ord (..), not, sum, (&&), (*), (+), (-), (/), (^), (||), (<=))
 import           System.Random                               (randomIO)
 import           Test.Tasty.Bench
 
@@ -20,12 +18,18 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Data.Vector
+import           ZkFold.Base.Data.Vector                       hiding (reverse)
 import           ZkFold.Prelude
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC 
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.UInt
 
@@ -39,9 +43,7 @@ hashCircuit :: forall n p .
    PrimeField (Zp p) =>
    SHA2 "SHA256" (ArithmeticCircuit (Zp p)) n =>
    IO (ByteString 256 (ArithmeticCircuit (Zp p)))
-hashCircuit = evaluate . force
-    . sha2 @"SHA256" @(ArithmeticCircuit (Zp p)) @n
-        =<< fromConstant <$> randomIO @Integer
+hashCircuit = sha2 @"SHA256" @(ArithmeticCircuit (Zp p)) @n . fromConstant <$> randomIO @Integer
 
 -- | Generate random addition circuit of given size
 additionCircuit :: forall n p r .
@@ -50,6 +52,19 @@ additionCircuit :: forall n p r .
 additionCircuit = from @(UInt n r (ArithmeticCircuit (Zp p))) <$$> (+)
     <$> do from @(ByteString n (ArithmeticCircuit (Zp p))) . fromConstant <$> randomIO @Integer
     <*> do from @(ByteString n (ArithmeticCircuit (Zp p))) . fromConstant <$> randomIO @Integer
+
+leqCircuit :: Ord (Bool c) (FieldElement c) => FieldElement c -> FieldElement c -> Bool c
+leqCircuit x y = x <= y
+
+fibonacciIndexCircuit :: forall c . (Ring (FieldElement c), Eq (Bool c) (FieldElement c), Conditional (Bool c) (FieldElement c)) => Integer -> FieldElement c -> FieldElement c
+fibonacciIndexCircuit nMax x = foldl (\m k -> bool m (fromConstant @Integer @(FieldElement c) k) (fib k one one == x :: Bool c)) zero [1..nMax]
+    where
+        fib :: Integer -> FieldElement c -> FieldElement c -> FieldElement c
+        fib 1 x1 _  = x1
+        fib n x1 x2 = fib (n - 1) x2 (x1 + x2)
+
+reverseListCircuit :: forall t n . Vector n t -> Vector n t
+reverseListCircuit = unsafeToVector . reverse . fromVector
 
 benchCircuit :: forall n p .
     KnownNat n =>
@@ -73,60 +88,62 @@ benchCompilation :: forall a f .
 benchCompilation title fp =
     bench title . nfIO . writeFileJSON fp . optimize . solder @a
 
+type F = Zp BLS12_381_Scalar
+
 main :: IO ()
 main = do
     mainSumBS
 
-mainHash :: IO ()
-mainHash = do
-  getCurrentTime >>= print
-  ByteString ac32  <- hashCircuit @32 @BLS12_381_Scalar
-  getCurrentTime >>= print
-  ByteString ac64  <- hashCircuit @64 @BLS12_381_Scalar
-  getCurrentTime >>= print
-  ByteString ac128 <- hashCircuit @128 @BLS12_381_Scalar
-  getCurrentTime >>= print
-  ByteString ac256 <- hashCircuit @256 @BLS12_381_Scalar
-  getCurrentTime >>= print
-  ByteString ac512 <- hashCircuit @512 @BLS12_381_Scalar
-  getCurrentTime >>= print
+-- mainHash :: IO ()
+-- mainHash = do
+--   getCurrentTime >>= print
+--   ByteString ac32  <- hashCircuit @32 @BLS12_381_Scalar
+--   getCurrentTime >>= print
+--   ByteString ac64  <- hashCircuit @64 @BLS12_381_Scalar
+--   getCurrentTime >>= print
+--   ByteString ac128 <- hashCircuit @128 @BLS12_381_Scalar
+--   getCurrentTime >>= print
+--   ByteString ac256 <- hashCircuit @256 @BLS12_381_Scalar
+--   getCurrentTime >>= print
+--   ByteString ac512 <- hashCircuit @512 @BLS12_381_Scalar
+--   getCurrentTime >>= print
 
-  putStrLn "Sizes"
+--   putStrLn "Sizes"
 
-  print $ acSizeM ac32
-  getCurrentTime >>= print
-  print $ acSizeM ac64
-  getCurrentTime >>= print
-  print $ acSizeM ac128
-  getCurrentTime >>= print
-  print $ acSizeM ac256
-  getCurrentTime >>= print
-  print $ acSizeM ac512
-  getCurrentTime >>= print
+--   print $ acSizeM ac32
+--   getCurrentTime >>= print
+--   print $ acSizeM ac64
+--   getCurrentTime >>= print
+--   print $ acSizeM ac128
+--   getCurrentTime >>= print
+--   print $ acSizeM ac256
+--   getCurrentTime >>= print
+--   print $ acSizeM ac512
+--   getCurrentTime >>= print
 
-  putStrLn "Evaluation"
+--   putStrLn "Evaluation"
 
-  print $ exec ac32
-  getCurrentTime >>= print
-  print $ exec ac64
-  getCurrentTime >>= print
-  print $ exec ac128
-  getCurrentTime >>= print
-  print $ exec ac256
-  getCurrentTime >>= print
-  print $ exec ac512
-  getCurrentTime >>= print
+--   print $ exec ac32
+--   getCurrentTime >>= print
+--   print $ exec ac64
+--   getCurrentTime >>= print
+--   print $ exec ac128
+--   getCurrentTime >>= print
+--   print $ exec ac256
+--   getCurrentTime >>= print
+--   print $ exec ac512
+--   getCurrentTime >>= print
 
-  defaultMain
-      [ benchCircuit "SHA2 512/364" $ hashCircuit @32 @BLS12_381_Scalar
-      , benchCircuit "SHA2 512/364" $ hashCircuit @64 @BLS12_381_Scalar
-      , benchCircuit "SHA2 512/364" $ hashCircuit @128 @BLS12_381_Scalar
-      , benchCircuit "SHA2 512/364" $ hashCircuit @256 @BLS12_381_Scalar
-      , benchCircuit "SHA2 512/364" $ hashCircuit @512 @BLS12_381_Scalar
-      ]
+--   defaultMain
+--       [ benchCircuit "SHA2 512/364" $ hashCircuit @32 @BLS12_381_Scalar
+--       , benchCircuit "SHA2 512/364" $ hashCircuit @64 @BLS12_381_Scalar
+--       , benchCircuit "SHA2 512/364" $ hashCircuit @128 @BLS12_381_Scalar
+--       , benchCircuit "SHA2 512/364" $ hashCircuit @256 @BLS12_381_Scalar
+--       , benchCircuit "SHA2 512/364" $ hashCircuit @512 @BLS12_381_Scalar
+--       ]
 
-mainSumBS :: IO ()
-mainSumBS = do
+-- mainSumBS :: IO ()
+-- mainSumBS = do
 
   printCircuitSize $ additionCircuit @32 @BLS12_381_Scalar @Auto
   printCircuitSize $ additionCircuit @64 @BLS12_381_Scalar @Auto
