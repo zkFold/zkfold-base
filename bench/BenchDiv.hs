@@ -74,10 +74,6 @@ main = do
   getCurrentTime >>= print
   (UInt ac128q, UInt ac128r) <- divisionCircuit @128 @BLS12_381_Scalar
   getCurrentTime >>= print
---  (UInt ac256q, UInt ac256r) <- divisionCircuit @256 @BLS12_381_Scalar
---  getCurrentTime >>= print
---  (UInt ac512q, UInt ac512r) <- divisionCircuit @512 @BLS12_381_Scalar
---  getCurrentTime >>= print
 
   putStrLn "Sizes"
 
@@ -87,10 +83,6 @@ main = do
   getCurrentTime >>= print
   print $ (acSizeM ac128q, acSizeM ac128r)
   getCurrentTime >>= print
---  print $ (acSizeM ac256q, acSizeM ac256r)
---  getCurrentTime >>= print
---  print $ (acSizeM ac512q, acSizeM ac512r)
---  getCurrentTime >>= print
 
   putStrLn "Evaluation"
 
@@ -100,16 +92,10 @@ main = do
   getCurrentTime >>= print
   print $ (exec ac128q, exec ac128r)
   getCurrentTime >>= print
---  print $ (exec ac256q, exec ac256r)
---  getCurrentTime >>= print
---  print $ (exec ac512q, exec ac512r)
---  getCurrentTime >>= print
 
   defaultMain
       [ benchOps @32 @BLS12_381_Scalar
       , benchOps @64 @BLS12_381_Scalar
       , benchOps @128 @BLS12_381_Scalar
---      , benchOps @256 @BLS12_381_Scalar
---      , benchOps @512 @BLS12_381_Scalar
       ]
 
