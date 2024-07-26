@@ -13,7 +13,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     desugarRange,
     isZeroC,
     invertC,
-    splitCircuit,
     foldCircuit,
     embedVarIndex,
     embedVarIndexV,
@@ -28,7 +27,7 @@ import           Data.List                                                 (sort
 import           Data.Map                                                  (elems)
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
-import           GHC.Generics                                              (Par1 (Par1))
+import           GHC.Generics                                              (Par1)
 import           GHC.IsList                                                (IsList (..))
 import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Bool, Eq (..), length, negate,
@@ -49,11 +48,6 @@ boolCheckC :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> Arithmet
 boolCheckC r = circuitF $ do
     is <- runCircuit r
     for is $ \i -> newAssigned (\x -> let xi = x i in xi * (xi - one))
-
--- | TODO: This is ONLY needed in ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
--- Using this function is against the new approach to ArithmeticCircuits
-splitCircuit :: forall f a . Functor f => ArithmeticCircuit a f -> f (ArithmeticCircuit a Par1)
-splitCircuit (ArithmeticCircuit c o) = ArithmeticCircuit c . Par1 <$> o
 
 foldCircuit :: forall n a. Arithmetic a => (forall i m . MonadBlueprint i a m => i -> i -> m i) -> ArithmeticCircuit a (Vector n) -> ArithmeticCircuit a Par1
 foldCircuit f c = circuit $ do
