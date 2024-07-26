@@ -7,21 +7,19 @@
 
 module ZkFold.Symbolic.Data.Ed25519  where
 
-import           Data.Void                                              (Void)
-import           GHC.Generics                                           ((:*:) (..))
-import           GHC.TypeNats                                           (Natural)
-import           Prelude                                                (type (~), ($), (.))
-import qualified Prelude                                                as P
+import           Data.Void                                 (Void)
+import           GHC.TypeNats                              (Natural)
+import           Prelude                                   (type (~), ($), (.))
+import qualified Prelude                                   as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
-import qualified ZkFold.Base.Data.Vector                                as V
-import           ZkFold.Symbolic.Compiler                               hiding (forceZero)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (joinCircuits)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (mapOutputs)
+import           ZkFold.Base.Control.HApplicative          (hliftA2)
+import qualified ZkFold.Base.Data.Vector                   as V
+import           ZkFold.Symbolic.Compiler                  hiding (forceZero)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
@@ -72,8 +70,8 @@ instance
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
     -- We can encode the point at infinity as (0, 0), therefore.
-    pieces Inf         = mapOutputs (\(q :*: r) -> q `V.append` r) $ pieces (zero :: UInt 256 Auto (ArithmeticCircuit a)) `joinCircuits` pieces (zero :: UInt 256 Auto (ArithmeticCircuit a))
-    pieces (Point x y) = mapOutputs (\(q :*: r) -> q `V.append` r) $ pieces x `joinCircuits` pieces y
+    pieces Inf         = hliftA2 V.append (pieces (zero :: UInt 256 Auto (ArithmeticCircuit a))) (pieces (zero :: UInt 256 Auto (ArithmeticCircuit a)))
+    pieces (Point x y) = hliftA2 V.append (pieces x) (pieces y)
 
     restore c o = bool @(Bool (ArithmeticCircuit a)) @(Point (Ed25519 ArithmeticCircuit a)) (Point x y) Inf ((x == zero) && (y == zero))
         where

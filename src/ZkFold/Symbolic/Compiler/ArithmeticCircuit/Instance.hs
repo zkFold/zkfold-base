@@ -27,10 +27,10 @@ import           Test.QuickCheck                                           (Arbi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.HFunctor                                 (hmap)
 import           ZkFold.Base.Data.Par1                                     ()
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, embedAll, embedV, expansion,
                                                                             foldCircuit, getAllVars, horner, invertC,
                                                                             isZeroC)
@@ -44,9 +44,6 @@ import           ZkFold.Symbolic.Data.Eq
 
 ------------------------------------- Instances -------------------------------------
 
-instance Symbolic (ArithmeticCircuit a) where
-    type BaseField (ArithmeticCircuit a) = a
-
 instance Arithmetic a => SymbolicData a (ArithmeticCircuit a (Vector n)) where
     type TypeSize a (ArithmeticCircuit a (Vector n)) = n
 
@@ -57,9 +54,9 @@ instance Arithmetic a => SymbolicData a (ArithmeticCircuit a (Vector n)) where
 instance Arithmetic a => SymbolicData a (ArithmeticCircuit a Par1) where
     type TypeSize a (ArithmeticCircuit a Par1) = 1
 
-    pieces = mapOutputs (V.singleton . unPar1)
+    pieces = hmap (V.singleton . unPar1)
 
-    restore r o = mapOutputs (Par1 . V.item) $ withOutputs r o
+    restore r o = hmap (Par1 . V.item) $ withOutputs r o
 
 deriving newtype instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a))
 deriving newtype instance Arithmetic a => Arithmetizable a (Bool (ArithmeticCircuit a))

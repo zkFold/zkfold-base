@@ -97,8 +97,11 @@ library
       ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
       ZkFold.Base.Algebra.Polynomials.Univariate
+      ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
+      ZkFold.Base.Data.HFunctor
       ZkFold.Base.Data.Matrix
+      ZkFold.Base.Data.Package
       ZkFold.Base.Data.Par1
       ZkFold.Base.Data.Sparse.Matrix
       ZkFold.Base.Data.Sparse.Vector

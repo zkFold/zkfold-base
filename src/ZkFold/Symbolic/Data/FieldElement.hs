@@ -13,13 +13,14 @@ import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.HFunctor                           (hmap)
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), mapOutputs, withOutputs)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), withOutputs)
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
 import           ZkFold.Symbolic.Data.Bool                           (Bool)
 import           ZkFold.Symbolic.Data.Eq                             (Eq)
-import           ZkFold.Symbolic.Interpreter                         (Interpreter (..), mapInterpreter)
+import           ZkFold.Symbolic.Interpreter                         (Interpreter (..))
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
 
@@ -29,13 +30,13 @@ deriving instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
 
 instance A.Arithmetic a => A.SymbolicData a (FieldElement (ArithmeticCircuit a)) where
     type TypeSize a (FieldElement (ArithmeticCircuit a)) = 1
-    pieces (FieldElement x) = mapOutputs (V.singleton . unPar1) x
+    pieces (FieldElement x) = hmap (V.singleton . unPar1) x
     restore c = FieldElement . withOutputs c . Par1 . V.item
 
 instance A.Arithmetic a => A.Arithmetizable a (FieldElement (ArithmeticCircuit a)) where
     type InputSize a (FieldElement (ArithmeticCircuit a)) = 0
     type OutputSize a (FieldElement (ArithmeticCircuit a)) = 1
-    arithmetize (FieldElement x) _ = mapOutputs (V.singleton . unPar1) x
+    arithmetize (FieldElement x) _ = hmap (V.singleton . unPar1) x
 
 deriving newtype instance FromConstant k (c Par1) => FromConstant k (FieldElement c)
 
@@ -89,9 +90,9 @@ instance FieldElementData (Interpreter a) () where
 instance FieldElementData (Interpreter a) (FieldElement (Interpreter a)) where
     type TypeSize (Interpreter a) (FieldElement (Interpreter a)) = 1
 
-    toFieldElements (FieldElement x) = mapInterpreter (V.singleton . unPar1) x
+    toFieldElements (FieldElement x) = hmap (V.singleton . unPar1) x
 
-    fromFieldElements = FieldElement . mapInterpreter (Par1 . V.item)
+    fromFieldElements = FieldElement . hmap (Par1 . V.item)
 
 instance
     ( FieldElementData (Interpreter a) x

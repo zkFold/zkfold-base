@@ -14,7 +14,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         inputVariables,
         witnessGenerator,
         varOrder,
-        mapOutputs,
         -- low-level functions
         constraint,
         rangeConstraint,
@@ -27,15 +26,13 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec1,
         apply,
         forceZero,
-        joinCircuits,
-        concatCircuits
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
 import           Control.Monad.State                          (MonadState (..), State, gets, modify)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
 import qualified Data.Set                                     as S
-import           GHC.Generics
+import           GHC.Generics                                 (Generic, Par1 (..))
 import           Numeric.Natural                              (Natural)
 import           Optics
 import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum,
@@ -47,8 +44,12 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
+import           ZkFold.Base.Control.HApplicative
+import           ZkFold.Base.Data.HFunctor
+import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Vector                      (Vector (..))
 import           ZkFold.Prelude                               (drop, length)
+import           ZkFold.Symbolic.Class
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data Circuit a = Circuit
@@ -91,8 +92,21 @@ witnessGenerator circuit inputs =
 varOrder :: ArithmeticCircuit a f -> Map (Natural, Natural) Natural
 varOrder = acVarOrder . acCircuit
 
-mapOutputs :: (forall i . f i -> g i) -> ArithmeticCircuit a f -> ArithmeticCircuit a g
-mapOutputs f (ArithmeticCircuit ac o) = ArithmeticCircuit ac (f o)
+------------------------------ Symbolic compiler context ----------------------------
+
+instance HFunctor (ArithmeticCircuit a) where
+    hmap f (ArithmeticCircuit c o) = ArithmeticCircuit c (f o)
+
+instance (Eq a, MultiplicativeMonoid a) => HApplicative (ArithmeticCircuit a) where
+    hpure = ArithmeticCircuit mempty
+    hliftA2 f (ArithmeticCircuit c o) (ArithmeticCircuit d p) = ArithmeticCircuit (c <> d) (f o p)
+
+instance (Eq a, MultiplicativeMonoid a) => Package (ArithmeticCircuit a) where
+    unpackWith f (ArithmeticCircuit c o) = ArithmeticCircuit c <$> f o
+    packWith f = ArithmeticCircuit <$> foldMap acCircuit <*> f . fmap acOutput
+
+instance (Eq a, MultiplicativeMonoid a) => Symbolic (ArithmeticCircuit a) where
+    type BaseField (ArithmeticCircuit a) = a
 
 ----------------------------------- Circuit monoid ----------------------------------
 
@@ -126,22 +140,6 @@ instance (Eq a, MultiplicativeMonoid a) => Monoid (Circuit a) where
                acVarOrder = empty,
                acRNG      = mkStdGen 0
            }
-
-joinCircuits :: Eq a => ArithmeticCircuit a ol -> ArithmeticCircuit a or -> ArithmeticCircuit a (ol :*: or)
-joinCircuits r1 r2 =
-    ArithmeticCircuit
-        {
-            acCircuit = acCircuit r1 <> acCircuit r2
-        ,   acOutput = acOutput r1 :*: acOutput r2
-        }
-
-concatCircuits :: (Eq a, MultiplicativeMonoid a, Foldable f, Functor f) => f (ArithmeticCircuit a g) -> ArithmeticCircuit a (f :.: g)
-concatCircuits cs =
-    ArithmeticCircuit
-        {
-            acCircuit = foldMap acCircuit cs
-        ,   acOutput = Comp1 (acOutput <$> cs)
-        }
 
 ------------------------------------- Variables -------------------------------------
 
