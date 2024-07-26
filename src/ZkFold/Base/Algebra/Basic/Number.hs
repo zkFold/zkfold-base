@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Algebra.Basic.Number 
+module ZkFold.Base.Algebra.Basic.Number
     ( Natural
     , KnownNat
     , Prime

@@ -14,7 +14,8 @@ import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Sparse.Vector                  (SVector (..))
 import           ZkFold.Base.Data.Vector                         (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript, LMap)
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
+                                                                  SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler                        (Arithmetic)
 
 data ProtostarLookup (l :: Natural) (sizeT :: Natural)

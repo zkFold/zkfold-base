@@ -40,13 +40,13 @@ class Arithmetic f => SpecialSoundProtocol f a where
 
       prover :: a -> Witness f a -> Input f a -> SpecialSoundTranscript f a -> ProverMessage f a
 
-      algebraicMap 
-          :: a 
-          -> Input f a 
-          -> [ProverMessage Natural a] 
-          -> [VerifierMessage Natural a] 
+      algebraicMap
+          :: a
+          -> Input f a
+          -> [ProverMessage Natural a]
+          -> [VerifierMessage Natural a]
           -> LMap f
-      -- ^ the algebraic map V_sps computed by the verifier. 
+      -- ^ the algebraic map V_sps computed by the verifier.
       -- The j-th element of the vector is a homogeneous degree-j algebraic map that outputs a vector of @Dimension a@ field elements.
       -- Variables have natural indices from @0@ to @2k@:
       -- Variable @0@ is public input

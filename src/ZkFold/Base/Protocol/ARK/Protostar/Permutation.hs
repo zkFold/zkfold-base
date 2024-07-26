@@ -7,7 +7,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate    (var)
-import           ZkFold.Base.Data.Vector as V 
+import           ZkFold.Base.Data.Vector                         as V
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
                                                                   SpecialSoundTranscript)
 import           ZkFold.Symbolic.Compiler                        (Arithmetic)

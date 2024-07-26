@@ -12,7 +12,8 @@ import           Control.DeepSeq                             (force)
 import           Control.Exception                           (evaluate)
 import qualified Data.Map                                    as M
 import           Data.Time.Clock                             (getCurrentTime)
-import           Prelude                                     hiding (not, sum, (&&), (*), (+), (-), (/), (^), (||), divMod)
+import           Prelude                                     hiding (divMod, not, sum, (&&), (*), (+), (-), (/), (^),
+                                                              (||))
 import           System.Random                               (randomIO)
 import           Test.Tasty.Bench
 
@@ -22,15 +23,15 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.UInt
 
 evalUInt :: forall a n . UInt n ArithmeticCircuit a -> Vector (NumberOfRegisters a n) a
 evalUInt (UInt xs) = eval xs M.empty
 
 -- | Generate random addition circuit of given size
 --
-divisionCircuit 
+divisionCircuit
     :: forall n p r
     .  KnownNat n
     => PrimeField (Zp p)
@@ -47,7 +48,7 @@ divisionCircuit = do
     let acX = fromConstant (x :: Integer) :: UInt n ArithmeticCircuit (Zp p)
         acY = fromConstant (y :: Integer) :: UInt n ArithmeticCircuit (Zp p)
 
-        acZ = acX `divMod` acY 
+        acZ = acX `divMod` acY
 
     evaluate . force $ acZ
 
