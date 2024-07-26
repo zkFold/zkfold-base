@@ -7,7 +7,7 @@ import           Control.DeepSeq                                     (NFData)
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
 import           GHC.Generics                                        (Generic)
-import           Prelude                                             (($))
+import           Prelude                                             (($), (==))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Number
@@ -46,19 +46,26 @@ data RecursiveCircuit n a
         } deriving (Generic, NFData)
 
 instance Arithmetic a => SpecialSoundProtocol a (RecursiveCircuit n a) where
-    type Witness a (RecursiveCircuit n a) = Map Natural a 
+    type Witness a (RecursiveCircuit n a) = Map Natural a
     type Input a (RecursiveCircuit n a) = Vector n a
     type ProverMessage a (RecursiveCircuit n a) = Vector n a
     type VerifierMessage a (RecursiveCircuit n a) = Vector n a
     type Degree (RecursiveCircuit n a) = 2
 
-    rounds = iterations
+    -- One round for Plonk
+    rounds = P.const 1
 
     outputLength (RecursiveCircuit _ c) = P.fromIntegral $ M.size $ constraintSystem c
 
-    prover rc w i ts = eval (circuit rc) (M.fromList $ P.zip [1..] (V.fromVector i))
+    -- The transcript will be empty at this point, it is a one-round protocol
+    --
+    prover rc _ i _ = eval (circuit rc) (M.fromList $ P.zip [1..] (V.fromVector i))
 
-    algebraicMap rc i pm vm = M.elems $ constraintSystem (circuit rc) 
+    -- We can use the polynomial system from the circuit, no need to build it from scratch
+    --
+    algebraicMap rc _ _ _ = M.elems $ constraintSystem (circuit rc)
 
-    verifier rc i pm vm = P.undefined
+    -- The transcript is only one prover message since this is a one-round protocol
+    --
+    verifier rc i pm _ = eval (circuit rc) (M.fromList $ P.zip [1..] (V.fromVector i)) == P.head pm
 
