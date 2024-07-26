@@ -29,7 +29,6 @@ import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Par1)
 import           GHC.IsList                                                (IsList (..))
-import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   hiding (Bool, Eq (..), length, negate,
                                                                             splitAt, (!!), (*), (+), (-), (^))
 

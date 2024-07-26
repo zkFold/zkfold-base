@@ -6,7 +6,6 @@
 module ZkFold.Symbolic.Data.FieldElement where
 
 import           GHC.Generics                                        (Par1 (..))
-import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Bool, Eq, Num (..), Ord, drop, length,
                                                                       product, splitAt, sum, take, (!!), (^))
 import qualified Prelude                                             as Haskell

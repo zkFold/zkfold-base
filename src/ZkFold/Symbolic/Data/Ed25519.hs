@@ -8,7 +8,6 @@
 module ZkFold.Symbolic.Data.Ed25519  where
 
 import           Data.Void                                 (Void)
-import           GHC.TypeNats                              (Natural)
 import           Prelude                                   (type (~), ($), (.))
 import qualified Prelude                                   as P
 

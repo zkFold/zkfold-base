@@ -7,12 +7,11 @@
 module Tests.UInt (specUInt) where
 
 import           Control.Applicative                         ((<*>))
-import           Control.Monad                               (return)
+import           Control.Monad                               (return, when)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1))
-import           Numeric.Natural                             (Natural)
 import           Prelude                                     (show, type (~))
 import qualified Prelude                                     as P
 import           System.IO                                   (IO)
@@ -98,15 +97,13 @@ specUInt' = hspec $ do
         it "subtracts correctly" $ isHom @n @p @rs (-) (-) <$> toss m <*> toss m
         it "multiplies correctly" $ isHom @n @p @rs (*) (*) <$> toss m <*> toss m
 
-        -- TODO: Optimise exec and uncomment this test
-        {--
-        it "performs divMod correctly" $ do
-            n <- toss m
+        -- TODO: reduce the number of constraints in divMod or wait for lookup arguments
+        when (n <= 128) $ it "performs divMod correctly" $ withMaxSuccess 10 $ do
+            num <- toss m
             d <- toss m
-            let (acQ, acR) = (fromConstant n :: UInt n ArithmeticCircuit (Zp p)) `divMod` (fromConstant d)
-            let (zpQ, zpR) = (fromConstant n :: UInt n Vector (Zp p)) `divMod` (fromConstant d)
+            let (acQ, acR) = (fromConstant num :: UInt n rs (ArithmeticCircuit (Zp p))) `divMod` (fromConstant d)
+            let (zpQ, zpR) = (fromConstant num :: UInt n rs (Interpreter (Zp p))) `divMod` (fromConstant d)
             return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR)
-        --}
 
         it "calculates gcd correctly" $ withMaxSuccess 10 $ do
             x <- toss m

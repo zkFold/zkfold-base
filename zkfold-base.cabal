@@ -113,10 +113,13 @@ library
       ZkFold.Base.Protocol.ARK.Plonk.Relation
       ZkFold.Base.Protocol.ARK.Protostar
       ZkFold.Base.Protocol.ARK.Protostar.Accumulator
+      ZkFold.Base.Protocol.ARK.Protostar.AccumulatorScheme
       ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
+      ZkFold.Base.Protocol.ARK.Protostar.FiatShamir
       ZkFold.Base.Protocol.ARK.Protostar.Internal
       ZkFold.Base.Protocol.ARK.Protostar.Gate
       ZkFold.Base.Protocol.ARK.Protostar.Lookup
+      ZkFold.Base.Protocol.ARK.Protostar.Oracle
       ZkFold.Base.Protocol.ARK.Protostar.Permutation
       ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
       ZkFold.Base.Protocol.Commitment.KZG
@@ -200,6 +203,7 @@ library
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
+      lens                                       ,
       mtl                                   < 2.4,
       optics                                < 0.5,
       parallel                          < 3.2.3.0,
@@ -221,7 +225,9 @@ library
 test-suite zkfold-base-test
     import: options
     type: exitcode-stdio-1.0
-    ghc-options: -rtsopts
+    ghc-options: 
+        -rtsopts
+        "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N" 
     main-is: Main.hs
     other-modules:
       Tests.ArithmeticCircuit
@@ -311,6 +317,25 @@ benchmark polynomial-multiplication
 benchmark arithmetic-circuit 
     import:           options
     main-is:          BenchAC.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:      
+      -rtsopts
+      -O3
+    build-depends: 
+      base, 
+      array,
+      containers,
+      deepseq,
+      random,
+      tasty-bench,
+      time,
+      vector,
+      zkfold-base 
+
+benchmark division 
+    import:           options
+    main-is:          BenchDiv.hs
     hs-source-dirs:   bench
     type:             exitcode-stdio-1.0
     ghc-options:      

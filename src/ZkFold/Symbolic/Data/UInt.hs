@@ -27,7 +27,6 @@ import           Data.Tuple                                                (swap
 import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Generic, Par1 (..))
 import           GHC.Natural                                               (naturalFromInteger)
-import           GHC.TypeNats                                              (Natural)
 import           Prelude                                                   (Integer, error, flip, otherwise, return,
                                                                             type (~), ($), (++), (.), (<>), (>>=))
 import qualified Prelude                                                   as Haskell
@@ -268,6 +267,7 @@ instance
     , KnownNat (r + r)
     , KnownRegisterSize rs
     , r ~ NumberOfRegisters (BaseField b) n rs
+    , NFData (b (Vector r))
     , Ord (Bool b) (UInt n rs b)
     , AdditiveGroup (UInt n rs b)
     , Semiring (UInt n rs b)
@@ -296,7 +296,7 @@ instance
                 -> Natural
                 -> (UInt n rs b, UInt n rs b)
             longDivisionStep (q', r') i =
-                let rs = addBit (r' + r') (value @n -! i -! 1)
+                let rs = force $ addBit (r' + r') (value @n -! i -! 1)
                  in bool @(Bool b) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegisters a n r)) => Ord (Bool (ArithmeticCircuit a)) (UInt n r (ArithmeticCircuit a)) where

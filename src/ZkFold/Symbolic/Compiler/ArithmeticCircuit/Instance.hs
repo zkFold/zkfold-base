@@ -16,7 +16,6 @@ import           Data.Traversable                                          (Trav
 import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Par1 (..))
 import           GHC.Num                                                   (integerToNatural)
-import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   (Integer, Show, const, id, mempty, pure,
                                                                             return, show, type (~), ($), (++), (.),
                                                                             (<$>), (>>=))

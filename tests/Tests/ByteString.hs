@@ -9,7 +9,6 @@ import           Control.Monad                               (return)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
-import           Numeric.Natural                             (Natural)
 import           Prelude                                     (show, type (~), (<>))
 import qualified Prelude                                     as Haskell
 import           System.IO                                   (IO)
