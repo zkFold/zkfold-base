@@ -10,6 +10,7 @@ module Main where
 import           Control.DeepSeq                                (force)
 import           Control.Exception                              (evaluate)
 import           Data.Aeson                                     (ToJSON)
+import qualified Data.Map                                       as M
 import           Prelude                                        hiding (Bool (..), Eq (..), Ord (..), not, sum, (&&),
                                                                  (*), (+), (-), (/), (<=), (^), (||))
 import           System.Random                                  (randomIO)
@@ -143,8 +144,8 @@ main = do
 --       , benchCircuit "SHA2 512/364" $ hashCircuit @512 @BLS12_381_Scalar
 --       ]
 
--- mainSumBS :: IO ()
--- mainSumBS = do
+mainSumBS :: IO ()
+mainSumBS = do
 
   printCircuitSize $ additionCircuit @32 @BLS12_381_Scalar @Auto
   printCircuitSize $ additionCircuit @64 @BLS12_381_Scalar @Auto
