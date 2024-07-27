@@ -4,7 +4,6 @@ import           Control.DeepSeq                  (NFData)
 import           Data.Eq                          (Eq)
 import           Data.Function                    (($), (.))
 import           Data.Functor                     ((<$>))
-import           Data.Kind                        (Type)
 import           GHC.Generics                     (Generic, Par1 (Par1))
 import           Text.Show                        (Show)
 
@@ -13,6 +12,7 @@ import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.MonadCircuit     (SymbolicField)
 
 newtype Interpreter a f = Interpreter { runInterpreter :: f a }
     deriving (Eq, Show, Generic, NFData)
@@ -28,8 +28,9 @@ instance Package (Interpreter a) where
   unpackWith f (Interpreter x) = Interpreter <$> f x
   packWith f g = Interpreter $ f (runInterpreter <$> g)
 
-instance Symbolic (Interpreter (a :: Type)) where
+instance SymbolicField a => Symbolic (Interpreter a) where
   type BaseField (Interpreter a) = a
+  symbolicF (Interpreter x) f _ = Interpreter (f x)
 
 value :: Interpreter a Par1 -> a
 value (Interpreter (Par1 x)) = x

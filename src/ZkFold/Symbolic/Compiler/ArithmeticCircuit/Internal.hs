@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveAnyClass   #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
@@ -29,7 +28,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
-import           Control.Monad.State                          (MonadState (..), State, gets, modify)
+import           Control.Monad.State                          (MonadState (..), State, gets, modify, runState)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
 import qualified Data.Map.Strict                              as M
 import qualified Data.Set                                     as S
@@ -43,6 +42,7 @@ import           System.Random                                (StdGen, mkStdGen,
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
 import           ZkFold.Base.Control.HApplicative
@@ -51,6 +51,7 @@ import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Vector                      (Vector (..))
 import           ZkFold.Prelude                               (drop, length)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.MonadCircuit
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data Circuit a = Circuit
@@ -106,8 +107,45 @@ instance (Eq a, MultiplicativeMonoid a) => Package (ArithmeticCircuit a) where
     unpackWith f (ArithmeticCircuit c o) = ArithmeticCircuit c <$> f o
     packWith f = ArithmeticCircuit <$> foldMap acCircuit <*> f . fmap acOutput
 
-instance (Eq a, MultiplicativeMonoid a) => Symbolic (ArithmeticCircuit a) where
+type Arithmetic a = (SymbolicField a, Eq a)
+
+instance Arithmetic a => Symbolic (ArithmeticCircuit a) where
     type BaseField (ArithmeticCircuit a) = a
+    symbolicF (ArithmeticCircuit c o) _ f = let (p, d) = runState (f o) c in withOutputs d p
+
+-------------------------------- MonadCircuit instance ------------------------------
+
+instance Arithmetic a => MonadCircuit Natural a (State (Circuit a)) where
+    newRanged upperBound witness = do
+        let s   = sources @a witness
+            -- | A wild (and obviously incorrect) approximation of
+            -- x (x - 1) ... (x - upperBound)
+            -- It's ok because we only use it for variable generation anyway.
+            p i = var i * (var i - fromConstant upperBound)
+        i <- addVariable =<< newVariableWithSource (S.toList s) p
+        rangeConstraint i upperBound
+        assignment i (\m -> witness (m !))
+        return i
+
+    newConstrained
+        :: NewConstraint Natural a
+        -> Witness Natural a
+        -> State (Circuit a) Natural
+    newConstrained new witness = do
+        let ws = sources @a witness
+            -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
+            x = maximum (S.mapMonotonic (+1) ws <> S.singleton 0)
+            -- | `s` is meant to be a set of variables used in a witness not present in a constraint.
+            s = ws `S.difference` sources @a (`new` x)
+        i <- addVariable =<< newVariableWithSource (S.toList s) (new var)
+        constraint (`new` i)
+        assignment i (\m -> witness (m !))
+        return i
+
+    constraint p = addConstraint (p var)
+
+sources :: forall a i . (FiniteField a, Ord i) => Witness i a -> S.Set i
+sources = runSources . ($ Sources @a . S.singleton)
 
 ----------------------------------- Circuit monoid ----------------------------------
 
@@ -151,8 +189,6 @@ type VarField = Zp BLS12_381_Scalar
 toField :: Arithmetic a => a -> VarField
 toField = toZp . fromConstant . fromBinary @Natural . castBits . binaryExpansion
 
-type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a, Bits a ~ [a])
-
 -- TODO: Remove the hardcoded constant.
 toVar :: Arithmetic a => [Natural] -> Constraint a -> Natural
 toVar srcs c = force $ fromZp ex
@@ -181,15 +217,15 @@ type ConstraintMonomial = Mono Natural Natural
 type Constraint c = Poly c Natural Natural
 
 -- | Adds a constraint to the arithmetic circuit.
-constraint :: Arithmetic a => Constraint a -> State (Circuit a) ()
-constraint c = zoom #acSystem . modify $ insert (toVar [] c) c
+addConstraint :: Arithmetic a => Constraint a -> State (Circuit a) ()
+addConstraint c = zoom #acSystem . modify $ insert (toVar [] c) c
 
 rangeConstraint :: Natural -> a -> State (Circuit a) ()
 rangeConstraint i b = zoom #acRange . modify $ insert i b
 
 -- | Forces the provided variables to be zero.
 forceZero :: Arithmetic a => Vector n Natural -> State (Circuit a) ()
-forceZero = mapM_ (constraint . var)
+forceZero = mapM_ (addConstraint . var)
 
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables

@@ -41,6 +41,7 @@ import           ZkFold.Prelude                                            (leng
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit (..),
                                                                             Circuit (acSystem), acInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
+import           ZkFold.Symbolic.MonadCircuit
 
 boolCheckC :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
