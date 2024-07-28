@@ -23,6 +23,7 @@ import           ZkFold.Symbolic.Data.Bool                                 (Bool
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
 import           ZkFold.Symbolic.Data.FieldElement                         (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where

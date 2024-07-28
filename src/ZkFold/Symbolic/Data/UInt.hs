@@ -52,6 +52,7 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData (..))
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit                              (constraint, newAssigned)
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (backend :: (Type -> Type) -> Type) = UInt (backend (Vector (NumberOfRegisters (BaseField backend) n r)))

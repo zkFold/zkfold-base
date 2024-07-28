@@ -103,6 +103,7 @@ library
       ZkFold.Base.Data.Matrix
       ZkFold.Base.Data.Package
       ZkFold.Base.Data.Par1
+      ZkFold.Base.Data.Product
       ZkFold.Base.Data.Sparse.Matrix
       ZkFold.Base.Data.Sparse.Vector
       ZkFold.Base.Data.Type
@@ -191,6 +192,7 @@ library
       ZkFold.Symbolic.Ledger.Validation.PrivateInput
       ZkFold.Symbolic.Ledger.Validation.PublicInput
       ZkFold.Symbolic.Ledger.Validation.Transaction
+      ZkFold.Symbolic.MonadCircuit
     build-depends:
       base                          >= 4.9 && < 5,
       adjunctions                           < 4.5,

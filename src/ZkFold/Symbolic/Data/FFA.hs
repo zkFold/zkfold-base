@@ -24,11 +24,11 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                                            (iterateM, length)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitF, newAssigned,
-                                                                            runCircuit)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitF, runCircuit)
 import           ZkFold.Symbolic.Data.Combinators                          (log2, maxBitsPerFieldElement)
 import           ZkFold.Symbolic.Data.Ord                                  (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
+import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
 
 type Size = 7
 

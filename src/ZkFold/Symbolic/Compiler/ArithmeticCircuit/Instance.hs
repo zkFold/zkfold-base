@@ -40,6 +40,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
 
 ------------------------------------- Instances -------------------------------------
 

@@ -18,9 +18,9 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (newAssigned, runCircuit),
-                                                                            circuit)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (circuit, runCircuit)
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
 
 class BoolType b where
     true  :: b
