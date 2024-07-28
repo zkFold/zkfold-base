@@ -118,10 +118,11 @@ instance Arithmetic a => Symbolic (ArithmeticCircuit a) where
 instance Arithmetic a => MonadCircuit Natural a (State (Circuit a)) where
     newRanged upperBound witness = do
         let s   = sources @a witness
+            b   = fromConstant upperBound
             -- | A wild (and obviously incorrect) approximation of
             -- x (x - 1) ... (x - upperBound)
             -- It's ok because we only use it for variable generation anyway.
-            p i = var i * (var i - fromConstant upperBound)
+            p i = b * var i * (var i - b)
         i <- addVariable =<< newVariableWithSource (S.toList s) p
         rangeConstraint i upperBound
         assignment i (\m -> witness (m !))

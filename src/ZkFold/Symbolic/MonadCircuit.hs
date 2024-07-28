@@ -38,7 +38,8 @@ type Witness i a = forall x . (Algebra a x, WitnessField x) => (i -> x) -> x
 -- suitable type, you don't have to check it yourself.
 type NewConstraint i a = forall x . Algebra a x => (i -> x) -> i -> x
 
--- | A type of polynomial expressions. @i@ is a type of variables, @a@ is a base field.
+-- | A type of polynomial expressions.
+-- @i@ is a type of variables, @a@ is a base field.
 --
 -- A function is a polynomial expression if, given an arbitrary algebra @x@ over
 -- @a@ and a function mapping known variables to their witnesses, it computes a
@@ -48,8 +49,9 @@ type NewConstraint i a = forall x . Algebra a x => (i -> x) -> i -> x
 -- suitable type, you don't have to check it yourself.
 type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
 
--- | A monadic DSL for constructing arithmetic circuits. @i@ is a type of variables,
--- @a@ is a base field and @m@ is a monad for constructing the circuit.
+-- | A monadic DSL for constructing arithmetic circuits.
+-- @i@ is a type of variables, @a@ is a base field
+-- and @m@ is a monad for constructing the circuit.
 --
 -- DSL provides the following guarantees:
 --
@@ -65,18 +67,40 @@ type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
 --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
 -- * That introduced constraints are supported by the zk-SNARK utilized for later proving.
 class Monad m => MonadCircuit i a m | m -> i, m -> a where
-    -- | Creates new variable given an inclusive upper bound on a value and a witness.
-    -- e.g., @newRanged b (\\x -> x i - one)@ creates new variable whose value
+    -- | Creates new variable from witness constrained with an inclusive upper bound.
+    -- E.g., @'newRanged' b (\\x -> x i - one)@ creates new variable whose value
     -- is equal to @x i - one@ and which is expected to be in range @[0..b]@.
+    --
+    -- NOTE: this adds a range constraint to the system.
     newRanged :: a -> Witness i a -> m i
 
-    -- | Creates new variable given a constraint polynomial and a witness.
+    -- | Creates new variable from witness constrained by a polynomial.
+    -- E.g., @'newConstrained' (\\x i -> x i * (x i - one)) (\\x -> x j - one)@
+    -- creates new variable whose value is equal to @x j - one@ and which is
+    -- expected to be a root of the polynomial @x i (x i - one)@.
+    --
+    -- NOTE: this adds a polynomial contraint to the system.
+    --
+    -- NOTE: it is not checked (yet) whether provided constraint is in
+    -- appropriate form for zkSNARK in use.
     newConstrained :: NewConstraint i a -> Witness i a -> m i
 
-    -- | Adds new constraint to the system.
+    -- | Adds new polynomial constraint to the system.
+    -- E.g., @'constraint' (\\x -> x i)@ forces variable @i@ to be zero.
+    --
+    -- NOTE: it is not checked (yet) whether provided constraint is in
+    -- appropriate form for zkSNARK in use.
     constraint :: ClosedPoly i a -> m ()
 
-    -- | Creates new variable given a polynomial witness.
+    -- | A wrapper around @'newConstrained'@ which creates
+    -- new variable given a polynomial witness.
+    -- E.g., @'newAssigned' (\\x -> x i + x j)@ creates new variable
+    -- whose value is equal to @x i + x j@.
+    --
+    -- NOTE: this adds a polynomial constraint to the system.
+    --
+    -- NOTE: is is not checked (yet) whether the corresponding constraint is in
+    -- appropriate form for zkSNARK in use.
     newAssigned :: ClosedPoly i a -> m i
     newAssigned p = newConstrained (\x i -> p x - x i) p
 
