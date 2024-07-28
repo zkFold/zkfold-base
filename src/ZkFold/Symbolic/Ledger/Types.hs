@@ -18,7 +18,7 @@ import           Data.Functor                             (Functor)
 import           Data.Zip                                 (Zip)
 
 import           ZkFold.Base.Algebra.Basic.Class          (AdditiveMonoid)
-import           ZkFold.Symbolic.Data.Bool                (BoolType)
+import           ZkFold.Symbolic.Class                    (Symbolic)
 import           ZkFold.Symbolic.Data.Eq                  (Eq)
 import           ZkFold.Symbolic.Ledger.Types.Address
 import           ZkFold.Symbolic.Ledger.Types.Basic
@@ -42,8 +42,8 @@ import           ZkFold.Symbolic.Ledger.Types.Value
 -}
 
 type Signature context =
-    ( AdditiveMonoid (Value context)
-    , BoolType (Bool context)
+    ( Symbolic context
+    , AdditiveMonoid (Value context)
     , Eq (Bool context) (Hash context)
     , Eq (Bool context) (Input context)
     , Eq (Bool context) (Address context, Datum context)

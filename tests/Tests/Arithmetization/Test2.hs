@@ -12,13 +12,14 @@ import           Test.QuickCheck                             (property)
 
 import           ZkFold.Base.Algebra.Basic.Class             (one)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
+import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 -- A true statement.
-tautology :: (BoolType (Bool c), Eq (Bool c) (FieldElement c)) => FieldElement c -> FieldElement c -> Bool c
+tautology :: (Symbolic c, Eq (Bool c) (FieldElement c)) => FieldElement c -> FieldElement c -> Bool c
 tautology x y = (x /= y) || (x == y)
 
 testTautology :: forall a . Arithmetic a => a -> a -> Haskell.Bool

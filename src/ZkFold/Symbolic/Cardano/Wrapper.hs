@@ -3,6 +3,7 @@ module ZkFold.Symbolic.Cardano.Wrapper where
 import           Prelude                          hiding (Bool, Eq (..), length, splitAt, (&&), (*), (+))
 
 import           ZkFold.Symbolic.Cardano.Types
+import           ZkFold.Symbolic.Class            (Symbolic)
 import           ZkFold.Symbolic.Data.Bool        (BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq          (Eq ((==)))
@@ -17,7 +18,7 @@ type Contract tx redeemer context = tx context -> redeemer context -> Bool conte
 
 -- | Wrap the contract, exposing the transaction hash as the single public input.
 symbolicContractWrapper :: forall inputs rinputs outputs tokens mint datum redeemer context .
-    (BoolType (Bool context), Eq (Bool context) (TxHash context))
+    (Symbolic context, Eq (Bool context) (TxHash context))
     => Contract (Transaction inputs rinputs outputs tokens mint datum) redeemer context
     -> TxHash context
     -> Transaction inputs rinputs outputs tokens mint datum context
