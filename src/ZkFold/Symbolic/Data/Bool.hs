@@ -9,18 +9,18 @@ module ZkFold.Symbolic.Data.Bool (
     any
 ) where
 
-import           GHC.Generics                                              (Par1 (..))
-import           Prelude                                                   hiding (Bool, Num (..), all, any, not, (&&),
-                                                                            (/), (||))
-import qualified Prelude                                                   as Haskell
+import           Data.Eq                         (Eq (..))
+import           Data.Foldable                   (Foldable (..))
+import           Data.Function                   (($), (.))
+import           Data.Functor                    (Functor, fmap, (<$>))
+import           GHC.Generics                    (Par1 (..))
+import qualified Prelude                         as Haskell
+import           Text.Show                       (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arithmetic, ArithmeticCircuit)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (circuit, runCircuit)
-import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit    (newAssigned)
 
 class BoolType b where
     true  :: b
@@ -38,9 +38,9 @@ class BoolType b where
     xor  :: b -> b -> b
 
 instance BoolType Haskell.Bool where
-    true  = True
+    true  = Haskell.True
 
-    false = False
+    false = Haskell.False
 
     not   = Haskell.not
 
@@ -55,51 +55,30 @@ newtype Bool c = Bool (c Par1)
 
 deriving instance Eq (c Par1) => Eq (Bool c)
 
-instance KnownNat p => Show (Bool (Interpreter (Zp p))) where
+instance (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
     show (fromBool -> x) = if x == one then "True" else "False"
 
-instance Arithmetic a => BoolType (Bool (ArithmeticCircuit a)) where
-    true = Bool $ circuit $ newAssigned one
+instance Symbolic c => BoolType (Bool c) where
+    true = Bool $ embed (Par1 one)
 
-    false = Bool $ circuit $ newAssigned zero
+    false = Bool $ embed (Par1 zero)
 
-    not (Bool b) = Bool $ circuit $ do
-      v <- unPar1 <$> runCircuit b
-      newAssigned (one - ($ v))
+    not (Bool b) = Bool $ fromCircuitF b $
+      \(Par1 v) -> Par1 <$> newAssigned (one - ($ v))
 
-    Bool b1 && Bool b2 = Bool $ circuit $ do
-      v1 <- unPar1 <$> runCircuit b1
-      v2 <- unPar1 <$> runCircuit b2
-      newAssigned (($ v1) * ($ v2))
+    Bool b1 && Bool b2 = Bool $ fromCircuit2F b1 b2 $
+      \(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))
 
-    Bool b1 || Bool b2 = Bool $ circuit $ do
-      v1 <- unPar1 <$> runCircuit b1
-      v2 <- unPar1 <$> runCircuit b2
-      newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - x1 * x2)
+    Bool b1 || Bool b2 = Bool $ fromCircuit2F b1 b2 $
+      \(Par1 v1) (Par1 v2) -> Par1 <$>
+          newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - x1 * x2)
 
-    Bool b1 `xor` Bool b2 = Bool $ circuit $ do
-      v1 <- unPar1 <$> runCircuit b1
-      v2 <- unPar1 <$> runCircuit b2
-      newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
+    Bool b1 `xor` Bool b2 = Bool $ fromCircuit2F b1 b2 $
+      \(Par1 v1) (Par1 v2) -> Par1 <$>
+          newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
 
 fromBool :: Bool (Interpreter a) -> a
 fromBool (Bool (Interpreter (Par1 b))) = b
-
-toBool :: a -> Bool (Interpreter a)
-toBool = Bool . Interpreter . Par1
-
-instance Arithmetic a => BoolType (Bool (Interpreter a)) where
-    true = Bool $ Interpreter $ Par1 one
-
-    false = Bool $ Interpreter $ Par1 zero
-
-    not (fromBool -> b) = Bool $ Interpreter $ Par1 $ one - b
-
-    (fromBool -> b1) && (fromBool -> b2) = toBool $ b1 * b2
-
-    (fromBool -> b1) || (fromBool -> b2) = toBool $ b1 + b2 - b1 * b2
-
-    (fromBool -> b1) `xor` (fromBool -> b2) = toBool $ b1 + b2 - (one + one) * b1 * b2
 
 all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true

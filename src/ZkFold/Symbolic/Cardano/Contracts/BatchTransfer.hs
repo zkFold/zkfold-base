@@ -14,6 +14,7 @@ import           ZkFold.Base.Data.Vector                        (Vector, fromVec
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
+import           ZkFold.Symbolic.Class                          (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
@@ -29,12 +30,12 @@ hash :: forall context x . MiMCHash F context x => x -> FieldElement context
 hash = mimcHash @F mimcConstants zero
 
 type Sig context =
-    ( StrictConv (context Par1) (UInt 256 Auto context)
+    ( Symbolic context
+    , StrictConv (context Par1) (UInt 256 Auto context)
     , FromConstant Natural (UInt 256 Auto context)
     , MultiplicativeSemigroup (UInt 256 Auto context)
     , AdditiveMonoid (context Par1)
     , MiMCHash F context (TxOut context, TxOut context)
-    , BoolType (Bool context)
     , Eq (Bool context) (UInt 256 Auto context)
     , Eq (Bool context) (TxOut context)
     , Iso (UInt 256 Auto context) (ByteString 256 context)

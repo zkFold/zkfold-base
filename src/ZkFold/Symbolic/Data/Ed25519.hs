@@ -18,6 +18,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Base.Control.HApplicative          (hliftA2)
 import qualified ZkFold.Base.Data.Vector                   as V
+import           ZkFold.Symbolic.Class                     (Symbolic)
 import           ZkFold.Symbolic.Compiler                  hiding (forceZero)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -78,7 +79,7 @@ instance
             partialRestore = restore c
             (x, y) = (partialRestore piecesX, partialRestore piecesY)
 
-instance (BoolType (Bool (c a)), Eq (Bool (c a)) (BaseField (Ed25519 c a))) => Eq (Bool (c a)) (Point (Ed25519 c a)) where
+instance (Symbolic (c a), Eq (Bool (c a)) (BaseField (Ed25519 c a))) => Eq (Bool (c a)) (Point (Ed25519 c a)) where
     Inf == Inf                     = true
     Inf == _                       = false
     _ == Inf                       = false
