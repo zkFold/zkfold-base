@@ -19,10 +19,9 @@ import           Numeric.Natural                                     (Natural)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
 import           ZkFold.Symbolic.MonadCircuit
 
+-- | A @'MonadCircuit'@ with an added capability
+-- of embedding another arithmetic circuit inside.
 class MonadCircuit i a m => MonadBlueprint i a m where
-    -- ^ A @'MonadCircuit'@ with an added capability
-    -- of embedding another arithmetic circuit inside.
-
     -- | Adds the supplied circuit to the blueprint and returns its output variable.
     runCircuit :: ArithmeticCircuit a f -> m (f i)
 

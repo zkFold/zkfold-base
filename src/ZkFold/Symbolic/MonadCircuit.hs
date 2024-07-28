@@ -12,24 +12,22 @@ import           Data.Type.Equality              (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
 
-type SymbolicField a = (FiniteField a, BinaryExpansion a, Bits a ~ [a])
-
--- | DSL for constructing witnesses in an arithmetic circuit. @a@ is a base
--- field; @x@ is a "field of witnesses over @a@" which you can safely assume to
--- be identical to @a@.
-type WitnessField a x = (Algebra a x, SymbolicField x)
+-- | A @'WitnessField'@ should support all algebraic operations
+-- used inside an arithmetic circuit.
+type WitnessField a = (FiniteField a, BinaryExpansion a, Bits a ~ [a])
 
 -- | A type of witness builders. @i@ is a type of variables, @a@ is a base field.
 --
--- A function is a witness builer if, given an arbitrary field of witnesses @x@
--- over @a@ and a function mapping known variables to their witnesses, it computes
--- the new witness in @x@.
+-- A function is a witness builder if, given an arbitrary field of witnesses @x@
+-- over @a@ and a function mapping known variables to their witnesses,
+-- it computes the new witness in @x@.
 --
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
-type Witness i a = forall x . WitnessField a x => (i -> x) -> x
+type Witness i a = forall x . (Algebra a x, WitnessField x) => (i -> x) -> x
 
--- | A type of constraints for new variables. @i@ is a type of variables, @a@ is a base field.
+-- | A type of constraints for new variables.
+-- @i@ is a type of variables, @a@ is a base field.
 --
 -- A function is a constraint for a new variable if, given an arbitrary algebra
 -- @x@ over @a@, a function mapping known variables to their witnesses in that
@@ -50,10 +48,11 @@ type NewConstraint i a = forall x . Algebra a x => (i -> x) -> i -> x
 -- suitable type, you don't have to check it yourself.
 type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
 
--- | DSL for constructing arithmetic circuits. @i@ is a type of variables,
+-- | A monadic DSL for constructing arithmetic circuits. @i@ is a type of variables,
 -- @a@ is a base field and @m@ is a monad for constructing the circuit.
 --
 -- DSL provides the following guarantees:
+--
 -- * There are no unconstrained variables;
 -- * Variables with equal constraints and witnesses are reused as much as possible;
 -- * Variables with either different constraints or different witnesses are different;
@@ -61,10 +60,10 @@ type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
 -- * Constraints never reference undefined variables.
 --
 -- However, DSL does NOT provide the following guarantees (yet):
+--
 -- * That provided witnesses satisfy the provided constraints. To check this,
 --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
--- * That introduced polynomial constraints are supported by the zk-SNARK
---   utilized for later proving.
+-- * That introduced constraints are supported by the zk-SNARK utilized for later proving.
 class Monad m => MonadCircuit i a m | m -> i, m -> a where
     -- | Creates new variable given an inclusive upper bound on a value and a witness.
     -- e.g., @newRanged b (\\x -> x i - one)@ creates new variable whose value
@@ -81,10 +80,12 @@ class Monad m => MonadCircuit i a m | m -> i, m -> a where
     newAssigned :: ClosedPoly i a -> m i
     newAssigned p = newConstrained (\x i -> p x - x i) p
 
+-- | An example implementation of a @'MonadCircuit'@ which computes witnesses
+-- immediately and drops the constraints.
 newtype Witnesses a x = Witnesses { runWitnesses :: x }
   deriving (Functor, Applicative, Monad) via Identity
 
-instance SymbolicField a => MonadCircuit a a (Witnesses a) where
+instance WitnessField a => MonadCircuit a a (Witnesses a) where
     newRanged _ w = return (w id)
     newConstrained _ w = return (w id)
     constraint _ = return ()

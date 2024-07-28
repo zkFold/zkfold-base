@@ -107,7 +107,7 @@ instance (Eq a, MultiplicativeMonoid a) => Package (ArithmeticCircuit a) where
     unpackWith f (ArithmeticCircuit c o) = ArithmeticCircuit c <$> f o
     packWith f = ArithmeticCircuit <$> foldMap acCircuit <*> f . fmap acOutput
 
-type Arithmetic a = (SymbolicField a, Eq a)
+type Arithmetic a = (WitnessField a, Eq a)
 
 instance Arithmetic a => Symbolic (ArithmeticCircuit a) where
     type BaseField (ArithmeticCircuit a) = a

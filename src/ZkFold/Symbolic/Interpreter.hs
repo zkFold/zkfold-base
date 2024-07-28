@@ -12,7 +12,7 @@ import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.MonadCircuit     (SymbolicField)
+import           ZkFold.Symbolic.MonadCircuit     (WitnessField)
 
 newtype Interpreter a f = Interpreter { runInterpreter :: f a }
     deriving (Eq, Show, Generic, NFData)
@@ -28,7 +28,7 @@ instance Package (Interpreter a) where
   unpackWith f (Interpreter x) = Interpreter <$> f x
   packWith f g = Interpreter $ f (runInterpreter <$> g)
 
-instance SymbolicField a => Symbolic (Interpreter a) where
+instance WitnessField a => Symbolic (Interpreter a) where
   type BaseField (Interpreter a) = a
   symbolicF (Interpreter x) f _ = Interpreter (f x)
 
