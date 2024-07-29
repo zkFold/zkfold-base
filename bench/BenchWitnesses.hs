@@ -1,24 +1,24 @@
-{-# LANGUAGE AllowAmbiguousTypes          #-}
-{-# LANGUAGE OverloadedLists  #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedLists     #-}
 
 module Main where
 
-import           GHC.Integer                                    (Integer)
-import           Data.Foldable                                  (foldl)
-import           Data.Function                                  (($), (.), flip)
-import           Data.Monoid                                    ((<>))
 import           Control.Applicative                            ((<*>))
-import           Control.Monad                                  ((>>=))
 import           Control.DeepSeq                                (force)
 import           Control.Exception                              (evaluate)
-import           Data.Functor                                   ((<$>))
-import           Text.Show                                      (show)
-import           Data.List                                      (reverse)
+import           Control.Monad                                  ((>>=))
 import           Data.Aeson                                     (ToJSON)
+import           Data.Foldable                                  (foldl)
+import           Data.Function                                  (flip, ($), (.))
+import           Data.Functor                                   ((<$>))
+import           Data.List                                      (reverse)
+import           Data.Monoid                                    ((<>))
 import           Data.String                                    (String)
+import           GHC.Integer                                    (Integer)
 import           System.IO                                      (IO)
 import           System.Random                                  (randomIO)
-import           Test.Tasty.Bench                               (Benchmark, env, bench, nf, defaultMain)
+import           Test.Tasty.Bench                               (Benchmark, bench, defaultMain, env, nf)
+import           Text.Show                                      (show)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
@@ -26,17 +26,17 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                        hiding (reverse)
 import           ZkFold.Prelude
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC 
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants 
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.FieldElement
+import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 
 hashCircuit :: forall n p .
