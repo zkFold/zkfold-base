@@ -63,16 +63,13 @@ fibonacciIndexCircuit nMax x = foldl @[] (\m k -> bool m (fromConstant @Integer 
         fib 1 x1 _  = x1
         fib n x1 x2 = fib (n - 1) x2 (x1 + x2)
 
-reverseListCircuit :: forall t n . Vector n t -> Vector n t
-reverseListCircuit = unsafeToVector . reverse . fromVector
-
 benchWitnessGeneration :: forall n p .
     KnownNat n =>
     String ->
-    IO (ArithmeticCircuit (Zp p) n) ->
+    ArithmeticCircuit (Zp p) n ->
     Benchmark
 benchWitnessGeneration desc crct =
-    env (crct >>= evaluate . force)
+    env (evaluate . force $ crct)
         $ bench title . nf (flip witnessGenerator []) where
 
     title = "Witness generation for " <> desc <> " of size " <> show (value @n)
@@ -81,22 +78,34 @@ type F = Zp BLS12_381_Scalar
 
 main :: IO ()
 main = do
+    leqc <- leqCircuit @(ArithmeticCircuit F)
+        <$> do fromConstant <$> randomIO @Integer
+        <*> do fromConstant <$> randomIO @Integer
+    fic <- fibonacciIndexCircuit @(ArithmeticCircuit F) 100
+        <$> fromConstant <$> randomIO @Integer
     ac32 <- additionCircuit @32 @BLS12_381_Scalar
     ac64 <- additionCircuit @64 @BLS12_381_Scalar
     ac128 <- additionCircuit @128 @BLS12_381_Scalar
     ac256 <- additionCircuit @256 @BLS12_381_Scalar
     ac512 <- additionCircuit @512 @BLS12_381_Scalar
 
-    -- ByteString hc32 <- hashCircuit @32 @BLS12_381_Scalar
-    -- ByteString hc64 <- hashCircuit @64 @BLS12_381_Scalar
-    -- ByteString hc128 <- hashCircuit @128 @BLS12_381_Scalar
-    -- ByteString hc256 <- hashCircuit @256 @BLS12_381_Scalar
-    -- ByteString hc512 <- hashCircuit @512 @BLS12_381_Scalar
+    ByteString hc32 <- hashCircuit @32 @BLS12_381_Scalar
+    ByteString hc64 <- hashCircuit @64 @BLS12_381_Scalar
+    ByteString hc128 <- hashCircuit @128 @BLS12_381_Scalar
+    ByteString hc256 <- hashCircuit @256 @BLS12_381_Scalar
+    ByteString hc512 <- hashCircuit @512 @BLS12_381_Scalar
 
     defaultMain
-        [ benchWitnessGeneration "Adding ByteStrings" $ toFieldElements @(ArithmeticCircuit F) <$> additionCircuit @32 @BLS12_381_Scalar
-        , benchWitnessGeneration "Adding ByteStrings" $ toFieldElements @(ArithmeticCircuit F) <$> additionCircuit @64 @BLS12_381_Scalar
-        , benchWitnessGeneration "Adding ByteStrings" $ toFieldElements @(ArithmeticCircuit F) <$> additionCircuit @128 @BLS12_381_Scalar
-        , benchWitnessGeneration "Adding ByteStrings" $ toFieldElements @(ArithmeticCircuit F) <$> additionCircuit @256 @BLS12_381_Scalar
-        , benchWitnessGeneration "Adding ByteStrings" $ toFieldElements @(ArithmeticCircuit F) <$> additionCircuit @512 @BLS12_381_Scalar
+        [ benchWitnessGeneration "(<=) operation" . pieces @F $ leqc
+        , benchWitnessGeneration "Fibonacci index" . pieces @F $ fic
+        , benchWitnessGeneration "Adding ByteStrings" . pieces @F $ ac32
+        , benchWitnessGeneration "Adding ByteStrings" . pieces @F $ ac64
+        , benchWitnessGeneration "Adding ByteStrings" . pieces @F $ ac128
+        , benchWitnessGeneration "Adding ByteStrings" . pieces @F $ ac256
+        , benchWitnessGeneration "Adding ByteStrings" . pieces @F $ ac512
+        , benchWitnessGeneration "Hash circuit" . pieces @F $ hc32
+        , benchWitnessGeneration "Hash circuit" . pieces @F $ hc64
+        , benchWitnessGeneration "Hash circuit" . pieces @F $ hc128
+        , benchWitnessGeneration "Hash circuit" . pieces @F $ hc256
+        , benchWitnessGeneration "Hash circuit" . pieces @F $ hc512
         ]
