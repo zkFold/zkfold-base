@@ -6,6 +6,7 @@ module ZkFold.Symbolic.Compiler (
     module ZkFold.Symbolic.Compiler.Arithmetizable,
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
     compile,
+    solder,
     compileIO
 ) where
 

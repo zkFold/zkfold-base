@@ -7,23 +7,33 @@
 
 module Main where
 
-import           Control.DeepSeq                             (force)
-import           Control.Exception                           (evaluate)
-import qualified Data.Map                                    as M
-import           Data.Time.Clock                             (getCurrentTime)
-import           Prelude                                     hiding (not, sum, (&&), (*), (+), (-), (/), (^), (||))
-import           System.Random                               (randomIO)
+import           Control.DeepSeq                                (force)
+import           Control.Exception                              (evaluate)
+import           Data.Aeson                                     (ToJSON)
+import qualified Data.Map                                       as M
+import           Data.Time                                      (getCurrentTime)
+import           Prelude                                        hiding (Bool (..), Eq (..), Ord (..), not, sum, (&&),
+                                                                 (*), (+), (-), (/), (<=), (^), (||))
+import           System.Random                                  (randomIO)
 import           Test.Tasty.Bench
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Data.Vector
+import           ZkFold.Base.Data.Vector                        hiding (reverse)
+import           ZkFold.Prelude
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.FieldElement
+import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 
 evalBS :: forall a n . ByteString n (ArithmeticCircuit a) -> Vector n a
@@ -32,47 +42,45 @@ evalBS (ByteString xs) = eval xs M.empty
 evalUInt :: forall a n r . UInt n r (ArithmeticCircuit a) -> Vector (NumberOfRegisters a n r) a
 evalUInt (UInt xs) = eval xs M.empty
 
-
-hashCircuit
-    :: forall n p
-    .  PrimeField (Zp p)
-    => SHA2 "SHA256" (ArithmeticCircuit (Zp p)) n
-    => IO (ByteString 256 (ArithmeticCircuit (Zp p)))
-hashCircuit = do
-    x <- randomIO
-    let acX = fromConstant (x :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
-        h = sha2 @"SHA256" @(ArithmeticCircuit (Zp p)) acX
-
-    evaluate . force $ h
+hashCircuit :: forall n p .
+   PrimeField (Zp p) =>
+   SHA2 "SHA256" (ArithmeticCircuit (Zp p)) n =>
+   IO (ByteString 256 (ArithmeticCircuit (Zp p)))
+hashCircuit = sha2 @"SHA256" @(ArithmeticCircuit (Zp p)) @n . fromConstant <$> randomIO @Integer
 
 -- | Generate random addition circuit of given size
---
-additionCircuit :: forall n p r . (KnownNat n, PrimeField (Zp p), KnownRegisterSize r) => IO (ByteString n (ArithmeticCircuit (Zp p)))
-additionCircuit = do
-    x <- randomIO
-    y <- randomIO
-    let acX = fromConstant (x :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
-        acY = fromConstant (y :: Integer) :: ByteString n (ArithmeticCircuit (Zp p))
-        acZ = from (from acX + from acY :: UInt n r (ArithmeticCircuit (Zp p)))
+additionCircuit :: forall n p r .
+    (KnownNat n, PrimeField (Zp p), KnownRegisterSize r) =>
+    IO (ByteString n (ArithmeticCircuit (Zp p)))
+additionCircuit = from @(UInt n r (ArithmeticCircuit (Zp p))) <$$> (+)
+    <$> do from @(ByteString n (ArithmeticCircuit (Zp p))) . fromConstant <$> randomIO @Integer
+    <*> do from @(ByteString n (ArithmeticCircuit (Zp p))) . fromConstant <$> randomIO @Integer
 
-    evaluate . force $ acZ
+benchCircuit :: forall n p .
+    KnownNat n =>
+    String ->
+    IO (ByteString n (ArithmeticCircuit (Zp p))) ->
+    Benchmark
+benchCircuit desc crct = env (crct >>= evaluate . force) $ bench title . nf evalBS where
 
-benchOps :: forall n p r . (KnownNat n, PrimeField (Zp p), KnownRegisterSize r) => Benchmark
-benchOps = env (additionCircuit @n @p @r) $ \ac ->
-    bench ("Adding ByteStrings of size " <> show (value @n) <> " via UInt") $ nf evalBS ac
+    title = "Calculating " <> desc <> " of size " <> show (value @n)
 
-benchHash
-    :: forall n p
-    .  PrimeField (Zp p)
-    => SHA2 "SHA256" (ArithmeticCircuit (Zp p)) n
-    => Benchmark
-benchHash = env (hashCircuit @n @p) $ \ac ->
-    bench ("Calculating SHA2 512/364 of a bytestring of length " <> show (value @n)) $ nf evalBS ac
+printCircuitSize :: forall p n .
+    PrimeField (Zp p) =>
+    IO (ByteString n (ArithmeticCircuit (Zp p))) -> IO ()
+printCircuitSize crct = crct
+    >>= evaluate . force
+    >>= print . acSizeM . toFieldElements @(ArithmeticCircuit (Zp p))
 
-main :: IO ()
+benchCompilation :: forall a f .
+   (ToJSON a, Arithmetizable a f, KnownNat (InputSize a f)) =>
+   String -> FilePath -> f -> Benchmark
+benchCompilation title fp =
+    bench title . nfIO . writeFileJSON fp . optimize . solder @a
+
 main = do
-    mainSumBS
-    mainHash
+  mainSumBS
+  mainHash
 
 mainHash :: IO ()
 mainHash = do
@@ -115,32 +123,26 @@ mainHash = do
   getCurrentTime >>= print
 
   defaultMain
-      [ benchHash @32 @BLS12_381_Scalar
-      , benchHash @64 @BLS12_381_Scalar
-      , benchHash @128 @BLS12_381_Scalar
-      , benchHash @256 @BLS12_381_Scalar
-      , benchHash @512 @BLS12_381_Scalar
+      [ benchCircuit "SHA2 512/364" $ hashCircuit @32 @BLS12_381_Scalar
+      , benchCircuit "SHA2 512/364" $ hashCircuit @64 @BLS12_381_Scalar
+      , benchCircuit "SHA2 512/364" $ hashCircuit @128 @BLS12_381_Scalar
+      , benchCircuit "SHA2 512/364" $ hashCircuit @256 @BLS12_381_Scalar
+      , benchCircuit "SHA2 512/364" $ hashCircuit @512 @BLS12_381_Scalar
       ]
 
 mainSumBS :: IO ()
 mainSumBS = do
-  ByteString ac32 <- additionCircuit @32 @BLS12_381_Scalar @Auto
-  ByteString ac64 <- additionCircuit @64 @BLS12_381_Scalar @Auto
-  ByteString ac128 <- additionCircuit @128 @BLS12_381_Scalar @Auto
-  ByteString ac256 <- additionCircuit @256 @BLS12_381_Scalar @Auto
-  ByteString ac512 <- additionCircuit @512 @BLS12_381_Scalar @Auto
 
-  print $ acSizeM ac32
-  print $ acSizeM ac64
-  print $ acSizeM ac128
-  print $ acSizeM ac256
-  print $ acSizeM ac512
+  printCircuitSize $ additionCircuit @32 @BLS12_381_Scalar @Auto
+  printCircuitSize $ additionCircuit @64 @BLS12_381_Scalar @Auto
+  printCircuitSize $ additionCircuit @128 @BLS12_381_Scalar @Auto
+  printCircuitSize $ additionCircuit @256 @BLS12_381_Scalar @Auto
+  printCircuitSize $ additionCircuit @512 @BLS12_381_Scalar @Auto
 
   defaultMain
-      [ benchOps @32 @BLS12_381_Scalar @Auto
-      , benchOps @64 @BLS12_381_Scalar @Auto
-      , benchOps @128 @BLS12_381_Scalar @Auto
-      , benchOps @256 @BLS12_381_Scalar @Auto
-      , benchOps @512 @BLS12_381_Scalar @Auto
+      [ benchCircuit "Adding ByteStrings" $ additionCircuit @32 @BLS12_381_Scalar @Auto
+      , benchCircuit "Adding ByteStrings" $ additionCircuit @64 @BLS12_381_Scalar @Auto
+      , benchCircuit "Adding ByteStrings" $ additionCircuit @128 @BLS12_381_Scalar @Auto
+      , benchCircuit "Adding ByteStrings" $ additionCircuit @256 @BLS12_381_Scalar @Auto
+      , benchCircuit "Adding ByteStrings" $ additionCircuit @512 @BLS12_381_Scalar @Auto
       ]
-

@@ -8,6 +8,8 @@ import           GHC.Num              (Natural, integerToNatural)
 import           Prelude              hiding (drop, lookup, readFile, replicate, take, writeFile, (!!))
 import           Test.QuickCheck      (Gen, chooseInteger)
 
+infixl 5 <$$>
+
 length :: Foldable t => t a -> Natural
 length = foldl' (\c _ -> c + 1) 0
 
@@ -73,3 +75,6 @@ assert statement obj x = if statement then x else error $ show obj
 
 chooseNatural :: (Natural, Natural) -> Gen Natural
 chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (fromIntegral lo, fromIntegral hi)
+
+(<$$>) :: (Functor f, Functor ff) => (a -> b) -> f (ff a) -> f (ff b)
+(<$$>) = (<$>) . (<$>)

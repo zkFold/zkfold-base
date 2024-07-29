@@ -325,7 +325,8 @@ benchmark arithmetic-circuit
       -rtsopts
       -O3
     build-depends: 
-      base, 
+      base,
+      aeson,
       array,
       containers,
       deepseq,
@@ -333,7 +334,27 @@ benchmark arithmetic-circuit
       tasty-bench,
       time,
       vector,
-      zkfold-base 
+      zkfold-base
+
+benchmark compilation
+    import:           options
+    main-is:          BenchCompilation.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:      
+      -rtsopts
+      -O3
+    build-depends:
+      base,
+      aeson,
+      array,
+      containers,
+      deepseq,
+      random,
+      tasty-bench,
+      time,
+      vector,
+      zkfold-base
 
 benchmark division 
     import:           options
@@ -344,7 +365,19 @@ benchmark division
       -rtsopts
       -O3
     build-depends: 
-      base, 
+      base
+
+benchmark witnesses
+    import:           options
+    main-is:          BenchWitnesses.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:      
+      -rtsopts
+      -O3
+    build-depends:
+      base,
+      aeson,
       array,
       containers,
       deepseq,
@@ -352,4 +385,4 @@ benchmark division
       tasty-bench,
       time,
       vector,
-      zkfold-base 
+      zkfold-base
