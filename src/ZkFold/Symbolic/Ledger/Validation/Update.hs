@@ -11,7 +11,11 @@ import           ZkFold.Symbolic.Ledger.Validation.Bridge (bridgeIsValid)
 
 type UpdateWitness context = (Block context, BlockWitness context)
 
--- TODO: Check that public inputs spent and produced are correct.
+-- TODO: Update check should be refactored as follows:
+-- 1. Add inputs that are bridge in to the inputs produced in the update.
+-- 2. Apply transactions one by one to the update, checking that they are valid.
+-- 3. Add inputs that are bridge out to the inputs spent in the update.
+-- 4. Check that the resulting update is equal to the new update.
 
 -- | Check if a new update is valid given the latest valid update.
 newUpdateIsValid ::
