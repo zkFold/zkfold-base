@@ -22,7 +22,7 @@ module ZkFold.Symbolic.Base.Circuit
   , compileC
   , desolderC
   , solderC
-  , varNum
+  , newVarsC
   ) where
 
 import Control.Applicative
@@ -68,8 +68,8 @@ data Circuit x i o = UnsafeCircuit
     -- they can be input, constant or new variables.
   }
 
-varNum :: Circuit x i o -> Int
-varNum c = maybe 0 Prelude.fst (IntMap.lookupMax (witnessC c))
+newVarsC :: Circuit x i o -> Int
+newVarsC c = maybe 0 Prelude.fst (IntMap.lookupMax (witnessC c))
 
 type Blueprint x i o =
   forall t m. (IxMonadCircuit x t, Monad m) => t i i m (o (Var x i))
@@ -117,7 +117,7 @@ instance (Ord x, VectorSpace x i, o ~ U1) => Monoid (Circuit x i o) where
 instance (Ord x, VectorSpace x i, o ~ U1) => Semigroup (Circuit x i o) where
   c0 <> c1 =
     let
-      varMax = maybe 0 Prelude.fst (IntMap.lookupMax (witnessC c0))
+      varMax = newVarsC c0
       sysF = \case
         InVar ix -> Right (InVar ix)
         NewVar ix -> Right (NewVar (varMax + ix))
@@ -130,7 +130,7 @@ instance (Ord x, VectorSpace x i, o ~ U1) => Semigroup (Circuit x i o) where
 
 class Monad m => MonadCircuit x i m | m -> x, m -> i where
   runCircuit
-    :: VectorSpace x i
+    :: (VectorSpace x i, Functor o)
     => Circuit x i o -> m (o (Var x i))
   input :: VectorSpace x i => m (i (Var x i))
   input = return (fmap (SysVar . InVar) (basisV @x))
@@ -177,8 +177,12 @@ instance (Field x, Ord x, Monad m)
 instance (Field x, Ord x, Monad m)
   => MonadCircuit x i (CircuitIx x i i m) where
 
-    runCircuit c = UnsafeCircuitIx $ \c' -> return
-      (outputC c, c {outputC = U1} <> c')
+    runCircuit c1 = UnsafeCircuitIx $ \c0 -> do
+      let
+        outF = \case
+          SysVar (NewVar ix) -> SysVar (NewVar (newVarsC c0 + ix))
+          v -> v
+      return (fmap outF (outputC c1), c0 <> c1 {outputC = U1})
 
     constraint p = UnsafeCircuitIx $ \c -> return
       ((), c {systemC = Set.insert (evalConst (p var)) (systemC c)})
@@ -350,7 +354,7 @@ instance (PrimeField x, VectorSpace x i)
       UnsafeRegister v1 <- runCircuit (binaryExpansion c1)
       let reverseLexicographical a b = b * b * (b - a) + a
       v <- newAssigned $ \x ->
-        V.foldl reverseLexicographical zero
+        V.foldl reverseLexicographical one
           (V.zipWith (\i0 i1 -> x i0 - x i1) v0 v1)
       return (Par1 v)
 
