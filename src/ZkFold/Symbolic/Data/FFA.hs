@@ -36,7 +36,6 @@ type Size = 7
 newtype FFA (p :: Natural) b = FFA (b (Vector Size))
 
 deriving newtype instance Arithmetic a => SymbolicData a (FFA p (ArithmeticCircuit a))
-deriving newtype instance Arithmetic a => Arithmetizable a (FFA p (ArithmeticCircuit a))
 
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])

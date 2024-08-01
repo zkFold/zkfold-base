@@ -81,7 +81,7 @@ deriving newtype instance (Arithmetic a, Haskell.Ord a) => Ord (Bool (Interprete
 deriving newtype instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (FieldElement (ArithmeticCircuit a))
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
-instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x) where
+instance (SymbolicData a x, Support a x ~ (), TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -94,10 +94,10 @@ instance (SymbolicData a x, TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a)
 
     min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
-getBitsBE :: forall a x . (SymbolicData a x, TypeSize a x ~ 1) => x -> ArithmeticCircuit a (V.Vector (NumberOfBits a))
+getBitsBE :: forall a x . (SymbolicData a x, Support a x ~ (), TypeSize a x ~ 1) => x -> ArithmeticCircuit a (V.Vector (NumberOfBits a))
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = let expansion = binaryExpansion $ hmap (Par1 . V.item) (pieces @a @x x)
+getBitsBE x = let expansion = binaryExpansion $ hmap (Par1 . V.item) (pieces @a @x x ())
                in expansion { acOutput = V.reverse $ acOutput expansion }
 
 circuitGE :: forall a f . (Arithmetic a, Z.Zip f, Foldable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f -> Bool (ArithmeticCircuit a)

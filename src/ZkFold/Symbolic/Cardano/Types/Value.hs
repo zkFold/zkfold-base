@@ -8,6 +8,7 @@ import           Prelude                             hiding (Bool, Eq, length, r
 import qualified Prelude                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number    (KnownNat)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Compiler
@@ -25,7 +26,7 @@ deriving instance (Haskell.Eq (ByteString 224 context), Haskell.Eq (ByteString 2
 
 deriving instance FE.FieldElementData CtxEvaluation (Value n CtxEvaluation)
 
-deriving instance SymbolicData F (Value n CtxCompilation)
+deriving instance KnownNat n => SymbolicData F (Value n CtxCompilation)
 
 instance (FromConstant Natural (UInt 64 Auto context), MultiplicativeSemigroup (UInt 64 Auto context))
         => Scale Natural (Value n context) where

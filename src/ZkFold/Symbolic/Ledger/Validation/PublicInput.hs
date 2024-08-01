@@ -1,11 +1,11 @@
 module ZkFold.Symbolic.Ledger.Validation.PublicInput where
 
-import           Prelude                                  hiding (Bool, Eq, all, any, head, init, last, length, splitAt, tail, (&&),
-                                                            (*), (+), (/=), (==))
+import           Prelude                                  hiding (Bool, Eq, all, any, head, init, last, length, splitAt,
+                                                           tail, (&&), (*), (+), (/=), (==))
 
 import           ZkFold.Symbolic.Data.Bool                (all, any, (&&))
 import           ZkFold.Symbolic.Data.Eq                  (Eq (..))
-import           ZkFold.Symbolic.Data.List                (last, head)
+import           ZkFold.Symbolic.Data.List                (head, last)
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Common (updateChainIsValid)
 

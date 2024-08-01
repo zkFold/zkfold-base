@@ -1,12 +1,12 @@
 module ZkFold.Symbolic.Ledger.Types.Update where
 
-import           Prelude                                  hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                                hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Ledger.Types.Basic
-import           ZkFold.Symbolic.Ledger.Types.Block       (BlockId)
-import           ZkFold.Symbolic.Ledger.Types.Contract    (ContractId)
-import           ZkFold.Symbolic.Ledger.Types.Input       (Input)
-import           ZkFold.Symbolic.Ledger.Types.OutputRef   (TransactionId)
+import           ZkFold.Symbolic.Ledger.Types.Block     (BlockId)
+import           ZkFold.Symbolic.Ledger.Types.Contract  (ContractId)
+import           ZkFold.Symbolic.Ledger.Types.Input     (Input)
+import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 
 -- TODO: Add contract public data to the update.
 
