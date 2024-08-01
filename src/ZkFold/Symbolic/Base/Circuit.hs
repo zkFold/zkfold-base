@@ -22,6 +22,7 @@ module ZkFold.Symbolic.Base.Circuit
   , compileC
   , desolderC
   , solderC
+  , varNum
   ) where
 
 import Control.Applicative
@@ -67,6 +68,9 @@ data Circuit x i o = UnsafeCircuit
     -- they can be input, constant or new variables.
   }
 
+varNum :: Circuit x i o -> Int
+varNum c = maybe 0 Prelude.fst (IntMap.lookupMax (witnessC c))
+
 type Blueprint x i o =
   forall t m. (IxMonadCircuit x t, Monad m) => t i i m (o (Var x i))
 
@@ -111,11 +115,18 @@ indexW witnessMap inp = \case
 instance (Ord x, VectorSpace x i, o ~ U1) => Monoid (Circuit x i o) where
   mempty = UnsafeCircuit mempty mempty U1
 instance (Ord x, VectorSpace x i, o ~ U1) => Semigroup (Circuit x i o) where
-  c0 <> c1 = UnsafeCircuit
-    { systemC = systemC c0 <> systemC c1
-    , witnessC = witnessC c0 <> witnessC c1
-    , outputC = U1
-    }
+  c0 <> c1 =
+    let
+      varMax = maybe 0 Prelude.fst (IntMap.lookupMax (witnessC c0))
+      sysF = \case
+        InVar ix -> Right (InVar ix)
+        NewVar ix -> Right (NewVar (varMax + ix))
+    in
+      UnsafeCircuit
+        { systemC = systemC c0 <> Set.map (mapPoly sysF) (systemC c1)
+        , witnessC = witnessC c0 <> IntMap.mapKeys (varMax +) (witnessC c1)
+        , outputC = U1
+        }
 
 class Monad m => MonadCircuit x i m | m -> x, m -> i where
   runCircuit
