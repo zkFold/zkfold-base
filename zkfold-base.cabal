@@ -186,12 +186,14 @@ library
       ZkFold.Symbolic.Ledger.Types.Output
       ZkFold.Symbolic.Ledger.Types.OutputRef
       ZkFold.Symbolic.Ledger.Types.Transaction
+      ZkFold.Symbolic.Ledger.Types.Update
       ZkFold.Symbolic.Ledger.Types.Value
       ZkFold.Symbolic.Ledger.Validation.Block
       ZkFold.Symbolic.Ledger.Validation.Contract
       ZkFold.Symbolic.Ledger.Validation.PrivateInput
       ZkFold.Symbolic.Ledger.Validation.PublicInput
       ZkFold.Symbolic.Ledger.Validation.Transaction
+      ZkFold.Symbolic.Ledger.Validation.Update
       ZkFold.Symbolic.MonadCircuit
     build-depends:
       base                          >= 4.9 && < 5,
