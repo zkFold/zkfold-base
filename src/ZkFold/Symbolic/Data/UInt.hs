@@ -61,7 +61,6 @@ deriving instance Generic (UInt n r backend)
 deriving instance (NFData (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => NFData (UInt n r backend)
 deriving instance (Haskell.Eq (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => Haskell.Eq (UInt n r backend)
 deriving instance (Haskell.Show (BaseField backend), Haskell.Show (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => Haskell.Show (UInt n r backend)
-deriving newtype instance Arithmetic a => Arithmetizable a (UInt n r (ArithmeticCircuit a))
 
 instance Arithmetic a => FieldElementData (Interpreter a) (UInt n r (Interpreter a)) where
     type TypeSize (Interpreter a) (UInt n r (Interpreter a)) = NumberOfRegisters a n r
@@ -217,11 +216,11 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Iso (UInt n r (Inte
 --------------------------------------------------------------------------------
 
 instance Arithmetic a => SymbolicData a (UInt n r (ArithmeticCircuit a)) where
+    type Support a (UInt n r (ArithmeticCircuit a)) = ()
     type TypeSize a (UInt n r (ArithmeticCircuit a)) = NumberOfRegisters a n r
 
-    pieces (UInt c) = c
-
-    restore c o = UInt $ c `withOutputs` o
+    pieces (UInt c) _ = c
+    restore = UInt . ($ ())
 
 
 instance

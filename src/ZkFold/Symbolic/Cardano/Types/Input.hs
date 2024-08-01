@@ -28,8 +28,9 @@ deriving instance
     => FE.FieldElementData CtxEvaluation (Input tokens datum CtxEvaluation)
 
 deriving instance
-    KnownNat (TypeSize F (Value tokens CtxCompilation))
-    => SymbolicData F (Input tokens datum CtxCompilation)
+    ( KnownNat tokens
+    , KnownNat (TypeSize F (Value tokens CtxCompilation))
+    ) => SymbolicData F (Input tokens datum CtxCompilation)
 
 txiOutputRef :: Input tokens datum context -> OutputRef context
 txiOutputRef (Input (ref, _)) = ref

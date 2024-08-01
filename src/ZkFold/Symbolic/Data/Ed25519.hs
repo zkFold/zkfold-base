@@ -3,10 +3,11 @@
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 
 module ZkFold.Symbolic.Data.Ed25519  where
 
+import           Control.Applicative                       ((<*>))
+import           Data.Functor                              ((<$>))
 import           Data.Void                                 (Void)
 import           Prelude                                   (type (~), ($), (.))
 import qualified Prelude                                   as P
@@ -65,19 +66,18 @@ instance
     , 1 <= r
     ) => SymbolicData a (Point (Ed25519 ArithmeticCircuit a)) where
 
+    type Support a (Point (Ed25519 ArithmeticCircuit a)) = Support a (UInt 256 Auto (ArithmeticCircuit a))
     type TypeSize a (Point (Ed25519 ArithmeticCircuit a)) =
         TypeSize a (UInt 256 Auto (ArithmeticCircuit a)) + TypeSize a (UInt 256 Auto (ArithmeticCircuit a))
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
     -- We can encode the point at infinity as (0, 0), therefore.
-    pieces Inf         = hliftA2 V.append (pieces (zero :: UInt 256 Auto (ArithmeticCircuit a))) (pieces (zero :: UInt 256 Auto (ArithmeticCircuit a)))
-    pieces (Point x y) = hliftA2 V.append (pieces x) (pieces y)
+    pieces Inf         = hliftA2 V.append <$> pieces (zero :: UInt 256 Auto (ArithmeticCircuit a)) <*> pieces (zero :: UInt 256 Auto (ArithmeticCircuit a))
+    pieces (Point x y) = hliftA2 V.append <$> pieces x <*> pieces y
 
-    restore c o = bool @(Bool (ArithmeticCircuit a)) @(Point (Ed25519 ArithmeticCircuit a)) (Point x y) Inf ((x == zero) && (y == zero))
+    restore f = bool @(Bool (ArithmeticCircuit a)) @(Point (Ed25519 ArithmeticCircuit a)) (Point x y) Inf ((x == zero) && (y == zero))
         where
-            (piecesX, piecesY) = V.splitAt @(TypeSize a (UInt 256 Auto (ArithmeticCircuit a))) o
-            partialRestore = restore c
-            (x, y) = (partialRestore piecesX, partialRestore piecesY)
+            (x, y) = restore f
 
 instance (Symbolic (c a), Eq (Bool (c a)) (BaseField (Ed25519 c a))) => Eq (Bool (c a)) (Point (Ed25519 c a)) where
     Inf == Inf                     = true
@@ -104,7 +104,7 @@ instance
     , r512 ~ NumberOfRegisters a 512 Auto
     , 1 <= r512
     , KnownNat r512
-    , KnownNat (r512 + r512 + r512)
+    , KnownNat (r512 + (r512 + r512))
     , Iso (UInt 256 Auto (ArithmeticCircuit a)) (ByteString 256 (ArithmeticCircuit a))
     ) => EllipticCurve (Ed25519 ArithmeticCircuit a)  where
 
@@ -133,7 +133,7 @@ acAdd25519
     => EuclideanDomain (UInt 512 Auto (ArithmeticCircuit a))
     => r ~ NumberOfRegisters a 512 Auto
     => KnownNat r
-    => KnownNat (r + r + r)
+    => KnownNat (r + (r + r))
     => 1 <= r
     => Point (Ed25519 ArithmeticCircuit a)
     -> Point (Ed25519 ArithmeticCircuit a)
@@ -195,7 +195,7 @@ acDouble25519
     => EuclideanDomain (UInt 512 Auto (ArithmeticCircuit a))
     => r ~ NumberOfRegisters a 512 Auto
     => KnownNat r
-    => KnownNat (r + r + r)
+    => KnownNat (r + (r + r))
     => 1 <= r
     => Point (Ed25519 ArithmeticCircuit a)
     -> Point (Ed25519 ArithmeticCircuit a)
