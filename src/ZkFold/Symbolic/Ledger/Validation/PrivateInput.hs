@@ -7,7 +7,7 @@ import           ZkFold.Symbolic.Data.Bool                (all, any, (&&))
 import           ZkFold.Symbolic.Data.Eq                  (Eq (..))
 import           ZkFold.Symbolic.Data.List                (filter, last, (.:), head, emptyList)
 import           ZkFold.Symbolic.Ledger.Types
-import           ZkFold.Symbolic.Ledger.Validation.Update (updateChainIsValid)
+import           ZkFold.Symbolic.Ledger.Validation.Common (updateChainIsValid)
 
 -- | Witness data that is required to prove the validity of a private transaction input.
 type PrivateInputWitness context =

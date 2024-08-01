@@ -190,6 +190,7 @@ library
       ZkFold.Symbolic.Ledger.Types.Value
       ZkFold.Symbolic.Ledger.Validation.Block
       ZkFold.Symbolic.Ledger.Validation.Contract
+      ZkFold.Symbolic.Ledger.Validation.Common
       ZkFold.Symbolic.Ledger.Validation.PrivateInput
       ZkFold.Symbolic.Ledger.Validation.PublicInput
       ZkFold.Symbolic.Ledger.Validation.Transaction
