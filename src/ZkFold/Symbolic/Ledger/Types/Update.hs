@@ -8,6 +8,8 @@ import           ZkFold.Symbolic.Ledger.Types.Contract    (ContractId)
 import           ZkFold.Symbolic.Ledger.Types.Input       (Input)
 import           ZkFold.Symbolic.Ledger.Types.OutputRef   (TransactionId)
 
+-- TODO: Add contract public data to the update.
+
 -- | Block hash of the corresponding block.
 type UpdateId context = BlockId context
 
@@ -19,7 +21,7 @@ data Update context = Update
     -- ^ List of public inputs produced by the update
     , updatePublicInputsSpent    :: List context (Input context)
     -- ^ List of public inputs spent by the update
-    , updateReference    :: UpdateId context
+    , updateReference            :: UpdateId context
     -- ^ Reference to the previous update
     }
 
