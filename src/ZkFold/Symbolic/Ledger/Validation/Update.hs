@@ -1,10 +1,10 @@
 module ZkFold.Symbolic.Ledger.Validation.Update where
 
-import           Prelude                                 hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
-                                                            (*), (+), (==))
+import           Prelude                                 hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*),
+                                                          (+), (==))
 
-import           ZkFold.Symbolic.Data.Bool               (BoolType(..))
-import           ZkFold.Symbolic.Data.Eq                 (Eq(..))
+import           ZkFold.Symbolic.Data.Bool               (BoolType (..))
+import           ZkFold.Symbolic.Data.Eq                 (Eq (..))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Block (BlockWitness, newBlockIsValid)
 
