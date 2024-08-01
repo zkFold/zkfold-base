@@ -37,14 +37,16 @@ deriving instance
     => FE.FieldElementData CtxEvaluation (Output tokens datum CtxEvaluation)
 
 deriving instance
-    KnownNat (TypeSize F (Value tokens CtxCompilation))
-    => SymbolicData F (Output tokens datum CtxCompilation)
+    ( KnownNat (TypeSize F (Value tokens CtxCompilation))
+    , KnownNat tokens
+    ) => SymbolicData F (Output tokens datum CtxCompilation)
 
 deriving via (Structural (Output tokens datum CtxCompilation))
          instance
             ( ts ~ TypeSize F (Output tokens datum CtxCompilation)
             , 1 <= ts
             , KnownNat ts
+            , KnownNat tokens
             , KnownNat (TypeSize F (Value tokens CtxCompilation))
             ) => Eq (Bool CtxCompilation) (Output tokens datum CtxCompilation)
 

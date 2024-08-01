@@ -1,10 +1,9 @@
-{-# LANGUAGE AllowAmbiguousTypes        #-}
-{-# LANGUAGE DeriveAnyClass             #-}
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE GeneralisedNewtypeDeriving #-}
-{-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
@@ -64,7 +63,6 @@ newtype ByteString (n :: Natural) (backend :: (Type -> Type) -> Type) = ByteStri
 deriving stock instance Haskell.Show (b (Vector n)) => Haskell.Show (ByteString n b)
 deriving stock instance Haskell.Eq (b (Vector n)) => Haskell.Eq (ByteString n b)
 deriving anyclass instance NFData (b (Vector n)) => NFData (ByteString n b)
-deriving newtype instance Arithmetic a => Arithmetizable a (ByteString n (ArithmeticCircuit a))
 
 instance Arithmetic a => FieldElementData (Interpreter a) (ByteString n (Interpreter a)) where
     type TypeSize (Interpreter a) (ByteString n (Interpreter a)) = n
@@ -360,11 +358,11 @@ instance Finite (Zp p) => BitState ByteString n (Interpreter (Zp p)) where
 --------------------------------------------------------------------------------
 
 instance Arithmetic a => SymbolicData a (ByteString n (ArithmeticCircuit a)) where
+    type Support a (ByteString n (ArithmeticCircuit a)) = ()
     type TypeSize a (ByteString n (ArithmeticCircuit a)) = n
 
-    pieces (ByteString bits) = bits
-
-    restore c o = ByteString $ c `withOutputs` o
+    pieces (ByteString bits) _ = bits
+    restore = ByteString . ($ ())
 
 instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircuit a)) where
     shiftBits bs@(ByteString oldBits) s

@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Cardano.UPLC.Type where
 
@@ -9,7 +8,7 @@ import           Data.Typeable                    (Proxy (..), TypeRep, Typeable
 import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Compiler         (Arithmetizable, SymbolicData (..))
+import           ZkFold.Symbolic.Compiler         (SymbolicData (..))
 
 data SomeType a where
     NoType         :: SomeType a
@@ -38,31 +37,21 @@ instance Semigroup (SomeType a) where
     _ <> _                                   = error "Semigroup (SomeType a): constructor mismatch"
 
 data SomeSymbolic a where
-    SomeData  :: forall a (t :: Type) . (Typeable t, SymbolicData a t, KnownNat (TypeSize a t), Arithmetizable a t) => Proxy t -> SomeSymbolic a
-    SomeArith :: forall a (t :: Type) . (Typeable t, Arithmetizable a t)                                            => Proxy t -> SomeSymbolic a
+    SomeData  :: forall a (t :: Type) . (Typeable t, SymbolicData a t, KnownNat (TypeSize a t)) => Proxy t -> SomeSymbolic a
 
 getType :: SomeSymbolic a -> TypeRep
 getType (SomeData t)  = typeOf t
-getType (SomeArith t) = typeOf t
 
 instance Eq (SomeSymbolic a) where
-    x == y = getType x == getType y
+    SomeData x == SomeData y = typeOf x == typeOf y
 
 instance Semigroup (SomeSymbolic a) where
-    SomeData x <> y
-      | typeOf x == getType y = SomeData x
+    SomeData x <> SomeData y
+      | typeOf x == typeOf y = SomeData x
       | otherwise = error "Semigroup (SomeSymbolic a): SomeData mismatch"
-    x <> SomeData y
-      | getType x == typeOf y = SomeData y
-      | otherwise = error "Semigroup (SomeSymbolic a): SomeData mismatch"
-    ax@(SomeArith x) <> SomeArith y
-      | typeOf x == typeOf y = ax
-      | otherwise = error "Semigroup (SomeSymbolic a): SomeArith mismatch"
 
 symToSym :: forall a. SomeSymbolic a -> SomeSymbolic a -> SomeSymbolic a
-symToSym (SomeData (_ :: Proxy x)) (SomeData (_ :: Proxy y))  = SomeArith (Proxy @(x -> y))
-symToSym (SomeData (_ :: Proxy x)) (SomeArith (_ :: Proxy y)) = SomeArith (Proxy @(x -> y))
-symToSym (SomeArith _) _                                      = error "symToSym: cannot make a conversion"
+symToSym (SomeData (_ :: Proxy x)) (SomeData (_ :: Proxy y)) = SomeData (Proxy @(x -> y))
 
 -- TODO: add support for polymorphic types
 functionToData :: SomeType a -> SomeType a

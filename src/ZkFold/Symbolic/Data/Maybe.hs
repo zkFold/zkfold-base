@@ -43,7 +43,7 @@ nothing
     => k ~ TypeSize a (u (ArithmeticCircuit a Par1))
     => KnownNat k
     => Maybe u (ArithmeticCircuit a Par1)
-nothing = Maybe zero (let ArithmeticCircuit c o = embedV $ Haskell.pure @(Vector k) (zero @a) in restore c o)
+nothing = Maybe zero (let c = embedV $ Haskell.pure @(Vector k) (zero @a) in restore (Haskell.const c))
 
 fromMaybe
     :: SymbolicData a (u (ArithmeticCircuit a Par1))
@@ -51,13 +51,12 @@ fromMaybe
     => u (ArithmeticCircuit a Par1)
     -> Maybe u (ArithmeticCircuit a Par1)
     -> u (ArithmeticCircuit a Par1)
-fromMaybe a (Maybe h t) =
+fromMaybe a (Maybe h t) = restore $ \i ->
   let
-    as = pieces a
-    ts = pieces t
-    ArithmeticCircuit c o = (ts - as) * hmap (V.singleton . unPar1) h + as
+    as = pieces a i
+    ts = pieces t i
   in
-    restore c o
+    (ts - as) * hmap (V.singleton . unPar1) h + as
 
 isNothing :: (DiscreteField b a) => Maybe u a -> b
 isNothing (Maybe h _) = isZero h
@@ -67,13 +66,15 @@ isJust = not Haskell.. isNothing
 
 instance
     ( SymbolicData a (u (ArithmeticCircuit a Par1))
+    , Support a (u (ArithmeticCircuit a Par1)) ~ ()
     , k ~ TypeSize a (u (ArithmeticCircuit a Par1))
     , k1 ~ k + 1
     , (k1 - 1) ~ k)
   => SymbolicData a (Maybe u (ArithmeticCircuit a Par1)) where
+    type Support a (Maybe u (ArithmeticCircuit a Par1)) = ()
     type TypeSize a (Maybe u (ArithmeticCircuit a Par1)) = TypeSize a (u (ArithmeticCircuit a Par1)) + 1
-    pieces (Maybe h t) = hliftA2 (\(Par1 h') t' -> h' V..: t') h (pieces t)
-    restore c o = Maybe (c `withOutputs` Par1 (V.head o)) (restore c (V.tail o))
+    pieces (Maybe h t) i = hliftA2 (\(Par1 h') t' -> h' V..: t') h (pieces t i)
+    restore f = Maybe (restore (hmap V.take . f)) (restore (hmap V.tail . f))
 
 maybe :: forall a b bool f .
     Conditional bool b =>

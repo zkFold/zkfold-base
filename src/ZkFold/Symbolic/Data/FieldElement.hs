@@ -15,7 +15,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor                           (hmap)
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..), withOutputs)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (ArithmeticCircuit (..))
 import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
 import           ZkFold.Symbolic.Data.Bool                           (Bool)
 import           ZkFold.Symbolic.Data.Eq                             (Eq)
@@ -28,14 +28,11 @@ deriving instance Show (c Par1) => Show (FieldElement c)
 deriving instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
 
 instance A.Arithmetic a => A.SymbolicData a (FieldElement (ArithmeticCircuit a)) where
+    type Support a (FieldElement (ArithmeticCircuit a)) = ()
     type TypeSize a (FieldElement (ArithmeticCircuit a)) = 1
-    pieces (FieldElement x) = hmap (V.singleton . unPar1) x
-    restore c = FieldElement . withOutputs c . Par1 . V.item
 
-instance A.Arithmetic a => A.Arithmetizable a (FieldElement (ArithmeticCircuit a)) where
-    type InputSize a (FieldElement (ArithmeticCircuit a)) = 0
-    type OutputSize a (FieldElement (ArithmeticCircuit a)) = 1
-    arithmetize (FieldElement x) _ = hmap (V.singleton . unPar1) x
+    pieces (FieldElement x) _ = hmap (V.singleton . unPar1) x
+    restore = FieldElement . hmap (Par1 . V.item) . ($ ())
 
 deriving newtype instance FromConstant k (c Par1) => FromConstant k (FieldElement c)
 
@@ -149,9 +146,9 @@ instance
 
     fromFieldElements (Interpreter v) = fromFieldElements . Interpreter <$> V.chunks v
 
-instance A.SymbolicData a x => FieldElementData (ArithmeticCircuit a) x where
+instance (A.SymbolicData a x, A.Support a x ~ ()) => FieldElementData (ArithmeticCircuit a) x where
     type TypeSize (ArithmeticCircuit a) x = A.TypeSize a x
 
-    toFieldElements = A.pieces
+    toFieldElements = flip A.pieces ()
 
-    fromFieldElements ArithmeticCircuit {..} = A.restore acCircuit acOutput
+    fromFieldElements = A.restore @a @x . const

@@ -43,7 +43,12 @@ deriving instance
 
 -- TODO: Think how to prettify this abomination
 deriving instance
-    ( KnownNat (TypeSize F (Value tokens CtxCompilation))
+    ( KnownNat tokens
+    , KnownNat rinputs
+    , KnownNat inputs
+    , KnownNat outputs
+    , KnownNat mint
+    , KnownNat (TypeSize F (Value tokens CtxCompilation))
     , KnownNat (TypeSize F (Output tokens datum CtxCompilation))
     , KnownNat (TypeSize F (Vector outputs (Output tokens datum CtxCompilation)))
     , KnownNat (TypeSize F (Input tokens datum CtxCompilation))
