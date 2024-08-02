@@ -46,3 +46,9 @@ filter ::
     -> List context x
     -> List context x
 filter = undefined
+
+delete :: x -> List context x -> List context x
+delete = undefined
+
+(\\) :: List context x -> List context x -> List context x
+_ \\ _ = undefined

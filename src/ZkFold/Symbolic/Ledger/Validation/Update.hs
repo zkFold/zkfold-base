@@ -1,37 +1,48 @@
 module ZkFold.Symbolic.Ledger.Validation.Update where
 
 import           Prelude                                 hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*),
-                                                          (+), (==))
+                                                          (+), (==), (++))
 
-import           ZkFold.Symbolic.Data.Bool               (BoolType (..))
-import           ZkFold.Symbolic.Data.Eq                 (Eq (..))
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Data.Conditional              (bool)
+import           ZkFold.Symbolic.Data.Eq                       (Eq(..))
+import           ZkFold.Symbolic.Data.List                     ((\\), (++), (.:), emptyList)
 import           ZkFold.Symbolic.Ledger.Types
-import           ZkFold.Symbolic.Ledger.Validation.Block (BlockWitness, newBlockIsValid)
-import           ZkFold.Symbolic.Ledger.Validation.Bridge (bridgeIsValid)
+import           ZkFold.Symbolic.Ledger.Validation.Block       (BlockWitness)
+import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
 
-type UpdateWitness context = (Block context, BlockWitness context)
+type UpdateWitness context = (Bridge L1ToL2 context, BlockWitness context)
 
--- TODO: Update check should be refactored as follows:
--- 1. Add inputs that are bridge in to the inputs produced in the update.
--- 2. Apply transactions one by one to the update, checking that they are valid.
--- 3. Add inputs that are bridge out to the inputs spent in the update.
--- 4. Check that the resulting update is equal to the new update.
+bridgeToLedger :: Signature context => Bridge L1ToL2 context -> Update context -> Update context
+bridgeToLedger Bridge {..} u =
+   let (ins, _) = foldl (\(accIns, accC) o -> (Input (OutputRef (updateReference u) (accC + one)) o .: accIns, accC + one)) (emptyList, zero) $ bridgeL1Assets ++ bridgeL2Assets
+   in u { updatePublicInputsProduced = updatePublicInputsProduced u ++ ins }
 
--- | Check if a new update is valid given the latest valid update.
-newUpdateIsValid ::
-      Signature context
-   => Bridge L1ToL2 context
-   -- ^ The bridged outputs from L1 to L2.
-   -> Bridge L2ToL1 context
-   -- ^ The bridged outputs from L2 to L1.
-   -> UpdateId context
-   -- ^ The id of the latest valid update.
-   -> Update context
-   -- ^ The new update to check.
-   -> UpdateWitness context
-   -- ^ The witness data for the new update.
-   -> Bool context
-newUpdateIsValid bridgeIn bridgeOut lastUpdateId u@Update {..} (wBlock, wBlockWitness) =
-      lastUpdateId == updateReference
-   && newBlockIsValid lastUpdateId wBlock wBlockWitness
-   && bridgeIsValid bridgeIn bridgeOut u
+bridgeFromLedger :: Update context -> Bridge L2ToL1 context
+bridgeFromLedger = undefined
+
+applyTransaction :: Signature context => Transaction context -> TransactionWitness context -> Update context -> Update context
+applyTransaction tx w u =
+   let res = transactionIsValid (updateId u) tx w
+       -- TODO: we only need to add public inputs from the previous updates here
+       insSpent = updatePublicInputsSpent u ++ txPublicInputs tx
+       insProduced = updatePublicInputsProduced u \\ txPublicInputs tx
+       spendingContracts = txoAddress . txiOutput <$> txPublicInputs tx
+       mintingContracts  = (\(Value s _ _) -> s) <$> txMint tx
+       u' = u { updateTransactionData = updateTransactionData u ++ fmap (, txId tx) (spendingContracts ++ mintingContracts)
+              , updatePublicInputsSpent = insSpent
+              , updatePublicInputsProduced = insProduced
+              }
+   in bool u u' res
+
+newUpdate :: Signature context => UpdateId context -> Bridge L1ToL2 context -> BlockWitness context -> Update context
+newUpdate lastUpdateId bridgeIn ws =
+   let u = Update { updateTransactionData = emptyList
+                  , updatePublicInputsProduced = emptyList
+                  , updatePublicInputsSpent = emptyList
+                  , updateReference = lastUpdateId
+                  }
+   in foldl (\acc (tx, w) -> applyTransaction tx w acc) (bridgeToLedger bridgeIn u) ws
+
+updateIsValid :: Signature context => UpdateId context -> Update context -> UpdateWitness context -> Bool context
+updateIsValid uId u w = uncurry (newUpdate uId) w == u
