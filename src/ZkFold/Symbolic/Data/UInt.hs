@@ -16,7 +16,7 @@ module ZkFold.Symbolic.Data.UInt (
 ) where
 
 import           Control.DeepSeq
-import           Control.Monad.State                                       (StateT (..))
+import           Control.Monad.State                                       (StateT (..), runState)
 import           Data.Foldable                                             (foldr, foldrM, for_)
 import           Data.Functor                                              ((<$>))
 import           Data.Kind                                                 (Type)
@@ -39,8 +39,9 @@ import           ZkFold.Base.Control.HApplicative                          (hlif
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
-import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Class                                     hiding (embed)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
@@ -52,7 +53,9 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData (..))
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (constraint, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                              (newAssigned, MonadCircuit (constraint, newRanged))
+import           Data.Monoid                                         (mempty)
+
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (backend :: (Type -> Type) -> Type) = UInt (backend (Vector (NumberOfRegisters (BaseField backend) n r)))
@@ -84,9 +87,17 @@ instance
     , KnownNat n
     , KnownRegisterSize r
     ) => FromConstant Natural (UInt n r (ArithmeticCircuit a)) where
-    fromConstant c =
-        let (lo, hi, _) = cast @a @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
-         in UInt $ embedV $ Vector $ fromConstant <$> (lo <> [hi])
+    fromConstant c = case regSize @r of
+        Auto ->
+            let (lo, hi, _) = cast @a @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
+            in UInt $ embedV $ Vector $ fromConstant <$> (lo <> [hi])
+        Fixed rs -> 
+            let cs = (c `Haskell.mod` base) : replicate (numberOfRegisters @a @n @r -! 1) zero
+                base = (2 :: Natural) ^ rs
+                v = Vector $ fromConstant <$> cs ::  Vector (NumberOfRegisters a n r) a
+                f = for v $ \x -> newAssigned $ fromConstant x
+                (os, r) = runState f (mempty :: Circuit a) 
+            in UInt $ ArithmeticCircuit { acCircuit = r {acRange = fromList [(1, fromConstant base - one)]}, acOutput = os }
 
 instance
     ( FromConstant Natural a
@@ -321,22 +332,34 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegis
 
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r (ArithmeticCircuit a)) where
-    UInt x + UInt y = UInt (circuitF $ V.unsafeToVector <$> solve)
-        where
-            solve :: MonadBlueprint i a m => m [i]
-            solve = do
-                j <- newAssigned (Haskell.const zero)
-                xs <- V.fromVector <$> runCircuit x
-                ys <- V.fromVector <$> runCircuit y
-                let midx = Haskell.init xs
-                    z    = Haskell.last xs
-                    midy = Haskell.init ys
-                    w    = Haskell.last ys
-                (zs, c) <- flip runStateT j $ traverse StateT $
-                    Haskell.zipWith (fullAdder $ registerSize @a @n @r) midx midy
-                k <- fullAdded z w c
-                (ks, _) <- splitExpansion (highRegisterSize @a @n @r) 1 k
-                return (zs ++ [ks])
+    UInt x + UInt y = case regSize @r of
+        Fixed rs -> UInt $ circuitF $ V.unsafeToVector <$> solve
+            where
+                solve :: MonadBlueprint i a m => m [i]
+                solve = do
+                    j <- newAssigned (Haskell.const zero)
+                    z <- Haskell.head . V.fromVector <$> runCircuit x
+                    w <- Haskell.head . V.fromVector <$> runCircuit y
+                    let base = (2 :: Natural) ^ (rs :: Natural)
+                    (k, _) <- newRanged (fromConstant base - one) (\v -> v z + v w) >>= splitExpansion rs 1
+                    return (k: replicate (numberOfRegisters @a @n @r -! 1) j)
+
+        Auto -> UInt (circuitF $ V.unsafeToVector <$> solve)
+            where
+                solve :: MonadBlueprint i a m => m [i]
+                solve = do
+                    j <- newAssigned (Haskell.const zero)
+                    xs <- V.fromVector <$> runCircuit x
+                    ys <- V.fromVector <$> runCircuit y
+                    let midx = Haskell.init xs
+                        z    = Haskell.last xs
+                        midy = Haskell.init ys
+                        w    = Haskell.last ys
+                    (zs, c) <- flip runStateT j $ traverse StateT $
+                        Haskell.zipWith (fullAdder $ registerSize @a @n @r) midx midy
+                    k <- fullAdded z w c
+                    (ks, _) <- splitExpansion (highRegisterSize @a @n @r) 1 k
+                    return (zs ++ [ks])
 
 instance
     ( Arithmetic a
@@ -353,52 +376,75 @@ instance
     , KnownNat (NumberOfRegisters a n r)
     ) => AdditiveGroup (UInt n r (ArithmeticCircuit a)) where
 
-        UInt x - UInt y = UInt $ circuitF (V.unsafeToVector <$> solve)
-            where
-                t :: a
-                t = (one + one) ^ registerSize @a @n @r - one
+        UInt x - UInt y =  case regSize @r of
+            Fixed rs -> UInt $ circuitF $ V.unsafeToVector <$> solve
+                where
+                    solve :: MonadBlueprint i a m => m [i]
+                    solve = do
+                        j <- newAssigned (Haskell.const zero)
+                        z <- Haskell.head . V.fromVector <$> runCircuit x
+                        w <- Haskell.head . V.fromVector <$> runCircuit y
+                        let base = (2 :: Natural) ^ (rs :: Natural)
+                        (k, _) <- newRanged (fromConstant base - one) (\v -> v z - v w + fromConstant base) >>= splitExpansion rs 1
+                        return (k: replicate (numberOfRegisters @a @n @r -! 1) j)
 
-                solve :: MonadBlueprint i a m => m [i]
-                solve = do
-                    is <- runCircuit x
-                    js <- runCircuit y
-                    case V.fromVector $ Z.zip is js of
-                      []              -> return []
-                      [(i, j)]        -> solve1 i j
-                      ((i, j) : rest) -> let (z, w) = Haskell.last rest
-                                             (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                          in solveN (i, j) (ris, rjs) (z, w)
+            Auto -> UInt $ circuitF (V.unsafeToVector <$> solve)
+                where
+                    t :: a
+                    t = (one + one) ^ registerSize @a @n @r - one
 
-                solve1 :: MonadBlueprint i a m => i -> i -> m [i]
-                solve1 i j = do
-                    z0 <- newAssigned (\v -> v i - v j + fromConstant (2 ^ registerSize @a @n @r :: Natural))
-                    (z, _) <- splitExpansion (highRegisterSize @a @n @r) 1 z0
-                    return [z]
+                    solve :: MonadBlueprint i a m => m [i]
+                    solve = do
+                        is <- runCircuit x
+                        js <- runCircuit y
+                        case V.fromVector $ Z.zip is js of
+                            []              -> return []
+                            [(i, j)]        -> solve1 i j
+                            ((i, j) : rest) ->  let (z, w) = Haskell.last rest
+                                                    (ris, rjs) = Haskell.unzip $ Haskell.init rest
+                                                in solveN (i, j) (ris, rjs) (z, w)
 
-                solveN :: MonadBlueprint i a m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
-                solveN (i, j) (is, js) (i', j') = do
-                    s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
-                    (k, b0) <- splitExpansion (registerSize @a @n @r) 1 s
-                    (zs, b) <- flip runStateT b0 $ traverse StateT (Haskell.zipWith fullSub is js)
-                    d <- newAssigned (\v -> v i' - v j')
-                    s'0 <- newAssigned (\v -> v d + v b + fromConstant t)
-                    (s', _) <- splitExpansion (highRegisterSize @a @n @r) 1 s'0
-                    return (k : zs <> [s'])
+                    solve1 :: MonadBlueprint i a m => i -> i -> m [i]
+                    solve1 i j = do
+                        z0 <- newAssigned (\v -> v i - v j + fromConstant (2 ^ registerSize @a @n @r :: Natural))
+                        (z, _) <- splitExpansion (highRegisterSize @a @n @r) 1 z0
+                        return [z]
 
-                fullSub :: MonadBlueprint i a m => i -> i -> i -> m (i, i)
-                fullSub xk yk b = do
-                    d <- newAssigned (\v -> v xk - v yk)
-                    s <- newAssigned (\v -> v d + v b + fromConstant t)
-                    splitExpansion (registerSize @a @n @r) 1 s
+                    solveN :: MonadBlueprint i a m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
+                    solveN (i, j) (is, js) (i', j') = do
+                        s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
+                        (k, b0) <- splitExpansion (registerSize @a @n @r) 1 s
+                        (zs, b) <- flip runStateT b0 $ traverse StateT (Haskell.zipWith fullSub is js)
+                        d <- newAssigned (\v -> v i' - v j')
+                        s'0 <- newAssigned (\v -> v d + v b + fromConstant t)
+                        (s', _) <- splitExpansion (highRegisterSize @a @n @r) 1 s'0
+                        return (k : zs <> [s'])
 
-        negate (UInt x) =
-            let y = 2 ^ registerSize @a @n @r
-                ys = replicate (numberOfRegisters @a @n @r -! 2) (2 ^ registerSize @a @n @r -! 1)
-                y' = 2 ^ highRegisterSize @a @n @r -! 1
-                ns
-                  | numberOfRegisters @a @n @r Haskell.== 1 = V.unsafeToVector [y' + 1]
-                  | otherwise = V.unsafeToVector $ (y : ys) <> [y']
-             in UInt (negateN ns x)
+                    fullSub :: MonadBlueprint i a m => i -> i -> i -> m (i, i)
+                    fullSub xk yk b = do
+                        d <- newAssigned (\v -> v xk - v yk)
+                        s <- newAssigned (\v -> v d + v b + fromConstant t)
+                        splitExpansion (registerSize @a @n @r) 1 s
+
+        negate (UInt x) = case regSize @r of
+            Fixed rs -> UInt $ circuitF $ V.unsafeToVector <$> solve
+                where
+                    solve :: MonadBlueprint i a m => m [i]
+                    solve = do
+                        j <- newAssigned (Haskell.const zero)
+                        z <- Haskell.head . V.fromVector <$> runCircuit x
+                        let base = (2 :: Natural) ^ (rs :: Natural)
+                        (k, _) <- newRanged (fromConstant base - one) (\v -> fromConstant base - v z) >>= splitExpansion rs 1
+                        return (k: replicate (numberOfRegisters @a @n @r -! 1) j)
+
+            Auto ->
+                let y = 2 ^ registerSize @a @n @r
+                    ys = replicate (numberOfRegisters @a @n @r -! 2) (2 ^ registerSize @a @n @r -! 1)
+                    y' = 2 ^ highRegisterSize @a @n @r -! 1
+                    ns
+                        | numberOfRegisters @a @n @r Haskell.== 1 = V.unsafeToVector [y' + 1]
+                        | otherwise = V.unsafeToVector $ (y : ys) <> [y']
+                in UInt (negateN ns x)
 
 negateN :: (Arithmetic a, Z.Zip f, Traversable f) => f Natural -> ArithmeticCircuit a f -> ArithmeticCircuit a f
 negateN ns r = circuitF $ do
@@ -406,47 +452,59 @@ negateN ns r = circuitF $ do
     for (Z.zip is ns) $ \(i, n) -> newAssigned (\v -> fromConstant n - v i)
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => MultiplicativeSemigroup (UInt n rs (ArithmeticCircuit a)) where
-    UInt x * UInt y = UInt (circuitF $ V.unsafeToVector <$> solve)
-        where
-            solve :: MonadBlueprint i a m => m [i]
-            solve = do
-                is <- runCircuit x
-                js <- runCircuit y
-                case V.fromVector $ Z.zip is js of
-                  []              -> return []
-                  [(i, j)]        -> solve1 i j
-                  ((i, j) : rest) -> let (z, w) = Haskell.last rest
-                                         (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                      in solveN (i, j) (ris, rjs) (z, w)
+    UInt x * UInt y = case regSize @rs of
+        Fixed rs -> UInt $ circuitF $ V.unsafeToVector <$> solve
+            where
+                solve :: MonadBlueprint i a m => m [i]
+                solve = do
+                    j <- newAssigned (Haskell.const zero)
+                    z <- Haskell.head . V.fromVector <$> runCircuit x
+                    w <- Haskell.head . V.fromVector <$> runCircuit y
+                    let base = (2 :: Natural) ^ (rs :: Natural)
+                    (k, _) <- newRanged (fromConstant base - one) (\v -> v z * v w ) >>= splitExpansion rs (maxOverflow @a @n @rs)
+                    return (k: replicate (numberOfRegisters @a @n @rs -! 1) j)
 
-            solve1 :: MonadBlueprint i a m => i -> i -> m [i]
-            solve1 i j = do
-                (z, _) <- newAssigned (\v -> v i * v j) >>= splitExpansion (highRegisterSize @a @n @rs) (maxOverflow @a @n @rs)
-                return [z]
+        Auto -> UInt (circuitF $ V.unsafeToVector <$> solve)
+            where
+                solve :: MonadBlueprint i a m => m [i]
+                solve = do
+                    is <- runCircuit x
+                    js <- runCircuit y
+                    case V.fromVector $ Z.zip is js of
+                        []              -> return []
+                        [(i, j)]        -> solve1 i j
+                        ((i, j) : rest) ->  let (z, w) = Haskell.last rest
+                                                (ris, rjs) = Haskell.unzip $ Haskell.init rest
+                                            in solveN (i, j) (ris, rjs) (z, w)
 
-            solveN :: MonadBlueprint i a m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
-            solveN (i, j) (is, js) (i', j') = do
-                let cs = fromList $ zip [0..] (i : is ++ [i'])
-                    ds = fromList $ zip [0..] (j : js ++ [j'])
-                    r  = numberOfRegisters @a @n @rs
-                -- single addend for lower register
-                q <- newAssigned (\v -> v i * v j)
-                -- multiple addends for middle registers
-                qs <- for [1 .. r -! 2] $ \k ->
-                    for [0 .. k] $ \l ->
-                        newAssigned (\v -> v (cs ! l) * v (ds ! (k -! l)))
-                -- lower register
-                (p, c) <- splitExpansion (registerSize @a @n @rs) (registerSize @a @n @rs) q
-                -- middle registers
-                (ps, c') <- flip runStateT c $ for qs $ StateT . \rs c' -> do
-                    s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
-                    splitExpansion (registerSize @a @n @rs) (maxOverflow @a @n @rs) s
-                -- high register
-                p'0 <- foldrM (\k l -> do
-                    k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
-                    newAssigned (\v -> v k' + v l)) c' [0 .. r -! 1]
-                (p', _) <- splitExpansion (highRegisterSize @a @n @rs) (maxOverflow @a @n @rs) p'0
-                return (p : ps <> [p'])
+                solve1 :: MonadBlueprint i a m => i -> i -> m [i]
+                solve1 i j = do
+                    (z, _) <- newAssigned (\v -> v i * v j) >>= splitExpansion (highRegisterSize @a @n @rs) (maxOverflow @a @n @rs)
+                    return [z]
+
+                solveN :: MonadBlueprint i a m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
+                solveN (i, j) (is, js) (i', j') = do
+                    let cs = fromList $ zip [0..] (i : is ++ [i'])
+                        ds = fromList $ zip [0..] (j : js ++ [j'])
+                        r  = numberOfRegisters @a @n @rs
+                    -- single addend for lower register
+                    q <- newAssigned (\v -> v i * v j)
+                    -- multiple addends for middle registers
+                    qs <- for [1 .. r -! 2] $ \k ->
+                        for [0 .. k] $ \l ->
+                            newAssigned (\v -> v (cs ! l) * v (ds ! (k -! l)))
+                    -- lower register
+                    (p, c) <- splitExpansion (registerSize @a @n @rs) (registerSize @a @n @rs) q
+                    -- middle registers
+                    (ps, c') <- flip runStateT c $ for qs $ StateT . \rs c' -> do
+                        s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
+                        splitExpansion (registerSize @a @n @rs) (maxOverflow @a @n @rs) s
+                    -- high register
+                    p'0 <- foldrM (\k l -> do
+                        k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
+                        newAssigned (\v -> v k' + v l)) c' [0 .. r -! 1]
+                    (p', _) <- splitExpansion (highRegisterSize @a @n @rs) (maxOverflow @a @n @rs) p'0
+                    return (p : ps <> [p'])
 
 
 instance
