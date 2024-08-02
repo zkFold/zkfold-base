@@ -8,6 +8,7 @@ module ZkFold.Symbolic.Ledger.Types (
     module ZkFold.Symbolic.Ledger.Types.Output,
     module ZkFold.Symbolic.Ledger.Types.OutputRef,
     module ZkFold.Symbolic.Ledger.Types.Transaction,
+    module ZkFold.Symbolic.Ledger.Types.Update,
     module ZkFold.Symbolic.Ledger.Types.Value,
     Signature
 ) where
@@ -18,7 +19,7 @@ import           Data.Functor                             (Functor)
 import           Data.Zip                                 (Zip)
 
 import           ZkFold.Base.Algebra.Basic.Class          (AdditiveMonoid)
-import           ZkFold.Symbolic.Data.Bool                (BoolType)
+import           ZkFold.Symbolic.Class                    (Symbolic)
 import           ZkFold.Symbolic.Data.Eq                  (Eq)
 import           ZkFold.Symbolic.Ledger.Types.Address
 import           ZkFold.Symbolic.Ledger.Types.Basic
@@ -29,6 +30,7 @@ import           ZkFold.Symbolic.Ledger.Types.Input
 import           ZkFold.Symbolic.Ledger.Types.Output
 import           ZkFold.Symbolic.Ledger.Types.OutputRef
 import           ZkFold.Symbolic.Ledger.Types.Transaction
+import           ZkFold.Symbolic.Ledger.Types.Update
 import           ZkFold.Symbolic.Ledger.Types.Value
 
 {-
@@ -42,8 +44,8 @@ import           ZkFold.Symbolic.Ledger.Types.Value
 -}
 
 type Signature context =
-    ( AdditiveMonoid (Value context)
-    , BoolType (Bool context)
+    ( Symbolic context
+    , AdditiveMonoid (Value context)
     , Eq (Bool context) (Hash context)
     , Eq (Bool context) (Input context)
     , Eq (Bool context) (Address context, Datum context)
@@ -53,8 +55,9 @@ type Signature context =
     , Eq (Bool context) (List context (Address context, Datum context))
     , Eq (Bool context) (List context (ContractId context, Token context))
     , Eq (Bool context) (List context (Input context))
-    , Eq (Bool context) (List context (Address context, TransactionId context))
+    , Eq (Bool context) (Output context)
     , Eq (Bool context) (List context (Transaction context))
+    , Eq (Bool context) (List context (List context (TransactionId context)))
     , Foldable (List context)
     , Functor (List context)
     , Zip (List context)

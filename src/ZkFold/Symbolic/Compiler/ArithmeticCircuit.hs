@@ -48,7 +48,6 @@ import           Text.Pretty.Simple                                     (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate           (evalMonomial, evalPolynomial)
-import           ZkFold.Base.Data.Vector                                (Vector)
 import           ZkFold.Prelude                                         (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (desugarRange)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
@@ -62,17 +61,17 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 --------------------------------- High-level functions --------------------------------
 
 -- TODO: make this work for different input types.
-applyArgs :: ArithmeticCircuit a n -> [a] -> ArithmeticCircuit a n
+applyArgs :: ArithmeticCircuit a f -> [a] -> ArithmeticCircuit a f
 applyArgs r args = r { acCircuit = execState (apply args) (acCircuit r) }
 
 -- | Optimizes the constraint system.
 --
 -- TODO: Implement nontrivial optimizations.
-optimize :: ArithmeticCircuit a n -> ArithmeticCircuit a n
+optimize :: ArithmeticCircuit a f -> ArithmeticCircuit a f
 optimize = id
 
 -- | Desugars range constraints into polynomial constraints
-desugarRanges :: Arithmetic a => ArithmeticCircuit a n -> ArithmeticCircuit a n
+desugarRanges :: Arithmetic a => ArithmeticCircuit a f -> ArithmeticCircuit a f
 desugarRanges c@(ArithmeticCircuit r _) =
   let r' = flip execState r . traverse (uncurry desugarRange) $ toList (acRange r)
    in c { acCircuit = r' { acRange = mempty } }
@@ -80,22 +79,22 @@ desugarRanges c@(ArithmeticCircuit r _) =
 ----------------------------------- Information -----------------------------------
 
 -- | Calculates the number of constraints in the system.
-acSizeN :: ArithmeticCircuit a n -> Natural
+acSizeN :: ArithmeticCircuit a f -> Natural
 acSizeN = length . acSystem . acCircuit
 
 -- | Calculates the number of variables in the system.
 -- The constant `1` is not counted.
-acSizeM :: ArithmeticCircuit a n -> Natural
+acSizeM :: ArithmeticCircuit a f -> Natural
 acSizeM = length . acVarOrder . acCircuit
 
-acValue :: ArithmeticCircuit a n -> Vector n a
+acValue :: Functor f => ArithmeticCircuit a f -> f a
 acValue r = eval r mempty
 
 -- | Prints the constraint system, the witness, and the output.
 --
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
-acPrint :: Show a => ArithmeticCircuit a n -> IO ()
+acPrint :: (Show a, Show (f Natural), Show (f a), Functor f) => ArithmeticCircuit a f -> IO ()
 acPrint ac@(ArithmeticCircuit r o) = do
     let m = elems (acSystem r)
         i = acInput r
@@ -122,8 +121,8 @@ acPrint ac@(ArithmeticCircuit r o) = do
 ---------------------------------- Testing -------------------------------------
 
 checkClosedCircuit
-    :: Arithmetic a
-    => FromConstant a a
+    :: forall a n
+     . Arithmetic a
     => Scale a a
     => Show a
     => ArithmeticCircuit a n
@@ -136,7 +135,6 @@ checkClosedCircuit c@(ArithmeticCircuit r _) = withMaxSuccess 1 $ conjoin [ test
 checkCircuit
     :: Arbitrary a
     => Arithmetic a
-    => FromConstant a a
     => Scale a a
     => Show a
     => ArithmeticCircuit a n

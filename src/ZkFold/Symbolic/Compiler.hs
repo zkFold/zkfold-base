@@ -3,23 +3,24 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Compiler (
-    module ZkFold.Symbolic.Compiler.Arithmetizable,
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
     compile,
     compileIO
 ) where
 
-import           Data.Aeson                                                (ToJSON)
-import           Prelude                                                   (FilePath, IO, Show (..), putStrLn, type (~),
-                                                                            ($), (++), (<$>))
+import           Data.Aeson                                          (ToJSON)
+import           Data.Eq                                             (Eq)
+import           Data.Function                                       (const, (.))
+import           Prelude                                             (FilePath, IO, Monoid (mempty), Show (..),
+                                                                      putStrLn, type (~), ($), (++))
 
+import           ZkFold.Base.Algebra.Basic.Class                     (MultiplicativeMonoid)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (replicateA, writeFileJSON)
+import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
+import           ZkFold.Prelude                                      (writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-import           ZkFold.Symbolic.Compiler.Arithmetizable
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (acInput)
+import           ZkFold.Symbolic.Data.Class
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -27,35 +28,57 @@ import           ZkFold.Symbolic.Compiler.Arithmetizable
     2. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
     3. ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
     4. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
-    5. ZkFold.Symbolic.Compiler.Arithmetizable
-    6. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
-    7. ZkFold.Symbolic.Compiler.ArithmeticCircuit
-    8. ZkFold.Symbolic.Compiler
+    5. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
+    6. ZkFold.Symbolic.Compiler.ArithmeticCircuit
+    7. ZkFold.Symbolic.Compiler
 -}
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
-solder :: forall a f . (Arithmetizable a f, KnownNat (InputSize a f)) => f -> ArithmeticCircuit a (OutputSize a f)
-solder f = arithmetize f inputC
+solder ::
+    forall a c f .
+    ( Eq a
+    , MultiplicativeMonoid a
+    , c ~ ArithmeticCircuit a
+    , SymbolicData c f
+    , SymbolicData c (Support c f)
+    , Support c (Support c f) ~ ()
+    , KnownNat (TypeSize c (Support c f))
+    ) => f -> c (Vector (TypeSize c f))
+solder f = pieces f (restore @c @(Support c f) $ const inputC)
     where
-        inputC :: ArithmeticCircuit a (InputSize a f)
-        inputC = circuitN $ Vector <$> replicateA (value @(InputSize a f)) input
+        inputList = [1..(typeSize @c @(Support c f))]
+        inputC = withOutputs (mempty { acInput = inputList }) (unsafeToVector inputList)
 
 -- | Compiles function `f` into an arithmetic circuit.
-compile
-    :: forall a f y
-    .  Arithmetizable a f
-    => SymbolicData a y
-    => KnownNat (InputSize a f)
-    => OutputSize a f ~ TypeSize a y
-    => f -> y
-compile f = restore @a c o
-    where
-        ArithmeticCircuit c o = optimize $ (solder @a) f
+compile ::
+    forall a c f y .
+    ( Eq a
+    , MultiplicativeMonoid a
+    , c ~ ArithmeticCircuit a
+    , SymbolicData c f
+    , SymbolicData c (Support c f)
+    , Support c (Support c f) ~ ()
+    , KnownNat (TypeSize c (Support c f))
+    , SymbolicData c y
+    , Support c y ~ ()
+    , TypeSize c f ~ TypeSize c y
+    ) => f -> y
+compile = restore @c . const . optimize . solder @a
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
-compileIO :: forall a f . (ToJSON a, Arithmetizable a f, KnownNat (InputSize a f)) => FilePath -> f -> IO ()
+compileIO ::
+    forall a c f .
+    ( Eq a
+    , MultiplicativeMonoid a
+    , c ~ ArithmeticCircuit a
+    , ToJSON a
+    , SymbolicData c f
+    , SymbolicData c (Support c f)
+    , Support c (Support c f) ~ ()
+    , KnownNat (TypeSize c (Support c f))
+    ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
-    let ac = optimize (solder @a f) :: ArithmeticCircuit a (OutputSize a f)
+    let ac = optimize (solder @a f) :: c (Vector (TypeSize c f))
 
     putStrLn "\nCompiling the script...\n"
 

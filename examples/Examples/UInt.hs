@@ -29,7 +29,7 @@ import           ZkFold.Symbolic.Data.UInt
 exampleUIntAdd
     :: forall n r
     .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n
+    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
     => KnownNat r
     => KnownNat (r + r)
     => IO ()
@@ -38,7 +38,7 @@ exampleUIntAdd = makeExample @n "+" "add" (+)
 exampleUIntMul
     :: forall n r
     .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n
+    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
     => KnownNat r
     => KnownNat (r + r)
     => IO ()
@@ -47,7 +47,7 @@ exampleUIntMul = makeExample @n "*" "mul" (*)
 exampleUIntStrictAdd
     :: forall n r
     .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n
+    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
     => KnownNat r
     => KnownNat (r + r)
     => IO ()
@@ -56,7 +56,7 @@ exampleUIntStrictAdd = makeExample @n "strictAdd" "strict_add" strictAdd
 exampleUIntStrictMul
     :: forall n r
     .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n
+    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
     => KnownNat r
     => KnownNat (r + r)
     => IO ()
@@ -64,12 +64,12 @@ exampleUIntStrictMul = makeExample @n "strictMul" "strict_mul" strictMul
 
 type Binary a = a -> a -> a
 
-type UBinary n = Binary (UInt n (ArithmeticCircuit (Zp BLS12_381_Scalar)))
+type UBinary n = Binary (UInt n Auto (ArithmeticCircuit (Zp BLS12_381_Scalar)))
 
 makeExample
     :: forall n r
     .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n
+    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
     => KnownNat r
     => KnownNat (r + r)
     => String -> String -> UBinary n -> IO ()

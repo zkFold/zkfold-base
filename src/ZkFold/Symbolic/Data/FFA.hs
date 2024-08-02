@@ -24,19 +24,19 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                                            (iterateM, length)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitN, newAssigned,
-                                                                            runCircuit)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitF, runCircuit)
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators                          (log2, maxBitsPerFieldElement)
 import           ZkFold.Symbolic.Data.Ord                                  (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
+import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, newAssigned)
 
 type Size = 7
 
 -- | Foreign-field arithmetic based on https://cr.yp.to/papers/mmecrt.pdf
-newtype FFA (p :: Natural) b = FFA (b Size)
+newtype FFA (p :: Natural) c = FFA (c (Vector Size))
 
-deriving newtype instance Arithmetic a => SymbolicData a (FFA p (ArithmeticCircuit a))
-deriving newtype instance Arithmetic a => Arithmetizable a (FFA p (ArithmeticCircuit a))
+deriving newtype instance SymbolicData c (FFA p c)
 
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])
@@ -87,8 +87,8 @@ instance (FromConstant c (Zp p), Finite (Zp q)) => FromConstant c (FFA p (Interp
 instance (FromConstant c (Zp p), Arithmetic a) => FromConstant c (FFA p (ArithmeticCircuit a)) where
   fromConstant = FFA . impl . toConstant . (fromConstant :: c -> Zp p)
     where
-      impl :: Natural -> ArithmeticCircuit a Size
-      impl x = circuitN $ for (coprimes @a) $ \m -> newAssigned (fromConstant (x `mod` m))
+      impl :: Natural -> ArithmeticCircuit a (Vector Size)
+      impl x = circuitF $ for (coprimes @a) $ \m -> newAssigned (fromConstant (x `mod` m))
 
 condSubOF :: forall i a m . MonadBlueprint i a m => Natural -> i -> m (i, i)
 condSubOF m i = do
@@ -142,7 +142,7 @@ instance (Finite (Zp p), Finite (Zp q)) => MultiplicativeSemigroup (FFA p (Inter
   x * y = fromConstant (toConstant x * toConstant y :: Zp p)
 
 instance (KnownNat p, Arithmetic a) => MultiplicativeSemigroup (FFA p (ArithmeticCircuit a)) where
-  FFA q * FFA r = FFA $ circuitN $ do
+  FFA q * FFA r = FFA $ circuitF $ do
     xs <- runCircuit q
     ys <- runCircuit r
     zs <- zipWithM (\i j -> newAssigned (($ i) * ($ j))) xs ys
@@ -164,7 +164,7 @@ instance (Finite (Zp p), Finite (Zp q)) => AdditiveSemigroup (FFA p (Interpreter
   x + y = fromConstant (toConstant x + toConstant y :: Zp p)
 
 instance (KnownNat p, Arithmetic a) => AdditiveSemigroup (FFA p (ArithmeticCircuit a)) where
-  FFA q + FFA r = FFA $ circuitN $ do
+  FFA q + FFA r = FFA $ circuitF $ do
     xs <- runCircuit q
     ys <- runCircuit r
     zs <- zipWithM (\i j -> newAssigned (($ i) + ($ j))) xs ys
@@ -183,7 +183,7 @@ instance (Finite (Zp p), Finite (Zp q)) => AdditiveGroup (FFA p (Interpreter (Zp
   negate = fromConstant . negate @(Zp p) . toConstant
 
 instance (Finite (Zp p), Arithmetic a) => AdditiveGroup (FFA p (ArithmeticCircuit a)) where
-  negate (FFA r) = FFA $ circuitN $ do
+  negate (FFA r) = FFA $ circuitF $ do
     xs <- runCircuit r
     ys <- zipWithM (\i m -> newAssigned $ fromConstant m - ($ i)) xs $ coprimes @a
     cast @p ys

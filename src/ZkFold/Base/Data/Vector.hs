@@ -7,13 +7,13 @@ module ZkFold.Base.Data.Vector where
 import           Control.DeepSeq                  (NFData)
 import qualified Control.Monad                    as M
 import           Control.Parallel.Strategies      (parMap, rpar)
+import           Data.Aeson                       (ToJSON (..))
 import           Data.Bifunctor                   (first)
 import qualified Data.List                        as List
 import           Data.List.Split                  (chunksOf)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
-import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (drop, head, length, mod, replicate, sum, tail, take, zip,
                                                    zipWith, (*))
 import qualified Prelude                          as P
@@ -39,6 +39,9 @@ toVector as
 
 unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector
+
+generate :: forall size a . KnownNat size => (Natural -> a) -> Vector size a
+generate f = Vector $ f <$> [0 .. value @size -! 1]
 
 unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
 unfold f = Vector . ZP.take (value @size) . List.unfoldr (Just . f)
@@ -169,3 +172,6 @@ instance (Random a, KnownNat size) => Random (Vector size a) where
                 let (a, g'') = randomR (P.head xs', P.head ys') g'
                 in ((as' ++ [a], g''), (P.tail xs', P.tail ys'))) (([], g), (xs, ys)) [1..value @size]
         in first Vector as
+
+instance ToJSON a => ToJSON (Vector n a) where
+    toJSON (Vector xs) = toJSON xs

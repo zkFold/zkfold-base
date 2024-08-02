@@ -1,14 +1,15 @@
 module ZkFold.Symbolic.Data.List where
 
-import           Data.Foldable                     (Foldable (..))
-import           Data.Kind                         (Type)
-import           GHC.TypeNats                      (Natural)
-import           Prelude                           (flip, undefined, (.))
+import           Data.Foldable              (Foldable (..))
+import           Data.Kind                  (Type)
+import           GHC.Generics               (Par1)
+import           Prelude                    (flip, undefined, (.))
 
-import           ZkFold.Symbolic.Data.Bool         (Bool)
-import           ZkFold.Symbolic.Data.FieldElement (FieldElementData (..))
+import           ZkFold.Base.Data.Vector    (Vector)
+import           ZkFold.Symbolic.Data.Bool  (Bool)
+import           ZkFold.Symbolic.Data.Class
 
-data List (context :: Natural -> Type) x = List (context (TypeSize context x)) (context 1)
+data List (context :: (Type -> Type) -> Type) x = List (context (Vector (TypeSize context x))) (context Par1)
 
 emptyList :: List context x
 emptyList = undefined
@@ -41,7 +42,7 @@ last = head . reverse
 _ ++ _ = undefined
 
 filter ::
-       (x -> Bool (context 1))
+       (x -> Bool context)
     -> List context x
     -> List context x
 filter = undefined

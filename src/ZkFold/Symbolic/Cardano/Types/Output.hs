@@ -18,11 +18,11 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address      (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Output.Datum
-import           ZkFold.Symbolic.Cardano.Types.Value        (Value)
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Cardano.Types.Value        (SingleAsset, Value)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq                    (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
-import qualified ZkFold.Symbolic.Data.FieldElement          as FE
 
 newtype Output tokens datum context = Output (Address context, (Value tokens context, DatumHash context))
 
@@ -33,21 +33,20 @@ deriving instance
     ) => Haskell.Eq (Output tokens datum context)
 
 deriving instance
-    KnownNat (FE.TypeSize CtxEvaluation (Value tokens CtxEvaluation))
-    => FE.FieldElementData CtxEvaluation (Output tokens datum CtxEvaluation)
-
-deriving instance
-    KnownNat (TypeSize F (Value tokens CtxCompilation))
-    => SymbolicData F (Output tokens datum CtxCompilation)
+    ( Symbolic context
+    , KnownNat (TypeSize context (Value tokens context))
+    , KnownNat (TypeSize context (SingleAsset context))
+    , KnownNat tokens
+    ) => SymbolicData context (Output tokens datum context)
 
 deriving via (Structural (Output tokens datum CtxCompilation))
          instance
-            ( ts ~ TypeSize F (Output tokens datum CtxCompilation)
+            ( ts ~ TypeSize CtxCompilation (Output tokens datum CtxCompilation)
             , 1 <= ts
             , KnownNat ts
-            , KnownNat (TypeSize F (Value tokens CtxCompilation))
+            , KnownNat tokens
+            , KnownNat (TypeSize CtxCompilation (Value tokens CtxCompilation))
             ) => Eq (Bool CtxCompilation) (Output tokens datum CtxCompilation)
-
 
 txoAddress :: Output tokens datum context -> Address context
 txoAddress (Output (addr, _)) = addr

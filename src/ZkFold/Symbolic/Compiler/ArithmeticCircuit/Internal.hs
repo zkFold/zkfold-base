@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveAnyClass   #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
@@ -20,23 +19,20 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         assignment,
         addVariable,
         newVariableWithSource,
-        input,
         eval,
         eval1,
         exec,
         exec1,
         apply,
         forceZero,
-        joinCircuits,
-        concatCircuits
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
-import           Control.Monad.State                          (MonadState (..), State, gets, modify)
+import           Control.Monad.State                          (MonadState (..), State, gets, modify, runState)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
+import qualified Data.Map.Strict                              as M
 import qualified Data.Set                                     as S
-import           GHC.Generics
-import           Numeric.Natural                              (Natural)
+import           GHC.Generics                                 (Generic, Par1 (..))
 import           Optics
 import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum,
                                                                take, (!!), (^))
@@ -46,11 +42,16 @@ import           System.Random                                (StdGen, mkStdGen,
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
-import qualified ZkFold.Base.Data.Vector                      as V
+import           ZkFold.Base.Control.HApplicative
+import           ZkFold.Base.Data.HFunctor
+import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Vector                      (Vector (..))
 import           ZkFold.Prelude                               (drop, length)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.MonadCircuit
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data Circuit a = Circuit
@@ -68,28 +69,82 @@ data Circuit a = Circuit
         acRNG      :: StdGen
     } deriving (Generic, NFData)
 
-data ArithmeticCircuit a n = ArithmeticCircuit
+data ArithmeticCircuit a f = ArithmeticCircuit
   { acCircuit :: Circuit a
-  , acOutput  :: Vector n Natural
-  } deriving (Generic, NFData)
+  , acOutput  :: f Natural
+  } deriving (Generic)
 
-withOutputs :: Circuit a -> Vector n Natural -> ArithmeticCircuit a n
+deriving instance (NFData a, NFData (f Natural)) => NFData (ArithmeticCircuit a f)
+
+withOutputs :: Circuit a -> f Natural -> ArithmeticCircuit a f
 withOutputs = ArithmeticCircuit
 
-constraintSystem :: ArithmeticCircuit a n -> Map Natural (Constraint a)
+constraintSystem :: ArithmeticCircuit a f -> Map Natural (Constraint a)
 constraintSystem = acSystem . acCircuit
 
-inputVariables :: ArithmeticCircuit a n -> [Natural]
+inputVariables :: ArithmeticCircuit a f -> [Natural]
 inputVariables = acInput . acCircuit
 
-witnessGenerator :: ArithmeticCircuit a n -> Map Natural a -> Map Natural a
+witnessGenerator :: ArithmeticCircuit a f -> Map Natural a -> Map Natural a
 witnessGenerator circuit inputs =
   let srcs = acWitness (acCircuit circuit)
       witness = ($ witness) <$> (srcs `union` fmap const inputs)
    in witness
 
-varOrder :: ArithmeticCircuit a n -> Map (Natural, Natural) Natural
+varOrder :: ArithmeticCircuit a f -> Map (Natural, Natural) Natural
 varOrder = acVarOrder . acCircuit
+
+------------------------------ Symbolic compiler context ----------------------------
+
+instance HFunctor (ArithmeticCircuit a) where
+    hmap f (ArithmeticCircuit c o) = ArithmeticCircuit c (f o)
+
+instance (Eq a, MultiplicativeMonoid a) => HApplicative (ArithmeticCircuit a) where
+    hpure = ArithmeticCircuit mempty
+    hliftA2 f (ArithmeticCircuit c o) (ArithmeticCircuit d p) = ArithmeticCircuit (c <> d) (f o p)
+
+instance (Eq a, MultiplicativeMonoid a) => Package (ArithmeticCircuit a) where
+    unpackWith f (ArithmeticCircuit c o) = ArithmeticCircuit c <$> f o
+    packWith f = ArithmeticCircuit <$> foldMap acCircuit <*> f . fmap acOutput
+
+instance Arithmetic a => Symbolic (ArithmeticCircuit a) where
+    type BaseField (ArithmeticCircuit a) = a
+    symbolicF (ArithmeticCircuit c o) _ f = let (p, d) = runState (f o) c in withOutputs d p
+
+-------------------------------- MonadCircuit instance ------------------------------
+
+instance Arithmetic a => MonadCircuit Natural a (State (Circuit a)) where
+    newRanged upperBound witness = do
+        let s   = sources @a witness
+            b   = fromConstant upperBound
+            -- | A wild (and obviously incorrect) approximation of
+            -- x (x - 1) ... (x - upperBound)
+            -- It's ok because we only use it for variable generation anyway.
+            p i = b * var i * (var i - b)
+        i <- addVariable =<< newVariableWithSource (S.toList s) p
+        rangeConstraint i upperBound
+        assignment i (\m -> witness (m !))
+        return i
+
+    newConstrained
+        :: NewConstraint Natural a
+        -> Witness Natural a
+        -> State (Circuit a) Natural
+    newConstrained new witness = do
+        let ws = sources @a witness
+            -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
+            x = maximum (S.mapMonotonic (+1) ws <> S.singleton 0)
+            -- | `s` is meant to be a set of variables used in a witness not present in a constraint.
+            s = ws `S.difference` sources @a (`new` x)
+        i <- addVariable =<< newVariableWithSource (S.toList s) (new var)
+        constraint (`new` i)
+        assignment i (\m -> witness (m !))
+        return i
+
+    constraint p = addConstraint (p var)
+
+sources :: forall a i . (FiniteField a, Ord i) => Witness i a -> S.Set i
+sources = runSources . ($ Sources @a . S.singleton)
 
 ----------------------------------- Circuit monoid ----------------------------------
 
@@ -97,14 +152,14 @@ instance Eq a => Semigroup (Circuit a) where
     c1 <> c2 =
         Circuit
            {
-               acSystem   = {-# SCC system_union #-}    acSystem c1 `union` acSystem c2
-            ,  acRange    = {-# SCC range_union #-}     acRange c1 `union` acRange c2
+               acSystem   = acSystem c1 `union` acSystem c2
+            ,  acRange    = acRange c1 `union` acRange c2
                -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
                -- We need a way to ensure the correct order no matter how `(<>)` is used.
-           ,   acInput    = {-# SCC input_union #-}     nubConcat (acInput c1) (acInput c2)
-           ,   acWitness  = {-# SCC witness_union #-}   acWitness c1 `union` acWitness c2
-           ,   acVarOrder = {-# SCC var_order_union #-} acVarOrder c1 `union` acVarOrder c2
-           ,   acRNG      = {-# SCC rng_union #-}       mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
+           ,   acInput    = nubConcat (acInput c1) (acInput c2)
+           ,   acWitness  = acWitness c1 `union` acWitness c2
+           ,   acVarOrder = acVarOrder c1 `union` acVarOrder c2
+           ,   acRNG      = mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
            }
 
 nubConcat :: Ord a => [a] -> [a] -> [a]
@@ -124,22 +179,6 @@ instance (Eq a, MultiplicativeMonoid a) => Monoid (Circuit a) where
                acRNG      = mkStdGen 0
            }
 
-joinCircuits :: Eq a => ArithmeticCircuit a ol -> ArithmeticCircuit a or -> ArithmeticCircuit a (ol + or)
-joinCircuits r1 r2 =
-    ArithmeticCircuit
-        {
-            acCircuit = acCircuit r1 <> acCircuit r2
-        ,   acOutput = acOutput r1 `V.append` acOutput r2
-        }
-
-concatCircuits :: (Eq a, MultiplicativeMonoid a) => Vector n (ArithmeticCircuit a m) -> ArithmeticCircuit a (n * m)
-concatCircuits cs =
-    ArithmeticCircuit
-        {
-            acCircuit = mconcat . V.fromVector $ acCircuit <$> cs
-        ,   acOutput = V.concat $ acOutput <$> cs
-        }
-
 ------------------------------------- Variables -------------------------------------
 
 -- | A finite field of a large order.
@@ -148,8 +187,6 @@ type VarField = Zp BLS12_381_Scalar
 
 toField :: Arithmetic a => a -> VarField
 toField = toZp . fromConstant . fromBinary @Natural . castBits . binaryExpansion
-
-type Arithmetic a = (FiniteField a, Eq a, BinaryExpansion a, Bits a ~ [a])
 
 -- TODO: Remove the hardcoded constant.
 toVar :: Arithmetic a => [Natural] -> Constraint a -> Natural
@@ -168,7 +205,7 @@ newVariableWithSource srcs con = toVar srcs . con . fst <$> do
 addVariable :: Natural -> State (Circuit a) Natural
 addVariable x = do
     zoom #acVarOrder . modify
-        $ \vo -> insert (length vo, x) x vo
+        $ \vo -> insert (Haskell.fromIntegral $ M.size vo, x) x vo
     pure x
 
 ---------------------------------- Low-level functions --------------------------------
@@ -179,45 +216,35 @@ type ConstraintMonomial = Mono Natural Natural
 type Constraint c = Poly c Natural Natural
 
 -- | Adds a constraint to the arithmetic circuit.
-constraint :: Arithmetic a => Constraint a -> State (Circuit a) ()
-constraint c = zoom #acSystem . modify $ insert (toVar [] c) c
+addConstraint :: Arithmetic a => Constraint a -> State (Circuit a) ()
+addConstraint c = zoom #acSystem . modify $ insert (toVar [] c) c
 
 rangeConstraint :: Natural -> a -> State (Circuit a) ()
 rangeConstraint i b = zoom #acRange . modify $ insert i b
 
 -- | Forces the provided variables to be zero.
 forceZero :: Arithmetic a => Vector n Natural -> State (Circuit a) ()
-forceZero = mapM_ (constraint . var)
+forceZero = mapM_ (addConstraint . var)
 
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
 assignment :: Natural -> (Map Natural a -> a) -> State (Circuit a) ()
 assignment i f = zoom #acWitness . modify $ insert i f
 
--- | Adds a new input variable to the arithmetic circuit.
-input :: State (Circuit a) Natural
-input = do
-  inputs <- zoom #acInput get
-  let s = if null inputs then 1 else maximum inputs + 1
-  zoom #acInput $ modify (++ [s])
-  zoom #acVarOrder . modify
-      $ \vo -> insert (length vo, s) s vo
-  return s
-
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
-eval1 :: ArithmeticCircuit a 1 -> Map Natural a -> a
-eval1 ctx i = witnessGenerator ctx i ! V.item (acOutput ctx)
+eval1 :: ArithmeticCircuit a Par1 -> Map Natural a -> a
+eval1 ctx i = witnessGenerator ctx i ! unPar1 (acOutput ctx)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: ArithmeticCircuit a n -> Map Natural a -> Vector n a
-eval ctx i = V.parFmap (witnessGenerator ctx i !) $ acOutput ctx
+eval :: Functor f => ArithmeticCircuit a f -> Map Natural a -> f a
+eval ctx i = (witnessGenerator ctx i !) <$> acOutput ctx
 
 -- | Evaluates the arithmetic circuit with no inputs and one output using the supplied input map.
-exec1 :: ArithmeticCircuit a 1 -> a
+exec1 :: ArithmeticCircuit a Par1 -> a
 exec1 ac = eval1 ac empty
 
 -- | Evaluates the arithmetic circuit with no inputs using the supplied input map.
-exec :: ArithmeticCircuit a n -> Vector n a
+exec :: Functor f => ArithmeticCircuit a f -> f a
 exec ac = eval ac empty
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.

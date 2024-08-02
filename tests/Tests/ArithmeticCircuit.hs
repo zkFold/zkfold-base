@@ -5,6 +5,7 @@
 module Tests.ArithmeticCircuit (exec1, it, specArithmeticCircuit) where
 
 import           Data.Bool                                              (bool)
+import           GHC.Generics                                           (Par1)
 import           Prelude                                                (IO, Show, String, id, ($))
 import qualified Prelude                                                as Haskell
 import qualified Test.Hspec
@@ -20,20 +21,21 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.MonadCircuit                           (Arithmetic)
 
-correctHom0 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b) -> Property
+correctHom0 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a
 
-correctHom1 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b -> b) -> a -> Property
+correctHom1 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field b => b -> b) -> a -> Property
 correctHom1 f x = let r = f (embed x) in checkClosedCircuit r .&&. exec1 r === f x
 
-correctHom2 :: forall a . (Arithmetic a, FromConstant a a, Scale a a, Show a) => (forall b . Field b => b -> b -> b) -> a -> a -> Property
+correctHom2 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field b => b -> b -> b) -> a -> a -> Property
 correctHom2 f x y = let r = f (embed x) (embed y) in checkClosedCircuit r .&&. exec1 r === f x y
 
 it :: Testable prop => String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
 
-specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, FromConstant a a, Scale a a, Show a) => IO ()
+specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, Scale a a, Show a) => IO ()
 specArithmeticCircuit' = hspec $ do
     describe "ArithmeticCircuit specification" $ do
         it "embeds constants" $ correctHom1 @a id
@@ -45,19 +47,19 @@ specArithmeticCircuit' = hspec $ do
         it "inverts nonzero correctly" $ correctHom1 @a finv
         it "inverts zero correctly" $ correctHom0 @a (finv zero)
         it "checks isZero(nonzero)" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a 1) = isZero (embed x)
+          let Bool (r :: ArithmeticCircuit a Par1) = isZero (embed x)
            in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== zero)
         it "checks isZero(0)" $
-          let Bool (r :: ArithmeticCircuit a 1) = isZero (zero :: ArithmeticCircuit a 1)
+          let Bool (r :: ArithmeticCircuit a Par1) = isZero (zero :: ArithmeticCircuit a Par1)
            in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === one
         it "computes binary expansion" $ \(x :: a) ->
           let rs = binaryExpansion (embed x)
            in checkClosedCircuit rs .&&. V.fromVector (exec rs) === padBits (numberOfBits @a) (binaryExpansion x)
         it "internalizes equality" $ \(x :: a) (y :: a) ->
-          let Bool (r :: ArithmeticCircuit a 1) = embed x == embed y
+          let Bool (r :: ArithmeticCircuit a Par1) = embed x == embed y
            in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a 1) = embed x == embed x
+          let Bool (r :: ArithmeticCircuit a Par1) = embed x == embed x
            in checkClosedCircuit r .&&. exec1 r === one
 
 specArithmeticCircuit :: IO ()

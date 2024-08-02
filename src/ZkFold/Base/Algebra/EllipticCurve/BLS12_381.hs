@@ -11,7 +11,6 @@ import           Data.Bits
 import           Data.Foldable
 import           Data.List                                  (unfoldr)
 import           Data.Word
-import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), (/), (^))
 import qualified Prelude                                    as Haskell
 

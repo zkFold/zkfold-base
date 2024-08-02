@@ -11,10 +11,12 @@ import           Test.Hspec
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString             (ByteString, Concat, ReverseEndianness, ShiftBits,
                                                               ToWords (..), Truncate (..))
+import           ZkFold.Symbolic.Data.Class                  (pieces)
 import           ZkFold.Symbolic.Data.Combinators            (Extend)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
@@ -30,7 +32,7 @@ blake2bSimple :: forall b .
     , Concat (ByteString 8 b) (ByteString 512 b)
     , FromConstant Natural (ByteString 0 b)
     , FromConstant Natural (ByteString 8 b)
-    , Eq (b 512)
+    , Eq (b (Vector 512))
     ) => Spec
 blake2bSimple =
     let a = blake2b_512 $ fromConstant @Natural @(ByteString 0 b) 0
@@ -40,7 +42,7 @@ blake2bSimple =
 blake2bAC :: Spec
 blake2bAC =
     let bs = compile @(Zp BLS12_381_Scalar) (blake2b_512 @8 @(ArithmeticCircuit (Zp BLS12_381_Scalar))) :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar))
-        ac = pieces @(Zp BLS12_381_Scalar) bs
+        ac = pieces @(ArithmeticCircuit (Zp BLS12_381_Scalar)) bs ()
     in it "simple test with cardano-crypto " $ acSizeN ac == 564239
 
 specBlake2b :: IO ()
