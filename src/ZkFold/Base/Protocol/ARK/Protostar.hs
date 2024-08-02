@@ -3,6 +3,7 @@
 module ZkFold.Base.Protocol.ARK.Protostar where
 
 
+import           Control.DeepSeq                                     (NFData)
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
 import           GHC.Generics                                        (Generic)
@@ -42,7 +43,7 @@ data RecursiveCircuit n a
     = RecursiveCircuit
         { iterations :: Natural
         , circuit    :: ArithmeticCircuit a (Vector n)
-        } deriving (Generic)
+        } deriving (Generic, NFData)
 
 instance Arithmetic a => SpecialSoundProtocol a (RecursiveCircuit n a) where
     type Witness a (RecursiveCircuit n a) = Map Natural a
