@@ -11,7 +11,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
 import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
-import           ZkFold.Symbolic.Cardano.Types.Value     (Value, SingleAsset)
+import           ZkFold.Symbolic.Cardano.Types.Value     (SingleAsset, Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
 

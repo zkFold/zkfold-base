@@ -5,13 +5,13 @@ module ZkFold.Symbolic.MonadCircuit where
 
 import           Control.Applicative             (Applicative)
 import           Control.Monad                   (Monad (return))
+import           Data.Eq                         (Eq)
 import           Data.Function                   (id)
 import           Data.Functor                    (Functor)
 import           Data.Functor.Identity           (Identity (..))
 import           Data.Type.Equality              (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import Data.Eq (Eq)
 
 -- | A @'WitnessField'@ should support all algebraic operations
 -- used inside an arithmetic circuit.

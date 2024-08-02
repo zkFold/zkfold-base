@@ -51,7 +51,7 @@ import           ZkFold.Symbolic.Data.Bool                                 (Bool
 import           ZkFold.Symbolic.Data.Class                                (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (newAssigned, Arithmetic)
+import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, newAssigned)
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.

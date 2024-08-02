@@ -4,17 +4,17 @@
 
 module ZkFold.Symbolic.Data.FieldElement where
 
-import           GHC.Generics                                        (Par1 (..))
-import           Prelude                                             hiding (Bool, Eq, Num (..), Ord, drop, length,
-                                                                      product, splitAt, sum, take, (!!), (^))
-import qualified Prelude                                             as Haskell
+import           GHC.Generics                    (Par1 (..))
+import           Prelude                         hiding (Bool, Eq, Num (..), Ord, drop, length, product, splitAt, sum,
+                                                  take, (!!), (^))
+import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.HFunctor                           (hmap, HFunctor)
-import qualified ZkFold.Base.Data.Vector                             as V
-import           ZkFold.Symbolic.Data.Bool                           (Bool)
+import           ZkFold.Base.Data.HFunctor       (HFunctor, hmap)
+import qualified ZkFold.Base.Data.Vector         as V
+import           ZkFold.Symbolic.Data.Bool       (Bool)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Eq                             (Eq)
+import           ZkFold.Symbolic.Data.Eq         (Eq)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
 
