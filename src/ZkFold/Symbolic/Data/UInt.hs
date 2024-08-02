@@ -83,7 +83,9 @@ instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Natura
             in UInt $ Interpreter $ V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
             
 instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Integer (UInt n r (Interpreter (Zp p))) where
-    fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
+    fromConstant = case regSize @r of
+        Auto -> fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
+        Fixed rs -> fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ rs))
 
 instance
     ( FromConstant Natural a
@@ -190,11 +192,9 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Ord (Bool (Interpre
     min x y = fromConstant $ Haskell.min (toConstant @_ @Natural x) (toConstant y)
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Natural where
-    toConstant (UInt (Interpreter xs)) = case regSize @r of
-        Auto -> foldr (\p y -> fromZp p + base * y) 0 xs
-            where base = 2 ^ registerSize @(Zp p) @n @r
-        Fixed rs -> foldr (\p y -> fromZp p + base * y) 0 [V.head xs]
-            where base = 2 ^ rs
+    toConstant (UInt (Interpreter xs)) = 
+        foldr (\p y -> fromZp p + base * y) 0 xs
+        where base = 2 ^ registerSize @(Zp p) @n @r
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Integer where
     toConstant = Haskell.fromIntegral @Natural . toConstant
@@ -220,10 +220,15 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Semiring (UInt n r 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Ring (UInt n r (Interpreter (Zp p)))
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r (Interpreter (Zp p))) where
-    arbitrary = do
-        lo <- replicateA (numberOfRegisters @(Zp p) @n @r -! 1) (toss $ registerSize @(Zp p) @n @r)
-        hi <- toss (highRegisterSize @(Zp p) @n @r)
-        return $ UInt $ Interpreter $ V.unsafeToVector (lo <> [hi])
+    arbitrary = case regSize @r of
+        Auto -> do
+            lo <- replicateA (numberOfRegisters @(Zp p) @n @r -! 1) (toss $ registerSize @(Zp p) @n @r)
+            hi <- toss (highRegisterSize @(Zp p) @n @r)
+            return $ UInt $ Interpreter $ V.unsafeToVector (lo <> [hi])
+        Fixed rs -> do
+            lst <- toss rs
+            let int = replicate (numberOfRegisters @(Zp p) @n @r -! 1) zero
+            return $ UInt $ Interpreter $ V.unsafeToVector ([lst] <> int)
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Iso (ByteString n (Interpreter (Zp p))) (UInt n r (Interpreter (Zp p))) where
@@ -549,12 +554,20 @@ deriving via (Structural (UInt n rs (ArithmeticCircuit a)))
          Eq (Bool (ArithmeticCircuit a)) (UInt n rs (ArithmeticCircuit a))
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r (ArithmeticCircuit a)) where
-    arbitrary = do
-        lows <- replicateA (numberOfRegisters @a @n @r -! 1) (toss $ registerSize @a @n @r)
-        hi <- toss (highRegisterSize @a @n @r)
-        return $ UInt $ embedV (V.unsafeToVector $ lows <> [hi])
-        where
-            toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
+    arbitrary = case regSize @r of
+        Auto -> do
+            lows <- replicateA (numberOfRegisters @a @n @r -! 1) (toss $ registerSize @a @n @r)
+            hi <- toss (highRegisterSize @a @n @r)
+            return $ UInt $ embedV (V.unsafeToVector $ lows <> [hi])
+        Fixed rs -> do
+            c  :: Integer <- toss $ registerSize @a @n @r
+            let cs = c : replicate (numberOfRegisters @a @n @r -! 1) zero
+                base = (2 :: Natural) ^ rs
+                v = Vector $ fromConstant <$> cs ::  Vector (NumberOfRegisters a n r) a
+                f = for v $ \x -> newAssigned $ fromConstant x
+                (os, r) = runState f (mempty :: Circuit a) 
+            return $ UInt $ ArithmeticCircuit { acCircuit = r {acRange = fromList [(1, fromConstant base - one)]}, acOutput = os }
+        where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n r (ArithmeticCircuit a)) where
     from (ByteString bits) = UInt (circuitF $ V.unsafeToVector <$> solve)
