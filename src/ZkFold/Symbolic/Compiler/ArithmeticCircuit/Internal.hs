@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass   #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators    #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
@@ -67,6 +68,8 @@ data ArithmeticCircuit a o = ArithmeticCircuit
         acOutput   :: o Natural
         -- ^ The output variables
     } deriving (Generic)
+deriving instance (NFData a, NFData (o Natural))
+    => NFData (ArithmeticCircuit a o)
 
 witnessGenerator :: ArithmeticCircuit a o -> Map Natural a -> Map Natural a
 witnessGenerator circuit inputs =
