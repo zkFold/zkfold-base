@@ -49,10 +49,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate           (evalMon
 import           ZkFold.Prelude                                         (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (desugarRange)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..),
-                                                                         Constraint, apply,
-                                                                         eval, eval1, exec, exec1,
-                                                                         forceZero,
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), Constraint,
+                                                                         apply, eval, eval1, exec, exec1, forceZero,
                                                                          witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 

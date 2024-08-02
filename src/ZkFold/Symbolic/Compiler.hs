@@ -8,16 +8,16 @@ module ZkFold.Symbolic.Compiler (
     compileIO
 ) where
 
-import           Data.Aeson                                          (ToJSON)
-import           Data.Eq                                             (Eq)
-import           Data.Function                                       (const, (.))
-import           Prelude                                             (FilePath, IO, Monoid (mempty), Show (..),
-                                                                      putStrLn, type (~), ($), (++))
+import           Data.Aeson                                 (ToJSON)
+import           Data.Eq                                    (Eq)
+import           Data.Function                              (const, (.))
+import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), putStrLn,
+                                                             type (~), ($), (++))
 
-import           ZkFold.Base.Algebra.Basic.Class                     (MultiplicativeMonoid)
+import           ZkFold.Base.Algebra.Basic.Class            (MultiplicativeMonoid)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
-import           ZkFold.Prelude                                      (writeFileJSON)
+import           ZkFold.Base.Data.Vector                    (Vector, unsafeToVector)
+import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Class
 
