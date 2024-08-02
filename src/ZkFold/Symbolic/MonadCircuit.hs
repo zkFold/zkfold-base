@@ -11,6 +11,7 @@ import           Data.Functor.Identity           (Identity (..))
 import           Data.Type.Equality              (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import Data.Eq (Eq)
 
 -- | A @'WitnessField'@ should support all algebraic operations
 -- used inside an arithmetic circuit.
@@ -103,6 +104,9 @@ class Monad m => MonadCircuit i a m | m -> i, m -> a where
     -- appropriate form for zkSNARK in use.
     newAssigned :: ClosedPoly i a -> m i
     newAssigned p = newConstrained (\x i -> p x - x i) p
+
+-- | Field of witnesses with decidable equality is called an ``arithmetic'' field.
+type Arithmetic a = (WitnessField a, Eq a)
 
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.

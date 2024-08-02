@@ -9,12 +9,11 @@ import qualified Prelude                                 as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
-import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
-import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
-import           ZkFold.Symbolic.Compiler
-import qualified ZkFold.Symbolic.Data.FieldElement       as FE
+import           ZkFold.Symbolic.Cardano.Types.Value     (Value, SingleAsset)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class
 
 newtype Input tokens datum context = Input (OutputRef context, Output tokens datum context)
 
@@ -24,13 +23,12 @@ deriving instance
     ) => Haskell.Eq (Input tokens datum context)
 
 deriving instance
-    KnownNat (FE.TypeSize CtxEvaluation (Value tokens CtxEvaluation))
-    => FE.FieldElementData CtxEvaluation (Input tokens datum CtxEvaluation)
-
-deriving instance
-    ( KnownNat tokens
-    , KnownNat (TypeSize F (Value tokens CtxCompilation))
-    ) => SymbolicData F (Input tokens datum CtxCompilation)
+    ( Symbolic context
+    , KnownNat tokens
+    , KnownNat (TypeSize context (OutputRef context))
+    , KnownNat (TypeSize context (SingleAsset context))
+    , KnownNat (TypeSize context (Value tokens context))
+    ) => SymbolicData context (Input tokens datum context)
 
 txiOutputRef :: Input tokens datum context -> OutputRef context
 txiOutputRef (Input (ref, _)) = ref

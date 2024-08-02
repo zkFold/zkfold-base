@@ -1,6 +1,3 @@
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module ZkFold.Base.Protocol.ARK.Protostar.Lookup where
 
 import           Data.Map                                        (fromList, mapWithKey)
@@ -16,7 +13,7 @@ import           ZkFold.Base.Data.Sparse.Vector                  (SVector (..))
 import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
                                                                   SpecialSoundTranscript)
-import           ZkFold.Symbolic.Compiler                        (Arithmetic)
+import           ZkFold.Symbolic.MonadCircuit                    (Arithmetic)
 
 data ProtostarLookup (l :: Natural) (sizeT :: Natural)
 

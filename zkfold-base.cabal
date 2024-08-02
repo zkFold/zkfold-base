@@ -159,9 +159,9 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-      ZkFold.Symbolic.Compiler.Arithmetizable
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
+      ZkFold.Symbolic.Data.Class
       ZkFold.Symbolic.Data.Combinators
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField

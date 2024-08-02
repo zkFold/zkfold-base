@@ -6,7 +6,7 @@ import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (length)
 
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly)
-import           ZkFold.Symbolic.Compiler.Arithmetizable      (Arithmetic)
+import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
 
 type SpecialSoundTranscript t a = [(ProverMessage t a, VerifierMessage t a)]
 
