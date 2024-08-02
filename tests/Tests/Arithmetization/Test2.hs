@@ -17,6 +17,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 -- A true statement.
 tautology :: (Symbolic c, Eq (Bool c) (FieldElement c)) => FieldElement c -> FieldElement c -> Bool c

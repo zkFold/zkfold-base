@@ -107,8 +107,6 @@ instance (Eq a, MultiplicativeMonoid a) => Package (ArithmeticCircuit a) where
     unpackWith f (ArithmeticCircuit c o) = ArithmeticCircuit c <$> f o
     packWith f = ArithmeticCircuit <$> foldMap acCircuit <*> f . fmap acOutput
 
-type Arithmetic a = (WitnessField a, Eq a)
-
 instance Arithmetic a => Symbolic (ArithmeticCircuit a) where
     type BaseField (ArithmeticCircuit a) = a
     symbolicF (ArithmeticCircuit c o) _ f = let (p, d) = runState (f o) c in withOutputs d p

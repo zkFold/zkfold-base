@@ -48,10 +48,10 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embe
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (acCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Class                                (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData (..))
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, newAssigned)
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
@@ -63,13 +63,7 @@ newtype ByteString (n :: Natural) (backend :: (Type -> Type) -> Type) = ByteStri
 deriving stock instance Haskell.Show (b (Vector n)) => Haskell.Show (ByteString n b)
 deriving stock instance Haskell.Eq (b (Vector n)) => Haskell.Eq (ByteString n b)
 deriving anyclass instance NFData (b (Vector n)) => NFData (ByteString n b)
-
-instance Arithmetic a => FieldElementData (Interpreter a) (ByteString n (Interpreter a)) where
-    type TypeSize (Interpreter a) (ByteString n (Interpreter a)) = n
-
-    toFieldElements (ByteString bits) = bits
-
-    fromFieldElements = ByteString
+deriving newtype instance SymbolicData c (ByteString n c)
 
 -- TODO
 -- Since the only difference between ByteStrings on Zp and ByteStrings on ArithmeticCircuits is backend,
@@ -356,13 +350,6 @@ instance Finite (Zp p) => BitState ByteString n (Interpreter (Zp p)) where
                      in Bool (Interpreter $ (one -) <$> zp)
 
 --------------------------------------------------------------------------------
-
-instance Arithmetic a => SymbolicData a (ByteString n (ArithmeticCircuit a)) where
-    type Support a (ByteString n (ArithmeticCircuit a)) = ()
-    type TypeSize a (ByteString n (ArithmeticCircuit a)) = n
-
-    pieces (ByteString bits) _ = bits
-    restore = ByteString . ($ ())
 
 instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircuit a)) where
     shiftBits bs@(ByteString oldBits) s

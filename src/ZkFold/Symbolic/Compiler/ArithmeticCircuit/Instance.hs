@@ -26,7 +26,7 @@ import           Test.QuickCheck                                           (Arbi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor                                 (hmap)
+import           ZkFold.Base.Data.HFunctor                                 (HFunctor, hmap)
 import           ZkFold.Base.Data.Par1                                     ()
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
@@ -35,8 +35,8 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embe
                                                                             isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitF)
-import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Class                                (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
@@ -44,14 +44,14 @@ import           ZkFold.Symbolic.MonadCircuit                              (newA
 
 ------------------------------------- Instances -------------------------------------
 
-instance Arithmetic a => SymbolicData a (ArithmeticCircuit a Par1) where
-    type Support a (ArithmeticCircuit a Par1) = ()
-    type TypeSize a (ArithmeticCircuit a Par1) = 1
+instance HFunctor c => SymbolicData c (c Par1) where
+    type Support c (c Par1) = ()
+    type TypeSize c (c Par1) = 1
 
     pieces = const . hmap (V.singleton . unPar1)
     restore = hmap (Par1 . V.item) . ($ ())
 
-deriving newtype instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a))
+deriving newtype instance HFunctor c => SymbolicData c (Bool c)
 
 -- TODO: I had to add these constraints and I don't like them
 instance
@@ -172,14 +172,20 @@ instance (Arithmetic a, DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCi
     x == y = isZero (x - y)
     x /= y = not $ isZero (x - y)
 
-instance (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit a)) x where
+instance
+    ( Arithmetic a
+    , SymbolicData (ArithmeticCircuit a) x
+    , n ~ TypeSize (ArithmeticCircuit a) x
+    , KnownNat n
+    ) => Conditional (Bool (ArithmeticCircuit a)) x where
+
     bool brFalse brTrue (Bool b) = restore ac
         where
             f' = pieces brFalse
             t' = pieces brTrue
             ac i = circuitF (solve i)
 
-            solve :: forall i m . MonadBlueprint i a m => Support a x -> m (Vector n i)
+            solve :: forall i m . MonadBlueprint i a m => Support (ArithmeticCircuit a) x -> m (Vector n i)
             solve i = do
                 ts <- runCircuit (t' i)
                 fs <- runCircuit (f' i)

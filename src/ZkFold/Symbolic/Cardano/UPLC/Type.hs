@@ -3,21 +3,20 @@
 
 module ZkFold.Symbolic.Cardano.UPLC.Type where
 
-import           Data.Kind                        (Type)
 import           Data.Typeable                    (Proxy (..), TypeRep, Typeable, typeOf)
 import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Compiler         (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
 
-data SomeType a where
-    NoType         :: SomeType a
-    AnyType        :: SomeType a
-    AnyBuiltinType :: SomeType a
-    SomeSym        :: SomeSymbolic a -> SomeType a
-    SomeFunction   :: SomeType a -> SomeType a -> SomeType a
+data SomeType c where
+    NoType         :: SomeType c
+    AnyType        :: SomeType c
+    AnyBuiltinType :: SomeType c
+    SomeSym        :: SomeSymbolic c -> SomeType c
+    SomeFunction   :: SomeType c -> SomeType c -> SomeType c
 
-instance Eq (SomeType a) where
+instance Eq (SomeType c) where
     NoType == NoType                         = True
     AnyType == AnyType                       = True
     AnyBuiltinType == AnyBuiltinType         = True
@@ -25,7 +24,7 @@ instance Eq (SomeType a) where
     SomeFunction x1 x2 == SomeFunction y1 y2 = x1 == y1 && x2 == y2
     _ == _                                   = False
 
-instance Semigroup (SomeType a) where
+instance Semigroup (SomeType c) where
     NoType <> t                              = t
     t <> NoType                              = t
     AnyType <> t                             = t
@@ -36,25 +35,25 @@ instance Semigroup (SomeType a) where
     SomeFunction t1 t2 <> SomeFunction t3 t4 = SomeFunction (t1 <> t3) (t2 <> t4)
     _ <> _                                   = error "Semigroup (SomeType a): constructor mismatch"
 
-data SomeSymbolic a where
-    SomeData  :: forall a (t :: Type) . (Typeable t, SymbolicData a t, KnownNat (TypeSize a t)) => Proxy t -> SomeSymbolic a
+data SomeSymbolic c where
+    SomeData :: (Typeable t, SymbolicData c t, KnownNat (TypeSize c t)) => Proxy t -> SomeSymbolic c
 
-getType :: SomeSymbolic a -> TypeRep
+getType :: SomeSymbolic c -> TypeRep
 getType (SomeData t)  = typeOf t
 
-instance Eq (SomeSymbolic a) where
+instance Eq (SomeSymbolic c) where
     SomeData x == SomeData y = typeOf x == typeOf y
 
-instance Semigroup (SomeSymbolic a) where
+instance Semigroup (SomeSymbolic c) where
     SomeData x <> SomeData y
       | typeOf x == typeOf y = SomeData x
       | otherwise = error "Semigroup (SomeSymbolic a): SomeData mismatch"
 
-symToSym :: forall a. SomeSymbolic a -> SomeSymbolic a -> SomeSymbolic a
+symToSym :: SomeSymbolic c -> SomeSymbolic c -> SomeSymbolic c
 symToSym (SomeData (_ :: Proxy x)) (SomeData (_ :: Proxy y)) = SomeData (Proxy @(x -> y))
 
 -- TODO: add support for polymorphic types
-functionToData :: SomeType a -> SomeType a
+functionToData :: SomeType c -> SomeType c
 functionToData (SomeFunction t1 t2) =
     let t1' = functionToData t1
         t2' = functionToData t2
