@@ -90,8 +90,8 @@ jobs:
         cabal build zkfold-base-test -f Pedantic
         cabal build zkfold-base-examples -f Pedantic
 
-    # - name: Test
-    #   run: cabal test all
+    - name: Test
+      run: cabal test all
 
     # - name: Check cabal file
     #   run: cabal check
