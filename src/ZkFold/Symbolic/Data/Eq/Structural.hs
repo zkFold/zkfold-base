@@ -15,16 +15,17 @@ newtype Structural a = Structural a
 
 instance
     ( SymbolicData a x
+    , Support a x ~ ()
     , n ~ TypeSize a x
     , Eq (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a (Vector n))
     ) => Eq (Bool (ArithmeticCircuit a)) (Structural x) where
 
     Structural x == Structural y =
-        let x' = pieces @a x
-            y' = pieces y
+        let x' = pieces @a x ()
+            y' = pieces y ()
          in x' == y'
 
     Structural x /= Structural y =
-        let x' = pieces @a x
-            y' = pieces y
+        let x' = pieces @a x ()
+            y' = pieces y ()
          in x' /= y'

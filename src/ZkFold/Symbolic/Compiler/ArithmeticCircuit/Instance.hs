@@ -16,9 +16,9 @@ import           Data.Traversable                                          (Trav
 import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Par1 (..))
 import           GHC.Num                                                   (integerToNatural)
-import           Prelude                                                   (Integer, Show, const, id, mempty, pure,
-                                                                            return, show, type (~), ($), (++), (.),
-                                                                            (<$>), (>>=))
+import           Prelude                                                   (Integer, Show, const, mempty, pure, return,
+                                                                            show, type (~), ($), (++), (.), (<$>),
+                                                                            (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
@@ -35,7 +35,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embe
                                                                             isZeroC)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitF)
-import           ZkFold.Symbolic.Compiler.Arithmetizable                   (Arithmetizable, SymbolicData (..))
+import           ZkFold.Symbolic.Compiler.Arithmetizable                   (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
@@ -44,22 +44,14 @@ import           ZkFold.Symbolic.MonadCircuit                              (newA
 
 ------------------------------------- Instances -------------------------------------
 
-instance Arithmetic a => SymbolicData a (ArithmeticCircuit a (Vector n)) where
-    type TypeSize a (ArithmeticCircuit a (Vector n)) = n
-
-    pieces = id
-
-    restore = ArithmeticCircuit
-
 instance Arithmetic a => SymbolicData a (ArithmeticCircuit a Par1) where
+    type Support a (ArithmeticCircuit a Par1) = ()
     type TypeSize a (ArithmeticCircuit a Par1) = 1
 
-    pieces = hmap (V.singleton . unPar1)
-
-    restore r o = hmap (Par1 . V.item) $ withOutputs r o
+    pieces = const . hmap (V.singleton . unPar1)
+    restore = hmap (Par1 . V.item) . ($ ())
 
 deriving newtype instance Arithmetic a => SymbolicData a (Bool (ArithmeticCircuit a))
-deriving newtype instance Arithmetic a => Arithmetizable a (Bool (ArithmeticCircuit a))
 
 -- TODO: I had to add these constraints and I don't like them
 instance
@@ -181,16 +173,16 @@ instance (Arithmetic a, DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCi
     x /= y = not $ isZero (x - y)
 
 instance (SymbolicData a x, n ~ TypeSize a x, KnownNat n) => Conditional (Bool (ArithmeticCircuit a)) x where
-    bool brFalse brTrue (Bool b) = restore c o
+    bool brFalse brTrue (Bool b) = restore ac
         where
             f' = pieces brFalse
             t' = pieces brTrue
-            ArithmeticCircuit c o = circuitF solve
+            ac i = circuitF (solve i)
 
-            solve :: forall i m . MonadBlueprint i a m => m (Vector n i)
-            solve = do
-                ts <- runCircuit t'
-                fs <- runCircuit f'
+            solve :: forall i m . MonadBlueprint i a m => Support a x -> m (Vector n i)
+            solve i = do
+                ts <- runCircuit (t' i)
+                fs <- runCircuit (f' i)
                 bs <- unPar1 <$> runCircuit b
                 V.zipWithM (\x y -> newAssigned $ \p -> p bs * (p x - p y) + p y) ts fs
 

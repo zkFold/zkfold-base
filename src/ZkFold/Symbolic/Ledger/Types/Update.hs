@@ -1,12 +1,12 @@
 module ZkFold.Symbolic.Ledger.Types.Update where
 
-import           Prelude                                  hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                                hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Ledger.Types.Basic
-import           ZkFold.Symbolic.Ledger.Types.Block       (BlockId)
-import           ZkFold.Symbolic.Ledger.Types.Contract    (ContractId)
-import           ZkFold.Symbolic.Ledger.Types.Input       (Input)
-import           ZkFold.Symbolic.Ledger.Types.OutputRef   (TransactionId)
+import           ZkFold.Symbolic.Ledger.Types.Block     (BlockId)
+import           ZkFold.Symbolic.Ledger.Types.Contract  (ContractId)
+import           ZkFold.Symbolic.Ledger.Types.Input     (Input)
+import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 
 -- | Block hash of the corresponding block.
 type UpdateId context = BlockId context
@@ -19,7 +19,7 @@ data Update context = Update
     -- ^ List of public inputs produced by the update
     , updatePublicInputsSpent    :: List context (Input context)
     -- ^ List of public inputs spent by the update
-    , updateReference    :: UpdateId context
+    , updateReference            :: UpdateId context
     -- ^ Reference to the previous update
     }
 
