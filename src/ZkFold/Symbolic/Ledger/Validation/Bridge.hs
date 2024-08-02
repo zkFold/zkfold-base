@@ -1,7 +1,6 @@
 module ZkFold.Symbolic.Ledger.Validation.Bridge where
 
-import           Prelude                                 hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
-                                                            (*), (+), (==))
+import           Prelude                      hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*), (+), (==))
 
 import           ZkFold.Symbolic.Ledger.Types
 

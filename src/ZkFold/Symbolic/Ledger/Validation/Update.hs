@@ -1,12 +1,12 @@
 module ZkFold.Symbolic.Ledger.Validation.Update where
 
-import           Prelude                                 hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*),
-                                                          (+), (==), (++))
+import           Prelude                                       hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
+                                                                (*), (+), (++), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Data.Conditional              (bool)
-import           ZkFold.Symbolic.Data.Eq                       (Eq(..))
-import           ZkFold.Symbolic.Data.List                     ((\\), (++), (.:), emptyList)
+import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
+import           ZkFold.Symbolic.Data.List                     (emptyList, (++), (.:), (\\))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
 
