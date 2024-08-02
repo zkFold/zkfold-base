@@ -74,10 +74,15 @@ instance Arithmetic a => FieldElementData (Interpreter a) (UInt n r (Interpreter
     fromFieldElements = UInt
 
 instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Natural (UInt n r (Interpreter (Zp p))) where
-    fromConstant c =
-        let (lo, hi, _) = cast @(Zp p) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
-         in UInt $ Interpreter $ V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
+    fromConstant c =  case regSize @r of
+        Auto ->
+            let (lo, hi, _) = cast @(Zp p) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
+            in UInt $ Interpreter $ V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
 
+        Fixed rs -> 
+            let (lo, hi, _) = cast @(Zp p) @n @r . (`Haskell.mod` (2 ^ rs)) $ c
+            in UInt $ Interpreter $ V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
+            
 instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Integer (UInt n r (Interpreter (Zp p))) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
@@ -186,8 +191,11 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Ord (Bool (Interpre
     min x y = fromConstant $ Haskell.min (toConstant @_ @Natural x) (toConstant y)
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Natural where
-    toConstant (UInt (Interpreter xs)) = foldr (\p y -> fromZp p + base * y) 0 xs
-        where base = 2 ^ registerSize @(Zp p) @n @r
+    toConstant (UInt (Interpreter xs)) = case regSize @r of
+        Auto -> foldr (\p y -> fromZp p + base * y) 0 xs
+            where base = 2 ^ registerSize @(Zp p) @n @r
+        Fixed rs -> foldr (\p y -> fromZp p + base * y) 0 [V.head xs]
+            where base = 2 ^ rs
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Integer where
     toConstant = Haskell.fromIntegral @Natural . toConstant
