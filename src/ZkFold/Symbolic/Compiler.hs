@@ -8,18 +8,17 @@ module ZkFold.Symbolic.Compiler (
     compileIO
 ) where
 
-import           Data.Aeson                                          (ToJSON)
-import           Data.Eq                                             (Eq)
-import           Data.Function                                       (const, (.))
-import           Prelude                                             (FilePath, IO, Monoid (mempty), Show (..),
-                                                                      putStrLn, type (~), ($), (++))
+import           Data.Aeson                                 (ToJSON)
+import           Data.Eq                                    (Eq)
+import           Data.Function                              (const, (.))
+import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), putStrLn,
+                                                             type (~), ($), (++))
 
-import           ZkFold.Base.Algebra.Basic.Class                     (MultiplicativeMonoid)
+import           ZkFold.Base.Algebra.Basic.Class            (MultiplicativeMonoid)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
-import           ZkFold.Prelude                                      (writeFileJSON)
+import           ZkFold.Base.Data.Vector                    (Vector, unsafeToVector)
+import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (acInput)
 import           ZkFold.Symbolic.Data.Class
 
 {-
@@ -47,7 +46,7 @@ solder ::
 solder f = pieces f (restore @c @(Support c f) $ const inputC)
     where
         inputList = [1..(typeSize @c @(Support c f))]
-        inputC = withOutputs (mempty { acInput = inputList }) (unsafeToVector inputList)
+        inputC = mempty { acInput = inputList, acOutput = unsafeToVector inputList }
 
 -- | Compiles function `f` into an arithmetic circuit.
 compile ::

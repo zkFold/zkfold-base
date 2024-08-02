@@ -45,7 +45,7 @@ toPlonkRelation xPub ac0 =
         evalX0 = evalPolynomial evalMonomial (\x -> if x == 0 then one else var x)
 
         pubInputConstraints = map var (fromVector xPub)
-        acConstraints       = map evalX0 $ elems (constraintSystem ac)
+        acConstraints       = map evalX0 $ elems (acSystem ac)
         extraConstraints    = replicate (value @n -! acSizeN ac -! value @l) zero
 
         system = map toPlonkConstraint $ pubInputConstraints ++ acConstraints ++ extraConstraints

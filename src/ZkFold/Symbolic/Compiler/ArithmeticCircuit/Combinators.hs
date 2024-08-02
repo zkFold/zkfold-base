@@ -38,8 +38,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate              (vari
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (length, splitAt, (!!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..), Circuit (acSystem),
-                                                                            acInput)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..), acInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -135,10 +134,10 @@ runInvert r = do
     return (js, ks)
 
 embedVarIndex :: Arithmetic a => Natural -> ArithmeticCircuit a Par1
-embedVarIndex n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure n}
+embedVarIndex n = mempty { acInput = [ n ], acOutput = pure n}
 
 embedVarIndexV :: (Arithmetic a, KnownNat n) => Natural -> ArithmeticCircuit a (Vector n)
-embedVarIndexV n = ArithmeticCircuit { acCircuit = mempty { acInput = [ n ]}, acOutput = pure n}
+embedVarIndexV n = mempty { acInput = [ n ], acOutput = pure n}
 
-getAllVars :: MultiplicativeMonoid a => Circuit a -> [Natural]
+getAllVars :: MultiplicativeMonoid a => ArithmeticCircuit a o -> [Natural]
 getAllVars ac = nubOrd $ sort $ 0 : acInput ac ++ concatMap (toList . variables) (elems $ acSystem ac)

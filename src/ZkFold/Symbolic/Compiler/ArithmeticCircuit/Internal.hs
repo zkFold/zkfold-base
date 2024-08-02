@@ -1,18 +1,14 @@
 {-# LANGUAGE DeriveAnyClass   #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators    #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
-        Circuit (..),
         Arithmetic,
         ConstraintMonomial,
         Constraint,
 
-        withOutputs,
-        constraintSystem,
-        inputVariables,
         witnessGenerator,
-        varOrder,
         -- low-level functions
         constraint,
         rangeConstraint,
@@ -29,10 +25,11 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
 
 import           Control.DeepSeq                              (NFData, force)
 import           Control.Monad.State                          (MonadState (..), State, gets, modify, runState)
+import           Data.Foldable                                (fold)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
 import qualified Data.Map.Strict                              as M
 import qualified Data.Set                                     as S
-import           GHC.Generics                                 (Generic, Par1 (..))
+import           GHC.Generics                                 (Generic, Par1 (..), U1 (..))
 import           Optics
 import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum,
                                                                take, (!!), (^))
@@ -54,7 +51,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
-data Circuit a = Circuit
+data ArithmeticCircuit a o = ArithmeticCircuit
     {
         acSystem   :: Map Natural (Constraint a),
         -- ^ The system of polynomial constraints
@@ -66,54 +63,46 @@ data Circuit a = Circuit
         -- ^ The witness generation functions
         acVarOrder :: Map (Natural, Natural) Natural,
         -- ^ The order of variable assignments
-        acRNG      :: StdGen
-    } deriving (Generic, NFData)
+        acRNG      :: StdGen,
+        -- ^ random generator for generating unique variables
+        acOutput   :: o Natural
+        -- ^ The output variables
+    } deriving (Generic)
+deriving instance (NFData a, NFData (o Natural))
+    => NFData (ArithmeticCircuit a o)
 
-data ArithmeticCircuit a f = ArithmeticCircuit
-  { acCircuit :: Circuit a
-  , acOutput  :: f Natural
-  } deriving (Generic)
-
-deriving instance (NFData a, NFData (f Natural)) => NFData (ArithmeticCircuit a f)
-
-withOutputs :: Circuit a -> f Natural -> ArithmeticCircuit a f
-withOutputs = ArithmeticCircuit
-
-constraintSystem :: ArithmeticCircuit a f -> Map Natural (Constraint a)
-constraintSystem = acSystem . acCircuit
-
-inputVariables :: ArithmeticCircuit a f -> [Natural]
-inputVariables = acInput . acCircuit
-
-witnessGenerator :: ArithmeticCircuit a f -> Map Natural a -> Map Natural a
+witnessGenerator :: ArithmeticCircuit a o -> Map Natural a -> Map Natural a
 witnessGenerator circuit inputs =
-  let srcs = acWitness (acCircuit circuit)
+  let srcs = acWitness circuit
       witness = ($ witness) <$> (srcs `union` fmap const inputs)
    in witness
-
-varOrder :: ArithmeticCircuit a f -> Map (Natural, Natural) Natural
-varOrder = acVarOrder . acCircuit
 
 ------------------------------ Symbolic compiler context ----------------------------
 
 instance HFunctor (ArithmeticCircuit a) where
-    hmap f (ArithmeticCircuit c o) = ArithmeticCircuit c (f o)
+    hmap f c = c {acOutput = f (acOutput c)}
 
 instance (Eq a, MultiplicativeMonoid a) => HApplicative (ArithmeticCircuit a) where
-    hpure = ArithmeticCircuit mempty
-    hliftA2 f (ArithmeticCircuit c o) (ArithmeticCircuit d p) = ArithmeticCircuit (c <> d) (f o p)
+    hpure o = mempty {acOutput = o}
+    hliftA2 f c d = (c {acOutput = U1} <> d {acOutput = U1})
+      {acOutput = f (acOutput c) (acOutput d)}
 
 instance (Eq a, MultiplicativeMonoid a) => Package (ArithmeticCircuit a) where
-    unpackWith f (ArithmeticCircuit c o) = ArithmeticCircuit c <$> f o
-    packWith f = ArithmeticCircuit <$> foldMap acCircuit <*> f . fmap acOutput
+    unpackWith f c = (\o -> c {acOutput = o}) <$> (f (acOutput c))
+    packWith f cs = (fold (fmap (\c -> c {acOutput = U1}) cs))
+      {acOutput = f (fmap acOutput cs)}
 
 instance Arithmetic a => Symbolic (ArithmeticCircuit a) where
     type BaseField (ArithmeticCircuit a) = a
-    symbolicF (ArithmeticCircuit c o) _ f = let (p, d) = runState (f o) c in withOutputs d p
+    symbolicF c _ f =
+        let
+            (p, d) = runState (f (acOutput c)) c {acOutput = U1}
+        in
+            d {acOutput = p}
 
 -------------------------------- MonadCircuit instance ------------------------------
 
-instance Arithmetic a => MonadCircuit Natural a (State (Circuit a)) where
+instance (Arithmetic a, o ~ U1) => MonadCircuit Natural a (State (ArithmeticCircuit a o)) where
     newRanged upperBound witness = do
         let s   = sources @a witness
             b   = fromConstant upperBound
@@ -129,7 +118,7 @@ instance Arithmetic a => MonadCircuit Natural a (State (Circuit a)) where
     newConstrained
         :: NewConstraint Natural a
         -> Witness Natural a
-        -> State (Circuit a) Natural
+        -> State (ArithmeticCircuit a U1) Natural
     newConstrained new witness = do
         let ws = sources @a witness
             -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
@@ -148,9 +137,9 @@ sources = runSources . ($ Sources @a . S.singleton)
 
 ----------------------------------- Circuit monoid ----------------------------------
 
-instance Eq a => Semigroup (Circuit a) where
+instance (Eq a, o ~ U1) => Semigroup (ArithmeticCircuit a o) where
     c1 <> c2 =
-        Circuit
+        ArithmeticCircuit
            {
                acSystem   = acSystem c1 `union` acSystem c2
             ,  acRange    = acRange c1 `union` acRange c2
@@ -160,6 +149,7 @@ instance Eq a => Semigroup (Circuit a) where
            ,   acWitness  = acWitness c1 `union` acWitness c2
            ,   acVarOrder = acVarOrder c1 `union` acVarOrder c2
            ,   acRNG      = mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
+           ,   acOutput   = U1
            }
 
 nubConcat :: Ord a => [a] -> [a] -> [a]
@@ -167,16 +157,17 @@ nubConcat l r = l ++ Prelude.filter (`S.notMember` lSet) r
     where
         lSet = S.fromList l
 
-instance (Eq a, MultiplicativeMonoid a) => Monoid (Circuit a) where
+instance (Eq a, MultiplicativeMonoid a, o ~ U1) => Monoid (ArithmeticCircuit a o) where
     mempty =
-        Circuit
+        ArithmeticCircuit
            {
                acSystem   = empty,
                acRange    = empty,
                acInput    = [],
                acWitness  = singleton 0 one,
                acVarOrder = empty,
-               acRNG      = mkStdGen 0
+               acRNG      = mkStdGen 0,
+               acOutput   = U1
            }
 
 ------------------------------------- Variables -------------------------------------
@@ -198,11 +189,11 @@ toVar srcs c = force $ fromZp ex
         x  = g ^ fromZp (evalPolynomial evalMonomial v $ mapCoeffs toField c)
         ex = foldr (\p y -> x ^ p + y) x srcs
 
-newVariableWithSource :: Arithmetic a => [Natural] -> (Natural -> Constraint a) -> State (Circuit a) Natural
+newVariableWithSource :: Arithmetic a => [Natural] -> (Natural -> Constraint a) -> State (ArithmeticCircuit a U1) Natural
 newVariableWithSource srcs con = toVar srcs . con . fst <$> do
     zoom #acRNG $ get >>= traverse put . uniformR (0, order @VarField -! 1)
 
-addVariable :: Natural -> State (Circuit a) Natural
+addVariable :: Natural -> State (ArithmeticCircuit a U1) Natural
 addVariable x = do
     zoom #acVarOrder . modify
         $ \vo -> insert (Haskell.fromIntegral $ M.size vo, x) x vo
@@ -216,19 +207,19 @@ type ConstraintMonomial = Mono Natural Natural
 type Constraint c = Poly c Natural Natural
 
 -- | Adds a constraint to the arithmetic circuit.
-addConstraint :: Arithmetic a => Constraint a -> State (Circuit a) ()
+addConstraint :: Arithmetic a => Constraint a -> State (ArithmeticCircuit a U1) ()
 addConstraint c = zoom #acSystem . modify $ insert (toVar [] c) c
 
-rangeConstraint :: Natural -> a -> State (Circuit a) ()
+rangeConstraint :: Natural -> a -> State (ArithmeticCircuit a U1) ()
 rangeConstraint i b = zoom #acRange . modify $ insert i b
 
 -- | Forces the provided variables to be zero.
-forceZero :: Arithmetic a => Vector n Natural -> State (Circuit a) ()
+forceZero :: Arithmetic a => Vector n Natural -> State (ArithmeticCircuit a U1) ()
 forceZero = mapM_ (addConstraint . var)
 
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
-assignment :: Natural -> (Map Natural a -> a) -> State (Circuit a) ()
+assignment :: Natural -> (Map Natural a -> a) -> State (ArithmeticCircuit a U1) ()
 assignment i f = zoom #acWitness . modify $ insert i f
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
@@ -236,7 +227,7 @@ eval1 :: ArithmeticCircuit a Par1 -> Map Natural a -> a
 eval1 ctx i = witnessGenerator ctx i ! unPar1 (acOutput ctx)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: Functor f => ArithmeticCircuit a f -> Map Natural a -> f a
+eval :: Functor o => ArithmeticCircuit a o -> Map Natural a -> o a
 eval ctx i = (witnessGenerator ctx i !) <$> acOutput ctx
 
 -- | Evaluates the arithmetic circuit with no inputs and one output using the supplied input map.
@@ -244,12 +235,12 @@ exec1 :: ArithmeticCircuit a Par1 -> a
 exec1 ac = eval1 ac empty
 
 -- | Evaluates the arithmetic circuit with no inputs using the supplied input map.
-exec :: Functor f => ArithmeticCircuit a f -> f a
+exec :: Functor o => ArithmeticCircuit a o -> o a
 exec ac = eval ac empty
 
 -- | Applies the values of the first `n` inputs to the arithmetic circuit.
 -- TODO: make this safe
-apply :: [a] -> State (Circuit a) ()
+apply :: [a] -> State (ArithmeticCircuit a U1) ()
 apply xs = do
     inputs <- gets acInput
     zoom #acInput . put $ drop (length xs) inputs
