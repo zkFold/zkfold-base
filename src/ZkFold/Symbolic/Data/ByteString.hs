@@ -28,7 +28,7 @@ import           Data.Maybe                                                (Mayb
 import           Data.Proxy                                                (Proxy (..))
 import           Data.String                                               (IsString (..))
 import           Data.Traversable                                          (for)
-import           GHC.Generics                                              (Generic, Par1 (..))
+import           GHC.Generics                                              (Generic, Par1 (..), U1 (..))
 import           GHC.Natural                                               (naturalFromInteger)
 import           GHC.TypeNats                                              (natVal)
 import           Prelude                                                   (Integer, drop, fmap, otherwise, pure, take,
@@ -45,7 +45,6 @@ import           ZkFold.Base.Data.Vector                                   (Vect
 import           ZkFold.Prelude                                            (replicateA, (!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (acCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class                                (SymbolicData)
@@ -440,9 +439,9 @@ instance
   , Arithmetic a
   ) => Concat (ByteString m (ArithmeticCircuit a)) (ByteString k (ArithmeticCircuit a)) where
 
-    concat bs = ByteString $ bsCircuit `withOutputs` bsOutputs
+    concat bs = ByteString $ bsCircuit {acOutput = bsOutputs}
         where
-            bsCircuit = Haskell.mconcat $ (\(ByteString bits) -> acCircuit bits) <$> bs
+            bsCircuit = Haskell.mconcat $ (\(ByteString bits) -> bits {acOutput = U1}) <$> bs
 
             bsOutputs :: Vector k Natural
             bsOutputs = V.unsafeConcat @(Div k m) $ (\(ByteString bits) -> acOutput bits) <$> bs

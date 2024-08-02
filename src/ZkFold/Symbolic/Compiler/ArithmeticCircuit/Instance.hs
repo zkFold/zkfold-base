@@ -195,13 +195,13 @@ instance
 instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit a Par1) where
     arbitrary = do
         k <- integerToNatural <$> chooseInteger (2, 10)
-        let ac = ArithmeticCircuit { acCircuit = mempty {acInput = [1..k]}, acOutput = pure k }
+        let ac = mempty { acInput = [1..k], acOutput = pure k }
         arbitrary' ac 10
 
 arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => ArithmeticCircuit a Par1 -> Natural -> Gen (ArithmeticCircuit a Par1)
 arbitrary' ac 0 = return ac
 arbitrary' ac iter = do
-    let vars = getAllVars . acCircuit $ ac
+    let vars = getAllVars ac
     li <- elements vars
     ri <- elements vars
     let (l, r) =( ac { acOutput = pure li }, ac { acOutput = pure ri })
@@ -215,16 +215,16 @@ arbitrary' ac iter = do
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Show a, Show (f Natural)) => Show (ArithmeticCircuit a f) where
-    show (ArithmeticCircuit r o) = "ArithmeticCircuit { acInput = " ++ show (acInput r)
-        ++ "\n, acSystem = " ++ show (acSystem r) ++ "\n, acOutput = " ++ show o ++ "\n, acVarOrder = " ++ show (acVarOrder r) ++ " }"
+    show r = "ArithmeticCircuit { acInput = " ++ show (acInput r)
+        ++ "\n, acSystem = " ++ show (acSystem r) ++ "\n, acOutput = " ++ show (acOutput r) ++ "\n, acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
 -- TODO: add witness generation info to the JSON object
 instance (ToJSON a, ToJSON (f Natural)) => ToJSON (ArithmeticCircuit a f) where
-    toJSON (ArithmeticCircuit r o) = object
+    toJSON r = object
         [
             "system" .= acSystem r,
             "input"  .= acInput r,
-            "output" .= o,
+            "output" .= acOutput r,
             "order"  .= acVarOrder r
         ]
 
@@ -240,5 +240,4 @@ instance (FromJSON a, FromJSON (f Natural)) => FromJSON (ArithmeticCircuit a f) 
             acOutput   <- v .: "output"
             let acWitness = empty
                 acRNG     = mkStdGen 0
-                acCircuit = Circuit{..}
             pure ArithmeticCircuit{..}

@@ -19,7 +19,6 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
 import           ZkFold.Prelude                                      (writeFileJSON)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (acInput)
 import           ZkFold.Symbolic.Data.Class
 
 {-
@@ -47,7 +46,7 @@ solder ::
 solder f = pieces f (restore @c @(Support c f) $ const inputC)
     where
         inputList = [1..(typeSize @c @(Support c f))]
-        inputC = withOutputs (mempty { acInput = inputList }) (unsafeToVector inputList)
+        inputC = mempty { acInput = inputList, acOutput = unsafeToVector inputList }
 
 -- | Compiles function `f` into an arithmetic circuit.
 compile ::
