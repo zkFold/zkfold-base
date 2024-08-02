@@ -15,7 +15,7 @@ type PublicInputWitness context = UpdateChain context
 -- | Checks if the private input existed.
 publicInputExisted ::
        Signature context
-    => BlockId context
+    => UpdateId context
     -- ^ The id of the current block.
     -> Input context
     -- ^ The transaction input to check.
@@ -37,7 +37,7 @@ publicInputExisted bId i w =
 -- | Checks if the private input was not spent.
 publicInputNotSpent ::
        Signature context
-    => BlockId context
+    => UpdateId context
     -- ^ The id of the current block.
     -> Input context
     -- ^ The transaction input to check.
@@ -57,7 +57,7 @@ publicInputNotSpent bId i w =
 -- | Checks if the public input is valid.
 publicInputIsValid ::
        Signature context
-    => BlockId context
+    => UpdateId context
     -- ^ The id of the current block.
     -> Input context
     -- ^ The transaction input to check.

@@ -8,10 +8,9 @@ import           ZkFold.Symbolic.Data.Conditional              (bool)
 import           ZkFold.Symbolic.Data.Eq                       (Eq(..))
 import           ZkFold.Symbolic.Data.List                     ((\\), (++), (.:), emptyList)
 import           ZkFold.Symbolic.Ledger.Types
-import           ZkFold.Symbolic.Ledger.Validation.Block       (BlockWitness)
 import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
 
-type UpdateWitness context = (Bridge L1ToL2 context, BlockWitness context)
+type UpdateWitness context = (Bridge L1ToL2 context, List context (Transaction context, TransactionWitness context))
 
 bridgeToLedger :: Signature context => Bridge L1ToL2 context -> Update context -> Update context
 bridgeToLedger Bridge {..} u =
@@ -24,8 +23,7 @@ bridgeFromLedger = undefined
 applyTransaction :: Signature context => Transaction context -> TransactionWitness context -> Update context -> Update context
 applyTransaction tx w u =
    let res = transactionIsValid (updateId u) tx w
-       -- TODO: we only need to add public inputs from the previous updates here
-       insSpent = updatePublicInputsSpent u ++ txPublicInputs tx
+       insSpent = (updatePublicInputsSpent u ++ txPublicInputs tx) \\ updatePublicInputsProduced u
        insProduced = updatePublicInputsProduced u \\ txPublicInputs tx
        spendingContracts = txoAddress . txiOutput <$> txPublicInputs tx
        mintingContracts  = (\(Value s _ _) -> s) <$> txMint tx
@@ -35,8 +33,8 @@ applyTransaction tx w u =
               }
    in bool u u' res
 
-newUpdate :: Signature context => UpdateId context -> Bridge L1ToL2 context -> BlockWitness context -> Update context
-newUpdate lastUpdateId bridgeIn ws =
+newUpdate :: Signature context => UpdateId context -> UpdateWitness context -> Update context
+newUpdate lastUpdateId (bridgeIn, ws) =
    let u = Update { updateTransactionData = emptyList
                   , updatePublicInputsProduced = emptyList
                   , updatePublicInputsSpent = emptyList
@@ -45,4 +43,4 @@ newUpdate lastUpdateId bridgeIn ws =
    in foldl (\acc (tx, w) -> applyTransaction tx w acc) (bridgeToLedger bridgeIn u) ws
 
 updateIsValid :: Signature context => UpdateId context -> Update context -> UpdateWitness context -> Bool context
-updateIsValid uId u w = uncurry (newUpdate uId) w == u
+updateIsValid uId u w = newUpdate uId w == u
