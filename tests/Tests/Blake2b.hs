@@ -16,6 +16,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.Blake2b
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString             (ByteString, Concat, ReverseEndianness, ShiftBits,
                                                               ToWords (..), Truncate (..))
+import           ZkFold.Symbolic.Data.Class                  (pieces)
 import           ZkFold.Symbolic.Data.Combinators            (Extend)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
@@ -41,7 +42,7 @@ blake2bSimple =
 blake2bAC :: Spec
 blake2bAC =
     let bs = compile @(Zp BLS12_381_Scalar) (blake2b_512 @8 @(ArithmeticCircuit (Zp BLS12_381_Scalar))) :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar))
-        ac = pieces @(Zp BLS12_381_Scalar) bs ()
+        ac = pieces @(ArithmeticCircuit (Zp BLS12_381_Scalar)) bs ()
     in it "simple test with cardano-crypto " $ acSizeN ac == 564239
 
 specBlake2b :: IO ()

@@ -25,17 +25,18 @@ import           ZkFold.Prelude                                            (iter
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitF, runCircuit)
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators                          (log2, maxBitsPerFieldElement)
 import           ZkFold.Symbolic.Data.Ord                                  (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, newAssigned)
 
 type Size = 7
 
 -- | Foreign-field arithmetic based on https://cr.yp.to/papers/mmecrt.pdf
-newtype FFA (p :: Natural) b = FFA (b (Vector Size))
+newtype FFA (p :: Natural) c = FFA (c (Vector Size))
 
-deriving newtype instance Arithmetic a => SymbolicData a (FFA p (ArithmeticCircuit a))
+deriving newtype instance SymbolicData c (FFA p c)
 
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])

@@ -20,10 +20,11 @@ import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit)
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional                          (Conditional (..))
 import           ZkFold.Symbolic.Data.FieldElement                         (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, newAssigned)
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
@@ -72,7 +73,7 @@ newtype Lexicographical a = Lexicographical a
 -- ^ A newtype wrapper for easy definition of Ord instances
 -- (though not necessarily a most effective one)
 
-deriving newtype instance SymbolicData a x => SymbolicData a (Lexicographical x)
+deriving newtype instance SymbolicData c x => SymbolicData c (Lexicographical x)
 
 deriving via (Lexicographical (ArithmeticCircuit a Par1))
     instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a Par1)
@@ -81,7 +82,13 @@ deriving newtype instance (Arithmetic a, Haskell.Ord a) => Ord (Bool (Interprete
 deriving newtype instance Arithmetic a => Ord (Bool (ArithmeticCircuit a)) (FieldElement (ArithmeticCircuit a))
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
-instance (SymbolicData a x, Support a x ~ (), TypeSize a x ~ 1) => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x) where
+instance
+    ( Arithmetic a
+    , SymbolicData (ArithmeticCircuit a) x
+    , Support (ArithmeticCircuit a) x ~ ()
+    , TypeSize (ArithmeticCircuit a) x ~ 1
+    ) => Ord (Bool (ArithmeticCircuit a)) (Lexicographical x) where
+
     x <= y = y >= x
 
     x <  y = y > x
@@ -94,10 +101,10 @@ instance (SymbolicData a x, Support a x ~ (), TypeSize a x ~ 1) => Ord (Bool (Ar
 
     min x y = bool @(Bool (ArithmeticCircuit a)) x y $ x > y
 
-getBitsBE :: forall a x . (SymbolicData a x, Support a x ~ (), TypeSize a x ~ 1) => x -> ArithmeticCircuit a (V.Vector (NumberOfBits a))
+getBitsBE :: forall c a x . (Arithmetic a, c ~ ArithmeticCircuit a, SymbolicData c x, Support c x ~ (), TypeSize c x ~ 1) => x -> c (V.Vector (NumberOfBits a))
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = let expansion = binaryExpansion $ hmap (Par1 . V.item) (pieces @a @x x ())
+getBitsBE x = let expansion = binaryExpansion $ hmap (Par1 . V.item) (pieces @c @x x ())
                in expansion { acOutput = V.reverse $ acOutput expansion }
 
 circuitGE :: forall a f . (Arithmetic a, Z.Zip f, Foldable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f -> Bool (ArithmeticCircuit a)

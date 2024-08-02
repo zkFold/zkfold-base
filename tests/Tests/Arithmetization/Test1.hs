@@ -17,6 +17,7 @@ import           ZkFold.Symbolic.Data.Conditional  (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Interpreter       (Interpreter)
+import           ZkFold.Symbolic.MonadCircuit      (Arithmetic)
 
 -- f x y = if (2 / x > y) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)
 testFunc :: forall c . (Field (FieldElement c), Eq (Bool c) (FieldElement c), Conditional (Bool c) (FieldElement c)) => FieldElement c -> FieldElement c -> FieldElement c

@@ -1,13 +1,13 @@
 module ZkFold.Symbolic.Data.DiscreteField where
 
-import           Data.Bool                               (bool)
-import           Prelude                                 hiding (Bool)
-import qualified Prelude                                 as Haskell
+import           Data.Bool                       (bool)
+import           Prelude                         hiding (Bool)
+import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Compiler.Arithmetizable (Arithmetic)
-import           ZkFold.Symbolic.Data.Bool               (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Interpreter             (Interpreter)
+import           ZkFold.Symbolic.Data.Bool       (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Interpreter     (Interpreter)
+import           ZkFold.Symbolic.MonadCircuit    (Arithmetic)
 
 class (BoolType b, Field a) => DiscreteField b a where
     isZero :: a -> b

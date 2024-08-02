@@ -3,14 +3,14 @@ module ZkFold.Symbolic.Data.Eq (
     elem
 ) where
 
-import           Data.Bool                               (bool)
-import qualified Data.Eq                                 as Haskell
-import           Data.Foldable                           (Foldable)
-import           GHC.Generics                            (Par1)
+import           Data.Bool                    (bool)
+import qualified Data.Eq                      as Haskell
+import           Data.Foldable                (Foldable)
+import           GHC.Generics                 (Par1)
 
-import           ZkFold.Symbolic.Compiler.Arithmetizable (Arithmetic)
-import           ZkFold.Symbolic.Data.Bool               (Bool, BoolType (..), any)
-import           ZkFold.Symbolic.Interpreter             (Interpreter)
+import           ZkFold.Symbolic.Data.Bool    (Bool, BoolType (..), any)
+import           ZkFold.Symbolic.Interpreter  (Interpreter)
+import           ZkFold.Symbolic.MonadCircuit (Arithmetic)
 
 class Eq b a where
     infix 4 ==

@@ -31,7 +31,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..),
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                             (length, (!))
-import           ZkFold.Symbolic.Compiler                   (Arithmetic, ArithmeticCircuit, inputVariables)
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, inputVariables)
+import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
