@@ -27,7 +27,7 @@ import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (Extend (..), KnownRegisterSize, NumberOfRegisters,
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), KnownRegisterSize (regSize), NumberOfRegisters,
                                                               RegisterSize (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
@@ -79,7 +79,9 @@ specUInt'
     => IO ()
 specUInt' = hspec $ do
     let n = value @n
-        m = 2 ^ n -! 1
+        m = case regSize @rs of 
+            Auto ->  2 ^ n -! 1
+            Fixed r -> 2 ^ r -! 1
     describe ("UInt" ++ show n ++ " specification") $ do
         it "Zp embeds Integer" $ do
             x <- toss m
