@@ -7,20 +7,20 @@ import           Data.Typeable                    (Typeable, cast, typeOf)
 import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Compiler         (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class
 
 -- Based on the November 2022 UPLC spec
-data Term name fun a where
-    Var       :: name -> Term name fun a
-    LamAbs    :: name -> Term name fun a -> Term name fun a
-    Apply     :: Term name fun a -> Term name fun a -> Term name fun a
-    Force     :: Term name fun a -> Term name fun a
-    Delay     :: Term name fun a -> Term name fun a
-    Constant  :: (Eq c, Typeable c, SymbolicData a c, KnownNat (TypeSize a c)) => c -> Term name fun a
-    Builtin   :: fun -> Term name fun a
-    Error     :: Term name fun a
+data Term name fun c where
+    Var       :: name -> Term name fun c
+    LamAbs    :: name -> Term name fun c -> Term name fun c
+    Apply     :: Term name fun c -> Term name fun c -> Term name fun c
+    Force     :: Term name fun c -> Term name fun c
+    Delay     :: Term name fun c -> Term name fun c
+    Constant  :: (Eq x, Typeable x, SymbolicData c x, KnownNat (TypeSize c x)) => x -> Term name fun c
+    Builtin   :: fun -> Term name fun c
+    Error     :: Term name fun c
 
-instance (Eq name, Eq fun) => Eq (Term name fun a) where
+instance (Eq name, Eq fun) => Eq (Term name fun c) where
     Var x == Var y = x == y
     LamAbs x f == LamAbs y g = x == y && f == g
     Apply f x == Apply g y = f == g && x == y

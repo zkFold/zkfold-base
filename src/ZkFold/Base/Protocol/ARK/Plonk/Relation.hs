@@ -18,6 +18,7 @@ import           ZkFold.Base.Data.Vector                      (Vector, fromVecto
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint    (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Prelude                               (replicate)
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
 
 -- Here `n` is the total number of constraints, `l` is the number of public inputs, and `a` is the field type.
 data PlonkRelation n l a = PlonkRelation
@@ -44,7 +45,7 @@ toPlonkRelation xPub ac0 =
         evalX0 = evalPolynomial evalMonomial (\x -> if x == 0 then one else var x)
 
         pubInputConstraints = map var (fromVector xPub)
-        acConstraints       = map evalX0 $ elems (constraintSystem ac)
+        acConstraints       = map evalX0 $ elems (acSystem ac)
         extraConstraints    = replicate (value @n -! acSizeN ac -! value @l) zero
 
         system = map toPlonkConstraint $ pubInputConstraints ++ acConstraints ++ extraConstraints

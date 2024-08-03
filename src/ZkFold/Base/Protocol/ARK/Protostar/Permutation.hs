@@ -10,7 +10,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate    (var)
 import           ZkFold.Base.Data.Vector                         as V
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
                                                                   SpecialSoundTranscript)
-import           ZkFold.Symbolic.Compiler                        (Arithmetic)
+import           ZkFold.Symbolic.MonadCircuit                    (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
 

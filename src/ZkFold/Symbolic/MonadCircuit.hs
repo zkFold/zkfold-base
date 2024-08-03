@@ -5,6 +5,7 @@ module ZkFold.Symbolic.MonadCircuit where
 
 import           Control.Applicative             (Applicative)
 import           Control.Monad                   (Monad (return))
+import           Data.Eq                         (Eq)
 import           Data.Function                   (id)
 import           Data.Functor                    (Functor)
 import           Data.Functor.Identity           (Identity (..))
@@ -103,6 +104,9 @@ class Monad m => MonadCircuit i a m | m -> i, m -> a where
     -- appropriate form for zkSNARK in use.
     newAssigned :: ClosedPoly i a -> m i
     newAssigned p = newConstrained (\x i -> p x - x i) p
+
+-- | Field of witnesses with decidable equality is called an ``arithmetic'' field.
+type Arithmetic a = (WitnessField a, Eq a)
 
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.

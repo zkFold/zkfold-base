@@ -9,6 +9,8 @@ import           ZkFold.Symbolic.Ledger.Types.Output    (Output)
 import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 import           ZkFold.Symbolic.Ledger.Types.Value     (Value)
 
+-- TODO: Either inputs or public inputs should be non-empty. It should be checked during validation.
+
 -- | zkFold ledger transaction.
 data Transaction context = Transaction
     { txInputs           :: List context (Input context)

@@ -18,7 +18,7 @@ type PrivateInputWitness context =
 -- | Checks if the private input existed.
 privateInputExisted ::
        Signature context
-    => BlockId context
+    => UpdateId context
     -- ^ The id of the current block.
     -> Input context
     -- ^ The transaction input to check.
@@ -43,7 +43,7 @@ privateInputExisted bId i (wTx, wCTxs) =
 -- | Checks if the private input was not spent.
 privateInputNotSpent ::
        Signature context
-    => BlockId context
+    => UpdateId context
     -- ^ The id of the current block.
     -> Input context
     -- ^ The transaction input to check.
@@ -73,7 +73,7 @@ privateInputNotSpent bId i (_, wCTxs) =
 -- | Checks if the private input is valid.
 privateInputIsValid ::
        Signature context
-    => BlockId context
+    => UpdateId context
     -- ^ The id of the current block.
     -> Input context
     -- ^ The transaction input to check.

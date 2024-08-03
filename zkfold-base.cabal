@@ -159,9 +159,9 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-      ZkFold.Symbolic.Compiler.Arithmetizable
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
+      ZkFold.Symbolic.Data.Class
       ZkFold.Symbolic.Data.Combinators
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
@@ -179,7 +179,7 @@ library
       ZkFold.Symbolic.Ledger.Types
       ZkFold.Symbolic.Ledger.Types.Address
       ZkFold.Symbolic.Ledger.Types.Basic
-      ZkFold.Symbolic.Ledger.Types.Block
+      ZkFold.Symbolic.Ledger.Types.Bridge
       ZkFold.Symbolic.Ledger.Types.Contract
       ZkFold.Symbolic.Ledger.Types.Hash
       ZkFold.Symbolic.Ledger.Types.Input
@@ -188,7 +188,7 @@ library
       ZkFold.Symbolic.Ledger.Types.Transaction
       ZkFold.Symbolic.Ledger.Types.Update
       ZkFold.Symbolic.Ledger.Types.Value
-      ZkFold.Symbolic.Ledger.Validation.Block
+      ZkFold.Symbolic.Ledger.Validation.Bridge
       ZkFold.Symbolic.Ledger.Validation.Contract
       ZkFold.Symbolic.Ledger.Validation.Common
       ZkFold.Symbolic.Ledger.Validation.PrivateInput
@@ -266,7 +266,7 @@ test-suite zkfold-base-test
       containers                                 ,
       deepseq                                    ,
       containers                                 ,
-      directory                        <= 1.3.8.3,
+      directory                        <= 1.3.8.4,
       filepath                         <= 1.5.2.0,
       hspec                                < 2.12,
       QuickCheck                                 ,

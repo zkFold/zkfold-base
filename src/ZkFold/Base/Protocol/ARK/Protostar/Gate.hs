@@ -14,7 +14,7 @@ import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProtostar (..))
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
                                                                   SpecialSoundTranscript)
-import           ZkFold.Symbolic.Compiler.Arithmetizable         (Arithmetic)
+import           ZkFold.Symbolic.MonadCircuit                    (Arithmetic)
 
 data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
 

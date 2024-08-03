@@ -46,14 +46,14 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embe
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Class                                (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
-import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData (..))
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (newAssigned, MonadCircuit (constraint, newRanged))
+import           ZkFold.Symbolic.MonadCircuit                              (newAssigned, MonadCircuit (Arithmetic, constraint, newRanged))
 import           Data.Monoid                                         (mempty)
 
 
@@ -64,13 +64,7 @@ deriving instance Generic (UInt n r backend)
 deriving instance (NFData (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => NFData (UInt n r backend)
 deriving instance (Haskell.Eq (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => Haskell.Eq (UInt n r backend)
 deriving instance (Haskell.Show (BaseField backend), Haskell.Show (backend (Vector (NumberOfRegisters (BaseField backend) n r)))) => Haskell.Show (UInt n r backend)
-
-instance Arithmetic a => FieldElementData (Interpreter a) (UInt n r (Interpreter a)) where
-    type TypeSize (Interpreter a) (UInt n r (Interpreter a)) = NumberOfRegisters a n r
-
-    toFieldElements (UInt c) = c
-
-    fromFieldElements = UInt
+deriving newtype instance SymbolicData c (UInt n r c)
 
 instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Natural (UInt n r (Interpreter (Zp p))) where
     fromConstant c =  case regSize @r of
@@ -238,14 +232,6 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Iso (UInt n r (Inte
     from = fromConstant @Natural . toConstant
 
 --------------------------------------------------------------------------------
-
-instance Arithmetic a => SymbolicData a (UInt n r (ArithmeticCircuit a)) where
-    type Support a (UInt n r (ArithmeticCircuit a)) = ()
-    type TypeSize a (UInt n r (ArithmeticCircuit a)) = NumberOfRegisters a n r
-
-    pieces (UInt c) _ = c
-    restore = UInt . ($ ())
-
 
 instance
     ( Arithmetic a

@@ -31,7 +31,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..),
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                             (length, (!))
-import           ZkFold.Symbolic.Compiler                   (Arithmetic, ArithmeticCircuit, inputVariables)
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (acInput))
+import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
@@ -54,7 +55,7 @@ instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (Scalar
         => Arbitrary (Plonk n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
-        let fullInp = length . inputVariables $ ac
+        let fullInp = length . acInput $ ac
         vecPubInp <- genSubset (value @l) fullInp
         let (omega, k1, k2) = getParams (value @n)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary

@@ -55,7 +55,7 @@ instance Arithmetic a => SpecialSoundProtocol a (RecursiveCircuit n a) where
     -- One round for Plonk
     rounds = P.const 1
 
-    outputLength (RecursiveCircuit _ c) = P.fromIntegral $ M.size $ constraintSystem c
+    outputLength (RecursiveCircuit _ c) = P.fromIntegral $ M.size $ acSystem c
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
@@ -63,7 +63,7 @@ instance Arithmetic a => SpecialSoundProtocol a (RecursiveCircuit n a) where
 
     -- We can use the polynomial system from the circuit, no need to build it from scratch
     --
-    algebraicMap rc _ _ _ = M.elems $ constraintSystem (circuit rc)
+    algebraicMap rc _ _ _ = M.elems $ acSystem (circuit rc)
 
     -- The transcript is only one prover message since this is a one-round protocol
     --

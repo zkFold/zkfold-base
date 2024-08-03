@@ -9,10 +9,11 @@ import           Numeric.Natural                   (Natural)
 import           Prelude                           hiding (Eq (..), Num (..), any, length, not, (!!), (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Package          (Package, unpacked)
+import           ZkFold.Base.Data.Package          (unpacked)
 import           ZkFold.Base.Data.Vector           (fromVector)
-import           ZkFold.Symbolic.Class             (BaseField)
-import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..), FieldElementData (..))
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.FieldElement
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5
@@ -39,5 +40,5 @@ mimcHashN xs k = go
 class MiMCHash a c x where
     mimcHash :: [a] -> a -> x -> FieldElement c
 
-instance (Package c, FieldElementData c x, BaseField c ~ a, FromConstant a (c Par1), Ring (c Par1)) => MiMCHash a c x where
-    mimcHash xs k = FieldElement . mimcHashN xs k . fromVector . unpacked . toFieldElements
+instance (Symbolic c, BaseField c ~ a, SymbolicData c x, Support c x ~ (), FromConstant a (c Par1), Ring (c Par1)) => MiMCHash a c x where
+    mimcHash xs k = FieldElement . mimcHashN xs k . fromVector . unpacked . flip pieces ()

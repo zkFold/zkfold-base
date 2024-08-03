@@ -21,6 +21,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embed)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.MonadCircuit                           (Arithmetic)
 
 correctHom0 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a
