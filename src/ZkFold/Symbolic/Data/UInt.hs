@@ -53,7 +53,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (newAssigned, MonadCircuit (Arithmetic, constraint, newRanged))
+import           ZkFold.Symbolic.MonadCircuit                              (newAssigned, Arithmetic, MonadCircuit (constraint, newRanged))
 import           Data.Monoid                                         (mempty)
 
 
@@ -96,8 +96,8 @@ instance
                 base = (2 :: Natural) ^ rs
                 v = Vector $ fromConstant <$> cs ::  Vector (NumberOfRegisters a n r) a
                 f = for v $ \x -> newAssigned $ fromConstant x
-                (os, r) = runState f (mempty :: Circuit a) 
-            in UInt $ ArithmeticCircuit { acCircuit = r {acRange = fromList [(1, fromConstant base - one)]}, acOutput = os }
+                (os, r) = runState f mempty
+            in UInt $ r { acRange = fromList [(1, fromConstant base - one)], acOutput = os }
 
 instance
     ( FromConstant Natural a
@@ -575,8 +575,8 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r 
                 base = (2 :: Natural) ^ rs
                 v = Vector $ fromConstant <$> cs ::  Vector (NumberOfRegisters a n r) a
                 f = for v $ \x -> newAssigned $ fromConstant x
-                (os, r) = runState f (mempty :: Circuit a) 
-            return $ UInt $ ArithmeticCircuit { acCircuit = r {acRange = fromList [(1, fromConstant base - one)]}, acOutput = os }
+                (os, r) = runState f mempty
+            return $ UInt $ r {acRange = fromList [(1, fromConstant base - one)], acOutput = os }
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n r (ArithmeticCircuit a)) where
@@ -804,10 +804,10 @@ fullAdded i j c = do
     k <- newAssigned (\v -> v i + v j)
     newAssigned (\v -> v k + v c)
 
-fullNegater :: MonadBlueprint i a m => Natural -> i -> i -> i -> m (i, i)
-fullNegater r xk yk c = fullNegated xk yk c >>= splitExpansion r 1
+-- fullNegater :: MonadBlueprint i a m => Natural -> i -> i -> i -> m (i, i)
+-- fullNegater r xk yk c = fullNegated xk yk c >>= splitExpansion r 1
 
-fullNegated :: MonadBlueprint i a m => i -> i -> i -> m i
-fullNegated i j c = do
-    k <- newAssigned (\v -> v i - v j)
-    newAssigned (\v -> v k + v c)
+-- fullNegated :: MonadBlueprint i a m => i -> i -> i -> m i
+-- fullNegated i j c = do
+--     k <- newAssigned (\v -> v i - v j)
+--     newAssigned (\v -> v k + v c)
