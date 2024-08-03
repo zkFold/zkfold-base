@@ -22,7 +22,7 @@ import           Data.Functor                                              ((<$>
 import           Data.Kind                                                 (Type)
 import           Data.List                                                 (unfoldr, zip)
 import           Data.Map                                                  (fromList, (!))
-import           Data.Traversable                                          (Traversable, for, traverse)
+import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
 import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Generic, Par1 (..))
@@ -53,7 +53,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (newAssigned, Arithmetic, MonadCircuit (constraint, newRanged))
+import           ZkFold.Symbolic.MonadCircuit                              (newAssigned, MonadCircuit (constraint, newRanged))
 import           Data.Monoid                                         (mempty)
 
 
@@ -71,11 +71,10 @@ instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Natura
         Auto ->
             let (lo, hi, _) = cast @(Zp p) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
             in UInt $ Interpreter $ V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
-
-        Fixed rs -> 
+        Fixed rs ->
             let (lo, hi, _) = cast @(Zp p) @n @r . (`Haskell.mod` (2 ^ rs)) $ c
             in UInt $ Interpreter $ V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
-            
+
 instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Integer (UInt n r (Interpreter (Zp p))) where
     fromConstant = case regSize @r of
         Auto -> fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
@@ -91,7 +90,7 @@ instance
         Auto ->
             let (lo, hi, _) = cast @a @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
             in UInt $ embedV $ Vector $ fromConstant <$> (lo <> [hi])
-        Fixed rs -> 
+        Fixed rs ->
             let cs = (c `Haskell.mod` base) : replicate (numberOfRegisters @a @n @r -! 1) zero
                 base = (2 :: Natural) ^ rs
                 v = Vector $ fromConstant <$> cs ::  Vector (NumberOfRegisters a n r) a
@@ -186,8 +185,7 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Ord (Bool (Interpre
     min x y = fromConstant $ Haskell.min (toConstant @_ @Natural x) (toConstant y)
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Natural where
-    toConstant (UInt (Interpreter xs)) = 
-        foldr (\p y -> fromZp p + base * y) 0 xs
+    toConstant (UInt (Interpreter xs)) = foldr (\p y -> fromZp p + base * y) 0 xs
         where base = 2 ^ registerSize @(Zp p) @n @r
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Integer where
@@ -435,42 +433,29 @@ instance
                         (k, _) <- newRanged (fromConstant base - one) (\v -> fromConstant base - v z) >>= splitExpansion rs 1
                         return (k: replicate (numberOfRegisters @a @n @r -! 1) j)
 
-            Auto ->
-                let y = 2 ^ registerSize @a @n @r
-                    ys = replicate (numberOfRegisters @a @n @r -! 2) (2 ^ registerSize @a @n @r -! 1)
-                    y' = 2 ^ highRegisterSize @a @n @r -! 1
-                    ns
-                        | numberOfRegisters @a @n @r Haskell.== 1 = V.unsafeToVector [y' + 1]
-                        | otherwise = V.unsafeToVector $ (y : ys) <> [y']
-                in UInt (negateN ns x)
+            Auto -> UInt (circuitF $ V.unsafeToVector <$> solve)
+                where
+                solve :: MonadBlueprint i a m => m [i]
+                solve = do
+                    j <- newAssigned (Haskell.const zero)
 
-negateN :: (Arithmetic a, Z.Zip f, Traversable f) => f Natural -> ArithmeticCircuit a f -> ArithmeticCircuit a f
-negateN ns r = circuitF $ do
-    is <- runCircuit r
-    for (Z.zip is ns) $ \(i, n) -> newAssigned (\v -> fromConstant n - v i)
-
-            -- Auto -> UInt (circuitF $ V.unsafeToVector <$> solve)
-            --     where
-            --     solve :: MonadBlueprint i a m => m [i]
-            --     solve = do
-            --         j <- newAssigned (Haskell.const zero)
-
-            --         let lo = fromConstant $ (2 :: Natural) ^ registerSize @a @n @r
-            --             mid = replicate (numberOfRegisters @a @n @r -! 2) (fromConstant $ (2 :: Natural) ^ registerSize @a @n @r -! 1)
-            --             hi = fromConstant $ (2 :: Natural) ^ highRegisterSize @a @n @r -! 1
-            --             y = embedV $ V.unsafeToVector ([lo] <> mid <> [hi])
-
-            --         xs <- V.fromVector <$> runCircuit x
-            --         ys <- V.fromVector <$> runCircuit y
-            --         let midx = Haskell.init xs
-            --             z    = Haskell.last xs
-            --             midy = Haskell.init ys
-            --             w    = Haskell.last ys
-            --         (zs, c) <- flip runStateT j $ traverse StateT $
-            --             Z.zipWith (fullNegater $ registerSize @a @n @r) midy midx
-            --         k <- fullNegated w z c
-            --         (ks, _) <- splitExpansion (highRegisterSize @a @n @r) 1 k
-            --         return (zs ++ [ks])
+                    let lo = fromConstant $ (2 :: Natural) ^ registerSize @a @n @r 
+                        mid = replicate (numberOfRegisters @a @n @r -! 2) (fromConstant $ (2 :: Natural) ^ registerSize @a @n @r -! 1)
+                        hi = fromConstant $ (2 :: Natural) ^ highRegisterSize @a @n @r -! 1
+                        ns
+                            | numberOfRegisters @a @n @r Haskell.== 1 = embedV $ V.unsafeToVector [hi + one] 
+                            | otherwise = embedV $ V.unsafeToVector $ (lo : mid) <> [hi]
+                    xs <- V.fromVector <$> runCircuit x
+                    ys <- V.fromVector <$> runCircuit ns
+                    let midx = Haskell.init xs
+                        z    = Haskell.last xs
+                        midy = Haskell.init ys
+                        w    = Haskell.last ys
+                    (zs, c) <- flip runStateT j $ traverse StateT $
+                        Z.zipWith (fullNegater $ registerSize @a @n @r) midy midx
+                    k <- fullNegated w z c
+                    (ks, _) <- splitExpansion (highRegisterSize @a @n @r) 1 k
+                    return (zs <> [ks])
 
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => MultiplicativeSemigroup (UInt n rs (ArithmeticCircuit a)) where
@@ -606,7 +591,7 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv Natural 
         Auto -> case cast @(Zp p) @n @r n of
             (lo, hi, []) -> UInt $ Interpreter $ V.unsafeToVector $ (toZp . Haskell.fromIntegral <$> lo) <> [toZp . Haskell.fromIntegral $ hi]
             _            -> error "strictConv: overflow"
-        Fixed rs -> 
+        Fixed rs ->
             let ns = replicate (numberOfRegisters @(Zp p) @n @r -! 1) 0
             in case div n (2 ^ rs) of
                 0 -> UInt $ Interpreter $ V.unsafeToVector $ (toZp . Haskell.fromIntegral <$> [n]) <> (toZp <$> ns)
@@ -617,10 +602,15 @@ instance (FromConstant Natural a, Arithmetic a, KnownNat n, KnownRegisterSize rs
         Auto -> case cast @a @n @rs n of
             (lo, hi, []) -> UInt $ embedV $ V.unsafeToVector $ fromConstant <$> (lo <> [hi])
             _            -> error "strictConv: overflow"
-        Fixed rs -> 
+        Fixed rs ->
             let ns = replicate (numberOfRegisters @a @n @rs -! 1) 0
             in case div n (2 ^ rs) of
-                0 -> UInt $ embedV $ V.unsafeToVector $ fromConstant <$> n: ns
+                0 -> 
+                    let v = V.unsafeToVector $ n: ns 
+                        f = for v $ \x -> newAssigned $ fromConstant x
+                        (os, r) = runState f mempty
+                        base = (2 :: Natural) ^ rs
+                    in UInt $ r {acRange = fromList [(1, fromConstant base - one)], acOutput = os } 
                 _ -> error "strictConv: overflow"
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r (Interpreter (Zp p))) where
@@ -804,10 +794,10 @@ fullAdded i j c = do
     k <- newAssigned (\v -> v i + v j)
     newAssigned (\v -> v k + v c)
 
--- fullNegater :: MonadBlueprint i a m => Natural -> i -> i -> i -> m (i, i)
--- fullNegater r xk yk c = fullNegated xk yk c >>= splitExpansion r 1
+fullNegater :: MonadBlueprint i a m => Natural -> i -> i -> i -> m (i, i)
+fullNegater r xk yk c = fullNegated xk yk c >>= splitExpansion r 1
 
--- fullNegated :: MonadBlueprint i a m => i -> i -> i -> m i
--- fullNegated i j c = do
---     k <- newAssigned (\v -> v i - v j)
---     newAssigned (\v -> v k + v c)
+fullNegated :: MonadBlueprint i a m => i -> i -> i -> m i
+fullNegated i j c = do
+    k <- newAssigned (\v -> v i - v j)
+    newAssigned (\v -> v k + v c)
