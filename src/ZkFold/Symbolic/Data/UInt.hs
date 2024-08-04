@@ -22,6 +22,7 @@ import           Data.Functor                                              ((<$>
 import           Data.Kind                                                 (Type)
 import           Data.List                                                 (unfoldr, zip)
 import           Data.Map                                                  (fromList, (!))
+import           Data.Monoid                                               (mempty)
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
 import qualified Data.Zip                                                  as Z
@@ -41,8 +42,8 @@ import           ZkFold.Base.Data.Vector                                   (Vect
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Class                                     hiding (embed)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, horner, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion, horner)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -53,8 +54,8 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (newAssigned, MonadCircuit (constraint, newRanged))
-import           Data.Monoid                                         (mempty)
+import           ZkFold.Symbolic.MonadCircuit                              (MonadCircuit (constraint, newRanged),
+                                                                            newAssigned)
 
 
 -- TODO (Issue #18): hide this constructor
@@ -77,7 +78,7 @@ instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Natura
 
 instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Integer (UInt n r (Interpreter (Zp p))) where
     fromConstant = case regSize @r of
-        Auto -> fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
+        Auto     -> fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
         Fixed rs -> fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ rs))
 
 instance
@@ -439,11 +440,11 @@ instance
                 solve = do
                     j <- newAssigned (Haskell.const zero)
 
-                    let lo = fromConstant $ (2 :: Natural) ^ registerSize @a @n @r 
+                    let lo = fromConstant $ (2 :: Natural) ^ registerSize @a @n @r
                         mid = replicate (numberOfRegisters @a @n @r -! 2) (fromConstant $ (2 :: Natural) ^ registerSize @a @n @r -! 1)
                         hi = fromConstant $ (2 :: Natural) ^ highRegisterSize @a @n @r -! 1
                         ns
-                            | numberOfRegisters @a @n @r Haskell.== 1 = embedV $ V.unsafeToVector [hi + one] 
+                            | numberOfRegisters @a @n @r Haskell.== 1 = embedV $ V.unsafeToVector [hi + one]
                             | otherwise = embedV $ V.unsafeToVector $ (lo : mid) <> [hi]
                     xs <- V.fromVector <$> runCircuit x
                     ys <- V.fromVector <$> runCircuit ns
@@ -605,12 +606,12 @@ instance (FromConstant Natural a, Arithmetic a, KnownNat n, KnownRegisterSize rs
         Fixed rs ->
             let ns = replicate (numberOfRegisters @a @n @rs -! 1) 0
             in case div n (2 ^ rs) of
-                0 -> 
-                    let v = V.unsafeToVector $ n: ns 
+                0 ->
+                    let v = V.unsafeToVector $ n: ns
                         f = for v $ \x -> newAssigned $ fromConstant x
                         (os, r) = runState f mempty
                         base = (2 :: Natural) ^ rs
-                    in UInt $ r {acRange = fromList [(1, fromConstant base - one)], acOutput = os } 
+                    in UInt $ r {acRange = fromList [(1, fromConstant base - one)], acOutput = os }
                 _ -> error "strictConv: overflow"
 
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r (Interpreter (Zp p))) where
