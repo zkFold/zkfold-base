@@ -30,14 +30,14 @@ import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Par1)
 import           GHC.IsList                                                (IsList (..))
 import           Prelude                                                   hiding (Bool, Eq (..), length, negate,
-                                                                            splitAt, (!!), (*), (+), (-), (^))
+                                                                            splitAt, (!!), (*), (+), (-), (^), take, drop)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate              (variables)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (length, splitAt, (!!))
+import           ZkFold.Prelude                                            (length, (!!), take, drop)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..), acInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.MonadCircuit
@@ -76,17 +76,19 @@ expansion n k = do
     constraint (\x -> x k - x k')
     return bits
 
-splitExpansion :: MonadBlueprint i a m => Natural -> Natural -> i -> m (i, i)
+splitExpansion :: (MonadBlueprint i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
 -- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).
 splitExpansion n1 n2 k = do
-    bits <- bitsOf (n1 + n2) k
-    let (lo, hi) = splitAt n1 bits
-    l <- horner lo
-    h <- horner hi
+    let f x y = x + y + y
+    l <- newRanged (fromConstant $ (2 :: Natural) ^ n1) $ foldr f zero . take n1 . repr . ($ k)
+    h <- newRanged (fromConstant $ (2 :: Natural) ^ n2) $ foldr f zero . take n2 . drop n1 . repr . ($ k)
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
+    where
+        repr :: forall b . (BinaryExpansion b, Bits b ~ [b]) => b -> [b]
+        repr = padBits (n1 + n2) . binaryExpansion
 
 bitsOf :: MonadBlueprint i a m => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller

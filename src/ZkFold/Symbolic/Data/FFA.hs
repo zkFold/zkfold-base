@@ -106,7 +106,7 @@ condSub m x = fst <$> condSubOF m x
 smallCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
 smallCut = zipWithM condSub $ coprimes @a
 
-bigSub :: MonadBlueprint i a m => Natural -> i -> m i
+bigSub :: (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m i
 bigSub m j = trimPow j >>= trimPow >>= condSub m
   where
     s = Haskell.ceiling (log2 m) :: Natural

@@ -3,7 +3,6 @@
 {-# LANGUAGE TypeOperators       #-}
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module Tests.UInt (specUInt) where
 
@@ -13,11 +12,11 @@ import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1))
-import           Prelude                                     (map, show, type (~))
+import           Prelude                                     (show, type (~))
 import qualified Prelude                                     as P
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (describe, hspec)
-import           Test.QuickCheck                             (Gen, Property, withMaxSuccess, (===))
+import           Test.QuickCheck                             (Gen, Property, withMaxSuccess, (.&.), (===))
 import           Tests.ArithmeticCircuit                     (exec1, it)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -28,8 +27,8 @@ import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (Extend (..), KnownRegisterSize (regSize),
-                                                              NumberOfRegisters, RegisterSize (..), Shrink (..))
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), KnownRegisterSize, NumberOfRegisters,
+                                                              RegisterSize (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -80,9 +79,7 @@ specUInt'
     => IO ()
 specUInt' = hspec $ do
     let n = value @n
-        m = case regSize @rs of
-            Auto    ->  2 ^ n -! 1
-            Fixed r -> 2 ^ r -! 1
+        m = 2 ^ n -! 1
     describe ("UInt" ++ show n ++ " specification") $ do
         it "Zp embeds Integer" $ do
             x <- toss m
@@ -121,12 +118,11 @@ specUInt' = hspec $ do
                 y = y' `P.div` P.gcd x' y'
 
                 -- We will test Bezout coefficients by multiplying two UInts less than 2^n, hence we need 2^(2n) bits to store the result
-                zpX' = fromConstant x :: UInt (2 * n) rs (Interpreter (Zp p))
-                zpY' = fromConstant y
-                (s', t', _) = eea zpX' zpY'
+                zpX = fromConstant x :: UInt (2 * n) rs (Interpreter (Zp p))
+                zpY = fromConstant y
+                (s, t, _) = eea zpX zpY
             -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
-                [zpX, s, zpY, t] =  map toConstant  [zpX', s', zpY', t']
-            return $ ((zpX * s) `mod`zpY, (zpY * t) `mod` zpX) === (1 :: Natural, 1 :: Natural)
+            return $ ((zpX * s) `mod` zpY === one) .&. ((zpY * t) `mod` zpX === one)
         it "has one" $ execAcUint @(Zp p) @n @rs one === execZpUint @_ @n @rs one
         it "strictly adds correctly" $ do
             x <- toss m
