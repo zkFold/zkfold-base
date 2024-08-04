@@ -29,15 +29,15 @@ import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Par1)
 import           GHC.IsList                                                (IsList (..))
-import           Prelude                                                   hiding (Bool, Eq (..), length, negate,
-                                                                            splitAt, (!!), (*), (+), (-), (^), take, drop)
+import           Prelude                                                   hiding (Bool, Eq (..), drop, length, negate,
+                                                                            splitAt, take, (!!), (*), (+), (-), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate              (variables)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (length, (!!), take, drop)
+import           ZkFold.Prelude                                            (drop, length, take, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..), acInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.MonadCircuit
