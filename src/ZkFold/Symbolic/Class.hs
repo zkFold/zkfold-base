@@ -68,6 +68,18 @@ fromCircuit2F ::
 -- | Runs the binary @'CircuitFun'@ in a generic context.
 fromCircuit2F x y m = fromCircuitF (hpair x y) (uncurryP m)
 
+symbolic3F ::
+    (Symbolic c, BaseField c ~ a) => c f -> c g -> c h -> (f a -> g a -> h a -> k a) ->
+    (forall i m. MonadCircuit i a m => f i -> g i -> h i -> m (k i)) -> c k
+-- | Runs the ternary function from @f@, @g@ and @h@ into @k@ in a context @c@.
+symbolic3F x y z f m = symbolic2F (hpair x y) z (uncurryP f) (uncurryP m)
+
+fromCircuit3F ::
+    Symbolic c => c f -> c g -> c h ->
+    (forall i m. MonadCircuit i (BaseField c) m => f i -> g i -> h i -> m (k i)) -> c k
+-- | Runs the ternary @'CircuitFun'@ in a generic context.
+fromCircuit3F x y z m = fromCircuit2F (hpair x y) z (uncurryP m)
+
 symbolicVF ::
     (Symbolic c, BaseField c ~ a, Foldable f, Functor f) =>
     f (c g) -> (f (g a) -> h a) ->

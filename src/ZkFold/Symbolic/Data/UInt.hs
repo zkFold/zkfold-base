@@ -127,11 +127,12 @@ cast n =
 --
 eea
     :: forall n b r
-    .  EuclideanDomain (UInt n r b)
+    .  Symbolic b
+    => EuclideanDomain (UInt n r b)
     => KnownNat n
+    => KnownNat (NumberOfRegisters (BaseField b) n r)
     => AdditiveGroup (UInt n r b)
     => Eq (Bool b) (UInt n r b)
-    => Conditional (Bool b) (UInt n r b, UInt n r b, UInt n r b)
     => UInt n r b -> UInt n r b -> (UInt n r b, UInt n r b, UInt n r b)
 eea a b = eea' 1 a b one zero zero one
     where
@@ -253,6 +254,7 @@ instance
     , KnownNat (r + r)
     , KnownRegisterSize rs
     , r ~ NumberOfRegisters (BaseField b) n rs
+    , Symbolic b
     , NFData (b (Vector r))
     , Ord (Bool b) (UInt n rs b)
     , AdditiveGroup (UInt n rs b)
@@ -262,8 +264,6 @@ instance
     , BitState ByteString n b
     , Iso (ByteString n b) (UInt n rs b)
     , Eq (Bool b) (UInt n rs b)
-    , Conditional (Bool b) (UInt n rs b)
-    , Conditional (Bool b) (UInt n rs b, UInt n rs b)
     , 1 + (r - 1) ~ r
     , 1 <= r
     ) => EuclideanDomain (UInt n rs b) where
