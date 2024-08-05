@@ -37,7 +37,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (Mona
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class                                (SymbolicData (..))
 import           ZkFold.Symbolic.Data.DiscreteField
-import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
 
 ------------------------------------- Instances -------------------------------------
@@ -165,10 +164,6 @@ instance (Arithmetic a, KnownNat n, 1 <= n) => DiscreteField (Bool (ArithmeticCi
 
 instance Arithmetic a => DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a Par1) where
     isZero = Bool . isZeroC
-
-instance (Arithmetic a, DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a f)) => Eq (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a f) where
-    x == y = isZero (x - y)
-    x /= y = not $ isZero (x - y)
 
 instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit a Par1) where
     arbitrary = do

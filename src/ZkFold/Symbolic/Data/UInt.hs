@@ -52,7 +52,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, constraint, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                              (constraint, newAssigned)
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (backend :: (Type -> Type) -> Type) = UInt (backend (Vector (NumberOfRegisters (BaseField backend) n r)))
@@ -465,7 +465,7 @@ instance
     ) => Ring (UInt n r (ArithmeticCircuit a))
 
 deriving via (Structural (UInt n rs (ArithmeticCircuit a)))
-         instance (Arithmetic a, KnownNat r, r ~ NumberOfRegisters a n rs, 1 <= r) =>
+         instance (Arithmetic a, r ~ NumberOfRegisters a n rs, 1 <= r) =>
          Eq (Bool (ArithmeticCircuit a)) (UInt n rs (ArithmeticCircuit a))
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r (ArithmeticCircuit a)) where

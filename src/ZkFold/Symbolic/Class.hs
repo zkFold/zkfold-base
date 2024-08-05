@@ -1,6 +1,16 @@
 {-# LANGUAGE TypeOperators #-}
 
-module ZkFold.Symbolic.Class where
+module ZkFold.Symbolic.Class
+  ( Symbolic (..)
+  , Arithmetic
+  , embed
+  , symbolic2F
+  , fromCircuit2F
+  , symbolic3F
+  , fromCircuit3F
+  , symbolicVF
+  , fromCircuitVF
+  ) where
 
 import           Data.Foldable                    (Foldable)
 import           Data.Function                    (const, ($), (.))
@@ -28,7 +38,7 @@ type CircuitFun f g a = forall i m. MonadCircuit i a m => f i -> m (g i)
 
 -- | A Symbolic DSL for performant pure computations with arithmetic circuits.
 -- @c@ is a generic context in which computations are performed.
-class (HApplicative c, Package c, WitnessField (BaseField c)) => Symbolic c where
+class (HApplicative c, Package c, Arithmetic (BaseField c)) => Symbolic c where
     -- | Base algebraic field over which computations are performed.
     type BaseField c :: Type
 
