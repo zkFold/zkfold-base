@@ -9,7 +9,6 @@ import qualified Data.Map                                   as Map
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Generic)
 import           GHC.IsList                                 (IsList (..))
-import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 import           System.Random                              (RandomGen, mkStdGen, uniformR)
 import           Test.QuickCheck                            (Arbitrary (..), Gen, shuffle)

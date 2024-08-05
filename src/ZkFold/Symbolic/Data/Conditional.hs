@@ -1,10 +1,15 @@
 module ZkFold.Symbolic.Data.Conditional where
 
-import           Prelude                   hiding (Bool, Num (..), (/))
+import           Data.Function                   (($))
+import           Data.Zip                        (zipWith)
+import           GHC.Generics                    (Par1 (..))
 
-import           ZkFold.Symbolic.Data.Bool (BoolType (..))
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Data.Bool       (Bool (Bool))
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
 
-class BoolType b => Conditional b a where
+class Conditional b a where
     bool :: a -> a -> b -> a
 
     gif :: b -> a -> a -> a
@@ -13,5 +18,8 @@ class BoolType b => Conditional b a where
     (?) :: b -> a -> a -> a
     (?) = gif
 
-instance {-# OVERLAPPABLE #-} (BoolType b, Eq b) => Conditional b x where
-    bool f t b = if b == true then t else f
+instance (Ring a, SymbolicData (Interpreter a) x) => Conditional (Bool (Interpreter a)) x where
+    bool x y (Bool (Interpreter (Par1 b))) =
+       restore $ \i -> Interpreter $ zipWith (\x' y' -> (one - b) * x' + b * y')
+          (runInterpreter $ pieces x i)
+          (runInterpreter $ pieces y i)

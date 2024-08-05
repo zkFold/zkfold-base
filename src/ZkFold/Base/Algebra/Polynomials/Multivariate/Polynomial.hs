@@ -38,9 +38,14 @@ newtype Poly c i j = P [(c, Mono i j)]
 polynomial :: Polynomial c i j => [(c, Mono i j)] -> Poly c i j
 polynomial = foldr (\(c, m) x -> if c == zero then x else P [(c, m)] + x) zero
 
-evalPolynomial :: forall c i j b .
-    Algebra c b =>
-    ((i -> b) -> Mono i j -> b) -> (i -> b) -> Poly c i j -> b
+evalPolynomial
+    :: forall c i j b
+     . AdditiveMonoid b
+    => Scale c b
+    => ((i -> b) -> Mono i j -> b)
+    -> (i -> b)
+    -> Poly c i j
+    -> b
 evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 
 variables :: forall c .

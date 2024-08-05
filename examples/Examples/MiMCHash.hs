@@ -2,6 +2,7 @@
 
 module Examples.MiMCHash (exampleMiMC) where
 
+import           GHC.Generics                                   (Par1)
 import           Prelude                                        hiding (Eq (..), Num (..), any, not, (!!), (/), (^),
                                                                  (||))
 
@@ -20,4 +21,4 @@ exampleMiMC = do
 
     putStrLn "\nExample: MiMC hash function\n"
 
-    compileIO @F file (mimcHash2 @F @(ArithmeticCircuit 1 F) mimcConstants zero)
+    compileIO @F file (mimcHash2 @F @(ArithmeticCircuit F Par1) mimcConstants zero)

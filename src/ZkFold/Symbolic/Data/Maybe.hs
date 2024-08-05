@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -6,82 +7,91 @@ module ZkFold.Symbolic.Data.Maybe (
     Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, find
 ) where
 
-import           Prelude                                                (foldr, type (~), ($))
-import qualified Prelude                                                as Haskell
+import           Data.Function                                       ((.))
+import           GHC.Generics                                        (Par1 (..))
+import           Prelude                                             (foldr, type (~), ($))
+import qualified Prelude                                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector                                as V
-import           ZkFold.Base.Data.Vector                                (Vector)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (embedV)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Compiler.Arithmetizable
+import           ZkFold.Base.Control.HApplicative                    (HApplicative, hliftA2)
+import           ZkFold.Base.Data.HFunctor                           (HFunctor, hmap)
+import qualified ZkFold.Base.Data.Vector                             as V
+import           ZkFold.Base.Data.Vector                             (Vector)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.DiscreteField
 
-data Maybe u a = Maybe a (u a)
+data Maybe context x = Maybe (Bool context) x
   deriving stock
-    ( Haskell.Eq
-    , Haskell.Functor
+    ( Haskell.Functor
     , Haskell.Foldable
     , Haskell.Traversable
     )
 
-just :: Field a => u a -> Maybe u a
-just = Maybe one
+deriving stock instance (Haskell.Eq (context Par1), Haskell.Eq x) => Haskell.Eq (Maybe context x)
+
+just :: Symbolic c => x -> Maybe c x
+just = Maybe true
 
 nothing
-    :: forall a u k
-    .  SymbolicData a (u (ArithmeticCircuit 1 a))
-    => k ~ TypeSize a (u (ArithmeticCircuit 1 a))
+    :: forall c x k
+    .  Symbolic c
+    => SymbolicData c x
+    => k ~ TypeSize c x
     => KnownNat k
-    => Maybe u (ArithmeticCircuit 1 a)
-nothing = Maybe zero (let ArithmeticCircuit c o = embedV $ Haskell.pure @(Vector k) (zero @a) in restore c o)
+    => Maybe c x
+nothing = Maybe false (let c = embed @c $ Haskell.pure @(Vector k) zero in restore (Haskell.const c))
 
 fromMaybe
-    :: SymbolicData a (u (ArithmeticCircuit 1 a))
-    => 1 ~ TypeSize a (u (ArithmeticCircuit 1 a))
-    => u (ArithmeticCircuit 1 a)
-    -> Maybe u (ArithmeticCircuit 1 a)
-    -> u (ArithmeticCircuit 1 a)
-fromMaybe a (Maybe h t) =
+    :: forall c x
+    .  HFunctor c
+    => Ring (c (Vector 1))
+    => SymbolicData c x
+    => 1 ~ TypeSize c x
+    => x
+    -> Maybe c x
+    -> x
+fromMaybe a (Maybe (Bool h) t) = restore $ \i ->
   let
-    as = pieces a
-    ts = pieces t
-    merge a' t' = (t' - a') * h + a'
-    ArithmeticCircuit c o = merge as ts
+    as = pieces a i
+    ts = pieces t i
   in
-    restore c o
+    (ts - as) * hmap (V.singleton . unPar1) h + as
 
-isNothing :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
-isNothing (Maybe h _) = isZero h
+isNothing :: Symbolic c => Maybe c x -> Bool c
+isNothing (Maybe h _) = not h
 
-isJust :: (DiscreteField (Bool a) a) => Maybe u a -> Bool a
-isJust = not Haskell.. isNothing
+isJust :: Maybe c x -> Bool c
+isJust (Maybe h _) = h
 
 instance
-    ( SymbolicData a (u (ArithmeticCircuit 1 a))
-    , k ~ TypeSize a (u (ArithmeticCircuit 1 a))
-    , k1 ~ 1 + k
+    ( HApplicative c
+    , SymbolicData c x
+    , Support c x ~ ()
+    , k ~ TypeSize c x
+    , k1 ~ k + 1
     , (k1 - 1) ~ k)
-  => SymbolicData a (Maybe u (ArithmeticCircuit 1 a)) where
-    type TypeSize a (Maybe u (ArithmeticCircuit 1 a)) = 1 + TypeSize a (u (ArithmeticCircuit 1 a))
-    pieces (Maybe h t) = h `joinCircuits` pieces t
-    restore c o = Maybe (c `withOutputs` V.take @1 o) (restore c (V.drop @1 o))
+  => SymbolicData c (Maybe c x) where
+    type Support c (Maybe c x) = ()
+    type TypeSize c (Maybe c x) = TypeSize c x + 1
+    pieces (Maybe (Bool h) t) i = hliftA2 (\(Par1 h') t' -> h' V..: t') h (pieces t i)
+    restore f = Maybe (restore (hmap V.take . f)) (restore (hmap V.tail . f))
 
-maybe :: forall a b f .
-    Conditional (Bool a) b =>
-    DiscreteField (Bool a) a =>
-    b -> (f a -> b) -> Maybe f a -> b
-maybe d h x@(Maybe _ v) = bool @(Bool a) d (h v) $ isNothing x
+maybe :: forall a b c .
+    Symbolic c =>
+    Conditional (Bool c) b =>
+    b -> (a -> b) -> Maybe c a -> b
+maybe d h x@(Maybe _ v) = bool @(Bool c) d (h v) $ isNothing x
 
-find :: forall a f t .
+find :: forall a c t .
+    Symbolic c =>
+    SymbolicData c a =>
+    KnownNat (TypeSize c a) =>
     Haskell.Foldable t =>
-    AdditiveMonoid (f a) =>
-    Conditional (Bool a) (Maybe f a) =>
-    DiscreteField (Bool a) a =>
-    (f a -> Bool a) -> t (f a) -> Maybe f a
-find p = let n = Maybe zero zero in
-    foldr (\i r -> maybe (bool @(Bool a) n (just i) $ p i) (Haskell.const r) $ r) n
+    Conditional (Bool c) (Maybe c a) =>
+    (a -> Bool c) -> t a -> Maybe c a
+find p = let n = nothing in
+    foldr (\i r -> maybe @a @_ @c (bool @(Bool c) n (just i) $ p i) (Haskell.const r) r) n

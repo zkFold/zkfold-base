@@ -7,9 +7,9 @@
 module ZkFold.Base.Algebra.Basic.Class where
 
 import           Data.Bool                        (bool)
+import           Data.Foldable                    (foldl')
 import           Data.Kind                        (Type)
 import           GHC.Natural                      (naturalFromInteger)
-import           Numeric.Natural                  (Natural)
 import           Prelude                          hiding (Num (..), div, divMod, length, mod, negate, product,
                                                    replicate, sum, (/), (^))
 import qualified Prelude                          as Haskell
@@ -99,6 +99,7 @@ class (MultiplicativeSemigroup a, Exponent a Natural) => MultiplicativeMonoid a 
     -- [Right identity] @x * one == x@
     one :: a
 
+{-# INLINE natPow #-}
 natPow :: MultiplicativeMonoid a => a -> Natural -> a
 -- | A default implementation for natural exponentiation. Uses only @('*')@ and
 -- @'one'@ so doesn't loop via an @'Exponent' Natural a@ instance.
@@ -109,10 +110,10 @@ natPow a n = product $ zipWith f (binaryExpansion n) (iterate (\x -> x * x) a)
     f _ _ = error "^: This should never happen."
 
 product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
-product = foldl (*) one
+product = foldl' (*) one
 
 multiExp :: (MultiplicativeMonoid a, Exponent a b, Foldable t) => a -> t b -> a
-multiExp a = foldl (\x y -> x * (a ^ y)) one
+multiExp a = foldl' (\x y -> x * (a ^ y)) one
 
 {- | A class for monoid actions where multiplicative notation is the most
 natural (including multiplication by constant itself).

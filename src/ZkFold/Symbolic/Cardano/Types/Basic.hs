@@ -1,4 +1,14 @@
-module ZkFold.Symbolic.Cardano.Types.Basic where
+module ZkFold.Symbolic.Cardano.Types.Basic
+    ( F
+    , FieldElement
+    , FieldElementBits
+    , Bool
+    , Symbolic.ByteString
+    , Symbolic.UInt
+    , Symbolic.UTCTime
+    , CtxCompilation
+    , CtxEvaluation
+    ) where
 
 import           Prelude                                     hiding (Bool, Eq, length, splitAt, (*), (+))
 
@@ -8,21 +18,17 @@ import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit)
 import qualified ZkFold.Symbolic.Data.Bool                   as Symbolic
 import qualified ZkFold.Symbolic.Data.ByteString             as Symbolic
+import qualified ZkFold.Symbolic.Data.FieldElement           as Symbolic
 import qualified ZkFold.Symbolic.Data.UInt                   as Symbolic
 import qualified ZkFold.Symbolic.Data.UTCTime                as Symbolic
+import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
 type F = Zp BLS12_381_Scalar
 
-type FieldElement context     = context 1 F
-type FieldElementBits context = context 256 F
+type FieldElement context     = Symbolic.FieldElement context
+type FieldElementBits context = context (Vector 256)
 
-type Bool context = Symbolic.Bool (FieldElement context)
+type Bool context = Symbolic.Bool context
 
-type UInt n context = Symbolic.UInt n context F
-
-type UTCTime context = Symbolic.UTCTime context F
-
-type ByteString n context = Symbolic.ByteString n context F
-
-type CtxCompilation = ArithmeticCircuit
-type CtxEvaluation  = Vector
+type CtxCompilation = ArithmeticCircuit F
+type CtxEvaluation  = Interpreter F

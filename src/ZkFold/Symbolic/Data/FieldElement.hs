@@ -1,92 +1,55 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.FieldElement where
 
-import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
-                                                                      sum, take, (!!), (^))
+import           GHC.Generics                    (Par1 (..))
+import           Prelude                         hiding (Bool, Eq, Num (..), Ord, drop, length, product, splitAt, sum,
+                                                  take, (!!), (^))
+import qualified Prelude                         as Haskell
 
-import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector                             as V
-import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
-import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.HFunctor       (HFunctor, hmap)
+import qualified ZkFold.Base.Data.Vector         as V
+import           ZkFold.Symbolic.Data.Bool       (Bool)
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Eq         (Eq)
 
--- | A class for serializing data types into containers holding finite field elements.
--- Type `a` is the finite field.
--- Type `b` is the container type.
--- Type `x` represents the data type.
-class Arithmetic a => FieldElementData a b x where
+newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
 
-    type TypeSize a b x :: Natural
+deriving instance Show (c Par1) => Show (FieldElement c)
 
-    -- | Returns the representation of `x` as a container of finite field elements.
-    toFieldElements :: x -> b (TypeSize a b x) a
+deriving instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
 
-    -- | Restores `x` from its representation as a container of finite field elements.
-    fromFieldElements :: b (TypeSize a b x) a -> x
+instance HFunctor c => SymbolicData c (FieldElement c) where
+    type Support c (FieldElement c) = ()
+    type TypeSize c (FieldElement c) = 1
 
--- | Returns the number of finite field elements needed to describe `x`.
-typeSize :: forall a b x . KnownNat (TypeSize a b x) => Natural
-typeSize = value @(TypeSize a b x)
+    pieces (FieldElement x) _ = hmap (V.singleton . unPar1) x
+    restore = FieldElement . hmap (Par1 . V.item) . ($ ())
 
-instance Arithmetic a => FieldElementData a Vector () where
-    type TypeSize a Vector () = 0
+deriving newtype instance FromConstant k (c Par1) => FromConstant k (FieldElement c)
 
-    toFieldElements () = V.empty
+instance (MultiplicativeSemigroup p, Exponent (c Par1) p) => Exponent (FieldElement c) p where
+    FieldElement x ^ a = FieldElement (x ^ a)
 
-    fromFieldElements _ = ()
+deriving newtype instance (MultiplicativeMonoid k, Scale k (c Par1)) => Scale k (FieldElement c)
 
-instance
-    ( FieldElementData a Vector x
-    , FieldElementData a Vector y
-    , m ~ TypeSize a Vector x
-    , KnownNat m
-    ) => FieldElementData a Vector (x, y) where
+deriving newtype instance MultiplicativeSemigroup (c Par1) => MultiplicativeSemigroup (FieldElement c)
 
-    type TypeSize a Vector (x, y) = TypeSize a Vector x + TypeSize a Vector y
+deriving newtype instance MultiplicativeMonoid (c Par1) => MultiplicativeMonoid (FieldElement c)
 
-    toFieldElements (a, b) = toFieldElements a `V.append` toFieldElements b
+deriving newtype instance AdditiveSemigroup (c Par1) => AdditiveSemigroup (FieldElement c)
 
-    fromFieldElements v = (fromFieldElements v1, fromFieldElements v2)
-        where
-            (v1, v2) = V.splitAt @m v
+deriving newtype instance AdditiveMonoid (c Par1) => AdditiveMonoid (FieldElement c)
 
-instance
-    ( FieldElementData a Vector x
-    , FieldElementData a Vector y
-    , FieldElementData a Vector z
-    , m ~ TypeSize a Vector x
-    , n ~ TypeSize a Vector y
-    , KnownNat m
-    , KnownNat n
-    ) => FieldElementData a Vector (x, y, z) where
+deriving newtype instance AdditiveGroup (c Par1) => AdditiveGroup (FieldElement c)
 
-    type TypeSize a Vector (x, y, z) = TypeSize a Vector x + TypeSize a Vector y + TypeSize a Vector z
+deriving newtype instance Semiring (c Par1) => Semiring (FieldElement c)
 
-    toFieldElements (a, b, c) = toFieldElements a `V.append` toFieldElements b `V.append` toFieldElements c
+deriving newtype instance Ring (c Par1) => Ring (FieldElement c)
 
-    fromFieldElements v = (fromFieldElements v1, fromFieldElements v2, fromFieldElements v3)
-        where
-            (v1, v2, v3) = V.splitAt3 @m @n v
+deriving newtype instance Field (c Par1) => Field (FieldElement c)
 
-instance
-    ( FieldElementData a Vector x
-    , m ~ TypeSize a Vector x
-    , KnownNat m
-    ) => FieldElementData a Vector (Vector n x) where
-
-    type TypeSize a Vector (Vector n x) = n * TypeSize a Vector x
-
-    toFieldElements xs = V.concat $ toFieldElements <$> xs
-
-    fromFieldElements v = fromFieldElements <$> V.chunks v
-
-instance A.SymbolicData a x => FieldElementData a ArithmeticCircuit x where
-    type TypeSize a ArithmeticCircuit x = A.TypeSize a x
-
-    toFieldElements = A.pieces
-
-    fromFieldElements ArithmeticCircuit {..} = A.restore acCircuit acOutput
+deriving newtype instance Eq (Bool c) (c Par1) => Eq (Bool c) (FieldElement c)

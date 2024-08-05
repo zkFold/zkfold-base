@@ -1,17 +1,19 @@
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Algorithms.Hash.MiMC where
 
-import           Data.List.NonEmpty                                     (NonEmpty ((:|)), nonEmpty)
-import           Numeric.Natural                                        (Natural)
-import           Prelude                                                hiding (Eq (..), Num (..), any, length, not,
-                                                                         (!!), (/), (^), (||))
+import           Data.List.NonEmpty                (NonEmpty ((:|)), nonEmpty)
+import           GHC.Generics                      (Par1)
+import           Numeric.Natural                   (Natural)
+import           Prelude                           hiding (Eq (..), Num (..), any, length, not, (!!), (/), (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                                (Vector, fromVector, singleton)
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
-import           ZkFold.Symbolic.Data.FieldElement                      (FieldElementData (..))
+import           ZkFold.Base.Data.Package          (unpacked)
+import           ZkFold.Base.Data.Vector           (fromVector)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.FieldElement
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5
@@ -35,11 +37,8 @@ mimcHashN xs k = go
       [zL, zR]    -> mimcHash2 xs k zL zR
       (zL:zR:zs') -> go (mimcHash2 xs k zL zR : zs')
 
-class MiMCHash a b x where
-    mimcHash :: [a] -> a -> x -> b 1 a
+class MiMCHash a c x where
+    mimcHash :: [a] -> a -> x -> FieldElement c
 
-instance FieldElementData a Vector x => MiMCHash a Vector x where
-    mimcHash xs k = singleton . mimcHashN xs k . fromVector . toFieldElements
-
-instance FieldElementData a ArithmeticCircuit x => MiMCHash a ArithmeticCircuit x where
-    mimcHash xs k = mimcHashN xs k . fromVector . splitCircuit . toFieldElements @a
+instance (Symbolic c, BaseField c ~ a, SymbolicData c x, Support c x ~ (), FromConstant a (c Par1), Ring (c Par1)) => MiMCHash a c x where
+    mimcHash xs k = FieldElement . mimcHashN xs k . fromVector . unpacked . flip pieces ()

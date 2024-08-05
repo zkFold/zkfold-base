@@ -4,19 +4,24 @@
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
 import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
+import qualified Prelude                             as Haskell
 
+import           ZkFold.Base.Control.HApplicative    (HApplicative)
 import           ZkFold.Symbolic.Cardano.Types.Basic
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.FieldElement   (FieldElementData)
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..))
 
 type TxRefId context = ByteString 256 context
-type TxRefIndex context = UInt 32 context
+type TxRefIndex context = UInt 32 Auto context
 
 newtype OutputRef context = OutputRef (TxRefId context, TxRefIndex context)
 
-deriving instance FieldElementData F CtxEvaluation (OutputRef CtxEvaluation)
+deriving instance
+    ( Haskell.Eq (TxRefId context)
+    , Haskell.Eq (TxRefIndex context)
+    ) => Haskell.Eq (OutputRef context)
 
-deriving instance SymbolicData F (OutputRef CtxCompilation)
+deriving instance HApplicative context => SymbolicData context (OutputRef context)
 
 outputRefId :: OutputRef context -> TxRefId context
 outputRefId (OutputRef (x, _)) = x

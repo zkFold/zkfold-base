@@ -2,16 +2,18 @@
 
 module ZkFold.Symbolic.Cardano.Types.Transaction where
 
-import           Prelude                              hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                                 hiding (Bool, Eq, length, splitAt, (*), (+))
+import qualified Prelude                                 as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
-import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
-import           ZkFold.Symbolic.Cardano.Types.Output (Output)
-import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
-import           ZkFold.Symbolic.Compiler
-import qualified ZkFold.Symbolic.Data.FieldElement    as FE
+import           ZkFold.Symbolic.Cardano.Types.Input     (Input)
+import           ZkFold.Symbolic.Cardano.Types.Output    (Output)
+import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
+import           ZkFold.Symbolic.Cardano.Types.Value     (SingleAsset, Value)
+import           ZkFold.Symbolic.Class                   (Symbolic)
+import           ZkFold.Symbolic.Data.Class
 
 newtype Transaction inputs rinputs outputs tokens mint datum context = Transaction
     ( Vector rinputs (Input tokens datum context)
@@ -21,27 +23,33 @@ newtype Transaction inputs rinputs outputs tokens mint datum context = Transacti
     , (UTCTime context, UTCTime context)
     ))))
 
--- TODO: Think how to prettify this abomination
 deriving instance
-    ( KnownNat (FE.TypeSize F CtxEvaluation (Value tokens CtxEvaluation))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Output tokens datum CtxEvaluation))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Vector outputs (Output tokens datum CtxEvaluation)))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Input tokens datum CtxEvaluation))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Vector inputs (Input tokens datum CtxEvaluation)))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Vector rinputs (Input tokens datum CtxEvaluation)))
-    , KnownNat (FE.TypeSize F CtxEvaluation (Value mint CtxEvaluation))
-    ) => FE.FieldElementData F Vector (Transaction inputs rinputs outputs tokens mint datum CtxEvaluation)
+    ( Haskell.Eq (Vector rinputs (Input tokens datum context))
+    , Haskell.Eq (Vector inputs (Input tokens datum context))
+    , Haskell.Eq (Vector outputs (Output tokens datum context))
+    , Haskell.Eq (Value mint context)
+    , Haskell.Eq (UTCTime context)
+    ) => Haskell.Eq (Transaction inputs rinputs outputs tokens mint datum context)
 
 -- TODO: Think how to prettify this abomination
 deriving instance
-    ( KnownNat (TypeSize F (Value tokens CtxCompilation))
-    , KnownNat (TypeSize F (Output tokens datum CtxCompilation))
-    , KnownNat (TypeSize F (Vector outputs (Output tokens datum CtxCompilation)))
-    , KnownNat (TypeSize F (Input tokens datum CtxCompilation))
-    , KnownNat (TypeSize F (Vector inputs (Input tokens datum CtxCompilation)))
-    , KnownNat (TypeSize F (Vector rinputs (Input tokens datum CtxCompilation)))
-    , KnownNat (TypeSize F (Value mint CtxCompilation))
-    ) => SymbolicData F (Transaction inputs rinputs outputs tokens mint datum CtxCompilation)
+    ( Symbolic context
+    , KnownNat tokens
+    , KnownNat rinputs
+    , KnownNat inputs
+    , KnownNat outputs
+    , KnownNat mint
+    , KnownNat (TypeSize context (SingleAsset context))
+    , KnownNat (TypeSize context (UTCTime context))
+    , KnownNat (TypeSize context (OutputRef context))
+    , KnownNat (TypeSize context (Value tokens context))
+    , KnownNat (TypeSize context (Output tokens datum context))
+    , KnownNat (TypeSize context (Vector outputs (Output tokens datum context)))
+    , KnownNat (TypeSize context (Input tokens datum context))
+    , KnownNat (TypeSize context (Vector inputs (Input tokens datum context)))
+    , KnownNat (TypeSize context (Vector rinputs (Input tokens datum context)))
+    , KnownNat (TypeSize context (Value mint context))
+    ) => SymbolicData context (Transaction inputs rinputs outputs tokens mint datum context)
 
 txRefInputs :: Transaction inputs rinputs outputs tokens mint datum context -> Vector rinputs (Input tokens datum context)
 txRefInputs (Transaction (ris, _)) = ris
