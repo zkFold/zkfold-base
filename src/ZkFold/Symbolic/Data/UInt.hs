@@ -394,9 +394,8 @@ instance
 
                 negateN :: MonadBlueprint i a m => Natural -> i -> i -> m (i, i)
                 negateN n i b = do
-                    r <- newAssigned (\v -> fromConstant n - v i)
-                    s <- newAssigned (\v -> v r + v b)
-                    splitExpansion (registerSize @a @n @r) 1 s
+                    r <- newAssigned (\v -> fromConstant n - v i + v b)
+                    splitExpansion (registerSize @a @n @r) 1 r
 
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => MultiplicativeSemigroup (UInt n rs (ArithmeticCircuit a)) where
