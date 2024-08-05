@@ -106,11 +106,7 @@ instance forall n l c1 c2 t plonk f g1.
         , KnownNat l
         , KnownNat (PlonkPermutationSize n)
         , KnownNat (PlonkPolyExtendedLength n)
-        , Eq (ScalarField c1)
-        , Scale (ScalarField c1) (ScalarField c1)
-        , BinaryExpansion (ScalarField c1)
-        , Bits (ScalarField c1) ~ [ScalarField c1]
-        , FiniteField (ScalarField c1)
+        , Arithmetic f
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
         , ToTranscript t (ScalarField c1)

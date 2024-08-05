@@ -52,7 +52,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, constraint, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                              (constraint, newAssigned)
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (backend :: (Type -> Type) -> Type) = UInt (backend (Vector (NumberOfRegisters (BaseField backend) n r)))
@@ -127,11 +127,12 @@ cast n =
 --
 eea
     :: forall n b r
-    .  EuclideanDomain (UInt n r b)
+    .  Symbolic b
+    => EuclideanDomain (UInt n r b)
     => KnownNat n
+    => KnownNat (NumberOfRegisters (BaseField b) n r)
     => AdditiveGroup (UInt n r b)
     => Eq (Bool b) (UInt n r b)
-    => Conditional (Bool b) (UInt n r b, UInt n r b, UInt n r b)
     => UInt n r b -> UInt n r b -> (UInt n r b, UInt n r b, UInt n r b)
 eea a b = eea' 1 a b one zero zero one
     where
@@ -253,6 +254,7 @@ instance
     , KnownNat (r + r)
     , KnownRegisterSize rs
     , r ~ NumberOfRegisters (BaseField b) n rs
+    , Symbolic b
     , NFData (b (Vector r))
     , Ord (Bool b) (UInt n rs b)
     , AdditiveGroup (UInt n rs b)
@@ -262,8 +264,6 @@ instance
     , BitState ByteString n b
     , Iso (ByteString n b) (UInt n rs b)
     , Eq (Bool b) (UInt n rs b)
-    , Conditional (Bool b) (UInt n rs b)
-    , Conditional (Bool b) (UInt n rs b, UInt n rs b)
     , 1 + (r - 1) ~ r
     , 1 <= r
     ) => EuclideanDomain (UInt n rs b) where
@@ -293,12 +293,12 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegis
     u1 >= u2 =
         let ByteString rs1 = from u1 :: ByteString n (ArithmeticCircuit a)
             ByteString rs2 = from u2 :: ByteString n (ArithmeticCircuit a)
-         in circuitGE rs1 rs2
+         in bitwiseGE rs1 rs2
 
     u1 > u2 =
         let ByteString rs1 = from u1 :: ByteString n (ArithmeticCircuit a)
             ByteString rs2 = from u2 :: ByteString n (ArithmeticCircuit a)
-         in circuitGT rs1 rs2
+         in bitwiseGT rs1 rs2
 
     max x y = bool @(Bool (ArithmeticCircuit a)) x y $ x < y
 
@@ -465,7 +465,7 @@ instance
     ) => Ring (UInt n r (ArithmeticCircuit a))
 
 deriving via (Structural (UInt n rs (ArithmeticCircuit a)))
-         instance (Arithmetic a, KnownNat r, r ~ NumberOfRegisters a n rs, 1 <= r) =>
+         instance (Arithmetic a, r ~ NumberOfRegisters a n rs, 1 <= r) =>
          Eq (Bool (ArithmeticCircuit a)) (UInt n rs (ArithmeticCircuit a))
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r (ArithmeticCircuit a)) where

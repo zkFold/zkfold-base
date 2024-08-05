@@ -12,7 +12,7 @@ module ZkFold.Symbolic.Compiler (
 import           Data.Aeson                                             (ToJSON)
 import           Data.Eq                                                (Eq)
 import           Data.Function                                          (const, (.))
-import           Prelude                                                (FilePath, IO, Monoid (mempty), Show (..),
+import           Prelude                                                (FilePath, IO, Monoid (mempty), Ord, Show (..),
                                                                          putStrLn, type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class                        (BinaryExpansion (..), Field, Finite,
@@ -54,8 +54,7 @@ solder f = pieces f (restore @c @(Support c f) $ const inputC)
 -- | Compiles function `f` into an arithmetic circuit with all outputs are zero.
 compileSafeZero ::
     forall a c f y .
-    ( Eq a
-    , c ~ ArithmeticCircuit a
+    ( c ~ ArithmeticCircuit a
     , SymbolicData c f
     , SymbolicData c (Support c f)
     , Support c (Support c f) ~ ()
@@ -67,6 +66,7 @@ compileSafeZero ::
     , Field a
     , BinaryExpansion a
     , Bits a ~ [a]
+    , Ord a
     ) => f -> y
 compileSafeZero = restore @c . const . optimize . safeZero . solder @a
 

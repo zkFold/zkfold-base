@@ -70,7 +70,7 @@ embedVar x = newAssigned $ const (fromConstant x)
 embedAll :: forall a n . (Arithmetic a, KnownNat n) => a -> ArithmeticCircuit a (Vector n)
 embedAll x = circuitF $ Vector <$> replicateM (fromIntegral $ value @n) (newAssigned $ const (fromConstant x))
 
-expansion :: MonadBlueprint i a m => Natural -> i -> m [i]
+expansion :: MonadCircuit i a m => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
 expansion n k = do
     bits <- bitsOf n k
@@ -90,7 +90,7 @@ splitExpansion n1 n2 k = do
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
 
-bitsOf :: MonadBlueprint i a m => Natural -> i -> m [i]
+bitsOf :: MonadCircuit i a m => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
 bitsOf n k = for [0 .. n -! 1] $ \j ->
@@ -99,7 +99,7 @@ bitsOf n k = for [0 .. n -! 1] $ \j ->
         repr :: forall b . (BinaryExpansion b, Bits b ~ [b], Finite b) => b -> [b]
         repr = padBits (numberOfBits @b) . binaryExpansion
 
-horner :: MonadBlueprint i a m => [i] -> m i
+horner :: MonadCircuit i a m => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
 -- Horner's scheme.
 horner xs = case reverse xs of

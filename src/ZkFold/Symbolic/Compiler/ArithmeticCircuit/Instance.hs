@@ -17,8 +17,7 @@ import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Par1 (..))
 import           GHC.Num                                                   (integerToNatural)
 import           Prelude                                                   (Integer, Show, const, mempty, pure, return,
-                                                                            show, type (~), ($), (++), (.), (<$>),
-                                                                            (>>=))
+                                                                            show, ($), (++), (.), (<$>), (>>=))
 import qualified Prelude                                                   as Haskell
 import           System.Random                                             (mkStdGen)
 import           Test.QuickCheck                                           (Arbitrary (arbitrary), Gen, chooseInteger,
@@ -37,9 +36,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hidin
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitF)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class                                (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.DiscreteField
-import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
 
 ------------------------------------- Instances -------------------------------------
@@ -167,30 +164,6 @@ instance (Arithmetic a, KnownNat n, 1 <= n) => DiscreteField (Bool (ArithmeticCi
 
 instance Arithmetic a => DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a Par1) where
     isZero = Bool . isZeroC
-
-instance (Arithmetic a, DiscreteField (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a f)) => Eq (Bool (ArithmeticCircuit a)) (ArithmeticCircuit a f) where
-    x == y = isZero (x - y)
-    x /= y = not $ isZero (x - y)
-
-instance
-    ( Arithmetic a
-    , SymbolicData (ArithmeticCircuit a) x
-    , n ~ TypeSize (ArithmeticCircuit a) x
-    , KnownNat n
-    ) => Conditional (Bool (ArithmeticCircuit a)) x where
-
-    bool brFalse brTrue (Bool b) = restore ac
-        where
-            f' = pieces brFalse
-            t' = pieces brTrue
-            ac i = circuitF (solve i)
-
-            solve :: forall i m . MonadBlueprint i a m => Support (ArithmeticCircuit a) x -> m (Vector n i)
-            solve i = do
-                ts <- runCircuit (t' i)
-                fs <- runCircuit (f' i)
-                bs <- unPar1 <$> runCircuit b
-                V.zipWithM (\x y -> newAssigned $ \p -> p bs * (p x - p y) + p y) ts fs
 
 instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit a Par1) where
     arbitrary = do

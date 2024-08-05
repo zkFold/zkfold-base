@@ -9,16 +9,17 @@ import           Test.Hspec
 
 import           ZkFold.Base.Algebra.Basic.Class   (fromConstant)
 import           ZkFold.Base.Algebra.Basic.Field   (Zp)
+import           ZkFold.Symbolic.Class             (Symbolic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import           ZkFold.Symbolic.Data.Ord          (Ord (..))
+import           ZkFold.Symbolic.Data.Ord          ((<=))
 import           ZkFold.Symbolic.Interpreter       (Interpreter (Interpreter))
 
 type R = ArithmeticCircuit (Zp 97)
 
 -- A comparison test
-testFunc :: Ord (Bool c) (FieldElement c) => FieldElement c -> FieldElement c -> Bool c
+testFunc :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 testFunc x y = x <= y
 
 specArithmetization3 :: Spec
