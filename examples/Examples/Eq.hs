@@ -7,10 +7,10 @@ import           Prelude                                     hiding (Bool, Eq (.
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
-import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 -- | (==) operation

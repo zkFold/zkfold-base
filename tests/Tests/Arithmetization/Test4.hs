@@ -18,11 +18,11 @@ import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkP
                                                               plonkVerifierInput)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-import           ZkFold.Symbolic.Class
 
 type N = 1
 

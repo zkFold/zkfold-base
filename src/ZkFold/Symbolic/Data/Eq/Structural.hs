@@ -5,9 +5,9 @@ module ZkFold.Symbolic.Data.Eq.Structural where
 
 import           Prelude                    (type (~))
 
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Eq
 
 newtype Structural a = Structural a
