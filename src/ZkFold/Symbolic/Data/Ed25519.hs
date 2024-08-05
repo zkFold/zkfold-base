@@ -64,7 +64,6 @@ instance
     , SymbolicData c (UInt 256 Auto c)
     , AdditiveMonoid (UInt 256 Auto c)
     , Eq (Bool c) (UInt 256 Auto c)
-    , Conditional (Bool c) (Point (Ed25519 c))
     , S.BaseField c ~ a
     , r ~ NumberOfRegisters a 256 Auto
     , KnownNat r
@@ -104,9 +103,7 @@ instance
     , Extend (UInt 256 Auto c) (UInt 512 Auto c)
     , Shrink (UInt 512 Auto c) (UInt 256 Auto c)
     , Eq (Bool c) (UInt 512 Auto c)
-    , Conditional (Bool c) (UInt 512 Auto c, UInt 512 Auto c, UInt 512 Auto c)
     , BitState ByteString 256 c
-    , Conditional (Bool c) (Point (Ed25519 c))
     , Eq (Bool c) (UInt 256 Auto c)
     , FromConstant Natural (UInt 256 Auto c)
     , FromConstant Natural (UInt 512 Auto c)
@@ -144,12 +141,13 @@ instance
 
 acAdd25519
     :: forall c
-    .  AdditiveGroup (UInt 512 Auto c)
+    .  Symbolic c
+    => AdditiveGroup (UInt 512 Auto c)
     => EuclideanDomain (UInt 512 Auto c)
     => Extend (UInt 256 Auto c) (UInt 512 Auto c)
     => Shrink (UInt 512 Auto c) (UInt 256 Auto c)
     => Eq (Bool c) (UInt 512 Auto c)
-    => Conditional (Bool c) (UInt 512 Auto c, UInt 512 Auto c, UInt 512 Auto c)
+    => KnownNat (TypeSize c (UInt 512 Auto c))
     => Point (Ed25519 c)
     -> Point (Ed25519 c)
     -> Point (Ed25519 c)
@@ -205,12 +203,13 @@ acAdd25519 (Point x1 y1) (Point x2 y2) = Point (shrink x3) (shrink y3)
 
 acDouble25519
     :: forall c
-    .  EuclideanDomain (UInt 512 Auto c)
+    .  Symbolic c
+    => EuclideanDomain (UInt 512 Auto c)
     => AdditiveGroup (UInt 512 Auto c)
     => Extend (UInt 256 Auto c) (UInt 512 Auto c)
     => Shrink (UInt 512 Auto c) (UInt 256 Auto c)
     => Eq (Bool c) (UInt 512 Auto c)
-    => Conditional (Bool c) (UInt 512 Auto c, UInt 512 Auto c, UInt 512 Auto c)
+    => KnownNat (TypeSize c (UInt 512 Auto c))
     => Point (Ed25519 c)
     -> Point (Ed25519 c)
 acDouble25519 Inf = Inf

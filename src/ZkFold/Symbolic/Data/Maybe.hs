@@ -71,27 +71,21 @@ instance
     ( HApplicative c
     , SymbolicData c x
     , Support c x ~ ()
-    , k ~ TypeSize c x
-    , k1 ~ k + 1
-    , (k1 - 1) ~ k)
-  => SymbolicData c (Maybe c x) where
+    ) => SymbolicData c (Maybe c x) where
+
     type Support c (Maybe c x) = ()
-    type TypeSize c (Maybe c x) = TypeSize c x + 1
-    pieces (Maybe (Bool h) t) i = hliftA2 (\(Par1 h') t' -> h' V..: t') h (pieces t i)
-    restore f = Maybe (restore (hmap V.take . f)) (restore (hmap V.tail . f))
+    type TypeSize c (Maybe c x) = 1 + TypeSize c x
+    pieces (Maybe (Bool h) t) i = hliftA2 (\(Par1 h') t' -> V.singleton h' `V.append` t') h (pieces t i)
+    restore f = Maybe (restore (hmap V.take . f)) (restore (hmap V.drop . f))
 
 maybe :: forall a b c .
-    Symbolic c =>
-    Conditional (Bool c) b =>
+    (Symbolic c, SymbolicData c b) =>
     b -> (a -> b) -> Maybe c a -> b
 maybe d h x@(Maybe _ v) = bool @(Bool c) d (h v) $ isNothing x
 
 find :: forall a c t .
-    Symbolic c =>
-    SymbolicData c a =>
-    KnownNat (TypeSize c a) =>
+    (Symbolic c, SymbolicData c a, Support c a ~ (), KnownNat (TypeSize c a)) =>
     Haskell.Foldable t =>
-    Conditional (Bool c) (Maybe c a) =>
     (a -> Bool c) -> t a -> Maybe c a
 find p = let n = nothing in
     foldr (\i r -> maybe @a @_ @c (bool @(Bool c) n (just i) $ p i) (Haskell.const r) r) n
