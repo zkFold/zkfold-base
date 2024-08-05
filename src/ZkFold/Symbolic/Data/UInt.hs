@@ -535,7 +535,8 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r, NumberOfBits a <= n) =>
             solve :: MonadBlueprint i a m => m [i]
             solve = do
                 i <- unPar1 <$> runCircuit a
-                bits <- Haskell.reverse <$> expansion (getNatural @n) i -- why count RequiredBits if we can use getNatural @n?
+                let len = Haskell.min (getNatural @n) (numberOfBits @a) 
+                bits <- Haskell.reverse <$> expansion len i 
                 fromBits (highRegisterSize @a @n @r) (registerSize @a @n @r) bits
 
 

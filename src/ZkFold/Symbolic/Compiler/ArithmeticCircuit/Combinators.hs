@@ -82,8 +82,8 @@ splitExpansion :: (MonadBlueprint i a m, Arithmetic a) => Natural -> Natural -> 
 -- values exist).
 splitExpansion n1 n2 k = do
     let f x y = x + y + y
-    l <- newRanged (fromConstant $ (2 :: Natural) ^ n1) $ foldr f zero . take n1 . repr . ($ k)
-    h <- newRanged (fromConstant $ (2 :: Natural) ^ n2) $ foldr f zero . take n2 . drop n1 . repr . ($ k)
+    l <- newRanged (fromConstant $ (2 :: Natural) ^ n1 -! 1) $ foldr f zero . take n1 . repr . ($ k)
+    h <- newRanged (fromConstant $ (2 :: Natural) ^ n2 -! 1) $ foldr f zero . take n2 . drop n1 . repr . ($ k)
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where
