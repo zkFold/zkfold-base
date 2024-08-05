@@ -11,7 +11,7 @@ import           Test.Hspec                                  (Spec, describe, it
 import           Test.QuickCheck                             (Testable (..), withMaxSuccess, (==>))
 import           Tests.NonInteractiveProof.Plonk             (PlonkBS)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero, (+))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1)
 import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
 import qualified ZkFold.Base.Data.Vector                     as V
@@ -19,7 +19,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkI
                                                               PlonkWitnessInput (..), plonkVerifierInput)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile,
+                                                              compileSafeZero)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
@@ -62,9 +63,9 @@ testOnlyOutputZKP x ps targetValue =
 
     in unPlonkInput input Haskell.== unPlonkInput circuitOutputsTrue Haskell.&& verify @(PlonkBS N) setupV circuitOutputsTrue proof
 
-testOneInputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
-testOneInputZKP x ps targetValue =
-    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
+testSafeOneInputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
+testSafeOneInputZKP x ps targetValue =
+    let Bool ac = compileSafeZero @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
 
         (omega, k1, k2) = getParams 32
         witnessInputs  = fromList [(1, targetValue), (unPar1 $ acOutput ac, 1)]
@@ -79,6 +80,23 @@ testOneInputZKP x ps targetValue =
 
     in unPlonkInput input Haskell.== unPlonkInput onePublicInput Haskell.&& verify @(PlonkBS N) setupV onePublicInput proof
 
+testAttackSafeOneInputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
+testAttackSafeOneInputZKP x ps targetValue =
+    let Bool ac = compileSafeZero @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
+
+        (omega, k1, k2) = getParams 32
+        witnessInputs  = fromList [(1, targetValue + 1), (unPar1 $ acOutput ac, 0)]
+        indexTargetValue = V.singleton (1 :: Natural)
+        plonk   = Plonk @32 omega k1 k2 indexTargetValue ac x
+        setupP  = setupProve @(PlonkBS N) plonk
+        setupV  = setupVerify @(PlonkBS N) plonk
+        witness = (PlonkWitnessInput witnessInputs, ps)
+        (input, proof) = prove @(PlonkBS N) setupP witness
+
+        onePublicInput = plonkVerifierInput $ V.singleton $ targetValue + 1
+
+    in unPlonkInput input Haskell.== unPlonkInput onePublicInput Haskell.&& Haskell.not (verify @(PlonkBS N) setupV onePublicInput proof)
+
 specArithmetization4 :: Spec
 specArithmetization4 = do
     describe "LockedByTxId arithmetization test 1" $ do
@@ -87,5 +105,7 @@ specArithmetization4 = do
         it "should pass" $ property $ \x y -> x Haskell./= y ==> testDifferentValue x y
     describe "LockedByTxId ZKP test only output" $ do
         it "should pass" $ withMaxSuccess 10 $ property testOnlyOutputZKP
-    describe "LockedByTxId ZKP test one public input" $ do
-       it "should pass" $ withMaxSuccess 10 $ property testOneInputZKP
+    describe "LockedByTxId ZKP test safe one public input" $ do
+       it "should pass" $ withMaxSuccess 10 $ property testSafeOneInputZKP
+    describe "LockedByTxId ZKP test attack safe one public input" $ do
+       it "should pass" $ withMaxSuccess 10 $ property testAttackSafeOneInputZKP
