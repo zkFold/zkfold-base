@@ -21,7 +21,7 @@ import           ZkFold.Symbolic.Interpreter       (Interpreter)
 import           ZkFold.Symbolic.MonadCircuit      (Arithmetic)
 
 -- f x y = if (2 / x > y) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)
-testFunc :: forall c . (Symbolic c, Field (FieldElement c), Eq (Bool c) (FieldElement c)) => FieldElement c -> FieldElement c -> FieldElement c
+testFunc :: forall c . (Symbolic c, Field (FieldElement c)) => FieldElement c -> FieldElement c -> FieldElement c
 testFunc x y =
     let c  = fromConstant @Integer @(FieldElement c)
         g1 = x ^ (2 :: Natural) + c 3 * x + c 5

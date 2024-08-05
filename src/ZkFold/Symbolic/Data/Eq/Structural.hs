@@ -5,9 +5,9 @@ module ZkFold.Symbolic.Data.Eq.Structural where
 
 import           Prelude                    (type (~))
 
-import           ZkFold.Base.Data.Vector    (Vector)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Eq
 
 newtype Structural a = Structural a
@@ -17,7 +17,7 @@ instance
     ( SymbolicData c x
     , Support c x ~ ()
     , n ~ TypeSize c x
-    , Eq (Bool c) (c (Vector n))
+    , Symbolic c
     ) => Eq (Bool c) (Structural x) where
 
     Structural x == Structural y =
