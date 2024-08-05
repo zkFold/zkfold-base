@@ -42,6 +42,7 @@ import           ZkFold.Prelude                                            (leng
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..), acInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.MonadCircuit
+import Data.Functor (($>))
 
 boolCheckC :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
@@ -124,7 +125,7 @@ desugarRange i b
 safeZero :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
 safeZero r = circuitF $ do
     is' <- runCircuit r
-    for is' $ \i -> newConstrained (\x j -> (x i - one) * x j) (\x -> x i - one)
+    for is' $ \i -> constraint (\x -> x i - one) $> i
 
 isZeroC :: (Arithmetic a, Z.Zip f, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
 isZeroC r = circuitF $ fst <$> runInvert r
