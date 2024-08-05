@@ -42,7 +42,6 @@ import           ZkFold.Prelude                                            (drop
 import           ZkFold.Symbolic.Class                                     hiding (embed)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
