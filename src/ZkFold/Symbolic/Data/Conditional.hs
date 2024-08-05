@@ -25,7 +25,9 @@ gif b x y = bool y x b
 (?) = gif
 
 instance (Symbolic c, SymbolicData c x) => Conditional (Bool c) x where
-    bool x y (Bool b) =
-      restore $ \s -> fromCircuit3F b (pieces x s) (pieces y s) $ \(Par1 c) ->
-          zipWithM $ \i j -> newAssigned $ \w -> w c * (w j - w i) + w i
-                                          -- ^ Is this really Plonk constraint?
+    bool x y (Bool b) = restore $ \s ->
+      fromCircuit3F b (pieces x s) (pieces y s) $ \(Par1 c) ->
+        zipWithM $ \i j -> do
+          i' <- newAssigned (\w -> (one - w c) * w i)
+          j' <- newAssigned (\w -> w c * w j)
+          newAssigned (\w -> w i' + w j')
