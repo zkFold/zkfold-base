@@ -16,13 +16,12 @@ module ZkFold.Symbolic.Data.UInt (
 ) where
 
 import           Control.DeepSeq
-import           Control.Monad.State                                       (StateT (..), runState)
+import           Control.Monad.State                                       (StateT (..))
 import           Data.Foldable                                             (foldr, foldrM, for_)
 import           Data.Functor                                              ((<$>))
 import           Data.Kind                                                 (Type)
 import           Data.List                                                 (unfoldr, zip)
 import           Data.Map                                                  (fromList, (!))
-import           Data.Monoid                                               (mempty)
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
 import qualified Data.Zip                                                  as Z
@@ -42,7 +41,7 @@ import           ZkFold.Base.Data.Vector                                   (Vect
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Class                                     hiding (embed)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, horner, splitExpansion)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
@@ -54,8 +53,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit                              (MonadCircuit (constraint, newRanged),
-                                                                            newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                              (MonadCircuit (constraint), newAssigned)
 
 
 -- TODO (Issue #18): hide this constructor
@@ -380,29 +378,27 @@ instance
                     s <- newAssigned (\v -> v d + v b + fromConstant t)
                     splitExpansion (registerSize @a @n @r) 1 s
 
-        negate (UInt x) = UInt (circuitF $ V.unsafeToVector <$> solve)
-                where
+        negate (UInt x) = UInt $ circuitF (V.unsafeToVector <$> solve)
+            where
                 solve :: MonadBlueprint i a m => m [i]
                 solve = do
                     j <- newAssigned (Haskell.const zero)
 
-                    let lo = fromConstant $ (2 :: Natural) ^ registerSize @a @n @r
-                        mid = replicate (numberOfRegisters @a @n @r -! 2) (fromConstant $ (2 :: Natural) ^ registerSize @a @n @r -! 1)
-                        hi = fromConstant $ (2 :: Natural) ^ highRegisterSize @a @n @r -! 1
-                        ns
-                            | numberOfRegisters @a @n @r Haskell.== 1 = embedV $ V.unsafeToVector [hi + one]
-                            | otherwise = embedV $ V.unsafeToVector $ (lo : mid) <> [hi]
                     xs <- V.fromVector <$> runCircuit x
-                    ys <- V.fromVector <$> runCircuit ns
-                    let midx = Haskell.init xs
-                        z    = Haskell.last xs
-                        midy = Haskell.init ys
-                        w    = Haskell.last ys
-                    (zs, c) <- flip runStateT j $ traverse StateT $
-                        Z.zipWith (fullNegater $ registerSize @a @n @r) midy midx
-                    k <- fullNegated w z c
-                    (ks, _) <- splitExpansion (highRegisterSize @a @n @r) 1 k
-                    return (zs <> [ks])
+                    let y = 2 ^ registerSize @a @n @r
+                        ys = replicate (numberOfRegisters @a @n @r -! 2) (2 ^ registerSize @a @n @r -! 1)
+                        y' = 2 ^ highRegisterSize @a @n @r -! 1
+                        ns
+                            | numberOfRegisters @a @n @r Haskell.== 1 = [y' + 1]
+                            | otherwise = (y : ys) <> [y']
+                    (zs, _) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN ns xs)
+                    return zs
+
+                negateN :: MonadBlueprint i a m => Natural -> i -> i -> m (i, i)
+                negateN n i b = do
+                    r <- newAssigned (\v -> fromConstant n - v i)
+                    s <- newAssigned (\v -> v r + v b)
+                    splitExpansion (registerSize @a @n @r) 1 s
 
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => MultiplicativeSemigroup (UInt n rs (ArithmeticCircuit a)) where
@@ -664,12 +660,4 @@ fullAdder r xk yk c = fullAdded xk yk c >>= splitExpansion r 1
 fullAdded :: MonadBlueprint i a m => i -> i -> i -> m i
 fullAdded i j c = do
     k <- newAssigned (\v -> v i + v j)
-    newAssigned (\v -> v k + v c)
-
-fullNegater :: (Arithmetic a, MonadBlueprint i a m)=> Natural -> i -> i -> i -> m (i, i)
-fullNegater r xk yk c = fullNegated xk yk c >>= splitExpansion r 1
-
-fullNegated :: MonadBlueprint i a m => i -> i -> i -> m i
-fullNegated i j c = do
-    k <- newAssigned (\v -> v i - v j)
     newAssigned (\v -> v k + v c)
