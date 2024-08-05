@@ -7,13 +7,14 @@ import           Prelude                                     hiding (Bool, Eq (.
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
+import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-import           ZkFold.Symbolic.Data.Ord                    (Ord (..))
+import           ZkFold.Symbolic.Data.Ord                    ((<=))
 
 -- | (<=) operation
-leq :: Ord (Bool c) (FieldElement c) => FieldElement c -> FieldElement c -> Bool c
+leq :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 leq x y = x <= y
 
 exampleLEQ :: IO ()

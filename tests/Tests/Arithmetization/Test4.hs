@@ -18,6 +18,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkP
                                                               plonkVerifierInput)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
@@ -28,7 +29,7 @@ type N = 1
 type C = BLS12_381_G1
 type F = ScalarField C
 
-lockedByTxId :: forall a c . (FromConstant a (FieldElement c), Eq (Bool c) (FieldElement c)) => a -> FieldElement c -> Bool c
+lockedByTxId :: forall a c . (FromConstant a (FieldElement c), Symbolic c) => a -> FieldElement c -> Bool c
 lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 
 testSameValue :: F -> Haskell.Bool

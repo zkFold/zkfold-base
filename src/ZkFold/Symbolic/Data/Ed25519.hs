@@ -29,21 +29,20 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit              (Arithmetic)
 
-zpToEd :: (Finite (Zp p)) => Point (Ed25519 UInt (Zp p)) -> Point (Ed25519 Void Void)
+zpToEd :: Finite (Zp p) => Point (Ed25519 (Interpreter (Zp p))) -> Point (Ed25519 Void)
 zpToEd Inf         = Inf
 zpToEd (Point x y) = Point (toZp . toConstant $ x) (toZp . toConstant $ y)
 
-edToZp :: (Finite (Zp p)) => Point (Ed25519 Void Void) -> Point (Ed25519 UInt (Zp p))
+edToZp :: Finite (Zp p) => Point (Ed25519 Void) -> Point (Ed25519 (Interpreter (Zp p)))
 edToZp Inf         = Inf
 edToZp (Point x y) = Point (fromConstant . fromZp $ x) (fromConstant . fromZp $ y)
 
 -- | Ed25519 with @UInt 256 (Zp p)@ as computational backend
 --
-instance (Finite (Zp p)) => EllipticCurve (Ed25519 UInt (Zp p)) where
-    type BaseField (Ed25519 UInt (Zp p)) = UInt 256 Auto (Interpreter (Zp p))
-    type ScalarField (Ed25519 UInt (Zp p)) = UInt 256 Auto (Interpreter (Zp p))
+instance Finite (Zp p) => EllipticCurve (Ed25519 (Interpreter (Zp p))) where
+    type BaseField (Ed25519 (Interpreter (Zp p))) = UInt 256 Auto (Interpreter (Zp p))
+    type ScalarField (Ed25519 (Interpreter (Zp p))) = UInt 256 Auto (Interpreter (Zp p))
 
     inf = Inf
 
@@ -65,26 +64,25 @@ instance
     , SymbolicData c (UInt 256 Auto c)
     , AdditiveMonoid (UInt 256 Auto c)
     , Eq (Bool c) (UInt 256 Auto c)
-    , Conditional (Bool c) (Point (Ed25519 c a))
     , S.BaseField c ~ a
     , r ~ NumberOfRegisters a 256 Auto
     , KnownNat r
     , 1 <= r
-    ) => SymbolicData c (Point (Ed25519 c a)) where
+    ) => SymbolicData c (Point (Ed25519 c)) where
 
-    type Support c (Point (Ed25519 c a)) = Support c (UInt 256 Auto c)
-    type TypeSize c (Point (Ed25519 c a)) = TypeSize c (UInt 256 Auto c) + TypeSize c (UInt 256 Auto c)
+    type Support c (Point (Ed25519 c)) = Support c (UInt 256 Auto c)
+    type TypeSize c (Point (Ed25519 c)) = TypeSize c (UInt 256 Auto c) + TypeSize c (UInt 256 Auto c)
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
     -- We can encode the point at infinity as (0, 0), therefore.
     pieces Inf         = hliftA2 V.append <$> pieces (zero :: UInt 256 Auto c) <*> pieces (zero :: UInt 256 Auto c)
     pieces (Point x y) = hliftA2 V.append <$> pieces x <*> pieces y
 
-    restore f = bool @(Bool c) @(Point (Ed25519 c (S.BaseField c))) (Point x y) Inf ((x == zero) && (y == zero))
+    restore f = bool @(Bool c) @(Point (Ed25519 c)) (Point x y) Inf ((x == zero) && (y == zero))
         where
             (x, y) = restore f
 
-instance (Symbolic c, S.BaseField c ~ a, Eq (Bool c) (BaseField (Ed25519 c a))) => Eq (Bool c) (Point (Ed25519 c a)) where
+instance (Symbolic c, Eq (Bool c) (BaseField (Ed25519 c))) => Eq (Bool c) (Point (Ed25519 c)) where
     Inf == Inf                     = true
     Inf == _                       = false
     _ == Inf                       = false
@@ -99,21 +97,18 @@ instance (Symbolic c, S.BaseField c ~ a, Eq (Bool c) (BaseField (Ed25519 c a))) 
 --
 instance
     ( Symbolic c
-    , S.BaseField c ~ a
-    , Arithmetic a
     , SymbolicData c (UInt 256 Auto c)
     , AdditiveGroup (UInt 256 Auto c)
     , AdditiveGroup (UInt 512 Auto c)
     , Extend (UInt 256 Auto c) (UInt 512 Auto c)
     , Shrink (UInt 512 Auto c) (UInt 256 Auto c)
     , Eq (Bool c) (UInt 512 Auto c)
-    , Conditional (Bool c) (UInt 512 Auto c, UInt 512 Auto c, UInt 512 Auto c)
     , BitState ByteString 256 c
-    , Conditional (Bool c) (Point (Ed25519 c a))
     , Eq (Bool c) (UInt 256 Auto c)
     , FromConstant Natural (UInt 256 Auto c)
     , FromConstant Natural (UInt 512 Auto c)
     , EuclideanDomain (UInt 512 Auto c)
+    , S.BaseField c ~ a
     , r256 ~ NumberOfRegisters a 256 Auto
     , KnownNat r256
     , KnownNat (r256 + r256)
@@ -123,10 +118,10 @@ instance
     , KnownNat r512
     , KnownNat (r512 + (r512 + r512))
     , Iso (UInt 256 Auto c) (ByteString 256 c)
-    ) => EllipticCurve (Ed25519 c a)  where
+    ) => EllipticCurve (Ed25519 c)  where
 
-    type BaseField (Ed25519 c a) = UInt 256 Auto c
-    type ScalarField (Ed25519 c a) = UInt 256 Auto c
+    type BaseField (Ed25519 c) = UInt 256 Auto c
+    type ScalarField (Ed25519 c) = UInt 256 Auto c
 
     inf = Inf
 
@@ -134,7 +129,7 @@ instance
             (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
             (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
 
-    add x y = bool @(Bool c) @(Point (Ed25519 c a)) (acAdd25519 x y) (acDouble25519 x) (x == y)
+    add x y = bool @(Bool c) @(Point (Ed25519 c)) (acAdd25519 x y) (acDouble25519 x) (x == y)
 
     -- pointMul uses natScale which converts the scale to Natural.
     -- We can't convert arithmetic circuits to Natural, so we can't use pointMul either.
@@ -145,17 +140,17 @@ instance
             bits = from sc
 
 acAdd25519
-    :: forall c a
-    .  AdditiveGroup (UInt 512 Auto c)
+    :: forall c
+    .  Symbolic c
+    => AdditiveGroup (UInt 512 Auto c)
     => EuclideanDomain (UInt 512 Auto c)
     => Extend (UInt 256 Auto c) (UInt 512 Auto c)
     => Shrink (UInt 512 Auto c) (UInt 256 Auto c)
-    => BaseField (Ed25519 c a) ~ UInt 256 Auto c
     => Eq (Bool c) (UInt 512 Auto c)
-    => Conditional (Bool c) (UInt 512 Auto c, UInt 512 Auto c, UInt 512 Auto c)
-    => Point (Ed25519 c a)
-    -> Point (Ed25519 c a)
-    -> Point (Ed25519 c a)
+    => KnownNat (TypeSize c (UInt 512 Auto c))
+    => Point (Ed25519 c)
+    -> Point (Ed25519 c)
+    -> Point (Ed25519 c)
 acAdd25519 Inf q = q
 acAdd25519 p Inf = p
 acAdd25519 (Point x1 y1) (Point x2 y2) = Point (shrink x3) (shrink y3)
@@ -207,16 +202,16 @@ acAdd25519 (Point x1 y1) (Point x2 y2) = Point (shrink x3) (shrink y3)
         y3 = y3n `mulM` y3di
 
 acDouble25519
-    :: forall c a
-    .  BaseField (Ed25519 c a) ~ UInt 256 Auto c
+    :: forall c
+    .  Symbolic c
     => EuclideanDomain (UInt 512 Auto c)
     => AdditiveGroup (UInt 512 Auto c)
     => Extend (UInt 256 Auto c) (UInt 512 Auto c)
     => Shrink (UInt 512 Auto c) (UInt 256 Auto c)
     => Eq (Bool c) (UInt 512 Auto c)
-    => Conditional (Bool c) (UInt 512 Auto c, UInt 512 Auto c, UInt 512 Auto c)
-    => Point (Ed25519 c a)
-    -> Point (Ed25519 c a)
+    => KnownNat (TypeSize c (UInt 512 Auto c))
+    => Point (Ed25519 c)
+    -> Point (Ed25519 c)
 acDouble25519 Inf = Inf
 acDouble25519 (Point x1 y1) = Point (shrink x3) (shrink y3)
     where

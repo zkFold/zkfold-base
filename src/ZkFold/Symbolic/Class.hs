@@ -1,6 +1,16 @@
 {-# LANGUAGE TypeOperators #-}
 
-module ZkFold.Symbolic.Class where
+module ZkFold.Symbolic.Class
+  ( Symbolic (..)
+  , Arithmetic
+  , embed
+  , symbolic2F
+  , fromCircuit2F
+  , symbolic3F
+  , fromCircuit3F
+  , symbolicVF
+  , fromCircuitVF
+  ) where
 
 import           Data.Foldable                    (Foldable)
 import           Data.Function                    (const, ($), (.))
@@ -28,7 +38,7 @@ type CircuitFun f g a = forall i m. MonadCircuit i a m => f i -> m (g i)
 
 -- | A Symbolic DSL for performant pure computations with arithmetic circuits.
 -- @c@ is a generic context in which computations are performed.
-class (HApplicative c, Package c, WitnessField (BaseField c)) => Symbolic c where
+class (HApplicative c, Package c, Arithmetic (BaseField c)) => Symbolic c where
     -- | Base algebraic field over which computations are performed.
     type BaseField c :: Type
 
@@ -67,6 +77,18 @@ fromCircuit2F ::
     (forall i m. MonadCircuit i (BaseField c) m => f i -> g i -> m (h i)) -> c h
 -- | Runs the binary @'CircuitFun'@ in a generic context.
 fromCircuit2F x y m = fromCircuitF (hpair x y) (uncurryP m)
+
+symbolic3F ::
+    (Symbolic c, BaseField c ~ a) => c f -> c g -> c h -> (f a -> g a -> h a -> k a) ->
+    (forall i m. MonadCircuit i a m => f i -> g i -> h i -> m (k i)) -> c k
+-- | Runs the ternary function from @f@, @g@ and @h@ into @k@ in a context @c@.
+symbolic3F x y z f m = symbolic2F (hpair x y) z (uncurryP f) (uncurryP m)
+
+fromCircuit3F ::
+    Symbolic c => c f -> c g -> c h ->
+    (forall i m. MonadCircuit i (BaseField c) m => f i -> g i -> h i -> m (k i)) -> c k
+-- | Runs the ternary @'CircuitFun'@ in a generic context.
+fromCircuit3F x y z m = fromCircuit2F (hpair x y) z (uncurryP m)
 
 symbolicVF ::
     (Symbolic c, BaseField c ~ a, Foldable f, Functor f) =>
