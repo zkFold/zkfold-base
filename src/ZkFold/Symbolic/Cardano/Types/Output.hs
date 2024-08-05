@@ -43,7 +43,6 @@ deriving via (Structural (Output tokens datum CtxCompilation))
          instance
             ( ts ~ TypeSize CtxCompilation (Output tokens datum CtxCompilation)
             , 1 <= ts
-            , KnownNat ts
             , KnownNat tokens
             , KnownNat (TypeSize CtxCompilation (Value tokens CtxCompilation))
             ) => Eq (Bool CtxCompilation) (Output tokens datum CtxCompilation)

@@ -465,7 +465,7 @@ instance
     ) => Ring (UInt n r (ArithmeticCircuit a))
 
 deriving via (Structural (UInt n rs (ArithmeticCircuit a)))
-         instance (Arithmetic a, KnownNat r, r ~ NumberOfRegisters a n rs, 1 <= r) =>
+         instance (Arithmetic a, r ~ NumberOfRegisters a n rs, 1 <= r) =>
          Eq (Bool (ArithmeticCircuit a)) (UInt n rs (ArithmeticCircuit a))
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r (ArithmeticCircuit a)) where
