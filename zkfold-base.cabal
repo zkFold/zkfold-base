@@ -143,6 +143,7 @@ library
       ZkFold.Base.Protocol.Protostar
       ZkFold.Base.Protocol.Protostar.Accumulator
       ZkFold.Base.Protocol.Protostar.AccumulatorScheme
+      ZkFold.Base.Protocol.Protostar.ArithmeticCircuit
       ZkFold.Base.Protocol.Protostar.CommitOpen
       ZkFold.Base.Protocol.Protostar.FiatShamir
       ZkFold.Base.Protocol.Protostar.Internal
@@ -304,6 +305,7 @@ test-suite zkfold-base-test
       Tests.Pairing
       Tests.Permutations
       Tests.Plonkup
+      Tests.Protostar
       Tests.SHA2
       Tests.UInt
       Tests.Univariate

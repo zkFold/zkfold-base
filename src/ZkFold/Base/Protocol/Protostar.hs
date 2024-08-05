@@ -78,4 +78,3 @@ instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (RecursiveCircuit 
     -- The transcript is only one prover message since this is a one-round protocol
     --
     verifier rc i pm _ = eval (circuit rc) i == P.head pm
-
