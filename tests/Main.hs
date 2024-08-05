@@ -15,6 +15,7 @@ import           Tests.Group               (specAdditiveGroup)
 import           Tests.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
+import           Tests.Protostar           (specProtostar)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
 import           Tests.Univariate          (specUnivariate)
@@ -45,6 +46,7 @@ main = do
 
     -- Non-interactive proofs
     specNonInteractiveProof
+    specProtostar
 
     -- Cryptography
     specSHA2Natural
