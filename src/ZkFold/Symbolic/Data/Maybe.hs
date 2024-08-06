@@ -7,17 +7,17 @@ module ZkFold.Symbolic.Data.Maybe (
     Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, find
 ) where
 
-import           Data.Function                                       ((.))
-import           GHC.Generics                                        (Par1 (..))
-import           Prelude                                             (foldr, type (~), ($))
-import qualified Prelude                                             as Haskell
+import           Data.Function                    ((.))
+import           GHC.Generics                     (Par1 (..))
+import           Prelude                          (foldr, type (~), ($))
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Control.HApplicative                    (HApplicative, hliftA2)
-import           ZkFold.Base.Data.HFunctor                           (HFunctor, hmap)
-import qualified ZkFold.Base.Data.Vector                             as V
-import           ZkFold.Base.Data.Vector                             (Vector)
+import           ZkFold.Base.Control.HApplicative (HApplicative, hliftA2)
+import           ZkFold.Base.Data.HFunctor        (HFunctor, hmap)
+import qualified ZkFold.Base.Data.Vector          as V
+import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
