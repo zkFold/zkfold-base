@@ -18,11 +18,11 @@ import qualified Prelude                         as Haskell
 import           Text.Show                       (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.HFunctor       (HFunctor)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class      (SymbolicData)
 import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit    (newAssigned)
-import ZkFold.Base.Data.HFunctor (HFunctor)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 
 class BoolType b where
     true  :: b
