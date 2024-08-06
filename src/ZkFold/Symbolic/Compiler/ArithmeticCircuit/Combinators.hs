@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     splitExpansion,
     horner,
     desugarRange,
+    safeZero,
     isZeroC,
     invertC,
     foldCircuit,
@@ -23,6 +24,7 @@ import           Control.Monad                                             (fold
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Eq                                                   ((==))
 import           Data.Foldable                                             (foldlM)
+import           Data.Functor                                              (($>))
 import           Data.List                                                 (sort)
 import           Data.Map                                                  (elems)
 import           Data.Traversable                                          (for)
@@ -119,6 +121,11 @@ desugarRange i b
   where forceGE j c k
           | c == zero = ($ j) * (one - ($ k))
           | otherwise = one + ($ k) * (($ j) - one)
+
+safeZero :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
+safeZero r = circuitF $ do
+    is' <- runCircuit r
+    for is' $ \i -> constraint (\x -> x i - one) $> i
 
 isZeroC :: (Arithmetic a, Z.Zip f, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
 isZeroC r = circuitF $ fst <$> runInvert r
