@@ -11,6 +11,7 @@ import           Data.Functor                    (Functor)
 import           Data.Functor.Identity           (Identity (..))
 import           Data.Ord                        (Ord)
 import           Data.Type.Equality              (type (~))
+import           Numeric.Natural                 (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 
@@ -108,7 +109,7 @@ class Monad m => MonadCircuit i a m | m -> i, m -> a where
 
 -- | Field of witnesses with decidable equality and ordering
 -- is called an ``arithmetic'' field.
-type Arithmetic a = (WitnessField a, Eq a, Ord a)
+type Arithmetic a = (WitnessField a, ToConstant a Natural, Eq a, Ord a)
 
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.

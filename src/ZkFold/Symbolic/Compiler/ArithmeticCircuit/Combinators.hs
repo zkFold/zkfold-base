@@ -78,7 +78,7 @@ expansion n k = do
     constraint (\x -> x k - x k')
     return bits
 
-splitExpansion :: (MonadBlueprint i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
+splitExpansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
 -- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).

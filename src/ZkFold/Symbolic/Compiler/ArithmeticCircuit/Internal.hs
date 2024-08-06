@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveAnyClass   #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
