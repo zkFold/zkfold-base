@@ -3,7 +3,6 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
         Constraint,
-
         witnessGenerator,
         -- high-level functions
         applyArgs,
@@ -14,7 +13,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         eval1,
         exec,
         exec1,
-        forceZero,
         -- information about the system
         acSizeN,
         acSizeM,
@@ -50,7 +48,7 @@ import           ZkFold.Prelude                                         (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (desugarRange)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                         apply, eval, eval1, exec, exec1, forceZero,
+                                                                         apply, eval, eval1, exec, exec1,
                                                                          witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 

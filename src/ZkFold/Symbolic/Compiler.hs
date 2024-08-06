@@ -6,22 +6,22 @@ module ZkFold.Symbolic.Compiler (
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
     compile,
     compileIO,
-    compileSafeZero
+    compileForceOne
 ) where
 
 import           Data.Aeson                                             (ToJSON)
 import           Data.Eq                                                (Eq)
 import           Data.Function                                          (const, (.))
-import           Prelude                                                (FilePath, IO, Monoid (mempty), Ord, Show (..),
+import           Prelude                                                (FilePath, IO, Monoid (mempty), Show (..),
                                                                          putStrLn, type (~), ($), (++))
 
-import           ZkFold.Base.Algebra.Basic.Class                        (BinaryExpansion (..), Field, Finite,
-                                                                         MultiplicativeMonoid)
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                                (Vector, unsafeToVector)
 import           ZkFold.Prelude                                         (writeFileJSON)
+import           ZkFold.Symbolic.Class                                  (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (safeZero)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (forceOne)
 import           ZkFold.Symbolic.Data.Class
 
 {-
@@ -51,10 +51,11 @@ solder f = pieces f (restore @c @(Support c f) $ const inputC)
         inputList = [1..(typeSize @c @(Support c f))]
         inputC = mempty { acInput = inputList, acOutput = unsafeToVector inputList }
 
--- | Compiles function `f` into an arithmetic circuit with all outputs are zero.
-compileSafeZero ::
+-- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
+compileForceOne ::
     forall a c f y .
     ( c ~ ArithmeticCircuit a
+    , Arithmetic a
     , SymbolicData c f
     , SymbolicData c (Support c f)
     , Support c (Support c f) ~ ()
@@ -62,13 +63,8 @@ compileSafeZero ::
     , SymbolicData c y
     , Support c y ~ ()
     , TypeSize c f ~ TypeSize c y
-    , Finite a
-    , Field a
-    , BinaryExpansion a
-    , Bits a ~ [a]
-    , Ord a
     ) => f -> y
-compileSafeZero = restore @c . const . optimize . safeZero . solder @a
+compileForceOne = restore @c . const . optimize . forceOne . solder @a
 
 -- | Compiles function `f` into an arithmetic circuit.
 compile ::

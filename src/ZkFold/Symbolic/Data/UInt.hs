@@ -40,7 +40,7 @@ import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Class                                     hiding (embed)
-import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
+import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool

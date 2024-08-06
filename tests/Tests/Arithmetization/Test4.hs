@@ -21,7 +21,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile,
-                                                              compileSafeZero)
+                                                              compileForceOne)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
@@ -66,7 +66,7 @@ testOnlyOutputZKP x ps targetValue =
 
 testSafeOneInputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
 testSafeOneInputZKP x ps targetValue =
-    let Bool ac = compileSafeZero @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
+    let Bool ac = compileForceOne @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
 
         (omega, k1, k2) = getParams 32
         witnessInputs  = fromList [(1, targetValue), (unPar1 $ acOutput ac, 1)]
@@ -83,7 +83,7 @@ testSafeOneInputZKP x ps targetValue =
 
 testAttackSafeOneInputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
 testAttackSafeOneInputZKP x ps targetValue =
-    let Bool ac = compileSafeZero @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
+    let Bool ac = compileForceOne @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
 
         (omega, k1, k2) = getParams 32
         witnessInputs  = fromList [(1, targetValue + 1), (unPar1 $ acOutput ac, 0)]
