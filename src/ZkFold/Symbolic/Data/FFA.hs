@@ -2,9 +2,10 @@
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.FFA where
+module ZkFold.Symbolic.Data.FFA (FFA (..)) where
 
-import           Control.Monad                                             (return, (>>=))
+import           Control.Applicative                                       (pure)
+import           Control.Monad                                             (Monad, return, (>>=))
 import           Data.Foldable                                             (any, foldlM)
 import           Data.Function                                             (const, ($), (.))
 import           Data.Functor                                              (fmap, (<$>))
@@ -13,23 +14,21 @@ import           Data.Ratio                                                ((%))
 import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (fst, snd, uncurry)
 import           Data.Zip                                                  (zipWith)
-import           Numeric.Natural                                           (Natural)
 import           Prelude                                                   (Integer, error)
 import qualified Prelude                                                   as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, inv)
-import           ZkFold.Base.Algebra.Basic.Number                          (KnownNat, value)
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                                            (iterateM, length)
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint, circuitF, runCircuit)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators                          (log2, maxBitsPerFieldElement)
 import           ZkFold.Symbolic.Data.Ord                                  (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                              (MonadCircuit, newAssigned)
 
 type Size = 7
 
@@ -67,30 +66,21 @@ mis = (`mod` value @p) <$> mis0 @a
 minv :: forall a. Finite a => Vector Size Natural
 minv = zipWith (\x p -> fromConstant x `inv` p) (mis0 @a) (coprimes @a)
 
-instance (KnownNat p, Finite (Zp q), ToConstant (Zp p) c) => ToConstant (FFA p (Interpreter (Zp q))) c where
-  toConstant = (toConstant :: Zp p -> c) . fromConstant . impl
-    where
-      mods = coprimes @(Zp q)
-      binary g m = (fromConstant g * 2 ^ sigma) `div` fromConstant m
-      impl (FFA (Interpreter xs)) =
-        let gs0 = zipWith (\x y -> toConstant x * y) xs $ minv @(Zp q)
-            gs = zipWith mod gs0 mods
-            residue = floorN ((3 % 4) + sum (zipWith binary gs mods) % (2 ^ sigma))
-         in vectorDotProduct gs (mis @(Zp q) @p) -! mprod @(Zp q) @p * residue
+toZp :: forall p a. (Arithmetic a, KnownNat p) => Vector Size a -> Zp p
+toZp = fromConstant . impl
+  where
+    mods = coprimes @a
+    binary g m = (fromConstant g * 2 ^ sigma) `div` fromConstant m
+    impl xs =
+      let gs0 = zipWith (\x y -> toConstant x * y) xs $ minv @a
+          gs = zipWith mod gs0 mods
+          residue = floorN ((3 % 4) + sum (zipWith binary gs mods) % (2 ^ sigma))
+       in vectorDotProduct gs (mis @a @p) -! mprod @a @p * residue
 
-instance (FromConstant c (Zp p), Finite (Zp q)) => FromConstant c (FFA p (Interpreter (Zp q))) where
-  fromConstant = FFA . Interpreter . impl . toConstant . (fromConstant :: c -> Zp p)
-    where
-      impl :: Natural -> Vector Size (Zp q)
-      impl x = fromConstant . (x `mod`) <$> coprimes @(Zp q)
+fromZp :: forall p a. Arithmetic a => Zp p -> Vector Size a
+fromZp = (\(FFA (Interpreter xs) :: FFA p (Interpreter a)) -> xs) . fromConstant
 
-instance (FromConstant c (Zp p), Arithmetic a) => FromConstant c (FFA p (ArithmeticCircuit a)) where
-  fromConstant = FFA . impl . toConstant . (fromConstant :: c -> Zp p)
-    where
-      impl :: Natural -> ArithmeticCircuit a (Vector Size)
-      impl x = circuitF $ for (coprimes @a) $ \m -> newAssigned (fromConstant (x `mod` m))
-
-condSubOF :: forall i a m . MonadBlueprint i a m => Natural -> i -> m (i, i)
+condSubOF :: forall i a m . MonadCircuit i a m => Natural -> i -> m (i, i)
 condSubOF m i = do
   z <- newAssigned zero
   o <- newAssigned one
@@ -100,13 +90,13 @@ condSubOF m i = do
   res <- newAssigned (($ i) - ($ ovf) * fromConstant m)
   return (res, ovf)
 
-condSub :: MonadBlueprint i a m => Natural -> i -> m i
+condSub :: MonadCircuit i a m => Natural -> i -> m i
 condSub m x = fst <$> condSubOF m x
 
-smallCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
+smallCut :: forall i a m. (Arithmetic a, MonadCircuit i a m) => Vector Size i -> m (Vector Size i)
 smallCut = zipWithM condSub $ coprimes @a
 
-bigSub :: (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> m i
+bigSub :: (Arithmetic a, MonadCircuit i a m) => Natural -> i -> m i
 bigSub m j = trimPow j >>= trimPow >>= condSub m
   where
     s = Haskell.ceiling (log2 m) :: Natural
@@ -114,10 +104,10 @@ bigSub m j = trimPow j >>= trimPow >>= condSub m
       (l, h) <- splitExpansion s s i
       newAssigned (($ l) + ($ h) * fromConstant ((2 ^ s) -! m))
 
-bigCut :: forall i a m. (Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
+bigCut :: forall i a m. (Arithmetic a, MonadCircuit i a m) => Vector Size i -> m (Vector Size i)
 bigCut = zipWithM bigSub $ coprimes @a
 
-cast :: forall p i a m. (KnownNat p, Arithmetic a, MonadBlueprint i a m) => Vector Size i -> m (Vector Size i)
+cast :: forall p i a m. (KnownNat p, Arithmetic a, MonadCircuit i a m) => Vector Size i -> m (Vector Size i)
 cast xs = do
   gs <- zipWithM (\i m -> newAssigned $ ($ i) * fromConstant m) xs (minv @a) >>= bigCut
   zi <- newAssigned (const zero)
@@ -138,71 +128,67 @@ cast xs = do
     newAssigned (($ dot) + fromConstant (m -! (mprod @a @p `mod` m)) * ($ residue))
         >>= bigSub m
 
-instance (Finite (Zp p), Finite (Zp q)) => MultiplicativeSemigroup (FFA p (Interpreter (Zp q))) where
-  x * y = fromConstant (toConstant x * toConstant y :: Zp p)
+mul :: forall p i a m. (KnownNat p, Arithmetic a, MonadCircuit i a m) => Vector Size i -> Vector Size i -> m (Vector Size i)
+mul xs ys = zipWithM (\i j -> newAssigned (\w -> w i * w j)) xs ys >>= bigCut >>= cast @p
 
-instance (KnownNat p, Arithmetic a) => MultiplicativeSemigroup (FFA p (ArithmeticCircuit a)) where
-  FFA q * FFA r = FFA $ circuitF $ do
-    xs <- runCircuit q
-    ys <- runCircuit r
-    zs <- zipWithM (\i j -> newAssigned (($ i) * ($ j))) xs ys
-    bigCut zs >>= cast @p
+natPowM :: Monad m => (a -> a -> m a) -> m a -> Natural -> a -> m a
+natPowM _ z 0 _ = z
+natPowM _ _ 1 x = pure x
+natPowM f z n x
+  | Haskell.even n    = natPowM f z (n `div` 2) x >>= \y -> f y y
+  | Haskell.otherwise = natPowM f z (n -! 1) x >>= f x
 
-instance (Finite (Zp p), Finite (Zp q)) => Exponent (FFA p (Interpreter (Zp q))) Natural where
-  x ^ a = fromConstant (toConstant x ^ a :: Zp p)
+oneM :: MonadCircuit i a m => m (Vector Size i)
+oneM = pure <$> newAssigned (const one)
 
-instance (Finite (Zp p), Arithmetic a) => Exponent (FFA p (ArithmeticCircuit a)) Natural where
-  (^) = natPow
+instance (KnownNat p, Arithmetic a) => ToConstant (FFA p (Interpreter a)) (Zp p) where
+  toConstant (FFA (Interpreter rs)) = toZp rs
 
-instance (Finite (Zp p), Finite (Zp q)) => MultiplicativeMonoid (FFA p (Interpreter (Zp q))) where
+instance (FromConstant a (Zp p), Symbolic c) => FromConstant a (FFA p c) where
+  fromConstant = FFA . embed . impl . toConstant . (fromConstant :: a -> Zp p)
+    where
+      impl :: Natural -> Vector Size (BaseField c)
+      impl x = fromConstant . (x `mod`) <$> coprimes @(BaseField c)
+
+instance (KnownNat p, Symbolic c) => MultiplicativeSemigroup (FFA p c) where
+  FFA x * FFA y =
+    FFA $ symbolic2F x y (\u v -> fromZp (toZp u * toZp v :: Zp p)) (mul @p)
+
+instance (KnownNat p, Symbolic c) => Exponent (FFA p c) Natural where
+  FFA x ^ a =
+    FFA $ symbolicF x (\v -> fromZp (toZp v ^ a :: Zp p)) $ natPowM (mul @p) oneM a
+
+instance (KnownNat p, Symbolic c) => MultiplicativeMonoid (FFA p c) where
   one = fromConstant (one :: Zp p)
 
-instance (Finite (Zp p), Arithmetic a) => MultiplicativeMonoid (FFA p (ArithmeticCircuit a)) where
-  one = fromConstant (one :: Zp p)
+instance (KnownNat p, Symbolic c) => AdditiveSemigroup (FFA p c) where
+  FFA x + FFA y =
+    FFA $ symbolic2F x y (\u v -> fromZp (toZp u + toZp v :: Zp p)) $ \xs ys ->
+      zipWithM (\i j -> newAssigned (\w -> w i + w j)) xs ys >>= smallCut >>= cast @p
 
-instance (Finite (Zp p), Finite (Zp q)) => AdditiveSemigroup (FFA p (Interpreter (Zp q))) where
-  x + y = fromConstant (toConstant x + toConstant y :: Zp p)
-
-instance (KnownNat p, Arithmetic a) => AdditiveSemigroup (FFA p (ArithmeticCircuit a)) where
-  FFA q + FFA r = FFA $ circuitF $ do
-    xs <- runCircuit q
-    ys <- runCircuit r
-    zs <- zipWithM (\i j -> newAssigned (($ i) + ($ j))) xs ys
-    smallCut zs >>= cast @p
-
-instance (Finite (Zp p), Scale c (Zp p), Finite (Zp q)) => Scale c (FFA p (Interpreter (Zp q))) where
+instance (KnownNat p, Scale a (Zp p), Symbolic c) => Scale a (FFA p c) where
   scale k x = fromConstant (scale k one :: Zp p) * x
 
-instance (Finite (Zp p), Scale c (Zp p), Arithmetic a) => Scale c (FFA p (ArithmeticCircuit a)) where
-  scale k x = fromConstant (scale k one :: Zp p) * x
-
-instance (Finite (Zp p), FromConstant (Zp p) (FFA p b), Scale Natural (FFA p b), AdditiveSemigroup (FFA p b)) => AdditiveMonoid (FFA p b) where
+instance (KnownNat p, Symbolic c) => AdditiveMonoid (FFA p c) where
   zero = fromConstant (zero :: Zp p)
 
-instance (Finite (Zp p), Finite (Zp q)) => AdditiveGroup (FFA p (Interpreter (Zp q))) where
-  negate = fromConstant . negate @(Zp p) . toConstant
-
-instance (Finite (Zp p), Arithmetic a) => AdditiveGroup (FFA p (ArithmeticCircuit a)) where
-  negate (FFA r) = FFA $ circuitF $ do
-    xs <- runCircuit r
-    ys <- zipWithM (\i m -> newAssigned $ fromConstant m - ($ i)) xs $ coprimes @a
+instance (KnownNat p, Symbolic c) => AdditiveGroup (FFA p c) where
+  negate (FFA x) = FFA $ symbolicF x (fromZp . negate . toZp @p) $ \xs -> do
+    let cs = coprimes @(BaseField c)
+    ys <- zipWithM (\i m -> newAssigned $ fromConstant m - ($ i)) xs cs
     cast @p ys
 
-instance (MultiplicativeMonoid (FFA p b), AdditiveMonoid (FFA p b), FromConstant Natural (FFA p b)) => Semiring (FFA p b)
+instance (KnownNat p, Symbolic c) => Semiring (FFA p c)
 
-instance (Semiring (FFA p b), AdditiveGroup (FFA p b), FromConstant Integer (FFA p b)) => Ring (FFA p b)
+instance (KnownNat p, Symbolic c) => Ring (FFA p c)
 
-instance (PrimeField (Zp p), Finite (Zp q)) => Exponent (FFA p (Interpreter (Zp q))) Integer where
-  x ^ a = fromConstant (toConstant x ^ a :: Zp p)
-
-instance (PrimeField (Zp p), Arithmetic a) => Exponent (FFA p (ArithmeticCircuit a)) Integer where
+instance (Prime p, Symbolic c) => Exponent (FFA p c) Integer where
   x ^ a = x `intPowF` (a `mod` fromConstant (value @p -! 1))
 
-instance (PrimeField (Zp p), Finite (Zp q)) => Field (FFA p (Interpreter (Zp q))) where
-  finv = fromConstant . finv @(Zp p) . toConstant
-
-instance (PrimeField (Zp p), Arithmetic a) => Field (FFA p (ArithmeticCircuit a)) where
-  finv x = x ^ (value @p -! 2)
+instance (Prime p, Symbolic c) => Field (FFA p c) where
+  finv (FFA x) =
+    FFA $ symbolicF x (fromZp . finv @(Zp p) . toZp)
+      $ natPowM (mul @p) oneM (value @p -! 2)
 
 instance Finite (Zp p) => Finite (FFA p b) where
   type Order (FFA p b) = p
