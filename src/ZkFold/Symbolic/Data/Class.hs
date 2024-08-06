@@ -11,15 +11,16 @@ module ZkFold.Symbolic.Data.Class (
     ) where
 
 import           Control.Applicative              ((<*>))
-import           Data.Function                    (flip, (.))
+import           Data.Function                    (const, flip, ($), (.))
 import           Data.Functor                     ((<$>))
 import           Data.Kind                        (Type)
 import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Typeable)
+import           GHC.Generics                     (Par1 (..))
 
 import           ZkFold.Base.Algebra.Basic.Number (KnownNat, Natural, type (*), type (+), value)
 import           ZkFold.Base.Control.HApplicative (HApplicative, hliftA2, hpure)
-import           ZkFold.Base.Data.HFunctor        (hmap)
+import           ZkFold.Base.Data.HFunctor        (HFunctor, hmap)
 import           ZkFold.Base.Data.Package         (Package, packWith)
 import qualified ZkFold.Base.Data.Vector          as V
 import           ZkFold.Base.Data.Vector          (Vector)
@@ -51,6 +52,13 @@ instance SymbolicData c (c (Vector n)) where
 
     pieces x _ = x
     restore f = f ()
+
+instance HFunctor c => SymbolicData c (c Par1) where
+    type Support c (c Par1) = ()
+    type TypeSize c (c Par1) = 1
+
+    pieces = const . hmap (V.singleton . unPar1)
+    restore = hmap (Par1 . V.item) . ($ ())
 
 instance HApplicative c => SymbolicData c () where
     type Support c () = ()

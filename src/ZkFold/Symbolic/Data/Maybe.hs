@@ -19,7 +19,6 @@ import           ZkFold.Base.Data.HFunctor                           (HFunctor, 
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional

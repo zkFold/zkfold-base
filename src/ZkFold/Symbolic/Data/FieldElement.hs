@@ -10,24 +10,18 @@ import           Prelude                         hiding (Bool, Eq, Num (..), Ord
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.HFunctor       (HFunctor, hmap)
-import qualified ZkFold.Base.Data.Vector         as V
+import           ZkFold.Base.Data.HFunctor       (HFunctor)
 import           ZkFold.Symbolic.Data.Bool       (Bool)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq         (Eq)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
 
-deriving instance Show (c Par1) => Show (FieldElement c)
+deriving stock instance Show (c Par1) => Show (FieldElement c)
 
-deriving instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
+deriving stock instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
 
-instance HFunctor c => SymbolicData c (FieldElement c) where
-    type Support c (FieldElement c) = ()
-    type TypeSize c (FieldElement c) = 1
-
-    pieces (FieldElement x) _ = hmap (V.singleton . unPar1) x
-    restore = FieldElement . hmap (Par1 . V.item) . ($ ())
+deriving newtype instance HFunctor c => SymbolicData c (FieldElement c)
 
 deriving newtype instance FromConstant k (c Par1) => FromConstant k (FieldElement c)
 
