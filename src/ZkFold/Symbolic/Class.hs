@@ -1,16 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module ZkFold.Symbolic.Class
-  ( Symbolic (..)
-  , Arithmetic
-  , embed
-  , symbolic2F
-  , fromCircuit2F
-  , symbolic3F
-  , fromCircuit3F
-  , symbolicVF
-  , fromCircuitVF
-  ) where
+module ZkFold.Symbolic.Class (module ZkFold.Symbolic.Class, Arithmetic) where
 
 import           Data.Foldable                    (Foldable)
 import           Data.Function                    (const, ($), (.))
