@@ -22,7 +22,7 @@ import           Data.Functor                                              ((<$>
 import           Data.Kind                                                 (Type)
 import           Data.List                                                 (unfoldr, zip)
 import           Data.Map                                                  (fromList, (!))
-import           Data.Traversable                                          (Traversable, for, traverse)
+import           Data.Traversable                                          (for, traverse)
 import           Data.Tuple                                                (swap)
 import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Generic, Par1 (..))
@@ -39,7 +39,7 @@ import           ZkFold.Base.Control.HApplicative                          (hlif
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
-import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Class                                     hiding (embed)
 import           ZkFold.Symbolic.Compiler                                  hiding (forceZero)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
@@ -376,19 +376,27 @@ instance
                     s <- newAssigned (\v -> v d + v b + fromConstant t)
                     splitExpansion (registerSize @a @n @r) 1 s
 
-        negate (UInt x) =
-            let y = 2 ^ registerSize @a @n @r
-                ys = replicate (numberOfRegisters @a @n @r -! 2) (2 ^ registerSize @a @n @r -! 1)
-                y' = 2 ^ highRegisterSize @a @n @r -! 1
-                ns
-                  | numberOfRegisters @a @n @r Haskell.== 1 = V.unsafeToVector [y' + 1]
-                  | otherwise = V.unsafeToVector $ (y : ys) <> [y']
-             in UInt (negateN ns x)
+        negate (UInt x) = UInt $ circuitF (V.unsafeToVector <$> solve)
+            where
+                solve :: MonadBlueprint i a m => m [i]
+                solve = do
+                    j <- newAssigned (Haskell.const zero)
 
-negateN :: (Arithmetic a, Z.Zip f, Traversable f) => f Natural -> ArithmeticCircuit a f -> ArithmeticCircuit a f
-negateN ns r = circuitF $ do
-    is <- runCircuit r
-    for (Z.zip is ns) $ \(i, n) -> newAssigned (\v -> fromConstant n - v i)
+                    xs <- V.fromVector <$> runCircuit x
+                    let y = 2 ^ registerSize @a @n @r
+                        ys = replicate (numberOfRegisters @a @n @r -! 2) (2 ^ registerSize @a @n @r -! 1)
+                        y' = 2 ^ highRegisterSize @a @n @r -! 1
+                        ns
+                            | numberOfRegisters @a @n @r Haskell.== 1 = [y' + 1]
+                            | otherwise = (y : ys) <> [y']
+                    (zs, _) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN ns xs)
+                    return zs
+
+                negateN :: MonadBlueprint i a m => Natural -> i -> i -> m (i, i)
+                negateN n i b = do
+                    r <- newAssigned (\v -> fromConstant n - v i + v b)
+                    splitExpansion (registerSize @a @n @r) 1 r
+
 
 instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => MultiplicativeSemigroup (UInt n rs (ArithmeticCircuit a)) where
     UInt x * UInt y = UInt (circuitF $ V.unsafeToVector <$> solve)
@@ -517,13 +525,11 @@ instance (Finite (Zp p), Prime p, KnownNat n, KnownRegisterSize r) => StrictConv
 instance (Arithmetic a, KnownNat n, KnownRegisterSize r, NumberOfBits a <= n) => StrictConv (ArithmeticCircuit a Par1) (UInt n r (ArithmeticCircuit a)) where
     strictConv a = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
-            requiredBits :: Natural
-            requiredBits = (numberOfRegisters @a @n @r -! 1) * (registerSize @a @n @r) + (highRegisterSize @a @n @r)
-
             solve :: MonadBlueprint i a m => m [i]
             solve = do
                 i <- unPar1 <$> runCircuit a
-                bits <- Haskell.reverse <$> expansion requiredBits i
+                let len = Haskell.min (getNatural @n) (numberOfBits @a)
+                bits <- Haskell.reverse <$> expansion len i
                 fromBits (highRegisterSize @a @n @r) (registerSize @a @n @r) bits
 
 
@@ -645,7 +651,7 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r 
 
 --------------------------------------------------------------------------------
 
-fullAdder :: MonadBlueprint i a m => Natural -> i -> i -> i -> m (i, i)
+fullAdder :: (Arithmetic a, MonadBlueprint i a m) => Natural -> i -> i -> i -> m (i, i)
 fullAdder r xk yk c = fullAdded xk yk c >>= splitExpansion r 1
 
 fullAdded :: MonadBlueprint i a m => i -> i -> i -> m i
