@@ -11,7 +11,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     splitExpansion,
     horner,
     desugarRange,
-    safeZero,
+    forceOne,
     isZeroC,
     invertC,
     foldCircuit,
@@ -78,7 +78,7 @@ expansion n k = do
     constraint (\x -> x k - x k')
     return bits
 
-splitExpansion :: (MonadBlueprint i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
+splitExpansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
 -- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).
@@ -124,8 +124,8 @@ desugarRange i b
           | c == zero = ($ j) * (one - ($ k))
           | otherwise = one + ($ k) * (($ j) - one)
 
-safeZero :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
-safeZero r = circuitF $ do
+forceOne :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
+forceOne r = circuitF $ do
     is' <- runCircuit r
     for is' $ \i -> constraint (\x -> x i - one) $> i
 

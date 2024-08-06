@@ -18,7 +18,9 @@ import qualified Prelude                         as Haskell
 import           Text.Show                       (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.HFunctor       (HFunctor)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class      (SymbolicData)
 import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit    (newAssigned)
 
@@ -57,6 +59,8 @@ deriving instance Eq (c Par1) => Eq (Bool c)
 
 instance (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
     show (fromBool -> x) = if x == one then "True" else "False"
+
+deriving newtype instance HFunctor c => SymbolicData c (Bool c)
 
 instance Symbolic c => BoolType (Bool c) where
     true = Bool $ embed (Par1 one)

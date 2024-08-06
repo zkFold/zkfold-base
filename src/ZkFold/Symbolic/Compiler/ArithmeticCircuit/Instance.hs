@@ -25,7 +25,6 @@ import           Test.QuickCheck                                           (Arbi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor                                 (HFunctor, hmap)
 import           ZkFold.Base.Data.Par1                                     ()
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
@@ -35,20 +34,10 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embe
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       hiding (constraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint (MonadBlueprint (..), circuit, circuitF)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Class                                (SymbolicData (..))
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.MonadCircuit                              (newAssigned)
 
 ------------------------------------- Instances -------------------------------------
-
-instance HFunctor c => SymbolicData c (c Par1) where
-    type Support c (c Par1) = ()
-    type TypeSize c (c Par1) = 1
-
-    pieces = const . hmap (V.singleton . unPar1)
-    restore = hmap (Par1 . V.item) . ($ ())
-
-deriving newtype instance HFunctor c => SymbolicData c (Bool c)
 
 -- TODO: I had to add these constraints and I don't like them
 instance

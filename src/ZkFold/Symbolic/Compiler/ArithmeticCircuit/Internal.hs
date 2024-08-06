@@ -1,13 +1,13 @@
-{-# LANGUAGE DeriveAnyClass   #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
         Arithmetic,
         ConstraintMonomial,
         Constraint,
-
         witnessGenerator,
         -- low-level functions
         constraint,
@@ -20,7 +20,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec,
         exec1,
         apply,
-        forceZero,
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
@@ -28,6 +27,7 @@ import           Control.Monad.State                          (MonadState (..), 
 import           Data.Foldable                                (fold)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
 import qualified Data.Map.Strict                              as M
+import           Data.Semialign                               (unzipDefault)
 import qualified Data.Set                                     as S
 import           GHC.Generics                                 (Generic, Par1 (..), U1 (..))
 import           Optics
@@ -45,7 +45,6 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalM
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
-import           ZkFold.Base.Data.Vector                      (Vector (..))
 import           ZkFold.Prelude                               (drop, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.MonadCircuit
@@ -79,26 +78,26 @@ witnessGenerator circuit inputs =
 
 ------------------------------ Symbolic compiler context ----------------------------
 
+crown :: ArithmeticCircuit a g -> f Natural -> ArithmeticCircuit a f
+crown = flip (set #acOutput)
+
+behead :: ArithmeticCircuit a f -> (ArithmeticCircuit a U1, f Natural)
+behead = liftA2 (,) (set #acOutput U1) acOutput
+
 instance HFunctor (ArithmeticCircuit a) where
-    hmap f c = c {acOutput = f (acOutput c)}
+    hmap = over #acOutput
 
 instance (Eq a, MultiplicativeMonoid a) => HApplicative (ArithmeticCircuit a) where
-    hpure o = mempty {acOutput = o}
-    hliftA2 f c d = (c {acOutput = U1} <> d {acOutput = U1})
-      {acOutput = f (acOutput c) (acOutput d)}
+    hpure = crown mempty
+    hliftA2 f (behead -> (c, o)) (behead -> (d, p)) = crown (c <> d) (f o p)
 
 instance (Eq a, MultiplicativeMonoid a) => Package (ArithmeticCircuit a) where
-    unpackWith f c = (\o -> c {acOutput = o}) <$> (f (acOutput c))
-    packWith f cs = (fold (fmap (\c -> c {acOutput = U1}) cs))
-      {acOutput = f (fmap acOutput cs)}
+    unpackWith f (behead -> (c, o)) = crown c <$> f o
+    packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
 instance Arithmetic a => Symbolic (ArithmeticCircuit a) where
     type BaseField (ArithmeticCircuit a) = a
-    symbolicF c _ f =
-        let
-            (p, d) = runState (f (acOutput c)) c {acOutput = U1}
-        in
-            d {acOutput = p}
+    symbolicF (behead -> (c, o)) _ f = uncurry (set #acOutput) (runState (f o) c)
 
 -------------------------------- MonadCircuit instance ------------------------------
 
@@ -212,10 +211,6 @@ addConstraint c = zoom #acSystem . modify $ insert (toVar [] c) c
 
 rangeConstraint :: Natural -> a -> State (ArithmeticCircuit a U1) ()
 rangeConstraint i b = zoom #acRange . modify $ insert i b
-
--- | Forces the provided variables to be zero.
-forceZero :: Arithmetic a => Vector n Natural -> State (ArithmeticCircuit a U1) ()
-forceZero = mapM_ (addConstraint . var)
 
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
