@@ -117,10 +117,10 @@ instance Symbolic c => TrichotomyField (FieldElement c) where
         delta <- for (zip is js) $ \(bi, bj) -> newAssigned (\w -> w bi - w bj)
         -- least significant bit first,
         -- reverse lexicographical ordering
-        let reverseLexicographical u v = do
+        let reverseLexicographical v u = do
               is0 <- newAssigned (\p -> one - p u * p u)
               v' <- newAssigned (\p -> p is0 * p v)
-              newAssigned (\p -> p u + p v')
+              newAssigned (\p -> p v' + p u)
         Par1 <$> case delta of
           []     -> newAssigned zero
           (d:ds) -> foldlM reverseLexicographical d ds
