@@ -48,9 +48,9 @@ evalPolynomial
     -> b
 evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 
-variables :: forall c .
-    MultiplicativeMonoid c =>
-    Poly c Natural Natural -> Set Natural
+variables :: forall c v .
+    (Ord v, MultiplicativeMonoid c) =>
+    Poly c v Natural -> Set v
 variables = runSources . evalPolynomial evalMonomial (Sources @c . singleton)
 
 mapVarPolynomial :: Variable i => Map i i-> Poly c i j -> Poly c i j

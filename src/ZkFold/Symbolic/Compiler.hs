@@ -17,7 +17,7 @@ import           Prelude                                                (FilePat
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                                (Vector, unsafeToVector)
+import           ZkFold.Base.Data.Vector                                (Vector)
 import           ZkFold.Prelude                                         (writeFileJSON)
 import           ZkFold.Symbolic.Class                                  (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
@@ -40,7 +40,7 @@ solder ::
     forall a c f .
     ( Eq a
     , MultiplicativeMonoid a
-    , c ~ ArithmeticCircuit a
+    , c ~ ArithmeticCircuit a (Vector (TypeSize c (Support c f)))
     , SymbolicData c f
     , SymbolicData c (Support c f)
     , Support c (Support c f) ~ ()
@@ -48,13 +48,12 @@ solder ::
     ) => f -> c (Vector (TypeSize c f))
 solder f = pieces f (restore @c @(Support c f) $ const inputC)
     where
-        inputList = [1..(typeSize @c @(Support c f))]
-        inputC = mempty { acInput = inputList, acOutput = unsafeToVector inputList }
+        inputC = mempty { acOutput = acInput }
 
 -- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
     forall a c f y .
-    ( c ~ ArithmeticCircuit a
+    ( c ~ ArithmeticCircuit a (Vector (TypeSize c (Support c f)))
     , Arithmetic a
     , SymbolicData c f
     , SymbolicData c (Support c f)
@@ -71,7 +70,7 @@ compile ::
     forall a c f y .
     ( Eq a
     , MultiplicativeMonoid a
-    , c ~ ArithmeticCircuit a
+    , c ~ ArithmeticCircuit a (Vector (TypeSize c (Support c f)))
     , SymbolicData c f
     , SymbolicData c (Support c f)
     , Support c (Support c f) ~ ()
@@ -87,7 +86,7 @@ compileIO ::
     forall a c f .
     ( Eq a
     , MultiplicativeMonoid a
-    , c ~ ArithmeticCircuit a
+    , c ~ ArithmeticCircuit a (Vector (TypeSize c (Support c f)))
     , ToJSON a
     , SymbolicData c f
     , SymbolicData c (Support c f)

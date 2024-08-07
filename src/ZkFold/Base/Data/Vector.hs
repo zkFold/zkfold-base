@@ -9,6 +9,8 @@ import qualified Control.Monad                    as M
 import           Control.Parallel.Strategies      (parMap, rpar)
 import           Data.Aeson                       (ToJSON (..))
 import           Data.Bifunctor                   (first)
+import           Data.Distributive                (Distributive (..))
+import           Data.Functor.Rep                 (Representable (..), distributeRep, collectRep)
 import qualified Data.List                        as List
 import           Data.List.Split                  (chunksOf)
 import           Data.These                       (These (..))
@@ -28,6 +30,15 @@ import           ZkFold.Prelude                   (length, replicate)
 
 newtype Vector (size :: Natural) a = Vector [a]
     deriving (Show, Eq, Functor, Foldable, Traversable, Generic, NFData)
+
+instance KnownNat size => Representable (Vector size) where
+  type Rep (Vector size) = Int
+  index (Vector v) ix = v Prelude.!! ix
+  tabulate f = Vector [f ix | ix <- [0 .. fromIntegral (value @size) Prelude.- 1]]
+
+instance KnownNat size => Distributive (Vector size) where
+  distribute = distributeRep
+  collect = collectRep
 
 parFmap :: (a -> b) -> Vector size a -> Vector size b
 parFmap f (Vector lst) = Vector $ parMap rpar f lst

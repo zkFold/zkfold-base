@@ -24,14 +24,15 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
 import           Control.Monad                                             (foldM, replicateM)
 import           Data.Containers.ListUtils                                 (nubOrd)
 import           Data.Eq                                                   ((==))
-import           Data.Foldable                                             (foldlM)
+import           Data.Foldable                                             (foldlM, toList)
 import           Data.Functor                                              (($>))
+import           Data.Functor.Rep                                          (Representable (..))
 import           Data.List                                                 (sort)
 import           Data.Map                                                  (elems)
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Par1)
-import           GHC.IsList                                                (IsList (..))
+-- import           GHC.IsList                                                (IsList (..))
 import           Prelude                                                   hiding (Bool, Eq (..), drop, length, negate,
                                                                             splitAt, take, (!!), (*), (+), (-), (^))
 
@@ -41,17 +42,17 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate              (vari
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (drop, length, take, (!!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..), acInput)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..), acInput, Var (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.MonadCircuit
 
-boolCheckC :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
+boolCheckC :: (Arithmetic a, Traversable f, Ord (Rep i), Representable i) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
 boolCheckC r = circuitF $ do
     is <- runCircuit r
     for is $ \i -> newAssigned (\x -> let xi = x i in xi * (xi - one))
 
-foldCircuit :: forall n a. Arithmetic a => (forall i m . MonadBlueprint i a m => i -> i -> m i) -> ArithmeticCircuit a (Vector n) -> ArithmeticCircuit a Par1
+foldCircuit :: forall n i a. (Arithmetic a, Ord (Rep i), Representable i) => (forall v m . MonadBlueprint i v a m => v -> v -> m v) -> ArithmeticCircuit a i (Vector n) -> ArithmeticCircuit a i Par1
 foldCircuit f c = circuit $ do
     outputs <- runCircuit c
     let (element, rest) = V.uncons outputs
@@ -59,19 +60,19 @@ foldCircuit f c = circuit $ do
 
 -- | TODO: Think about circuits with multiple outputs
 --
-embed :: Arithmetic a => a -> ArithmeticCircuit a Par1
+embed :: (Arithmetic a, Ord (Rep i), Representable i) => a -> ArithmeticCircuit a i Par1
 embed x = circuit $ newAssigned $ const (fromConstant x)
 
-embedV :: (Arithmetic a, Traversable f) => f a -> ArithmeticCircuit a f
+embedV :: (Arithmetic a, Traversable f, Ord (Rep i), Representable i) => f a -> ArithmeticCircuit a i f
 embedV v = circuitF $ for v $ \x -> newAssigned $ const (fromConstant x)
 
-embedVar :: forall a . a -> (forall i m . MonadBlueprint i a m => m i)
+embedVar :: forall a . a -> (forall i v m . MonadBlueprint i v a m => m v)
 embedVar x = newAssigned $ const (fromConstant x)
 
-embedAll :: forall a n . (Arithmetic a, KnownNat n) => a -> ArithmeticCircuit a (Vector n)
+embedAll :: forall a i n . (Arithmetic a, KnownNat n, Ord (Rep i), Representable i) => a -> ArithmeticCircuit a i (Vector n)
 embedAll x = circuitF $ Vector <$> replicateM (fromIntegral $ value @n) (newAssigned $ const (fromConstant x))
 
-expansion :: MonadCircuit i a m => Natural -> i -> m [i]
+expansion :: MonadCircuit v a m => Natural -> v -> m [v]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
 expansion n k = do
     bits <- bitsOf n k
@@ -79,7 +80,7 @@ expansion n k = do
     constraint (\x -> x k - x k')
     return bits
 
-splitExpansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
+splitExpansion :: (MonadCircuit v a m, Arithmetic a) => Natural -> Natural -> v -> m (v, v)
 -- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).
@@ -93,7 +94,7 @@ splitExpansion n1 n2 k = do
         repr :: forall b . (BinaryExpansion b, Bits b ~ [b]) => b -> [b]
         repr = padBits (n1 + n2) . binaryExpansion
 
-bitsOf :: MonadCircuit i a m => Natural -> i -> m [i]
+bitsOf :: MonadCircuit v a m => Natural -> v -> m [v]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
 bitsOf n k = for [0 .. n -! 1] $ \j ->
@@ -102,14 +103,14 @@ bitsOf n k = for [0 .. n -! 1] $ \j ->
         repr :: forall b . (BinaryExpansion b, Bits b ~ [b], Finite b) => b -> [b]
         repr = padBits (numberOfBits @b) . binaryExpansion
 
-horner :: MonadCircuit i a m => [i] -> m i
+horner :: MonadCircuit v a m => [v] -> m v
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
 -- Horner's scheme.
 horner xs = case reverse xs of
     []       -> newAssigned (const zero)
     (b : bs) -> foldlM (\a i -> newAssigned (\x -> let xa = x a in x i + xa + xa)) b bs
 
-desugarRange :: (Arithmetic a, MonadBlueprint i a m) => i -> a -> m ()
+desugarRange :: (Arithmetic a, MonadBlueprint i v a m) => v -> a -> m ()
 desugarRange i b
   | b == negate one = return ()
   | otherwise = do
@@ -125,28 +126,28 @@ desugarRange i b
           | c == zero = ($ j) * (one - ($ k))
           | otherwise = one + ($ k) * (($ j) - one)
 
-forceOne :: (Arithmetic a, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
+forceOne :: (Arithmetic a, Traversable f, Ord (Rep i), Representable i) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
 forceOne r = circuitF $ do
     is' <- runCircuit r
     for is' $ \i -> constraint (\x -> x i - one) $> i
 
-isZeroC :: (Arithmetic a, Z.Zip f, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
+isZeroC :: (Arithmetic a, Z.Zip f, Traversable f, Ord (Rep i), Representable i) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
 isZeroC r = circuitF $ runCircuit r >>= fmap fst . runInvert
 
-invertC :: (Arithmetic a, Z.Zip f, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
+invertC :: (Arithmetic a, Z.Zip f, Traversable f, Ord (Rep i), Representable i) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
 invertC r = circuitF $ runCircuit r >>= fmap snd . runInvert
 
-runInvert :: (MonadCircuit i a m, Z.Zip f, Traversable f) => f i -> m (f i, f i)
+runInvert :: (MonadCircuit v a m, Z.Zip f, Traversable f) => f v -> m (f v, f v)
 runInvert is = do
     js <- for is $ \i -> newConstrained (\x j -> x i * x j) (\x -> let xi = x i in one - xi // xi)
     ks <- for (Z.zip is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv . ($ i))
     return (js, ks)
 
-embedVarIndex :: Arithmetic a => Natural -> ArithmeticCircuit a Par1
-embedVarIndex n = mempty { acInput = [ n ], acOutput = pure n}
+embedVarIndex :: Arithmetic a => Rep i -> ArithmeticCircuit a i Par1
+embedVarIndex n = mempty { acOutput = pure (InVar n)}
 
-embedVarIndexV :: (Arithmetic a, KnownNat n) => Natural -> ArithmeticCircuit a (Vector n)
-embedVarIndexV n = mempty { acInput = [ n ], acOutput = pure n}
+embedVarIndexV :: (Arithmetic a, KnownNat n) => Rep i -> ArithmeticCircuit a i (Vector n)
+embedVarIndexV n = mempty { acOutput = pure (InVar n)}
 
-getAllVars :: MultiplicativeMonoid a => ArithmeticCircuit a o -> [Natural]
-getAllVars ac = nubOrd $ sort $ 0 : acInput ac ++ concatMap (toList . variables) (elems $ acSystem ac)
+getAllVars :: (MultiplicativeMonoid a, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuit a i o -> [Var i]
+getAllVars ac = nubOrd $ sort $ NewVar 0 : toList acInput ++ concatMap (toList . variables) (elems $ acSystem ac)

@@ -42,7 +42,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 data RecursiveCircuit n a
     = RecursiveCircuit
         { iterations :: Natural
-        , circuit    :: ArithmeticCircuit a (Vector n)
+        , circuit    :: ArithmeticCircuit a (Vector n) (Vector n)
         } deriving (Generic, NFData)
 
 instance Arithmetic a => SpecialSoundProtocol a (RecursiveCircuit n a) where

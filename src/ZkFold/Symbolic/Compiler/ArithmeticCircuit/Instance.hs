@@ -7,15 +7,15 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Data.Aeson                                             hiding (Bool)
+import           Data.Functor.Rep                                       (Representable (..))
 import           Data.Map                                               hiding (drop, foldl, foldl', foldr, map, null,
                                                                          splitAt, take)
 import           GHC.Generics                                           (Par1 (..))
-import           GHC.Num                                                (integerToNatural)
 import           Prelude                                                (Show, mempty, pure, return, show, ($), (++),
                                                                          (<$>))
 import qualified Prelude                                                as Haskell
 import           System.Random                                          (mkStdGen)
-import           Test.QuickCheck                                        (Arbitrary (arbitrary), Gen, chooseInteger,
+import           Test.QuickCheck                                        (Arbitrary (arbitrary), Gen,
                                                                          elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -27,13 +27,13 @@ import           ZkFold.Symbolic.Data.FieldElement                      (FieldEl
 
 ------------------------------------- Instances -------------------------------------
 
-instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit a Par1) where
+instance (Arithmetic a, Arbitrary a, Arbitrary (Rep i), Haskell.Ord (Rep i), Representable i, Haskell.Foldable i) => Arbitrary (ArithmeticCircuit a i Par1) where
     arbitrary = do
-        k <- integerToNatural <$> chooseInteger (2, 10)
-        let ac = mempty { acInput = [1..k], acOutput = pure k }
+        outVar <- InVar <$> arbitrary
+        let ac = mempty {acOutput = Par1 outVar}
         fromFieldElement <$> arbitrary' (FieldElement ac) 10
 
-arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => FieldElement (ArithmeticCircuit a) -> Natural -> Gen (FieldElement (ArithmeticCircuit a))
+arbitrary' :: forall a i . (Arithmetic a, Arbitrary a, FromConstant a a, Haskell.Ord (Rep i), Representable i, Haskell.Foldable i) => FieldElement (ArithmeticCircuit a i) -> Natural -> Gen (FieldElement (ArithmeticCircuit a i))
 arbitrary' ac 0 = return ac
 arbitrary' ac iter = do
     let vars = getAllVars (fromFieldElement ac)
@@ -50,28 +50,25 @@ arbitrary' ac iter = do
     arbitrary' ac' (iter -! 1)
 
 -- TODO: make it more readable
-instance (FiniteField a, Haskell.Eq a, Show a, Show (f Natural)) => Show (ArithmeticCircuit a f) where
-    show r = "ArithmeticCircuit { acInput = " ++ show (acInput r)
-        ++ "\n, acSystem = " ++ show (acSystem r) ++ "\n, acOutput = " ++ show (acOutput r) ++ "\n, acVarOrder = " ++ show (acVarOrder r) ++ " }"
+instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var i)), Haskell.Ord (Rep i), Show (Var i)) => Show (ArithmeticCircuit a i o) where
+    show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r) ++ "\n, acOutput = " ++ show (acOutput r) ++ "\n, acVarOrder = " ++ show (acVarOrder r) ++ " }"
 
 -- TODO: add witness generation info to the JSON object
-instance (ToJSON a, ToJSON (f Natural)) => ToJSON (ArithmeticCircuit a f) where
+instance (ToJSON a, ToJSON (o (Var i)), ToJSONKey (Var i), FromJSONKey (Var i)) => ToJSON (ArithmeticCircuit a i o) where
     toJSON r = object
         [
             "system" .= acSystem r,
-            "input"  .= acInput r,
             "output" .= acOutput r,
             "order"  .= acVarOrder r
         ]
 
 -- TODO: properly restore the witness generation function
 -- TODO: Check that there are exactly N outputs
-instance (FromJSON a, FromJSON (f Natural)) => FromJSON (ArithmeticCircuit a f) where
+instance (FromJSON a, FromJSON (o (Var i)), ToJSONKey (Var i), FromJSONKey (Var i), Haskell.Ord (Rep i)) => FromJSON (ArithmeticCircuit a i o) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"
             acRange    <- v .: "range"
-            acInput    <- v .: "input"
             acVarOrder <- v .: "order"
             acOutput   <- v .: "output"
             let acWitness = empty
