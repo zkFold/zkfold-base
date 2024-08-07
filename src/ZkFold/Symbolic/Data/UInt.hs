@@ -41,7 +41,7 @@ import           ZkFold.Base.Data.Vector                                   (Vect
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Class                                     hiding (embed)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion, embed)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -53,6 +53,7 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit                              (constraint, newAssigned)
+import Control.Applicative (pure)
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (backend :: (Type -> Type) -> Type) = UInt (backend (Vector (NumberOfRegisters (BaseField backend) n r)))
@@ -329,7 +330,7 @@ instance
     , KnownNat (NumberOfRegisters a n r)
     , KnownRegisterSize r
     ) => AdditiveMonoid (UInt n r (ArithmeticCircuit a)) where
-    zero = UInt zero
+    zero = UInt $ embedV (pure zero)
 
 instance
     ( Arithmetic a
@@ -451,7 +452,7 @@ instance
     , (NumberOfRegisters a n r - 1) + 1 ~ NumberOfRegisters a n r
     ) => MultiplicativeMonoid (UInt n r (ArithmeticCircuit a)) where
 
-    one = UInt $ hliftA2 (\(Par1 h) t -> h V..: t) (one :: ArithmeticCircuit a Par1) (zero :: ArithmeticCircuit a (Vector (NumberOfRegisters a n r - 1)))
+    one = UInt $ hliftA2 (\(Par1 h) t -> h V..: t) (embed one :: ArithmeticCircuit a Par1) (embedV (pure zero) :: ArithmeticCircuit a (Vector (NumberOfRegisters a n r - 1)))
 
 
 instance

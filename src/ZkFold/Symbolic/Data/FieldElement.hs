@@ -1,49 +1,129 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.FieldElement where
 
-import           GHC.Generics                    (Par1 (..))
-import           Prelude                         hiding (Bool, Eq, Num (..), Ord, drop, length, product, splitAt, sum,
-                                                  take, (!!), (^))
-import qualified Prelude                         as Haskell
+import           Data.Bool                                              (bool)
+import           Data.Foldable                                          (foldlM, foldr)
+import           Data.Function                                          (($), (.))
+import           Data.Functor                                           (fmap, (<$>))
+import           Data.Ord                                               (Ordering (..), compare)
+import           Data.Traversable                                       (for)
+import           Data.Tuple                                             (fst, snd)
+import           Data.Zip                                               (zip)
+import           GHC.Generics                                           (Par1 (..))
+import           Prelude                                                (Integer)
+import qualified Prelude                                                as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.HFunctor       (HFunctor)
-import           ZkFold.Symbolic.Data.Bool       (Bool)
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.HFunctor                              (HFunctor, hmap)
+import           ZkFold.Base.Data.Par1                                  ()
+import           ZkFold.Base.Data.Vector                                (Vector, fromVector, unsafeToVector)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, horner, runInvert)
+import           ZkFold.Symbolic.Data.Bool                              (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Eq         (Eq)
+import           ZkFold.Symbolic.Data.DiscreteField
+import           ZkFold.Symbolic.Data.Eq                                (Eq)
+import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.MonadCircuit                           (newAssigned)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
 
-deriving stock instance Show (c Par1) => Show (FieldElement c)
+deriving stock instance Haskell.Show (c Par1) => Haskell.Show (FieldElement c)
 
 deriving stock instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
 
+deriving stock instance Haskell.Ord (c Par1) => Haskell.Ord (FieldElement c)
+
 deriving newtype instance HFunctor c => SymbolicData c (FieldElement c)
 
-deriving newtype instance FromConstant k (c Par1) => FromConstant k (FieldElement c)
+deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
 
-instance (MultiplicativeSemigroup p, Exponent (c Par1) p) => Exponent (FieldElement c) p where
-    FieldElement x ^ a = FieldElement (x ^ a)
+deriving via (Lexicographical (FieldElement c))
+  instance Symbolic c => Ord (Bool c) (FieldElement c)
 
-deriving newtype instance (MultiplicativeMonoid k, Scale k (c Par1)) => Scale k (FieldElement c)
+instance (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
+  fromConstant = FieldElement . embed . Par1 . fromConstant
 
-deriving newtype instance MultiplicativeSemigroup (c Par1) => MultiplicativeSemigroup (FieldElement c)
+instance Symbolic c => Exponent (FieldElement c) Natural where
+  (^) = natPow
 
-deriving newtype instance MultiplicativeMonoid (c Par1) => MultiplicativeMonoid (FieldElement c)
+instance Symbolic c => Exponent (FieldElement c) Integer where
+  (^) = intPowF
 
-deriving newtype instance AdditiveSemigroup (c Par1) => AdditiveSemigroup (FieldElement c)
+instance (Symbolic c, MultiplicativeMonoid k, Scale k (BaseField c)) =>
+    Scale k (FieldElement c) where
+  scale k (FieldElement c) = FieldElement $ fromCircuitF c $ \(Par1 i) ->
+    Par1 <$> newAssigned (\x -> fromConstant (scale k one :: BaseField c) * x i)
 
-deriving newtype instance AdditiveMonoid (c Par1) => AdditiveMonoid (FieldElement c)
+instance Symbolic c => MultiplicativeSemigroup (FieldElement c) where
+  FieldElement x * FieldElement y = FieldElement $ fromCircuit2F x y
+    $ \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i * w j)
 
-deriving newtype instance AdditiveGroup (c Par1) => AdditiveGroup (FieldElement c)
+instance Symbolic c => MultiplicativeMonoid (FieldElement c) where
+  one = FieldElement $ embed (Par1 one)
 
-deriving newtype instance Semiring (c Par1) => Semiring (FieldElement c)
+instance Symbolic c => AdditiveSemigroup (FieldElement c) where
+  FieldElement x + FieldElement y = FieldElement $ fromCircuit2F x y
+    $ \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i + w j)
 
-deriving newtype instance Ring (c Par1) => Ring (FieldElement c)
+instance Symbolic c => AdditiveMonoid (FieldElement c) where
+  zero = FieldElement $ embed (Par1 zero)
 
-deriving newtype instance Field (c Par1) => Field (FieldElement c)
+instance Symbolic c => AdditiveGroup (FieldElement c) where
+  negate (FieldElement x) = FieldElement $ fromCircuitF x $ \(Par1 i) ->
+    Par1 <$> newAssigned (\w -> negate (w i))
 
-deriving newtype instance Eq (Bool c) (c Par1) => Eq (Bool c) (FieldElement c)
+  FieldElement x - FieldElement y = FieldElement $ fromCircuit2F x y
+    $ \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i - w j)
+
+instance Symbolic c => Semiring (FieldElement c)
+
+instance Symbolic c => Ring (FieldElement c)
+
+instance Symbolic c => Field (FieldElement c) where
+  finv (FieldElement x) =
+    FieldElement $ symbolicF x (\(Par1 v) -> Par1 (finv v))
+      $ fmap snd . runInvert
+
+instance
+    ( KnownNat (Order (FieldElement c))
+    , KnownNat (NumberOfBits (FieldElement c))) => Finite (FieldElement c) where
+  type Order (FieldElement c) = Order (BaseField c)
+
+instance Symbolic c => BinaryExpansion (FieldElement c) where
+  type Bits (FieldElement c) = c (Vector (NumberOfBits (BaseField c)))
+  binaryExpansion (FieldElement c) = hmap unsafeToVector $ symbolicF c
+    (\(Par1 v) -> padBits (numberOfBits @(BaseField c)) $ binaryExpansion v)
+    (\(Par1 i) -> expansion (numberOfBits @(BaseField c)) i)
+  fromBinary bits =
+    FieldElement $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
+      $ fmap Par1 . horner . fromVector
+
+instance Symbolic c => DiscreteField' (FieldElement c) where
+  equal x y = let Bool c = isZero (x - y) in FieldElement c
+
+instance Symbolic c => TrichotomyField (FieldElement c) where
+  trichotomy (FieldElement x) (FieldElement y) =
+    FieldElement $ symbolic2F x y
+      (\u v -> Par1 $ case compare u v of { LT -> negate one; EQ -> zero; GT -> one })
+      $ \(Par1 i) (Par1 j) -> do
+        is <- expansion (numberOfBits @(BaseField c)) i
+        js <- expansion (numberOfBits @(BaseField c)) j
+        -- zip pairs of bits in {0,1} to orderings in {-1,0,1}
+        delta <- for (zip is js) $ \(bi, bj) -> newAssigned (\w -> w bi - w bj)
+        -- least significant bit first,
+        -- reverse lexicographical ordering
+        let reverseLexicographical u v = newAssigned $ \p -> p v * p v * (p v - p u) + p u
+                                                      -- ^ Is this Plonk?
+        Par1 <$> case delta of
+          []     -> newAssigned zero
+          (d:ds) -> foldlM reverseLexicographical d ds
+
+instance Symbolic c => DiscreteField (Bool c) (FieldElement c) where
+  isZero (FieldElement x) =
+    Bool $ symbolicF x (Par1 . bool zero one . (Haskell.== Par1 zero))
+      $ fmap fst . runInvert
