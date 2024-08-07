@@ -15,6 +15,7 @@ module ZkFold.Symbolic.Data.UInt (
     eea
 ) where
 
+import           Control.Applicative                                       (pure)
 import           Control.DeepSeq
 import           Control.Monad.State                                       (StateT (..))
 import           Data.Foldable                                             (foldr, foldrM, for_)
@@ -41,7 +42,7 @@ import           ZkFold.Base.Data.Vector                                   (Vect
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Class                                     hiding (embed)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion, embed)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embed, embedV, expansion, splitExpansion)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -53,7 +54,6 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit                              (constraint, newAssigned)
-import Control.Applicative (pure)
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (backend :: (Type -> Type) -> Type) = UInt (backend (Vector (NumberOfRegisters (BaseField backend) n r)))
