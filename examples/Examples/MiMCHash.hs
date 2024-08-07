@@ -2,7 +2,6 @@
 
 module Examples.MiMCHash (exampleMiMC) where
 
-import           GHC.Generics                                   (Par1)
 import           Prelude                                        hiding (Eq (..), Num (..), any, not, (!!), (/), (^),
                                                                  (||))
 
@@ -12,6 +11,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381    (BLS12_381_Scala
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHash2)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.FieldElement              (FieldElement)
 
 type F = Zp BLS12_381_Scalar
 
@@ -21,4 +21,4 @@ exampleMiMC = do
 
     putStrLn "\nExample: MiMC hash function\n"
 
-    compileIO @F file (mimcHash2 @F @(ArithmeticCircuit F Par1) mimcConstants zero)
+    compileIO @F file (mimcHash2 @F @(FieldElement (ArithmeticCircuit F)) mimcConstants zero)

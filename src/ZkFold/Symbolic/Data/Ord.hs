@@ -24,7 +24,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansi
 import           ZkFold.Symbolic.Data.Bool                              (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional                       (Conditional (..))
-import           ZkFold.Symbolic.Data.FieldElement                      (FieldElement (..))
 import           ZkFold.Symbolic.MonadCircuit                           (MonadCircuit, newAssigned)
 
 -- TODO (Issue #23): add `compare`
@@ -61,9 +60,6 @@ newtype Lexicographical a = Lexicographical a
 -- (though not necessarily a most effective one)
 
 deriving newtype instance SymbolicData c a => SymbolicData c (Lexicographical a)
-
-deriving via (Lexicographical (FieldElement c))
-  instance Symbolic c => Ord (Bool c) (FieldElement c)
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
 instance

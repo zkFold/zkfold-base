@@ -403,7 +403,7 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circu
 
 
 instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit a)) where
-    false = ByteString zero
+    false = ByteString $ embedV (pure zero)
 
     true = not false
 

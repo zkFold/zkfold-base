@@ -34,7 +34,6 @@ type Sig context =
     , StrictConv (context Par1) (UInt 256 Auto context)
     , FromConstant Natural (UInt 256 Auto context)
     , MultiplicativeSemigroup (UInt 256 Auto context)
-    , AdditiveMonoid (context Par1)
     , MiMCHash F context (TxOut context, TxOut context)
     , Eq (Bool context) (UInt 256 Auto context)
     , Eq (Bool context) (TxOut context)
