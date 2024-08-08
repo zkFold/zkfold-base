@@ -42,16 +42,16 @@ class Arithmetic f => SpecialSoundProtocol f a where
 
       algebraicMap
           :: a
-          -> Input f a
-          -> [ProverMessage Natural a]
-          -> [VerifierMessage Natural a]
+          -> Input f a  -- ^ public input
+          -> [ProverMessage Natural a]  -- ^ NARK proof witness (the list of prover messages)
+          -> [f]        -- ^ Verifier random challenges
           -> LMap f
       -- ^ the algebraic map V_sps computed by the verifier.
       -- The j-th element of the vector is a homogeneous degree-j algebraic map that outputs a vector of @Dimension a@ field elements.
       -- Variables have natural indices from @0@ to @2k@:
-      -- Variable @0@ is public input
-      -- Variables @1@ to @k@ are prover messages from the transcript
-      -- Variables @k+1@ to @2k@ are random challenges from the verifier
+      -- Variables @0@ to @l_in - 1@ are reserved for public input
+      -- Variables @l_in@ to @l_in + k@ are prover messages from the transcript
+      -- Variables @l_in + k + 1@ to @l_in + 2k@ are random challenges from the verifier
 
-      verifier :: a -> Input f a -> [ProverMessage f a] -> [VerifierMessage f a] -> Bool
+      verifier :: a -> Input f a -> [ProverMessage f a] -> [f] -> Bool
 
