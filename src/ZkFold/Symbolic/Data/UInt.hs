@@ -90,7 +90,7 @@ instance (FromConstant a Natural, KnownNat n, KnownRegisterSize r, Symbolic c) =
 --     ) => FromConstant Integer (UInt n r (ArithmeticCircuit a)) where
 --     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
-instance (Arithmetic a, FromConstant a (UInt n r c), MultiplicativeSemigroup (UInt n r c)) => Scale a (UInt n r c)
+instance (Symbolic c, FromConstant a (UInt n r c), MultiplicativeSemigroup (UInt n r c), MultiplicativeMonoid a) => Scale a (UInt n r c)
 
 -- instance (FromConstant Integer (UInt n r c), KnownNat n, MultiplicativeSemigroup (UInt n r c)) => Scale Integer (UInt n r c)
 
@@ -192,9 +192,9 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r, Haskell.Num a) => ToCo
 instance ( KnownNat n,  KnownRegisterSize r, Symbolic c) => MultiplicativeMonoid (UInt n r c) where
     one = fromConstant (1 :: Natural)
 
-instance (Prime p, KnownNat n, KnownRegisterSize r, Symbolic c) => Semiring (UInt n r c)
+instance (Prime p, KnownNat n, KnownRegisterSize r, Symbolic c, KnownNat (NumberOfRegisters (BaseField c) n r)) => Semiring (UInt n r c)
 
-instance (Prime p, KnownNat n, KnownRegisterSize r) => Ring (UInt n r (Interpreter (Zp p)))
+instance (Symbolic c,  KnownNat n, KnownRegisterSize r, FromConstant Integer Natural, KnownNat (NumberOfRegisters (BaseField c) n r)) => Ring (UInt n r c)
 
 instance (KnownNat n, Symbolic c, KnownRegisterSize r) => Arbitrary (UInt n r c) where
     arbitrary = do
@@ -399,7 +399,7 @@ instance
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 r
 
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs, Symbolic c) => MultiplicativeSemigroup (UInt n rs c) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs, Symbolic c, BaseField c ~ a) => MultiplicativeSemigroup (UInt n rs c) where
     UInt x * UInt y = UInt $ symbolic2F x y (\u v -> V.unsafeToVector $ V.fromVector u * V.fromVector v) solve
         where
             solve :: forall i m. (MonadCircuit i (BaseField c) m) => Vector (NumberOfRegisters (BaseField c) n rs) i -> Vector (NumberOfRegisters (BaseField c) n rs) i -> m (Vector (NumberOfRegisters (BaseField c) n rs) i)
@@ -520,8 +520,8 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (
 instance (Finite (Zp p), Prime p, KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r (ArithmeticCircuit (Zp p))) where
     strictConv = strictConv . toConstant @_ @Natural
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r, NumberOfBits (BaseField c) <= n) => StrictConv (ArithmeticCircuit (BaseField c) Par1) (UInt n r c) where
-    strictConv a = UInt $ symbolicF a (fromConstant) solve
+instance (Symbolic c, KnownNat n, KnownRegisterSize r, NumberOfBits (BaseField c) <= n, BaseField c ~ a) => StrictConv (ArithmeticCircuit a Par1) (UInt n r c) where
+    strictConv a = UInt $ symbolicF a fromConstant solve
         where
             solve :: MonadCircuit i (BaseField c) m => Par1 i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
             solve xv = do
