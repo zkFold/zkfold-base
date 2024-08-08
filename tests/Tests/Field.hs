@@ -12,7 +12,8 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import qualified ZkFold.Base.Algebra.EllipticCurve.BLS12_381 as BLS12_381
+import qualified ZkFold.Base.Algebra.EllipticCurve.Bn254 as Bn254
 
 specField' :: forall a . (Field a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
 specField' = hspec $ do
@@ -40,8 +41,14 @@ specField' = hspec $ do
 
 specField :: IO ()
 specField = do
-    specField' @Fr
-    specField' @Fq
-    specField' @Fq2
-    specField' @Fq6
-    specField' @Fq12
+    specField' @BLS12_381.Fr
+    specField' @BLS12_381.Fq
+    specField' @BLS12_381.Fq2
+    specField' @BLS12_381.Fq6
+    specField' @BLS12_381.Fq12
+
+    specField' @Bn254.Fr
+    specField' @Bn254.Fp
+    specField' @Bn254.Fp2
+    specField' @Bn254.Fp6
+    specField' @Bn254.Fp12
