@@ -59,7 +59,7 @@ instance Arithmetic a => SpecialSoundProtocol a (RecursiveCircuit n a) where
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
-    prover rc _ i _ = eval (circuit rc) (M.fromList $ P.zip [1..] (V.fromVector i))
+    prover rc _ i _ = eval (circuit rc) i
 
     -- We can use the polynomial system from the circuit, no need to build it from scratch
     --
