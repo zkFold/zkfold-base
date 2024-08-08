@@ -14,6 +14,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (
     forceOne,
     isZeroC,
     invertC,
+    runInvert,
     foldCircuit,
     embedVarIndex,
     embedVarIndexV,
@@ -130,14 +131,13 @@ forceOne r = circuitF $ do
     for is' $ \i -> constraint (\x -> x i - one) $> i
 
 isZeroC :: (Arithmetic a, Z.Zip f, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
-isZeroC r = circuitF $ fst <$> runInvert r
+isZeroC r = circuitF $ runCircuit r >>= fmap fst . runInvert
 
 invertC :: (Arithmetic a, Z.Zip f, Traversable f) => ArithmeticCircuit a f -> ArithmeticCircuit a f
-invertC r = circuitF $ snd <$> runInvert r
+invertC r = circuitF $ runCircuit r >>= fmap snd . runInvert
 
-runInvert :: (MonadBlueprint i a m, Z.Zip f, Traversable f) => ArithmeticCircuit a f -> m (f i, f i)
-runInvert r = do
-    is <- runCircuit r
+runInvert :: (MonadCircuit i a m, Z.Zip f, Traversable f) => f i -> m (f i, f i)
+runInvert is = do
     js <- for is $ \i -> newConstrained (\x j -> x i * x j) (\x -> let xi = x i in one - xi // xi)
     ks <- for (Z.zip is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv . ($ i))
     return (js, ks)
