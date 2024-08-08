@@ -7,8 +7,8 @@ import           Control.Lens.Combinators (makeLenses)
 import           Prelude                  hiding (length)
 
 -- Page 19, Accumulator instance
-data AccumulatorInstance f c = AccumulatorInstance {
-      _pi :: f     -- pi ∈  M^{l_in} in the paper
+data AccumulatorInstance pi f c = AccumulatorInstance {
+      _pi :: pi    -- pi ∈  M^{l_in} in the paper
     , _c  :: [c]   -- [C_i] ∈  C^k in the paper
     , _r  :: [f]   -- [r_i] ∈  F^{k-1} in the paper
     , _e  :: c     -- E ∈  C in the paper
@@ -20,9 +20,9 @@ makeLenses ''AccumulatorInstance
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
-data Accumulator f c m
+data Accumulator i f c m
     = Accumulator
-        { _x :: AccumulatorInstance f c
+        { _x :: AccumulatorInstance i f c
         , _w :: [m]
         }
 

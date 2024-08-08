@@ -39,7 +39,7 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
     algebraicMap :: ProtostarPermutation n
                  -> Input f (ProtostarPermutation n)
                  -> [ProverMessage Natural (ProtostarPermutation n)]
-                 -> [VerifierMessage Natural (ProtostarPermutation n)]
+                 -> [f]
                  -> LMap f
     algebraicMap _ sigma [w] _ = V.fromVector $ zipWith (-) (applyPermutation sigma wX) wX
       where wX = fmap var w
@@ -49,7 +49,7 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
     verifier :: ProtostarPermutation n
              -> Input f (ProtostarPermutation n)
              -> [ProverMessage f (ProtostarPermutation n)]
-             -> [VerifierMessage f (ProtostarPermutation n)]
+             -> [f]
              -> Bool
     verifier _ sigma [w] _ = applyPermutation sigma w == w
     verifier _ _     _   _ = error "Invalid transcript"

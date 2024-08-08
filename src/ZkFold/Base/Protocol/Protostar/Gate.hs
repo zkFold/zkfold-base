@@ -43,7 +43,7 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
     algebraicMap :: ProtostarGate m n c d
                  -> Input f (ProtostarGate m n c d)
                  -> [ProverMessage Natural (ProtostarGate m n c d)]
-                 -> [VerifierMessage Natural (ProtostarGate m n c d)]
+                 -> [f]
                  -> LMap f
     algebraicMap _ (s, g) [w] _ =
       let w' = fmap ((var .) . subs) w :: Vector n (Zp c -> Poly f Natural Natural)
@@ -54,7 +54,7 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
     verifier :: ProtostarGate m n c d
              -> Input f (ProtostarGate m n c d)
              -> [ProverMessage f (ProtostarGate m n c d)]
-             -> [VerifierMessage f (ProtostarGate m n c d)]
+             -> [f]
              -> Bool
     verifier _ (s, g) [w] _ =
       let w' = fmap subs w :: Vector n (Zp c -> f)

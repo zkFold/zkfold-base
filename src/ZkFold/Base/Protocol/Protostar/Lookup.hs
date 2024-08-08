@@ -52,14 +52,14 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
     algebraicMap :: ProtostarLookup l sizeT
                  -> Input f (ProtostarLookup l sizeT)
                  -> [ProverMessage Natural (ProtostarLookup l sizeT)]
-                 -> [VerifierMessage Natural (ProtostarLookup l sizeT)]
+                 -> [f]
                  -> LMap f
     algebraicMap = undefined
 
     verifier :: ProtostarLookup l sizeT
              -> Input f (ProtostarLookup l sizeT)
              -> [ProverMessage f (ProtostarLookup l sizeT)]
-             -> [VerifierMessage f (ProtostarLookup l sizeT)]
+             -> [f]
              -> Bool
     verifier _ (ProtostarLookupParams t _) [(w, m), (h, g)] [r, _] =
         let c1 = sum h == sum g

@@ -16,6 +16,7 @@ import           Data.List.Split                  (chunksOf)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
+import           GHC.IsList                       (IsList (..))
 import           Prelude                          hiding (drop, head, length, mod, replicate, sum, tail, take, zip,
                                                    zipWith, (*))
 import qualified Prelude                          as P
@@ -40,6 +41,11 @@ instance KnownNat size => Representable (Vector size) where
 instance KnownNat size => Distributive (Vector size) where
   distribute = distributeRep
   collect = collectRep
+
+instance IsList (Vector n a) where
+    type Item (Vector n a) = a
+    toList = fromVector
+    fromList = unsafeToVector
 
 parFmap :: (a -> b) -> Vector size a -> Vector size b
 parFmap f (Vector lst) = Vector $ parMap rpar f lst

@@ -4,73 +4,78 @@
 
 module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
-import           Control.Lens                                 ((^.))
-import qualified Data.Vector                                  as DV
-import           Prelude                                      (fmap, otherwise, type (~), ($), (&&), (.), (<$>), (<=),
-                                                               (==))
-import qualified Prelude                                      as P
+import           Control.Lens                                    ((^.))
+import qualified Data.Vector                                     as DV
+import           GHC.IsList                                      (IsList (..))
+import           Prelude                                         (fmap, otherwise, type (~), ($), (&&), (.), (<$>), (<),
+                                                                  (<=), (==))
+import qualified Prelude                                         as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate as PM
-import qualified ZkFold.Base.Algebra.Polynomials.Univariate   as PU
-import qualified ZkFold.Base.Data.Vector                      as V
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate    as PM
+import qualified ZkFold.Base.Algebra.Polynomials.Univariate      as PU
+import qualified ZkFold.Base.Data.Vector                         as V
 import           ZkFold.Base.Protocol.Protostar.Accumulator
-import           ZkFold.Base.Protocol.Protostar.CommitOpen    (CommitOpen (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir    (FiatShamir (..))
-import           ZkFold.Base.Protocol.Protostar.Oracle        (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound  (Input, LMap, ProverMessage, SpecialSoundProtocol (..))
-import           ZkFold.Prelude                               ((!!))
+import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), CommitOpenProverMessage (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
+import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (Input, LMap, ProverMessage, SpecialSoundProtocol (..))
+import           ZkFold.Prelude                                  (length, (!!))
 
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
-class AccumulatorScheme f c m a where
+class AccumulatorScheme i f c m a where
   commit   :: a -> [m] -> c
 
-  prover   :: a                        -- input commitment key
-           -> Accumulator f c m        -- accumulator
-           -> InstanceProofPair f c m  -- instance-proof pair (pi, π)
-           -> (Accumulator f c m, [c]) -- updated accumulator and accumulation proof
+  prover   :: a                          -- input commitment key
+           -> Accumulator i f c m        -- accumulator
+           -> InstanceProofPair i c m    -- instance-proof pair (pi, π)
+           -> (Accumulator i f c m, [c]) -- updated accumulator and accumulation proof
 
-  verifier :: f                        -- Public input
-           -> [c]                      -- NARK proof π.x
-           -> AccumulatorInstance f c  -- accumulator instance acc.x
-           -> AccumulatorInstance f c  -- updated accumulator instance acc'.x
-           -> [c]                      -- accumulation proof E_j
+  verifier :: i                          -- Public input
+           -> [c]                        -- NARK proof π.x
+           -> AccumulatorInstance i f c  -- accumulator instance acc.x
+           -> AccumulatorInstance i f c  -- updated accumulator instance acc'.x
+           -> [c]                        -- accumulation proof E_j
            -> P.Bool
 
-  decider  :: a                   -- Commitment key ck
-           -> Accumulator f c m   -- accumulator
+  decider  :: a                     -- Commitment key ck
+           -> Accumulator i f c m   -- accumulator
            -> P.Bool
 
 instance
-    ( Input f a ~ f
-    , ProverMessage f a ~ m
-    , f ~ m -- TODO: Seems off but I really have no idea how to compile the code without it
-    , P.Eq c
+    ( P.Eq c
+    , P.Eq i
+    , f ~ c -- TODO: seems off. Re-check
+    , f ~ m -- TODO: seems off. Re-check
     , AdditiveGroup c
     , Ring m
     , Scale m c
-    , Input m (FiatShamir m (CommitOpen m c a)) ~ m
-    , ProverMessage Natural (FiatShamir m (CommitOpen m c a)) ~ m
-    , VerifierMessage Natural (FiatShamir m (CommitOpen m c a)) ~ m
-    , KnownNat (Degree (FiatShamir f (CommitOpen f c a)))
-    , SpecialSoundProtocol f (FiatShamir f (CommitOpen f c a))
-    , RandomOracle (f, c) f                                  -- Random oracle ρ_NARK
-    , RandomOracle (AccumulatorInstance f c, f, [c], [c]) f  -- Random oracle ρ_acc
-    ) => AccumulatorScheme f c m (FiatShamir f (CommitOpen f c a)) where
+    , ProverMessage f a ~ m
+    , IsList (Input f (CommitOpen f c a))
+    , Item (Input f (CommitOpen f c a)) ~ f
+    , Input m a ~ i
+    , Item i ~ m
+    , KnownNat (Degree (CommitOpen f c a))
+    , SpecialSoundProtocol f (CommitOpen f c a)
+    , RandomOracle (f, c) f                                    -- Random oracle ρ_NARK
+    , RandomOracle i f                                         -- Random oracle for compressing public input
+    , RandomOracle (AccumulatorInstance i f c, i, [c], [c]) f  -- Random oracle ρ_acc
+    ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen f c a)) where
   commit (FiatShamir (CommitOpen cm _) _) = cm
 
-  prover sps@(FiatShamir (CommitOpen cm _) _) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
-      (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') mi'', eCapital_j)
+  prover (FiatShamir sps@(CommitOpen cm _) _) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
+      (Accumulator (AccumulatorInstance (fromList pi'') ci'' ri'' eCapital' mu') mi'', eCapital_j)
       where
+
           -- Fig. 3, step 1
           r_i :: [f]
-          r_i = P.tail $ P.scanl (P.curry oracle) pubi (zero : pi_x)
+          r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) (zero : pi_x)
 
           -- Fig. 3, step 2
-          f_sps = degreeDecomposition @(Degree (FiatShamir f (CommitOpen f c a))) $ algebraicMap @f sps pubi (acc^.x^.r) (acc^.w)
+          f_sps = degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps pubi (Commit <$> pi_w) pi_x
 
           -- X + mu as a univariate polynomial
           xMu :: PU.Poly f
@@ -82,11 +87,14 @@ instance
           k :: Natural
           k = rounds @f sps
 
+          l_in :: Natural
+          l_in = length $ toList $ (acc^.x^.pi)
+
           ixToPoly :: Natural -> PU.Poly f
           ixToPoly n
-            | n == 0    = PU.toPoly $ DV.fromList [acc^.x^.pi, pubi]                                   -- X * pi + pi'
-            | n <= k    = PU.toPoly $ DV.fromList [(acc^.w) !! (n -! 1), pi_w !! (n -! 1)]             -- X * mi + mi'
-            | otherwise = PU.toPoly $ DV.fromList [(acc^.x^.r) !! (n -! k -! 1), r_i !! (n -! k -! 1)] -- X * ri + ri'
+            | n < l_in      = PU.toPoly $ DV.fromList [(toList $ acc^.x^.pi) !! n, toList pubi !! n]       -- X * pi + pi'
+            | n <= k + l_in = PU.toPoly $ DV.fromList [(acc^.w) !! (n -! 1), pi_w !! (n -! 1)]             -- X * mi + mi'
+            | otherwise     = PU.toPoly $ DV.fromList [(acc^.x^.r) !! (n -! k -! 1), r_i !! (n -! k -! 1)] -- X * ri + ri'
 
           -- The @lxd@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
@@ -107,7 +115,7 @@ instance
 
           -- Fig. 3, steps 5, 6
           mu'  = alpha            + acc^.x^.mu
-          pi'' = scale alpha pubi + acc^.x^.pi
+          pi'' = P.zipWith (\li i' -> scale alpha li + i') (toList pubi) $ toList (acc^.x^.pi)
           ri'' = P.zipWith (\rl r' -> scale alpha rl + r') r_i  $ acc^.x^.r
           ci'' = P.zipWith (\cl c' -> scale alpha cl + c') pi_x $ acc^.x^.c
           mi'' = P.zipWith (\ml m' -> scale alpha ml + m') pi_w $ acc^.w
@@ -120,28 +128,28 @@ instance
       where
           -- Fig. 4, step 1
           r_i :: [f]
-          r_i = P.tail $ P.scanl (P.curry oracle) pubi (zero : c_i)
+          r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) (zero : c_i)
 
           -- Fig. 4, step 2
           alpha :: f
           alpha = oracle (acc, pubi, c_i, pf)
 
           -- Fig. 4, step 3
-          mu'  = alpha            + acc^.mu
-          pi'' = scale alpha pubi + acc^.pi
-          ri'' = P.zipWith (\rl r' -> scale alpha rl + r') r_i $ acc^.r
-          ci'' = P.zipWith (\cl c' -> scale alpha cl + c') c_i $ acc^.c
+          mu'  = alpha + acc^.mu
+          pi'' = P.zipWith (\il pi' -> scale alpha il + pi') (toList pubi) $ (toList $ acc^.pi)
+          ri'' = P.zipWith (\rl r'  -> scale alpha rl + r')  r_i  $ acc^.r
+          ci'' = P.zipWith (\cl c'  -> scale alpha cl + c')  c_i  $ acc^.c
 
           -- Fig 4, step 4
           muEq = acc'^.mu == mu'
-          piEq = acc'^.pi == pi''
+          piEq = acc'^.pi == fromList pi''
           riEq = acc'^.r  == ri''
           ciEq = acc'^.c  == ci''
 
           -- Fig 4, step 5
           eEq = acc'^.e == acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf)
 
-  decider sps@(FiatShamir (CommitOpen cm _) _) acc = commitsEq && eEq
+  decider (FiatShamir sps@(CommitOpen cm _) _) acc = commitsEq && eEq
       where
           d :: Natural
           d = outputLength @f sps
@@ -154,13 +162,16 @@ instance
           commitsEq = P.and $ P.zipWith (\cl m -> cm [m] == cl) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
-          f_sps = mulDeg (acc^.x^.mu) d <$> algebraicMap @f sps (acc^.x^.pi) (acc^.x^.r) (acc^.w)
+          f_sps = mulDeg (acc^.x^.mu) d <$> algebraicMap @f sps (acc^.x^.pi) (Commit <$> acc^.w) (acc^.x^.r)
+
+          l_in :: Natural
+          l_in = length $ toList (acc^.x^.pi)
 
           ixToVal :: Natural -> f
           ixToVal n
-            | n == 0    = acc^.x^.pi                   -- pi
-            | n <= k    = (acc^.w) !! (n -! 1)         -- mi
-            | otherwise = (acc^.x^.r) !! (n -! k -! 1) -- ri
+            | n < l_in      = toList (acc^.x^.pi) !! n       -- pi
+            | n <= k + l_in = (acc^.w) !! (n -! 1)           -- mi
+            | otherwise     = (acc^.x^.r) !! (n -! k -! 1)   -- ri
 
           err = PM.evalPolynomial PM.evalMonomial ixToVal <$> f_sps
 
