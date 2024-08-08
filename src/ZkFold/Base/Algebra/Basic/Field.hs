@@ -309,10 +309,10 @@ instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
 
 instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly f e) => FromConstant (Poly f) (Ext3 f e) where
     fromConstant p = case fromPoly . snd $ qr p (irreduciblePoly @f @e) of
-      [] -> zero
-      [x] -> fromConstant x
+      []     -> zero
+      [x]    -> fromConstant x
       [x, y] -> Ext3 x y zero
-      v -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
+      v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext3 f e)
 
