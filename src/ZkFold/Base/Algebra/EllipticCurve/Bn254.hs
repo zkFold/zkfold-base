@@ -3,7 +3,17 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Base.Algebra.EllipticCurve.Bn254 where
+module ZkFold.Base.Algebra.EllipticCurve.Bn254
+  ( Bn254_Scalar
+  , Bn254_Base
+  , Fr
+  , Fp
+  , Fp2
+  , Fp6
+  , Fp12
+  , Bn254_G1
+  , Bn254_G2
+  , Bn254_GT) where
 
 import           Data.Binary                                (Binary (..))
 import           Data.Eq                                    (Eq)
