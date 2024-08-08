@@ -25,6 +25,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                          (value)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, horner)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit)
 
 -- | A class for isomorphic types.
 -- The @Iso b a@ context ensures that transformations in both directions are defined
@@ -69,7 +70,7 @@ fromBits
     :: forall a
     .  Natural
     -> Natural
-    -> (forall i m. MonadBlueprint i a m => [i] -> m [i])
+    -> (forall i m. MonadCircuit i a m => [i] -> m [i])
 fromBits hiBits loBits bits = do
     let (bitsHighNew, bitsLowNew) = splitAt (Haskell.fromIntegral hiBits) bits
     let lowVarsNew = chunksOf (Haskell.fromIntegral loBits) bitsLowNew
