@@ -5,6 +5,7 @@
 
 module ZkFold.Base.Algebra.EllipticCurve.Bn254 where
 
+import           Data.Binary                                (Binary (..))
 import           Data.Eq                                    (Eq)
 import           Prelude                                    (Integer)
 
@@ -12,7 +13,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field            (Ext2 (..), Ext3, IrreduciblePoly (..), Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Pairing  (ate)
+import           ZkFold.Base.Algebra.EllipticCurve.Encoding
+import           ZkFold.Base.Algebra.EllipticCurve.Pairing
 import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, toPoly)
 
 -------------------------- Scalar field & field towers -------------------------
@@ -108,3 +110,21 @@ instance Finite Bn254_GT where
 instance Pairing Bn254_G1 Bn254_G2 where
   type TargetGroup Bn254_G1 Bn254_G2 = Bn254_GT
   pairing p q = Bn254_GT (ate p q)
+
+------------------------------ Encoding ----------------------------------------
+
+instance Binary (Point Bn254_G1) where
+  put = putPointZp
+  get = getPointZp
+
+instance Binary (PointCompressed Bn254_G1) where
+  put = putCompressedPointZp
+  get = getCompressedPointZp
+
+instance Binary (Point Bn254_G2) where
+  put = putPointExt2
+  get = getPointExt2
+
+instance Binary (PointCompressed Bn254_G2) where
+  put = putCompressedPointExt2
+  get = getCompressedPointExt2

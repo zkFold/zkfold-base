@@ -99,6 +99,7 @@ library
       ZkFold.Base.Algebra.EllipticCurve.Bn254
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.EllipticCurve.Ed25519
+      ZkFold.Base.Algebra.EllipticCurve.Encoding
       ZkFold.Base.Algebra.EllipticCurve.Pairing
       ZkFold.Base.Algebra.Polynomials.Multivariate
       ZkFold.Base.Algebra.Polynomials.Multivariate.Groebner

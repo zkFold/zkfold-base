@@ -1,15 +1,14 @@
-{-# LANGUAGE DerivingVia      #-}
-{-# LANGUAGE OverloadedLists  #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DerivingVia     #-}
+{-# LANGUAGE OverloadedLists #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
-import           Control.Monad
-import           Data.Bits
-import           Data.Foldable
-import           Data.Word
+import           Control.Monad                              (replicateM)
+import           Data.Binary                                (Word8, bitReverse8)
+import           Data.Bits                                  (bit, clearBit, testBit, (.|.))
+import           Data.Foldable                              (foldl')
 import           Prelude                                    hiding (Num (..), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class

@@ -7,11 +7,10 @@ module ZkFold.Base.Algebra.EllipticCurve.Class where
 import           Data.Functor                    ((<&>))
 import           Data.Kind                       (Type)
 import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), sum, (/), (^))
+import           Prelude                         hiding (Num (..), div, sum, (/), (^))
 import           Test.QuickCheck                 hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
-
 
 data Point curve = Point { _x :: BaseField curve, _y :: BaseField curve } | Inf
 
@@ -155,7 +154,7 @@ decompress = \case
     let a = aParameter @curve
         b = bParameter @curve
         p = order @(BaseField curve)
-        sqrt_ z = z ^ ((p + 1) `Prelude.div` 2)
+        sqrt_ z = z ^ ((p + 1) `div` 2)
         y' = sqrt_ (x * x * x + a * x + b)
         y = (if bigY then maximum else minimum) [y', negate y']
     in
