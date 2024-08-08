@@ -34,7 +34,7 @@ untwist Inf = error "untwist: point at infinity"
 
 -- Used in miller loop for computing line functions l_r,r and v_2r
 doubleEval ::
-  Field (BaseField c2) => Untwisted c2 i1 i2 ~ g => 
+  Field (BaseField c2) => Untwisted c2 i1 i2 ~ g =>
   FromConstant (BaseField c1) g => Field g =>
   Point c2 -> Point c1 -> g
 doubleEval r (Point px py) = fromConstant py - (fromConstant px * slope) - v

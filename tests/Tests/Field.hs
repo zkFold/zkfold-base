@@ -13,7 +13,7 @@ import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import qualified ZkFold.Base.Algebra.EllipticCurve.BLS12_381 as BLS12_381
-import qualified ZkFold.Base.Algebra.EllipticCurve.Bn254 as Bn254
+import qualified ZkFold.Base.Algebra.EllipticCurve.Bn254     as Bn254
 
 specField' :: forall a . (Field a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
 specField' = hspec $ do
