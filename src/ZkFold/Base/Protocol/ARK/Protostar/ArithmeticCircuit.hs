@@ -87,15 +87,26 @@ data FoldResult n a
     , deciderOutput   :: P.Bool
     }
 
-transform :: RandomOracle [a] a => RecursiveCircuit n a -> Vector n a -> FiatShamir a (CommitOpen a a (RecursiveCircuit n a))
+type FS_CM n a = FiatShamir a (CommitOpen a a (RecursiveCircuit n a))
+
+transform 
+    :: forall n a 
+    .  RandomOracle [a] a 
+    => RecursiveCircuit n a 
+    -> Vector n a 
+    -> FS_CM n a 
 transform rc v = FiatShamir (CommitOpen commit rc) v
     where
         commit :: [Vector n a] -> a
-        commit = oracle . P.concatMap V.fromVector
+        commit = oracle @[a] @a . P.concatMap V.fromVector
 
 fold
     :: forall a x n
-    .  SymbolicData (ArithmeticCircuit a) x
+    .  Arithmetic a
+    => Acc.AccumulatorScheme (Vector n a) a a a (FS_CM n a) 
+    => RandomOracle (Vector n a) a
+    => RandomOracle [a] a
+    => SymbolicData (ArithmeticCircuit a) x
     => TypeSize (ArithmeticCircuit a) x ~ n
     => KnownNat n
     => Support (ArithmeticCircuit a) x ~ ()
@@ -113,33 +124,56 @@ fold f iter i = foldN rc i [] initialAccumulator
         m = oracle $ executeAc rc i
 
         initialAccumulator :: Accumulator (Vector n a) a a a
-        initialAccumulator = Accumulator (AccumulatorInstance i [Acc.commit (transform rc i) [m]] [] zero one) [m]
+        initialAccumulator = Accumulator (AccumulatorInstance i [Acc.commit @(Vector n a) @a (transform rc i) [m]] [] zero one) [m]
 
 
-instanceProof :: RecursiveCircuit n a -> SPS.Input a (RecursiveCircuit n a) -> InstanceProofPair (Vector n a) a a
-instanceProof rc i = InstanceProofPair i (NARKProof [Acc.commit (transform rc i) [m]] [m])
+instanceProof 
+    :: forall n a 
+    .  RandomOracle (Vector n a) a
+    => RandomOracle [a] a
+    => Acc.AccumulatorScheme (Vector n a) a a a (FS_CM n a) 
+    => RecursiveCircuit n a 
+    -> SPS.Input a (RecursiveCircuit n a) 
+    -> InstanceProofPair (Vector n a) a a
+instanceProof rc i = InstanceProofPair i (NARKProof [Acc.commit @(Vector n a) @a (transform rc i) [m]] [m])
     where
         m = oracle $ executeAc rc i
 
-foldN :: RecursiveCircuit n a -> SPS.Input a (RecursiveCircuit n a) -> [P.Bool] -> Accumulator (Vector n a) a a a -> FoldResult n a
+foldN 
+    :: forall n a 
+    .  Arithmetic a
+    => RandomOracle [a] a
+    => RandomOracle (Vector n a) a
+    => Acc.AccumulatorScheme (Vector n a) a a a (FS_CM n a) 
+    => RecursiveCircuit n a 
+    -> SPS.Input a (RecursiveCircuit n a) 
+    -> [P.Bool] 
+    -> Accumulator (Vector n a) a a a 
+    -> FoldResult n a
 foldN rc i verifierResults acc
   | iterations rc == 0 = FoldResult i acc (and verifierResults) (Acc.decider (transform rc i) acc)
   | otherwise = let (output, newAcc, newVerifierResult) = foldStep rc i acc
                  in foldN (rc {iterations = iterations rc -! 1}) output (newVerifierResult : verifierResults) newAcc
 
-executeAc :: RecursiveCircuit n a -> Vector n a -> Vector n a
+executeAc :: forall n a . RecursiveCircuit n a -> Vector n a -> Vector n a
 executeAc (RecursiveCircuit _ rc) i = eval rc (M.fromList $ P.zip [1..] (V.fromVector i))
 
 foldStep 
     :: forall n a 
-    .  RecursiveCircuit n a 
+    .  Arithmetic a 
+    => RandomOracle [a] a
+    => RandomOracle (Vector n a) a
+    => Acc.AccumulatorScheme (Vector n a) a a a (FS_CM n a) 
+    => RecursiveCircuit n a 
     -> SPS.Input a (RecursiveCircuit n a) 
     -> Accumulator (Vector n a) a a a 
     -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a a a, P.Bool)
 foldStep rc i acc = (newInput, newAcc, verifierAccepts)
     where
+        fs :: FS_CM n a
         fs = transform rc i
+
         nark@(InstanceProofPair _ narkProof) = instanceProof rc i
-        (newAcc, accProof) = Acc.prover @(Vector n a) fs acc nark
-        verifierAccepts = Acc.verifier i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
+        (newAcc, accProof) = Acc.prover fs acc nark
+        verifierAccepts = Acc.verifier @_ @_ @_ @a @(FS_CM n a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
         newInput = executeAc rc i

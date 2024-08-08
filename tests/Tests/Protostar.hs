@@ -20,7 +20,10 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Base.Data.Vector                                (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar
+import           ZkFold.Base.Protocol.ARK.Protostar.FiatShamir
+import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
+import           ZkFold.Base.Protocol.ARK.Protostar.ArithmeticCircuit
 import           ZkFold.Prelude                                         ((!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
@@ -69,6 +72,7 @@ specProtostarN
     :: forall a n
     .  Arbitrary a
     => Arithmetic a
+    => AccumulatorScheme (Vector n a) a a a (FiatShamir a (CommitOpen a a (RecursiveCircuit n a)))
     => KnownNat n
     => IO ()
 specProtostarN = hspec $ do

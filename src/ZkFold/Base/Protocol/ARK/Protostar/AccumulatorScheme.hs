@@ -55,7 +55,6 @@ instance
     , Scale m c
     , ProverMessage f a ~ m
     , IsList (Input f (CommitOpen f c a))
-    , Item (Input f (CommitOpen f c a)) ~ f
     , Input m a ~ i
     , Item i ~ m
     , KnownNat (Degree (CommitOpen f c a))
