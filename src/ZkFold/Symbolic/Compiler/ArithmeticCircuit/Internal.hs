@@ -91,9 +91,6 @@ deriving instance NFData (Rep i) => NFData (Var i)
 witnessGenerator :: ArithmeticCircuit a i o -> i a -> Map Natural a
 witnessGenerator circuit inputs =
     fmap ($ inputs) (acWitness circuit)
---   let srcs = acWitness circuit
---       witness = ($ witness) <$> (srcs `union` fmap const inputs)
---    in witness
 
 ------------------------------ Symbolic compiler context ----------------------------
 

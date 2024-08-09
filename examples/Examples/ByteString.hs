@@ -18,6 +18,7 @@ import           Text.Show                                   (show)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Data.Vector (Vector)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -35,15 +36,15 @@ exampleByteStringExtend = do
     let k = show $ natVal (Proxy @k)
     putStrLn $ "\nExample: Extending a bytestring of length " ++ n ++ " to length " ++ k
     let file = "compiled_scripts/bytestring" ++ n ++ "_to_" ++ k ++ ".json"
-    compileIO @(Zp BLS12_381_Scalar) file $ extend @(ByteString n (ArithmeticCircuit (Zp BLS12_381_Scalar))) @(ByteString k (ArithmeticCircuit (Zp BLS12_381_Scalar)))
+    compileIO @n @(Zp BLS12_381_Scalar) file $ extend @(ByteString n (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n))) @(ByteString k (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n)))
 
 type Binary a = a -> a -> a
 
-type UBinary n = Binary (ByteString n (ArithmeticCircuit (Zp BLS12_381_Scalar)))
+type UBinary n = Binary (ByteString n (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector (n + n))))
 
 makeExample :: forall n . (KnownNat n, KnownNat (n + n)) => String -> String -> UBinary n -> IO ()
 makeExample shortName name op = do
     let n = show $ natVal (Proxy @n)
     putStrLn $ "\nExample: (" ++ shortName ++ ") operation on ByteString" ++ n
     let file = "compiled_scripts/bytestring" ++ n ++ "_" ++ name ++ ".json"
-    compileIO @(Zp BLS12_381_Scalar) file op
+    compileIO @(n+n) @(Zp BLS12_381_Scalar) file op

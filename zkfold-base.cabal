@@ -261,6 +261,7 @@ test-suite zkfold-base-test
       Tests.Univariate.PolyVec
     build-depends:
       base                          >= 4.9 && < 5,
+      adjunctions                           < 4.5,
       binary                               < 0.11,
       bytestring                                 ,
       blake2                                     ,

@@ -4,8 +4,8 @@
 module Tests.NonInteractiveProof.Plonk (PlonkBS, specPlonk) where
 
 import           Data.ByteString                             (ByteString)
+import           Data.Functor.Rep                            (Representable (..))
 import           Data.List                                   (transpose)
-import           Data.Map                                    ((!))
 import           Data.Maybe                                  (fromJust)
 import qualified Data.Vector                                 as V
 import           GHC.IsList                                  (IsList (..))
@@ -43,7 +43,7 @@ propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
         (PlonkWitnessInput wInput, _) = w
         (w1', w2', w3') = wmap pr wInput
 
-        wPub = toPolyVec @_ @PlonkPolyLengthBS $ fmap (negate . (wInput !)) $ fromList @(V.Vector Natural) $ fromVector iPub
+        wPub = toPolyVec @_ @PlonkPolyLengthBS $ fmap (negate . index wInput . fromIntegral) $ fromList @(V.Vector Natural) $ fromVector iPub
 
         qm' = V.toList $ fromPolyVec $ qM pr
         ql' = V.toList $ fromPolyVec $ qL pr
@@ -67,7 +67,7 @@ propPlonkPolyIdentity (TestData plonk w) =
         PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
         (w1, w2, w3) = wmap wInput
 
-        wPub = fmap (negate . (wInput !)) iPub'
+        wPub = fmap (negate . index wInput . fromIntegral) iPub'
         pubPoly = polyVecInLagrangeBasis @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS omega' $
             toPolyVec @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS wPub
 

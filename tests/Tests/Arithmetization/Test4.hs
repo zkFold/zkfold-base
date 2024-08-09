@@ -2,7 +2,6 @@
 
 module Tests.Arithmetization.Test4 (specArithmetization4) where
 
-import           Data.Map                                    (fromList)
 import           GHC.Generics                                (Par1 (unPar1))
 import           GHC.Num                                     (Natural)
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
@@ -20,8 +19,9 @@ import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkI
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), acValue, applyArgs, compile,
-                                                              compileForceOne)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), compile,
+                                                              compileForceOne, eval)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Var (..))
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
@@ -36,23 +36,25 @@ lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 
 testSameValue :: F -> Haskell.Bool
 testSameValue targetValue =
-    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
-        b       = unPar1 $ acValue (applyArgs ac [targetValue])
+    let Bool ac = compile @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
+        b       = unPar1 (eval ac (V.singleton targetValue))
     in b Haskell.== one
 
 testDifferentValue :: F -> F -> Haskell.Bool
 testDifferentValue targetValue otherValue =
-    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
-        b       = unPar1 $ acValue (applyArgs ac [otherValue])
+    let Bool ac = compile @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
+        b       = unPar1 (eval ac (V.singleton otherValue))
     in b Haskell.== zero
 
 testOnlyOutputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
 testOnlyOutputZKP x ps targetValue =
-    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
+    let Bool ac = compile @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
 
         (omega, k1, k2) = getParams 32
-        witnessInputs   = fromList [(1, targetValue), (unPar1 $ acOutput ac, 1)]
-        indexOutputBool = V.singleton $ unPar1 $ acOutput ac
+        witnessInputs = V.singleton targetValue
+        varF (NewVar ix) = ix + 1
+        varF (InVar ix) = fromIntegral ix
+        indexOutputBool = V.singleton $ varF $ unPar1 $ acOutput ac
         plonk   = Plonk @32 omega k1 k2 indexOutputBool ac x
         setupP  = setupProve @(PlonkBS N) plonk
         setupV  = setupVerify @(PlonkBS N) plonk
@@ -66,10 +68,10 @@ testOnlyOutputZKP x ps targetValue =
 
 testSafeOneInputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
 testSafeOneInputZKP x ps targetValue =
-    let Bool ac = compileForceOne @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
+    let Bool ac = compileForceOne @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
 
         (omega, k1, k2) = getParams 32
-        witnessInputs  = fromList [(1, targetValue), (unPar1 $ acOutput ac, 1)]
+        witnessInputs  = V.singleton targetValue
         indexTargetValue = V.singleton (1 :: Natural)
         plonk   = Plonk @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) plonk
@@ -83,10 +85,10 @@ testSafeOneInputZKP x ps targetValue =
 
 testAttackSafeOneInputZKP :: F -> PlonkProverSecret C -> F -> Haskell.Bool
 testAttackSafeOneInputZKP x ps targetValue =
-    let Bool ac = compileForceOne @F (lockedByTxId @F @(ArithmeticCircuit F) targetValue) :: Bool (ArithmeticCircuit F)
+    let Bool ac = compileForceOne @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
 
         (omega, k1, k2) = getParams 32
-        witnessInputs  = fromList [(1, targetValue + 1), (unPar1 $ acOutput ac, 0)]
+        witnessInputs  = V.singleton (targetValue + 1)
         indexTargetValue = V.singleton (1 :: Natural)
         plonk   = Plonk @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) plonk
