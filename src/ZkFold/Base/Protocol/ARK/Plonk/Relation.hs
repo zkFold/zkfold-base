@@ -3,7 +3,7 @@
 
 module ZkFold.Base.Protocol.ARK.Plonk.Relation where
 
-import           Data.Map                                     (Map, elems, (!))
+import           Data.Map                                     (elems, (!))
 import           GHC.Generics                                 (Par1)
 import           GHC.IsList                                   (IsList (..))
 import           Prelude                                      hiding (Num (..), drop, length, replicate, sum, take,
@@ -18,7 +18,7 @@ import           ZkFold.Base.Data.Vector                      (Vector, fromVecto
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint    (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Prelude                               (replicate)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 -- Here `n` is the total number of constraints, `l` is the number of public inputs, and `a` is the field type.
 data PlonkRelation n l a = PlonkRelation
@@ -28,7 +28,7 @@ data PlonkRelation n l a = PlonkRelation
     , qO    :: PolyVec a n
     , qC    :: PolyVec a n
     , sigma :: Permutation (3 * n)
-    , wmap  :: Map Natural a -> (PolyVec a n, PolyVec a n, PolyVec a n)
+    , wmap  :: Vector l a -> (PolyVec a n, PolyVec a n, PolyVec a n)
     }
 
 toPlonkRelation :: forall n l a .
@@ -38,11 +38,14 @@ toPlonkRelation :: forall n l a .
     => Arithmetic a
     => Scale a a
     => Vector l Natural
-    -> ArithmeticCircuit a Par1
+    -> ArithmeticCircuit a (Vector l) Par1
     -> Maybe (PlonkRelation n l a)
 toPlonkRelation xPub ac0 =
     let ac = desugarRanges ac0
-        evalX0 = evalPolynomial evalMonomial (\x -> if x == 0 then one else var x)
+
+        varF (NewVar ix) = if ix == 0 then one else var (ix + value @l)
+        varF (InVar ix) = var (fromIntegral ix)
+        evalX0 = evalPolynomial evalMonomial varF
 
         pubInputConstraints = map var (fromVector xPub)
         acConstraints       = map evalX0 $ elems (acSystem ac)

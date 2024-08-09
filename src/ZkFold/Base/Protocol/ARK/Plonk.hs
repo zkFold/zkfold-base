@@ -12,6 +12,7 @@ module ZkFold.Base.Protocol.ARK.Plonk (
 ) where
 
 import           Data.Maybe                                 (fromJust)
+import           Data.Functor.Rep                           (Representable (..))
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Par1)
 import           GHC.IsList                                 (IsList (..))
@@ -30,8 +31,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                             (length, (!))
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (acInput))
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
 import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
 
 {-
@@ -44,7 +44,7 @@ data Plonk (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
         iPub  :: Vector l Natural,
-        ac    :: ArithmeticCircuit (ScalarField curve1) Par1,
+        ac    :: ArithmeticCircuit (ScalarField curve1) (Vector l) Par1,
         x     :: ScalarField curve1
     }
 instance (Show (ScalarField c1), Arithmetic (ScalarField c1)) => Show (Plonk n l c1 c2 t) where
@@ -55,7 +55,7 @@ instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (Scalar
         => Arbitrary (Plonk n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
-        let fullInp = length . acInput $ ac
+        let fullInp = value @l
         vecPubInp <- genSubset (value @l) fullInp
         let (omega, k1, k2) = getParams (value @n)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
@@ -114,9 +114,9 @@ instance forall n l c1 c2 t plonk f g1.
         , FromTranscript t (ScalarField c1)
         ) => NonInteractiveProof (Plonk n l c1 c2 t) where
     type Transcript (Plonk n l c1 c2 t)  = t
-    type SetupProve (Plonk n l c1 c2 t)  = (PlonkSetupParamsProve c1 c2, PlonkPermutation n c1, PlonkCircuitPolynomials n c1 , PlonkWitnessMap n c1)
+    type SetupProve (Plonk n l c1 c2 t)  = (PlonkSetupParamsProve c1 c2, PlonkPermutation n c1, PlonkCircuitPolynomials n c1 , PlonkWitnessMap n l c1)
     type SetupVerify (Plonk n l c1 c2 t) = (PlonkSetupParamsVerify c1 c2, PlonkCircuitCommitments c1)
-    type Witness (Plonk n l c1 c2 t)     = (PlonkWitnessInput c1, PlonkProverSecret c1)
+    type Witness (Plonk n l c1 c2 t)     = (PlonkWitnessInput l c1, PlonkProverSecret c1)
     type Input (Plonk n l c1 c2 t)       = PlonkInput c1
     type Proof (Plonk n l c1 c2 t)       = PlonkProof c1
 
@@ -172,7 +172,7 @@ instance forall n l c1 c2 t plonk f g1.
 
             (w1, w2, w3) = wmap wInput
 
-            wPub = fmap (negate . (wInput !)) iPub'
+            wPub = fmap (negate . index wInput . P.fromIntegral) iPub'
 
             pubPoly = polyVecInLagrangeBasis omega' $ toPolyVec @f @n wPub
 
