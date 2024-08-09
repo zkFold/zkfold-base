@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Pairing
   ( millerLoop
