@@ -3,17 +3,17 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Base.Algebra.EllipticCurve.Bn254
-  ( Bn254_Scalar
-  , Bn254_Base
+module ZkFold.Base.Algebra.EllipticCurve.BN254
+  ( BN254_Scalar
+  , BN254_Base
   , Fr
   , Fp
   , Fp2
   , Fp6
   , Fp12
-  , Bn254_G1
-  , Bn254_G2
-  , Bn254_GT) where
+  , BN254_G1
+  , BN254_G2
+  , BN254_GT) where
 
 import           Data.Binary                                (Binary (..))
 import           Data.Eq                                    (Eq)
@@ -30,14 +30,14 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, toPoly)
 
 -------------------------- Scalar field & field towers -------------------------
 
-type Bn254_Scalar = 21888242871839275222246405745257275088548364400416034343698204186575808495617
-instance Prime Bn254_Scalar
+type BN254_Scalar = 21888242871839275222246405745257275088548364400416034343698204186575808495617
+instance Prime BN254_Scalar
 
-type Bn254_Base = 21888242871839275222246405745257275088696311157297823662689037894645226208583
-instance Prime Bn254_Base
+type BN254_Base = 21888242871839275222246405745257275088696311157297823662689037894645226208583
+instance Prime BN254_Base
 
-type Fr = Zp Bn254_Scalar
-type Fp = Zp Bn254_Base
+type Fr = Zp BN254_Scalar
+type Fp = Zp BN254_Base
 
 x :: (Ring a, Eq a) => Poly a
 x = toPoly [zero, one]
@@ -68,27 +68,27 @@ type Fp12 = Ext2 Fp6 "IP3"
 
 ------------------------------- bn254 G1 ---------------------------------------
 
-data Bn254_G1
+data BN254_G1
 
-instance EllipticCurve Bn254_G1 where
-  type ScalarField Bn254_G1 = Fr
-  type BaseField Bn254_G1 = Fp
+instance EllipticCurve BN254_G1 where
+  type ScalarField BN254_G1 = Fr
+  type BaseField BN254_G1 = Fp
   inf = Inf
   gen = Point 1 2
   add = pointAdd
   mul = pointMul
 
-instance StandardEllipticCurve Bn254_G1 where
+instance StandardEllipticCurve BN254_G1 where
   aParameter = 0
   bParameter = 3
 
 ------------------------------- bn254 G2 ---------------------------------------
 
-data Bn254_G2
+data BN254_G2
 
-instance EllipticCurve Bn254_G2 where
-  type ScalarField Bn254_G2 = Fr
-  type BaseField Bn254_G2 = Fp2
+instance EllipticCurve BN254_G2 where
+  type ScalarField BN254_G2 = Fr
+  type BaseField BN254_G2 = Fp2
   inf = Inf
   gen = Point
     (Ext2 10857046999023057135944570762232829481370756359578518086990519993285655852781
@@ -98,29 +98,29 @@ instance EllipticCurve Bn254_G2 where
   add = pointAdd
   mul = pointMul
 
-instance StandardEllipticCurve Bn254_G2 where
+instance StandardEllipticCurve BN254_G2 where
   aParameter = zero
   bParameter = Ext2 3 0 // Ext2 9 1
 
 ------------------------------- Pairing ----------------------------------------
 
-newtype Bn254_GT = Bn254_GT Fp12
+newtype BN254_GT = BN254_GT Fp12
   deriving (Eq, MultiplicativeSemigroup, MultiplicativeMonoid)
 
-instance Exponent Bn254_GT Natural where
-  Bn254_GT e ^ p = Bn254_GT (e ^ p)
+instance Exponent BN254_GT Natural where
+  BN254_GT e ^ p = BN254_GT (e ^ p)
 
-instance Exponent Bn254_GT Integer where
-  Bn254_GT e ^ p = Bn254_GT (e ^ p)
+instance Exponent BN254_GT Integer where
+  BN254_GT e ^ p = BN254_GT (e ^ p)
 
-deriving via (NonZero Fp12) instance MultiplicativeGroup Bn254_GT
+deriving via (NonZero Fp12) instance MultiplicativeGroup BN254_GT
 
-instance Finite Bn254_GT where
-  type Order Bn254_GT = Bn254_Scalar
+instance Finite BN254_GT where
+  type Order BN254_GT = BN254_Scalar
 
-instance Pairing Bn254_G1 Bn254_G2 where
-  type TargetGroup Bn254_G1 Bn254_G2 = Bn254_GT
-  pairing p q = Bn254_GT $ finalExponentiation @Bn254_G2 $ finalStep (millerLoop param p q)
+instance Pairing BN254_G1 BN254_G2 where
+  type TargetGroup BN254_G1 BN254_G2 = BN254_GT
+  pairing p q = BN254_GT $ finalExponentiation @BN254_G2 $ finalStep (millerLoop param p q)
 
 param :: Integer
 -- | Each curve needs a separate miller loop parameter.
@@ -134,18 +134,18 @@ finalStep _ = error "TODO"
 
 ------------------------------ Encoding ----------------------------------------
 
-instance Binary (Point Bn254_G1) where
+instance Binary (Point BN254_G1) where
   put = putPointZp
   get = getPointZp
 
-instance Binary (PointCompressed Bn254_G1) where
+instance Binary (PointCompressed BN254_G1) where
   put = putCompressedPointZp
   get = getCompressedPointZp
 
-instance Binary (Point Bn254_G2) where
+instance Binary (Point BN254_G2) where
   put = putPointExt2
   get = getPointExt2
 
-instance Binary (PointCompressed Bn254_G2) where
+instance Binary (PointCompressed BN254_G2) where
   put = putCompressedPointExt2
   get = getCompressedPointExt2
