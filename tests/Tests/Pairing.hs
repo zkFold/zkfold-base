@@ -78,3 +78,5 @@ specPairing' = hspec $ do
 specPairing :: IO ()
 specPairing = do
     specPairing' @BLS12_381_G1 @BLS12_381_G2
+    -- TODO: finish pairing for bn254 and uncomment this line
+    -- specPairing' @Bn254_G1 @Bn254_G2
