@@ -2,29 +2,29 @@
 
 module Tests.Arithmetization.Test4 (specArithmetization4) where
 
-import           GHC.Generics                                (Par1 (unPar1))
-import           GHC.Num                                     (Natural)
-import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
-import qualified Prelude                                     as Haskell
-import           Test.Hspec                                  (Spec, describe, it)
-import           Test.QuickCheck                             (Testable (..), withMaxSuccess, (==>))
-import           Tests.NonInteractiveProof.Plonk             (PlonkBS)
+import           GHC.Generics                                        (Par1 (unPar1))
+import           GHC.Num                                             (Natural)
+import           Prelude                                             hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
+import qualified Prelude                                             as Haskell
+import           Test.Hspec                                          (Spec, describe, it)
+import           Test.QuickCheck                                     (Testable (..), withMaxSuccess, (==>))
+import           Tests.NonInteractiveProof.Plonk                     (PlonkBS)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero, (+))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
-import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Protocol.ARK.Plonk              (Plonk (..), PlonkInput (..), PlonkProverSecret,
-                                                              PlonkWitnessInput (..), plonkVerifierInput)
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal     (getParams)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
+import           ZkFold.Base.Algebra.Basic.Class                     (FromConstant (..), one, zero, (+))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
+import qualified ZkFold.Base.Data.Vector                             as V
+import           ZkFold.Base.Protocol.ARK.Plonk                      (Plonk (..), PlonkInput (..), PlonkProverSecret,
+                                                                      PlonkWitnessInput (..), plonkVerifierInput)
+import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
+import           ZkFold.Base.Protocol.NonInteractiveProof            (NonInteractiveProof (..))
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), compile,
-                                                              compileForceOne, eval)
+import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuit (..), compile, compileForceOne,
+                                                                      eval)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Var (..))
-import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
-import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
+import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
+import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
 
 type N = 1
 
@@ -53,7 +53,7 @@ testOnlyOutputZKP x ps targetValue =
         (omega, k1, k2) = getParams 32
         witnessInputs = V.singleton targetValue
         varF (NewVar ix) = ix + 1
-        varF (InVar ix) = fromIntegral ix
+        varF (InVar ix)  = fromIntegral ix
         indexOutputBool = V.singleton $ varF $ unPar1 $ acOutput ac
         plonk   = Plonk @32 omega k1 k2 indexOutputBool ac x
         setupP  = setupProve @(PlonkBS N) plonk

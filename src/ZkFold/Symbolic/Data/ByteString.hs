@@ -22,7 +22,7 @@ import           Control.DeepSeq                                           (NFDa
 import           Control.Monad                                             (replicateM)
 import           Data.Bits                                                 as B
 import qualified Data.ByteString                                           as Bytes
-import           Data.Functor.Rep (Representable (..))
+import           Data.Functor.Rep                                          (Representable (..))
 import           Data.Kind                                                 (Type)
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.Maybe                                                (Maybe (..))
@@ -46,13 +46,13 @@ import           ZkFold.Base.Data.Vector                                   (Vect
 import           ZkFold.Prelude                                            (replicateA, (!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Var)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class                                (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, newAssigned)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Var)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.

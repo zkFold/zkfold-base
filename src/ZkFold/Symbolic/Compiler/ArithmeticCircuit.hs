@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
@@ -40,8 +40,8 @@ import           GHC.Generics                                           (U1 (..)
 import           Numeric.Natural                                        (Natural)
 import           Prelude                                                hiding (Num (..), drop, length, product,
                                                                          splitAt, sum, take, (!!), (^))
-import           Test.QuickCheck                                        (Arbitrary, Property, conjoin, property,
-                                                                         withMaxSuccess, (===), arbitrary)
+import           Test.QuickCheck                                        (Arbitrary, Property, arbitrary, conjoin,
+                                                                         property, withMaxSuccess, (===))
 import           Text.Pretty.Simple                                     (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -50,8 +50,8 @@ import           ZkFold.Prelude                                         (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (desugarRange)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                         eval, eval1, exec, exec1,
-                                                                         witnessGenerator, Var (..), acInput)
+                                                                         Var (..), acInput, eval, eval1, exec, exec1,
+                                                                         witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 
 --------------------------------- High-level functions --------------------------------
@@ -126,7 +126,7 @@ checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acS
         w = witnessGenerator c U1
         testPoly p = evalPolynomial evalMonomial varF p === zero
         varF (NewVar v) = w ! v
-        varF (InVar v) = absurd v
+        varF (InVar v)  = absurd v
 
 checkCircuit
     :: Arbitrary (i a)
@@ -142,6 +142,6 @@ checkCircuit c = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
             ins <- arbitrary
             let w = witnessGenerator c ins
                 varF (NewVar v) = w ! v
-                varF (InVar v) = index ins v
+                varF (InVar v)  = index ins v
             return $ evalPolynomial evalMonomial varF p === zero
 

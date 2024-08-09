@@ -15,8 +15,7 @@ import           Prelude                                                (Show, m
                                                                          (<$>))
 import qualified Prelude                                                as Haskell
 import           System.Random                                          (mkStdGen)
-import           Test.QuickCheck                                        (Arbitrary (arbitrary), Gen,
-                                                                         elements)
+import           Test.QuickCheck                                        (Arbitrary (arbitrary), Gen, elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number

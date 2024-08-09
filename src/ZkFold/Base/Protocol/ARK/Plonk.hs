@@ -11,8 +11,8 @@ module ZkFold.Base.Protocol.ARK.Plonk (
     plonkVerifierInput
 ) where
 
-import           Data.Maybe                                 (fromJust)
 import           Data.Functor.Rep                           (Representable (..))
+import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Par1)
 import           GHC.IsList                                 (IsList (..))

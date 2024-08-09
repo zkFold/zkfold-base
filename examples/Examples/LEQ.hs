@@ -7,7 +7,7 @@ import           Prelude                                     hiding (Bool, Eq (.
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Data.Vector (Vector)
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool)

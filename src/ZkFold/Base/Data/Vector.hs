@@ -10,7 +10,7 @@ import           Control.Parallel.Strategies      (parMap, rpar)
 import           Data.Aeson                       (ToJSON (..))
 import           Data.Bifunctor                   (first)
 import           Data.Distributive                (Distributive (..))
-import           Data.Functor.Rep                 (Representable (..), distributeRep, collectRep)
+import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep)
 import qualified Data.List                        as List
 import           Data.List.Split                  (chunksOf)
 import           Data.These                       (These (..))

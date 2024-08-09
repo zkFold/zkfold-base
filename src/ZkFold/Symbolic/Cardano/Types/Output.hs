@@ -11,7 +11,7 @@ module ZkFold.Symbolic.Cardano.Types.Output (
     txoDatumHash
 ) where
 
-import           Data.Functor.Rep                    (Representable (..))
+import           Data.Functor.Rep                           (Representable (..))
 import           Prelude                                    hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                                    as Haskell
 

@@ -11,10 +11,10 @@ import           Prelude                                             (($), (==))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial, var)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (evalMonomial, evalPolynomial, var)
 
 {--
 
@@ -66,7 +66,7 @@ instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (RecursiveCircuit 
     algebraicMap rc _ _ _ =
         let
             varF (NewVar ix) = var (ix P.+ value @n)
-            varF (InVar ix) = var (P.fromIntegral ix)
+            varF (InVar ix)  = var (P.fromIntegral ix)
         in
             [ evalPolynomial evalMonomial varF poly
             | poly <- M.elems $ acSystem (circuit rc)

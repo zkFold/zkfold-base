@@ -3,20 +3,20 @@
 
 module ZkFold.Base.Protocol.ARK.Plonk.Relation where
 
-import           Data.Map                                     (elems, (!))
-import           GHC.Generics                                 (Par1)
-import           GHC.IsList                                   (IsList (..))
-import           Prelude                                      hiding (Num (..), drop, length, replicate, sum, take,
-                                                               (!!), (/), (^))
+import           Data.Map                                            (elems, (!))
+import           GHC.Generics                                        (Par1)
+import           GHC.IsList                                          (IsList (..))
+import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
+                                                                      take, (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Permutations       (Permutation, fromCycles, mkIndexPartition)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (evalMonomial, evalPolynomial, var)
-import           ZkFold.Base.Algebra.Polynomials.Univariate   (PolyVec, toPolyVec)
-import           ZkFold.Base.Data.Vector                      (Vector, fromVector)
-import           ZkFold.Base.Protocol.ARK.Plonk.Constraint    (PlonkConstraint (..), toPlonkConstraint)
-import           ZkFold.Prelude                               (replicate)
+import           ZkFold.Base.Algebra.Basic.Permutations              (Permutation, fromCycles, mkIndexPartition)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial, var)
+import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec, toPolyVec)
+import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
+import           ZkFold.Base.Protocol.ARK.Plonk.Constraint           (PlonkConstraint (..), toPlonkConstraint)
+import           ZkFold.Prelude                                      (replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
@@ -44,7 +44,7 @@ toPlonkRelation xPub ac0 =
     let ac = desugarRanges ac0
 
         varF (NewVar ix) = if ix == 0 then one else var (ix + value @l)
-        varF (InVar ix) = var (fromIntegral ix)
+        varF (InVar ix)  = var (fromIntegral ix)
         evalX0 = evalPolynomial evalMonomial varF
 
         pubInputConstraints = map var (fromVector xPub)

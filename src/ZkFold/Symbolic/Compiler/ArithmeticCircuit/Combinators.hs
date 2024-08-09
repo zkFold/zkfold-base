@@ -32,7 +32,6 @@ import           Data.Map                                                  (elem
 import           Data.Traversable                                          (for)
 import qualified Data.Zip                                                  as Z
 import           GHC.Generics                                              (Par1)
--- import           GHC.IsList                                                (IsList (..))
 import           Prelude                                                   hiding (Bool, Eq (..), drop, length, negate,
                                                                             splitAt, take, (!!), (*), (+), (-), (^))
 
@@ -42,7 +41,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate              (vari
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (drop, length, take, (!!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..), acInput, Var (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (ArithmeticCircuit (..), Var (..), acInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.MonadCircuit
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE DerivingStrategies       #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -27,7 +27,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
 
 import           Control.DeepSeq                              (NFData, force)
 import           Control.Monad.State                          (MonadState (..), State, gets, modify, runState)
-import           Data.Aeson                                   (ToJSON, ToJSONKey, FromJSON, FromJSONKey)
+import           Data.Aeson                                   (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
 import           Data.Foldable                                (fold)
 import           Data.Functor.Rep                             (Representable (..), fmapRep)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
@@ -140,7 +140,7 @@ instance (Arithmetic a, Ord (Rep i), Representable i, o ~ U1) => MonadCircuit (V
     newConstrained new witness = do
         let ws = sources @a witness
             varF (NewVar v) = NewVar (v + 1)
-            varF (InVar v) = InVar v
+            varF (InVar v)  = InVar v
             -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
             x = maximum (S.mapMonotonic varF ws <> S.singleton (NewVar 0))
             -- | `s` is meant to be a set of variables used in a witness not present in a constraint.
@@ -202,7 +202,7 @@ toVar srcs c = force $ fromZp ex
         r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: VarField
         varF (NewVar w) = w
-        varF (InVar _) = 0
+        varF (InVar _)  = 0
         v  = (+ r) . fromConstant . varF
         x  = g ^ fromZp (evalPolynomial evalMonomial v $ mapCoeffs toField c)
         ex = foldr (\p y -> x ^ (varF p) + y) x srcs
@@ -240,7 +240,7 @@ assignment i f = zoom #acWitness . modify $ insert i f
 eval1 :: Representable i => ArithmeticCircuit a i Par1 -> i a -> a
 eval1 ctx i = case unPar1 (acOutput ctx) of
     NewVar k -> witnessGenerator ctx i ! k
-    InVar j -> index i j
+    InVar j  -> index i j
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
 eval :: (Representable i, Functor o) => ArithmeticCircuit a i o -> i a -> o a
@@ -265,9 +265,9 @@ apply xs ac = ac
   , acOutput = U1
   }
   where
-    varF (InVar (Left v)) = fromConstant (index xs v)
+    varF (InVar (Left v))  = fromConstant (index xs v)
     varF (InVar (Right v)) = var (InVar v)
-    varF (NewVar v) = var (NewVar v)
+    varF (NewVar v)        = var (NewVar v)
     witF f j = f (xs :*: j)
 
     -- let inputs = acInput

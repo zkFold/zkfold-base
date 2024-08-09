@@ -6,11 +6,11 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         ArithmeticCircuitTest(..)
     ) where
 
-import           Data.Traversable                                       (for)
 import           Data.Functor.Rep                                       (Representable (..))
 import           Data.Map                                               hiding (drop, foldl, foldr, fromList, map, null,
                                                                          splitAt, take, toList)
 import qualified Data.Map                                               as Map
+import           Data.Traversable                                       (for)
 import           GHC.Generics                                           (Par1)
 import           GHC.IsList                                             (IsList (..))
 import           Prelude                                                hiding (Num (..), drop, length, product,
@@ -20,7 +20,8 @@ import           Test.QuickCheck                                        (Arbitra
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (getAllVars)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), acInput, Var (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), Var (..),
+                                                                         acInput)
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
@@ -48,7 +49,7 @@ mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
     let vars = [v | NewVar v <- getAllVars ac]
         forward = Map.fromAscList $ zip vars [0..]
         backward = Map.fromAscList $ zip [0..] vars
-        varF (InVar v) = InVar v
+        varF (InVar v)  = InVar v
         varF (NewVar v) = NewVar (forward ! v)
         mappedCircuit = ac
             {

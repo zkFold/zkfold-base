@@ -18,7 +18,7 @@ import           Text.Show                                   (show)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Data.Vector (Vector)
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString

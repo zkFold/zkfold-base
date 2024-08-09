@@ -1,4 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes, TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Examples.FFA (examplesFFA) where
 
