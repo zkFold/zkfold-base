@@ -1,6 +1,10 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
-module ZkFold.Base.Algebra.EllipticCurve.Pairing (ate) where
+module ZkFold.Base.Algebra.EllipticCurve.Pairing
+  ( millerLoop
+  , finalExponentiation
+  ) where
 
 import           Data.Bits                               (shiftR)
 import           Data.Bool                               (Bool, otherwise, (&&))
@@ -19,10 +23,12 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 
 -- Adapted from:
 -- https://github.com/nccgroup/pairing-bls12381/blob/master/Crypto/Pairing_bls12381.hs
+-- https://github.com/sdiehl/pairing/blob/master/src/Data/Pairing/Ate.hs
 
 type Untwisted c i1 i2 = Ext2 (Ext3 (BaseField c) i1) i2
 
 -- Untwist point on E2 for pairing calculation
+-- FIXME: this works for BLS12-381 only
 untwist ::
   (Field (BaseField c), Untwisted c i1 i2 ~ g, Field g) => Point c -> (g, g)
 untwist (Point x1 y1) = (wideX, wideY)
@@ -68,15 +74,15 @@ addEval' (rx, ry) (qx, qy) (Point px py) =
 addEval' _ _ Inf = error "addEval': point at infinity"
 
 -- Classic Miller loop for Ate pairing
-miller ::
+millerLoop ::
   (BaseField c2 ~ f, Field f, Eq f) =>
   (Untwisted c2 i1 i2 ~ g, FromConstant (BaseField c1) g, Field g) =>
-  Point c1 -> Point c2 -> g
-miller p q = miller' p q q iterations one
+  Integer -> Point c1 -> Point c2 -> g
+millerLoop param p q = miller' p q q iterations one
   where
     iterations = tail $ reverse $  -- list of true/false per bits of operand
       unfoldr (\b -> if b == (0 :: Integer) then Nothing
-                     else Just(odd b, shiftR b 1)) 0xd201000000010000
+                     else Just(odd b, shiftR b 1)) param
 
 -- Double and add loop helper for Miller (iterative)
 miller' ::
@@ -91,19 +97,14 @@ miller' p q r (i:iters) result =
     accum = result * result * doubleEval r p
     doubleR = pointDouble r
 
--- | Pairing calculation for a valid point in G1 and another valid point in G2.
--- Classic Ate pairing.
-ate ::
-  forall c1 c2 i1 i2 f g.
-  (Finite (ScalarField c2), BaseField c2 ~ f, FiniteField f, Eq f) =>
-  (Untwisted c2 i1 i2 ~ g, FromConstant (BaseField c1) g, Field g) =>
-  Point c1 -> Point c2 -> g
-ate Inf _ = zero
-ate _ Inf = zero
-ate p1 p2 = pow' (miller p1 p2) ((p ^ (12 :: Natural) -! 1) `div` r) one
+finalExponentiation ::
+  forall c a.
+  (Finite (ScalarField c), Finite (BaseField c), MultiplicativeMonoid a) =>
+  a -> a
+finalExponentiation x = pow' x ((p ^ (12 :: Natural) -! 1) `div` r) one
   where
-    p = order @(BaseField c2)
-    r = order @(ScalarField c2)
+    p = order @(BaseField c)
+    r = order @(ScalarField c)
 
 -- Used for the final exponentiation; opportunity for further perf optimization
 pow' :: MultiplicativeSemigroup a => a -> Natural -> a -> a

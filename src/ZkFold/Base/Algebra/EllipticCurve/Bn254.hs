@@ -17,7 +17,8 @@ module ZkFold.Base.Algebra.EllipticCurve.Bn254
 
 import           Data.Binary                                (Binary (..))
 import           Data.Eq                                    (Eq)
-import           Prelude                                    (Integer)
+import           Data.Function                              (($))
+import           Prelude                                    (Integer, error)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field            (Ext2 (..), Ext3, IrreduciblePoly (..), Zp)
@@ -119,7 +120,17 @@ instance Finite Bn254_GT where
 
 instance Pairing Bn254_G1 Bn254_G2 where
   type TargetGroup Bn254_G1 Bn254_G2 = Bn254_GT
-  pairing p q = Bn254_GT (ate p q)
+  pairing p q = Bn254_GT $ finalExponentiation @Bn254_G2 $ finalStep (millerLoop param p q)
+
+param :: Integer
+-- | Each curve needs a separate miller loop parameter.
+-- TODO: find param for BN254
+param = error "TODO"
+
+finalStep :: Fp12 -> Fp12
+-- | BN curves need another final step after Miller loop.
+-- TODO: implement final step for BN254
+finalStep _ = error "TODO"
 
 ------------------------------ Encoding ----------------------------------------
 
