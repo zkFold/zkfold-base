@@ -1,4 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE AllowAmbiguousTypes, TypeOperators #-}
 
 module Examples.FFA (examplesFFA) where
 
@@ -12,6 +12,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
 import           ZkFold.Symbolic.Data.FFA                    (FFA)
 
@@ -33,9 +34,9 @@ exampleFFAmul = makeExample @p "*" "mul" (*)
 
 type Binary a = a -> a -> a
 
-makeExample :: forall p. KnownNat p => String -> String -> Binary (FFA p (ArithmeticCircuit (Zp BLS12_381_Scalar))) -> IO ()
+makeExample :: forall p. KnownNat p => String -> String -> Binary (FFA p (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 14))) -> IO ()
 makeExample shortName name op = do
     let p = show $ value @p
     putStrLn $ "\nExample: (" ++ shortName ++ ") operation on FFA " ++ p
     let file = "compiled_scripts/ffa_" ++ p ++ "_" ++ name ++ ".json"
-    compileIO @(Zp BLS12_381_Scalar) file op
+    compileIO @14 @(Zp BLS12_381_Scalar) file op

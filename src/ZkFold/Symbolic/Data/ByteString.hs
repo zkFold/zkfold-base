@@ -22,6 +22,7 @@ import           Control.DeepSeq                                           (NFDa
 import           Control.Monad                                             (replicateM)
 import           Data.Bits                                                 as B
 import qualified Data.ByteString                                           as Bytes
+import           Data.Functor.Rep (Representable (..))
 import           Data.Kind                                                 (Type)
 import           Data.List                                                 (foldl, reverse, unfoldr)
 import           Data.Maybe                                                (Maybe (..))
@@ -51,7 +52,7 @@ import           ZkFold.Symbolic.Data.Class                                (Symb
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, newAssigned)
-
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Var)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -163,7 +164,7 @@ instance (KnownNat n, Finite (Zp p)) => FromConstant Natural (ByteString n (Inte
 instance (KnownNat n, Finite (Zp p)) => FromConstant Integer (ByteString n (Interpreter (Zp p))) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
-instance (FromConstant Natural a, Arithmetic a, KnownNat n) => FromConstant Natural (ByteString n (ArithmeticCircuit a)) where
+instance (FromConstant Natural a, Arithmetic a, KnownNat n, Haskell.Ord (Rep i), Representable i) => FromConstant Natural (ByteString n (ArithmeticCircuit a i)) where
 
     -- | Pack a ByteString using one field element per bit.
     -- @fromConstant@ discards bits after @n@.
@@ -187,7 +188,7 @@ toBase _ 0    = Nothing
 toBase base b = let (d, m) = b `divMod` base in Just (m, d)
 
 
-instance (FromConstant Natural a, Arithmetic a, KnownNat n) => FromConstant Integer (ByteString n (ArithmeticCircuit a)) where
+instance (FromConstant Natural a, Arithmetic a, KnownNat n, Haskell.Ord (Rep i), Representable i) => FromConstant Integer (ByteString n (ArithmeticCircuit a i)) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
 instance (Finite (Zp p), KnownNat n) => Arbitrary (ByteString n (Interpreter (Zp p))) where
@@ -350,13 +351,13 @@ instance Finite (Zp p) => BitState ByteString n (Interpreter (Zp p)) where
 
 --------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n, Haskell.Ord (Rep i), Representable i) => ShiftBits (ByteString n (ArithmeticCircuit a i)) where
     shiftBits bs@(ByteString oldBits) s
       | s == 0 = bs
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
       | otherwise = ByteString $ circuitF solve
       where
-        solve :: forall i m. MonadBlueprint i a m => m (Vector n i)
+        solve :: forall v m. MonadBlueprint i v a m => m (Vector n v)
         solve = do
             bits  <- V.fromVector <$> runCircuit oldBits
             zeros <- replicateM (Haskell.fromIntegral $ Haskell.abs s) $ newAssigned (Haskell.const zero)
@@ -376,7 +377,7 @@ instance
     ( KnownNat wordSize
     , (Div n wordSize) * wordSize ~ n
     , (Div wordSize 8) * 8 ~ wordSize
-    ) => ReverseEndianness wordSize (ByteString n (ArithmeticCircuit a)) where
+    ) => ReverseEndianness wordSize (ByteString n (ArithmeticCircuit a i)) where
         reverseEndianness (ByteString v) = ByteString $ v { acOutput = reverseEndianness' @wordSize (acOutput v) }
 
 
@@ -384,25 +385,25 @@ instance
 -- TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit to 0 or 1.
 --
 bitwiseOperation
-    :: forall a n
-    .  Arithmetic a
-    => ByteString n (ArithmeticCircuit a)
-    -> ByteString n (ArithmeticCircuit a)
-    -> (forall i. i -> i -> ClosedPoly i a)
-    -> ByteString n (ArithmeticCircuit a)
+    :: forall a i n
+    .  (Arithmetic a, Haskell.Ord (Rep i), Representable i)
+    => ByteString n (ArithmeticCircuit a i)
+    -> ByteString n (ArithmeticCircuit a i)
+    -> (forall v. v -> v -> ClosedPoly v a)
+    -> ByteString n (ArithmeticCircuit a i)
 bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circuitF solve
   where
-    solve :: forall i m. MonadBlueprint i a m => m (Vector n i)
+    solve :: forall v m. MonadBlueprint i v a m => m (Vector n v)
     solve = do
         varsLeft  <- runCircuit bits1
         varsRight <- runCircuit bits2
         V.zipWithM applyBitwise varsLeft varsRight
 
-    applyBitwise :: forall i m . MonadBlueprint i a m => i -> i -> m i
+    applyBitwise :: forall v m . MonadBlueprint i v a m => v -> v -> m v
     applyBitwise l r = newAssigned $ cons l r
 
 
-instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit a)) where
+instance (Arithmetic a, KnownNat n, Haskell.Ord (Rep i), Representable i) => BoolType (ByteString n (ArithmeticCircuit a i)) where
     false = ByteString $ embedV (pure zero)
 
     true = not false
@@ -428,7 +429,7 @@ instance
   ( KnownNat wordSize
   , Mod n wordSize ~ 0
   , (Div n wordSize) * wordSize ~ n
-  ) => ToWords (ByteString n (ArithmeticCircuit a)) (ByteString wordSize (ArithmeticCircuit a)) where
+  ) => ToWords (ByteString n (ArithmeticCircuit a i)) (ByteString wordSize (ArithmeticCircuit a i)) where
 
     toWords (ByteString bits) = (\o -> ByteString $ bits { acOutput = o} ) <$> V.fromVector (V.chunks @(Div n wordSize) @wordSize $ acOutput bits)
 
@@ -437,19 +438,19 @@ instance
   ( Mod k m ~ 0
   , (Div k m) * m ~ k
   , Arithmetic a
-  ) => Concat (ByteString m (ArithmeticCircuit a)) (ByteString k (ArithmeticCircuit a)) where
+  ) => Concat (ByteString m (ArithmeticCircuit a i)) (ByteString k (ArithmeticCircuit a i)) where
 
     concat bs = ByteString $ bsCircuit {acOutput = bsOutputs}
         where
             bsCircuit = Haskell.mconcat $ (\(ByteString bits) -> bits {acOutput = U1}) <$> bs
 
-            bsOutputs :: Vector k Natural
+            bsOutputs :: Vector k (Var i)
             bsOutputs = V.unsafeConcat @(Div k m) $ (\(ByteString bits) -> acOutput bits) <$> bs
 
 instance
   ( KnownNat n
   , n <= m
-  ) => Truncate (ByteString m (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
+  ) => Truncate (ByteString m (ArithmeticCircuit a i)) (ByteString n (ArithmeticCircuit a i)) where
 
     truncate (ByteString bits) = ByteString $ bits { acOutput = V.take @n (acOutput bits) }
 
@@ -457,12 +458,12 @@ instance
   ( KnownNat m
   , KnownNat n
   , m <= n
-  , Arithmetic a
-  ) => Extend (ByteString m (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
+  , Arithmetic a, Haskell.Ord (Rep i), Representable i
+  ) => Extend (ByteString m (ArithmeticCircuit a i)) (ByteString n (ArithmeticCircuit a i)) where
 
     extend (ByteString oldBits) = ByteString $ circuitF (Vector <$> solve)
       where
-        solve :: forall i m'. MonadBlueprint i a m' => m' [i]
+        solve :: forall v m'. MonadBlueprint i v a m' => m' [v]
         solve = do
             bits <- runCircuit oldBits
             zeros <- replicateM diff $ newAssigned (Haskell.const zero)
@@ -472,14 +473,14 @@ instance
         diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @m
 
 
-instance Arithmetic a => BitState ByteString n (ArithmeticCircuit a) where
+instance (Arithmetic a, Haskell.Ord (Rep i), Representable i) => BitState ByteString n (ArithmeticCircuit a i) where
     isSet (ByteString v) ix = Bool $ circuit solve
         where
-            solve :: forall i m . MonadBlueprint i a m => m i
+            solve :: forall v m . MonadBlueprint i v a m => m v
             solve = (!! ix) . V.fromVector <$> runCircuit v
     isUnset (ByteString v) ix = Bool $ circuit solve
         where
-            solve :: forall i m . MonadBlueprint i a m => m i
+            solve :: forall v m . MonadBlueprint i v a m => m v
             solve = do
                 i <- (!! ix) . V.fromVector <$> runCircuit v
                 newAssigned $ \p -> one - p i

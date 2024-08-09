@@ -5,7 +5,6 @@ module ZkFold.Base.Protocol.ARK.Plonk.Internal where
 
 import           Data.Bifunctor                             (first)
 import           Data.Bool                                  (bool)
-import qualified Data.Map                                   as Map
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Generic)
 import           GHC.IsList                                 (IsList (..))
@@ -18,6 +17,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Prelude                             (take)
+import           ZkFold.Base.Data.Vector                    (Vector)
 
 log2 :: (Integral a, Integral b) => a -> b
 log2 = ceiling @Double . logBase 2 . fromIntegral
@@ -141,11 +141,11 @@ instance (Show (BaseField c), EllipticCurve c) => Show (PlonkCircuitCommitments 
         ++ show cmS2 ++ " "
         ++ show cmS3
 
-newtype PlonkWitnessMap n c = PlonkWitnessMap
-    (Map.Map Natural (ScalarField c) -> (PolyVec (ScalarField c) n, PolyVec (ScalarField c) n, PolyVec (ScalarField c) n))
+newtype PlonkWitnessMap n l c = PlonkWitnessMap
+    (Vector l (ScalarField c) -> (PolyVec (ScalarField c) n, PolyVec (ScalarField c) n, PolyVec (ScalarField c) n))
 
-newtype PlonkWitnessInput c = PlonkWitnessInput (Map.Map Natural (ScalarField c))
-instance Show (ScalarField c) => Show (PlonkWitnessInput c) where
+newtype PlonkWitnessInput l c = PlonkWitnessInput (Vector l (ScalarField c))
+instance Show (ScalarField c) => Show (PlonkWitnessInput l c) where
     show (PlonkWitnessInput m) = "Witness Input: " ++ show m
 
 data PlonkProverSecret c = PlonkProverSecret {

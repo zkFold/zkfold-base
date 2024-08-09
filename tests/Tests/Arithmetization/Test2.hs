@@ -17,6 +17,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector)
 import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 -- A true statement.
@@ -25,8 +26,8 @@ tautology x y = (x /= y) || (x == y)
 
 testTautology :: forall a . Arithmetic a => a -> a -> Haskell.Bool
 testTautology x y =
-    let Bool ac = compile @a (tautology @(ArithmeticCircuit a))
-        b       = unPar1 $ acValue (applyArgs ac [x, y])
+    let Bool (ac :: ArithmeticCircuit a (Vector 2) Par1) = compile @2 @a (tautology @(ArithmeticCircuit a (Vector 2)))
+        b       = unPar1 (eval ac (unsafeToVector [x, y]))
     in b Haskell.== one
 
 specArithmetization2 :: Spec

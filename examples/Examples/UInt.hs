@@ -22,6 +22,7 @@ import           Text.Show                                   (show)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Data.Vector (Vector)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.UInt
@@ -29,7 +30,7 @@ import           ZkFold.Symbolic.Data.UInt
 exampleUIntAdd
     :: forall n r
     .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
+    => r ~ Num n
     => KnownNat r
     => KnownNat (r + r)
     => IO ()
@@ -38,7 +39,7 @@ exampleUIntAdd = makeExample @n "+" "add" (+)
 exampleUIntMul
     :: forall n r
     .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
+    => r ~ Num n
     => KnownNat r
     => KnownNat (r + r)
     => IO ()
@@ -47,7 +48,7 @@ exampleUIntMul = makeExample @n "*" "mul" (*)
 exampleUIntStrictAdd
     :: forall n r
     .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
+    => r ~ Num n
     => KnownNat r
     => KnownNat (r + r)
     => IO ()
@@ -56,7 +57,7 @@ exampleUIntStrictAdd = makeExample @n "strictAdd" "strict_add" strictAdd
 exampleUIntStrictMul
     :: forall n r
     .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
+    => r ~ Num n
     => KnownNat r
     => KnownNat (r + r)
     => IO ()
@@ -64,7 +65,9 @@ exampleUIntStrictMul = makeExample @n "strictMul" "strict_mul" strictMul
 
 type Binary a = a -> a -> a
 
-type UBinary n = Binary (UInt n Auto (ArithmeticCircuit (Zp BLS12_381_Scalar)))
+type Num n = NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
+
+type UBinary n = Binary (UInt n Auto (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector (Num n + Num n))))
 
 makeExample
     :: forall n r
@@ -77,4 +80,4 @@ makeExample shortName name op = do
     let n = show $ natVal (Proxy @n)
     putStrLn $ "\nExample: (" ++ shortName ++ ") operation on UInt" ++ n
     let file = "compiled_scripts/uint" ++ n ++ "_" ++ name ++ ".json"
-    compileIO @(Zp BLS12_381_Scalar) file op
+    compileIO @(Num n + Num n) @(Zp BLS12_381_Scalar) file op

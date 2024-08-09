@@ -41,8 +41,8 @@ blake2bSimple =
 
 blake2bAC :: Spec
 blake2bAC =
-    let bs = compile @(Zp BLS12_381_Scalar) (blake2b_512 @8 @(ArithmeticCircuit (Zp BLS12_381_Scalar))) :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar))
-        ac = pieces @(ArithmeticCircuit (Zp BLS12_381_Scalar)) bs ()
+    let bs = compile @64 @(Zp BLS12_381_Scalar) (blake2b_512 @8 @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 64))) :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 64))
+        ac = pieces @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 64)) bs ()
     in it "simple test with cardano-crypto " $ acSizeN ac == 564239
 
 specBlake2b :: IO ()
