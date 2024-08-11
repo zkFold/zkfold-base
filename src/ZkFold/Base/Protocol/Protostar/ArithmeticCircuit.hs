@@ -29,6 +29,7 @@ import qualified ZkFold.Base.Protocol.ARK.Protostar.SpecialSound      as SPS
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.FieldElement                    (FieldElement)
 
 
 {--
@@ -53,7 +54,7 @@ data RecursiveCircuit n a
         , circuit    :: ArithmeticCircuit a (Vector n)
         } deriving (Generic, NFData)
 
-instance (RandomOracle (Vector n a) a, KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCircuit n a) where
+instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCircuit n a) where
     type Witness a (RecursiveCircuit n a) = Map Natural a
     type Input a (RecursiveCircuit n a) = Vector n a
     type ProverMessage t (RecursiveCircuit n a) = a
@@ -127,22 +128,17 @@ transform
 transform rc v = FiatShamir (CommitOpen oracle rc) v
 
 fold
-    :: forall a x n
+    :: forall a c n
     .  Arithmetic a
     => Scale a a
-    => Commit (CommitOpen a a (RecursiveCircuit n a)) [a] a
-    => RandomOracle (Vector n a) a
-    => RandomOracle [a] a
-    => RandomOracle (AccumulatorInstance (Vector n a) a a, Vector n a, [a], [a]) a
-    => RandomOracle (CommitOpen a a (RecursiveCircuit n a)) a
-    => RandomOracle (a, a) a
+    => RandomOracle a a
     => Commit a [a] a
-    => SymbolicData (ArithmeticCircuit a) x
-    => TypeSize (ArithmeticCircuit a) x ~ n
+    => SymbolicData (ArithmeticCircuit a) (FieldElement c)
+    => TypeSize (ArithmeticCircuit a) (FieldElement c) ~ 1
+    => Support (ArithmeticCircuit a) (FieldElement c) ~ ()
     => KnownNat n
-    => Support (ArithmeticCircuit a) x ~ ()
-    => (x -> x)  -- ^ An arithmetisable function to be applied recursively
-    -> Natural   -- ^ The number of iterations to perform
+    => (Vector n (FieldElement c) -> Vector n (FieldElement c))  -- ^ An arithmetisable function to be applied recursively
+    -> Natural                             -- ^ The number of iterations to perform
     -> SPS.Input a (RecursiveCircuit n a)  -- ^ Input for the first iteration
     -> FoldResult n a
 fold f iter i = foldN rc i [] initialAccumulator
@@ -153,18 +149,18 @@ fold f iter i = foldN rc i [] initialAccumulator
         m = oracle $ executeAc rc i
 
         initialAccumulator :: Accumulator (Vector n a) a a a
-        initialAccumulator = Accumulator (AccumulatorInstance i [commit ((\(FiatShamir sps _) -> sps) $ transform rc i) [m]] [] zero one) [m]
+        initialAccumulator = Accumulator (AccumulatorInstance i [commit ((\(FiatShamir _ inp) -> inp) $ transform rc i) [m]] [] zero one) [m]
 
 
 instanceProof
     :: forall n a
     .  RandomOracle (Vector n a) a
     => RandomOracle [a] a
-    => Commit (CommitOpen a a (RecursiveCircuit n a)) [a] a
+    => Ring a
     => RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> InstanceProofPair (Vector n a) a a
-instanceProof rc i = InstanceProofPair i (NARKProof [commit ((\(FiatShamir sps _) -> sps) $ transform rc i) [m]] [m])
+instanceProof rc i = InstanceProofPair i (NARKProof [commit ((\(FiatShamir _ inp) -> inp) $ transform rc i) [m]] [m])
     where
         m = oracle $ executeAc rc i
 
@@ -173,13 +169,8 @@ foldN
     .  Arithmetic a
     => KnownNat n
     => Scale a a
-    => RandomOracle [a] a
-    => RandomOracle (Vector n a) a
-    => RandomOracle (AccumulatorInstance (Vector n a) a a, Vector n a, [a], [a]) a
-    => RandomOracle (CommitOpen a a (RecursiveCircuit n a)) a
-    => RandomOracle (a, a) a
+    => RandomOracle a a
     => Commit a [a] a
-    => Commit (CommitOpen a a (RecursiveCircuit n a)) [a] a
     => RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> [P.Bool]
@@ -198,13 +189,8 @@ foldStep
     .  Arithmetic a
     => KnownNat n
     => Scale a a
-    => RandomOracle [a] a
-    => RandomOracle (Vector n a) a
-    => RandomOracle (AccumulatorInstance (Vector n a) a a, Vector n a, [a], [a]) a
-    => RandomOracle (CommitOpen a a (RecursiveCircuit n a)) a
-    => RandomOracle (a, a) a
+    => RandomOracle a a
     => Commit a [a] a
-    => Commit (CommitOpen a a (RecursiveCircuit n a)) [a] a
     => RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> Accumulator (Vector n a) a a a

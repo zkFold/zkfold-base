@@ -9,10 +9,13 @@ import           Prelude                                         hiding (length)
 
 import           ZkFold.Base.Data.ByteString
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
-import           ZkFold.Prelude                              (length)
+import           ZkFold.Base.Protocol.Protostar.Oracle
+import           ZkFold.Prelude                                  (length)
 
 data CommitOpen f c a = CommitOpen ([ProverMessage f a] -> c) a
-    deriving Generic
+
+instance RandomOracle a b => RandomOracle (CommitOpen f c a) b where
+    oracle (CommitOpen _ a) = oracle a
 
 data CommitOpenProverMessage t c a = Commit c | Open [ProverMessage t a]
     deriving Generic
