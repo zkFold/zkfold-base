@@ -55,6 +55,7 @@ instance
     , IsList (Input f (CommitOpen f c a))
     , Input f a ~ i
     , Item i ~ f
+    , ProverMessage Natural a ~ m
     , KnownNat (Degree (CommitOpen f c a))
     , SpecialSoundProtocol f (CommitOpen f c a)
     , RandomOracle (f, c) f                                    -- Random oracle ρ_NARK
@@ -71,7 +72,7 @@ instance
           r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) (zero : pi_x)
 
           -- Fig. 3, step 2
-          f_sps = degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps pubi (Commit <$> pi_w) pi_x
+          f_sps = degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps pubi [Open pi_w] pi_x
 
           -- X + mu as a univariate polynomial
           xMu :: PU.Poly f
@@ -158,7 +159,7 @@ instance
           commitsEq = P.and $ P.zipWith (\cl m -> commit (oracle @_ @c i) [m] == cl) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
-          f_sps = mulDeg (acc^.x^.mu) d <$> algebraicMap @f sps (acc^.x^.pi) (Commit <$> acc^.w) (acc^.x^.r)
+          f_sps = mulDeg (acc^.x^.mu) d <$> algebraicMap @f sps (acc^.x^.pi) [Open $ acc^.w] (acc^.x^.r)
 
           l_in :: Natural
           l_in = length $ toList (acc^.x^.pi)

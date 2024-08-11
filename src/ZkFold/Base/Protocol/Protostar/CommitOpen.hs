@@ -8,8 +8,8 @@ import           GHC.Generics
 import           Prelude                                         hiding (length)
 
 import           ZkFold.Base.Data.ByteString
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Base.Protocol.Protostar.Oracle
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Prelude                                  (length)
 
 data CommitOpen f c a = CommitOpen ([ProverMessage f a] -> c) a
@@ -46,9 +46,8 @@ instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen 
             | length ts < rounds @f a = Commit $ cm [prover @f a w i $ zip ms $ map snd ts]
             | otherwise               = Open ms
 
-      -- TODO: Implement this
-
-      algebraicMap = undefined
+      algebraicMap (CommitOpen _ a) i ((Open ms):_) ts = algebraicMap @f a i ms ts
+      algebraicMap _ _ _ _                             = error "CommitOpen algebraic map: invalid transcript"
 
       verifier (CommitOpen cm a) i ((Open ms):mss) (_:ts) = map (cm . pure) ms == map f mss && verifier @f a i ms ts
             where f (Commit c) = c
