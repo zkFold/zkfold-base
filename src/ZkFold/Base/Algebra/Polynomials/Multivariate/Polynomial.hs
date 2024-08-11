@@ -9,7 +9,8 @@ import           Data.Bifunctor                                        (Bifuncto
 import           Data.Functor                                          ((<&>))
 import           Data.List                                             (foldl', intercalate)
 import           Data.Map.Strict                                       (Map, empty, keysSet)
-import           Data.Set                                              (Set)
+import qualified Data.Map.Strict                                       as M
+import           Data.Set                                              (Set, singleton)
 import           GHC.Generics                                          (Generic)
 import           GHC.IsList                                            (IsList (..))
 import           Numeric.Natural                                       (Natural)
@@ -125,6 +126,10 @@ instance Polynomial c i j => Ring (Poly c i j)
 -- | @'var' i@ is a polynomial \(p(x) = x_i\)
 var :: Polynomial c i j => i -> Poly c i j
 var x = polynomial [(one, monomial $ fromList [(x, one)])]
+
+-- | @'constant' i@ is a polynomial \(p(x) = const\)
+constant :: Polynomial c i j => c -> Poly c i j
+constant c = polynomial [(c, M M.empty)]
 
 lt :: Polynomial c i j => Poly c i j -> (c, Mono i j)
 lt (P [])    = (zero, M empty)

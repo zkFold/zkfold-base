@@ -3,8 +3,9 @@ module ZkFold.Base.Protocol.Protostar.Lookup where
 import           Data.Map                                    (fromList, mapWithKey)
 import           Data.These                                  (These (..))
 import           Data.Zip
-import           Prelude                                     hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/),
-                                                              (^))
+import           GHC.Generics
+import           Prelude                                         hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/),
+                                                                  (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -15,8 +16,10 @@ import           ZkFold.Base.Protocol.Protostar.SpecialSound (LMap, SpecialSound
 import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 data ProtostarLookup (l :: Natural) (sizeT :: Natural)
+    deriving Generic
 
 data ProtostarLookupParams f sizeT = ProtostarLookupParams (Zp sizeT -> f) (f -> [Zp sizeT])
+    deriving Generic
 
 instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
     type Witness f (ProtostarLookup l sizeT)         = Vector l f

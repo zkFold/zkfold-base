@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Protostar (specProtostar) where
 
@@ -20,10 +21,10 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Base.Data.Vector                                (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar
-import           ZkFold.Base.Protocol.ARK.Protostar.FiatShamir
-import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
 import           ZkFold.Base.Protocol.ARK.Protostar.ArithmeticCircuit
+import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
+import           ZkFold.Base.Protocol.ARK.Protostar.FiatShamir
+import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
 import           ZkFold.Prelude                                         ((!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
@@ -69,22 +70,19 @@ it :: Testable prop => P.String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
 
 specProtostarN
-    :: forall a n
-    .  Arbitrary a
-    => Arithmetic a
-    => AccumulatorScheme (Vector n a) a a a (FiatShamir a (CommitOpen a a (RecursiveCircuit n a)))
-    => KnownNat n
+    :: forall n
+    .  KnownNat n
     => IO ()
 specProtostarN = hspec $ do
     describe ("Test recursive functions of " <> P.show (value @n) <> " arguments") $
         it "folds correctly" $ \rf@RecursiveFunction{..} ->
             let FoldResult{..} = fold rFunction rIterations rInitial
-             in verifierOutput === P.True .&&. deciderOutput === P.True .&&. output === evaluateRF (rf  :: RecursiveFunction n a)
+             in verifierOutput === P.True .&&. deciderOutput === P.True .&&. output === evaluateRF (rf  :: RecursiveFunction n (Zp BLS12_381_Scalar))
 
 specProtostar :: IO ()
 specProtostar = do
-    specProtostarN @(Zp BLS12_381_Scalar) @1
-    specProtostarN @(Zp BLS12_381_Scalar) @2
-    specProtostarN @(Zp BLS12_381_Scalar) @3
-    specProtostarN @(Zp BLS12_381_Scalar) @10
-    specProtostarN @(Zp BLS12_381_Scalar) @100
+    specProtostarN @1
+    specProtostarN @2
+    specProtostarN @3
+    specProtostarN @10
+    specProtostarN @100

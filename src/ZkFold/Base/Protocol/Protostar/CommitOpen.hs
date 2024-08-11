@@ -4,16 +4,19 @@
 
 module ZkFold.Base.Protocol.Protostar.CommitOpen where
 
-import           Prelude                                     hiding (length)
+import           GHC.Generics
+import           Prelude                                         hiding (length)
 
-import           ZkFold.Base.Algebra.Basic.Class             (Bits)
 import           ZkFold.Base.Data.ByteString
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Prelude                              (length)
 
 data CommitOpen f c a = CommitOpen ([ProverMessage f a] -> c) a
+    deriving Generic
 
 data CommitOpenProverMessage t c a = Commit c | Open [ProverMessage t a]
+    deriving Generic
+
 instance (Binary c, Binary (ProverMessage t a)) => Binary (CommitOpenProverMessage t c a) where
       put (Commit c)  = putWord8 0 <> put c
       put (Open msgs) = putWord8 1 <> put msgs
@@ -23,7 +26,7 @@ instance (Binary c, Binary (ProverMessage t a)) => Binary (CommitOpenProverMessa
             else if flag == 1 then Open <$> get
             else fail ("Binary (CommitOpenProverMessage t c a): unexpected flag " <> show flag)
 
-instance (SpecialSoundProtocol f a, Eq c, Bits a ~ [a]) => SpecialSoundProtocol f (CommitOpen f c a) where
+instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen f c a) where
       type Witness f (CommitOpen f c a)         = (Witness f a, [ProverMessage f a])
       type Input f (CommitOpen f c a)           = Input f a
       type ProverMessage t (CommitOpen f c a)   = CommitOpenProverMessage t c a
@@ -54,7 +57,7 @@ commits = map f
       where f (Commit c, _) = c
             f _             = error "Invalid message"
 
-opening :: forall f a c . (SpecialSoundProtocol f a, Eq c, Bits a ~ [a])
+opening :: forall f a c . (SpecialSoundProtocol f a, Eq c)
         => CommitOpen f c a
         -> Witness f a
         -> Input f a

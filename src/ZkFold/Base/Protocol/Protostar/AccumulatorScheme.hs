@@ -18,17 +18,16 @@ import qualified ZkFold.Base.Algebra.Polynomials.Univariate      as PU
 import qualified ZkFold.Base.Data.Vector                         as V
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), CommitOpenProverMessage (..))
+import           ZkFold.Base.Protocol.Protostar.Commit (Commit (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (Input, LMap, ProverMessage, SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (Input, LMap, SpecialSoundProtocol (..))
 import           ZkFold.Prelude                                  (length, (!!))
 
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
 class AccumulatorScheme i f c m a where
-  commit   :: a -> [m] -> c
-
   prover   :: a                          -- input commitment key
            -> Accumulator i f c m        -- accumulator
            -> InstanceProofPair i c m    -- instance-proof pair (pi, π)
@@ -48,24 +47,23 @@ class AccumulatorScheme i f c m a where
 instance
     ( P.Eq c
     , P.Eq i
-    , f ~ c -- TODO: seems off. Re-check
-    , f ~ m -- TODO: seems off. Re-check
+    , f ~ c   -- These two constraints seem the only way to make the algorithm work. The algorithm performs various algebraic operations on combinations of them.  
+    , f ~ m   -- If they are actually not the same, replace them with hashes.
     , AdditiveGroup c
     , Ring m
     , Scale m c
-    , ProverMessage f a ~ m
     , IsList (Input f (CommitOpen f c a))
-    , Input m a ~ i
-    , Item i ~ m
+    , Input f a ~ i
+    , Item i ~ f
     , KnownNat (Degree (CommitOpen f c a))
     , SpecialSoundProtocol f (CommitOpen f c a)
     , RandomOracle (f, c) f                                    -- Random oracle ρ_NARK
     , RandomOracle i f                                         -- Random oracle for compressing public input
+    , RandomOracle (CommitOpen c c a) c                        -- Random oracle for calculating commitment key 
     , RandomOracle (AccumulatorInstance i f c, i, [c], [c]) f  -- Random oracle ρ_acc
+    , Commit c [c] c
     ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen f c a)) where
-  commit (FiatShamir (CommitOpen cm _) _) = cm
-
-  prover (FiatShamir sps@(CommitOpen cm _) _) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
+  prover (FiatShamir sps _) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
       (Accumulator (AccumulatorInstance (fromList pi'') ci'' ri'' eCapital' mu') mi'', eCapital_j)
       where
 
@@ -91,9 +89,9 @@ instance
 
           ixToPoly :: Natural -> PU.Poly f
           ixToPoly n
-            | n < l_in      = PU.toPoly $ DV.fromList [(toList $ acc^.x^.pi) !! n, toList pubi !! n]       -- X * pi + pi'
-            | n <= k + l_in = PU.toPoly $ DV.fromList [(acc^.w) !! (n -! 1), pi_w !! (n -! 1)]             -- X * mi + mi'
-            | otherwise     = PU.toPoly $ DV.fromList [(acc^.x^.r) !! (n -! k -! 1), r_i !! (n -! k -! 1)] -- X * ri + ri'
+            | n < l_in      = PU.toPoly $ DV.fromList [(toList $ acc^.x^.pi) !! n, toList pubi !! n]        -- X * pi + pi'
+            | n <= k + l_in = PU.toPoly $ DV.fromList [(acc^.w) !! (n -! 1), pi_w !! (n -! 1)]              -- X * mi + mi'
+            | otherwise     = PU.toPoly $ DV.fromList [(acc^.x^.r) !! (n -! k -! 1), r_i !! (n -! k -! 1)]  -- X * ri + ri'
 
           -- The @lxd@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
@@ -106,7 +104,7 @@ instance
           e_j = P.tail e_all
 
           -- Fig. 3, step 3
-          eCapital_j = cm <$> e_j
+          eCapital_j = commit (oracle @_ @c sps) <$> e_j
 
           -- Fig. 3, step 4
           alpha :: f
@@ -148,7 +146,7 @@ instance
           -- Fig 4, step 5
           eEq = acc'^.e == acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf)
 
-  decider (FiatShamir sps@(CommitOpen cm _) _) acc = commitsEq && eEq
+  decider (FiatShamir sps _) acc = commitsEq && eEq
       where
           d :: Natural
           d = outputLength @f sps
@@ -158,7 +156,7 @@ instance
 
 
           -- Fig. 5, step 1
-          commitsEq = P.and $ P.zipWith (\cl m -> cm [m] == cl) (acc^.x^.c) (acc^.w)
+          commitsEq = P.and $ P.zipWith (\cl m -> commit (oracle @_ @c sps) [m] == cl) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           f_sps = mulDeg (acc^.x^.mu) d <$> algebraicMap @f sps (acc^.x^.pi) (Commit <$> acc^.w) (acc^.x^.r)
@@ -168,14 +166,14 @@ instance
 
           ixToVal :: Natural -> f
           ixToVal n
-            | n < l_in      = toList (acc^.x^.pi) !! n       -- pi
-            | n <= k + l_in = (acc^.w) !! (n -! 1)           -- mi
-            | otherwise     = (acc^.x^.r) !! (n -! k -! 1)   -- ri
+            | n < l_in      = toList (acc^.x^.pi) !! n      -- pi
+            | n <= k + l_in = (acc^.w) !! (n -! 1)          -- mi
+            | otherwise     = (acc^.x^.r) !! (n -! k -! 1)  -- ri
 
           err = PM.evalPolynomial PM.evalMonomial ixToVal <$> f_sps
 
           -- Fig. 5, step 3
-          eEq = acc^.x^.e == cm err
+          eEq = acc^.x^.e == commit (oracle @_ @c sps) err
 
 mulDeg
     :: MultiplicativeSemigroup f

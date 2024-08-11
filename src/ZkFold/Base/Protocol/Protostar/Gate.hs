@@ -1,8 +1,9 @@
 module ZkFold.Base.Protocol.Protostar.Gate where
 
-import           Data.Zip                                     (zipWith)
-import           Numeric.Natural                              (Natural)
-import           Prelude                                      hiding (Num (..), zipWith, (!!), (^))
+import           Data.Zip                                        (zipWith)
+import           GHC.Generics
+import           Numeric.Natural                                 (Natural)
+import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp)
@@ -16,6 +17,7 @@ import           ZkFold.Base.Protocol.Protostar.SpecialSound  (LMap, SpecialSoun
 import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
 
 data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
+    deriving Generic
 
 instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (ProtostarGate m n c d) where
     type Witness f (ProtostarGate m n c d)       = Vector n (Vector c f)

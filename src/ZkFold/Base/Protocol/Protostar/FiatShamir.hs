@@ -4,11 +4,10 @@
 
 module ZkFold.Base.Protocol.Protostar.FiatShamir where
 
-import           Data.ByteString                             (ByteString)
-import           Prelude                                     hiding (length)
+import           Data.ByteString                                 (ByteString)
+import           GHC.Generics
+import           Prelude                                         hiding (length)
 
-import           ZkFold.Base.Algebra.Basic.Class                 (Bits)
-import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.ByteString                     (Binary (..))
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound as SpS
@@ -17,6 +16,7 @@ import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractive
                                                                   challenge)
 
 data FiatShamir f a = FiatShamir a (SpS.Input f a)
+    deriving Generic
 
 fsChallenge :: forall f a c . (Binary (SpS.Input f a), Binary (VerifierMessage f a), Binary c, Binary (ProverMessage f a))
       => FiatShamir f (CommitOpen f c a)
@@ -26,7 +26,7 @@ fsChallenge (FiatShamir _ ip) []           c =
       in challenge @ByteString $ toTranscript r0 <> toTranscript c
 fsChallenge _                 ((_, r) : _) c = challenge @ByteString $ toTranscript r <> toTranscript c
 
-instance 
+instance
     ( SpS.SpecialSoundProtocol f a
     , Eq c
     , Binary (SpS.Input f a)
@@ -34,7 +34,7 @@ instance
     , VerifierMessage f a ~ f
     , Binary c
     , Binary (ProverMessage f a)
-    , Bits a ~ [a]
+--    , Bits a ~ [a]
     ) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) where
       type Transcript (FiatShamir f (CommitOpen f c a))  = ByteString
       type SetupProve (FiatShamir f (CommitOpen f c a))  = FiatShamir f (CommitOpen f c a)

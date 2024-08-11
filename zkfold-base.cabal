@@ -145,6 +145,7 @@ library
       ZkFold.Base.Protocol.Protostar.AccumulatorScheme
       ZkFold.Base.Protocol.Protostar.ArithmeticCircuit
       ZkFold.Base.Protocol.Protostar.CommitOpen
+      ZkFold.Base.Protocol.Protostar.Commit
       ZkFold.Base.Protocol.Protostar.FiatShamir
       ZkFold.Base.Protocol.Protostar.Internal
       ZkFold.Base.Protocol.Protostar.Gate
