@@ -30,7 +30,7 @@ deriving instance
     , KnownNat (TypeSize context (SingleAsset context))
     ) => SymbolicData context (Value n context)
 
-instance (FromConstant Natural (UInt 64 Auto context), MultiplicativeSemigroup (UInt 64 Auto context))
+instance (Symbolic context, FromConstant Natural (UInt 64 Auto context), MultiplicativeSemigroup (UInt 64 Auto context))
         => Scale Natural (Value n context) where
     n `scale` Value v = Value $ fmap (\(pid, (aname, q)) -> (pid, (aname, n `scale` q))) v
 
@@ -46,7 +46,8 @@ instance AdditiveSemigroup (Value n context) where
     (+) = (<>)
 
 instance
-    ( FromConstant Natural (UInt 64 Auto context)
+    ( Symbolic context
+    , FromConstant Natural (UInt 64 Auto context)
     , MultiplicativeSemigroup (UInt 64 Auto context)
     ) => AdditiveMonoid (Value n context) where
     zero = mempty

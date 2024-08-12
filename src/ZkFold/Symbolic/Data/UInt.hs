@@ -7,7 +7,6 @@
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE IncoherentInstances #-}
 
 module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
@@ -179,20 +178,19 @@ instance
     , KnownNat k
     , KnownRegisterSize r
     , n <= k
-    , from ~ NumberOfRegisters (BaseField c) n r
-    , to ~ NumberOfRegisters (BaseField c) k r
-    , ToConstant (Vector (NumberOfRegisters (BaseField с) n r) (BaseField с)) Natural
-    , FromConstant Natural (Vector (NumberOfRegisters (BaseField с) k r) (BaseField с))
+    , Finite (BaseField с)
+    , ToConstant (Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)) Natural
+    ,FromConstant Natural (Vector (NumberOfRegisters (BaseField c) k r) (BaseField c))
     -- , BaseField c ~ BaseField c
-    ) => Extend (UInt n r с) (UInt k r с) where
+    ) => Extend (UInt n r c) (UInt k r c) where
     extend (UInt x) =  UInt $ symbolicF x (\l -> fromConstant (toConstant l :: Natural)) solve
         where
-            solve :: (Symbolic c, MonadCircuit i (BaseField c) m) => Vector from i -> m (Vector to i)
+            solve :: MonadCircuit i a m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector  (NumberOfRegisters (BaseField c) k r) i)
             solve xv = do
                 let regs = V.fromVector xv
                 zeros <- replicateA (value @k -! (value @n)) (newAssigned (Haskell.const zero))
-                bsBits <- toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
-                extended <- fromBits (highRegisterSize @(BaseField c) @k @r) (registerSize @(BaseField c) @k @r) (zeros <> bsBits)
+                bsBits <- toBits (Haskell.reverse regs) (highRegisterSize @(BaseField с) @n @r) (registerSize @(BaseField с) @n @r)
+                extended <- fromBits (highRegisterSize @(BaseField с) @k @r) (registerSize @(BaseField с) @k @r) (zeros <> bsBits)
                 return $ V.unsafeToVector $ Haskell.reverse extended
 
 instance

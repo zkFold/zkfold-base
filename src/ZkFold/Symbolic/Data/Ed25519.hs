@@ -34,13 +34,13 @@ zpToEd :: Finite (Zp p) => Point (Ed25519 (Interpreter (Zp p))) -> Point (Ed2551
 zpToEd Inf         = Inf
 zpToEd (Point x y) = Point (toZp . toConstant $ x) (toZp . toConstant $ y)
 
-edToZp :: Finite (Zp p) => Point (Ed25519 Void) -> Point (Ed25519 (Interpreter (Zp p)))
+edToZp :: (Finite (Zp p), Prime p )=> Point (Ed25519 Void) -> Point (Ed25519 (Interpreter (Zp p)))
 edToZp Inf         = Inf
 edToZp (Point x y) = Point (fromConstant . fromZp $ x) (fromConstant . fromZp $ y)
 
 -- | Ed25519 with @UInt 256 (Zp p)@ as computational backend
 --
-instance Finite (Zp p) => EllipticCurve (Ed25519 (Interpreter (Zp p))) where
+instance (Finite (Zp p) , Prime p)=> EllipticCurve (Ed25519 (Interpreter (Zp p))) where
     type BaseField (Ed25519 (Interpreter (Zp p))) = UInt 256 Auto (Interpreter (Zp p))
     type ScalarField (Ed25519 (Interpreter (Zp p))) = UInt 256 Auto (Interpreter (Zp p))
 
