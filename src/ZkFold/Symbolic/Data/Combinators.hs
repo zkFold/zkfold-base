@@ -24,7 +24,6 @@ import           Type.Errors
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                          (value)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, horner)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit)
 
 -- | A class for isomorphic types.
@@ -49,7 +48,7 @@ class Shrink a b where
 --
 toBits
     :: forall i a m
-    .  MonadBlueprint i a m
+    .  MonadCircuit i a m
     => [i]
     -> Natural
     -> Natural

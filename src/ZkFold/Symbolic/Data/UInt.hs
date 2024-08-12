@@ -7,6 +7,7 @@
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# LANGUAGE IncoherentInstances #-}
 
 module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
@@ -16,7 +17,6 @@ module ZkFold.Symbolic.Data.UInt (
     eea
 ) where
 
-import           Control.Applicative                                       (pure)
 import           Control.DeepSeq
 import           Control.Monad.State                                       (StateT (..))
 import           Data.Foldable                                             (foldr, foldrM, for_)
@@ -36,14 +36,12 @@ import           Test.QuickCheck                                           (Arbi
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                           (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Control.HApplicative                          (hliftA2)
 import qualified ZkFold.Base.Data.Vector                                   as V
 import           ZkFold.Base.Data.Vector                                   (Vector (..))
 import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
-import           ZkFold.Symbolic.Class                                    
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV, expansion, splitExpansion)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Class                                (SymbolicData)
@@ -70,29 +68,8 @@ instance (FromConstant a Natural, KnownNat n, KnownRegisterSize r, Symbolic c) =
             (lo, hi, _) = cast @(BaseField c) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c'
         in UInt . embed @c $ V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
 
--- instance
---     ( FromConstant Natural a
---     , Arithmetic a
---     , KnownNat n
---     , KnownRegisterSize r
---     ) => FromConstant Natural (UInt n r (ArithmeticCircuit a)) where
---     fromConstant c =
---         let (lo, hi, _) = cast @a @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
---          in UInt $ embedV $ Vector $ fromConstant <$> (lo <> [hi])
-
--- instance (KnownNat n, Finite (Zp p), KnownRegisterSize r) => FromConstant Integer (UInt n r (Interpreter (Zp p))) where
---     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
--- instance
---     ( FromConstant Natural a
---     , Arithmetic a
---     , KnownNat n
---     , KnownRegisterSize r
---     ) => FromConstant Integer (UInt n r (ArithmeticCircuit a)) where
---     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
 instance (Symbolic c, FromConstant a (UInt n r c), MultiplicativeSemigroup (UInt n r c), MultiplicativeMonoid a) => Scale a (UInt n r c)
-
--- instance (FromConstant Integer (UInt n r c), KnownNat n, MultiplicativeSemigroup (UInt n r c)) => Scale Integer (UInt n r c)
 
 instance MultiplicativeMonoid (UInt n r c) => Exponent (UInt n r c) Natural where
     (^) = natPow
@@ -150,13 +127,6 @@ eea a b = eea' 1 a b one zero zero one
                 rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
 
 --------------------------------------------------------------------------------
-
--- instance (Symbolic c, Prime p) => Extend (UInt n r (Interpreter (Zp p))) (UInt m r (Interpreter (Zp p))) where
---     extend = fromConstant @Natural . toConstant
-
--- instance (Symbolic c, Prime p) => Shrink (UInt n r (Interpreter (Zp p))) (UInt m r (Interpreter (Zp p))) where
---     shrink = fromConstant @Natural . toConstant
-
 instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => Eq (Bool (Interpreter (Zp p))) (UInt n r (Interpreter (Zp p))) where
     x == y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.== toConstant y
     x /= y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell./= toConstant y
@@ -173,28 +143,15 @@ instance (Finite (Zp p), KnownNat n, KnownRegisterSize r, Haskell.Num a) => ToCo
     toConstant (UInt (Interpreter xs)) =  Haskell.fromIntegral @Natural $ foldr (\p y -> fromZp p + base * y) 0 xs
         where base = 2 ^ registerSize @(Zp p) @n @r
 
--- instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Integer where
---     toConstant = Haskell.fromIntegral @Natural . toConstant
-
--- instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r (Interpreter (Zp p))) where
---     x + y = fromConstant $ toConstant x + toConstant @_ @Natural y
-
--- instance (Symbolic c, KnownNat (NumberOfRegisters (BaseField c) n r), KnownRegisterSize r) => AdditiveMonoid (UInt n r c) where
---     zero = UInt $ fromConstant (0 :: Natural)
-
--- instance (Prime p, KnownNat n, KnownRegisterSize r) => AdditiveGroup (UInt n r (Interpreter (Zp p))) where
-    -- x - y = fromConstant $ toConstant x + 2 ^ getNatural @n -! toConstant y
-    -- negate x = fromConstant $ 2 ^ getNatural @n -! toConstant x
-
--- instance (Prime p, KnownNat n, KnownRegisterSize r) => MultiplicativeSemigroup (UInt n r (Interpreter (Zp p))) where
---     x * y = fromConstant $ toConstant x * toConstant @_ @Natural y
+instance (KnownNat n, KnownRegisterSize r, Haskell.Num b, Finite a) => ToConstant (UInt n r (ArithmeticCircuit a)) b where
+    toConstant (UInt xs) = 
+         Haskell.fromIntegral @Natural $ foldr (\p y -> fromConstant p + base * y) 0 (acOutput xs)
+        where base = 2 ^ registerSize @(BaseField (ArithmeticCircuit a)) @n @r
 
 instance ( KnownNat n,  KnownRegisterSize r, Symbolic c) => MultiplicativeMonoid (UInt n r c) where
     one = fromConstant (1 :: Natural)
 
-instance (Prime p, KnownNat n, KnownRegisterSize r, Symbolic c, KnownNat (NumberOfRegisters (BaseField c) n r)) => Semiring (UInt n r c)
-
-instance (Symbolic c,  KnownNat n, KnownRegisterSize r, FromConstant Integer Natural, KnownNat (NumberOfRegisters (BaseField c) n r)) => Ring (UInt n r c)
+instance (Symbolic c, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegisters (BaseField c) n r)) => Semiring (UInt n r c)
 
 instance (KnownNat n, Symbolic c, KnownRegisterSize r) => Arbitrary (UInt n r c) where
     arbitrary = do
@@ -203,12 +160,17 @@ instance (KnownNat n, Symbolic c, KnownRegisterSize r) => Arbitrary (UInt n r c)
         return $ UInt $ embed $ V.unsafeToVector (lo <> [hi])
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
--- instance (KnownNat n, KnownRegisterSize r, Symbolic c) => Iso (ByteString n c) (UInt n r c) where
---     from = UInt $ embed $ fromConstant @Natural . toConstant
+instance (KnownNat n, KnownRegisterSize r, Symbolic (Interpreter (Zp p))) => Iso (ByteString n (Interpreter (Zp p))) (UInt n r (Interpreter (Zp p))) where
+    from b = UInt $ embed $ V.unsafeToVector [fromConstant @Natural $ toConstant b]
 
--- instance (Arithmetic (Zp p), KnownNat n, KnownRegisterSize r) => Iso (UInt n r (Interpreter (Zp p))) (ByteString n (Interpreter (Zp p))) where
---     from = fromConstant @Natural . toConstant
+instance (KnownNat n, KnownRegisterSize r, Symbolic (Interpreter (Zp p))) => Iso (UInt n r (Interpreter (Zp p))) (ByteString n (Interpreter (Zp p))) where
+    from b = ByteString $ embed $ V.unsafeToVector [fromConstant @Natural $ toConstant b]
 
+instance (KnownNat n, KnownRegisterSize r, Symbolic (ArithmeticCircuit a), ToConstant (ByteString n (ArithmeticCircuit a)) Natural) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n r (ArithmeticCircuit a)) where
+    from b = UInt $ embed $ V.unsafeToVector [fromConstant @Natural $ toConstant b]
+
+instance (KnownNat n, KnownRegisterSize r, Symbolic (ArithmeticCircuit a), ToConstant (ByteString n (ArithmeticCircuit a)) Natural) => Iso (UInt n r (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
+    from b = ByteString $ embed $ V.unsafeToVector [fromConstant @Natural $ toConstant b]
 --------------------------------------------------------------------------------
 
 instance
@@ -219,15 +181,17 @@ instance
     , n <= k
     , from ~ NumberOfRegisters (BaseField c) n r
     , to ~ NumberOfRegisters (BaseField c) k r
-    , BaseField с ~ BaseField c
+    , ToConstant (Vector (NumberOfRegisters (BaseField с) n r) (BaseField с)) Natural
+    , FromConstant Natural (Vector (NumberOfRegisters (BaseField с) k r) (BaseField с))
+    -- , BaseField c ~ BaseField c
     ) => Extend (UInt n r с) (UInt k r с) where
-    extend (UInt ac) = UInt $ symbolicF ac (V.unsafeToVector . V.fromVector ) solve
+    extend (UInt x) =  UInt $ symbolicF x (\l -> fromConstant (toConstant l :: Natural)) solve
         where
-            solve :: MonadCircuit i (BaseField c) m => Vector from i -> m (Vector to i)
+            solve :: (Symbolic c, MonadCircuit i (BaseField c) m) => Vector from i -> m (Vector to i)
             solve xv = do
                 let regs = V.fromVector xv
-                bsBits <- toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
                 zeros <- replicateA (value @k -! (value @n)) (newAssigned (Haskell.const zero))
+                bsBits <- toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
                 extended <- fromBits (highRegisterSize @(BaseField c) @k @r) (registerSize @(BaseField c) @k @r) (zeros <> bsBits)
                 return $ V.unsafeToVector $ Haskell.reverse extended
 
@@ -239,7 +203,6 @@ instance
     , k <= n
     , from ~ NumberOfRegisters (BaseField c) n r
     , to ~ NumberOfRegisters (BaseField c) k r
-    , BaseField c ~ BaseField c
     ) => Shrink (UInt n r c) (UInt k r c) where
     shrink (UInt ac) =  UInt $ symbolicF ac (V.unsafeToVector . V.fromVector ) solve
         where
@@ -288,12 +251,12 @@ instance
                 let rs = force $ addBit (r' + r') (value @n -! i -! 1)
                  in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegisters a n r)) => Ord (Bool (ArithmeticCircuit a)) (UInt n r (ArithmeticCircuit a)) where
+instance (KnownNat n, KnownRegisterSize r, Symbolic (ArithmeticCircuit a), ToConstant (ByteString n (ArithmeticCircuit a)) Natural) => Ord (Bool (ArithmeticCircuit a)) (UInt n r (ArithmeticCircuit a)) where
     x <= y = y >= x
 
     x <  y = y > x
 
-    u1 >= u2 =
+    u1 >= u2 = 
         let ByteString rs1 = from u1 :: ByteString n (ArithmeticCircuit a)
             ByteString rs2 = from u2 :: ByteString n (ArithmeticCircuit a)
          in bitwiseGE rs1 rs2
@@ -301,7 +264,7 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegis
     u1 > u2 =
         let ByteString rs1 = from u1 :: ByteString n (ArithmeticCircuit a)
             ByteString rs2 = from u2 :: ByteString n (ArithmeticCircuit a)
-         in bitwiseGT rs1 rs2
+        in bitwiseGT rs1 rs2
 
     max x y = bool @(Bool (ArithmeticCircuit a)) x y $ x < y
 
@@ -328,17 +291,20 @@ instance (KnownNat n, KnownRegisterSize r, Symbolic c) => AdditiveSemigroup (UIn
 
 instance
     ( Symbolic c
+    , KnownNat n
     , KnownNat (NumberOfRegisters (BaseField c) n r)
     , KnownRegisterSize r
     ) => AdditiveMonoid (UInt n r c) where
     zero = fromConstant (0:: Natural)
 
 instance
-    ( KnownNat n
+    ( Symbolic c
+    , KnownNat n
+    , FromConstant Integer Natural
     , KnownRegisterSize r
     , KnownNat (NumberOfRegisters (BaseField c) n r)
-    , Symbolic c
-    ) => AdditiveGroup (UInt n r c) where
+    , ToConstant (Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)) Natural 
+    , FromConstant Natural (Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)) ) => AdditiveGroup (UInt n r c) where
 
     UInt x - UInt y = UInt $ symbolic2F x y (\u v -> V.unsafeToVector $ V.fromVector u + V.fromVector v) solve
         where
@@ -378,7 +344,7 @@ instance
                 s <- newAssigned (\v -> v d + v b + fromConstant t)
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 s
 
-    negate (UInt x) =  UInt $ symbolicF x negate solve
+    negate (UInt x) =  UInt $ symbolicF x (\v -> fromConstant $ (2 ^ (value @n) ) -! (toConstant v :: Natural)) solve   
         where
             solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
             solve xv = do
@@ -390,7 +356,7 @@ instance
                     ns
                         | numberOfRegisters @(BaseField c) @n @r Haskell.== 1 = [y' + 1]
                         | otherwise = (y : ys) <> [y']
-                    (zs, _) = flip runStateT j $ traverse StateT (Haskell.zipWith negateN ns xs)
+                (zs, _) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN ns xs)
                 return $ V.unsafeToVector zs
 
             negateN :: MonadCircuit i (BaseField c) m => Natural -> i -> i -> m (i, i)
@@ -399,14 +365,11 @@ instance
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 r
 
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs, Symbolic c, BaseField c ~ a) => MultiplicativeSemigroup (UInt n rs c) where
+instance (Symbolic c, KnownNat n, KnownRegisterSize rs, BaseField c ~ a) => MultiplicativeSemigroup (UInt n rs c) where
     UInt x * UInt y = UInt $ symbolic2F x y (\u v -> V.unsafeToVector $ V.fromVector u * V.fromVector v) solve
         where
             solve :: forall i m. (MonadCircuit i (BaseField c) m) => Vector (NumberOfRegisters (BaseField c) n rs) i -> Vector (NumberOfRegisters (BaseField c) n rs) i -> m (Vector (NumberOfRegisters (BaseField c) n rs) i)
-
             solve xv yv = do
-                -- is <- runCircuit x
-                -- js <- runCircuit y
                 case V.fromVector $ Z.zip xv yv of
                   []              -> return $ V.unsafeToVector []
                   [(i, j)]        -> V.unsafeToVector <$> solve1 i j
@@ -416,14 +379,14 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters 
 
             solve1 :: forall i m. (MonadCircuit i (BaseField c) m) => i -> i -> m [i]
             solve1 i j = do
-                (z, _) <- newAssigned (\v -> v i * v j) >>= splitExpansion (highRegisterSize @a @n @rs) (maxOverflow @a @n @rs)
+                (z, _) <- newAssigned (\v -> v i * v j) >>= splitExpansion (highRegisterSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs)
                 return [z]
 
             solveN :: forall i m. (MonadCircuit i (BaseField c) m) => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
             solveN (i, j) (is, js) (i', j') = do
                 let cs = fromList $ zip [0..] (i : is ++ [i'])
                     ds = fromList $ zip [0..] (j : js ++ [j'])
-                    r  = numberOfRegisters @a @n @rs
+                    r  = numberOfRegisters @(BaseField c) @n @rs
                 -- single addend for lower register
                 q <- newAssigned (\v -> v i * v j)
                 -- multiple addends for middle registers
@@ -431,30 +394,17 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters 
                     for [0 .. k] $ \l ->
                         newAssigned (\v -> v (cs ! l) * v (ds ! (k -! l)))
                 -- lower register
-                (p, c) <- splitExpansion (registerSize @a @n @rs) (registerSize @a @n @rs) q
+                (p, c) <- splitExpansion (registerSize @(BaseField c) @n @rs) (registerSize @(BaseField c) @n @rs) q
                 -- middle registers
                 (ps, c') <- flip runStateT c $ for qs $ StateT . \rs c' -> do
                     s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
-                    splitExpansion (registerSize @a @n @rs) (maxOverflow @a @n @rs) s
+                    splitExpansion (registerSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs) s
                 -- high register
                 p'0 <- foldrM (\k l -> do
                     k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
                     newAssigned (\v -> v k' + v l)) c' [0 .. r -! 1]
-                (p', _) <- splitExpansion (highRegisterSize @a @n @rs) (maxOverflow @a @n @rs) p'0
+                (p', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs) p'0
                 return (p : ps <> [p'])
-
-
--- instance
---     ( Arithmetic a
---     , KnownNat n
---     , KnownNat (NumberOfRegisters a n r)
---     , KnownNat (NumberOfRegisters a n r - 1)
---     , KnownRegisterSize r
---     , (NumberOfRegisters a n r - 1) + 1 ~ NumberOfRegisters a n r
---     ) => MultiplicativeMonoid (UInt n r (ArithmeticCircuit a)) where
-
---     one = UInt $ hliftA2 (\(Par1 h) t -> h V..: t) (embed one :: ArithmeticCircuit a Par1) (embedV (pure zero) :: ArithmeticCircuit a (Vector (NumberOfRegisters a n r - 1)))
-
 
 instance
     ( Arithmetic a
@@ -466,66 +416,40 @@ instance
     ) => Semiring (UInt n r (ArithmeticCircuit a))
 
 instance
-    ( Arithmetic a
+    ( Symbolic c
     , KnownNat n
-    , KnownNat (NumberOfRegisters a n r)
-    , KnownNat (NumberOfRegisters a n r - 1)
+    , KnownNat (NumberOfRegisters (BaseField c) n r)
+    , KnownNat (NumberOfRegisters (BaseField c) n r - 1)
     , KnownRegisterSize r
-    , (NumberOfRegisters a n r - 1) + 1 ~ NumberOfRegisters a n r
-    ) => Ring (UInt n r (ArithmeticCircuit a))
+    , (NumberOfRegisters (BaseField c) n r - 1) + 1 ~ NumberOfRegisters (BaseField c) n r
+    , FromConstant Integer Natural
+    , ToConstant (Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)) Natural
+    , FromConstant Natural (Vector (NumberOfRegisters (BaseField c) n r) (BaseField c))
+    ) => Ring (UInt n r c)
 
 deriving via (Structural (UInt n rs (ArithmeticCircuit a)))
          instance (Arithmetic a, r ~ NumberOfRegisters a n rs, 1 <= r) =>
          Eq (Bool (ArithmeticCircuit a)) (UInt n rs (ArithmeticCircuit a))
-
-instance ( KnownNat (NumberOfRegisters (BaseField c) n r)
-        , KnownRegisterSize r
-        , Symbolic c
-        , KnownNat n
-        , KnownNat (NumberOfRegisters (BaseField c) n r) 
-        ) => Iso (ByteString n c) (UInt n r c) where
-    from (ByteString bits) = UInt $ symbolicF bits negate solve
-        where
-            solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
-            solve xv = let bsBits = V.fromVector xv
-                in V.unsafeToVector . Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bsBits
-
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => Iso (UInt n r (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
-    from (UInt ac) = ByteString $ circuitF $ Vector <$> solve
-        where
-            solve :: forall i m. MonadCircuit i a m => m [i]
-            solve = do
-                regs <- V.fromVector <$> runCircuit ac
-                toBits (Haskell.reverse regs) (highRegisterSize @a @n @r) (registerSize @a @n @r)
-
 
 --------------------------------------------------------------------------------
 
 class StrictConv b a where
     strictConv :: b -> a
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv Natural (UInt n r (Interpreter (Zp p))) where
-    strictConv n = case cast @(Zp p) @n @r n of
-        (lo, hi, []) -> UInt $ Interpreter $ V.unsafeToVector $ (toZp . Haskell.fromIntegral <$> lo) <> [toZp . Haskell.fromIntegral $ hi]
+instance (FromConstant Natural (BaseField c), Symbolic c, KnownNat n, KnownRegisterSize rs) => StrictConv Natural (UInt n rs c) where
+    strictConv n = case cast @(BaseField c) @n @rs n of
+        (lo, hi, []) -> UInt $ embed $ V.unsafeToVector $ fromConstant <$> (lo <> [hi])
         _            -> error "strictConv: overflow"
 
-instance (FromConstant Natural a, Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => StrictConv Natural (UInt n rs (ArithmeticCircuit a)) where
-    strictConv n = case cast @a @n @rs n of
-        (lo, hi, []) -> UInt $ embedV $ V.unsafeToVector $ fromConstant <$> (lo <> [hi])
-        _            -> error "strictConv: overflow"
-
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r (Interpreter (Zp p))) where
+instance (Symbolic c, FromConstant Natural (BaseField c), KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r c) where
     strictConv = strictConv . toConstant @_ @Natural
 
-instance (Finite (Zp p), Prime p, KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r (ArithmeticCircuit (Zp p))) where
-    strictConv = strictConv . toConstant @_ @Natural
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r, NumberOfBits (BaseField c) <= n, BaseField c ~ a) => StrictConv (ArithmeticCircuit a Par1) (UInt n r c) where
-    strictConv a = UInt $ symbolicF a fromConstant solve
+instance (Symbolic c, KnownNat n, KnownRegisterSize r, NumberOfBits (BaseField c) <= n) => StrictConv (c Par1) (UInt n r c) where
+    strictConv a = UInt $ symbolicF a (\p -> V.unsafeToVector [unPar1 p]) solve
         where
             solve :: MonadCircuit i (BaseField c) m => Par1 i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
             solve xv = do
-                let i = unPar1 xv 
+                let i = unPar1 xv
                     len = Haskell.min (getNatural @n) (numberOfBits @(BaseField c))
                 bits <- Haskell.reverse <$> expansion len i
                 V.unsafeToVector <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bits
@@ -536,93 +460,84 @@ class StrictNum a where
     strictSub :: a -> a -> a
     strictMul :: a -> a -> a
 
-instance (Finite (Zp p), KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r (Interpreter (Zp p))) where
-    strictAdd x y = strictConv $ toConstant x + toConstant @_ @Natural y
-    strictSub x y = strictConv $ toConstant x -! toConstant y
-    strictMul x y = strictConv $ toConstant x * toConstant @_ @Natural y
-
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r, Symbolic c) => StrictNum (UInt n r c) where
+instance (KnownNat n, KnownNat (NumberOfRegisters (BaseField c) n r), KnownRegisterSize r, Symbolic c) => StrictNum (UInt n r c) where
     strictAdd (UInt x) (UInt y) = UInt $ symbolic2F x y (\u v -> V.unsafeToVector $ V.fromVector u + V.fromVector v) solve
         where
             solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
             solve xv yv = do
-                let j = newAssigned (Haskell.const zero)
-                    xs = V.fromVector xv
+                j <- newAssigned (Haskell.const zero)
+                let xs = V.fromVector xv
                     ys = V.fromVector yv
-                    midx = Haskell.init xs
                     z    = Haskell.last xs
-                    midy = Haskell.init ys
                     w    = Haskell.last ys
+                    midx = Haskell.init xs
+                    midy = Haskell.init ys
                 (zs, c) <- flip runStateT j $ traverse StateT $
                     Haskell.zipWith (fullAdder $ registerSize @(BaseField c) @n @r) midx midy
                 k <- fullAdded z w c
-                _ <- expansion (highRegisterSize @(BaseField c) @n @r) k
-                return $ V.unsafeToVector (zs <> [k])
+                (ks, _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 k
+                return $ V.unsafeToVector (zs ++ [ks])
 
 
-    strictSub (UInt x) (UInt y) = UInt (circuitF $ V.unsafeToVector <$> solve)
+    strictSub (UInt x) (UInt y) = UInt $ symbolic2F x y (\u v -> V.unsafeToVector $ V.fromVector u - V.fromVector v) solve
         where
-            t :: a
-            t = (one + one) ^ registerSize @a @n @r - one
+            t :: BaseField c
+            t = (one + one) ^ registerSize @(BaseField c) @n @r - one
 
-            solve :: MonadCircuit i a m => m [i]
-            solve = do
-                is <- runCircuit x
-                js <- runCircuit y
-                case V.fromVector $ Z.zip is js of
-                  []              -> return []
-                  [(i, j)]        -> solve1 i j
+            solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
+            solve xv yv = do
+                case V.fromVector $ Z.zip xv yv of
+                  []              -> return $ V.unsafeToVector []
+                  [(i, j)]        -> V.unsafeToVector <$> solve1 i j
                   ((i, j) : rest) -> let (z, w) = Haskell.last rest
                                          (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                      in solveN (i, j) (ris, rjs) (z, w)
+                                      in V.unsafeToVector <$> solveN (i, j) (ris, rjs) (z, w)
 
-            solve1 :: MonadCircuit i a m => i -> i -> m [i]
+            solve1 :: MonadCircuit i (BaseField c) m => i -> i -> m [i]
             solve1 i j = do
                 z <- newAssigned (\v -> v i - v j)
-                _ <- expansion (highRegisterSize @a @n @r) z
+                _ <- expansion (highRegisterSize @(BaseField c) @n @r) z
                 return [z]
 
-            solveN :: MonadCircuit i a m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
+            solveN :: MonadCircuit i (BaseField c) m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
             solveN (i, j) (is, js) (i', j') = do
                 s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
-                (k, b0) <- splitExpansion (registerSize @a @n @r) 1 s
+                (k, b0) <- splitExpansion (registerSize @(BaseField c) @n @r) 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (Haskell.zipWith fullSub is js)
                 k' <- newAssigned (\v -> v i' - v j')
                 s' <- newAssigned (\v -> v k' + v b - one)
-                _ <- expansion (highRegisterSize @a @n @r) s'
+                _ <- expansion (highRegisterSize @(BaseField c) @n @r) s'
                 return (k : zs <> [s'])
 
 
-            fullSub :: MonadCircuit i a m => i -> i -> i -> m (i, i)
+            fullSub :: MonadCircuit i (BaseField c) m => i -> i -> i -> m (i, i)
             fullSub xk yk b = do
                 k <- newAssigned (\v -> v xk - v yk)
                 s <- newAssigned (\v -> v k + v b + fromConstant t)
-                splitExpansion (registerSize @a @n @r) 1 s
+                splitExpansion (registerSize @(BaseField c) @n @r) 1 s
 
-    strictMul (UInt x) (UInt y) = UInt (circuitF $ V.unsafeToVector <$> solve)
+    strictMul (UInt x) (UInt y) = UInt $ symbolic2F x y (\u v -> V.unsafeToVector $ V.fromVector u * V.fromVector v) solve
         where
-            solve :: MonadCircuit i a m => m [i]
-            solve = do
-                is <- runCircuit x
-                js <- runCircuit y
-                case V.fromVector $ Z.zip is js of
-                  []              -> return []
-                  [(i, j)]        -> solve1 i j
+            solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
+            solve xv yv = do
+                case V.fromVector $ Z.zip xv yv of
+                  []              -> return $ V.unsafeToVector []
+                  [(i, j)]        -> V.unsafeToVector <$> solve1 i j
                   ((i, j) : rest) -> let (z, w) = Haskell.last rest
                                          (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                      in solveN (i, j) (ris, rjs) (z, w)
+                                      in V.unsafeToVector <$> solveN (i, j) (ris, rjs) (z, w)
 
-            solve1 :: MonadCircuit i a m => i -> i -> m [i]
+            solve1 :: MonadCircuit i (BaseField c) m => i -> i -> m [i]
             solve1 i j = do
                 z <- newAssigned $ \v -> v i * v j
-                _ <- expansion (highRegisterSize @a @n @r) z
+                _ <- expansion (highRegisterSize @(BaseField c) @n @r) z
                 return [z]
 
-            solveN :: MonadCircuit i a m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
+            solveN :: MonadCircuit i (BaseField c) m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
             solveN (i, j) (is, js) (i', j') = do
                 let cs = fromList $ zip [0..] (i : is ++ [i'])
                     ds = fromList $ zip [0..] (j : js ++ [j'])
-                    r  = numberOfRegisters @a @n @r
+                    r  = numberOfRegisters @(BaseField c) @n @r
                 -- single addend for lower register
                 q <- newAssigned (\v -> v i * v j)
                 -- multiple addends for middle registers
@@ -630,16 +545,16 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r, Symbolic c) => StrictNu
                     for [0 .. k] $ \l ->
                         newAssigned (\v -> v (cs ! l) * v (ds ! (k -! l)))
                 -- lower register
-                (p, c) <- splitExpansion (registerSize @a @n @r) (registerSize @a @n @r) q
+                (p, c) <- splitExpansion (registerSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) q
                 -- middle registers
                 (ps, c') <- flip runStateT c $ for qs $ StateT . \rs c' -> do
                     s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
-                    splitExpansion (registerSize @a @n @r) (maxOverflow @a @n @r) s
+                    splitExpansion (registerSize @(BaseField c) @n @r) (maxOverflow @(BaseField c) @n @r) s
                 -- high register
                 p' <- foldrM (\k l -> do
                     k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
                     newAssigned (\v -> v l + v k')) c' [0 .. r -! 1]
-                _ <- expansion (highRegisterSize @a @n @r) p'
+                _ <- expansion (highRegisterSize @(BaseField c) @n @r) p'
                 -- all addends higher should be zero
                 for_ [r .. r * 2 -! 2] $ \k ->
                     for_ [k -! r + 1 .. r -! 1] $ \l ->
