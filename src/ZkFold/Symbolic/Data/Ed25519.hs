@@ -9,6 +9,7 @@ module ZkFold.Symbolic.Data.Ed25519  where
 import           Control.Applicative                       ((<*>))
 import           Data.Functor                              ((<$>))
 import           Data.Void                                 (Void)
+import           GHC.Generics                              (Par1)
 import           Prelude                                   (type (~), ($), (.))
 import qualified Prelude                                   as P
 
@@ -29,7 +30,6 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter
-import  GHC.Generics (Par1)
 
 zpToEd :: (Symbolic (Interpreter (Zp p)), FromConstant (Interpreter (Zp p) Par1) Natural ) => Point (Ed25519 (Interpreter (Zp p))) -> Point (Ed25519 Void)
 zpToEd Inf         = Inf

@@ -6,25 +6,24 @@
 
 module ZkFold.Symbolic.Data.Combinators where
 
-import           Control.Monad                                             (mapM)
-import           Data.Kind                                                 (Type)
-import           Data.List                                                 (find, splitAt)
-import           Data.List.Split                                           (chunksOf)
-import           Data.Maybe                                                (fromMaybe)
-import           Data.Proxy                                                (Proxy (..))
-import           Data.Ratio                                                ((%))
-import           Data.Type.Bool                                            (If)
+import           Control.Monad                                          (mapM)
+import           Data.Kind                                              (Type)
+import           Data.List                                              (find, splitAt)
+import           Data.List.Split                                        (chunksOf)
+import           Data.Maybe                                             (fromMaybe)
+import           Data.Proxy                                             (Proxy (..))
+import           Data.Ratio                                             ((%))
+import           Data.Type.Bool                                         (If)
 import           Data.Type.Ord
 import           GHC.TypeNats
-import           Prelude                                                   (error, head, pure, tail, ($), (.), (<$>),
-                                                                            (<>))
-import qualified Prelude                                                   as Haskell
+import           Prelude                                                (error, head, pure, tail, ($), (.), (<$>), (<>))
+import qualified Prelude                                                as Haskell
 import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                          (value)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, horner)
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit)
+import           ZkFold.Base.Algebra.Basic.Number                       (value)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, horner)
+import           ZkFold.Symbolic.MonadCircuit                           (MonadCircuit)
 
 -- | A class for isomorphic types.
 -- The @Iso b a@ context ensures that transformations in both directions are defined

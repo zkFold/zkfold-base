@@ -16,40 +16,40 @@ module ZkFold.Symbolic.Data.UInt (
 ) where
 
 import           Control.DeepSeq
-import           Control.Monad.State                                       (StateT (..))
-import           Data.Foldable                                             (foldr, foldrM, for_)
-import           Data.Functor                                              ((<$>))
-import           Data.Kind                                                 (Type)
-import           Data.List                                                 (unfoldr, zip)
-import           Data.Map                                                  (fromList, (!))
-import           Data.Traversable                                          (for, traverse)
-import           Data.Tuple                                                (swap)
-import qualified Data.Zip                                                  as Z
-import           GHC.Generics                                              (Generic, Par1 (..))
-import           Prelude                                                   (Integer, error, flip, otherwise, return,
-                                                                            type (~), ($), (++), (.), (<>), (>>=))
-import qualified Prelude                                                   as Haskell
-import           Test.QuickCheck                                           (Arbitrary (..), chooseInteger)
+import           Control.Monad.State                                    (StateT (..))
+import           Data.Foldable                                          (foldr, foldrM, for_)
+import           Data.Functor                                           ((<$>))
+import           Data.Kind                                              (Type)
+import           Data.List                                              (unfoldr, zip)
+import           Data.Map                                               (fromList, (!))
+import           Data.Traversable                                       (for, traverse)
+import           Data.Tuple                                             (swap)
+import qualified Data.Zip                                               as Z
+import           GHC.Generics                                           (Generic, Par1 (..))
+import           Prelude                                                (Integer, error, flip, otherwise, return,
+                                                                         type (~), ($), (++), (.), (<>), (>>=))
+import qualified Prelude                                                as Haskell
+import           Test.QuickCheck                                        (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                           (Zp)
+import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector                                   as V
-import           ZkFold.Base.Data.Vector                                   (Vector (..))
-import           ZkFold.Prelude                                            (drop, length, replicate, replicateA)
+import           ZkFold.Base.Data.Package                               (unpacked)
+import qualified ZkFold.Base.Data.Vector                                as V
+import           ZkFold.Base.Data.Vector                                (Vector (..))
+import           ZkFold.Prelude                                         (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, splitExpansion)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, splitExpansion)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Class                                (SymbolicData)
+import           ZkFold.Symbolic.Data.Class                             (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.MonadCircuit                              (constraint, newAssigned, MonadCircuit)
-import ZkFold.Base.Data.Package (unpacked)
+import           ZkFold.Symbolic.MonadCircuit                           (MonadCircuit, constraint, newAssigned)
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
@@ -231,7 +231,7 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r, ToConstant (ByteString n 
 
     x <  y = y > x
 
-    u1 >= u2 = 
+    u1 >= u2 =
         let ByteString rs1 = from u1 :: ByteString n c
             ByteString rs2 = from u2 :: ByteString n c
          in bitwiseGE rs1 rs2
@@ -272,7 +272,7 @@ instance
     , KnownNat n
     , KnownRegisterSize r
     , FromConstant Integer Natural
-    , ToConstant (Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)) Natural 
+    , ToConstant (Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)) Natural
     , FromConstant Natural (Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)) ) => AdditiveGroup (UInt n r c) where
 
     UInt x - UInt y = UInt $ symbolic2F x y (\u v -> V.unsafeToVector $ V.fromVector u + V.fromVector v) solve
@@ -313,7 +313,7 @@ instance
                 s <- newAssigned (\v -> v d + v b + fromConstant t)
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 s
 
-    negate (UInt x) =  UInt $ symbolicF x (\v -> fromConstant $ (2 ^ (value @n) ) -! (toConstant v :: Natural)) solve   
+    negate (UInt x) =  UInt $ symbolicF x (\v -> fromConstant $ (2 ^ (value @n) ) -! (toConstant v :: Natural)) solve
         where
             solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
             solve xv = do
