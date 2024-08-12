@@ -46,13 +46,14 @@ instance (Symbolic c, Haskell.Eq (BaseField c), Z.Zip f, Traversable f)
     x /= y =
         let
             result = symbolic2F x y
-                (Z.zipWith (\i j -> bool zero one (i Haskell./= j)))
+                (\x' y' -> Z.zipWith (\i j -> bool zero one (i Haskell./= j)) x' y')
                 (\x' y' -> do
                     difference <- for (Z.zip x' y') $ \(i, j) ->
                         newAssigned (\w -> w i - w j)
                     (isZeros, _) <- runInvert difference
-                    for isZeros $ \isZ ->
+                    notIsZeros <- for isZeros $ \isZ ->
                       newAssigned (\w -> one - w isZ)
+                    return notIsZeros
                 )
         in
             any Bool (unpacked result)
