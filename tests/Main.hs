@@ -28,17 +28,21 @@ main = do
     specPermutations
     specField
     specAdditiveGroup
+
+    -- Arithmetic circuit
+    specArithmeticCircuit
+
+    -- Symbolic types and operations
+    specByteString
+    specUInt
+
+    -- Algebra, Pt.2
     specPairing
     specUnivariate
     specGroebner
 
-    -- Symbolic types and operations
-    specUInt
+    -- Symbolic types and operations, Pt.2
     specFFA
-    specByteString
-
-    -- Arithmetic circuit
-    specArithmeticCircuit
 
     -- Arithmetization
     specArithmetization
