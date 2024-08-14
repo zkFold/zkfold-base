@@ -163,11 +163,8 @@ sources = runSources . ($ Sources @a . S.singleton)
 instance (Eq a, o ~ U1) => Semigroup (ArithmeticCircuit a i o) where
     c1 <> c2 =
         ArithmeticCircuit
-           {
-               acSystem   = acSystem c1 `union` acSystem c2
-            ,  acRange    = acRange c1 `union` acRange c2
-               -- NOTE: is it possible that we get a wrong argument order when doing `apply` because of this concatenation?
-               -- We need a way to ensure the correct order no matter how `(<>)` is used.
+           {   acSystem   = acSystem c1 `union` acSystem c2
+           ,   acRange    = acRange c1 `union` acRange c2
            ,   acWitness  = acWitness c1 `union` acWitness c2
            ,   acVarOrder = acVarOrder c1 `union` acVarOrder c2
            ,   acRNG      = mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
