@@ -4,8 +4,8 @@
 module ZkFold.Base.Protocol.ARK.Plonk.Relation where
 
 import           Data.Map                                     (Map, elems, (!))
+import           GHC.Generics                                 (Par1)
 import           GHC.IsList                                   (IsList (..))
-import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (Num (..), drop, length, replicate, sum, take,
                                                                (!!), (/), (^))
 
@@ -18,6 +18,7 @@ import           ZkFold.Base.Data.Vector                      (Vector, fromVecto
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint    (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Prelude                               (replicate)
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
 
 -- Here `n` is the total number of constraints, `l` is the number of public inputs, and `a` is the field type.
 data PlonkRelation n l a = PlonkRelation
@@ -36,16 +37,15 @@ toPlonkRelation :: forall n l a .
     => KnownNat l
     => Arithmetic a
     => Scale a a
-    => FromConstant a a
     => Vector l Natural
-    -> ArithmeticCircuit a 1
+    -> ArithmeticCircuit a Par1
     -> Maybe (PlonkRelation n l a)
 toPlonkRelation xPub ac0 =
     let ac = desugarRanges ac0
         evalX0 = evalPolynomial evalMonomial (\x -> if x == 0 then one else var x)
 
         pubInputConstraints = map var (fromVector xPub)
-        acConstraints       = map evalX0 $ elems (constraintSystem ac)
+        acConstraints       = map evalX0 $ elems (acSystem ac)
         extraConstraints    = replicate (value @n -! acSizeN ac -! value @l) zero
 
         system = map toPlonkConstraint $ pubInputConstraints ++ acConstraints ++ extraConstraints

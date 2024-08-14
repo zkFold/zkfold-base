@@ -13,6 +13,7 @@ import           Data.List.Split                                           (chun
 import           Data.Maybe                                                (fromMaybe)
 import           Data.Proxy                                                (Proxy (..))
 import           Data.Ratio                                                ((%))
+import           Data.Type.Bool                                            (If)
 import           Data.Type.Ord
 import           GHC.TypeNats
 import           Prelude                                                   (error, head, pure, tail, ($), (.), (<$>),
@@ -21,6 +22,7 @@ import qualified Prelude                                                   as Ha
 import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number                          (value)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (expansion, horner)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 
@@ -77,19 +79,31 @@ fromBits hiBits loBits bits = do
 
     pure $ highNew : lowsNew
 
+data RegisterSize = Auto | Fixed Natural
 
-maxOverflow :: forall a n . (Finite a, KnownNat n) => Natural
-maxOverflow = registerSize @a @n + Haskell.ceiling (log2 $ numberOfRegisters @a @n)
+class KnownRegisterSize (r :: RegisterSize) where
+  regSize :: RegisterSize
 
-highRegisterSize :: forall a n . (Finite a, KnownNat n) => Natural
-highRegisterSize = getNatural @n -! registerSize @a @n * (numberOfRegisters @a @n -! 1)
+instance KnownRegisterSize Auto where
+  regSize = Auto
 
-registerSize :: forall a n . (Finite a, KnownNat n) => Natural
-registerSize = Haskell.ceiling (getNatural @n % numberOfRegisters @a @n)
+instance KnownNat n => KnownRegisterSize (Fixed n) where
+  regSize = Fixed (value @n)
 
+maxOverflow :: forall a n r . (Finite a, KnownNat n, KnownRegisterSize r) => Natural
+maxOverflow = registerSize @a @n @r + Haskell.ceiling (log2 $ numberOfRegisters @a @n @r)
 
-type family NumberOfRegisters (a :: Type) (bits :: Natural) :: Natural where
-    NumberOfRegisters a bits = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
+highRegisterSize :: forall a n r . (Finite a, KnownNat n, KnownRegisterSize r) => Natural
+highRegisterSize = getNatural @n -! registerSize @a @n @r * (numberOfRegisters @a @n @r -! 1)
+
+registerSize  :: forall a n r. (Finite a, KnownNat n, KnownRegisterSize r) => Natural
+registerSize = case regSize @r of
+    Auto     -> Haskell.ceiling (getNatural @n % numberOfRegisters @a @n @r)
+    Fixed rs -> rs
+
+type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize ) :: Natural where
+  NumberOfRegisters a bits (Fixed rs) = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
+  NumberOfRegisters a bits Auto       = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
                                                                           -- But it is weird anyway if someone is trying to store a value
                                                                           -- which requires more than 50 registers.
 
@@ -120,15 +134,17 @@ type family ListRange (from :: Natural) (to :: Natural) :: [Natural] where
 
 
 
-numberOfRegisters :: forall a n . (Finite a, KnownNat n) => Natural
-numberOfRegisters = fromMaybe (error "too many bits, field is not big enough")
-    $ find (\c -> c * maxRegisterSize c Haskell.>= getNatural @n) [1 .. maxRegisterCount]
-    where
-        maxRegisterCount = 2 ^ bitLimit
-        bitLimit = Haskell.floor $ log2 (order @a)
-        maxRegisterSize regCount =
-            let maxAdded = Haskell.ceiling $ log2 regCount
-             in Haskell.floor $ (bitLimit -! maxAdded) % 2
+numberOfRegisters :: forall a n r . ( Finite a, KnownNat n, KnownRegisterSize r) => Natural
+numberOfRegisters =  case regSize @r of
+    Auto -> fromMaybe (error "too many bits, field is not big enough")
+        $ find (\c -> c * maxRegisterSize c Haskell.>= getNatural @n) [1 .. maxRegisterCount]
+        where
+            maxRegisterCount = 2 ^ bitLimit
+            bitLimit = Haskell.floor $ log2 (order @a)
+            maxRegisterSize regCount =
+                let maxAdded = Haskell.ceiling $ log2 regCount
+                in Haskell.floor $ (bitLimit -! maxAdded) % 2
+    Fixed rs -> Haskell.ceiling (value @n % rs)
 
 log2 :: Natural -> Haskell.Double
 log2 = Haskell.logBase 2 . Haskell.fromIntegral

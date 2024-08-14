@@ -22,7 +22,6 @@ import           Data.Bool                                  (bool)
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Generic)
 import           GHC.TypeLits                               (Symbol)
-import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Fractional (..), Num (..), div, length, (^))
 import qualified Prelude                                    as Haskell
 import           System.Random                              (Random (..), RandomGen, mkStdGen, uniformR)
@@ -38,12 +37,15 @@ import           ZkFold.Base.Data.ByteString
 newtype Zp (p :: Natural) = Zp Integer
     deriving (Generic, NFData)
 
+{-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural
 fromZp (Zp a) = fromIntegral a
 
+{-# INLINE residue #-}
 residue :: forall p . KnownNat p => Integer -> Integer
 residue = (`Haskell.mod` fromIntegral (value @p))
 
+{-# INLINE toZp #-}
 toZp :: forall p . KnownNat p => Integer -> Zp p
 toZp = Zp . residue @p
 

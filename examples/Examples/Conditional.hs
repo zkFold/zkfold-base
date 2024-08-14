@@ -2,6 +2,7 @@
 
 module Examples.Conditional (exampleConditional) where
 
+import           GHC.Generics                                (Par1)
 import           Prelude                                     (IO, putStrLn)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -11,7 +12,7 @@ import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Conditional            (Conditional (..))
 
 type F = Zp BLS12_381_Scalar
-type A = ArithmeticCircuit F 1
+type A = ArithmeticCircuit F
 type B = Bool A
 
 exampleConditional :: IO ()
@@ -20,4 +21,4 @@ exampleConditional = do
 
     putStrLn "\nExample: conditional\n"
 
-    compileIO @F file (bool @B @A)
+    compileIO @F file (bool @B @(A Par1))

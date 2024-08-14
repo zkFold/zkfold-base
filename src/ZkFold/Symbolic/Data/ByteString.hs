@@ -1,10 +1,10 @@
-{-# LANGUAGE AllowAmbiguousTypes        #-}
-{-# LANGUAGE DeriveAnyClass             #-}
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE GeneralisedNewtypeDeriving #-}
-{-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module ZkFold.Symbolic.Data.ByteString
@@ -28,9 +28,9 @@ import           Data.Maybe                                                (Mayb
 import           Data.Proxy                                                (Proxy (..))
 import           Data.String                                               (IsString (..))
 import           Data.Traversable                                          (for)
-import           GHC.Generics                                              (Generic)
+import           GHC.Generics                                              (Generic, Par1 (..), U1 (..))
 import           GHC.Natural                                               (naturalFromInteger)
-import           GHC.TypeNats                                              (Natural, natVal)
+import           GHC.TypeNats                                              (natVal)
 import           Prelude                                                   (Integer, drop, fmap, otherwise, pure, take,
                                                                             type (~), ($), (.), (<$>), (<), (<>), (==),
                                                                             (>=))
@@ -45,29 +45,24 @@ import           ZkFold.Base.Data.Vector                                   (Vect
 import           ZkFold.Prelude                                            (replicateA, (!!))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators    (embedV)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (acCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.Data.Bool                                 (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Class                                (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.FieldElement                         (FieldElementData (..))
 import           ZkFold.Symbolic.Interpreter                               (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit                              (Arithmetic, newAssigned)
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
-newtype ByteString (n :: Natural) (backend :: Natural -> Type) = ByteString (backend n)
-    deriving (Haskell.Show, Haskell.Eq, Generic)
+newtype ByteString (n :: Natural) (backend :: (Type -> Type) -> Type) = ByteString (backend (Vector n))
+    deriving (Generic)
 
-deriving anyclass instance NFData (b n) => NFData (ByteString n b)
-deriving newtype instance Arithmetic a => Arithmetizable a (ByteString n (ArithmeticCircuit a))
-
-instance Arithmetic a => FieldElementData (Interpreter a) (ByteString n (Interpreter a)) where
-    type TypeSize (Interpreter a) (ByteString n (Interpreter a)) = n
-
-    toFieldElements (ByteString bits) = bits
-
-    fromFieldElements = ByteString
+deriving stock instance Haskell.Show (b (Vector n)) => Haskell.Show (ByteString n b)
+deriving stock instance Haskell.Eq (b (Vector n)) => Haskell.Eq (ByteString n b)
+deriving anyclass instance NFData (b (Vector n)) => NFData (ByteString n b)
+deriving newtype instance SymbolicData c (ByteString n c)
 
 -- TODO
 -- Since the only difference between ByteStrings on Zp and ByteStrings on ArithmeticCircuits is backend,
@@ -148,8 +143,8 @@ class Truncate a b where
 -- | Allows to check state of bits in a container @c@ of size @n@ with computational backend @b@
 --
 class BitState c n b where
-    isSet :: c n b -> Natural -> Bool (b 1)
-    isUnset :: c n b -> Natural -> Bool (b 1)
+    isSet :: c n b -> Natural -> Bool b
+    isUnset :: c n b -> Natural -> Bool b
 
 
 instance ToConstant (ByteString n (Interpreter (Zp p))) Natural where
@@ -349,24 +344,17 @@ instance
     extend = fromConstant @Natural . toConstant
 
 instance Finite (Zp p) => BitState ByteString n (Interpreter (Zp p)) where
-    isSet (ByteString (Interpreter v)) ix = Bool (Interpreter . V.singleton . (!! ix) . V.fromVector $ v)
+    isSet (ByteString (Interpreter v)) ix = Bool (Interpreter . Par1 . (!! ix) . V.fromVector $ v)
     isUnset bs ix = let Bool (Interpreter zp) = isSet bs ix
                      in Bool (Interpreter $ (one -) <$> zp)
 
 --------------------------------------------------------------------------------
 
-instance Arithmetic a => SymbolicData a (ByteString n (ArithmeticCircuit a)) where
-    type TypeSize a (ByteString n (ArithmeticCircuit a)) = n
-
-    pieces (ByteString bits) = bits
-
-    restore c o = ByteString $ c `withOutputs` o
-
 instance (Arithmetic a, KnownNat n) => ShiftBits (ByteString n (ArithmeticCircuit a)) where
     shiftBits bs@(ByteString oldBits) s
       | s == 0 = bs
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
-      | otherwise = ByteString $ circuitN solve
+      | otherwise = ByteString $ circuitF solve
       where
         solve :: forall i m. MonadBlueprint i a m => m (Vector n i)
         solve = do
@@ -402,7 +390,7 @@ bitwiseOperation
     -> ByteString n (ArithmeticCircuit a)
     -> (forall i. i -> i -> ClosedPoly i a)
     -> ByteString n (ArithmeticCircuit a)
-bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circuitN solve
+bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circuitF solve
   where
     solve :: forall i m. MonadBlueprint i a m => m (Vector n i)
     solve = do
@@ -415,13 +403,13 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circu
 
 
 instance (Arithmetic a, KnownNat n) => BoolType (ByteString n (ArithmeticCircuit a)) where
-    false = ByteString zero
+    false = ByteString $ embedV (pure zero)
 
     true = not false
 
     not (ByteString bits) = ByteString (flipBits bits)
         where
-            flipBits r = circuitN $ do
+            flipBits r = circuitF $ do
                 is <- runCircuit r
                 for is $ \i -> newAssigned (\p -> one - p i)
 
@@ -451,9 +439,9 @@ instance
   , Arithmetic a
   ) => Concat (ByteString m (ArithmeticCircuit a)) (ByteString k (ArithmeticCircuit a)) where
 
-    concat bs = ByteString $ bsCircuit `withOutputs` bsOutputs
+    concat bs = ByteString $ bsCircuit {acOutput = bsOutputs}
         where
-            bsCircuit = Haskell.mconcat $ (\(ByteString bits) -> acCircuit bits) <$> bs
+            bsCircuit = Haskell.mconcat $ (\(ByteString bits) -> bits {acOutput = U1}) <$> bs
 
             bsOutputs :: Vector k Natural
             bsOutputs = V.unsafeConcat @(Div k m) $ (\(ByteString bits) -> acOutput bits) <$> bs
@@ -472,7 +460,7 @@ instance
   , Arithmetic a
   ) => Extend (ByteString m (ArithmeticCircuit a)) (ByteString n (ArithmeticCircuit a)) where
 
-    extend (ByteString oldBits) = ByteString $ circuitN (Vector <$> solve)
+    extend (ByteString oldBits) = ByteString $ circuitF (Vector <$> solve)
       where
         solve :: forall i m'. MonadBlueprint i a m' => m' [i]
         solve = do

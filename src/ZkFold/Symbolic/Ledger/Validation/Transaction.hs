@@ -29,7 +29,7 @@ type TransactionWitness context = (TransactionInputsWitness context, Transaction
 -- | Checks if the inputs of a transaction are valid.
 transactionInputsAreValid ::
       Signature context
-   => BlockId context
+   => UpdateId context
    -- ^ The id of the current block.
    -> Transaction context
    -- ^ The transaction to check.
@@ -75,7 +75,7 @@ transactionContractsAreSatisfied tx (wSpend, wMint) =
 -- | Checks if a transaction is valid.
 transactionIsValid ::
       Signature context
-   => BlockId context
+   => UpdateId context
    -- ^ The id of the current block.
    -> Transaction context
    -- ^ The transaction to check.

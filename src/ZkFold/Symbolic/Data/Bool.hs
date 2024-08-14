@@ -1,4 +1,5 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Bool (
     BoolType(..),
@@ -8,12 +9,20 @@ module ZkFold.Symbolic.Data.Bool (
     any
 ) where
 
-import           Prelude                                 hiding (Bool, Num (..), all, any, not, (&&), (/), (||))
-import qualified Prelude                                 as Haskell
+import           Data.Eq                         (Eq (..))
+import           Data.Foldable                   (Foldable (..))
+import           Data.Function                   (($), (.))
+import           Data.Functor                    (Functor, fmap, (<$>))
+import           GHC.Generics                    (Par1 (..))
+import qualified Prelude                         as Haskell
+import           Text.Show                       (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                 (Vector)
-import           ZkFold.Symbolic.Compiler.Arithmetizable
+import           ZkFold.Base.Data.HFunctor       (HFunctor)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class      (SymbolicData)
+import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit    (newAssigned)
 
 class BoolType b where
     true  :: b
@@ -31,9 +40,9 @@ class BoolType b where
     xor  :: b -> b -> b
 
 instance BoolType Haskell.Bool where
-    true  = True
+    true  = Haskell.True
 
-    false = False
+    false = Haskell.False
 
     not   = Haskell.not
 
@@ -44,39 +53,36 @@ instance BoolType Haskell.Bool where
     xor = xor
 
 -- TODO (Issue #18): hide this constructor
-newtype Bool x = Bool x
-    deriving (Eq)
+newtype Bool c = Bool (c Par1)
 
-deriving newtype instance Arithmetizable a x => Arithmetizable a (Bool x)
+deriving instance Eq (c Par1) => Eq (Bool c)
 
-instance (Field x, Eq x) => Show (Bool x) where
-    show (Bool x) = if x == one then "True" else "False"
+instance (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
+    show (fromBool -> x) = if x == one then "True" else "False"
 
-instance {-# OVERLAPPABLE #-} (Ring x) => BoolType (Bool x) where
-    true = Bool one
+deriving newtype instance HFunctor c => SymbolicData c (Bool c)
 
-    false = Bool zero
+instance Symbolic c => BoolType (Bool c) where
+    true = Bool $ embed (Par1 one)
 
-    not (Bool b) = Bool $ one - b
+    false = Bool $ embed (Par1 zero)
 
-    (&&) (Bool b1) (Bool b2) = Bool $ b1 * b2
+    not (Bool b) = Bool $ fromCircuitF b $
+      \(Par1 v) -> Par1 <$> newAssigned (one - ($ v))
 
-    (||) (Bool b1) (Bool b2) = Bool $ b1 + b2 - b1 * b2
+    Bool b1 && Bool b2 = Bool $ fromCircuit2F b1 b2 $
+      \(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))
 
-    xor (Bool b1) (Bool b2) = Bool $ b1 + b2 - (b1 * b2 + b1 * b2)
+    Bool b1 || Bool b2 = Bool $ fromCircuit2F b1 b2 $
+      \(Par1 v1) (Par1 v2) -> Par1 <$>
+          newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - x1 * x2)
 
-instance (Ring x) => BoolType (Bool (Vector 1 x)) where
-    true = Bool $ pure one
+    Bool b1 `xor` Bool b2 = Bool $ fromCircuit2F b1 b2 $
+      \(Par1 v1) (Par1 v2) -> Par1 <$>
+          newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
 
-    false = Bool $ pure zero
-
-    not (Bool b) = Bool $ (one -) <$> b
-
-    (&&) (Bool b1) (Bool b2) = Bool $ (*) <$> b1 <*> b2
-
-    (||) (Bool b1) (Bool b2) = Bool $ (\x y -> x + y - x * y) <$> b1 <*> b2
-
-    xor (Bool b1) (Bool b2) = Bool $ (\x y -> x + y - (x * y + x * y)) <$> b1 <*> b2
+fromBool :: Bool (Interpreter a) -> a
+fromBool (Bool (Interpreter (Par1 b))) = b
 
 all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true

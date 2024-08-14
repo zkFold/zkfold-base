@@ -7,8 +7,8 @@ import           Data.Bifunctor                             (first)
 import           Data.Bool                                  (bool)
 import qualified Data.Map                                   as Map
 import qualified Data.Vector                                as V
+import           GHC.Generics                               (Generic)
 import           GHC.IsList                                 (IsList (..))
-import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 import           System.Random                              (RandomGen, mkStdGen, uniformR)
 import           Test.QuickCheck                            (Arbitrary (..), Gen, shuffle)
@@ -74,22 +74,20 @@ data PlonkSetupParamsVerify c1 c2 = PlonkSetupParamsVerify {
         omega'' :: ScalarField c1,
         k1''    :: ScalarField c1,
         k2''    :: ScalarField c1,
-        g0''    :: Point c1,
-        h0''    :: Point c2,
-        h1''    :: Point c2,
-        pow''   :: Integer
+        x2''    :: Point c2,
+        pow''   :: Integer,
+        n''     :: Integer
     }
 instance (Show (ScalarField c1), Show (BaseField c1), Show (BaseField c2),
         EllipticCurve c1, EllipticCurve c2) => Show (PlonkSetupParamsVerify c1 c2) where
-    show (PlonkSetupParamsVerify omega'' k1'' k2'' g0'' h0'' h1'' pow'') =
+    show (PlonkSetupParamsVerify omega'' k1'' k2'' x2'' pow'' n'') =
         "Setup Parameters (Verify): "
         ++ show omega'' ++ " "
-        ++ show k1'' ++ " "
-        ++ show k2'' ++ " "
-        ++ show g0'' ++ " "
-        ++ show h0'' ++ " "
-        ++ show h1'' ++ " "
-        ++ show pow''
+        ++ show k1''  ++ " "
+        ++ show k2''  ++ " "
+        ++ show x2''  ++ " "
+        ++ show pow'' ++ " "
+        ++ show n''
 
 data PlonkPermutation n c = PlonkPermutation {
         s1 :: PolyVec (ScalarField c) n,
@@ -162,7 +160,8 @@ data PlonkProverSecret c = PlonkProverSecret {
         b9  :: ScalarField c,
         b10 :: ScalarField c,
         b11 :: ScalarField c
-    }
+    } deriving Generic
+
 instance Show (ScalarField c) => Show (PlonkProverSecret c) where
     show (PlonkProverSecret b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11) =
         "Prover Secret: "
@@ -183,7 +182,7 @@ instance Arbitrary (ScalarField c) => Arbitrary (PlonkProverSecret c) where
         arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
         <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
-newtype PlonkInput c = PlonkInput (V.Vector (ScalarField c))
+newtype PlonkInput c = PlonkInput { unPlonkInput :: V.Vector (ScalarField c) }
 instance Show (ScalarField c) => Show (PlonkInput c) where
     show (PlonkInput v) = "Input: " ++ show v
 

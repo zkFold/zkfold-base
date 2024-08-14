@@ -1,116 +1,131 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.FieldElement where
 
-import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
-                                                                      sum, take, (!!), (^))
+import           Data.Bool                                              (bool)
+import           Data.Foldable                                          (foldlM, foldr)
+import           Data.Function                                          (($), (.))
+import           Data.Functor                                           (fmap, (<$>))
+import           Data.Ord                                               (Ordering (..), compare)
+import           Data.Traversable                                       (for)
+import           Data.Tuple                                             (fst, snd)
+import           Data.Zip                                               (zip)
+import           GHC.Generics                                           (Par1 (..))
+import           Prelude                                                (Integer)
+import qualified Prelude                                                as Haskell
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector                             as V
-import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
-import qualified ZkFold.Symbolic.Compiler.Arithmetizable             as A
-import           ZkFold.Symbolic.Interpreter                         (Interpreter (..))
+import           ZkFold.Base.Data.HFunctor                              (HFunctor, hmap)
+import           ZkFold.Base.Data.Par1                                  ()
+import           ZkFold.Base.Data.Vector                                (Vector, fromVector, unsafeToVector)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, horner, runInvert)
+import           ZkFold.Symbolic.Data.Bool                              (Bool (Bool))
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.DiscreteField
+import           ZkFold.Symbolic.Data.Eq                                (Eq)
+import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.MonadCircuit                           (newAssigned)
 
-newtype FieldElement c = FieldElement { fromFieldElement :: c 1 }
+newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
 
-deriving instance Show (c 1) => Show (FieldElement c)
+deriving stock instance Haskell.Show (c Par1) => Haskell.Show (FieldElement c)
 
-deriving instance Eq (c 1) => Eq (FieldElement c)
+deriving stock instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
 
--- | A class for serializing data types into containers holding finite field elements.
--- Type `c` is the container type.
--- Type `x` represents the data type.
-class FieldElementData c x where
+deriving stock instance Haskell.Ord (c Par1) => Haskell.Ord (FieldElement c)
 
-    type TypeSize c x :: Natural
+deriving newtype instance HFunctor c => SymbolicData c (FieldElement c)
 
-    -- | Returns the representation of `x` as a container of finite field elements.
-    toFieldElements :: x -> c (TypeSize c x)
+deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
 
-    -- | Restores `x` from its representation as a container of finite field elements.
-    fromFieldElements :: c (TypeSize c x) -> x
+deriving via (Lexicographical (FieldElement c))
+  instance Symbolic c => Ord (Bool c) (FieldElement c)
 
--- | Returns the number of finite field elements needed to describe `x`.
-typeSize :: forall c x . KnownNat (TypeSize c x) => Natural
-typeSize = value @(TypeSize c x)
+instance (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
+  fromConstant = FieldElement . embed . Par1 . fromConstant
 
-instance Arithmetic a => FieldElementData (Interpreter a) () where
-    type TypeSize (Interpreter a) () = 0
+instance Symbolic c => Exponent (FieldElement c) Natural where
+  (^) = natPow
 
-    toFieldElements () = Interpreter V.empty
+instance Symbolic c => Exponent (FieldElement c) Integer where
+  (^) = intPowF
 
-    fromFieldElements _ = ()
+instance (Symbolic c, MultiplicativeMonoid k, Scale k (BaseField c)) =>
+    Scale k (FieldElement c) where
+  scale k (FieldElement c) = FieldElement $ fromCircuitF c $ \(Par1 i) ->
+    Par1 <$> newAssigned (\x -> fromConstant (scale k one :: BaseField c) * x i)
 
-instance Arithmetic a => FieldElementData (Interpreter a) (FieldElement (Interpreter a)) where
-    type TypeSize (Interpreter a) (FieldElement (Interpreter a)) = 1
+instance Symbolic c => MultiplicativeSemigroup (FieldElement c) where
+  FieldElement x * FieldElement y = FieldElement $ fromCircuit2F x y
+    $ \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i * w j)
 
-    toFieldElements (FieldElement x) = x
+instance Symbolic c => MultiplicativeMonoid (FieldElement c) where
+  one = FieldElement $ embed (Par1 one)
 
-    fromFieldElements = FieldElement
+instance Symbolic c => AdditiveSemigroup (FieldElement c) where
+  FieldElement x + FieldElement y = FieldElement $ fromCircuit2F x y
+    $ \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i + w j)
 
-instance
-    ( FieldElementData (Interpreter a) x
-    , FieldElementData (Interpreter a) y
-    , m ~ TypeSize (Interpreter a) x
-    , KnownNat m
-    ) => FieldElementData (Interpreter a) (x, y) where
+instance Symbolic c => AdditiveMonoid (FieldElement c) where
+  zero = FieldElement $ embed (Par1 zero)
 
-    type TypeSize (Interpreter a) (x, y) =
-        TypeSize (Interpreter a) x + TypeSize (Interpreter a) y
+instance Symbolic c => AdditiveGroup (FieldElement c) where
+  negate (FieldElement x) = FieldElement $ fromCircuitF x $ \(Par1 i) ->
+    Par1 <$> newAssigned (\w -> negate (w i))
 
-    toFieldElements (a, b) = Interpreter $
-        runInterpreter (toFieldElements a)
-        `V.append` runInterpreter (toFieldElements b)
+  FieldElement x - FieldElement y = FieldElement $ fromCircuit2F x y
+    $ \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i - w j)
 
-    fromFieldElements (Interpreter v) =
-        (fromFieldElements (Interpreter v1), fromFieldElements (Interpreter v2))
-        where
-            (v1, v2) = V.splitAt @m v
+instance Symbolic c => Semiring (FieldElement c)
 
-instance
-    ( FieldElementData (Interpreter a) x
-    , FieldElementData (Interpreter a) y
-    , FieldElementData (Interpreter a) z
-    , m ~ TypeSize (Interpreter a) x
-    , n ~ TypeSize (Interpreter a) y
-    , KnownNat m
-    , KnownNat n
-    ) => FieldElementData (Interpreter a) (x, y, z) where
+instance Symbolic c => Ring (FieldElement c)
 
-    type TypeSize (Interpreter a) (x, y, z) =
-        TypeSize (Interpreter a) x + TypeSize (Interpreter a) y + TypeSize (Interpreter a) z
-
-    toFieldElements (a, b, c) = Interpreter $
-        runInterpreter (toFieldElements a)
-        `V.append` runInterpreter (toFieldElements b)
-        `V.append` runInterpreter (toFieldElements c)
-
-    fromFieldElements (Interpreter v) =
-        (fromFieldElements (Interpreter v1)
-        , fromFieldElements (Interpreter v2)
-        , fromFieldElements (Interpreter v3))
-        where
-            (v1, v2, v3) = V.splitAt3 @m @n v
+instance Symbolic c => Field (FieldElement c) where
+  finv (FieldElement x) =
+    FieldElement $ symbolicF x (\(Par1 v) -> Par1 (finv v))
+      $ fmap snd . runInvert
 
 instance
-    ( FieldElementData (Interpreter a) x
-    , m ~ TypeSize (Interpreter a) x
-    , KnownNat m
-    ) => FieldElementData (Interpreter a) (Vector n x) where
+    ( KnownNat (Order (FieldElement c))
+    , KnownNat (NumberOfBits (FieldElement c))) => Finite (FieldElement c) where
+  type Order (FieldElement c) = Order (BaseField c)
 
-    type TypeSize (Interpreter a) (Vector n x) = n * TypeSize (Interpreter a) x
+instance Symbolic c => BinaryExpansion (FieldElement c) where
+  type Bits (FieldElement c) = c (Vector (NumberOfBits (BaseField c)))
+  binaryExpansion (FieldElement c) = hmap unsafeToVector $ symbolicF c
+    (\(Par1 v) -> padBits (numberOfBits @(BaseField c)) $ binaryExpansion v)
+    (\(Par1 i) -> expansion (numberOfBits @(BaseField c)) i)
+  fromBinary bits =
+    FieldElement $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
+      $ fmap Par1 . horner . fromVector
 
-    toFieldElements xs = Interpreter . V.concat $ runInterpreter . toFieldElements <$> xs
+instance Symbolic c => DiscreteField' (FieldElement c) where
+  equal x y = let Bool c = isZero (x - y) in FieldElement c
 
-    fromFieldElements (Interpreter v) = fromFieldElements . Interpreter <$> V.chunks v
+instance Symbolic c => TrichotomyField (FieldElement c) where
+  trichotomy (FieldElement x) (FieldElement y) =
+    FieldElement $ symbolic2F x y
+      (\u v -> Par1 $ case compare u v of { LT -> negate one; EQ -> zero; GT -> one })
+      $ \(Par1 i) (Par1 j) -> do
+        is <- expansion (numberOfBits @(BaseField c)) i
+        js <- expansion (numberOfBits @(BaseField c)) j
+        -- zip pairs of bits in {0,1} to orderings in {-1,0,1}
+        delta <- for (zip is js) $ \(bi, bj) -> newAssigned (\w -> w bi - w bj)
+        -- least significant bit first,
+        -- reverse lexicographical ordering
+        let reverseLexicographical v u = do
+              is0 <- newAssigned (\p -> one - p u * p u)
+              v' <- newAssigned (\p -> p is0 * p v)
+              newAssigned (\p -> p v' + p u)
+        Par1 <$> case delta of
+          []     -> newAssigned zero
+          (d:ds) -> foldlM reverseLexicographical d ds
 
-instance A.SymbolicData a x => FieldElementData (ArithmeticCircuit a) x where
-    type TypeSize (ArithmeticCircuit a) x = A.TypeSize a x
-
-    toFieldElements = A.pieces
-
-    fromFieldElements ArithmeticCircuit {..} = A.restore acCircuit acOutput
+instance Symbolic c => DiscreteField (Bool c) (FieldElement c) where
+  isZero (FieldElement x) =
+    Bool $ symbolicF x (Par1 . bool zero one . (Haskell.== Par1 zero))
+      $ fmap fst . runInvert

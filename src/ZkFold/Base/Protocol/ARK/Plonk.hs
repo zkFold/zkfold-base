@@ -13,8 +13,8 @@ module ZkFold.Base.Protocol.ARK.Plonk (
 
 import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
+import           GHC.Generics                               (Par1)
 import           GHC.IsList                                 (IsList (..))
-import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num (..), div, drop, length, replicate, sum, take,
                                                              (!!), (/), (^))
 import qualified Prelude                                    as P hiding (length)
@@ -31,7 +31,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..),
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                             (length, (!))
-import           ZkFold.Symbolic.Compiler                   (Arithmetic, ArithmeticCircuit, inputVariables)
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (acInput))
+import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
@@ -43,7 +44,7 @@ data Plonk (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
         iPub  :: Vector l Natural,
-        ac    :: ArithmeticCircuit (ScalarField curve1) 1,
+        ac    :: ArithmeticCircuit (ScalarField curve1) Par1,
         x     :: ScalarField curve1
     }
 instance (Show (ScalarField c1), Arithmetic (ScalarField c1)) => Show (Plonk n l c1 c2 t) where
@@ -54,7 +55,7 @@ instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (Scalar
         => Arbitrary (Plonk n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
-        let fullInp = length . inputVariables $ ac
+        let fullInp = length . acInput $ ac
         vecPubInp <- genSubset (value @l) fullInp
         let (omega, k1, k2) = getParams (value @n)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
@@ -105,11 +106,7 @@ instance forall n l c1 c2 t plonk f g1.
         , KnownNat l
         , KnownNat (PlonkPermutationSize n)
         , KnownNat (PlonkPolyExtendedLength n)
-        , Eq (ScalarField c1)
-        , Scale (ScalarField c1) (ScalarField c1)
-        , BinaryExpansion (ScalarField c1)
-        , Bits (ScalarField c1) ~ [ScalarField c1]
-        , FiniteField (ScalarField c1)
+        , Arithmetic f
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
         , ToTranscript t (ScalarField c1)
@@ -148,10 +145,9 @@ instance forall n l c1 c2 t plonk f g1.
             omega'' = omega
             k1''    = k1
             k2''    = k2
-            g0''    = gen
-            h0''    = gen
-            h1''    = x `mul` gen
+            x2''    = x `mul` gen
             pow''   = log2 $ value @n
+            n''     = fromIntegral $ value @n
 
             pr   = fromJust $ toPlonkRelation @n @l @f iPub ac
             perm = plonkPermutation plonk pr
@@ -366,7 +362,7 @@ instance forall n l c1 c2 t plonk f g1.
                 + v * v * v * v * s1_xi
                 + v * v * v * v * v * s2_xi
                 + u * z_xi
-                ) `mul` g0''
+                ) `mul` gen
 
-            p1 = pairing @c1 @c2 (xi `mul` proof1 + (u * xi * omega'') `mul` proof2 + f - e) h0''
-            p2 = pairing (proof1 + u `mul` proof2) h1''
+            p1 = pairing @c1 @c2 (xi `mul` proof1 + (u * xi * omega'') `mul` proof2 + f - e) (gen :: Point c2)
+            p2 = pairing (proof1 + u `mul` proof2) x2''

@@ -3,27 +3,29 @@
 
 module ZkFold.Symbolic.Data.Eq.Structural where
 
-import           Prelude                   (type (~))
+import           Prelude                    (type (~))
 
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq
 
 newtype Structural a = Structural a
 -- ^ A newtype wrapper for easy definition of Eq instances.
 
 instance
-    ( SymbolicData a x
-    , n ~ TypeSize a x
-    , Eq (Bool (ArithmeticCircuit a 1)) (ArithmeticCircuit a n)
-    ) => Eq (Bool (ArithmeticCircuit a 1)) (Structural x) where
+    ( SymbolicData c x
+    , Support c x ~ ()
+    , n ~ TypeSize c x
+    , Symbolic c
+    ) => Eq (Bool c) (Structural x) where
 
     Structural x == Structural y =
-        let x' = pieces @a x
-            y' = pieces y
+        let x' = pieces @c x ()
+            y' = pieces y ()
          in x' == y'
 
     Structural x /= Structural y =
-        let x' = pieces @a x
-            y' = pieces y
+        let x' = pieces @c x ()
+            y' = pieces y ()
          in x' /= y'

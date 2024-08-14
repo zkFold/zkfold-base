@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
 import           Data.Maybe                                     (fromJust)
 import           Data.Zip                                       (zip)
+import           GHC.Generics                                   (Par1)
 import           Numeric.Natural                                (Natural)
 import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
                                                                  (*), (+))
@@ -13,12 +14,12 @@ import           ZkFold.Base.Data.Vector                        (Vector, fromVec
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
+import           ZkFold.Symbolic.Class                          (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement              (fromFieldElement)
 import           ZkFold.Symbolic.Data.UInt                      (StrictConv (..))
-import           ZkFold.Symbolic.Types                          (Symbolic)
 
 type Tokens = 10
 type TxOut context = Output Tokens () context
@@ -29,15 +30,14 @@ hash :: forall context x . MiMCHash F context x => x -> FieldElement context
 hash = mimcHash @F mimcConstants zero
 
 type Sig context =
-    ( StrictConv (context 1) (UInt 256 context)
-    , FromConstant Natural (UInt 256 context)
-    , MultiplicativeSemigroup (UInt 256 context)
-    , AdditiveMonoid (context 1)
-    , Symbolic (context 1)
+    ( Symbolic context
+    , StrictConv (context Par1) (UInt 256 Auto context)
+    , FromConstant Natural (UInt 256 Auto context)
+    , MultiplicativeSemigroup (UInt 256 Auto context)
     , MiMCHash F context (TxOut context, TxOut context)
-    , Eq (Bool context) (UInt 256 context)
+    , Eq (Bool context) (UInt 256 Auto context)
     , Eq (Bool context) (TxOut context)
-    , Iso (UInt 256 context) (ByteString 256 context)
+    , Iso (UInt 256 Auto context) (ByteString 256 context)
     , Extend (ByteString 224 context) (ByteString 256 context))
 
 verifySignature ::
@@ -48,7 +48,7 @@ verifySignature ::
     Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (extend pub :: ByteString 256 context))
     where
-        base :: UInt 256 context
+        base :: UInt 256 Auto context
         base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)
 
         mimc :: FieldElement context

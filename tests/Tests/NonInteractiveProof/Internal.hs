@@ -5,6 +5,7 @@
 module Tests.NonInteractiveProof.Internal (NonInteractiveProofTestData(..)) where
 
 import           Data.ByteString                                (ByteString)
+import           GHC.Generics                                   (Par1)
 import           GHC.TypeNats                                   (KnownNat)
 import           Prelude                                        hiding (Fractional (..), Num (..), length)
 import           Test.QuickCheck                                (Arbitrary (arbitrary), Gen)
@@ -18,7 +19,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk                 (Plonk (Plonk), 
 import           ZkFold.Base.Protocol.Commitment.KZG            (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof       (NonInteractiveProof (..))
 import           ZkFold.Prelude                                 (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit     (inputVariables, witnessGenerator)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit     (acInput, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircuitTest (..))
 
 data NonInteractiveProofTestData a = TestData a (Witness a)
@@ -35,8 +36,8 @@ instance (KZG c1 c2 d ~ kzg, NonInteractiveProof kzg, Arbitrary kzg, Arbitrary (
 
 instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (PlonkBS n)) where
     arbitrary = do
-        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField BLS12_381_G1) 1)
-        let inputLen = length . inputVariables $ ac
+        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField BLS12_381_G1) Par1)
+        let inputLen = length . acInput $ ac
         vecPubInp <- genSubset (value @n) inputLen
         let (omega, k1, k2) = getParams $ value @PlonkSizeBS
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
