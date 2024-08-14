@@ -23,6 +23,7 @@ import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.ByteString      (Binary (..))
 import qualified ZkFold.Prelude                   as ZP
@@ -32,9 +33,9 @@ newtype Vector (size :: Natural) a = Vector [a]
     deriving (Show, Eq, Functor, Foldable, Traversable, Generic, NFData)
 
 instance KnownNat size => Representable (Vector size) where
-  type Rep (Vector size) = Int
-  index (Vector v) ix = v Prelude.!! ix
-  tabulate f = Vector [f ix | ix <- [0 .. fromIntegral (value @size) Prelude.- 1]]
+  type Rep (Vector size) = Zp size
+  index (Vector v) ix = v Prelude.!! (fromIntegral (fromZp ix))
+  tabulate f = Vector [f (toZp ix) | ix <- [0 .. fromIntegral (value @size) Prelude.- 1]]
 
 instance KnownNat size => Distributive (Vector size) where
   distribute = distributeRep

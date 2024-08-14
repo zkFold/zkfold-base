@@ -44,7 +44,7 @@ toPlonkRelation xPub ac0 =
     let ac = desugarRanges ac0
 
         varF (NewVar ix) = if ix == 0 then one else var (ix + value @l)
-        varF (InVar ix)  = var (fromIntegral ix)
+        varF (InVar ix)  = var (toConstant ix)
         evalX0 = evalPolynomial evalMonomial varF
 
         pubInputConstraints = map var (fromVector xPub)
