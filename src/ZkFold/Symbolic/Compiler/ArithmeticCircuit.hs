@@ -56,10 +56,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 
 --------------------------------- High-level functions --------------------------------
 
--- TODO: make this work for different input types.
--- applyArgs :: ArithmeticCircuit a (i :*: j) o -> i a -> ArithmeticCircuit a j o
--- applyArgs r args = (apply args r{acOutput = U1}) {acOutput = fmap _ (acOutput r)}
-
 -- | Optimizes the constraint system.
 --
 -- TODO: Implement nontrivial optimizations.
