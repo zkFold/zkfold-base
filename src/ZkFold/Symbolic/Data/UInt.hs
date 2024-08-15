@@ -126,8 +126,7 @@ eea a b = eea' 1 a b one zero zero one
 
 --------------------------------------------------------------------------------
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Natural where
-    toConstant (UInt (Interpreter xs)) = vectorToNatural xs base
-        where base = 2 ^ registerSize @(Zp p) @n @r
+    toConstant (UInt (Interpreter xs)) = vectorToNatural xs (registerSize @(Zp p) @n @r)
 
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Integer where
     toConstant = Haskell.fromIntegral @Natural . toConstant
@@ -233,7 +232,7 @@ instance
                  in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
 instance (Symbolic (ArithmeticCircuit a), KnownNat n, KnownRegisterSize r) => Iso (ByteString n (ArithmeticCircuit a)) (UInt n r (ArithmeticCircuit a)) where
-    from (ByteString bits) = UInt $ symbolicF bits (\v -> naturalToVector @(ArithmeticCircuit a) @n @r $ vectorToNatural v (getNatural @n)) solve
+    from (ByteString bits) = UInt $ symbolicF bits (\v -> naturalToVector @(ArithmeticCircuit a) @n @r $ vectorToNatural v (registerSize @a @n @r)) solve
         where
             solve :: MonadCircuit i a m => Vector n i -> m (Vector (NumberOfRegisters a n r) i)
             solve xv = do
@@ -334,7 +333,7 @@ instance
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 s
 
     negate :: UInt n r c -> UInt n r c
-    negate (UInt x) =  UInt $ symbolicF x (\v ->  naturalToVector @c @n @r $ (2 ^ (value @n) ) -! vectorToNatural v (getNatural @n)) solve
+    negate (UInt x) =  UInt $ symbolicF x (\v ->  naturalToVector @c @n @r $ (2 ^ (value @n) ) -! vectorToNatural v (registerSize @(BaseField c) @n @r)) solve
         where
             solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
             solve xv = do
