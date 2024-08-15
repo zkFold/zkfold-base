@@ -26,6 +26,7 @@ import           Data.Traversable                                       (for, tr
 import           Data.Tuple                                             (swap)
 import qualified Data.Zip                                               as Z
 import           GHC.Generics                                           (Generic, Par1 (..))
+import           GHC.Natural                                            (naturalFromInteger)
 import           Prelude                                                (Integer, error, flip, otherwise, return,
                                                                          type (~), ($), (++), (.), (<>), (>>=))
 import qualified Prelude                                                as Haskell
@@ -38,6 +39,7 @@ import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Base.Data.Vector                                (Vector (..))
 import           ZkFold.Prelude                                         (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit             (ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, splitExpansion)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -47,10 +49,8 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Interpreter                            (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit                           (MonadCircuit, constraint, newAssigned)
-import           GHC.Natural                                            (naturalFromInteger)
-import ZkFold.Symbolic.Interpreter (Interpreter(..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
@@ -493,7 +493,7 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c)
                 s <- newAssigned (\v -> v k + v b + fromConstant t)
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 s
 
-    strictMul (UInt x) (UInt y) = UInt $ symbolic2F x y (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) * vectorToNatural v (registerSize @(BaseField c) @n @r)) solve 
+    strictMul (UInt x) (UInt y) = UInt $ symbolic2F x y (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) * vectorToNatural v (registerSize @(BaseField c) @n @r)) solve
         where
             solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
             solve xv yv = do
