@@ -9,7 +9,6 @@ module ZkFold.Symbolic.Data.Ed25519  where
 import           Control.Applicative                       ((<*>))
 import           Data.Functor                              ((<$>))
 import           Data.Void                                 (Void)
-import           GHC.Generics                              (Par1)
 import           Prelude                                   (type (~), ($), (.))
 import qualified Prelude                                   as P
 
@@ -31,17 +30,17 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter
 
-zpToEd :: (Symbolic (Interpreter (Zp p)), FromConstant (Interpreter (Zp p) Par1) Natural ) => Point (Ed25519 (Interpreter (Zp p))) -> Point (Ed25519 Void)
+zpToEd :: (Symbolic (Interpreter (Zp p))) => Point (Ed25519 (Interpreter (Zp p))) -> Point (Ed25519 Void)
 zpToEd Inf         = Inf
 zpToEd (Point x y) = Point (toZp . toConstant $ x) (toZp . toConstant $ y)
 
-edToZp :: (Symbolic (Interpreter (Zp p)) ) => Point (Ed25519 Void) -> Point (Ed25519 (Interpreter (Zp p)))
+edToZp :: (Symbolic (Interpreter (Zp p))) => Point (Ed25519 Void) -> Point (Ed25519 (Interpreter (Zp p)))
 edToZp Inf         = Inf
 edToZp (Point x y) = Point (fromConstant . fromZp $ x) (fromConstant . fromZp $ y)
 
 -- | Ed25519 with @UInt 256 (Zp p)@ as computational backend
 --
-instance (Symbolic  (Interpreter (Zp p)), FromConstant (Interpreter (Zp p) Par1) Natural) => EllipticCurve (Ed25519 (Interpreter (Zp p))) where
+instance (Symbolic  (Interpreter (Zp p))) => EllipticCurve (Ed25519 (Interpreter (Zp p))) where
     type BaseField (Ed25519 (Interpreter (Zp p))) = UInt 256 Auto (Interpreter (Zp p))
     type ScalarField (Ed25519 (Interpreter (Zp p))) = UInt 256 Auto (Interpreter (Zp p))
 

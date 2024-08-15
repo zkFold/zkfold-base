@@ -64,8 +64,8 @@ isLeftNeutral f g n1 n2 x = eval (n2 `g` fromConstant x) === n1 `f` fromConstant
 testWords
     :: forall n wordSize p
     .  KnownNat n
-    => PrimeField (Zp p)
     => KnownNat wordSize
+    => PrimeField (Zp p)
     => ToWords (ByteString n (ArithmeticCircuit (Zp p))) (ByteString wordSize (ArithmeticCircuit (Zp p)))
     => ToWords (ByteString n (Interpreter (Zp p))) (ByteString wordSize (Interpreter (Zp p)))
     => Spec
