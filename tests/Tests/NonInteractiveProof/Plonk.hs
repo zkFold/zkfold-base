@@ -27,10 +27,11 @@ import           ZkFold.Base.Data.Vector                     (fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation     (PlonkRelation (..), toPlonkRelation)
+import           ZkFold.Base.Protocol.Commitment.KZG         (HaskellCore)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 
 type PlonkPolyLengthBS = 32
-type PlonkBS n = Plonk PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
+type PlonkBS n = Plonk PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString HaskellCore
 type PlonkPolyExtendedLengthBS = PlonkPolyExtendedLength PlonkPolyLengthBS
 
 propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint a -> Bool

@@ -356,3 +356,19 @@ benchmark division
       time,
       vector,
       zkfold-base 
+
+benchmark msm
+    import:           options
+    main-is:          BenchMSM.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:      
+      -rtsopts
+      -O3
+    build-depends: 
+      base, 
+      tasty-bench,
+      QuickCheck,
+      vector,
+      zkfold-base,
+      bytestring,

@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE OverloadedLists      #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -28,7 +29,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Base.Data.Vector                    (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
-import           ZkFold.Base.Protocol.Commitment.KZG        (com)
+import           ZkFold.Base.Protocol.Commitment.KZG        (CoreFunction, com')
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                             (length, (!))
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (acInput))
@@ -39,7 +40,9 @@ import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
 
-data Plonk (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
+data Plonk (n :: Natural) (l :: Natural) curve1 curve2 transcript core =
+    CoreFunction curve1 core =>
+    Plonk {
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
@@ -47,12 +50,11 @@ data Plonk (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
         ac    :: ArithmeticCircuit (ScalarField curve1) Par1,
         x     :: ScalarField curve1
     }
-instance (Show (ScalarField c1), Arithmetic (ScalarField c1)) => Show (Plonk n l c1 c2 t) where
+instance (Show (ScalarField c1), Arithmetic (ScalarField c1)) => Show (Plonk n l c1 c2 t core) where
     show (Plonk omega k1 k2 iPub ac x) =
         "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show iPub ++ " " ++ show ac ++ " " ++ show x
 
-instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1))
-        => Arbitrary (Plonk n l c1 c2 t) where
+instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1), CoreFunction c1 core) => Arbitrary (Plonk n l c1 c2 t core) where
     arbitrary = do
         ac <- arbitrary
         let fullInp = length . acInput $ ac
@@ -60,8 +62,7 @@ instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (Scalar
         let (omega, k1, k2) = getParams (value @n)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
 
-plonkPermutation :: forall n l c1 c2 t .
-    (KnownNat n, FiniteField (ScalarField c1)) => Plonk n l c1 c2 t -> PlonkRelation n l (ScalarField c1) -> PlonkPermutation n c1
+plonkPermutation :: forall n l c1 c2 t core . (KnownNat n, FiniteField (ScalarField c1)) => Plonk n l c1 c2 t core -> PlonkRelation n l (ScalarField c1) -> PlonkPermutation n c1
 plonkPermutation (Plonk omega k1 k2 _ _ _) PlonkRelation {..} = PlonkPermutation {..}
     where
         f i = case (i-!1) `div` value @n of
@@ -75,9 +76,9 @@ plonkPermutation (Plonk omega k1 k2 _ _ _) PlonkRelation {..} = PlonkPermutation
         s2 = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
         s3 = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
 
-plonkCircuitPolynomials :: forall n l c1 c2 t .
+plonkCircuitPolynomials :: forall n l c1 c2 t core.
     (KnownNat n, KnownNat (PlonkPolyExtendedLength n), Eq (ScalarField c1), Field (ScalarField c1))
-    => Plonk n l c1 c2 t
+    => Plonk n l c1 c2 t core
     -> PlonkPermutation n c1
     -> PlonkRelation n l (ScalarField c1)
     -> PlonkCircuitPolynomials n c1
@@ -98,8 +99,8 @@ plonkCircuitPolynomials
 plonkVerifierInput :: Field (ScalarField c) => Vector n (ScalarField c) -> PlonkInput c
 plonkVerifierInput input = PlonkInput $ fromList $ map negate $ fromVector input
 
-instance forall n l c1 c2 t plonk f g1.
-        ( Plonk n l c1 c2 t ~ plonk
+instance forall n l c1 c2 t plonk f g1 core.
+        ( Plonk n l c1 c2 t core ~ plonk
         , ScalarField c1 ~ f
         , Point c1 ~ g1
         , KnownNat n
@@ -112,13 +113,14 @@ instance forall n l c1 c2 t plonk f g1.
         , ToTranscript t (ScalarField c1)
         , ToTranscript t (Point c1)
         , FromTranscript t (ScalarField c1)
-        ) => NonInteractiveProof (Plonk n l c1 c2 t) where
-    type Transcript (Plonk n l c1 c2 t)  = t
-    type SetupProve (Plonk n l c1 c2 t)  = (PlonkSetupParamsProve c1 c2, PlonkPermutation n c1, PlonkCircuitPolynomials n c1 , PlonkWitnessMap n c1)
-    type SetupVerify (Plonk n l c1 c2 t) = (PlonkSetupParamsVerify c1 c2, PlonkCircuitCommitments c1)
-    type Witness (Plonk n l c1 c2 t)     = (PlonkWitnessInput c1, PlonkProverSecret c1)
-    type Input (Plonk n l c1 c2 t)       = PlonkInput c1
-    type Proof (Plonk n l c1 c2 t)       = PlonkProof c1
+        , CoreFunction c1 core
+        ) => NonInteractiveProof (Plonk n l c1 c2 t core) where
+    type Transcript (Plonk n l c1 c2 t core)  = t
+    type SetupProve (Plonk n l c1 c2 t core)  = (PlonkSetupParamsProve c1 c2, PlonkPermutation n c1, PlonkCircuitPolynomials n c1 , PlonkWitnessMap n c1)
+    type SetupVerify (Plonk n l c1 c2 t core) = (PlonkSetupParamsVerify c1 c2, PlonkCircuitCommitments c1)
+    type Witness (Plonk n l c1 c2 t core)     = (PlonkWitnessInput c1, PlonkProverSecret c1)
+    type Input (Plonk n l c1 c2 t core)       = PlonkInput c1
+    type Proof (Plonk n l c1 c2 t core)       = PlonkProof c1
 
     setupProve :: plonk -> SetupProve plonk
     setupProve plonk@(Plonk omega' k1' k2' iPub ac x) =
@@ -153,6 +155,7 @@ instance forall n l c1 c2 t plonk f g1.
             perm = plonkPermutation plonk pr
             PlonkCircuitPolynomials {..} = plonkCircuitPolynomials plonk perm pr
 
+            com = com' @c1 @core
             cmQl = gs `com` ql
             cmQr = gs `com` qr
             cmQo = gs `com` qo
@@ -180,6 +183,7 @@ instance forall n l c1 c2 t plonk f g1.
             b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega' w2
             c = polyVecLinear b6 b5 * zH + polyVecInLagrangeBasis omega' w3
 
+            com = com' @c1 @core
             cmA = gs' `com` a
             cmB = gs' `com` b
             cmC = gs' `com` c

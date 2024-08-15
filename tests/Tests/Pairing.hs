@@ -17,16 +17,17 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, deg, evalPolyVec, polyVecDiv, scalePV, toPolyVec,
                                                               vec2poly)
-import           ZkFold.Base.Protocol.Commitment.KZG         (com)
+import           ZkFold.Base.Protocol.Commitment.KZG         (CoreFunction, HaskellCore, com')
 
 propVerificationKZG
-    :: forall c1 c2 f
+    :: forall c1 c2 f core
     .  Pairing c1 c2
     => f ~ ScalarField c1
     => f ~ ScalarField c2
     => Field f
     => Eq f
     => AdditiveGroup (BaseField c1)
+    => CoreFunction c1 core
     => f -> PolyVec f 32 -> f -> Bool
 propVerificationKZG x p z =
     let n  = deg $ vec2poly p
@@ -39,6 +40,7 @@ propVerificationKZG x p z =
         h0 = gen :: Point c2
         h1 = x `mul` h0
 
+        com = com' @c1 @core
         -- Proving a polynomial evaluation
         pz = p `evalPolyVec` z
         h  = (p - scalePV pz one) `polyVecDiv` toPolyVec [negate z, one]
@@ -73,7 +75,7 @@ specPairing' = hspec $ do
                     property $ \p q -> pairing @c1 @c2 p q /= one
             describe "Pairing verification" $ do
                 it "should verify KZG commitments" $ withMaxSuccess 10 $ do
-                    property $ propVerificationKZG @c1 @c2
+                    property $ propVerificationKZG @c1 @c2 @f @HaskellCore
 
 specPairing :: IO ()
 specPairing = do

@@ -11,7 +11,7 @@ import           Tests.NonInteractiveProof.Internal          (NonInteractiveProo
 import           Tests.NonInteractiveProof.Plonk             (PlonkBS, specPlonk)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
+import           ZkFold.Base.Protocol.Commitment.KZG         (HaskellCore, KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
 
 propNonInteractiveProof :: forall a .
@@ -34,7 +34,7 @@ specNonInteractiveProof' = hspec $ do
 
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
-    specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32)
+    specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32 HaskellCore)
 
     specPlonk
     specNonInteractiveProof' @(PlonkBS 2)
