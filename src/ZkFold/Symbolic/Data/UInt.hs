@@ -33,7 +33,7 @@ import qualified Prelude                                                as Haske
 import           Test.QuickCheck                                        (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                        (Zp, fromZp, toZp)
+import           ZkFold.Base.Algebra.Basic.Field                        (Zp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Base.Data.Vector                                (Vector (..))
@@ -62,9 +62,7 @@ deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vect
 deriving newtype instance SymbolicData c (UInt n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (UInt n r c) where
-    fromConstant c =
-        let (lo, hi, _) = cast @(BaseField c) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
-        in UInt . embed @c $ V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
+    fromConstant c = UInt . embed @c $ naturalToVector @c @n @r c
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Integer (UInt n r c) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
@@ -128,7 +126,7 @@ eea a b = eea' 1 a b one zero zero one
 
 --------------------------------------------------------------------------------
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Natural where
-    toConstant (UInt (Interpreter xs)) = foldr (\p y -> fromZp p + base * y) 0 xs
+    toConstant (UInt (Interpreter xs)) = vectorToNatural xs base
         where base = 2 ^ registerSize @(Zp p) @n @r
 
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Integer where
@@ -555,6 +553,6 @@ naturalToVector c = let (lo, hi, _) = cast @(BaseField c) @n @r . (`Haskell.mod`
 
 
 vectorToNatural :: (ToConstant a Natural) => Vector n a -> Natural -> Natural
-vectorToNatural v n = Haskell.foldr (\l r -> fromConstant l  + b * r) 0 vs where
+vectorToNatural v n = foldr (\l r -> fromConstant l  + b * r) 0 vs where
     vs = Haskell.map toConstant $ V.fromVector v :: [Natural]
     b = 2 ^ n
