@@ -1,11 +1,5 @@
 cradle:
   cabal:
-    - path: "./rust-ffi/src"
-      component: "lib:rust-ffi"
-
-    - path: "./rust-ffi-test/app/Main.hs"
-      component: "rust-ffi-test:exe:rust-ffi-test"
-
     - path: "./src"
       component: "lib:zkfold-base"
 

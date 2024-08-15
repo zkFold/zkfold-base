@@ -16,6 +16,7 @@ module ZkFold.Symbolic.Data.ByteString
     , Concat (..)
     , Truncate (..)
     , emptyByteString
+    , toBsBits
     ) where
 
 import           Control.DeepSeq                                           (NFData)
