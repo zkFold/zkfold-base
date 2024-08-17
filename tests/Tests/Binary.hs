@@ -7,7 +7,8 @@ import           Test.Hspec.QuickCheck
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, BLS12_381_G1, BLS12_381_G2)
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (Point, PointCompressed)
 import           ZkFold.Base.Data.ByteString                 (LittleEndian, fromByteString, toByteString)
 
 doesRoundtrip :: (Binary a, Eq a, Show a) => a -> Property
@@ -18,5 +19,9 @@ doesRoundtrip x = do
 
 specBinary :: IO ()
 specBinary = hspec $ describe "Binary instance" $ do
-  prop "roundtrips LittleEndian"        $ doesRoundtrip @LittleEndian
-  prop "roundtrips Zp BLS12_381_Scalar" $ doesRoundtrip @(Zp BLS12_381_Scalar)
+  prop "roundtrips LittleEndian"                   $ doesRoundtrip @LittleEndian
+  prop "roundtrips Zp BLS12_381_Scalar"            $ doesRoundtrip @(Zp BLS12_381_Scalar)
+  prop "roundtrips (Point BLS12_381_G1)"           $ doesRoundtrip @(Point BLS12_381_G1)
+  prop "roundtrips (PointCompressed BLS12_381_G1)" $ doesRoundtrip @(PointCompressed BLS12_381_G1)
+  prop "roundtrips (Point BLS12_381_G2)"           $ doesRoundtrip @(Point BLS12_381_G2)
+  prop "roundtrips (PointCompressed BLS12_381_G2)" $ doesRoundtrip @(PointCompressed BLS12_381_G2)
