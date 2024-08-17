@@ -196,7 +196,10 @@ class IrreduciblePoly f (e :: Symbol) | e -> f where
     irreduciblePoly :: Poly f
 
 data Ext2 f (e :: Symbol) = Ext2 f f
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Show)
+
+instance Ord f => Ord (Ext2 f e) where
+    Ext2 a b <= Ext2 c d = [b, a] <= ([d, c] :: [f])
 
 instance (KnownNat (Order (Ext2 f e)), KnownNat (NumberOfBits (Ext2 f e))) => Finite (Ext2 f e) where
     type Order (Ext2 f e) = Order f ^ 2
@@ -255,6 +258,9 @@ instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext2 f 
 
 data Ext3 f (e :: Symbol) = Ext3 f f f
     deriving (Eq, Show)
+
+instance Ord f => Ord (Ext3 f e) where
+    Ext3 a b c <= Ext3 d e f = [c, b, a] <= ([f, e, d] :: [f])
 
 instance (KnownNat (Order (Ext3 f e)), KnownNat (NumberOfBits (Ext3 f e))) => Finite (Ext3 f e) where
     type Order (Ext3 f e) = Order f ^ 3
