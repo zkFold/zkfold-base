@@ -227,7 +227,7 @@ library
       vector-binary-instances               < 0.3
     hs-source-dirs: src
 
-test-suite test
+test-suite zkfold-base-test
     import: options
     type: exitcode-stdio-1.0
     ghc-options: 
@@ -277,7 +277,7 @@ test-suite test
       zkfold-base                                ,
     hs-source-dirs: tests
 
-test-suite examples
+test-suite zkfold-base-examples
     import: options
     type: exitcode-stdio-1.0
     ghc-options: -rtsopts
