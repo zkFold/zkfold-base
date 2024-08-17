@@ -17,7 +17,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
-import           ZkFold.Prelude                             (take, log2ceiling)
+import           ZkFold.Prelude                             (log2ceiling, take)
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
