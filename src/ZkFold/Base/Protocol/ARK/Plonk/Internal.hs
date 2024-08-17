@@ -17,15 +17,12 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
-import           ZkFold.Prelude                             (take)
-
-log2 :: (Integral a, Integral b) => a -> b
-log2 = ceiling @Double . logBase 2 . fromIntegral
+import           ZkFold.Prelude                             (take, log2ceiling)
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
     where
-        omega = case rootOfUnity @a (log2 n) of
+        omega = case rootOfUnity @a (log2ceiling n) of
                   Just o -> o
                   _      -> error "impossible"
         hGroup = map (omega^) [0 .. n-!1]

@@ -21,6 +21,7 @@ import           Data.Bifunctor                             (first)
 import           Data.Bool                                  (bool)
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Generic)
+import           GHC.Real                                   ((%))
 import           GHC.TypeLits                               (Symbol)
 import           Prelude                                    hiding (Fractional (..), Num (..), div, length, (^))
 import qualified Prelude                                    as Haskell
@@ -31,6 +32,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString
+import           ZkFold.Prelude                             (log2ceiling)
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -158,7 +160,14 @@ instance FromJSON (Zp p) where
     parseJSON = fmap Zp . parseJSON
 
 instance KnownNat p => Binary (Zp p) where
-    put = put . LittleEndian . toConstant
+    put (Zp x) = go x wordCount
+      where
+        wordCount = ceiling $ log2ceiling @_ @Natural (value @p -! 1) % 8
+
+        go _ 0      = pure ()
+        go n count =
+            let (n', r) = n `Haskell.divMod` 256
+            in putWord8 (fromIntegral r) <> go n' (count -! 1)
     get = fromConstant . unLittleEndian <$> get
 
 instance KnownNat p => Arbitrary (Zp p) where

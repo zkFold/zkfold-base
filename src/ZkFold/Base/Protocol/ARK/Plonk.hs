@@ -31,7 +31,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                             (length, (!))
+import           ZkFold.Prelude                             (length, (!), log2ceiling)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (acInput))
 import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
 
@@ -148,7 +148,7 @@ instance forall n l c1 c2 t plonk f g1.
             k1''    = k1
             k2''    = k2
             x2''    = x `mul` gen
-            pow''   = log2 $ value @n
+            pow''   = log2ceiling $ value @n
             n''     = fromIntegral $ value @n
 
             pr   = fromJust $ toPlonkRelation @n @l @f iPub ac
