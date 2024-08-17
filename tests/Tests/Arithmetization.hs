@@ -16,7 +16,6 @@ import           ZkFold.Base.Algebra.Basic.Class                (FromConstant, M
 import           ZkFold.Base.Algebra.Basic.Field                (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.MonadCircuit                   (Arithmetic)
 
 propCircuitInvariance :: (MultiplicativeMonoid a, Eq a) => ArithmeticCircuitTest a Par1 -> Bool
