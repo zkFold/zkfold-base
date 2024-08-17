@@ -32,7 +32,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..),
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                             (length, log2ceiling, (!))
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (..), ArithmeticCircuitTest (..), witnessGenerator)
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (..), ArithmeticCircuitTest (..),
+                                                             witnessGenerator)
 import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
 
 {-

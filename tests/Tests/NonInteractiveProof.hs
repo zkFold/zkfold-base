@@ -11,7 +11,8 @@ import           Tests.NonInteractiveProof.Plonk             (PlonkBS, specPlonk
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..), NonInteractiveProofTestData(..))
+import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..),
+                                                              NonInteractiveProofTestData (..))
 
 propNonInteractiveProof :: forall a .
     NonInteractiveProof a =>
