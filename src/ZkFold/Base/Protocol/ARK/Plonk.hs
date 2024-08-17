@@ -23,7 +23,8 @@ import           Test.QuickCheck                            (Arbitrary (..))
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations     (fromPermutation)
-import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Pairing (..), Point, compress, PointCompressed)
+import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Pairing (..), Point, PointCompressed,
+                                                             compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Base.Data.Vector                    (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal

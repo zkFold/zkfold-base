@@ -124,20 +124,20 @@ class EllipticCurve curve => StandardEllipticCurve curve where
 data PointCompressed curve = PointCompressed (BaseField curve) Bool | InfCompressed
 
 instance Show (BaseField curve) => Show (PointCompressed curve) where
-    show InfCompressed = "InfCompressed"
+    show InfCompressed            = "InfCompressed"
     show (PointCompressed x bigY) = "(" ++ show x ++ ", " ++ show bigY ++ ")"
 
 instance Eq (BaseField curve) => Eq (PointCompressed curve) where
-    InfCompressed == InfCompressed = True
+    InfCompressed == InfCompressed                       = True
     PointCompressed x1 bigY1 == PointCompressed x2 bigY2 = x1 == x2 && bigY1 == bigY2
-    _ == _ = False
+    _ == _                                               = False
 
 instance (Arbitrary (Point curve), AdditiveGroup (BaseField curve), Ord (BaseField curve)
         ) => Arbitrary (PointCompressed curve) where
     arbitrary = do
         p <- arbitrary :: Gen (Point curve)
         case p of
-            Inf -> pure InfCompressed
+            Inf       -> pure InfCompressed
             Point x y -> pure $ PointCompressed x (y > negate y)
 
 compress

@@ -7,7 +7,7 @@ import           Test.Hspec.QuickCheck
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, BLS12_381_G1, BLS12_381_G2)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_G2, BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.Class     (Point, PointCompressed)
 import           ZkFold.Base.Data.ByteString                 (LittleEndian, fromByteString, toByteString)
 
