@@ -18,7 +18,7 @@ import           GHC.IsList                                 (IsList (..))
 import           Prelude                                    hiding (Num (..), div, drop, length, replicate, sum, take,
                                                              (!!), (/), (^))
 import qualified Prelude                                    as P hiding (length)
-import           Test.QuickCheck                            (Arbitrary (..))
+import           Test.QuickCheck                            (Arbitrary (..), Gen)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -32,7 +32,7 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..),
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                             (length, log2ceiling, (!))
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (acInput))
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (..), ArithmeticCircuitTest (..), witnessGenerator)
 import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
 
 {-
@@ -60,6 +60,17 @@ instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (Scalar
         vecPubInp <- genSubset (value @l) fullInp
         let (omega, k1, k2) = getParams (value @n)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+
+instance forall n l c1 c2 t . (KnownNat n, KnownNat l, Eq (ScalarField c1), Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
+        Witness (Plonk n l c1 c2 t) ~ (PlonkWitnessInput c1, PlonkProverSecret c1)) => Arbitrary (NonInteractiveProofTestData (Plonk n l c1 c2 t)) where
+    arbitrary = do
+        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) Par1)
+        let inputLen = length . acInput $ ac
+        vecPubInp <- genSubset (value @l) inputLen
+        let (omega, k1, k2) = getParams $ value @n
+        pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        secret <- arbitrary
+        return $ TestData pl (PlonkWitnessInput (witnessGenerator ac wi), secret)
 
 plonkPermutation :: forall n l c1 c2 t .
     (KnownNat n, FiniteField (ScalarField c1)) => Plonk n l c1 c2 t -> PlonkRelation n l (ScalarField c1) -> PlonkPermutation n c1
