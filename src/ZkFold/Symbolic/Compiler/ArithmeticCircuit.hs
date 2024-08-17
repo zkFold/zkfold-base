@@ -2,6 +2,7 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
+        ArithmeticCircuitTest(..),
         Constraint,
         witnessGenerator,
         -- high-level functions

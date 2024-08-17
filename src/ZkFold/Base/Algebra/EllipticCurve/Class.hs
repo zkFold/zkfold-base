@@ -123,6 +123,16 @@ class EllipticCurve curve => StandardEllipticCurve curve where
 
 data PointCompressed curve = PointCompressed (BaseField curve) Bool | InfCompressed
 
+instance Show (BaseField curve) => Show (PointCompressed curve) where
+    show InfCompressed            = "InfCompressed"
+    show (PointCompressed x bigY) = "(" ++ show x ++ ", " ++ show bigY ++ ")"
+
+deriving instance Eq (BaseField curve) => Eq (PointCompressed curve)
+
+instance (Arbitrary (Point curve), AdditiveGroup (BaseField curve), Ord (BaseField curve)
+        ) => Arbitrary (PointCompressed curve) where
+    arbitrary = compress <$> arbitrary
+
 compress
   :: ( AdditiveGroup (BaseField curve)
      , Ord (BaseField curve)
