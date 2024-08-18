@@ -14,3 +14,6 @@ cradle:
 
     - path: "./bench/BenchAC.hs"
       component: "zkfold-base:bench:arithmetic-circuit"
+    
+    - path: "./bench/BenchDiv.hs"
+      component: "zkfold-base:bench:division"

@@ -17,15 +17,12 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
-import           ZkFold.Prelude                             (take)
-
-log2 :: (Integral a, Integral b) => a -> b
-log2 = ceiling @Double . logBase 2 . fromIntegral
+import           ZkFold.Prelude                             (log2ceiling, take)
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
     where
-        omega = case rootOfUnity @a (log2 n) of
+        omega = case rootOfUnity @a (log2ceiling n) of
                   Just o -> o
                   _      -> error "impossible"
         hGroup = map (omega^) [0 .. n-!1]
@@ -191,24 +188,25 @@ instance Arbitrary (ScalarField c) => Arbitrary (PlonkInput c) where
         PlonkInput . fromList <$> arbitrary
 
 data PlonkProof c = PlonkProof {
-        cmA    :: Point c,
-        cmB    :: Point c,
-        cmC    :: Point c,
-        cmZ    :: Point c,
-        cmT1   :: Point c,
-        cmT2   :: Point c,
-        cmT3   :: Point c,
-        proof1 :: Point c,
-        proof2 :: Point c,
-        a_xi   :: ScalarField c,
-        b_xi   :: ScalarField c,
-        c_xi   :: ScalarField c,
-        s1_xi  :: ScalarField c,
-        s2_xi  :: ScalarField c,
-        z_xi   :: ScalarField c
+        cmA       :: Point c,
+        cmB       :: Point c,
+        cmC       :: Point c,
+        cmZ       :: Point c,
+        cmT1      :: Point c,
+        cmT2      :: Point c,
+        cmT3      :: Point c,
+        proof1    :: Point c,
+        proof2    :: Point c,
+        a_xi      :: ScalarField c,
+        b_xi      :: ScalarField c,
+        c_xi      :: ScalarField c,
+        s1_xi     :: ScalarField c,
+        s2_xi     :: ScalarField c,
+        z_xi      :: ScalarField c,
+        l1_xi_mul :: ScalarField c
     }
 instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (PlonkProof c) where
-    show (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi) =
+    show PlonkProof {..} =
         "Proof: "
         ++ show cmA ++ " "
         ++ show cmB ++ " "
@@ -225,4 +223,4 @@ instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (Pl
         ++ show s1_xi ++ " "
         ++ show s2_xi ++ " "
         ++ show z_xi
-
+        ++ show l1_xi_mul
