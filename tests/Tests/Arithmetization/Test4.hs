@@ -52,10 +52,9 @@ testOnlyOutputZKP x ps targetValue =
 
         (omega, k1, k2) = getParams 32
         witnessInputs = V.singleton targetValue
-        -- varF (NewVar ix) = ix + 1
-        -- varF (InVar ix)  = fromIntegral ix
-        -- indexOutputBool = V.singleton $ varF $ unPar1 $ acOutput ac
-        indexOutputBool = V.singleton (1 :: Natural)
+        indexOutputBool = V.singleton $ case unPar1 $ acOutput ac of
+          NewVar ix -> ix + 1
+          InVar _ -> 1
         plonk   = Plonk @32 omega k1 k2 indexOutputBool ac x
         setupP  = setupProve @(PlonkBS N) plonk
         setupV  = setupVerify @(PlonkBS N) plonk
