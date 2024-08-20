@@ -54,7 +54,7 @@ testOnlyOutputZKP x ps targetValue =
         witnessInputs = V.singleton targetValue
         indexOutputBool = V.singleton $ case unPar1 $ acOutput ac of
           NewVar ix -> ix + 1
-          InVar _ -> 1
+          InVar _   -> 1
         plonk   = Plonk @32 omega k1 k2 indexOutputBool ac x
         setupP  = setupProve @(PlonkBS N) plonk
         setupV  = setupVerify @(PlonkBS N) plonk

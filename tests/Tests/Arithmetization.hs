@@ -3,8 +3,8 @@
 
 module Tests.Arithmetization (specArithmetization) where
 
-import           Data.Functor.Rep                               (Representable (..))
-import           GHC.Generics                                   (Par1)
+import           Data.Functor.Rep                            (Representable (..))
+import           GHC.Generics                                (Par1)
 import           Prelude
 import           Test.Hspec
 import           Test.QuickCheck
@@ -13,10 +13,10 @@ import           Tests.Arithmetization.Test2                 (specArithmetizatio
 import           Tests.Arithmetization.Test3                 (specArithmetization3)
 import           Tests.Arithmetization.Test4                 (specArithmetization4)
 
-import           ZkFold.Base.Algebra.Basic.Class                (FromConstant, Scale, MultiplicativeMonoid)
-import           ZkFold.Base.Algebra.Basic.Field                (Zp)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant, MultiplicativeMonoid, Scale)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Data.Vector                        (Vector)
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
