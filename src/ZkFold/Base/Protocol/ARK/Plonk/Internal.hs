@@ -17,7 +17,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Base.Data.Vector                    (Vector)
-import           ZkFold.Prelude                             (take)
+import           ZkFold.Prelude                             (log2ceiling, take)
 
 log2 :: (Integral a, Integral b) => a -> b
 log2 = ceiling @Double . logBase 2 . fromIntegral

@@ -46,8 +46,8 @@ class Shrink a b where
 -- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 --
 toBits
-    :: forall i v a m
-    .  MonadBlueprint i v a m
+    :: forall v a m
+    .  MonadCircuit v a m
     => [v]
     -> Natural
     -> Natural
@@ -68,7 +68,7 @@ fromBits
     :: forall a
     .  Natural
     -> Natural
-    -> (forall i v m. MonadBlueprint i v a m => [v] -> m [v])
+    -> (forall v m. MonadCircuit v a m => [v] -> m [v])
 fromBits hiBits loBits bits = do
     let (bitsHighNew, bitsLowNew) = splitAt (Haskell.fromIntegral hiBits) bits
     let lowVarsNew = chunksOf (Haskell.fromIntegral loBits) bitsLowNew
