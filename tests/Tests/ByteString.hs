@@ -119,7 +119,6 @@ specByteString'
     .  PrimeField (Zp p)
     => KnownNat n
     => 1 <= n
-    => 2 <= n
     => 4 <= n
     => 8 <= n
     => 16 <= n
@@ -128,16 +127,11 @@ specByteString'
     => n <= n + 10
     => n <= n + 128
     => n <= n + n
-    => Mod n 1 ~ 0
-    => Mod n 2 ~ 0
-    => Mod n 4 ~ 0
-    => Mod n n ~ 0
     => Mod (3 * n) n ~ 0
     => (Div (3 * n) n) * n ~ 3 * n
     => (Div n n) * n ~ n
     => (Div n 4) * 4 ~ n
     => (Div n 2) * 2 ~ n
-    => KnownNat (3 * n)
     => KnownNat (n + 1)
     => KnownNat (n + 10)
     => KnownNat (n + 128)
