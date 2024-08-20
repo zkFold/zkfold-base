@@ -32,9 +32,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                             (length, log2ceiling, (!))
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (..), ArithmeticCircuitTest (..),
-                                                             witnessGenerator)
+import           ZkFold.Prelude                             (log2ceiling)
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (..), ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
 
 {-
@@ -64,15 +63,15 @@ instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (Scalar
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
 
 instance forall n l c1 c2 t . (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
-        Witness (Plonk n l c1 c2 t) ~ (PlonkWitnessInput c1, PlonkProverSecret c1)) => Arbitrary (NonInteractiveProofTestData (Plonk n l c1 c2 t)) where
+        Witness (Plonk n l c1 c2 t) ~ (PlonkWitnessInput l c1, PlonkProverSecret c1)) => Arbitrary (NonInteractiveProofTestData (Plonk n l c1 c2 t)) where
     arbitrary = do
-        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) Par1)
-        let inputLen = length . acInput $ ac
+        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector l) Par1)
+        let inputLen = value @l
         vecPubInp <- genSubset (value @l) inputLen
         let (omega, k1, k2) = getParams $ value @n
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
-        return $ TestData pl (PlonkWitnessInput (witnessGenerator ac wi), secret)
+        return $ TestData pl (PlonkWitnessInput wi, secret)
 
 plonkPermutation :: forall n l c1 c2 t .
     (KnownNat n, FiniteField (ScalarField c1)) => Plonk n l c1 c2 t -> PlonkRelation n l (ScalarField c1) -> PlonkPermutation n c1
