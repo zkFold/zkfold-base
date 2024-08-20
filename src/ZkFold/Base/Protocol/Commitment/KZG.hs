@@ -23,14 +23,12 @@ import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 
 -- | `d` is the degree of polynomials in the protocol
-data KZG c1 c2 (d :: Natural) core =
-    CoreFunction c1 core =>
-    KZG (ScalarField c1)
-instance Show (ScalarField c1) => Show (KZG c1 c2 d core) where
+newtype KZG c1 c2 (d :: Natural) = KZG (ScalarField c1)
+instance Show (ScalarField c1) => Show (KZG c1 c2 d) where
     show (KZG x) = "KZG " <> show x
-instance Eq (ScalarField c1) => Eq (KZG c1 c2 d core) where
+instance Eq (ScalarField c1) => Eq (KZG c1 c2 d) where
     KZG x == KZG y = x == y
-instance (Arbitrary (ScalarField c1), CoreFunction c1 core) => Arbitrary (KZG c1 c2 d core) where
+instance Arbitrary (ScalarField c1) => Arbitrary (KZG c1 c2 d) where
     arbitrary = KZG <$> arbitrary
 
 newtype WitnessKZG c1 c2 d = WitnessKZG { runWitness :: Map (ScalarField c1) (V.Vector (PolyVec (ScalarField c1) d)) }
@@ -42,13 +40,13 @@ instance (EllipticCurve c1, f ~ ScalarField c1, KnownNat d, Ring f, Arbitrary f,
         m <- chooseInt (1, 5)
         WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> (V.fromList <$> replicateM m arbitrary))
 
-instance (KZG c1 c2 d ~ kzg, NonInteractiveProof kzg, Arbitrary kzg, Arbitrary (Witness kzg)) =>
-    Arbitrary (NonInteractiveProofTestData (KZG c1 c2 d)) where
+instance (KZG c1 c2 d ~ kzg, NonInteractiveProof kzg core, Arbitrary kzg, Arbitrary (Witness kzg)) =>
+    Arbitrary (NonInteractiveProofTestData (KZG c1 c2 d) core) where
     arbitrary = TestData <$> arbitrary <*> arbitrary
 
 -- TODO (Issue #18): check list lengths
 instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
-    ( KZG c1 c2 d core ~ kzg
+    ( KZG c1 c2 d ~ kzg
     , ScalarField c1 ~ f
     , Point c1 ~ g1
     , KnownNat d
@@ -59,13 +57,13 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
     , Binary (Point c1)
     , Pairing c1 c2
     , CoreFunction c1 core
-    ) => NonInteractiveProof (KZG c1 c2 d core) where
-    type Transcript (KZG c1 c2 d core)  = ByteString
-    type SetupProve (KZG c1 c2 d core)  = V.Vector (Point c1)
-    type SetupVerify (KZG c1 c2 d core) = (V.Vector (Point c1), Point c2, Point c2)
-    type Witness (KZG c1 c2 d core)     = WitnessKZG c1 c2 d
-    type Input (KZG c1 c2 d core)       = Map (ScalarField c1) (V.Vector (Point c1), V.Vector (ScalarField c1))
-    type Proof (KZG c1 c2 d core)       = Map (ScalarField c1) (Point c1)
+    ) => NonInteractiveProof (KZG c1 c2 d) core where
+    type Transcript (KZG c1 c2 d)  = ByteString
+    type SetupProve (KZG c1 c2 d)  = V.Vector (Point c1)
+    type SetupVerify (KZG c1 c2 d) = (V.Vector (Point c1), Point c2, Point c2)
+    type Witness (KZG c1 c2 d)     = WitnessKZG c1 c2 d
+    type Input (KZG c1 c2 d)       = Map (ScalarField c1) (V.Vector (Point c1), V.Vector (ScalarField c1))
+    type Proof (KZG c1 c2 d)       = Map (ScalarField c1) (Point c1)
 
     setupProve :: kzg -> SetupProve kzg
     setupProve (KZG x) =
@@ -91,7 +89,7 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
                      -> (Transcript kzg, (Input kzg, Proof kzg))
             proveOne (ts, (iMap, pMap)) (z, fs) = (ts'', (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
-                    com = com' @c1 @core
+                    com = msm @c1 @core
                     cms  = fmap (com gs) fs
                     fzs  = fmap (`evalPolyVec` z) fs
 
@@ -126,7 +124,7 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
                     gamma = V.fromList gamma'
                     (r, ts'')    = if ts == empty then (one, ts') else challenge ts'
 
-                    com = com' @c1 @core
+                    com = msm @c1 @core
 
                     v0' = r `mul` sum (V.zipWith mul gamma cms)
                         - r `mul` (gs `com` toPolyVec @(ScalarField c1) @d [sum $ V.zipWith (*) gamma fzs])
@@ -137,12 +135,3 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
 
 provePolyVecEval :: forall size f . (KnownNat size, FiniteField f, Eq f) => PolyVec f size -> f -> PolyVec f size
 provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) `polyVecDiv` toPolyVec [negate z, one]
-
-class (EllipticCurve curve) => CoreFunction curve core where
-    com' :: (f ~ ScalarField curve) => V.Vector (Point curve) -> PolyVec f size -> Point curve
-
-
-data HaskellCore
-
-instance (EllipticCurve curve, f ~ ScalarField curve) => CoreFunction curve HaskellCore where
-    com' gs f = sum $ V.zipWith mul (fromPolyVec f) gs

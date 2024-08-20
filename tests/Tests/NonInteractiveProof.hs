@@ -11,30 +11,30 @@ import           Tests.NonInteractiveProof.Plonk             (PlonkBS, specPlonk
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..),
+import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..),
                                                               NonInteractiveProofTestData (..))
 
-propNonInteractiveProof :: forall a .
-    NonInteractiveProof a =>
-    NonInteractiveProofTestData a -> Bool
+propNonInteractiveProof :: forall a core .
+    NonInteractiveProof a core =>
+    NonInteractiveProofTestData a core -> Bool
 propNonInteractiveProof (TestData a w) =
-    let sp = setupProve a
-        sv = setupVerify a
-        (i, p) = prove @a sp w
-    in verify @a sv i p
+    let sp = setupProve @a @core a
+        sv = setupVerify @a @core a
+        (i, p) = prove @a @core sp w
+    in verify @a @core sv i p
 
-specNonInteractiveProof' :: forall a . (Typeable a, NonInteractiveProof a,
+specNonInteractiveProof' :: forall a core . (Typeable a, NonInteractiveProof a core,
     Show a, Show (Input a), Show (Witness a),
-    Arbitrary (NonInteractiveProofTestData a)) => IO ()
+    Arbitrary (NonInteractiveProofTestData a core)) => IO ()
 specNonInteractiveProof' = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
             describe "All correct proofs" $ do
-                it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @a
+                it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @a @core
 
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
-    specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32 HaskellCore)
+    specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
 
     specPlonk
-    specNonInteractiveProof' @(PlonkBS 2)
+    specNonInteractiveProof' @(PlonkBS 2) @HaskellCore
