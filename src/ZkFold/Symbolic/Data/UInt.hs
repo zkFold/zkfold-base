@@ -282,8 +282,7 @@ instance (Arithmetic a, KnownNat n, KnownRegisterSize r, KnownNat (NumberOfRegis
 
     min x y = bool @(Bool (ArithmeticCircuit a i)) x y $ x > y
 
-
-instance (Arithmetic a, KnownNat n, KnownRegisterSize r, Haskell.Ord (Rep i), Representable i) => AdditiveSemigroup (UInt n r (ArithmeticCircuit a i)) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt x + UInt y = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: MonadCircuit v a m => m [v]
@@ -383,7 +382,7 @@ instance
                     splitExpansion (registerSize @a @n @r) 1 r
 
 
-instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs, Haskell.Ord (Rep i), Representable i) => MultiplicativeSemigroup (UInt n rs (ArithmeticCircuit a i)) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize rs, r ~ NumberOfRegisters a n rs) => MultiplicativeSemigroup (UInt n rs c) where
     UInt x * UInt y = UInt (circuitF $ V.unsafeToVector <$> solve)
         where
             solve :: MonadCircuit v a m => m [v]
