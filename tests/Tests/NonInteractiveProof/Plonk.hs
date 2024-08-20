@@ -14,7 +14,6 @@ import           Prelude                                     hiding (Fractional 
                                                               take)
 import           Test.Hspec
 import           Test.QuickCheck
-import           Tests.NonInteractiveProof.Internal          (NonInteractiveProofTestData (..))
 
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), AdditiveSemigroup (..), FiniteField,
                                                               MultiplicativeSemigroup (..), negate, zero, (-!))
@@ -27,8 +26,8 @@ import           ZkFold.Base.Data.Vector                     (fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation     (PlonkRelation (..), toPlonkRelation)
-import           ZkFold.Base.Protocol.Commitment.KZG         (HaskellCore)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
+import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..),
+                                                              NonInteractiveProofTestData (..))
 
 type PlonkPolyLengthBS = 32
 type PlonkBS n = Plonk PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString HaskellCore

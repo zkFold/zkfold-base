@@ -43,3 +43,4 @@ instance forall n . (KnownNat n) => Arbitrary (NonInteractiveProofTestData (Plon
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
         return $ TestData pl (PlonkWitnessInput $ witnessGenerator ac wi, secret)
+

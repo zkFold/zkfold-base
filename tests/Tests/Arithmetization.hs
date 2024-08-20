@@ -3,21 +3,20 @@
 
 module Tests.Arithmetization (specArithmetization) where
 
-import           GHC.Generics                                   (Par1)
+import           GHC.Generics                                (Par1)
 import           Prelude
 import           Test.Hspec
 import           Test.QuickCheck
-import           Tests.Arithmetization.Test1                    (specArithmetization1)
-import           Tests.Arithmetization.Test2                    (specArithmetization2)
-import           Tests.Arithmetization.Test3                    (specArithmetization3)
-import           Tests.Arithmetization.Test4                    (specArithmetization4)
+import           Tests.Arithmetization.Test1                 (specArithmetization1)
+import           Tests.Arithmetization.Test2                 (specArithmetization2)
+import           Tests.Arithmetization.Test3                 (specArithmetization3)
+import           Tests.Arithmetization.Test4                 (specArithmetization4)
 
-import           ZkFold.Base.Algebra.Basic.Class                (FromConstant, MultiplicativeMonoid)
-import           ZkFold.Base.Algebra.Basic.Field                (Zp)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant, MultiplicativeMonoid)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (ArithmeticCircuitTest (..))
-import           ZkFold.Symbolic.MonadCircuit                   (Arithmetic)
+import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 propCircuitInvariance :: (MultiplicativeMonoid a, Eq a) => ArithmeticCircuitTest a Par1 -> Bool
 propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =

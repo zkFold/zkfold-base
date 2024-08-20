@@ -133,17 +133,17 @@ ofBytes
   . foldl' (\n w8 -> n * 256 + fromIntegral w8) 0
 
 instance Binary (Point BLS12_381_G1) where
-    put Inf         = foldMap putWord8 (bit 1 : replicate 95 0)
+    put Inf         = foldMap putWord8 (bitReverse8 (bit 1) : replicate 95 0)
     put (Point x y) = foldMap putWord8 (bytesOf 48 x <> bytesOf 48 y)
     get = do
-        byte <- getWord8
+        byte <- bitReverse8 <$> getWord8
         let compressed = testBit byte 0
             infinite = testBit byte 1
         if infinite then do
             skip (if compressed then 47 else 95)
             return Inf
         else do
-            let byteXhead = clearBit (clearBit (clearBit byte 0) 1) 2
+            let byteXhead = bitReverse8 $ clearBit (clearBit (clearBit byte 0) 1) 2
             bytesXtail <- replicateM 47 getWord8
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
@@ -155,22 +155,21 @@ instance Binary (Point BLS12_381_G1) where
 
 instance Binary (PointCompressed BLS12_381_G1) where
     put InfCompressed            =
-        foldMap putWord8 ((bit 0 .|. bit 1) : replicate 47 0)
+        foldMap putWord8 (bitReverse8 (bit 0 .|. bit 1) : replicate 47 0)
     put (PointCompressed x bigY) =
         let
-            flags = if bigY then bit 0 .|. bit 2 else bit 0
+            flags = bitReverse8 $ if bigY then bit 0 .|. bit 2 else bit 0
             bytes = bytesOf 48 x
-        in
-            foldMap putWord8 ((flags .|. head bytes) : tail bytes)
+        in foldMap putWord8 ((flags .|. head bytes) : tail bytes)
     get = do
-        byte <- getWord8
+        byte <- bitReverse8 <$> getWord8
         let compressed = testBit byte 0
             infinite = testBit byte 1
         if infinite then do
             skip (if compressed then 47 else 95)
             return InfCompressed
         else do
-            let byteXhead = clearBit (clearBit (clearBit byte 0) 1) 2
+            let byteXhead = bitReverse8 $ clearBit (clearBit (clearBit byte 0) 1) 2
             bytesXtail <- replicateM 47 getWord8
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
@@ -183,7 +182,7 @@ instance Binary (PointCompressed BLS12_381_G1) where
 
 instance Binary (Point BLS12_381_G2) where
     put Inf                               =
-        foldMap putWord8 (bit 1 : replicate 191  0)
+        foldMap putWord8 (bitReverse8 (bit 1) : replicate 191  0)
     put (Point (Ext2 x0 x1) (Ext2 y0 y1)) =
         let
             bytes = bytesOf 48 x1
@@ -193,14 +192,14 @@ instance Binary (Point BLS12_381_G2) where
         in
             foldMap putWord8 bytes
     get = do
-        byte <- getWord8
+        byte <- bitReverse8 <$> getWord8
         let compressed = testBit byte 0
             infinite = testBit byte 1
         if infinite then do
             skip (if compressed then 95 else 191)
             return Inf
         else do
-            let byteX1head = clearBit (clearBit (clearBit byte 0) 1) 2
+            let byteX1head = bitReverse8 $ clearBit (clearBit (clearBit byte 0) 1) 2
             bytesX1tail <- replicateM 47 getWord8
             bytesX0 <- replicateM 48 getWord8
             let x1 = ofBytes (byteX1head:bytesX1tail)
@@ -215,22 +214,22 @@ instance Binary (Point BLS12_381_G2) where
                 return (Point (Ext2 x0 x1) (Ext2 y0 y1))
 
 instance Binary (PointCompressed BLS12_381_G2) where
-    put InfCompressed = foldMap putWord8 ((bit 0 .|. bit 1) : replicate 95 0)
+    put InfCompressed = foldMap putWord8 (bitReverse8 (bit 0 .|. bit 1) : replicate 95 0)
     put (PointCompressed (Ext2 x0 x1) bigY) =
         let
-            flags = if bigY then bit 0 .|. bit 2 else bit 0
+            flags = bitReverse8 $ if bigY then bit 0 .|. bit 2 else bit 0
             bytes = bytesOf 48 x1 <> bytesOf 48 x0
         in
             foldMap putWord8 ((flags .|. head bytes) : tail bytes)
     get = do
-        byte <- getWord8
+        byte <- bitReverse8 <$> getWord8
         let compressed = testBit byte 0
             infinite = testBit byte 1
         if infinite then do
             skip (if compressed then 95 else 191)
             return InfCompressed
         else do
-            let byteX1head = clearBit (clearBit (clearBit byte 0) 1) 2
+            let byteX1head = bitReverse8 $ clearBit (clearBit (clearBit byte 0) 1) 2
             bytesX1tail <- replicateM 47 getWord8
             bytesX0 <- replicateM 48 getWord8
             let x1 = ofBytes (byteX1head:bytesX1tail)
