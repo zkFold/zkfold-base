@@ -8,6 +8,9 @@ import           GHC.Num              (Natural, integerToNatural)
 import           Prelude              hiding (drop, lookup, readFile, replicate, take, writeFile, (!!))
 import           Test.QuickCheck      (Gen, chooseInteger)
 
+log2ceiling :: (Integral a, Integral b) => a -> b
+log2ceiling = ceiling @Double . logBase 2 . fromIntegral
+
 length :: Foldable t => t a -> Natural
 length = foldl' (\c _ -> c + 1) 0
 

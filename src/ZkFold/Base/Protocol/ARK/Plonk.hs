@@ -19,19 +19,22 @@ import           GHC.IsList                                 (IsList (..))
 import           Prelude                                    hiding (Num (..), div, drop, length, replicate, sum, take,
                                                              (!!), (/), (^))
 import qualified Prelude                                    as P hiding (length)
-import           Test.QuickCheck                            (Arbitrary (..))
+import           Test.QuickCheck                            (Arbitrary (..), Gen)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations     (fromPermutation)
-import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Pairing (..), Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Pairing (..), Point, PointCompressed,
+                                                             compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Base.Data.Vector                    (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
+import           ZkFold.Prelude                             (length, log2ceiling, (!))
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (..), ArithmeticCircuitTest (..),
+                                                             witnessGenerator)
 import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
 
 {-
@@ -59,6 +62,17 @@ instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (Scalar
         vecPubInp <- genSubset (value @l) fullInp
         let (omega, k1, k2) = getParams (value @n)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+
+instance forall n l c1 c2 t . (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
+        Witness (Plonk n l c1 c2 t) ~ (PlonkWitnessInput c1, PlonkProverSecret c1)) => Arbitrary (NonInteractiveProofTestData (Plonk n l c1 c2 t)) where
+    arbitrary = do
+        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) Par1)
+        let inputLen = length . acInput $ ac
+        vecPubInp <- genSubset (value @l) inputLen
+        let (omega, k1, k2) = getParams $ value @n
+        pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        secret <- arbitrary
+        return $ TestData pl (PlonkWitnessInput (witnessGenerator ac wi), secret)
 
 plonkPermutation :: forall n l c1 c2 t .
     (KnownNat n, FiniteField (ScalarField c1)) => Plonk n l c1 c2 t -> PlonkRelation n l (ScalarField c1) -> PlonkPermutation n c1
@@ -107,10 +121,11 @@ instance forall n l c1 c2 t plonk f g1.
         , KnownNat (PlonkPermutationSize n)
         , KnownNat (PlonkPolyExtendedLength n)
         , Arithmetic f
+        , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
         , ToTranscript t (ScalarField c1)
-        , ToTranscript t (Point c1)
+        , ToTranscript t (PointCompressed c1)
         , FromTranscript t (ScalarField c1)
         ) => NonInteractiveProof (Plonk n l c1 c2 t) where
     type Transcript (Plonk n l c1 c2 t)  = t
@@ -146,7 +161,7 @@ instance forall n l c1 c2 t plonk f g1.
             k1''    = k1
             k2''    = k2
             x2''    = x `mul` gen
-            pow''   = log2 $ value @n
+            pow''   = log2ceiling $ value @n
             n''     = fromIntegral $ value @n
 
             pr   = fromJust $ toPlonkRelation @n @l @f iPub ac
@@ -185,9 +200,9 @@ instance forall n l c1 c2 t plonk f g1.
             cmC = gs' `com` c
 
             (beta, ts) = challenge $ mempty
-                `transcript` cmA
-                `transcript` cmB
-                `transcript` cmC
+                `transcript` compress cmA
+                `transcript` compress cmB
+                `transcript` compress cmC
             (gamma, ts') = challenge ts
 
             omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega') omega'
@@ -200,7 +215,7 @@ instance forall n l c1 c2 t plonk f g1.
             zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
             cmZ = gs' `com` z
 
-            (alpha, ts'') = challenge $ ts' `transcript` cmZ :: (f, Transcript plonk)
+            (alpha, ts'') = challenge $ ts' `transcript` compress cmZ :: (f, Transcript plonk)
 
             t1  = a * b * qm + a * ql + b * qr + c * qo + pubPoly + qc
             t2  = (a + polyVecLinear gamma beta)
@@ -225,9 +240,9 @@ instance forall n l c1 c2 t plonk f g1.
             cmT3   = gs' `com` t_hi
 
             (xi, ts''') = challenge $ ts''
-                `transcript` cmT1
-                `transcript` cmT2
-                `transcript` cmT3
+                `transcript` compress cmT1
+                `transcript` compress cmT2
+                `transcript` compress cmT3
 
             a_xi  = evalPolyVec a xi
             b_xi  = evalPolyVec b xi
@@ -235,6 +250,7 @@ instance forall n l c1 c2 t plonk f g1.
             s1_xi = evalPolyVec sigma1 xi
             s2_xi = evalPolyVec sigma2 xi
             z_xi  = evalPolyVec z (xi * omega')
+            l1_xi_mul = one // (scale n one * (xi - omega'))
 
             (v, _) = challenge $ ts'''
                 `transcript` a_xi
@@ -284,22 +300,22 @@ instance forall n l c1 c2 t plonk f g1.
     verify
         (PlonkSetupParamsVerify {..}, PlonkCircuitCommitments {..})
         (PlonkInput wPub)
-        (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi) = p1 == p2
+        (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi _) = p1 == p2
         where
             n = value @n
 
             (beta, ts) = challenge $ mempty
-                `transcript` cmA
-                `transcript` cmB
-                `transcript` cmC :: (f, Transcript plonk)
+                `transcript` compress cmA
+                `transcript` compress cmB
+                `transcript` compress cmC :: (f, Transcript plonk)
             (gamma, ts') = challenge ts
 
-            (alpha, ts'') = challenge $ ts' `transcript` cmZ
+            (alpha, ts'') = challenge $ ts' `transcript` compress cmZ
 
             (xi, ts''') = challenge $ ts''
-                `transcript` cmT1
-                `transcript` cmT2
-                `transcript` cmT3
+                `transcript` compress cmT1
+                `transcript` compress cmT2
+                `transcript` compress cmT3
 
             (v, ts'''') = challenge $ ts'''
                 `transcript` a_xi
@@ -310,8 +326,8 @@ instance forall n l c1 c2 t plonk f g1.
                 `transcript` z_xi
 
             (u, _) = challenge $ ts''''
-                `transcript` proof1
-                `transcript` proof2
+                `transcript` compress proof1
+                `transcript` compress proof2
 
             zH_xi        = polyVecZero @f @n @(PlonkPolyExtendedLength n) `evalPolyVec` xi
             lagrange1_xi = polyVecLagrange @f @n @(PlonkPolyExtendedLength n) 1 omega'' `evalPolyVec` xi
