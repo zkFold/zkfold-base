@@ -47,7 +47,7 @@ import           ZkFold.Symbolic.Data.Bool        (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class       (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned, ClosedPoly)
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
@@ -187,35 +187,22 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                 ys <-  for xs $ \i -> newAssigned (\p -> one - p i)
                 return $ V.unsafeToVector ys
 
-    ByteString l || (ByteString r) =  ByteString $ fromCircuit2F l r solve
+    l || r =  bitwiseOperation l r cons 
         where
-            solve :: MonadCircuit i (BaseField c) m => Vector n i -> Vector n i -> m (Vector n i)
-            solve lv rv = do
-                let varsLeft = lv
-                    varsRight = rv
-                V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
-
             cons i j x =
                         let xi = x i
                             xj = x j
                         in xi + xj - xi * xj
 
-    ByteString l && (ByteString r) = ByteString $ fromCircuit2F l r solve
+    l && r = bitwiseOperation l r cons 
         where
-            solve :: MonadCircuit i (BaseField c) m => Vector n i -> Vector n i -> m (Vector n i)
-            solve lv rv = do
-                let varsLeft = lv
-                    varsRight = rv
-                V.zipWithM  (\i j -> newAssigned (\x -> x i * x j)) varsLeft varsRight
+            cons i j x =
+                        let xi = x i
+                            xj = x j
+                        in xi * xj
 
-    xor (ByteString l) (ByteString r) = ByteString $ fromCircuit2F l r solve
+    xor l r = bitwiseOperation l r cons 
         where
-            solve :: MonadCircuit i (BaseField c) m => Vector n i -> Vector n i -> m (Vector n i)
-            solve lv rv = do
-                let varsLeft = lv
-                    varsRight = rv
-                V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
-
             cons i j x =
                         let xi = x i
                             xj = x j
@@ -332,20 +319,17 @@ toBase base b = let (d, m) = b `divMod` base in Just (m, d)
 -- | A generic bitwise operation on two ByteStrings.
 -- TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit to 0 or 1.
 --
--- bitwiseOperation
---     :: forall a n
---     .  Arithmetic a
---     => ByteString n (ArithmeticCircuit a)
---     -> ByteString n (ArithmeticCircuit a)
---     -> (forall i. i -> i -> ClosedPoly i a)
---     -> ByteString n (ArithmeticCircuit a)
--- bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ circuitF solve
---   where
---     solve :: forall i m. MonadCircuit i a m => m (Vector n i)
---     solve = do
---         varsLeft  <- runCircuit bits1
---         varsRight <- runCircuit bits2
---         V.zipWithM applyBitwise varsLeft varsRight
-
---     applyBitwise :: forall i m . MonadCircuit i a m => i -> i -> m i
---     applyBitwise l r = newAssigned $ cons l r
+bitwiseOperation
+    :: forall c n
+    .  Symbolic c
+    => ByteString n c
+    -> ByteString n c
+    -> (forall i. i -> i -> ClosedPoly i (BaseField c))
+    -> ByteString n c
+bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ fromCircuit2F bits1 bits2 solve
+    where
+        solve :: MonadCircuit i (BaseField c) m => Vector n i -> Vector n i -> m (Vector n i)
+        solve lv rv = do
+            let varsLeft = lv
+                varsRight = rv
+            V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
