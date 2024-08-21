@@ -47,7 +47,7 @@ import           ZkFold.Symbolic.Data.Bool        (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class       (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned, ClosedPoly)
+import           ZkFold.Symbolic.MonadCircuit     (ClosedPoly, MonadCircuit, newAssigned)
 
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
@@ -187,21 +187,21 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                 ys <-  for xs $ \i -> newAssigned (\p -> one - p i)
                 return $ V.unsafeToVector ys
 
-    l || r =  bitwiseOperation l r cons 
+    l || r =  bitwiseOperation l r cons
         where
             cons i j x =
                         let xi = x i
                             xj = x j
                         in xi + xj - xi * xj
 
-    l && r = bitwiseOperation l r cons 
+    l && r = bitwiseOperation l r cons
         where
             cons i j x =
                         let xi = x i
                             xj = x j
                         in xi * xj
 
-    xor l r = bitwiseOperation l r cons 
+    xor l r = bitwiseOperation l r cons
         where
             cons i j x =
                         let xi = x i
