@@ -99,7 +99,7 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 .
             let (e0, e1) = snd $ foldl (prepareVerifyOne (input, proof)) (empty, (inf, inf)) $ keys input
                 p1 = pairing e0 h0
                 p2 = pairing e1 h1
-            in p1 == p2
+            in p1 /= p2
         where
             prepareVerifyOne
                 :: (Map f (V.Vector g1, V.Vector f), Map f g1)
