@@ -7,27 +7,27 @@ import           Prelude
 
 import           ZkFold.Base.Protocol.NonInteractiveProof.Internal
 
-class (NonInteractiveProof a, NonInteractiveProof b) => CompatibleNonInteractiveProofs a b where
+class (NonInteractiveProof a core, NonInteractiveProof b core) => CompatibleNonInteractiveProofs a b core where
     nipSetupTransform    :: SetupVerify a -> SetupVerify b
     nipInputTransform    :: Input a -> Input b
     nipProofTransform    :: Proof a -> Proof b
 
-nipCompatibility :: forall a b . CompatibleNonInteractiveProofs a b
+nipCompatibility :: forall a b core . CompatibleNonInteractiveProofs a b core
     => a -> Witness a -> Bool
 nipCompatibility a w =
-    let (i, p) = prove @a (setupProve a) w
-        s'     = nipSetupTransform @a @b (setupVerify a)
-        i'     = nipInputTransform @a @b i
-        p'     = nipProofTransform @a @b p
-    in verify @b s' i' p'
+    let (i, p) = prove @a @core (setupProve @a @core a) w
+        s'     = nipSetupTransform @a @b @core (setupVerify @a @core a)
+        i'     = nipInputTransform @a @b @core i
+        p'     = nipProofTransform @a @b @core p
+    in verify @b @core s' i' p'
 
-instance NonInteractiveProof a => CompatibleNonInteractiveProofs a a where
+instance NonInteractiveProof a core => CompatibleNonInteractiveProofs a a core where
     nipSetupTransform    = id
     nipInputTransform    = id
     nipProofTransform    = id
 
-data NonInteractiveProofTestData a = TestData a (Witness a)
+data NonInteractiveProofTestData a core = (NonInteractiveProof a core) => TestData a (Witness a)
 
 instance (Show a, Show (Input a), Show (Witness a)) =>
-    Show (NonInteractiveProofTestData a) where
+    Show (NonInteractiveProofTestData a core) where
     show (TestData a w) = "TestData: \n" ++ show a ++ "\n" ++ show w

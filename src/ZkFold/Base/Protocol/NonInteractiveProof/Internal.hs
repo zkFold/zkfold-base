@@ -1,14 +1,19 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof.Internal where
 
-import           Crypto.Hash.BLAKE2.BLAKE2b  (hash)
-import           Data.ByteString             (ByteString, cons)
-import           Data.Maybe                  (fromJust)
-import           Numeric.Natural             (Natural)
-import           Prelude
+import           Crypto.Hash.BLAKE2.BLAKE2b                 (hash)
+import           Data.ByteString                            (ByteString, cons)
+import           Data.Maybe                                 (fromJust)
+import qualified Data.Vector                                as V
+import           Numeric.Natural                            (Natural)
+import           Prelude                                    hiding (sum)
 
+import           ZkFold.Base.Algebra.Basic.Class            (sum)
+import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, fromPolyVec)
 import           ZkFold.Base.Data.ByteString
 
 class Monoid t => ToTranscript t a where
@@ -41,7 +46,7 @@ challenges ts0 n = go ts0 n []
         let (c, ts') = challenge ts
         in go ts' (k - 1) (c : acc)
 
-class NonInteractiveProof a where
+class NonInteractiveProof a core where
     type Transcript a
 
     type SetupProve a
@@ -61,3 +66,11 @@ class NonInteractiveProof a where
     prove :: SetupProve a -> Witness a -> (Input a, Proof a)
 
     verify :: SetupVerify a -> Input a -> Proof a -> Bool
+
+class (EllipticCurve curve) => CoreFunction curve core where
+    msm :: (f ~ ScalarField curve) => V.Vector (Point curve) -> PolyVec f size -> Point curve
+
+data HaskellCore
+
+instance (EllipticCurve curve, f ~ ScalarField curve) => CoreFunction curve HaskellCore where
+    msm gs f = sum $ V.zipWith mul (fromPolyVec f) gs
