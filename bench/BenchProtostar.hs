@@ -1,0 +1,80 @@
+{-# LANGUAGE AllowAmbiguousTypes          #-}
+{-# LANGUAGE DeriveAnyClass               #-}
+{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables          #-}
+{-# LANGUAGE TypeApplications             #-}
+{-# LANGUAGE TypeOperators                #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-}
+
+module Main where
+
+import Control.Monad (replicateM)
+import           Control.DeepSeq                             (force)
+import           Control.Exception                           (evaluate)
+import           Data.Time.Clock                             (getCurrentTime)
+import           Prelude                                     hiding (divMod, not, sum, (&&), (*), (+), (-), (/), (^),
+                                                              (||))
+import           System.Random                               (randomIO)
+import           Test.Tasty.Bench
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Protocol.ARK.Protostar
+import           ZkFold.Base.Data.Vector (Vector)
+import qualified ZkFold.Base.Data.Vector as V
+import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.FieldElement                    (FieldElement)
+
+
+fact 
+    :: forall a n c 
+    .  Arithmetic a
+    => KnownNat n
+    => MultiplicativeSemigroup (FieldElement c)
+    => SymbolicData (ArithmeticCircuit a) (FieldElement c)
+    => TypeSize (ArithmeticCircuit a) (FieldElement c) ~ 1
+    => Support (ArithmeticCircuit a) (FieldElement c) ~ ()
+    => Vector n (FieldElement c) -> Vector n (FieldElement c)
+fact v = V.generate (\i -> if i == 0 then v V.!! 0 * v V.!! 1 else v V.!! 0)
+
+-- | Generate random addition circuit of given size
+--
+divisionCircuit
+    :: forall n k p 
+    .  KnownNat n
+    => KnownNat k
+    => PrimeField (Zp p)
+    => IO (Natural, (Vector n (Zp p)))
+divisionCircuit = do
+    v <- V.unsafeToVector <$> replicateM (fromIntegral $ value @k) (toZp <$> randomIO)
+
+    evaluate . force $ (value @k, v) 
+
+benchOps
+    :: forall n k p
+    .  KnownNat n
+    => KnownNat k
+    => PrimeField (Zp p)
+    => Benchmark
+benchOps = env (divisionCircuit @n @k) $ \ ~inp ->
+    bench ("Folding a function of size " <> show (value @n) <> " arguments with " <> show (value @k) <> " iterations") $ 
+        nf (\(iter, inp) -> fold (fact @(Zp p) @n @(ArithmeticCircuit (Zp p))) iter inp :: FoldResult n (Zp p)) inp
+
+foldFact :: Natural -> Vector 2 Natural -> FoldResult 2 (Zp BLS12_381_Scalar)
+foldFact iter inp = fold (fact @(Zp BLS12_381_Scalar) @2 @(ArithmeticCircuit (Zp BLS12_381_Scalar))) iter (toZp . fromIntegral <$> inp) 
+
+main :: IO ()
+main = do
+    print $ foldFact 20 (V.unsafeToVector [1, 2])
+    defaultMain
+      [ benchOps @2 @32  @BLS12_381_Scalar 
+      , benchOps @2 @64  @BLS12_381_Scalar 
+      , benchOps @2 @128 @BLS12_381_Scalar 
+      ]
+

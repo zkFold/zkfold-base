@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -11,11 +12,12 @@ import           Data.List                                            (foldl')
 import           Data.Map.Strict                                      (Map, (!))
 import qualified Data.Map.Strict                                      as M
 import           GHC.Generics                                         (Generic)
-import           Prelude                                              (and, otherwise, type (~), ($), (<$>), (<=), (==))
+import           Prelude                                              (and, otherwise, type (~), ($), (<$>), (<=), (==), (<>))
 import qualified Prelude                                              as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate         as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import qualified ZkFold.Base.Data.Vector                              as V
 import           ZkFold.Base.Data.Vector                              (Vector)
@@ -68,7 +70,7 @@ instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCirc
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
-    prover rc _ i _ = oracle $ eval (circuit rc) (M.fromList $ P.zip [1..] (V.fromVector i))
+    prover rc@(RecursiveCircuit _ ac) _ i _ = oracle $ witnessGenerator ac (M.fromList $ P.zip [1..] (V.fromVector i))
 
     -- We can modify the polynomial system from the circuit.
     -- The result is a system of @n+1@-variate polynomials
@@ -105,9 +107,13 @@ instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCirc
             remapPoly :: Poly a Natural Natural -> Poly a Natural Natural
             remapPoly (P monos) = P (remapMono <$> monos)
 
-    -- The transcript is only one prover message since this is a one-round protocol
+    -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --
-    verifier rc i pm _ = SPS.prover @a rc M.empty i [] == P.head pm
+    verifier rc i pm ts = P.fmap (PM.evalPolynomial PM.evalMonomial (varMap !)) amap == zeros
+        where
+            amap = SPS.algebraicMap rc i pm ts
+            zeros = P.const zero <$> amap
+            varMap = M.fromList $ P.zip [0..] (V.fromVector i <> pm)
 
 data FoldResult n a
     = FoldResult
@@ -115,7 +121,7 @@ data FoldResult n a
     , lastAccumulator :: Accumulator (Vector n a) a a a
     , verifierOutput  :: P.Bool
     , deciderOutput   :: P.Bool
-    }
+    } deriving (P.Show, Generic, NFData)
 
 type FS_CM n a = FiatShamir a (CommitOpen a a (RecursiveCircuit n a))
 
@@ -130,6 +136,7 @@ transform rc v = FiatShamir (CommitOpen oracle rc) v
 fold
     :: forall a c n
     .  Arithmetic a
+    => P.Show a
     => Scale a a
     => RandomOracle a a
     => Commit a [a] a
@@ -141,45 +148,51 @@ fold
     -> Natural                             -- ^ The number of iterations to perform
     -> SPS.Input a (RecursiveCircuit n a)  -- ^ Input for the first iteration
     -> FoldResult n a
-fold f iter i = foldN rc i [] initialAccumulator
+fold f iter i = foldN ck rc i [] initialAccumulator
     where
         rc :: RecursiveCircuit n a
         rc = RecursiveCircuit iter (compile @a f)
 
         m = oracle $ executeAc rc i
 
+        ck = oracle i
+
         initialAccumulator :: Accumulator (Vector n a) a a a
-        initialAccumulator = Accumulator (AccumulatorInstance i [commit ((\(FiatShamir _ inp) -> inp) $ transform rc i) [m]] [] zero one) [m]
+        initialAccumulator = Accumulator (AccumulatorInstance i [commit ck [m]] [] zero one) [m]
 
 
 instanceProof
     :: forall n a
     .  RandomOracle (Vector n a) a
-    => RandomOracle [a] a
+    => RandomOracle a a
+    => P.Show a
     => Ring a
-    => RecursiveCircuit n a
+    => a
+    -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> InstanceProofPair (Vector n a) a a
-instanceProof rc i = InstanceProofPair i (NARKProof [commit ((\(FiatShamir _ inp) -> inp) $ transform rc i) [m]] [m])
+instanceProof ck rc i = InstanceProofPair i (NARKProof [commit ck [m]] [m])
     where
         m = oracle $ executeAc rc i
 
 foldN
     :: forall n a
     .  Arithmetic a
+    => P.Show a
     => KnownNat n
     => Scale a a
     => RandomOracle a a
     => Commit a [a] a
-    => RecursiveCircuit n a
+    => a
+    -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> [P.Bool]
     -> Accumulator (Vector n a) a a a
     -> FoldResult n a
-foldN rc i verifierResults acc
-  | iterations rc == 0 = FoldResult i acc (and verifierResults) (Acc.decider (transform rc i) acc)
-  | otherwise = let (output, newAcc, newVerifierResult) = foldStep rc i acc
-                 in foldN (rc {iterations = iterations rc -! 1}) output (newVerifierResult : verifierResults) newAcc
+foldN ck rc i verifierResults acc
+  | iterations rc == 0 = FoldResult i acc (and verifierResults) (Acc.decider (transform rc i) ck acc)
+  | otherwise = let (output, newAcc, newVerifierResult) = foldStep ck rc i acc
+                 in foldN ck (rc {iterations = iterations rc -! 1}) output (newVerifierResult : verifierResults) newAcc
 
 executeAc :: forall n a . RecursiveCircuit n a -> Vector n a -> Vector n a
 executeAc (RecursiveCircuit _ rc) i = eval rc (M.fromList $ P.zip [1..] (V.fromVector i))
@@ -187,20 +200,22 @@ executeAc (RecursiveCircuit _ rc) i = eval rc (M.fromList $ P.zip [1..] (V.fromV
 foldStep
     :: forall n a
     .  Arithmetic a
+    => P.Show a
     => KnownNat n
     => Scale a a
     => RandomOracle a a
     => Commit a [a] a
-    => RecursiveCircuit n a
+    => a
+    -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> Accumulator (Vector n a) a a a
     -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a a a, P.Bool)
-foldStep rc i acc = (newInput, newAcc, verifierAccepts)
+foldStep ck rc i acc = (newInput, newAcc, verifierAccepts)
     where
         fs :: FS_CM n a
         fs = transform rc i
 
-        nark@(InstanceProofPair _ narkProof) = instanceProof rc i
-        (newAcc, accProof) = Acc.prover fs acc nark
+        nark@(InstanceProofPair _ narkProof) = instanceProof ck rc i
+        (newAcc, accProof) = Acc.prover fs ck acc nark
         verifierAccepts = Acc.verifier @_ @_ @_ @a @(FS_CM n a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
         newInput = executeAc rc i

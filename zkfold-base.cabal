@@ -2,6 +2,7 @@ cabal-version:      3.0
 
 name:               zkfold-base
 version:            0.1.0.0
+tested-with:        GHC ==9.6.4
 synopsis:           ZkFold Symbolic compiler and zero-knowledge proof protocols
 homepage:           https://zkfold.io/
 category:           Cryptography, DSL, Math, Symbolic Computation
@@ -367,3 +368,44 @@ benchmark compiler-benchmark
       tasty-golden,
       zkfold-base,
       zkfold-symbolic-examples
+      time,
+      vector,
+      zkfold-base 
+
+benchmark division 
+    import:           options
+    main-is:          BenchDiv.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:      
+      -rtsopts
+      -O3
+    build-depends: 
+      base, 
+      array,
+      containers,
+      deepseq,
+      random,
+      tasty-bench,
+      time,
+      vector,
+      zkfold-base 
+
+benchmark protostar 
+    import:           options
+    main-is:          BenchProtostar.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:      
+      -rtsopts
+      -O3
+    build-depends: 
+      base, 
+      array,
+      containers,
+      deepseq,
+      random,
+      tasty-bench,
+      time,
+      vector,
+      zkfold-base 

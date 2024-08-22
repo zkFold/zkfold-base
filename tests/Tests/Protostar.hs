@@ -39,7 +39,7 @@ instance
     ( KnownNat n
     , Arbitrary a
     , Symbolic c
-    , Bits (BaseField c) ~ [BaseField c]
+    , MultiplicativeSemigroup (FieldElement c) 
     ) => Arbitrary (RecursiveFunction n c a) where
     -- Given a column-vector v, generate two random matrices L and R and compute (Lv *_h Rv) where *_h is Hadamard product
     -- This will construct a reasonably complicated recursive function for testing purposes

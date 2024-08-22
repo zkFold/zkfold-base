@@ -1,8 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE TemplateHaskell     #-}
 
 module ZkFold.Base.Protocol.Protostar.Accumulator where
 
+import           Control.DeepSeq          (NFData (..))
 import           Control.Lens.Combinators (makeLenses)
 import           GHC.Generics
 import           Prelude                  hiding (length)
@@ -16,7 +18,7 @@ data AccumulatorInstance pi f c
         , _e  :: c     -- E ∈  C in the paper
         , _mu :: f     -- μ ∈  F in the paper
         }
-    deriving Generic
+    deriving (Show, Generic, NFData)
 
 makeLenses ''AccumulatorInstance
 
@@ -28,7 +30,7 @@ data Accumulator i f c m
         { _x :: AccumulatorInstance i f c
         , _w :: [m]
         }
-    deriving Generic
+    deriving (Show, Generic, NFData)
 
 makeLenses ''Accumulator
 
@@ -39,10 +41,10 @@ data NARKProof c m
         { narkCommits :: [c] -- Commits [C_i] ∈  C^k
         , narkWitness :: [m] -- prover messages in the special-sound protocol [m_i]
         }
-    deriving Generic
+    deriving (Show, Generic, NFData)
 
 data InstanceProofPair pi c m = InstanceProofPair pi (NARKProof c m)
-    deriving Generic
+    deriving (Show, Generic, NFData)
 
 {--
 toAccumulatorInstance :: (FiniteField f, AdditiveGroup c) => (f -> c -> f) -> NARKInstance f c -> AccumulatorInstance f c

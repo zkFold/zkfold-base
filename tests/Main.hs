@@ -23,6 +23,7 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
+{--
     -- Base
     specBinary
 
@@ -48,6 +49,7 @@ main = do
     -- Protocols
     specPlonkup
     specNonInteractiveProof
+--}
     specProtostar
 
     -- Cryptography

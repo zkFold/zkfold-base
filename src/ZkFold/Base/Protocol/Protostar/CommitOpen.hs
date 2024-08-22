@@ -39,7 +39,7 @@ instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen 
 
       outputLength (CommitOpen _ a) = outputLength @f a
 
-      rounds a = rounds @f a + 1
+      rounds (CommitOpen _ a) = rounds @f a + 1
 
       prover (CommitOpen cm a) (w, ms) i ts
             | length ts /= length ms  = error "Invalid transcript length"

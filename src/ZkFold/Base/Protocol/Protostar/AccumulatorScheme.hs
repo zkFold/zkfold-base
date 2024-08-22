@@ -25,10 +25,16 @@ import           ZkFold.Base.Protocol.Protostar.SpecialSound (Input, LMap, Speci
 import           ZkFold.Prelude                                  (length, (!!))
 
 
+import Debug.Trace
+
+traceP :: P.Show a => P.String -> a -> a
+traceP s a = trace (s P.<> P.show a) a
+
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
 class AccumulatorScheme i f c m a where
-  prover   :: a                          -- input commitment key
+  prover   :: a                          
+           -> f                          -- Commitment key ck
            -> Accumulator i f c m        -- accumulator
            -> InstanceProofPair i c m    -- instance-proof pair (pi, π)
            -> (Accumulator i f c m, [c]) -- updated accumulator and accumulation proof
@@ -40,13 +46,16 @@ class AccumulatorScheme i f c m a where
            -> [c]                        -- accumulation proof E_j
            -> P.Bool
 
-  decider  :: a                     -- Commitment key ck
+  decider  :: a                      
+           -> f                     -- Commitment key ck
            -> Accumulator i f c m   -- accumulator
            -> P.Bool
 
 instance
     ( P.Eq c
     , P.Eq i
+    , P.Show f
+    , P.Show i
     , f ~ c   -- These two constraints seem the only way to make the algorithm work. The algorithm performs various algebraic operations on combinations of them.
     , f ~ m   -- If they are actually not the same, replace them with hashes.
     , AdditiveGroup c
@@ -63,9 +72,22 @@ instance
     , RandomOracle (AccumulatorInstance i f c, i, [c], [c]) f  -- Random oracle ρ_acc
     , Commit c [c] c
     ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen f c a)) where
-  prover (FiatShamir sps i) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
-      (Accumulator (AccumulatorInstance (fromList pi'') ci'' ri'' eCapital' mu') mi'', eCapital_j)
+  prover (FiatShamir sps i) ck acc ip@(InstanceProofPair pubi (NARKProof pi_x pi_w)) = -- trace traceStr $ -- P.undefined 
+        (Accumulator (AccumulatorInstance (fromList pi'') ci'' ri'' eCapital' mu') mi'', eCapital_j)
       where
+          traceStr :: P.String
+          traceStr = P.unlines
+            [ "Acc " P.<> P.show acc
+            , "Instance proof " P.<> P.show ip
+            , "r_i " P.<> P.show r_i
+            , "k " P.<> P.show k
+       --     , P.show $ PU.toPoly $ DV.fromList [(acc^.w) !! (2 -! l_in), pi_w !! (2 -! l_in)]
+       --     , P.show (ixToPoly 2)
+       --     , P.show (ixToPoly 2 * ixToPoly 2)
+       --     , "mappedVars " P.<> P.show mappedVars
+       --     , "e_uni " P.<> P.show e_uni
+       --     , "e_j " P.<> P.show e_j
+            ]
 
           -- Fig. 3, step 1
           r_i :: [f]
@@ -90,13 +112,15 @@ instance
           ixToPoly :: Natural -> PU.Poly f
           ixToPoly n
             | n < l_in      = PU.toPoly $ DV.fromList [(toList $ acc^.x^.pi) !! n, toList pubi !! n]        -- X * pi + pi'
-            | n <= k + l_in = PU.toPoly $ DV.fromList [(acc^.w) !! (n -! 1), pi_w !! (n -! 1)]              -- X * mi + mi'
-            | otherwise     = PU.toPoly $ DV.fromList [(acc^.x^.r) !! (n -! k -! 1), r_i !! (n -! k -! 1)]  -- X * ri + ri'
+            | n <= k + l_in = PU.toPoly $ DV.fromList [(acc^.w) !! (n -! l_in), pi_w !! (n -! l_in)]        -- X * mi + mi'
+            | otherwise     = PU.toPoly $ DV.fromList [(acc^.x^.r) !! (n -! k -! l_in -! 1), r_i !! (n -! k -! l_in -! 1)]  -- X * ri + ri'
 
           -- The @lxd@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
+          mappedVars = fmap (PM.evalPolynomial PM.evalMonomial ixToPoly) <$> f_sps
+
           e_uni :: [PU.Poly f]
-          e_uni = P.foldl (P.liftA2 (+)) (P.pure zero) $ V.mapWithIx (\j p -> ((xMu ^ (d -! j)) *) <$> p) $ fmap (PM.evalPolynomial PM.evalMonomial ixToPoly) <$> f_sps
+          e_uni = P.foldl (P.zipWith (+)) (P.repeat zero) $ V.mapWithIx (\j p -> ((xMu ^ (d -! j)) *) <$> p) $ mappedVars 
 
           e_all = (DV.toList . PU.fromPoly) <$> e_uni
 
@@ -104,7 +128,7 @@ instance
           e_j = P.tail e_all
 
           -- Fig. 3, step 3
-          eCapital_j = commit (oracle @_ @c i) <$> e_j
+          eCapital_j = commit ck <$> e_j
 
           -- Fig. 3, step 4
           alpha :: f
@@ -146,7 +170,8 @@ instance
           -- Fig 4, step 5
           eEq = acc'^.e == acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf)
 
-  decider (FiatShamir sps i) acc = commitsEq && eEq
+  --decider (FiatShamir sps i) ck acc = traceShow (commitsEq) $ commitsEq && eEq
+  decider (FiatShamir sps i) ck acc = commitsEq && eEq
       where
           d :: Natural
           d = outputLength @f sps
@@ -156,7 +181,7 @@ instance
 
 
           -- Fig. 5, step 1
-          commitsEq = P.and $ P.zipWith (\cl m -> commit (oracle @_ @c i) [m] == cl) (acc^.x^.c) (acc^.w)
+          commitsEq = P.and $ P.zipWith (\cl m -> commit ck [m] == cl) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           f_sps = mulDeg (acc^.x^.mu) d <$> algebraicMap @f sps (acc^.x^.pi) [Open $ acc^.w] (acc^.x^.r)
@@ -166,14 +191,14 @@ instance
 
           ixToVal :: Natural -> f
           ixToVal n
-            | n < l_in      = toList (acc^.x^.pi) !! n      -- pi
-            | n <= k + l_in = (acc^.w) !! (n -! 1)          -- mi
-            | otherwise     = (acc^.x^.r) !! (n -! k -! 1)  -- ri
+            | n < l_in      = toList (acc^.x^.pi) !! n               -- pi
+            | n <= k + l_in = (acc^.w) !! (n -! l_in)                -- mi
+            | otherwise     = (acc^.x^.r) !! (n -! k  -! l_in -! 1)  -- ri
 
           err = PM.evalPolynomial PM.evalMonomial ixToVal <$> f_sps
 
           -- Fig. 5, step 3
-          eEq = acc^.x^.e == commit (oracle @_ @c i) err
+          eEq = acc^.x^.e == commit ck err
 
 mulDeg
     :: MultiplicativeSemigroup f
