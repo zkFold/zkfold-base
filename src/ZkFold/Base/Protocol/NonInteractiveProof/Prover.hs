@@ -67,8 +67,8 @@ instance ToSchema ProveAPIResult where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 
 proveAPI
-    :: forall a
-    . (NonInteractiveProof a
+    :: forall a core
+    . (NonInteractiveProof a core
     , Binary (SetupProve a)
     , Binary (Witness a)
     , Binary (Input a)
@@ -82,10 +82,10 @@ proveAPI bsS bsW =
     in case (mS, mW) of
         (Nothing, _)     -> ProveAPIErrorSetup
         (_, Nothing)     -> ProveAPIErrorWitness
-        (Just s, Just w) -> ProveAPISuccess . ProofBytes $ toByteString $ prove @a s w
+        (Just s, Just w) -> ProveAPISuccess . ProofBytes $ toByteString $ prove @a @core s w
 
-testVector :: forall a .
-    NonInteractiveProof a =>
+testVector :: forall a core .
+    NonInteractiveProof a core =>
     Arbitrary a =>
     Arbitrary (Witness a) =>
     Binary (SetupProve a) =>
@@ -96,6 +96,6 @@ testVector n = generate . vectorOf n $ (,)
     <$> arbitrary @a
     <*> arbitrary @(Witness a)
     >>= \(a, w) -> do
-        let s = setupProve @a a
-        let (i, p) = prove @a s w
+        let s = setupProve @a @core a
+        let (i, p) = prove @a @core s w
         pure (toByteString s, toByteString i, toByteString p)

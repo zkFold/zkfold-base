@@ -33,13 +33,12 @@ import qualified Prelude                                                as Haske
 import           Test.QuickCheck                                        (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                        (Zp, toZp)
+import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Base.Data.Vector                                (Vector (..))
 import           ZkFold.Prelude                                         (drop, length, replicate, replicateA)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit             (ArithmeticCircuit)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, splitExpansion)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -143,25 +142,22 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r c)
         return $ UInt $ embed $ V.unsafeToVector (lo <> [hi])
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
-instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => Iso (ByteString n (Interpreter (Zp p))) (UInt n r (Interpreter (Zp p))) where
-    from = fromConstant @Natural . toConstant
 
-instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => Iso (UInt n r (Interpreter (Zp p))) (ByteString n (Interpreter (Zp p))) where
-    from = fromConstant @Natural . toConstant
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (UInt n r c) where
+    from (ByteString b) = UInt $ fromCircuitF b solve
+        where
+            solve :: forall i m. MonadCircuit i (BaseField c) m => Vector n i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
+            solve bits = do
+                let bsBits = V.fromVector bits
+                V.unsafeToVector . Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bsBits
 
-instance (Symbolic (Interpreter(Zp p)), KnownNat n, KnownRegisterSize r) => Ord (Bool (Interpreter (Zp p))) (UInt n r (Interpreter (Zp p))) where
-    x <= y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.<= toConstant y
-    x < y  = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.< toConstant y
-    x >= y = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.>= toConstant y
-    x > y  = Bool . Interpreter . Par1 . toZp . Haskell.fromIntegral . Haskell.fromEnum $ toConstant @_ @Natural x Haskell.> toConstant y
-    max x y = fromConstant $ Haskell.max (toConstant @_ @Natural x) (toConstant y)
-    min x y = fromConstant $ Haskell.min (toConstant @_ @Natural x) (toConstant y)
-
--- instance (Symbolic c, KnownNat n, KnownRegisterSize r, ToConstant (ByteString n c) Natural, FromConstant (c Par1) Natural) => Iso (ByteString n c) (UInt n r c) where
---     from b = UInt $ embed $ V.unsafeToVector [fromConstant @Natural $ toConstant b]
-
--- instance (Symbolic c, KnownNat n, KnownRegisterSize r, FromConstant (c Par1) Natural, ToConstant (ByteString n c) Natural) => Iso (UInt n r c) (ByteString n c) where
---     from b = ByteString $ embed $ V.unsafeToVector [fromConstant @Natural $ toConstant b]
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (ByteString n c) where
+    from (UInt v) =  ByteString $ fromCircuitF v solve
+        where
+            solve :: forall i m. MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector n i)
+            solve ui = do
+                let regs = V.fromVector ui
+                V.unsafeToVector <$> toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
 
 -- --------------------------------------------------------------------------------
 
@@ -174,7 +170,7 @@ instance
     ) => Extend (UInt n r c) (UInt k r c) where
     extend (UInt x) = UInt $ symbolicF x (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
         where
-            solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector  (NumberOfRegisters (BaseField c) k r) i)
+            solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) k r) i)
             solve xv = do
                 let regs = V.fromVector xv
                 zeros <- replicateA (value @k -! (value @n)) (newAssigned (Haskell.const zero))
@@ -231,15 +227,15 @@ instance
                 let rs = force $ addBit (r' + r') (value @n -! i -! 1)
                  in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
-instance (Symbolic (ArithmeticCircuit a i), KnownNat n, KnownRegisterSize r) => Iso (ByteString n (ArithmeticCircuit a i)) (UInt n r (ArithmeticCircuit a i)) where
-    from (ByteString bits) = UInt $ symbolicF bits (\v -> naturalToVector @(ArithmeticCircuit a i) @n @r $ vectorToNatural v (registerSize @a @n @r)) solve
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (UInt n r c) where
+    from (ByteString bits) = UInt $ symbolicF bits (\v -> naturalToVector @c @n @r $ vectorToNatural v (registerSize @a @n @r)) solve
         where
             solve :: MonadCircuit v a m => Vector n v -> m (Vector (NumberOfRegisters a n r) v)
             solve xv = do
                 let bsBits = V.fromVector xv
                 V.unsafeToVector . Haskell.reverse <$> fromBits (highRegisterSize @a @n @r) (registerSize @a @n @r) bsBits
 
-instance (Symbolic (ArithmeticCircuit a i), KnownNat n, KnownRegisterSize r) => Iso (UInt n r (ArithmeticCircuit a i)) (ByteString n (ArithmeticCircuit a i)) where
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (ByteString n c) where
     from (UInt ac) = ByteString $ symbolicF ac (\v -> V.unsafeToVector $ fromConstant <$> toBsBits (vectorToNatural v (registerSize @a @n @r)) (value @n)) solve
         where
             solve :: MonadCircuit v a m => Vector (NumberOfRegisters a n r) v -> m (Vector n v)
@@ -247,24 +243,24 @@ instance (Symbolic (ArithmeticCircuit a i), KnownNat n, KnownRegisterSize r) => 
                 let regs = V.fromVector xv
                 V.unsafeToVector <$> toBits (Haskell.reverse regs) (highRegisterSize @a @n @r) (registerSize @a @n @r)
 
-instance (Symbolic (ArithmeticCircuit a i), KnownNat n, KnownRegisterSize r) => Ord (Bool (ArithmeticCircuit a i)) (UInt n r (ArithmeticCircuit a i)) where
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Ord (Bool c) (UInt n r c) where
     x <= y = y >= x
 
     x <  y = y > x
 
     u1 >= u2 =
-        let ByteString rs1 = from u1 :: ByteString n (ArithmeticCircuit a i)
-            ByteString rs2 = from u2 :: ByteString n (ArithmeticCircuit a i)
+        let ByteString rs1 = from u1 :: ByteString n c
+            ByteString rs2 = from u2 :: ByteString n c
          in bitwiseGE rs1 rs2
 
     u1 > u2 =
-        let ByteString rs1 = from u1 :: ByteString n (ArithmeticCircuit a i)
-            ByteString rs2 = from u2 :: ByteString n (ArithmeticCircuit a i)
+        let ByteString rs1 = from u1 :: ByteString n c
+            ByteString rs2 = from u2 :: ByteString n c
         in bitwiseGT rs1 rs2
 
-    max x y = bool @(Bool (ArithmeticCircuit a i)) x y $ x < y
+    max x y = bool @(Bool c) x y $ x < y
 
-    min x y = bool @(Bool (ArithmeticCircuit a i)) x y $ x > y
+    min x y = bool @(Bool c) x y $ x > y
 
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where

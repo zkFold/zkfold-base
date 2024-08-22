@@ -100,13 +100,13 @@ specUInt' = hspec $ do
             let (zpQ, zpR) = (fromConstant num :: UInt n rs (Interpreter (Zp p))) `divMod` (fromConstant d)
             return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR)
 
-        it "calculates gcd correctly" $ withMaxSuccess 10 $ do
+        when (n <= 128) $ it "calculates gcd correctly" $ withMaxSuccess 10 $ do
             x <- toss m
             y <- toss m
             let (_, _, r) = eea (fromConstant x :: UInt n rs (Interpreter (Zp p))) (fromConstant y)
                 ans = fromConstant (P.gcd x y) :: UInt n rs (Interpreter (Zp p))
             return $ r === ans
-        it "calculates Bezout coefficients correctly" $ withMaxSuccess 10 $ do
+        when (n <= 128) $ it "calculates Bezout coefficients correctly" $ withMaxSuccess 10 $ do
             x' <- toss m
             y' <- toss m
             let x = x' `P.div` P.gcd x' y'

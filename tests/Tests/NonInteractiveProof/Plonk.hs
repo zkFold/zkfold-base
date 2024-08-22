@@ -26,7 +26,7 @@ import           ZkFold.Base.Data.Vector                     (fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation     (PlonkRelation (..), toPlonkRelation)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..),
+import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..),
                                                               NonInteractiveProofTestData (..))
 
 type PlonkPolyLengthBS = 32
@@ -37,7 +37,7 @@ propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint a -> B
 propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
-propPlonkConstraintSatisfaction :: forall n . KnownNat n => NonInteractiveProofTestData (PlonkBS n) -> Bool
+propPlonkConstraintSatisfaction :: forall n core . KnownNat n => NonInteractiveProofTestData (PlonkBS n) core -> Bool
 propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
     let pr   = fromJust $ toPlonkRelation @PlonkPolyLengthBS iPub ac
         (PlonkWitnessInput wInput, _) = w
@@ -57,11 +57,11 @@ propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
 
     in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', toList $ fromPolyVec w1', toList $ fromPolyVec w2', toList $ fromPolyVec w3', toList $ fromPolyVec wPub]
 
-propPlonkPolyIdentity :: forall n . KnownNat n => NonInteractiveProofTestData (PlonkBS n) -> Bool
+propPlonkPolyIdentity :: forall n  core . NonInteractiveProofTestData (PlonkBS n) core -> Bool
 propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS
 
-        s = setupProve @(PlonkBS n) plonk
+        s = setupProve @(PlonkBS n) @core plonk
         (PlonkSetupParamsProve {..}, _, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap) = s
         (PlonkWitnessInput wInput, ps) = w
         PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
@@ -95,6 +95,6 @@ specPlonk = hspec $ do
         describe "Conversion to Plonk constraints and back" $ do
             it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @(ScalarField BLS12_381_G1)
         describe "Plonk constraint satisfaction" $ do
-            it "should hold" $ property $ propPlonkConstraintSatisfaction @2
+            it "should hold" $ property $ propPlonkConstraintSatisfaction @2 @HaskellCore
         describe "Plonk polynomial identity" $ do
-            it "should hold" $ property $ propPlonkPolyIdentity @2
+            it "should hold" $ property $ propPlonkPolyIdentity @2 @HaskellCore

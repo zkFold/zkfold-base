@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE OverloadedLists      #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -30,7 +31,6 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Base.Data.Vector                    (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
-import           ZkFold.Base.Protocol.Commitment.KZG        (com)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                             (log2ceiling)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (..), ArithmeticCircuitTest (..))
@@ -53,8 +53,7 @@ instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l) => Sho
     show (Plonk omega k1 k2 iPub ac x) =
         "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show iPub ++ " " ++ show ac ++ " " ++ show x
 
-instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1))
-        => Arbitrary (Plonk n l c1 c2 t) where
+instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonk n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
         let fullInp = value @l
@@ -62,8 +61,8 @@ instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (Scalar
         let (omega, k1, k2) = getParams (value @n)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
 
-instance forall n l c1 c2 t . (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
-        Witness (Plonk n l c1 c2 t) ~ (PlonkWitnessInput l c1, PlonkProverSecret c1)) => Arbitrary (NonInteractiveProofTestData (Plonk n l c1 c2 t)) where
+instance forall n l c1 c2 t core . (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
+        Witness (Plonk n l c1 c2 t) ~ (PlonkWitnessInput c1, PlonkProverSecret c1), NonInteractiveProof (Plonk n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk n l c1 c2 t) core) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector l) Par1)
         let inputLen = value @l
@@ -111,7 +110,7 @@ plonkCircuitPolynomials
 plonkVerifierInput :: Field (ScalarField c) => Vector n (ScalarField c) -> PlonkInput c
 plonkVerifierInput input = PlonkInput $ fromList $ map negate $ fromVector input
 
-instance forall n l c1 c2 t plonk f g1.
+instance forall n l c1 c2 t plonk f g1 core.
         ( Plonk n l c1 c2 t ~ plonk
         , ScalarField c1 ~ f
         , Point c1 ~ g1
@@ -126,7 +125,8 @@ instance forall n l c1 c2 t plonk f g1.
         , ToTranscript t (ScalarField c1)
         , ToTranscript t (PointCompressed c1)
         , FromTranscript t (ScalarField c1)
-        ) => NonInteractiveProof (Plonk n l c1 c2 t) where
+        , CoreFunction c1 core
+        ) => NonInteractiveProof (Plonk n l c1 c2 t) core where
     type Transcript (Plonk n l c1 c2 t)  = t
     type SetupProve (Plonk n l c1 c2 t)  = (PlonkSetupParamsProve c1 c2, PlonkPermutation n c1, PlonkCircuitPolynomials n c1 , PlonkWitnessMap n l c1)
     type SetupVerify (Plonk n l c1 c2 t) = (PlonkSetupParamsVerify c1 c2, PlonkCircuitCommitments c1)
@@ -167,6 +167,7 @@ instance forall n l c1 c2 t plonk f g1.
             perm = plonkPermutation plonk pr
             PlonkCircuitPolynomials {..} = plonkCircuitPolynomials plonk perm pr
 
+            com = msm @c1 @core
             cmQl = gs `com` ql
             cmQr = gs `com` qr
             cmQo = gs `com` qo
@@ -194,6 +195,7 @@ instance forall n l c1 c2 t plonk f g1.
             b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega' w2
             c = polyVecLinear b6 b5 * zH + polyVecInLagrangeBasis omega' w3
 
+            com = msm @c1 @core
             cmA = gs' `com` a
             cmB = gs' `com` b
             cmC = gs' `com` c
