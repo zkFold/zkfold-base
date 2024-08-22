@@ -241,7 +241,7 @@ instance
   , n <= m
   ) => Truncate (ByteString m c) (ByteString n c) where
     truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
-    
+
 --------------------------------------------------------------------------------
 instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
     shiftBits bs@(ByteString oldBits) s
