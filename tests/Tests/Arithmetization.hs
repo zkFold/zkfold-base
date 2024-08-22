@@ -14,8 +14,8 @@ import           Tests.Arithmetization.Test3                 (specArithmetizatio
 import           Tests.Arithmetization.Test4                 (specArithmetization4)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant, Scale, ToConstant)
-import           ZkFold.Base.Algebra.Basic.Number            (Natural)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.Basic.Number            (Natural)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler
