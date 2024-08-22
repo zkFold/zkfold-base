@@ -26,7 +26,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
-import           Control.Monad.State                          (MonadState (..), State, gets, modify, runState)
+import           Control.Monad.State                          (MonadState (..), State, modify, runState)
 import           Data.Aeson                                   (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
 import           Data.Foldable                                (fold)
 import           Data.Functor.Rep                             (Representable (..), fmapRep)
@@ -60,7 +60,7 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
         -- ^ The system of polynomial constraints
         acRange    :: Map Natural a,
         -- ^ The range constraints [0, a] for the selected variables
-        acWitness  :: Map Natural (i a -> a),
+        acWitness  :: Map Natural (i a -> Map Natural a -> a),
         -- ^ The witness generation functions
         acVarOrder :: Map (Natural, Natural) Natural,
         -- ^ The order of variable assignments
@@ -90,7 +90,10 @@ deriving instance NFData (Rep i) => NFData (Var i)
 
 witnessGenerator :: ArithmeticCircuit a i o -> i a -> Map Natural a
 witnessGenerator circuit inputs =
-    fmap ($ inputs) (acWitness circuit)
+    let
+        result = fmap (\k -> k inputs result) (acWitness circuit)
+    in
+        result
 
 ------------------------------ Symbolic compiler context ----------------------------
 
@@ -127,10 +130,10 @@ instance (Arithmetic a, Ord (Rep i), Representable i, Foldable i, o ~ U1, ToCons
             p i = b * var i * (var i - b)
         i <- addVariable =<< newVariableWithSource (S.toList s) p
         rangeConstraint i upperBound
-        currentWitness <- gets acWitness
-        assignment i $ \m -> witness $ \case
+        -- currentWitness <- gets acWitness
+        assignment i $ \m currentWitness -> witness $ \case
           InVar inV -> index m inV
-          NewVar newV -> (currentWitness ! newV) m
+          NewVar newV -> currentWitness ! newV
         return (NewVar i)
 
     newConstrained
@@ -147,10 +150,9 @@ instance (Arithmetic a, Ord (Rep i), Representable i, Foldable i, o ~ U1, ToCons
             s = ws `S.difference` sources @a (`new` x)
         i <- addVariable =<< newVariableWithSource (S.toList s) (new var)
         constraint (`new` (NewVar i))
-        currentWitness <- gets acWitness
-        assignment i $ \m -> witness $ \case
+        assignment i $ \m currentWitness -> witness $ \case
           InVar inV -> index m inV
-          NewVar newV -> (currentWitness ! newV) m
+          NewVar newV -> currentWitness ! newV
         return (NewVar i)
 
     constraint p = addConstraint (p var)
@@ -231,7 +233,7 @@ rangeConstraint i b = zoom #acRange . modify $ insert i b
 
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
-assignment :: Natural -> (i a -> a) -> State (ArithmeticCircuit a i U1) ()
+assignment :: Natural -> (i a -> Map Natural a -> a) -> State (ArithmeticCircuit a i U1) ()
 assignment i f = zoom #acWitness . modify $ insert i f
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
