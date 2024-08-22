@@ -13,7 +13,7 @@ import           Tests.Arithmetization.Test2                 (specArithmetizatio
 import           Tests.Arithmetization.Test3                 (specArithmetization3)
 import           Tests.Arithmetization.Test4                 (specArithmetization4)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant, MultiplicativeMonoid, Scale)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant, Scale)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                     (Vector)

@@ -62,7 +62,7 @@ instance (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (Scalar
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
 
 instance forall n l c1 c2 t core . (KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
-        Witness (Plonk n l c1 c2 t) ~ (PlonkWitnessInput c1, PlonkProverSecret c1), NonInteractiveProof (Plonk n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk n l c1 c2 t) core) where
+        Witness (Plonk n l c1 c2 t) ~ (PlonkWitnessInput l c1, PlonkProverSecret c1), NonInteractiveProof (Plonk n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk n l c1 c2 t) core) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector l) Par1)
         let inputLen = value @l

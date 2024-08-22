@@ -57,7 +57,7 @@ propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
 
     in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', toList $ fromPolyVec w1', toList $ fromPolyVec w2', toList $ fromPolyVec w3', toList $ fromPolyVec wPub]
 
-propPlonkPolyIdentity :: forall n  core . NonInteractiveProofTestData (PlonkBS n) core -> Bool
+propPlonkPolyIdentity :: forall n  core . KnownNat n => NonInteractiveProofTestData (PlonkBS n) core -> Bool
 propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS
 
