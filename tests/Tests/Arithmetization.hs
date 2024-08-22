@@ -28,7 +28,7 @@ propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
         v'  = ac' `eval` wi'
     in v == v'
 
-specArithmetization' :: forall a i . (FromConstant a a, Scale a a, Arithmetic a, Arbitrary a, Show a, Show (ArithmeticCircuitTest a i Par1), Arbitrary (Rep i), Ord (Rep i), Representable i, Traversable i, ToConstant (Rep i) Natural) => IO ()
+specArithmetization' :: forall a i . (FromConstant a a, Scale a a, Arithmetic a, Arbitrary a, Arbitrary (i a), Show a, Show (ArithmeticCircuitTest a i Par1), Arbitrary (Rep i), Ord (Rep i), Representable i, Traversable i, ToConstant (Rep i) Natural) => IO ()
 specArithmetization' = hspec $ do
     describe "Arithmetization specification" $ do
         describe "Variable mapping" $ do

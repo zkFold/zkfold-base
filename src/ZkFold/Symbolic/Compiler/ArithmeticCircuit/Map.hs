@@ -10,7 +10,6 @@ import           Data.Functor.Rep                                       (Represe
 import           Data.Map                                               hiding (drop, foldl, foldr, fromList, map, null,
                                                                          splitAt, take, toList)
 import qualified Data.Map                                               as Map
-import           Data.Traversable                                       (for)
 import           GHC.Generics                                           (Par1)
 import           GHC.IsList                                             (IsList (..))
 import           Prelude                                                hiding (Num (..), drop, length, product,
@@ -20,8 +19,7 @@ import           Test.QuickCheck                                        (Arbitra
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (getAllVars)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), Var (..),
-                                                                         acInput)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), Var (..))
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
@@ -34,11 +32,11 @@ data ArithmeticCircuitTest a i o = ArithmeticCircuitTest
 instance (Show (ArithmeticCircuit a i o), Show a, Show (i a)) => Show (ArithmeticCircuitTest a i o) where
     show (ArithmeticCircuitTest ac wi) = show ac ++ ",\nwitnessInput: " ++ show wi
 
-instance (Arithmetic a, Arbitrary a, Arbitrary (ArithmeticCircuit a i Par1), Traversable i, Representable i) => Arbitrary (ArithmeticCircuitTest a i Par1) where
+instance (Arithmetic a, Arbitrary (i a), Arbitrary (ArithmeticCircuit a i Par1), Representable i) => Arbitrary (ArithmeticCircuitTest a i Par1) where
     arbitrary :: Gen (ArithmeticCircuitTest a i Par1)
     arbitrary = do
         ac <- arbitrary
-        wi <- for acInput $ \_ -> arbitrary
+        wi <- arbitrary
         return ArithmeticCircuitTest {
             arithmeticCircuit = ac
             , witnessInput = wi
