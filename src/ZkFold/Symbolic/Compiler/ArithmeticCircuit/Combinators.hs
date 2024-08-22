@@ -45,13 +45,13 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal       (Arit
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
 import           ZkFold.Symbolic.MonadCircuit
 
-boolCheckC :: (Arithmetic a, Traversable f, Ord (Rep i), Representable i) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
+boolCheckC :: (Arithmetic a, Traversable f, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
 -- ^ @boolCheckC r@ computes @r (r - 1)@ in one PLONK constraint.
 boolCheckC r = circuitF $ do
     is <- runCircuit r
     for is $ \i -> newAssigned (\x -> let xi = x i in xi * (xi - one))
 
-foldCircuit :: forall n i a. (Arithmetic a, Ord (Rep i), Representable i) => (forall v m . MonadBlueprint i v a m => v -> v -> m v) -> ArithmeticCircuit a i (Vector n) -> ArithmeticCircuit a i Par1
+foldCircuit :: forall n i a. (Arithmetic a, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => (forall v m . MonadBlueprint i v a m => v -> v -> m v) -> ArithmeticCircuit a i (Vector n) -> ArithmeticCircuit a i Par1
 foldCircuit f c = circuit $ do
     outputs <- runCircuit c
     let (element, rest) = V.uncons outputs
@@ -59,16 +59,16 @@ foldCircuit f c = circuit $ do
 
 -- | TODO: Think about circuits with multiple outputs
 --
-embed :: (Arithmetic a, Ord (Rep i), Representable i) => a -> ArithmeticCircuit a i Par1
+embed :: (Arithmetic a, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => a -> ArithmeticCircuit a i Par1
 embed x = circuit $ newAssigned $ const (fromConstant x)
 
-embedV :: (Arithmetic a, Traversable f, Ord (Rep i), Representable i) => f a -> ArithmeticCircuit a i f
+embedV :: (Arithmetic a, Traversable f, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => f a -> ArithmeticCircuit a i f
 embedV v = circuitF $ for v $ \x -> newAssigned $ const (fromConstant x)
 
 embedVar :: forall a . a -> (forall i v m . MonadBlueprint i v a m => m v)
 embedVar x = newAssigned $ const (fromConstant x)
 
-embedAll :: forall a i n . (Arithmetic a, KnownNat n, Ord (Rep i), Representable i) => a -> ArithmeticCircuit a i (Vector n)
+embedAll :: forall a i n . (Arithmetic a, KnownNat n, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => a -> ArithmeticCircuit a i (Vector n)
 embedAll x = circuitF $ Vector <$> replicateM (fromIntegral $ value @n) (newAssigned $ const (fromConstant x))
 
 expansion :: MonadCircuit v a m => Natural -> v -> m [v]
@@ -125,15 +125,15 @@ desugarRange i b
           | c == zero = ($ j) * (one - ($ k))
           | otherwise = one + ($ k) * (($ j) - one)
 
-forceOne :: (Arithmetic a, Traversable f, Ord (Rep i), Representable i) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
+forceOne :: (Arithmetic a, Traversable f, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
 forceOne r = circuitF $ do
     is' <- runCircuit r
     for is' $ \i -> constraint (\x -> x i - one) $> i
 
-isZeroC :: (Arithmetic a, Z.Zip f, Traversable f, Ord (Rep i), Representable i) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
+isZeroC :: (Arithmetic a, Z.Zip f, Traversable f, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
 isZeroC r = circuitF $ runCircuit r >>= fmap fst . runInvert
 
-invertC :: (Arithmetic a, Z.Zip f, Traversable f, Ord (Rep i), Representable i) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
+invertC :: (Arithmetic a, Z.Zip f, Traversable f, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => ArithmeticCircuit a i f -> ArithmeticCircuit a i f
 invertC r = circuitF $ runCircuit r >>= fmap snd . runInvert
 
 runInvert :: (MonadCircuit v a m, Z.Zip f, Traversable f) => f v -> m (f v, f v)

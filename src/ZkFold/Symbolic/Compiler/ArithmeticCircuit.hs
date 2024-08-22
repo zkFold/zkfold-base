@@ -64,7 +64,7 @@ optimize :: ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 optimize = id
 
 -- | Desugars range constraints into polynomial constraints
-desugarRanges :: (Arithmetic a, Ord (Rep i), Representable i) => ArithmeticCircuit a i o -> ArithmeticCircuit a i o
+desugarRanges :: (Arithmetic a, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
   let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(NewVar k, v) | (k,v) <- toList (acRange c)]
    in r' { acRange = mempty, acOutput = acOutput c }

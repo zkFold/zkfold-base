@@ -15,6 +15,7 @@ import           Data.Functor.Rep                           (Representable (..))
 import           Prelude                                    hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                                    as Haskell
 
+import           ZkFold.Base.Algebra.Basic.Class            (ToConstant)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address      (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
@@ -47,7 +48,9 @@ deriving via (Structural (Output tokens datum (CtxCompilation i)))
             , KnownNat tokens
             , KnownNat (TypeSize (CtxCompilation i) (Value tokens (CtxCompilation i)))
             , Ord (Rep i)
+            , Foldable i
             , Representable i
+            , ToConstant (Rep i) Natural
             ) => Eq (Bool (CtxCompilation i)) (Output tokens datum (CtxCompilation i))
 
 txoAddress :: Output tokens datum context -> Address context

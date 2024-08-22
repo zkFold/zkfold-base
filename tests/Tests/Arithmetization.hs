@@ -13,7 +13,8 @@ import           Tests.Arithmetization.Test2                 (specArithmetizatio
 import           Tests.Arithmetization.Test3                 (specArithmetization3)
 import           Tests.Arithmetization.Test4                 (specArithmetization4)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant, Scale)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant, Scale, ToConstant)
+import           ZkFold.Base.Algebra.Basic.Number            (Natural)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                     (Vector)
@@ -27,7 +28,7 @@ propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
         v'  = ac' `eval` wi'
     in v == v'
 
-specArithmetization' :: forall a i . (FromConstant a a, Scale a a, Arithmetic a, Arbitrary a, Show a, Show (ArithmeticCircuitTest a i Par1), Arbitrary (Rep i), Ord (Rep i), Representable i, Traversable i) => IO ()
+specArithmetization' :: forall a i . (FromConstant a a, Scale a a, Arithmetic a, Arbitrary a, Show a, Show (ArithmeticCircuitTest a i Par1), Arbitrary (Rep i), Ord (Rep i), Representable i, Traversable i, ToConstant (Rep i) Natural) => IO ()
 specArithmetization' = hspec $ do
     describe "Arithmetization specification" $ do
         describe "Variable mapping" $ do
