@@ -287,7 +287,7 @@ instance forall n l c1 c2 t plonk f g1.
     verify
         (PlonkSetupParamsVerify {..}, PlonkCircuitCommitments {..})
         (PlonkInput wPub)
-        (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi) = p1 == p2
+        (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi) = p1 /= p2
         where
             n = value @n
 
