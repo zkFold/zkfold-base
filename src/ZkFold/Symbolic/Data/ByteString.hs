@@ -173,7 +173,7 @@ instance
     , (Div n wordSize) * wordSize ~ n
     , (Div wordSize 8) * 8 ~ wordSize
     ) => ReverseEndianness wordSize (ByteString n c) where
-        reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize) v
+    reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize) v
 
 instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
     false = fromConstant (0 :: Natural)
@@ -220,7 +220,6 @@ instance
   , KnownNat wordSize
   , (Div n wordSize) * wordSize ~ n
   ) => ToWords (ByteString n c) (ByteString wordSize c) where
-
     toWords (ByteString bits) = Haskell.map (ByteString . packed) $ V.fromVector . V.chunks @(Div n wordSize) @wordSize $ unpacked bits
 
 -- | Unfortunately, Haskell does not support dependent types yet,
@@ -234,7 +233,6 @@ instance
   , Mod k m ~ 0
   , (Div k m) * m ~ k
   ) => Concat (ByteString m c) (ByteString k c) where
-
     concat bs = (ByteString . packed) $ V.unsafeConcat @(Div k m) ( Haskell.map (\(ByteString bits) -> unpacked bits) bs)
 
 instance
@@ -242,8 +240,8 @@ instance
   , KnownNat n
   , n <= m
   ) => Truncate (ByteString m c) (ByteString n c) where
-
     truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
+    
 --------------------------------------------------------------------------------
 instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
     shiftBits bs@(ByteString oldBits) s
@@ -263,6 +261,7 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
             pure $ V.unsafeToVector newBits
 
     rotateBits (ByteString bits) s = ByteString $ hmap (`V.rotate` s) bits
+
 instance
   ( Symbolic c
   , KnownNat k
@@ -281,6 +280,7 @@ instance
         diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @k
 
         zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
+
 instance Symbolic c => BitState ByteString n c where
     isSet (ByteString bits) ix = Bool $ fromCircuitF bits solve
         where
