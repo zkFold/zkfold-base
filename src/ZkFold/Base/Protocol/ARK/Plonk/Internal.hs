@@ -19,9 +19,6 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Prelude                             (log2ceiling, take)
 
-log2 :: (Integral a, Integral b) => a -> b
-log2 = ceiling @Double . logBase 2 . fromIntegral
-
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
     where
