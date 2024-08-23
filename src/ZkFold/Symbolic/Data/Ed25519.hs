@@ -7,6 +7,7 @@
 module ZkFold.Symbolic.Data.Ed25519  where
 
 import           Control.Applicative                       ((<*>))
+import           Control.DeepSeq                           (NFData)
 import           Data.Functor                              ((<$>))
 import           Prelude                                   (type (~), ($))
 import qualified Prelude                                   as P
@@ -27,7 +28,6 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
-import           Control.DeepSeq (NFData)
 
 instance
     ( Symbolic c
@@ -64,7 +64,7 @@ instance (Symbolic c, Eq (Bool c) (BaseField (Ed25519 c r))) => Eq (Bool c) (Poi
 --
 instance
     ( Symbolic c
-    , KnownRegisterSize rs 
+    , KnownRegisterSize rs
     , KnownNat (NumberOfRegisters (S.BaseField c) 256 rs)
     , KnownNat (NumberOfRegisters (S.BaseField c) 512 rs)
     , NFData (c (V.Vector (NumberOfRegisters (S.BaseField c) 512 rs)))
