@@ -33,13 +33,9 @@ import           Control.DeepSeq (NFData)
 instance
     ( Symbolic c
     , KnownRegisterSize rs
-    , SymbolicData c (UInt 256 rs c)
-    , AdditiveMonoid (UInt 256 rs c)
-    , Eq (Bool c) (UInt 256 rs c)
     , S.BaseField c ~ a
     , r ~ NumberOfRegisters a 256 rs
     , KnownNat r
-    -- , 1 <= r
     ) => SymbolicData c (Point (Ed25519 c rs)) where
 
     type Support c (Point (Ed25519 c rs)) = Support c (UInt 256 rs c)
