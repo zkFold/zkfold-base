@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), blueprintGE, bi
 
 import           Control.Monad                                          (foldM)
 import qualified Data.Bool                                              as Haskell
+import           Data.Data                                              (Proxy (..))
 import           Data.Foldable                                          (Foldable, toList)
 import           Data.Function                                          ((.))
 import           Data.Functor                                           ((<$>))
@@ -59,14 +60,15 @@ newtype Lexicographical a = Lexicographical a
 -- ^ A newtype wrapper for easy definition of Ord instances
 -- (though not necessarily a most effective one)
 
-deriving newtype instance SymbolicData c a => SymbolicData c (Lexicographical a)
+deriving newtype instance SymbolicData a => SymbolicData (Lexicographical a)
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
 instance
     ( Symbolic c
-    , SymbolicData c x
-    , Support c x ~ ()
-    , TypeSize c x ~ 1
+    , SymbolicData x
+    , Context x ~ c
+    , Support x ~ Proxy c
+    , TypeSize x ~ 1
     ) => Ord (Bool c) (Lexicographical x) where
 
     x <= y = y >= x
@@ -83,13 +85,13 @@ instance
 
 getBitsBE ::
   forall c x .
-  (Symbolic c, SymbolicData c x, Support c x ~ (), TypeSize c x ~ 1) =>
+  (Symbolic c, SymbolicData x, Context x ~ c, Support x ~ Proxy c, TypeSize x ~ 1) =>
   x -> c (V.Vector (NumberOfBits (BaseField c)))
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
 getBitsBE x =
   hmap unsafeToVector
-    $ symbolicF (pieces x ()) (binaryExpansion . V.item)
+    $ symbolicF (pieces x Proxy) (binaryExpansion . V.item)
       $ expansion (numberOfBits @(BaseField c)) . V.item
 
 bitwiseGE :: forall c f . (Symbolic c, Z.Zip f, Foldable f) => c f -> c f -> Bool c

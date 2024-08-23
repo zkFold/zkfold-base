@@ -4,6 +4,7 @@ module Tests.Blake2b where
 
 import           Crypto.Hash.BLAKE2.BLAKE2b                  (hash)
 import qualified Data.ByteString.Internal                    as BI
+import           Data.Data                                   (Proxy (Proxy))
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (Eq (..), IO, ($))
 import           Test.Hspec
@@ -35,14 +36,14 @@ blake2bSimple :: forall b .
     , Eq (b (Vector 512))
     ) => Spec
 blake2bSimple =
-    let a = blake2b_512 $ fromConstant @Natural @(ByteString 0 b) 0
+    let a = blake2b_512 @0 @b $ fromConstant (0 :: Natural)
         b = hash 64 BI.empty BI.empty
     in  it "computes blake2b_512 correctly on empty bytestring" $ a == fromConstant b
 
 blake2bAC :: Spec
 blake2bAC =
-    let bs = compile @(Zp BLS12_381_Scalar) (blake2b_512 @8 @(ArithmeticCircuit (Zp BLS12_381_Scalar))) :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar))
-        ac = pieces @(ArithmeticCircuit (Zp BLS12_381_Scalar)) bs ()
+    let bs = compile (blake2b_512 @8) :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar))
+        ac = pieces bs Proxy
     in it "simple test with cardano-crypto " $ acSizeN ac == 564239
 
 specBlake2b :: IO ()

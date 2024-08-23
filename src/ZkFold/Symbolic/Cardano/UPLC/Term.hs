@@ -1,4 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Cardano.UPLC.Term where
 
@@ -16,7 +16,7 @@ data Term name fun c where
     Apply     :: Term name fun c -> Term name fun c -> Term name fun c
     Force     :: Term name fun c -> Term name fun c
     Delay     :: Term name fun c -> Term name fun c
-    Constant  :: (Eq x, Typeable x, SymbolicData c x, KnownNat (TypeSize c x)) => x -> Term name fun c
+    Constant  :: (Eq x, Typeable x, SymbolicData x, Context x ~ c, KnownNat (TypeSize x)) => x -> Term name fun c
     Builtin   :: fun -> Term name fun c
     Error     :: Term name fun c
 

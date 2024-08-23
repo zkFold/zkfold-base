@@ -21,7 +21,7 @@ deriving instance
     , Haskell.Eq (TxRefIndex context)
     ) => Haskell.Eq (OutputRef context)
 
-deriving instance HApplicative context => SymbolicData context (OutputRef context)
+deriving instance HApplicative context => SymbolicData (OutputRef context)
 
 outputRefId :: OutputRef context -> TxRefId context
 outputRefId (OutputRef (x, _)) = x

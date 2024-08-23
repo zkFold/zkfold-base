@@ -8,6 +8,7 @@ module ZkFold.Symbolic.Data.Maybe (
 ) where
 
 import           Data.Function                    ((.))
+import           Data.Proxy                       (Proxy)
 import           GHC.Generics                     (Par1 (..))
 import           Prelude                          (foldr, type (~), ($))
 import qualified Prelude                          as Haskell
@@ -38,8 +39,9 @@ just = Maybe true
 nothing
     :: forall c x k
     .  Symbolic c
-    => SymbolicData c x
-    => k ~ TypeSize c x
+    => SymbolicData x
+    => c ~ Context x
+    => k ~ TypeSize x
     => KnownNat k
     => Maybe c x
 nothing = Maybe false (let c = embed @c $ Haskell.pure @(Vector k) zero in restore (Haskell.const c))
@@ -48,8 +50,9 @@ fromMaybe
     :: forall c x
     .  HFunctor c
     => Ring (c (Vector 1))
-    => SymbolicData c x
-    => 1 ~ TypeSize c x
+    => SymbolicData x
+    => Context x ~ c
+    => 1 ~ TypeSize x
     => x
     -> Maybe c x
     -> x
@@ -68,22 +71,24 @@ isJust (Maybe h _) = h
 
 instance
     ( HApplicative c
-    , SymbolicData c x
-    , Support c x ~ ()
-    ) => SymbolicData c (Maybe c x) where
+    , SymbolicData x
+    , Context x ~ c
+    , Support x ~ Proxy c
+    ) => SymbolicData (Maybe c x) where
 
-    type Support c (Maybe c x) = ()
-    type TypeSize c (Maybe c x) = 1 + TypeSize c x
+    type Context (Maybe c x) = c
+    type Support (Maybe c x) = Proxy c
+    type TypeSize (Maybe c x) = 1 + TypeSize x
     pieces (Maybe (Bool h) t) i = hliftA2 (\(Par1 h') t' -> V.singleton h' `V.append` t') h (pieces t i)
     restore f = Maybe (restore (hmap V.take . f)) (restore (hmap V.drop . f))
 
 maybe :: forall a b c .
-    (Symbolic c, SymbolicData c b) =>
+    (Symbolic c, SymbolicData b, Context b ~ c) =>
     b -> (a -> b) -> Maybe c a -> b
 maybe d h x@(Maybe _ v) = bool @(Bool c) d (h v) $ isNothing x
 
 find :: forall a c t .
-    (Symbolic c, SymbolicData c a, Support c a ~ (), KnownNat (TypeSize c a)) =>
+    (Symbolic c, SymbolicData a, Context a ~ c, Support a ~ Proxy c, KnownNat (TypeSize a)) =>
     Haskell.Foldable t =>
     (a -> Bool c) -> t a -> Maybe c a
 find p = let n = nothing in

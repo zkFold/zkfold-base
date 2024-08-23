@@ -1,6 +1,9 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Data.Conditional where
 
 import           Data.Function                   (($))
+import           Data.Type.Equality              (type (~))
 import           GHC.Generics                    (Par1 (Par1))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -24,7 +27,7 @@ gif b x y = bool y x b
 (?) :: Conditional b a => b -> a -> a -> a
 (?) = gif
 
-instance (Symbolic c, SymbolicData c x) => Conditional (Bool c) x where
+instance (SymbolicData x, Context x ~ c, Symbolic c) => Conditional (Bool c) x where
     bool x y (Bool b) = restore $ \s ->
       fromCircuit3F b (pieces x s) (pieces y s) $ \(Par1 c) ->
         zipWithM $ \i j -> do

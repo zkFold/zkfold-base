@@ -58,7 +58,7 @@ deriving instance Generic (UInt n r context)
 deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) n r)))) => NFData (UInt n r context)
 deriving instance (Haskell.Eq (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Eq (UInt n r context)
 deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Show (UInt n r context)
-deriving newtype instance SymbolicData c (UInt n r c)
+deriving newtype instance SymbolicData (UInt n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (UInt n r c) where
     fromConstant c = UInt . embed @c $ naturalToVector @c @n @r c
