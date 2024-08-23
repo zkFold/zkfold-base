@@ -6,7 +6,6 @@ module Examples.BatchTransfer (exampleBatchTransfer) where
 import           Prelude                                         hiding (Eq (..), Num (..), any, not, (!!), (/), (^),
                                                                   (||))
 
-import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Symbolic.Cardano.Contracts.BatchTransfer (batchTransfer)
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Compiler                        (compileIO)
@@ -17,4 +16,4 @@ exampleBatchTransfer = do
 
     putStrLn "\nExample: Batch Transfer smart contract\n"
 
-    compileIO @F file (batchTransfer @(CtxCompilation (Vector 151810)))
+    compileIO @F file (batchTransfer)
