@@ -338,6 +338,5 @@ benchmark compiler-benchmark
       deepseq,
       tasty-bench,
       tasty-golden,
-      tasty-program,
       zkfold-base,
       zkfold-symbolic-examples
