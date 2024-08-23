@@ -25,10 +25,10 @@ deriving instance
 deriving instance
     ( Symbolic context
     , KnownNat tokens
-    , KnownNat (TypeSize context (OutputRef context))
-    , KnownNat (TypeSize context (SingleAsset context))
-    , KnownNat (TypeSize context (Value tokens context))
-    ) => SymbolicData context (Input tokens datum context)
+    , KnownNat (TypeSize (OutputRef context))
+    , KnownNat (TypeSize (SingleAsset context))
+    , KnownNat (TypeSize (Value tokens context))
+    ) => SymbolicData (Input tokens datum context)
 
 txiOutputRef :: Input tokens datum context -> OutputRef context
 txiOutputRef (Input (ref, _)) = ref

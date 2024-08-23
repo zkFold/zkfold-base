@@ -58,7 +58,7 @@ deriving instance Generic (UInt n r context)
 deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) n r)))) => NFData (UInt n r context)
 deriving instance (Haskell.Eq (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Eq (UInt n r context)
 deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Show (UInt n r context)
-deriving newtype instance SymbolicData c (UInt n r c)
+deriving newtype instance SymbolicData (UInt n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (UInt n r c) where
     fromConstant c = UInt . embed @c $ naturalToVector @c @n @r c
@@ -183,14 +183,9 @@ instance
     ( Symbolic c
     , KnownNat n
     , KnownNat r
-    , KnownNat (r - 1)
-    , KnownNat (r + r)
     , KnownRegisterSize rs
     , r ~ NumberOfRegisters (BaseField c) n rs
     , NFData (c (Vector r))
-    , Ord (Bool c) (UInt n rs c)
-    , BitState ByteString n c
-    , Iso (ByteString n c) (UInt n rs c)
     ) => EuclideanDomain (UInt n rs c) where
     divMod numerator d = bool @(Bool c) (q, r) (zero, zero) (d == zero)
         where

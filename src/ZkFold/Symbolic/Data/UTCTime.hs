@@ -16,6 +16,6 @@ newtype UTCTime c = UTCTime (UInt 11 Auto c)
 
 deriving newtype instance Eq (UInt 11 Auto c) => Eq (UTCTime c)
 
-deriving newtype instance SymbolicData c (UTCTime c)
+deriving newtype instance SymbolicData (UTCTime c)
 
 deriving newtype instance FromConstant Natural (UInt 11 Auto c) => FromConstant Natural (UTCTime c)

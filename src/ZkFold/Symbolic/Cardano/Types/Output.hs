@@ -36,22 +36,18 @@ deriving instance
 
 deriving instance
     ( Symbolic context
-    , KnownNat (TypeSize context (Value tokens context))
-    , KnownNat (TypeSize context (SingleAsset context))
+    , KnownNat (TypeSize (Value tokens context))
+    , KnownNat (TypeSize (SingleAsset context))
     , KnownNat tokens
-    ) => SymbolicData context (Output tokens datum context)
+    ) => SymbolicData (Output tokens datum context)
 
 deriving via (Structural (Output tokens datum (CtxCompilation i)))
          instance
-            ( ts ~ TypeSize (CtxCompilation i) (Output tokens datum (CtxCompilation i))
+            ( ts ~ TypeSize (Output tokens datum CtxCompilation)
             , 1 <= ts
             , KnownNat tokens
-            , KnownNat (TypeSize (CtxCompilation i) (Value tokens (CtxCompilation i)))
-            , Ord (Rep i)
-            , Foldable i
-            , Representable i
-            , ToConstant (Rep i) Natural
-            ) => Eq (Bool (CtxCompilation i)) (Output tokens datum (CtxCompilation i))
+            , KnownNat (TypeSize (Value tokens CtxCompilation))
+            ) => Eq (Bool CtxCompilation) (Output tokens datum CtxCompilation)
 
 txoAddress :: Output tokens datum context -> Address context
 txoAddress (Output (addr, _)) = addr

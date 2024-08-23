@@ -39,17 +39,17 @@ deriving instance
     , KnownNat inputs
     , KnownNat outputs
     , KnownNat mint
-    , KnownNat (TypeSize context (SingleAsset context))
-    , KnownNat (TypeSize context (UTCTime context))
-    , KnownNat (TypeSize context (OutputRef context))
-    , KnownNat (TypeSize context (Value tokens context))
-    , KnownNat (TypeSize context (Output tokens datum context))
-    , KnownNat (TypeSize context (Vector outputs (Output tokens datum context)))
-    , KnownNat (TypeSize context (Input tokens datum context))
-    , KnownNat (TypeSize context (Vector inputs (Input tokens datum context)))
-    , KnownNat (TypeSize context (Vector rinputs (Input tokens datum context)))
-    , KnownNat (TypeSize context (Value mint context))
-    ) => SymbolicData context (Transaction inputs rinputs outputs tokens mint datum context)
+    , KnownNat (TypeSize (SingleAsset context))
+    , KnownNat (TypeSize (UTCTime context))
+    , KnownNat (TypeSize (OutputRef context))
+    , KnownNat (TypeSize (Value tokens context))
+    , KnownNat (TypeSize (Output tokens datum context))
+    , KnownNat (TypeSize (Vector outputs (Output tokens datum context)))
+    , KnownNat (TypeSize (Input tokens datum context))
+    , KnownNat (TypeSize (Vector inputs (Input tokens datum context)))
+    , KnownNat (TypeSize (Vector rinputs (Input tokens datum context)))
+    , KnownNat (TypeSize (Value mint context))
+    ) => SymbolicData (Transaction inputs rinputs outputs tokens mint datum context)
 
 txRefInputs :: Transaction inputs rinputs outputs tokens mint datum context -> Vector rinputs (Input tokens datum context)
 txRefInputs (Transaction (ris, _)) = ris

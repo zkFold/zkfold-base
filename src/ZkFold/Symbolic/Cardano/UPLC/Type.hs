@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Cardano.UPLC.Type where
 
@@ -36,7 +37,7 @@ instance Semigroup (SomeType c) where
     _ <> _                                   = error "Semigroup (SomeType a): constructor mismatch"
 
 data SomeSymbolic c where
-    SomeData :: (Typeable t, SymbolicData c t, KnownNat (TypeSize c t)) => Proxy t -> SomeSymbolic c
+    SomeData :: (Typeable t, SymbolicData t, Context t ~ c, KnownNat (TypeSize t)) => Proxy t -> SomeSymbolic c
 
 getType :: SomeSymbolic c -> TypeRep
 getType (SomeData t)  = typeOf t

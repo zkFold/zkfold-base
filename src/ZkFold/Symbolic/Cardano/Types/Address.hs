@@ -24,7 +24,7 @@ newtype Address context = Address (AddressType context, (PaymentCredential conte
 deriving instance (Haskell.Eq (ByteString 4 context), Haskell.Eq (ByteString 224 context))
     => Haskell.Eq (Address context)
 
-deriving instance HApplicative context => SymbolicData context (Address context)
+deriving instance HApplicative context => SymbolicData (Address context)
 
 deriving via (Structural (Address (CtxCompilation i)))
     instance (Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural)

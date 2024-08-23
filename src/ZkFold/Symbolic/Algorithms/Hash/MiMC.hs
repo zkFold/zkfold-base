@@ -4,6 +4,7 @@
 module ZkFold.Symbolic.Algorithms.Hash.MiMC where
 
 import           Data.List.NonEmpty                (NonEmpty ((:|)), nonEmpty)
+import           Data.Proxy                        (Proxy (..))
 import           Numeric.Natural                   (Natural)
 import           Prelude                           hiding (Eq (..), Num (..), any, length, not, (!!), (/), (^), (||))
 
@@ -39,5 +40,5 @@ mimcHashN xs k = go
 class MiMCHash a c x where
     mimcHash :: [a] -> a -> x -> FieldElement c
 
-instance (Symbolic c, BaseField c ~ a, SymbolicData c x, Support c x ~ ()) => MiMCHash a c x where
-    mimcHash xs k = mimcHashN xs k . fromVector . fmap FieldElement . unpacked . flip (pieces @c) ()
+instance (Symbolic c, BaseField c ~ a, SymbolicData x, Context x ~ c, Support x ~ Proxy c) => MiMCHash a c x where
+    mimcHash xs k = mimcHashN xs k . fromVector . fmap FieldElement . unpacked . flip pieces Proxy

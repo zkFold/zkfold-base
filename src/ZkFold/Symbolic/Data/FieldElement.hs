@@ -33,7 +33,7 @@ deriving stock instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
 
 deriving stock instance Haskell.Ord (c Par1) => Haskell.Ord (FieldElement c)
 
-deriving newtype instance HFunctor c => SymbolicData c (FieldElement c)
+deriving newtype instance HFunctor c => SymbolicData (FieldElement c)
 
 deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
 
