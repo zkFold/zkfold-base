@@ -17,7 +17,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 data Ed25519 c r
 
 -- | 2^252 + 27742317777372353535851937790883648493 is the order of the multiplicative group in Ed25519
--- with the generator point defined below in @instance EllipticCurve (Ed25519 Void Void)@
+-- with the generator point defined below in @instance EllipticCurve (Ed25519 Void r)@
 --
 type Ed25519_Scalar = 7237005577332262213973186563042994240857116359379907606001950938285454250989
 instance Prime Ed25519_Scalar
