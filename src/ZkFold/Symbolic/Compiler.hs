@@ -54,6 +54,7 @@ solder f = pieces f (restore @(Support f) $ const inputC)
     where
         inputC = mempty { acOutput = acInput }
 
+-- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
     forall a c f y ni .
     ( KnownNat ni
