@@ -37,9 +37,7 @@ jobs:
     - name: Generate cache key
       # Creates plan.json file
       run: |
-        cabal build zkfold-base --dry-run
-        cabal build zkfold-base-test --dry-run
-        cabal build zkfold-base-examples --dry-run
+        cabal build all --dry-run
 
     - name: Restore cached dependencies
       uses: actions/cache/restore@v4.0.1
@@ -71,9 +69,7 @@ jobs:
       # If we had an exact cache hit, the dependencies will be up to date.
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
-        cabal build zkfold-base --only-dependencies
-        cabal build zkfold-base-test --only-dependencies
-        cabal build zkfold-base-examples --only-dependencies
+        cabal build all --only-dependencies
 
     # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
     - name: Save cached dependencies
@@ -86,9 +82,7 @@ jobs:
 
     - name: Build
       run: |
-        cabal build zkfold-base -f Pedantic
-        cabal build zkfold-base-test -f Pedantic
-        cabal build zkfold-base-examples -f Pedantic
+        cabal build all -f Pedantic
 
     # - name: Test
     #   run: cabal test all

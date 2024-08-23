@@ -37,9 +37,7 @@ jobs:
       shell: bash
       run: |
         cabal update
-        cabal new-build zkfold-base -f Pedantic
-        cabal new-build zkfold-base-test -f Pedantic
-        cabal new-build zkfold-base-examples -f Pedantic
+        cabal new-build all -f Pedantic
 
     - name: Upload package
       env:
