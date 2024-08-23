@@ -7,6 +7,7 @@ import           Prelude                                         hiding (Eq (..)
                                                                   (||))
 
 import           ZkFold.Symbolic.Cardano.Contracts.BatchTransfer (batchTransfer)
+import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Compiler                        (compileIO)
 
 exampleBatchTransfer :: IO ()
@@ -15,4 +16,4 @@ exampleBatchTransfer = do
 
     putStrLn "\nExample: Batch Transfer smart contract\n"
 
-    compileIO file batchTransfer
+    compileIO @F file batchTransfer
