@@ -38,10 +38,12 @@ import           ZkFold.Symbolic.Data.Class
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder ::
-    forall a c f .
+    forall a c f ni .
     ( Eq a
     , MultiplicativeMonoid a
-    , c ~ ArithmeticCircuit a
+    , KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)
@@ -56,16 +58,16 @@ solder f = pieces f (restore @(Support f) $ const inputC)
 
 -- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
-    forall n a c f y .
-    ( n ~ TypeSize c (Support c f)
-    , c ~ ArithmeticCircuit a (Vector n)
+    forall a c f y ni .
+    ( KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
     , Arithmetic a
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
-    , KnownNat (TypeSize (Support f))
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
@@ -75,16 +77,17 @@ compileForceOne = restore . const . optimize . forceOne . solder @a
 
 -- | Compiles function `f` into an arithmetic circuit.
 compile ::
-    forall n a c f y .
+    forall a c f y ni .
     ( Eq a
     , MultiplicativeMonoid a
-    , c ~ ArithmeticCircuit a
+    , KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
-    , KnownNat (TypeSize (Support f))
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
@@ -94,18 +97,18 @@ compile = restore . const . optimize . solder @a
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::
-    forall n a c f .
+    forall a c f ni .
     ( Eq a
     , MultiplicativeMonoid a
-    , n ~ TypeSize c (Support c f)
-    , c ~ ArithmeticCircuit a (Vector n)
+    , KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
     , ToJSON a
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
-    , KnownNat (TypeSize (Support f))
     ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = optimize (solder @a f) :: c (Vector (TypeSize f))
