@@ -24,4 +24,4 @@ exampleEq = do
 
     putStrLn "\nExample: (==) operation\n"
 
-    compileIO @2 @(Zp BLS12_381_Scalar) file (eq @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 2)))
+    compileIO @(Zp BLS12_381_Scalar) file (eq @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 2)))

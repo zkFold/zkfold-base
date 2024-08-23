@@ -49,14 +49,11 @@ solder ::
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
-    , KnownNat (TypeSize (Support f))
     ) => f -> c (Vector (TypeSize f))
 solder f = pieces f (restore @(Support f) $ const inputC)
     where
-        inputList = [1..(typeSize @(Support f))]
-        inputC = mempty { acInput = inputList, acOutput = unsafeToVector inputList }
+        inputC = mempty { acOutput = acInput }
 
--- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
     forall a c f y ni .
     ( KnownNat ni

@@ -17,4 +17,4 @@ exampleBatchTransfer = do
 
     putStrLn "\nExample: Batch Transfer smart contract\n"
 
-    compileIO @151810 @F file (batchTransfer @(CtxCompilation (Vector 151810)))
+    compileIO @F file (batchTransfer @(CtxCompilation (Vector 151810)))

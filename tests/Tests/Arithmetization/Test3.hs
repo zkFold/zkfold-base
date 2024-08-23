@@ -27,5 +27,5 @@ specArithmetization3 :: Spec
 specArithmetization3 = do
     describe "Arithmetization test 3" $ do
         it "should pass" $ do
-            let Bool r = compile @2 @(Zp 97) (testFunc @R) :: Bool R
+            let Bool r = compile @(Zp 97) (testFunc @R) :: Bool R
             Bool (Interpreter (eval r (unsafeToVector [3, 5]))) `shouldBe` testFunc (fromConstant (3 :: Natural)) (fromConstant (5 :: Natural))

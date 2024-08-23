@@ -22,4 +22,4 @@ exampleMiMC = do
 
     putStrLn "\nExample: MiMC hash function\n"
 
-    compileIO @2 @F file (mimcHash2 @F @(FieldElement (ArithmeticCircuit F (Vector 2))) mimcConstants zero)
+    compileIO @F file (mimcHash2 @F @(FieldElement (ArithmeticCircuit F (Vector 2))) mimcConstants zero)

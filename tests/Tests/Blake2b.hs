@@ -42,7 +42,7 @@ blake2bSimple =
 
 blake2bAC :: Spec
 blake2bAC =
-    let bs = compile (blake2b_512 @8) :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar))
+    let bs = compile blake2b_512 :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 8))
         ac = pieces bs Proxy
     in it "simple test with cardano-crypto " $ acSizeN ac == 564239
 

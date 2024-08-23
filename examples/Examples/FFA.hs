@@ -40,4 +40,4 @@ makeExample shortName name op = do
     let p = show $ value @p
     putStrLn $ "\nExample: (" ++ shortName ++ ") operation on FFA " ++ p
     let file = "compiled_scripts/ffa_" ++ p ++ "_" ++ name ++ ".json"
-    compileIO @14 @(Zp BLS12_381_Scalar) file op
+    compileIO @(Zp BLS12_381_Scalar) file op

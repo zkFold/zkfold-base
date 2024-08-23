@@ -22,4 +22,4 @@ exampleConditional = do
 
     putStrLn "\nExample: conditional\n"
 
-    compileIO @3 @F file (bool @B @(A Par1))
+    compileIO @F file (bool @B @(A Par1))

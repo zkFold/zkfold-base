@@ -24,4 +24,4 @@ exampleLEQ = do
 
     putStrLn "\nExample: (<=) operation\n"
 
-    compileIO @2 @(Zp BLS12_381_Scalar) file (leq @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 2)))
+    compileIO @(Zp BLS12_381_Scalar) file (leq @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 2)))

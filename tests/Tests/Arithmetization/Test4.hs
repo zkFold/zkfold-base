@@ -38,19 +38,19 @@ lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 
 testSameValue :: F -> Haskell.Bool
 testSameValue targetValue =
-    let Bool ac = compile @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
+    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
         b       = unPar1 (eval ac (V.singleton targetValue))
     in b Haskell.== one
 
 testDifferentValue :: F -> F -> Haskell.Bool
 testDifferentValue targetValue otherValue =
-    let Bool ac = compile @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
+    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
         b       = unPar1 (eval ac (V.singleton otherValue))
     in b Haskell.== zero
 
 testOnlyOutputZKP :: forall core . (CoreFunction C core) => F -> PlonkProverSecret C -> F -> Haskell.Bool
 testOnlyOutputZKP x ps targetValue =
-    let Bool ac = compile @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
+    let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
 
         (omega, k1, k2) = getParams 32
         witnessInputs = V.singleton targetValue
@@ -70,7 +70,7 @@ testOnlyOutputZKP x ps targetValue =
 
 testSafeOneInputZKP :: forall core . (CoreFunction C core) => F -> PlonkProverSecret C -> F -> Haskell.Bool
 testSafeOneInputZKP x ps targetValue =
-    let Bool ac = compileForceOne @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
+    let Bool ac = compileForceOne @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
 
         (omega, k1, k2) = getParams 32
         witnessInputs  = V.singleton targetValue
@@ -87,7 +87,7 @@ testSafeOneInputZKP x ps targetValue =
 
 testAttackSafeOneInputZKP :: forall core . (CoreFunction C core) => F -> PlonkProverSecret C -> F -> Haskell.Bool
 testAttackSafeOneInputZKP x ps targetValue =
-    let Bool ac = compileForceOne @1 @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
+    let Bool ac = compileForceOne @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
 
         (omega, k1, k2) = getParams 32
         witnessInputs  = V.singleton (targetValue + 1)

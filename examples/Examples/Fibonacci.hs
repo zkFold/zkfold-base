@@ -30,4 +30,4 @@ exampleFibonacci = do
 
     putStrLn "\nExample: Fibonacci index function\n"
 
-    compileIO @1 @(Zp BLS12_381_Scalar) file (fibonacciIndex @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 1)) nMax)
+    compileIO @(Zp BLS12_381_Scalar) file (fibonacciIndex @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 1)) nMax)

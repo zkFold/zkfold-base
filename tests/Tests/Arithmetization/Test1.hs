@@ -38,5 +38,5 @@ specArithmetization1 :: forall a . (FromConstant a a, Arithmetic a, Arbitrary a,
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do
-            let ac = compile @2 @a (testFunc @(ArithmeticCircuit a (Vector 2))) :: ArithmeticCircuit a (Vector 2) Par1
+            let ac = compile @a (testFunc @(ArithmeticCircuit a (Vector 2))) :: ArithmeticCircuit a (Vector 2) Par1
             property $ \x y -> testResult ac x y

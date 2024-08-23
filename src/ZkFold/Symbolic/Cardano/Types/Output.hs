@@ -43,11 +43,15 @@ deriving instance
 
 deriving via (Structural (Output tokens datum (CtxCompilation i)))
          instance
-            ( ts ~ TypeSize (Output tokens datum CtxCompilation)
+            ( ts ~ TypeSize (Output tokens datum (CtxCompilation i))
             , 1 <= ts
             , KnownNat tokens
-            , KnownNat (TypeSize (Value tokens CtxCompilation))
-            ) => Eq (Bool CtxCompilation) (Output tokens datum CtxCompilation)
+            , KnownNat (TypeSize (Value tokens (CtxCompilation i)))
+            , Ord (Rep i)
+            , Representable i
+            , Foldable i
+            , ToConstant (Rep i) Natural
+            ) => Eq (Bool (CtxCompilation i)) (Output tokens datum (CtxCompilation i))
 
 txoAddress :: Output tokens datum context -> Address context
 txoAddress (Output (addr, _)) = addr

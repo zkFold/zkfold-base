@@ -26,7 +26,7 @@ tautology x y = (x /= y) || (x == y)
 
 testTautology :: forall a . Arithmetic a => a -> a -> Haskell.Bool
 testTautology x y =
-    let Bool (ac :: ArithmeticCircuit a (Vector 2) Par1) = compile @2 @a (tautology @(ArithmeticCircuit a (Vector 2)))
+    let Bool (ac :: ArithmeticCircuit a (Vector 2) Par1) = compile @a (tautology @(ArithmeticCircuit a (Vector 2)))
         b       = unPar1 (eval ac (unsafeToVector [x, y]))
     in b Haskell.== one
 

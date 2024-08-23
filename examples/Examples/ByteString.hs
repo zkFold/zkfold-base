@@ -36,7 +36,7 @@ exampleByteStringExtend = do
     let k = show $ natVal (Proxy @k)
     putStrLn $ "\nExample: Extending a bytestring of length " ++ n ++ " to length " ++ k
     let file = "compiled_scripts/bytestring" ++ n ++ "_to_" ++ k ++ ".json"
-    compileIO @n @(Zp BLS12_381_Scalar) file $ extend @(ByteString n (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n))) @(ByteString k (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n)))
+    compileIO @(Zp BLS12_381_Scalar) file $ extend @(ByteString n (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n))) @(ByteString k (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n)))
 
 type Binary a = a -> a -> a
 
@@ -47,4 +47,4 @@ makeExample shortName name op = do
     let n = show $ natVal (Proxy @n)
     putStrLn $ "\nExample: (" ++ shortName ++ ") operation on ByteString" ++ n
     let file = "compiled_scripts/bytestring" ++ n ++ "_" ++ name ++ ".json"
-    compileIO @(n+n) @(Zp BLS12_381_Scalar) file op
+    compileIO @(Zp BLS12_381_Scalar) file op

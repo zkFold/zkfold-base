@@ -80,4 +80,4 @@ makeExample shortName name op = do
     let n = show $ natVal (Proxy @n)
     putStrLn $ "\nExample: (" ++ shortName ++ ") operation on UInt" ++ n
     let file = "compiled_scripts/uint" ++ n ++ "_" ++ name ++ ".json"
-    compileIO @(Num n + Num n) @(Zp BLS12_381_Scalar) file op
+    compileIO @(Zp BLS12_381_Scalar) file op
