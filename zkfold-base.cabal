@@ -135,6 +135,11 @@ library
       ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
       ZkFold.Symbolic.Algorithms.Hash.SHA2
       ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants
+      ZkFold.Symbolic.Base.Circuit
+      ZkFold.Symbolic.Base.Function
+      ZkFold.Symbolic.Base.Num
+      ZkFold.Symbolic.Base.Polynomial
+      ZkFold.Symbolic.Base.Vector
       ZkFold.Symbolic.Cardano.Wrapper
       ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
       ZkFold.Symbolic.Cardano.Contracts.RandomOracle
@@ -210,6 +215,8 @@ library
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
+      distributive                          < 0.7,
+      indexed-transformers                  < 0.2,
       lens                                       ,
       mtl                                   < 2.4,
       optics                                < 0.5,
