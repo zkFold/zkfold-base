@@ -1,11 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 {-# OPTIONS_GHC -Wno-orphans     #-}
 
 module ZkFold.Symbolic.Cardano.UPLC where
 
 import           Data.Maybe                             (fromJust)
+import           Data.Type.Equality                     (type (~))
 import           Data.Typeable                          (Proxy (..), Typeable, cast)
 import           Prelude                                (Eq (..), error, otherwise, snd, ($))
 
@@ -20,7 +22,7 @@ import           ZkFold.Symbolic.Data.Class             (SymbolicData)
 
 data ArgList name c where
     ArgListEmpty :: ArgList name c
-    ArgListCons  :: (Typeable t, SymbolicData c t) => (name, t) -> ArgList name c -> ArgList name c
+    ArgListCons  :: (Typeable t, SymbolicData t, S.Context t ~ c) => (name, t) -> ArgList name c -> ArgList name c
 
 class FromUPLC name fun c where
     fromUPLC :: ArgList name c -> Term name fun c -> S.SomeData c
@@ -37,9 +39,9 @@ instance forall name fun c . (Eq name, Typeable name, Typeable fun, Eq fun, Plut
                     t2' = functionToData t2
                 in case (t1', t2') of
                     (SomeSym (SomeData (_ :: Proxy t1)), SomeSym (SomeData (_ :: Proxy t2))) ->
-                        S.SomeData $ \(arg :: t1) ->
+                        S.SomeData @(t1 -> t2) $ \arg ->
                             case fromUPLC (ArgListCons (x, arg) args) f of
-                                S.SomeData res -> fromJust $ cast @_ @t2 res
+                                S.SomeData res -> fromJust $ cast res
                     _ -> error "fromUPLC: LamAbs"
             _ -> error "fromUPLC: LamAbs"
     fromUPLC args (Apply f x) =

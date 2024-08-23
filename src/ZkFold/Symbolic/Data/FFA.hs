@@ -35,7 +35,7 @@ type Size = 7
 -- | Foreign-field arithmetic based on https://cr.yp.to/papers/mmecrt.pdf
 newtype FFA (p :: Natural) c = FFA (c (Vector Size))
 
-deriving newtype instance SymbolicData c (FFA p c)
+deriving newtype instance SymbolicData (FFA p c)
 
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])

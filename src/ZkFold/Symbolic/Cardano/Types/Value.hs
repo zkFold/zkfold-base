@@ -27,8 +27,8 @@ deriving instance (Haskell.Eq (ByteString 224 context), Haskell.Eq (ByteString 2
 deriving instance
     ( Symbolic context
     , KnownNat n
-    , KnownNat (TypeSize context (SingleAsset context))
-    ) => SymbolicData context (Value n context)
+    , KnownNat (TypeSize (SingleAsset context))
+    ) => SymbolicData (Value n context)
 
 instance Symbolic context => Scale Natural (Value n context) where
     n `scale` Value v = Value $ fmap (\(pid, (aname, q)) -> (pid, (aname, n `scale` q))) v

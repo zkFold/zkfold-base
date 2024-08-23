@@ -60,7 +60,7 @@ deriving instance Eq (c Par1) => Eq (Bool c)
 instance (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
     show (fromBool -> x) = if x == one then "True" else "False"
 
-deriving newtype instance HFunctor c => SymbolicData c (Bool c)
+deriving newtype instance HFunctor c => SymbolicData (Bool c)
 
 instance Symbolic c => BoolType (Bool c) where
     true = Bool $ embed (Par1 one)

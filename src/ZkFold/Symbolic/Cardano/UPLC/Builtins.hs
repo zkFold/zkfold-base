@@ -27,8 +27,8 @@ data BuiltinFunctions =
 -- TODO: use shortcuts to make these definitions more readable
 instance
     ( Typeable c
-    , S.SymbolicData c (c Par1)
-    , KnownNat (S.TypeSize c (c Par1))
+    , S.SymbolicData (c Par1)
+    , KnownNat (S.TypeSize (c Par1))
     , Semiring (c Par1)
     ) => PlutusBuiltinFunction c BuiltinFunctions where
 

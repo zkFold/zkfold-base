@@ -35,10 +35,11 @@ instance
     , S.BaseField c ~ a
     , r ~ NumberOfRegisters a 256 rs
     , KnownNat r
-    ) => SymbolicData c (Point (Ed25519 c rs)) where
+    ) => SymbolicData (Point (Ed25519 c rs)) where
 
-    type Support c (Point (Ed25519 c rs)) = Support c (UInt 256 rs c)
-    type TypeSize c (Point (Ed25519 c rs)) = TypeSize c (UInt 256 rs c) + TypeSize c (UInt 256 rs c)
+    type Context (Point (Ed25519 c rs)) = c
+    type Support (Point (Ed25519 c rs)) = Support (UInt 256 rs c)
+    type TypeSize (Point (Ed25519 c rs)) = TypeSize (UInt 256 rs c) + TypeSize (UInt 256 rs c)
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
     -- We can encode the point at infinity as (0, 0), therefore.
