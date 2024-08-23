@@ -18,21 +18,21 @@ import           ZkFold.Symbolic.Data.Combinators     (Extend (..), Iso (..), Re
 import           ZkFold.Symbolic.Data.UInt            (UInt)
 
 exampleByteStringAnd ::
-  (Symbolic c, KnownNat n) => ByteString n c -> ByteString n c -> ByteString n c
+  (KnownNat n, Symbolic c) => ByteString n c -> ByteString n c -> ByteString n c
 exampleByteStringAnd = (&&)
 
 exampleByteStringOr ::
-  (Symbolic c, KnownNat n) => ByteString n c -> ByteString n c -> ByteString n c
+  (KnownNat n, Symbolic c) => ByteString n c -> ByteString n c -> ByteString n c
 exampleByteStringOr = (||)
 
 exampleByteStringExtend ::
-  (Symbolic c, KnownNat n, KnownNat k, n <= k) =>
+  (KnownNat n, KnownNat k, n <= k, Symbolic c) =>
   ByteString n c -> ByteString k c
 exampleByteStringExtend = extend
 
 exampleByteStringAdd ::
-  forall c n. (Symbolic c, KnownNat n) => ByteString n c -> ByteString n c -> ByteString n c
+  forall n c. (KnownNat n, Symbolic c) => ByteString n c -> ByteString n c -> ByteString n c
 exampleByteStringAdd x y = from (from x + from y :: UInt n Auto c)
 
-exampleSHA :: SHA2 "SHA256" c n => ByteString n c -> ByteString 256 c
+exampleSHA :: forall n c. SHA2 "SHA256" c n => ByteString n c -> ByteString 256 c
 exampleSHA = sha2 @"SHA256"
