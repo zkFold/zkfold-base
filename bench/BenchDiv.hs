@@ -36,8 +36,6 @@ divisionCircuit
     => KnownRegisterSize r
     => rs ~ NumberOfRegisters (Zp p) n r
     => KnownNat rs
-    => KnownNat (rs - 1)
-    => KnownNat (rs + rs)
     => PrimeField (Zp p)
     => IO (UInt n r (ArithmeticCircuit (Zp p)), UInt n r (ArithmeticCircuit (Zp p)))
 divisionCircuit = do
@@ -57,8 +55,6 @@ benchOps
     => KnownRegisterSize r
     => rs ~ NumberOfRegisters (Zp p) n r
     => KnownNat rs
-    => KnownNat (rs - 1)
-    => KnownNat (rs + rs)
     => Benchmark
 benchOps = env (divisionCircuit @n @p @r) $ \ ~ac ->
     bench ("Dividing UInts of size " <> show (value @n)) $ nf (\(a, b) -> (evalUInt a, evalUInt b)) ac

@@ -200,14 +200,9 @@ instance
     ( Symbolic c
     , KnownNat n
     , KnownNat r
-    , KnownNat (r - 1)
-    , KnownNat (r + r)
     , KnownRegisterSize rs
     , r ~ NumberOfRegisters (BaseField c) n rs
     , NFData (c (Vector r))
-    , Ord (Bool c) (UInt n rs c)
-    , BitState ByteString n c
-    , Iso (ByteString n c) (UInt n rs c)
     ) => EuclideanDomain (UInt n rs c) where
     divMod numerator d = bool @(Bool c) (q, r) (zero, zero) (d == zero)
         where
