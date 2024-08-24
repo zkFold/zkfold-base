@@ -78,6 +78,13 @@ common options
       TypeFamilies,
       ViewPatterns
 
+common options-exe
+    import: options
+    ghc-options:
+      -rtsopts
+    ghc-prof-options:
+      -with-rtsopts=-pj
+
 library
     import: options
     exposed-modules:
@@ -229,12 +236,33 @@ library
       vector-binary-instances               < 0.3
     hs-source-dirs: src
 
-test-suite zkfold-base-test
+library zkfold-symbolic-examples
     import: options
+    exposed-modules:
+      ZkFold.Symbolic.Examples
+    other-modules:
+      Examples.BatchTransfer
+      Examples.ByteString
+      Examples.Conditional
+      Examples.Eq
+      Examples.FFA
+      Examples.Fibonacci
+      Examples.LEQ
+      Examples.MiMCHash
+      Examples.ReverseList
+      Examples.UInt
+    build-depends:
+      base,
+      containers,
+      deepseq,
+      zkfold-base,
+    hs-source-dirs: examples
+
+test-suite zkfold-base-test
+    import: options-exe
     type: exitcode-stdio-1.0
     ghc-options: 
-        -rtsopts
-        "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N" 
+        "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N"
     main-is: Main.hs
     other-modules:
       Tests.ArithmeticCircuit
@@ -278,83 +306,37 @@ test-suite zkfold-base-test
       zkfold-base                                ,
     hs-source-dirs: tests
 
-test-suite zkfold-base-examples
-    import: options
-    type: exitcode-stdio-1.0
-    ghc-options: -rtsopts
-    main-is: Main.hs
-    other-modules:
-      Examples.ByteString
-      Examples.Conditional
-      Examples.Eq
-      Examples.FFA
-      Examples.Fibonacci
-      Examples.LEQ
-      Examples.MiMCHash
-      Examples.ReverseList
-      Examples.UInt
-      Examples.BatchTransfer
-    build-depends:
-      base                          >= 4.9 && < 5,
-      containers                                 ,
-      cryptohash-sha256                          ,
-      directory                             < 1.4,
-      tfp                                        ,
-      zkfold-base                                ,
-    hs-source-dirs: examples
-
 benchmark polynomial-multiplication
-    import:           options
+    import:           options-exe
     main-is:          BenchPolyMul.hs
     hs-source-dirs:   bench
     type:             exitcode-stdio-1.0
-    ghc-options:      
-      -rtsopts
+    ghc-options:
       -O3
-    build-depends: 
-      base, 
+    build-depends:
+      base,
       array,
       deepseq,
       random,
       tasty-bench,
       vector,
-      zkfold-base 
+      zkfold-base
 
-benchmark arithmetic-circuit 
-    import:           options
-    main-is:          BenchAC.hs
+benchmark compiler-benchmark
+    import:           options-exe
+    main-is:          BenchCompiler.hs
     hs-source-dirs:   bench
     type:             exitcode-stdio-1.0
-    ghc-options:      
-      -rtsopts
+    ghc-options:
+      -fprof-auto
+      -fprof-cafs
       -O3
-    build-depends: 
-      base, 
-      array,
+    build-depends:
+      base,
+      bytestring,
       containers,
       deepseq,
-      random,
       tasty-bench,
-      time,
-      vector,
-      zkfold-base 
-
-benchmark division 
-    import:           options
-    main-is:          BenchDiv.hs
-    hs-source-dirs:   bench
-    type:             exitcode-stdio-1.0
-    ghc-options:      
-      -rtsopts
-      -O3
-    build-depends: 
-      base, 
-      array,
-      containers,
-      deepseq,
-      random,
-      tasty-bench,
-      time,
-      vector,
-      zkfold-base 
-
+      tasty-golden,
+      zkfold-base,
+      zkfold-symbolic-examples

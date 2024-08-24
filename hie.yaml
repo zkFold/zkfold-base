@@ -3,17 +3,14 @@ cradle:
     - path: "./src"
       component: "lib:zkfold-base"
 
+    - path: "./examples"
+      component: "zkfold-base:lib:zkfold-symbolic-examples"
+
     - path: "./tests"
       component: "zkfold-base:test:zkfold-base-test"
-
-    - path: "./examples"
-      component: "zkfold-base:test:zkfold-base-examples"
 
     - path: "./bench/BenchPolyMul.hs"
       component: "zkfold-base:bench:polynomial-multiplication"
 
-    - path: "./bench/BenchAC.hs"
-      component: "zkfold-base:bench:arithmetic-circuit"
-    
-    - path: "./bench/BenchDiv.hs"
-      component: "zkfold-base:bench:division"
+    - path: "./bench/BenchCompiler.hs"
+      component: "zkfold-base:bench:compiler-benchmark"
