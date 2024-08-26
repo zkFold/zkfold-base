@@ -35,7 +35,7 @@ instance
     , Binary c
     , Binary (ProverMessage f a)
 --    , Bits a ~ [a]
-    ) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) where
+    ) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) core where
       type Transcript (FiatShamir f (CommitOpen f c a))  = ByteString
       type SetupProve (FiatShamir f (CommitOpen f c a))  = FiatShamir f (CommitOpen f c a)
       type SetupVerify (FiatShamir f (CommitOpen f c a)) = FiatShamir f (CommitOpen f c a)

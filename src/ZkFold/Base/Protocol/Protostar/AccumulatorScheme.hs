@@ -6,6 +6,7 @@ module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
 import           Control.Lens                                    ((^.))
 import qualified Data.Vector                                     as DV
+import           Debug.Trace
 import           GHC.IsList                                      (IsList (..))
 import           Prelude                                         (fmap, otherwise, type (~), ($), (&&), (.), (<$>), (<),
                                                                   (<=), (==))
@@ -24,16 +25,13 @@ import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (Input, LMap, SpecialSoundProtocol (..))
 import           ZkFold.Prelude                                  (length, (!!))
 
-
-import Debug.Trace
-
 traceP :: P.Show a => P.String -> a -> a
 traceP s a = trace (s P.<> P.show a) a
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
 class AccumulatorScheme i f c m a where
-  prover   :: a                          
+  prover   :: a
            -> f                          -- Commitment key ck
            -> Accumulator i f c m        -- accumulator
            -> InstanceProofPair i c m    -- instance-proof pair (pi, π)
@@ -46,7 +44,7 @@ class AccumulatorScheme i f c m a where
            -> [c]                        -- accumulation proof E_j
            -> P.Bool
 
-  decider  :: a                      
+  decider  :: a
            -> f                     -- Commitment key ck
            -> Accumulator i f c m   -- accumulator
            -> P.Bool
@@ -70,9 +68,9 @@ instance
     , RandomOracle (f, c) f                                    -- Random oracle ρ_NARK
     , RandomOracle i f                                         -- Random oracle for compressing public input
     , RandomOracle (AccumulatorInstance i f c, i, [c], [c]) f  -- Random oracle ρ_acc
-    , Commit c [c] c
+    , HomomorphicCommit f [f] f
     ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen f c a)) where
-  prover (FiatShamir sps i) ck acc ip@(InstanceProofPair pubi (NARKProof pi_x pi_w)) = -- trace traceStr $ -- P.undefined 
+  prover (FiatShamir sps i) ck acc ip@(InstanceProofPair pubi (NARKProof pi_x pi_w)) = -- trace traceStr $ -- P.undefined
         (Accumulator (AccumulatorInstance (fromList pi'') ci'' ri'' eCapital' mu') mi'', eCapital_j)
       where
           traceStr :: P.String
@@ -120,7 +118,7 @@ instance
           mappedVars = fmap (PM.evalPolynomial PM.evalMonomial ixToPoly) <$> f_sps
 
           e_uni :: [PU.Poly f]
-          e_uni = P.foldl (P.zipWith (+)) (P.repeat zero) $ V.mapWithIx (\j p -> ((xMu ^ (d -! j)) *) <$> p) $ mappedVars 
+          e_uni = P.foldl (P.zipWith (+)) (P.repeat zero) $ V.mapWithIx (\j p -> ((xMu ^ (d -! j)) *) <$> p) $ mappedVars
 
           e_all = (DV.toList . PU.fromPoly) <$> e_uni
 
@@ -128,7 +126,7 @@ instance
           e_j = P.tail e_all
 
           -- Fig. 3, step 3
-          eCapital_j = commit ck <$> e_j
+          eCapital_j = hcommit ck <$> e_j
 
           -- Fig. 3, step 4
           alpha :: f
@@ -181,7 +179,7 @@ instance
 
 
           -- Fig. 5, step 1
-          commitsEq = P.and $ P.zipWith (\cl m -> commit ck [m] == cl) (acc^.x^.c) (acc^.w)
+          commitsEq = P.and $ P.zipWith (\cl m -> hcommit ck [m] == cl) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           f_sps = mulDeg (acc^.x^.mu) d <$> algebraicMap @f sps (acc^.x^.pi) [Open $ acc^.w] (acc^.x^.r)
@@ -198,7 +196,7 @@ instance
           err = PM.evalPolynomial PM.evalMonomial ixToVal <$> f_sps
 
           -- Fig. 5, step 3
-          eEq = acc^.x^.e == commit ck err
+          eEq = acc^.x^.e == hcommit ck err
 
 mulDeg
     :: MultiplicativeSemigroup f

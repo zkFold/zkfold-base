@@ -139,7 +139,7 @@ fold
     => P.Show a
     => Scale a a
     => RandomOracle a a
-    => Commit a [a] a
+    => HomomorphicCommit a [a] a
     => SymbolicData (ArithmeticCircuit a) (FieldElement c)
     => TypeSize (ArithmeticCircuit a) (FieldElement c) ~ 1
     => Support (ArithmeticCircuit a) (FieldElement c) ~ ()
@@ -182,7 +182,7 @@ foldN
     => KnownNat n
     => Scale a a
     => RandomOracle a a
-    => Commit a [a] a
+    => HomomorphicCommit a [a] a
     => a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
@@ -204,7 +204,7 @@ foldStep
     => KnownNat n
     => Scale a a
     => RandomOracle a a
-    => Commit a [a] a
+    => HomomorphicCommit a [a] a
     => a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
