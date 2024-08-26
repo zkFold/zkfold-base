@@ -11,8 +11,8 @@ import           Data.Map                                            hiding (dro
                                                                       splitAt, take, toList)
 import           GHC.Generics                                        (Par1 (..))
 import           GHC.Num                                             (integerToNatural)
-import           Prelude                                             (Show, mempty, pure, return, show, ($),
-                                                                      (++), (<$>))
+import           Prelude                                             (Show, mempty, pure, return, show, ($), (++),
+                                                                      (<$>))
 import qualified Prelude                                             as Haskell
 import           System.Random                                       (mkStdGen)
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, chooseInteger,
