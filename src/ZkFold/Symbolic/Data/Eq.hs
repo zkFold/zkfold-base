@@ -5,19 +5,19 @@ module ZkFold.Symbolic.Data.Eq (
     elem
 ) where
 
-import           Data.Bool                       (bool)
-import qualified Data.Eq                         as Haskell
-import           Data.Foldable                   (Foldable)
-import           Data.Traversable                (Traversable, for)
-import qualified Data.Zip                        as Z
-import           Prelude                         (return, ($))
+import           Data.Bool                        (bool)
+import qualified Data.Eq                          as Haskell
+import           Data.Foldable                    (Foldable)
+import           Data.Traversable                 (Traversable, for)
+import qualified Data.Zip                         as Z
+import           Prelude                          (return, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool       (Bool (Bool), BoolType (..), all, any)
+import           ZkFold.Symbolic.Data.Bool        (Bool (Bool), BoolType (..), all, any)
+import           ZkFold.Symbolic.Data.Combinators (runInvert)
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Data.Combinators (runInvert)
 
 class Eq b a where
     infix 4 ==

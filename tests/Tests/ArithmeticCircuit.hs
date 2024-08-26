@@ -4,25 +4,25 @@
 
 module Tests.ArithmeticCircuit (exec1, it, specArithmeticCircuit) where
 
-import           Data.Bool                                              (bool)
-import           GHC.Generics                                           (Par1 (..))
-import           ZkFold.Base.Data.Par1                                  ()
-import           Prelude                                                (IO, Show, String, id, ($))
-import qualified Prelude                                                as Haskell
+import           Data.Bool                                   (bool)
+import           GHC.Generics                                (Par1 (..))
+import           Prelude                                     (IO, Show, String, id, ($))
+import qualified Prelude                                     as Haskell
 import qualified Test.Hspec
-import           Test.Hspec                                             (Spec, describe, hspec)
+import           Test.Hspec                                  (Spec, describe, hspec)
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                        (Zp)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import qualified ZkFold.Base.Data.Vector                                as V
+import           ZkFold.Base.Data.Par1                       ()
+import qualified ZkFold.Base.Data.Vector                     as V
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.DiscreteField
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Symbolic.Class
 
 correctHom0 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = fromFieldElement f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a
@@ -31,12 +31,12 @@ correctHom1 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field
 correctHom1 f x = let r = fromFieldElement $ f (FieldElement $ embed @(ArithmeticCircuit a) $ Par1 x) in checkClosedCircuit r .&&. exec1 r === f x
 
 correctHom2 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field b => b -> b -> b) -> a -> a -> Property
-correctHom2 f x y = let r = fromFieldElement $ f (FieldElement $ embed @(ArithmeticCircuit a) $ Par1 x) (FieldElement $ embed @(ArithmeticCircuit a) $ Par1 y)  
+correctHom2 f x y = let r = fromFieldElement $ f (FieldElement $ embed @(ArithmeticCircuit a) $ Par1 x) (FieldElement $ embed @(ArithmeticCircuit a) $ Par1 y)
                     in checkClosedCircuit r .&&. exec1 r === f x y
 
 it :: Testable prop => String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
-                                           
+
 specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, Scale a a, Show a) => IO ()
 specArithmeticCircuit' = hspec $ do
     describe "ArithmeticCircuit specification" $ do

@@ -4,30 +4,30 @@
 
 module ZkFold.Symbolic.Data.FFA (FFA (..)) where
 
-import           Control.Applicative                                    (pure)
-import           Control.Monad                                          (Monad, return, (>>=))
-import           Data.Foldable                                          (any, foldlM)
-import           Data.Function                                          (const, ($), (.))
-import           Data.Functor                                           (fmap, (<$>))
-import           Data.List                                              (dropWhile, (++))
-import           Data.Ratio                                             ((%))
-import           Data.Traversable                                       (for, traverse)
-import           Data.Tuple                                             (fst, snd, uncurry)
-import           Data.Zip                                               (zipWith)
-import           Prelude                                                (Integer, error)
-import qualified Prelude                                                as Haskell
+import           Control.Applicative              (pure)
+import           Control.Monad                    (Monad, return, (>>=))
+import           Data.Foldable                    (any, foldlM)
+import           Data.Function                    (const, ($), (.))
+import           Data.Functor                     (fmap, (<$>))
+import           Data.List                        (dropWhile, (++))
+import           Data.Ratio                       ((%))
+import           Data.Traversable                 (for, traverse)
+import           Data.Tuple                       (fst, snd, uncurry)
+import           Data.Zip                         (zipWith)
+import           Prelude                          (Integer, error)
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                        (Zp, inv)
+import           ZkFold.Base.Algebra.Basic.Field  (Zp, inv)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
-import           ZkFold.Prelude                                         (iterateM, length)
+import           ZkFold.Prelude                   (iterateM, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators                       (log2, maxBitsPerFieldElement, expansion, splitExpansion)
-import           ZkFold.Symbolic.Data.Ord                               (blueprintGE)
+import           ZkFold.Symbolic.Data.Combinators (expansion, log2, maxBitsPerFieldElement, splitExpansion)
+import           ZkFold.Symbolic.Data.Ord         (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                           (MonadCircuit, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned)
 
 type Size = 7
 

@@ -10,23 +10,23 @@ module ZkFold.Symbolic.Compiler (
     solder,
 ) where
 
-import           Data.Aeson                                             (ToJSON)
-import           Data.Eq                                                (Eq)
-import           Data.Function                                          (const, (.))
-import           Data.Proxy                                             (Proxy)
-import           Prelude                                                (FilePath, IO, Monoid (mempty), Show (..),
-                                                                         putStrLn, type (~), ($), (++), Traversable)
+import           Data.Aeson                                 (ToJSON)
+import           Data.Eq                                    (Eq)
+import           Data.Function                              (const, (.))
+import           Data.Functor                               (($>))
+import           Data.Proxy                                 (Proxy)
+import           Data.Traversable                           (for)
+import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), Traversable,
+                                                             putStrLn, type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                                (Vector, unsafeToVector)
-import           ZkFold.Prelude                                         (writeFileJSON)
-import           ZkFold.Symbolic.Class                                  (Arithmetic, Symbolic (..))
+import           ZkFold.Base.Data.Vector                    (Vector, unsafeToVector)
+import           ZkFold.Prelude                             (writeFileJSON)
+import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Class
-import Data.Traversable (for)
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit(..))
-import Data.Functor (($>))
+import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
 
 {-
     ZkFold Symbolic compiler module dependency order:

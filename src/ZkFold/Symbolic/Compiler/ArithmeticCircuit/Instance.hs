@@ -6,29 +6,27 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
-import           Data.Aeson                                             hiding (Bool)
-import           Data.Map                                               hiding (toList, drop, foldl, foldl', foldr, map, null,
-                                                                         splitAt, take)
-import           GHC.Generics                                           (Par1 (..))
-import           GHC.Num                                                (integerToNatural)
-import           Prelude                                                (Show, mempty, pure, return, show, ($), (++),
-                                                                         (<$>), (.), concatMap)
-import qualified Prelude                                                as Haskell
-import           System.Random                                          (mkStdGen)
-import           Test.QuickCheck                                        (Arbitrary (arbitrary), Gen, chooseInteger,
-                                                                         elements)
+import           Data.Aeson                                          hiding (Bool)
+import           Data.Containers.ListUtils                           (nubOrd)
+import           Data.List                                           (sort)
+import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
+                                                                      splitAt, take, toList)
+import           GHC.Generics                                        (Par1 (..))
+import           GHC.IsList                                          (IsList (..))
+import           GHC.Num                                             (integerToNatural)
+import           Prelude                                             (Show, concatMap, mempty, pure, return, show, ($),
+                                                                      (++), (.), (<$>))
+import qualified Prelude                                             as Haskell
+import           System.Random                                       (mkStdGen)
+import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, chooseInteger,
+                                                                      elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Par1                                  ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    hiding (constraint)
-import           ZkFold.Symbolic.Data.FieldElement                      (FieldElement (..))
-
-
-import           Data.Containers.ListUtils                                 (nubOrd)
-import           Data.List                                                 (sort)
-import           GHC.IsList                                                (IsList (..))
-import           ZkFold.Base.Algebra.Polynomials.Multivariate              (variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (variables)
+import           ZkFold.Base.Data.Par1                               ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
+import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 
 ------------------------------------- Instances -------------------------------------
 

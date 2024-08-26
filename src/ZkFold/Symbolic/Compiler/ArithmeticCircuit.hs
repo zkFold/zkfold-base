@@ -33,28 +33,27 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         checkClosedCircuit
     ) where
 
-import           Control.Monad.State                                    (execState)
-import           Data.Map                                               hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                         take)
-import           GHC.Generics                                           (U1 (..))
-import           Numeric.Natural                                        (Natural)
-import           Prelude                                                hiding (Num (..), drop, length, product,
-                                                                         splitAt, sum, take, (!!), (^))
-import           Test.QuickCheck                                        (Arbitrary, Property, conjoin, property, vector,
-                                                                         withMaxSuccess, (===))
-import           Text.Pretty.Simple                                     (pPrint)
+import           Control.Monad                                       (foldM)
+import           Control.Monad.State                                 (execState)
+import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                      take)
+import           GHC.Generics                                        (U1 (..))
+import           Numeric.Natural                                     (Natural)
+import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
+                                                                      sum, take, (!!), (^))
+import           Test.QuickCheck                                     (Arbitrary, Property, conjoin, property, vector,
+                                                                      withMaxSuccess, (===))
+import           Text.Pretty.Simple                                  (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate           (evalMonomial, evalPolynomial)
-import           ZkFold.Prelude                                         (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                         apply, eval, eval1, exec, exec1,
-                                                                         witnessGenerator)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial)
+import           ZkFold.Prelude                                      (length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
+                                                                      apply, eval, eval1, exec, exec1, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
-import ZkFold.Symbolic.Data.Combinators (expansion)
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit(..))
-import           Control.Monad                                          (foldM)
+import           ZkFold.Symbolic.Data.Combinators                    (expansion)
+import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
 
 --------------------------------- High-level functions --------------------------------
 

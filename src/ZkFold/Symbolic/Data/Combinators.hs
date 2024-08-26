@@ -6,30 +6,30 @@
 
 module ZkFold.Symbolic.Data.Combinators where
 
-import           Control.Monad                                          (mapM)
-import           Data.Kind                                              (Type)
-import           Data.List                                              (find, splitAt)
-import           Data.List.Split                                        (chunksOf)
-import           Data.Maybe                                             (fromMaybe)
-import           Data.Proxy                                             (Proxy (..))
-import           Data.Ratio                                             ((%))
-import           Data.Type.Bool                                         (If)
+import           Control.Monad                    (mapM)
+import           Data.Foldable                    (Foldable (..), foldlM)
+import           Data.Kind                        (Type)
+import           Data.List                        (find, splitAt)
+import           Data.List.Split                  (chunksOf)
+import           Data.Maybe                       (fromMaybe)
+import           Data.Proxy                       (Proxy (..))
+import           Data.Ratio                       ((%))
+import           Data.Traversable                 (Traversable, for)
+import           Data.Type.Bool                   (If)
+import           Data.Type.Equality               (type (~))
 import           Data.Type.Ord
+import qualified Data.Zip                         as Z
+import           GHC.Base                         (const, return)
+import           GHC.List                         (reverse)
 import           GHC.TypeNats
-import           Prelude                                                (error, head, pure, tail, ($), (.), (<$>), (<>))
-import qualified Prelude                                                as Haskell
+import           Prelude                          (error, head, pure, tail, ($), (.), (<$>), (<>))
+import qualified Prelude                          as Haskell
 import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                       (value)
+import           ZkFold.Base.Algebra.Basic.Number (value)
+import           ZkFold.Prelude                   (drop, take, (!!))
 import           ZkFold.Symbolic.MonadCircuit
-import GHC.Base ( return, const )
-import Data.Traversable ( for, Traversable )
-import GHC.List (reverse)
-import Data.Foldable ( foldlM, Foldable(..) )
-import ZkFold.Prelude ( take, (!!), drop )
-import qualified Data.Zip as Z
-import           Data.Type.Equality                          (type (~))
 
 -- | A class for isomorphic types.
 -- The @Iso b a@ context ensures that transformations in both directions are defined

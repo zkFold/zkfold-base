@@ -5,27 +5,27 @@
 
 module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), blueprintGE, bitwiseGE, bitwiseGT, getBitsBE) where
 
-import           Control.Monad                                          (foldM)
-import qualified Data.Bool                                              as Haskell
-import           Data.Data                                              (Proxy (..))
-import           Data.Foldable                                          (Foldable, toList)
-import           Data.Function                                          ((.))
-import           Data.Functor                                           ((<$>))
-import qualified Data.Zip                                               as Z
-import           GHC.Generics                                           (Par1 (..))
-import           Prelude                                                (type (~), ($))
-import qualified Prelude                                                as Haskell
+import           Control.Monad                    (foldM)
+import qualified Data.Bool                        as Haskell
+import           Data.Data                        (Proxy (..))
+import           Data.Foldable                    (Foldable, toList)
+import           Data.Function                    ((.))
+import           Data.Functor                     ((<$>))
+import qualified Data.Zip                         as Z
+import           GHC.Generics                     (Par1 (..))
+import           Prelude                          (type (~), ($))
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.HFunctor                              (hmap)
-import qualified ZkFold.Base.Data.Vector                                as V
-import           ZkFold.Base.Data.Vector                                (unsafeToVector)
-import           ZkFold.Symbolic.Class                                  (Symbolic (BaseField, symbolicF), symbolic2F)
-import           ZkFold.Symbolic.Data.Bool                              (Bool (..))
+import           ZkFold.Base.Data.HFunctor        (hmap)
+import qualified ZkFold.Base.Data.Vector          as V
+import           ZkFold.Base.Data.Vector          (unsafeToVector)
+import           ZkFold.Symbolic.Class            (Symbolic (BaseField, symbolicF), symbolic2F)
+import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Conditional                       (Conditional (..))
-import           ZkFold.Symbolic.MonadCircuit                           (MonadCircuit, newAssigned)
-import ZkFold.Symbolic.Data.Combinators (expansion)
+import           ZkFold.Symbolic.Data.Combinators (expansion)
+import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
+import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned)
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
