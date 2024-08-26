@@ -20,13 +20,14 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec,
         exec1,
         apply,
+        getAllVars
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
 import           Control.Monad.State                          (MonadState (..), State, gets, modify, runState)
 import           Data.Foldable                                (fold)
-import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
-import qualified Data.Map.Strict                              as M
+import           Data.Map.Strict                              hiding (toList, drop, foldl, foldr, map, null, splitAt, take)
+import qualified Data.Map.Strict                              as M hiding (toList)
 import           Data.Semialign                               (unzipDefault)
 import qualified Data.Set                                     as S
 import           GHC.Generics                                 (Generic, Par1 (..), U1 (..))
@@ -41,13 +42,25 @@ import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
+import ZkFold.Base.Algebra.Polynomials.Multivariate
+    ( Mono,
+      Poly,
+      evalMonomial,
+      evalPolynomial,
+      mapCoeffs,
+      var,
+      variables )
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Prelude                               (drop, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.MonadCircuit
+import           Data.Containers.ListUtils                           (nubOrd)
+import           Data.List                                           (sort)
+import           GHC.IsList                                          (IsList (toList))
+
+
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a o = ArithmeticCircuit
@@ -240,6 +253,9 @@ apply xs = do
     inputs <- gets acInput
     zoom #acInput . put $ drop (length xs) inputs
     zoom #acWitness . modify . union . fromList $ zip inputs (map const xs)
+
+getAllVars :: MultiplicativeMonoid a => ArithmeticCircuit a o -> [Natural]
+getAllVars ac = nubOrd $ sort $ 0 : acInput ac ++ concatMap (toList . variables) (elems $ acSystem ac)
 
 -- TODO: Add proper symbolic application functions
 
