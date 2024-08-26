@@ -21,11 +21,11 @@ import           ZkFold.Base.Data.HFunctor                              (hmap)
 import qualified ZkFold.Base.Data.Vector                                as V
 import           ZkFold.Base.Data.Vector                                (unsafeToVector)
 import           ZkFold.Symbolic.Class                                  (Symbolic (BaseField, symbolicF), symbolic2F)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion)
 import           ZkFold.Symbolic.Data.Bool                              (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional                       (Conditional (..))
 import           ZkFold.Symbolic.MonadCircuit                           (MonadCircuit, newAssigned)
+import ZkFold.Symbolic.Data.Combinators (expansion)
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where

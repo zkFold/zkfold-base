@@ -47,12 +47,14 @@ import           Text.Pretty.Simple                                     (pPrint)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate           (evalMonomial, evalPolynomial)
 import           ZkFold.Prelude                                         (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (desugarRange)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), Constraint,
                                                                          apply, eval, eval1, exec, exec1,
                                                                          witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
+import ZkFold.Symbolic.Data.Combinators (expansion)
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit(..))
+import           Control.Monad                                          (foldM)
 
 --------------------------------- High-level functions --------------------------------
 
@@ -66,6 +68,23 @@ applyArgs r args =
 -- TODO: Implement nontrivial optimizations.
 optimize :: ArithmeticCircuit a f -> ArithmeticCircuit a f
 optimize = id
+
+
+desugarRange :: (Arithmetic a, MonadCircuit i a m) => i -> a -> m ()
+desugarRange i b
+  | b == negate one = return ()
+  | otherwise = do
+    let bs = binaryExpansion b
+    is <- expansion (length bs) i
+    case dropWhile ((== one) . fst) (zip bs is) of
+      [] -> return ()
+      ((_, k0):ds) -> do
+        z <- newAssigned (one - ($ k0))
+        ge <- foldM (\j (c, k) -> newAssigned $ forceGE j c k) z ds
+        constraint (($ ge) - one)
+  where forceGE j c k
+          | c == zero = ($ j) * (one - ($ k))
+          | otherwise = one + ($ k) * (($ j) - one)
 
 -- | Desugars range constraints into polynomial constraints
 desugarRanges :: Arithmetic a => ArithmeticCircuit a f -> ArithmeticCircuit a f

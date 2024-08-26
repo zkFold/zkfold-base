@@ -21,8 +21,9 @@ import           Test.QuickCheck                                        (Arbitra
 import           ZkFold.Base.Algebra.Basic.Class                        (MultiplicativeMonoid (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Prelude                                         (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (getAllVars)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..))
+import Data.Containers.ListUtils (nubOrd)
+import GHC.OldList (sort)
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
@@ -46,6 +47,10 @@ instance (Arithmetic a, Arbitrary a, Arbitrary (ArithmeticCircuit a Par1)) => Ar
             arithmeticCircuit = ac
             , witnessInput = wi
             }
+
+
+getAllVars :: MultiplicativeMonoid a => ArithmeticCircuit a o -> [Natural]
+getAllVars ac = nubOrd $ sort $ 0 : acInput ac ++ concatMap (toList . variables) (elems $ acSystem ac)
 
 mapVarArithmeticCircuit :: (MultiplicativeMonoid a, Functor f) => ArithmeticCircuitTest a f -> ArithmeticCircuitTest a f
 mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =

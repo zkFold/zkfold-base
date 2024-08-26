@@ -22,7 +22,7 @@ import           ZkFold.Base.Data.HFunctor                              (HFuncto
 import           ZkFold.Base.Data.Par1                                  ()
 import           ZkFold.Base.Data.Vector                                (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, horner, runInvert)
+import ZkFold.Symbolic.Data.Combinators ( runInvert, expansion, horner )
 import           ZkFold.Symbolic.Data.Bool                              (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.DiscreteField

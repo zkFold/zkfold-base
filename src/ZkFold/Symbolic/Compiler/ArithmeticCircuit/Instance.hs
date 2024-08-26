@@ -7,12 +7,12 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Data.Aeson                                             hiding (Bool)
-import           Data.Map                                               hiding (drop, foldl, foldl', foldr, map, null,
+import           Data.Map                                               hiding (toList, drop, foldl, foldl', foldr, map, null,
                                                                          splitAt, take)
 import           GHC.Generics                                           (Par1 (..))
 import           GHC.Num                                                (integerToNatural)
 import           Prelude                                                (Show, mempty, pure, return, show, ($), (++),
-                                                                         (<$>))
+                                                                         (<$>), (.), concatMap)
 import qualified Prelude                                                as Haskell
 import           System.Random                                          (mkStdGen)
 import           Test.QuickCheck                                        (Arbitrary (arbitrary), Gen, chooseInteger,
@@ -21,9 +21,14 @@ import           Test.QuickCheck                                        (Arbitra
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Par1                                  ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (getAllVars)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    hiding (constraint)
 import           ZkFold.Symbolic.Data.FieldElement                      (FieldElement (..))
+
+
+import           Data.Containers.ListUtils                                 (nubOrd)
+import           Data.List                                                 (sort)
+import           GHC.IsList                                                (IsList (..))
+import           ZkFold.Base.Algebra.Polynomials.Multivariate              (variables)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -32,6 +37,9 @@ instance (Arithmetic a, Arbitrary a) => Arbitrary (ArithmeticCircuit a Par1) whe
         k <- integerToNatural <$> chooseInteger (2, 10)
         let ac = mempty { acInput = [1..k], acOutput = pure k }
         fromFieldElement <$> arbitrary' (FieldElement ac) 10
+
+getAllVars :: MultiplicativeMonoid a => ArithmeticCircuit a o -> [Natural]
+getAllVars ac = nubOrd $ sort $ 0 : acInput ac ++ concatMap (toList . variables) (elems $ acSystem ac)
 
 arbitrary' :: forall a . (Arithmetic a, Arbitrary a, FromConstant a a) => FieldElement (ArithmeticCircuit a) -> Natural -> Gen (FieldElement (ArithmeticCircuit a))
 arbitrary' ac 0 = return ac

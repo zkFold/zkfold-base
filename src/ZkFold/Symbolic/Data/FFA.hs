@@ -23,9 +23,8 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                                         (iterateM, length)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, splitExpansion)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators                       (log2, maxBitsPerFieldElement)
+import           ZkFold.Symbolic.Data.Combinators                       (log2, maxBitsPerFieldElement, expansion, splitExpansion)
 import           ZkFold.Symbolic.Data.Ord                               (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit                           (MonadCircuit, newAssigned)
