@@ -2,7 +2,6 @@
 
 module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
-import           Control.DeepSeq                             (NFData)
 import           Data.Function                               (const, ($), (.))
 import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
@@ -19,7 +18,7 @@ import           Examples.ReverseList                        (exampleReverseList
 import           Examples.UInt
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural)
+import           ZkFold.Base.Algebra.Basic.Number            (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
@@ -30,20 +29,41 @@ import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto
 type C = ArithmeticCircuit (Zp BLS12_381_Scalar)
 
 data ExampleOutput where
-  ExampleOutput :: forall o. NFData (o Natural) => (() -> C o) -> ExampleOutput
+  ExampleOutput
+    :: forall i_n o_n. (() -> C (Vector i_n) (Vector o_n)) -> ExampleOutput
 
 exampleOutput ::
-  forall n f.
-  ( SymbolicData f
-  , Context f ~ C
-  , TypeSize f ~ n
+  forall i_n o_n c f.
+  ( KnownNat i_n
+  , i_n ~ TypeSize (Support f)
+  , SymbolicData f
+  , c ~ C (Vector i_n)
+  , Context f ~ c
+  , TypeSize f ~ o_n
   , SymbolicData (Support f)
-  , Context (Support f) ~ C
-  , Support (Support f) ~ Proxy C
-  , KnownNat (TypeSize (Support f))
+  , Context (Support f) ~ c
+  , Support (Support f) ~ Proxy c
   ) => f -> ExampleOutput
-exampleOutput = ExampleOutput @(Vector n) . const . compile
-
+exampleOutput = ExampleOutput @i_n @o_n . const . compile
+{-
+compile ::
+    forall a c f y ni .
+    ( Eq a
+    , MultiplicativeMonoid a
+    , KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
+    , SymbolicData f
+    , Context f ~ c
+    , SymbolicData (Support f)
+    , Context (Support f) ~ c
+    , Support (Support f) ~ Proxy c
+    , SymbolicData y
+    , Context y ~ c
+    , Support y ~ Proxy c
+    , TypeSize f ~ TypeSize y
+    ) => f -> y
+-}
 examples :: [(String, ExampleOutput)]
 examples =
   [ ("Eq", exampleOutput exampleEq)
@@ -57,7 +77,7 @@ examples =
   , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
   , ("UInt.StrictMul.512.Auto", exampleOutput $ exampleUIntStrictMul @512 @Auto)
   , ("UInt.DivMod.32.Auto", exampleOutput $ exampleUIntDivMod @32 @Auto)
-  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 C))
+  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C (Vector _))))
   , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
   , ("MiMCHash", exampleOutput exampleMiMC)
   , ("SHA256.32", exampleOutput $ exampleSHA @32)
