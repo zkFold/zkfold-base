@@ -8,10 +8,10 @@ import qualified Prelude                             as Haskell
 
 import           ZkFold.Base.Control.HApplicative    (HApplicative)
 import           ZkFold.Symbolic.Cardano.Types.Basic
+import           ZkFold.Symbolic.Class               (Symbolic)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq             (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
-import ZkFold.Symbolic.Class (Symbolic)
 
 type AddressType context = ByteString 4 context
 type PaymentCredential context = ByteString 224 context
