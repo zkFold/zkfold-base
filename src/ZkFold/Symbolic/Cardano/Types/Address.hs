@@ -11,6 +11,7 @@ import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq             (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
+import ZkFold.Symbolic.Class (Symbolic)
 
 type AddressType context = ByteString 4 context
 type PaymentCredential context = ByteString 224 context
@@ -23,8 +24,8 @@ deriving instance (Haskell.Eq (ByteString 4 context), Haskell.Eq (ByteString 224
 
 deriving instance HApplicative context => SymbolicData (Address context)
 
-deriving via (Structural (Address CtxCompilation))
-         instance Eq (Bool CtxCompilation) (Address CtxCompilation)
+deriving via (Structural (Address context))
+         instance (Symbolic context) => Eq (Bool context) (Address context)
 
 addressType :: Address context -> AddressType context
 addressType (Address (t, _)) = t

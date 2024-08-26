@@ -39,13 +39,13 @@ deriving instance
     , KnownNat tokens
     ) => SymbolicData (Output tokens datum context)
 
-deriving via (Structural (Output tokens datum CtxCompilation))
+deriving via (Structural (Output tokens datum context))
          instance
-            ( ts ~ TypeSize (Output tokens datum CtxCompilation)
-            , 1 <= ts
+            ( Symbolic context
             , KnownNat tokens
-            , KnownNat (TypeSize (Value tokens CtxCompilation))
-            ) => Eq (Bool CtxCompilation) (Output tokens datum CtxCompilation)
+            , KnownNat (TypeSize (SingleAsset context))
+            , KnownNat (TypeSize (Value tokens context))
+            ) => Eq (Bool context) (Output tokens datum context)
 
 txoAddress :: Output tokens datum context -> Address context
 txoAddress (Output (addr, _)) = addr
