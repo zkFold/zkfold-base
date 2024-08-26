@@ -134,17 +134,14 @@ transform
 transform rc v = FiatShamir (CommitOpen oracle rc) v
 
 fold
-    :: forall a c n
+    :: forall a n
     .  Arithmetic a
     => P.Show a
     => Scale a a
     => RandomOracle a a
     => HomomorphicCommit a [a] a
-    => SymbolicData (ArithmeticCircuit a) (FieldElement c)
-    => TypeSize (ArithmeticCircuit a) (FieldElement c) ~ 1
-    => Support (ArithmeticCircuit a) (FieldElement c) ~ ()
     => KnownNat n
-    => (Vector n (FieldElement c) -> Vector n (FieldElement c))  -- ^ An arithmetisable function to be applied recursively
+    => (Vector n (FieldElement (ArithmeticCircuit a)) -> Vector n (FieldElement (ArithmeticCircuit a)))  -- ^ An arithmetisable function to be applied recursively
     -> Natural                             -- ^ The number of iterations to perform
     -> SPS.Input a (RecursiveCircuit n a)  -- ^ Input for the first iteration
     -> FoldResult n a

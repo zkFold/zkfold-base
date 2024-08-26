@@ -108,6 +108,9 @@ instance Prime p => Exponent (Zp p) Integer where
     -- | By Fermat's little theorem
     a ^ n = intPowF a (n `Haskell.mod` (fromConstant (value @p) - 1))
 
+instance Prime p => MultiplicativeGroup (Zp p) where
+    invert = finv
+
 instance Prime p => Field (Zp p) where
     finv (Zp a) = fromConstant $ inv a (value @p)
 
