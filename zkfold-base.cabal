@@ -334,6 +334,7 @@ benchmark compiler-benchmark
       -fprof-cafs
       -O3
     build-depends:
+      adjunctions,
       base,
       bytestring,
       containers,

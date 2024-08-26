@@ -30,7 +30,9 @@ type C = ArithmeticCircuit (Zp BLS12_381_Scalar)
 
 data ExampleOutput where
   ExampleOutput
-    :: forall i_n o_n. (() -> C (Vector i_n) (Vector o_n)) -> ExampleOutput
+    :: forall i_n o_n. KnownNat i_n
+    => (() -> C (Vector i_n) (Vector o_n))
+    -> ExampleOutput
 
 exampleOutput ::
   forall i_n o_n c f.
