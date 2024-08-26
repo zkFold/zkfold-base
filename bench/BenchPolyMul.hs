@@ -1,7 +1,5 @@
-{-# LANGUAGE DeriveAnyClass               #-}
-{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
-{-# LANGUAGE ScopedTypeVariables          #-}
-{-# LANGUAGE TypeApplications             #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Main where
 

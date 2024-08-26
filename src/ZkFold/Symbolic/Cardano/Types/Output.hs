@@ -11,11 +11,9 @@ module ZkFold.Symbolic.Cardano.Types.Output (
     txoDatumHash
 ) where
 
-import           Data.Functor.Rep                           (Representable (..))
 import           Prelude                                    hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                                    as Haskell
 
-import           ZkFold.Base.Algebra.Basic.Class            (ToConstant)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address      (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
@@ -41,17 +39,13 @@ deriving instance
     , KnownNat tokens
     ) => SymbolicData (Output tokens datum context)
 
-deriving via (Structural (Output tokens datum (CtxCompilation i)))
+deriving via (Structural (Output tokens datum context))
          instance
-            ( ts ~ TypeSize (Output tokens datum (CtxCompilation i))
-            , 1 <= ts
+            ( Symbolic context
             , KnownNat tokens
-            , KnownNat (TypeSize (Value tokens (CtxCompilation i)))
-            , Ord (Rep i)
-            , Representable i
-            , Foldable i
-            , ToConstant (Rep i) Natural
-            ) => Eq (Bool (CtxCompilation i)) (Output tokens datum (CtxCompilation i))
+            , KnownNat (TypeSize (SingleAsset context))
+            , KnownNat (TypeSize (Value tokens context))
+            ) => Eq (Bool context) (Output tokens datum context)
 
 txoAddress :: Output tokens datum context -> Address context
 txoAddress (Output (addr, _)) = addr

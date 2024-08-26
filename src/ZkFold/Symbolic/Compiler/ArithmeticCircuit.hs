@@ -17,6 +17,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         -- information about the system
         acSizeN,
         acSizeM,
+        acSizeR,
         acSystem,
         acValue,
         acPrint,
@@ -79,6 +80,10 @@ acSizeN = length . acSystem
 -- The constant `1` is not counted.
 acSizeM :: ArithmeticCircuit a i o -> Natural
 acSizeM = length . acVarOrder
+
+-- | Calculates the number of range lookups in the system.
+acSizeR :: ArithmeticCircuit a i o -> Natural
+acSizeR = length . acRange
 
 acValue :: Functor o => ArithmeticCircuit a U1 o -> o a
 acValue r = eval r U1

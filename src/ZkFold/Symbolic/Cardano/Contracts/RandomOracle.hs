@@ -11,7 +11,7 @@ import           ZkFold.Base.Data.Vector                        ((!!))
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (MiMCHash, mimcHash)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Class                          (Symbolic)
+import           ZkFold.Symbolic.Class                          (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
 import qualified ZkFold.Symbolic.Data.ByteString                as Symbolic
 import           ZkFold.Symbolic.Data.Combinators
@@ -22,12 +22,12 @@ type TxOut context = Output Tokens () context
 type TxIn context  = Input Tokens () context
 type Tx context = Transaction 1 0 2 Tokens 1 () context
 
-hash :: forall context x . MiMCHash F context x => x -> FieldElement context
-hash = mimcHash @F mimcConstants zero
+hash :: forall context x . (Symbolic context, MiMCHash (BaseField context) context x )=> x -> FieldElement context
+hash = mimcHash @(BaseField context) mimcConstants zero
 
 type Sig context =
     ( Symbolic context
-    , FromConstant F (FieldElement context)
+    , FromConstant (BaseField context) (FieldElement context)
     , MultiplicativeMonoid (UInt 64 Auto context)
     , Eq (Bool context) (FieldElement context)
     , Eq (Bool context) (UInt 64 Auto context)
@@ -37,11 +37,11 @@ type Sig context =
     , Extend (AssetName context) (AssetName context)
     , BinaryExpansion (FieldElement context)
     , Bits (FieldElement context) ~ FieldElementBits context
-    , MiMCHash F context (FieldElement context)
-    , MiMCHash F context (OutputRef context)
-    , MiMCHash F context (FieldElement context, FieldElement context))
+    , MiMCHash (BaseField context) context (FieldElement context)
+    , MiMCHash (BaseField context) context (OutputRef context)
+    , MiMCHash (BaseField context) context (FieldElement context, FieldElement context))
 
-randomOracle :: forall context . Sig context => F -> Tx context -> FieldElement context -> Bool context
+randomOracle :: forall context . Sig context => BaseField context -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =
     let -- The secret key is correct
         conditionSecretKey = fromConstant c == hash @context w

@@ -1,83 +1,40 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
+{-# LANGUAGE TypeOperators #-}
 
 module Examples.UInt (
-    exampleUIntAdd,
     exampleUIntMul,
+    exampleUIntDivMod,
     exampleUIntStrictAdd,
     exampleUIntStrictMul
   ) where
 
-import           Data.Data                                   (Proxy (Proxy))
-import           Data.Function                               (($))
-import           Data.List                                   ((++))
-import           Data.String                                 (String)
-import           GHC.TypeNats                                (KnownNat, natVal, type (+))
-import           Prelude                                     (type (~))
-import           System.IO                                   (IO, putStrLn)
-import           Text.Show                                   (show)
+import           Control.DeepSeq                  (NFData)
+import           Data.Type.Equality               (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
-import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
+import           ZkFold.Base.Data.Vector          (Vector)
+import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
+import           ZkFold.Symbolic.Data.Combinators (KnownRegisterSize, NumberOfRegisters)
+import           ZkFold.Symbolic.Data.UInt        (StrictNum (..), UInt)
 
-exampleUIntAdd
-    :: forall n r
-    .  KnownNat n
-    => r ~ Num n
-    => KnownNat r
-    => KnownNat (r + r)
-    => IO ()
-exampleUIntAdd = makeExample @n "+" "add" (+)
+exampleUIntMul ::
+  (KnownNat n, KnownRegisterSize r, Symbolic c) =>
+  UInt n r c -> UInt n r c -> UInt n r c
+exampleUIntMul = (*)
 
-exampleUIntMul
-    :: forall n r
-    .  KnownNat n
-    => r ~ Num n
-    => KnownNat r
-    => KnownNat (r + r)
-    => IO ()
-exampleUIntMul = makeExample @n "*" "mul" (*)
+exampleUIntDivMod ::
+  (KnownNat n, KnownRegisterSize r, Symbolic c,
+   NumberOfRegisters (BaseField c) n r ~ k,
+   KnownNat k, NFData (c (Vector k))) =>
+  UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
+exampleUIntDivMod = divMod
 
-exampleUIntStrictAdd
-    :: forall n r
-    .  KnownNat n
-    => r ~ Num n
-    => KnownNat r
-    => KnownNat (r + r)
-    => IO ()
-exampleUIntStrictAdd = makeExample @n "strictAdd" "strict_add" strictAdd
+exampleUIntStrictAdd ::
+  (KnownNat n, KnownRegisterSize r, Symbolic c) =>
+  UInt n r c -> UInt n r c -> UInt n r c
+exampleUIntStrictAdd = strictAdd
 
-exampleUIntStrictMul
-    :: forall n r
-    .  KnownNat n
-    => r ~ Num n
-    => KnownNat r
-    => KnownNat (r + r)
-    => IO ()
-exampleUIntStrictMul = makeExample @n "strictMul" "strict_mul" strictMul
-
-type Binary a = a -> a -> a
-
-type Num n = NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
-
-type UBinary n = Binary (UInt n Auto (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector (Num n + Num n))))
-
-makeExample
-    :: forall n r
-    .  KnownNat n
-    => r ~ NumberOfRegisters (Zp BLS12_381_Scalar) n Auto
-    => KnownNat r
-    => KnownNat (r + r)
-    => String -> String -> UBinary n -> IO ()
-makeExample shortName name op = do
-    let n = show $ natVal (Proxy @n)
-    putStrLn $ "\nExample: (" ++ shortName ++ ") operation on UInt" ++ n
-    let file = "compiled_scripts/uint" ++ n ++ "_" ++ name ++ ".json"
-    compileIO @(Zp BLS12_381_Scalar) file op
+exampleUIntStrictMul ::
+  (KnownNat n, KnownRegisterSize r, Symbolic c) =>
+  UInt n r c -> UInt n r c -> UInt n r c
+exampleUIntStrictMul = strictMul

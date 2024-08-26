@@ -1,50 +1,38 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Examples.ByteString (
     exampleByteStringAnd,
     exampleByteStringOr,
-    exampleByteStringExtend
+    exampleByteStringExtend,
+    exampleByteStringAdd,
+    exampleSHA
   ) where
 
-import           Data.Data                                   (Proxy (Proxy))
-import           Data.Function                               (($))
-import           Data.List                                   ((++))
-import           Data.String                                 (String)
-import           GHC.TypeNats                                (KnownNat, natVal, type (+), type (<=))
-import           System.IO                                   (IO, putStrLn)
-import           Text.Show                                   (show)
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number     (KnownNat, type (<=))
+import           ZkFold.Symbolic.Algorithms.Hash.SHA2 (SHA2, sha2)
+import           ZkFold.Symbolic.Class                (Symbolic)
+import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString      (ByteString)
+import           ZkFold.Symbolic.Data.Combinators     (Extend (..), Iso (..), RegisterSize (..))
+import           ZkFold.Symbolic.Data.UInt            (UInt)
 
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compileIO)
-import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators
+exampleByteStringAnd ::
+  (KnownNat n, Symbolic c) => ByteString n c -> ByteString n c -> ByteString n c
+exampleByteStringAnd = (&&)
 
-exampleByteStringAnd :: forall n . (KnownNat n, KnownNat (n + n)) => IO ()
-exampleByteStringAnd = makeExample @n "*" "and" (&&)
+exampleByteStringOr ::
+  (KnownNat n, Symbolic c) => ByteString n c -> ByteString n c -> ByteString n c
+exampleByteStringOr = (||)
 
-exampleByteStringOr :: forall n . (KnownNat n, KnownNat (n + n)) => IO ()
-exampleByteStringOr = makeExample @n "+" "or" (||)
+exampleByteStringExtend ::
+  (KnownNat n, KnownNat k, n <= k, Symbolic c) =>
+  ByteString n c -> ByteString k c
+exampleByteStringExtend = extend
 
-exampleByteStringExtend :: forall n k . (KnownNat n, KnownNat k, n <= k) => IO ()
-exampleByteStringExtend = do
-    let n = show $ natVal (Proxy @n)
-    let k = show $ natVal (Proxy @k)
-    putStrLn $ "\nExample: Extending a bytestring of length " ++ n ++ " to length " ++ k
-    let file = "compiled_scripts/bytestring" ++ n ++ "_to_" ++ k ++ ".json"
-    compileIO @(Zp BLS12_381_Scalar) file $ extend @(ByteString n (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n))) @(ByteString k (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n)))
+exampleByteStringAdd ::
+  forall n c. (KnownNat n, Symbolic c) => ByteString n c -> ByteString n c -> ByteString n c
+exampleByteStringAdd x y = from (from x + from y :: UInt n Auto c)
 
-type Binary a = a -> a -> a
-
-type UBinary n = Binary (ByteString n (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector (n + n))))
-
-makeExample :: forall n . (KnownNat n, KnownNat (n + n)) => String -> String -> UBinary n -> IO ()
-makeExample shortName name op = do
-    let n = show $ natVal (Proxy @n)
-    putStrLn $ "\nExample: (" ++ shortName ++ ") operation on ByteString" ++ n
-    let file = "compiled_scripts/bytestring" ++ n ++ "_" ++ name ++ ".json"
-    compileIO @(Zp BLS12_381_Scalar) file op
+exampleSHA :: forall n c. SHA2 "SHA256" c n => ByteString n c -> ByteString 256 c
+exampleSHA = sha2 @"SHA256"

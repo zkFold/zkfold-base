@@ -6,7 +6,8 @@ module ZkFold.Symbolic.Compiler (
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
     compile,
     compileIO,
-    compileForceOne
+    compileForceOne,
+    solder,
 ) where
 
 import           Data.Aeson                                             (ToJSON)

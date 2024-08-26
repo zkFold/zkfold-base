@@ -3,14 +3,12 @@
 
 module ZkFold.Symbolic.Cardano.Types.Address where
 
-import           Data.Functor.Rep                    (Representable (..))
 import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                             as Haskell
 
-import           ZkFold.Base.Algebra.Basic.Class     (ToConstant)
-import           ZkFold.Base.Algebra.Basic.Number    (Natural)
 import           ZkFold.Base.Control.HApplicative    (HApplicative)
 import           ZkFold.Symbolic.Cardano.Types.Basic
+import           ZkFold.Symbolic.Class               (Symbolic)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq             (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
@@ -26,9 +24,8 @@ deriving instance (Haskell.Eq (ByteString 4 context), Haskell.Eq (ByteString 224
 
 deriving instance HApplicative context => SymbolicData (Address context)
 
-deriving via (Structural (Address (CtxCompilation i)))
-    instance (Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural)
-         => Eq (Bool (CtxCompilation i)) (Address (CtxCompilation i))
+deriving via (Structural (Address context))
+         instance (Symbolic context) => Eq (Bool context) (Address context)
 
 addressType :: Address context -> AddressType context
 addressType (Address (t, _)) = t
