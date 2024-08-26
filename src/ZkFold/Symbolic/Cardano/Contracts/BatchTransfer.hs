@@ -14,7 +14,7 @@ import           ZkFold.Base.Data.Vector                        (Vector, fromVec
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Class                          (Symbolic)
+import           ZkFold.Symbolic.Class                          (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
@@ -26,15 +26,15 @@ type TxOut context = Output Tokens () context
 type TxIn context  = Input Tokens () context
 type Tx context = Transaction 6 0 11 Tokens 0 () context
 
-hash :: forall context x . MiMCHash F context x => x -> FieldElement context
-hash = mimcHash @F mimcConstants zero
+hash :: forall context x . (Symbolic context, MiMCHash (BaseField context) context x) => x -> FieldElement context
+hash = mimcHash @(BaseField context) mimcConstants zero
 
 type Sig context =
     ( Symbolic context
     , StrictConv (context Par1) (UInt 256 Auto context)
     , FromConstant Natural (UInt 256 Auto context)
     , MultiplicativeSemigroup (UInt 256 Auto context)
-    , MiMCHash F context (TxOut context, TxOut context)
+    , MiMCHash (BaseField context) context (TxOut context, TxOut context)
     , Eq (Bool context) (UInt 256 Auto context)
     , Eq (Bool context) (TxOut context)
     , Iso (UInt 256 Auto context) (ByteString 256 context)
