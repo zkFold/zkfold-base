@@ -45,25 +45,7 @@ exampleOutput ::
   , Support (Support f) ~ Proxy c
   ) => f -> ExampleOutput
 exampleOutput = ExampleOutput @i_n @o_n . const . compile
-{-
-compile ::
-    forall a c f y ni .
-    ( Eq a
-    , MultiplicativeMonoid a
-    , KnownNat ni
-    , ni ~ TypeSize (Support f)
-    , c ~ ArithmeticCircuit a (Vector ni)
-    , SymbolicData f
-    , Context f ~ c
-    , SymbolicData (Support f)
-    , Context (Support f) ~ c
-    , Support (Support f) ~ Proxy c
-    , SymbolicData y
-    , Context y ~ c
-    , Support y ~ Proxy c
-    , TypeSize f ~ TypeSize y
-    ) => f -> y
--}
+
 examples :: [(String, ExampleOutput)]
 examples =
   [ ("Eq", exampleOutput exampleEq)
