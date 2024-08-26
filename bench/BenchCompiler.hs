@@ -1,25 +1,25 @@
 {-# LANGUAGE TypeOperators #-}
 module Main where
 
-import           Control.DeepSeq                 (NFData, force)
-import           Control.Monad                   (return)
-import           Data.ByteString.Lazy            (ByteString)
-import           Data.Function                   (($), const)
-import           Data.Functor.Rep                (Representable(..))
-import           Data.Semigroup                  ((<>))
-import           Data.String                     (String, fromString)
-import           Data.Type.Equality              (type (~))
-import           GHC.TypeNats                    (KnownNat)
-import           System.IO                       (IO)
+import           Control.DeepSeq                                     (NFData, force)
+import           Control.Monad                                       (return)
+import           Data.ByteString.Lazy                                (ByteString)
+import           Data.Function                                       (const, ($))
+import           Data.Functor.Rep                                    (Representable (..))
+import           Data.Semigroup                                      ((<>))
+import           Data.String                                         (String, fromString)
+import           Data.Type.Equality                                  (type (~))
+import           GHC.TypeNats                                        (KnownNat)
+import           System.IO                                           (IO)
 import           Test.Tasty.Bench
-import           Test.Tasty.Golden               (goldenVsString)
-import           Text.Show                       (show)
+import           Test.Tasty.Golden                                   (goldenVsString)
+import           Text.Show                                           (show)
 
-import           ZkFold.Base.Algebra.Basic.Class (AdditiveMonoid, zero)
-import           ZkFold.Base.Data.Vector         (Vector)
+import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveMonoid, zero)
+import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Examples
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Var)
+import           ZkFold.Symbolic.Examples
 
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
