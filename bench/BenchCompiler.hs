@@ -21,9 +21,6 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Examples
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Var)
 
--- inputMap :: AdditiveMonoid a => ArithmeticCircuit a i o -> Map Natural a
--- inputMap circuit = fromAscList [ (i, zero) | i <- acInput circuit ]
-
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
   fromString name
