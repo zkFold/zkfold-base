@@ -16,7 +16,7 @@ import           Prelude                                             hiding (Num
 import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial, variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial, var, variables)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length, take, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -33,16 +33,16 @@ data PlonkConstraint i a = PlonkConstraint
     }
     deriving (Show, Eq)
 
-instance (Arbitrary a, Finite a, KnownNat i) => Arbitrary (PlonkConstraint i a) where
+instance (Arbitrary a, Finite a, ToConstant a Natural, KnownNat i) => Arbitrary (PlonkConstraint i a) where
     arbitrary = do
         qm <- arbitrary
         ql <- arbitrary
         qr <- arbitrary
         qo <- arbitrary
         qc <- arbitrary
-        x1 <- InVar <$> arbitrary
-        x2 <- InVar <$> arbitrary
-        x3 <- InVar <$> arbitrary
+        x1 <- NewVar . toConstant @a <$> arbitrary
+        x2 <- NewVar . toConstant @a <$> arbitrary
+        x3 <- NewVar . toConstant @a <$> arbitrary
         let xs = sort [x1, x2, x3]
         return $ PlonkConstraint qm ql qr qo qc (xs !! 0) (xs !! 1) (xs !! 2)
 
@@ -79,11 +79,16 @@ toPlonkConstraint p =
 
     in head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (Eq a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var (Vector i)) Natural
+fromPlonkConstraint :: (Eq a, Scale a a, FromConstant a a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var (Vector i)) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
-    let xa = [(a, 1)]
-        xb = [(b, 1)]
-        xc = [(c, 1)]
-        xaxb = [(a, 1), (b, 1)]
-
-    in polynomial [(qm, xaxb), (ql, xa), (qr, xb), (qo, xc), (qc, one)]
+    let xvar v = if v == NewVar zero then zero else var v
+        xa = xvar a
+        xb = xvar b
+        xc = xvar c
+        xaxb = xa * xb
+    in 
+              scale qm xaxb
+            + scale ql xa
+            + scale qr xb
+            + scale qo xc
+            + fromConstant qc

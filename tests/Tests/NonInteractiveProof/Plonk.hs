@@ -18,7 +18,7 @@ import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGroup (..), AdditiveSemigroup (..),
                                                                       FiniteField, MultiplicativeSemigroup (..), negate,
-                                                                      zero, (-!))
+                                                                      zero, (-!), Scale (..), FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, value)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
@@ -36,7 +36,7 @@ type PlonkPolyLengthBS = 32
 type PlonkBS n = Plonk 1 PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
 type PlonkPolyExtendedLengthBS = PlonkPolyExtendedLength PlonkPolyLengthBS
 
-propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint 1 a -> Bool
+propPlonkConstraintConversion :: (Eq a, Scale a a, FromConstant a a, FiniteField a) => PlonkConstraint 1 a -> Bool
 propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
