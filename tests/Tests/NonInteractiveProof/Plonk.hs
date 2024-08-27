@@ -17,8 +17,9 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGroup (..), AdditiveSemigroup (..),
-                                                                      FiniteField, MultiplicativeSemigroup (..), negate,
-                                                                      zero, (-!), Scale (..), FromConstant (..))
+                                                                      FiniteField, FromConstant (..),
+                                                                      MultiplicativeSemigroup (..), Scale (..), negate,
+                                                                      zero, (-!))
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, value)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))

@@ -86,7 +86,7 @@ fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
         xb = xvar b
         xc = xvar c
         xaxb = xa * xb
-    in 
+    in
               scale qm xaxb
             + scale ql xa
             + scale qr xb
