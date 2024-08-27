@@ -4,26 +4,26 @@
 
 module ZkFold.Symbolic.Data.FieldElement where
 
-import           Data.Foldable                                          (foldr)
-import           Data.Function                                          (($), (.))
-import           Data.Functor                                           (fmap, (<$>))
-import           Data.Tuple                                             (snd)
-import           GHC.Generics                                           (Par1 (..))
-import           Prelude                                                (Integer)
-import qualified Prelude                                                as Haskell
+import           Data.Foldable                      (foldr)
+import           Data.Function                      (($), (.))
+import           Data.Functor                       (fmap, (<$>))
+import           Data.Tuple                         (snd)
+import           GHC.Generics                       (Par1 (..))
+import           Prelude                            (Integer)
+import qualified Prelude                            as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor                              (HFunctor, hmap)
-import           ZkFold.Base.Data.Par1                                  ()
-import           ZkFold.Base.Data.Vector                                (Vector, fromVector, unsafeToVector)
+import           ZkFold.Base.Data.HFunctor          (HFunctor, hmap)
+import           ZkFold.Base.Data.Par1              ()
+import           ZkFold.Base.Data.Vector            (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, horner, runInvert)
-import           ZkFold.Symbolic.Data.Bool                              (Bool)
+import           ZkFold.Symbolic.Data.Bool          (Bool)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Eq                                (Eq)
+import           ZkFold.Symbolic.Data.Combinators   (expansion, horner, runInvert)
+import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.MonadCircuit                           (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
 

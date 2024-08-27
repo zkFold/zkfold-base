@@ -10,32 +10,36 @@ module ZkFold.Symbolic.Compiler (
     solder,
 ) where
 
-import           Data.Aeson                                             (ToJSON)
-import           Data.Eq                                                (Eq)
-import           Data.Function                                          (const, (.))
-import           Data.Proxy                                             (Proxy)
-import           Prelude                                                (FilePath, IO, Monoid (mempty), Show (..),
-                                                                         putStrLn, type (~), ($), (++))
+import           Data.Aeson                                 (ToJSON)
+import           Data.Eq                                    (Eq)
+import           Data.Function                              (const, (.))
+import           Data.Functor                               (($>))
+import           Data.Proxy                                 (Proxy)
+import           Data.Traversable                           (for)
+import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), Traversable,
+                                                             putStrLn, type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                                (Vector)
-import           ZkFold.Prelude                                         (writeFileJSON)
-import           ZkFold.Symbolic.Class                                  (Arithmetic)
+import           ZkFold.Base.Data.Vector                    (Vector, unsafeToVector)
+import           ZkFold.Prelude                             (writeFileJSON)
+import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (forceOne)
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
 
 {-
     ZkFold Symbolic compiler module dependency order:
     1. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
     2. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
-    3. ZkFold.Symbolic.Compiler.ArithmeticCircuit.MonadBlueprint
-    4. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators
-    5. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
-    6. ZkFold.Symbolic.Compiler.ArithmeticCircuit
-    7. ZkFold.Symbolic.Compiler
+    3. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
+    4. ZkFold.Symbolic.Compiler.ArithmeticCircuit
+    5. ZkFold.Symbolic.Compiler
 -}
+
+forceOne :: (Symbolic c, Traversable f) => c f -> c f
+forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) $> i)
+
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder ::

@@ -23,18 +23,23 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec,
         exec1,
         apply,
+        getAllVars
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
-import           Control.Monad.State                          (MonadState (..), State, modify, runState)
-import           Data.Aeson                                   (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
+import           Control.Monad.State                          (MonadState (..), State, gets, modify, runState)
+import           Data.Aeson
+import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.Foldable                                (fold)
-import           Data.Functor.Rep                             (Representable (..), fmapRep)
-import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take)
-import qualified Data.Map.Strict                              as M
+import           Data.Functor.Rep
+import           Data.List                                    (sort)
+import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take,
+                                                               toList)
+import qualified Data.Map.Strict                              as M hiding (toList)
 import           Data.Semialign                               (unzipDefault)
 import qualified Data.Set                                     as S
 import           GHC.Generics                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
+import           GHC.IsList                                   (IsList (toList))
 import           Optics
 import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum,
                                                                take, (!!), (^))
@@ -46,12 +51,15 @@ import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalMonomial, evalPolynomial, mapCoeffs, var,
+                                                               variables)
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.MonadCircuit
+
+
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a i o = ArithmeticCircuit
@@ -272,6 +280,9 @@ apply xs ac = ac
 
     -- let inputs = acInput
     -- zoom #acWitness . modify . union . fromList $ zip inputs (map const xs)
+
+getAllVars :: MultiplicativeMonoid a => ArithmeticCircuit a i o -> [Natural]
+getAllVars ac = nubOrd $ sort $ 0 : acInput ac ++ concatMap (toList . variables) (elems $ acSystem ac)
 
 -- TODO: Add proper symbolic application functions
 
