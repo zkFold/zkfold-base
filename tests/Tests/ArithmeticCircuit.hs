@@ -49,19 +49,19 @@ specArithmeticCircuit' = hspec $ do
         it "inverts nonzero correctly" $ correctHom1 @a finv
         it "inverts zero correctly" $ correctHom0 @a (finv zero)
         it "checks isZero(nonzero)" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a Par1) = isZero $ FieldElement $ embed @(ArithmeticCircuit a) $ Par1 x
+          let Bool (r :: ArithmeticCircuit a Par1) = isZero (fromConstant x :: FieldElement (ArithmeticCircuit a))
            in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== zero)
         it "checks isZero(0)" $
           let Bool (r :: ArithmeticCircuit a Par1) = isZero (zero :: FieldElement (ArithmeticCircuit a))
            in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === one
         it "computes binary expansion" $ \(x :: a) ->
-          let rs = binaryExpansion $ FieldElement $ embed @(ArithmeticCircuit a) $ Par1 x
+          let rs = binaryExpansion (fromConstant x :: FieldElement (ArithmeticCircuit a))
            in checkClosedCircuit rs .&&. V.fromVector (exec rs) === padBits (numberOfBits @a) (binaryExpansion x)
         it "internalizes equality" $ \(x :: a) (y :: a) ->
-          let Bool (r :: ArithmeticCircuit a Par1) = embed @(ArithmeticCircuit a) (Par1 x) == embed @(ArithmeticCircuit a) (Par1 y)
+          let Bool (r :: ArithmeticCircuit a Par1) = fromFieldElement (fromConstant x :: FieldElement (ArithmeticCircuit a)) == fromFieldElement (fromConstant y)
            in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
-          let Bool (r :: ArithmeticCircuit a Par1) = embed @(ArithmeticCircuit a) (Par1 x) == embed (Par1 x)
+          let Bool (r :: ArithmeticCircuit a Par1) = fromFieldElement (fromConstant x :: FieldElement (ArithmeticCircuit a)) == fromFieldElement (fromConstant x)
            in checkClosedCircuit r .&&. exec1 r === one
 
 specArithmeticCircuit :: IO ()
