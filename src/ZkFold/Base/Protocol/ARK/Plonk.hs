@@ -58,21 +58,17 @@ instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownN
 instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonk i n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
-        let fullInp = value @i
-        vecPubInp <- genSubset (value @l) fullInp
-        let vecPubInVars = [InVar (fromConstant ix) | ix <- vecPubInp]
-            (omega, k1, k2) = getParams (value @n)
-        Plonk omega k1 k2 (Vector vecPubInVars) ac <$> arbitrary
+        vecPubInp <- genSubset (getAllVars ac) (value @l)
+        let (omega, k1, k2) = getParams (value @n)
+        Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
 
 instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
         Witness (Plonk i n l c1 c2 t) ~ (PlonkWitnessInput i c1, PlonkProverSecret c1), NonInteractiveProof (Plonk i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) Par1)
-        let inputLen = value @i
-        vecPubInp <- genSubset (value @l) inputLen
-        let vecPubInVars = [InVar (fromConstant ix) | ix <- vecPubInp]
-            (omega, k1, k2) = getParams $ value @n
-        pl <- Plonk omega k1 k2 (Vector vecPubInVars) ac <$> arbitrary
+        vecPubInp <- genSubset (getAllVars ac) (value @l)
+        let (omega, k1, k2) = getParams $ value @n
+        pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
         return $ TestData pl (PlonkWitnessInput wi (witnessGenerator ac wi), secret)
 

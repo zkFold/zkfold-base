@@ -39,8 +39,8 @@ getParams n = findK' $ mkStdGen 0
                 all (`notElem` hGroup) (hGroup' k1)
                 && all (`notElem` hGroup' k1) (hGroup' k2)
 
-genSubset :: Natural -> Natural -> Gen [Natural]
-genSubset maxLength maxValue = take maxLength <$> shuffle [1..maxValue]
+genSubset :: [Var (Vector i)] -> Natural -> Gen [Var (Vector i)]
+genSubset vars maxLength = take maxLength <$> shuffle vars
 
 type PlonkPermutationSize n = 3 * n
 
