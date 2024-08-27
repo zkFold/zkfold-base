@@ -53,7 +53,7 @@ mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
             {
                 acSystem  = fromList $ zip [0..] $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac),
                 -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
-                acWitness = (`Map.compose` backward) $ acWitness ac
+                acWitness = (`Map.compose` backward) $ (\f i m -> f i (Map.compose m forward)) <$> acWitness ac
             }
         mappedOutputs = varF <$> acOutput ac
     in ArithmeticCircuitTest (mappedCircuit {acOutput = mappedOutputs}) wi
