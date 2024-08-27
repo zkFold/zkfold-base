@@ -6,24 +6,30 @@
 
 module ZkFold.Symbolic.Data.Combinators where
 
-import           Control.Monad                                          (mapM)
-import           Data.Kind                                              (Type)
-import           Data.List                                              (find, splitAt)
-import           Data.List.Split                                        (chunksOf)
-import           Data.Maybe                                             (fromMaybe)
-import           Data.Proxy                                             (Proxy (..))
-import           Data.Ratio                                             ((%))
-import           Data.Type.Bool                                         (If)
+import           Control.Monad                    (mapM)
+import           Data.Foldable                    (Foldable (..), foldlM)
+import           Data.Kind                        (Type)
+import           Data.List                        (find, splitAt)
+import           Data.List.Split                  (chunksOf)
+import           Data.Maybe                       (fromMaybe)
+import           Data.Proxy                       (Proxy (..))
+import           Data.Ratio                       ((%))
+import           Data.Traversable                 (Traversable, for)
+import           Data.Type.Bool                   (If)
+import           Data.Type.Equality               (type (~))
 import           Data.Type.Ord
+import qualified Data.Zip                         as Z
+import           GHC.Base                         (const, return)
+import           GHC.List                         (reverse)
 import           GHC.TypeNats
-import           Prelude                                                (error, head, pure, tail, ($), (.), (<$>), (<>))
-import qualified Prelude                                                as Haskell
+import           Prelude                          (error, head, pure, tail, ($), (.), (<$>), (<>))
+import qualified Prelude                          as Haskell
 import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                       (value)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (expansion, horner)
-import           ZkFold.Symbolic.MonadCircuit                           (MonadCircuit)
+import           ZkFold.Base.Algebra.Basic.Number (value)
+import           ZkFold.Prelude                   (drop, take, (!!))
+import           ZkFold.Symbolic.MonadCircuit
 
 -- | A class for isomorphic types.
 -- The @Iso b a@ context ensures that transformations in both directions are defined
@@ -175,3 +181,50 @@ highRegisterBits = case getNatural @n `mod` maxBitsPerFieldElement @p of
 minNumberOfRegisters :: forall p n. (Finite p, KnownNat n) => Natural
 minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` maxBitsPerRegister @p @n
 
+
+---------------------------------------------------------------
+
+expansion :: MonadCircuit i a m => Natural -> i -> m [i]
+-- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
+expansion n k = do
+    bits <- bitsOf n k
+    k' <- horner bits
+    constraint (\x -> x k - x k')
+    return bits
+
+bitsOf :: MonadCircuit i a m => Natural -> i -> m [i]
+-- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
+-- bits of @k@.
+bitsOf n k = for [0 .. n -! 1] $ \j ->
+    newConstrained (\x i -> let xi = x i in xi * (xi - one)) ((!! j) . repr . ($ k))
+    where
+        repr :: forall b . (BinaryExpansion b, Bits b ~ [b], Finite b) => b -> [b]
+        repr = padBits (numberOfBits @b) . binaryExpansion
+
+horner :: MonadCircuit i a m => [i] -> m i
+-- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
+-- Horner's scheme.
+horner xs = case reverse xs of
+    []       -> newAssigned (const zero)
+    (b : bs) -> foldlM (\a i -> newAssigned (\x -> let xa = x a in x i + xa + xa)) b bs
+
+splitExpansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
+-- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
+-- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
+-- values exist).
+splitExpansion n1 n2 k = do
+    let f x y = x + y + y
+    l <- newRanged (fromConstant $ (2 :: Natural) ^ n1 -! 1) $ foldr f zero . take n1 . repr . ($ k)
+    h <- newRanged (fromConstant $ (2 :: Natural) ^ n2 -! 1) $ foldr f zero . take n2 . drop n1 . repr . ($ k)
+    constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
+    return (l, h)
+    where
+        repr :: forall b . (BinaryExpansion b, Bits b ~ [b]) => b -> [b]
+        repr = padBits (n1 + n2) . binaryExpansion
+
+
+runInvert :: (MonadCircuit i a m, Z.Zip f, Traversable f) => f i -> m (f i, f i)
+runInvert is = do
+    js <- for is $ \i -> newConstrained (\x j -> x i * x j) (\x -> let xi = x i in one - xi // xi)
+    ks <- for (Z.zip is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv . ($ i))
+    return (js, ks)

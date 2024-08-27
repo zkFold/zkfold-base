@@ -5,17 +5,18 @@ module ZkFold.Symbolic.Data.Eq (
     elem
 ) where
 
-import           Data.Bool                       (bool)
-import qualified Data.Eq                         as Haskell
-import           Data.Foldable                   (Foldable)
-import           Data.Traversable                (Traversable, for)
-import qualified Data.Zip                        as Z
-import           Prelude                         (return, ($), (.))
+import           Data.Bool                        (bool)
+import qualified Data.Eq                          as Haskell
+import           Data.Foldable                    (Foldable)
+import           Data.Traversable                 (Traversable, for)
+import qualified Data.Zip                         as Z
+import           Prelude                          (return, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool       (Bool (Bool), BoolType (..), all, any)
+import           ZkFold.Symbolic.Data.Bool        (Bool (Bool), BoolType (..), all, any)
+import           ZkFold.Symbolic.Data.Combinators (runInvert)
 import           ZkFold.Symbolic.MonadCircuit
 
 class Eq b a where
@@ -33,7 +34,7 @@ instance (Symbolic c, Haskell.Eq (BaseField c), Z.Zip f, Traversable f)
     x == y =
         let
             result = symbolic2F x y
-                (\x' y' -> Z.zipWith (\i j -> bool zero one (i Haskell.== j)) x' y')
+                (Z.zipWith (\i j -> bool zero one (i Haskell.== j)))
                 (\x' y' -> do
                     difference <- for (Z.zip x' y') $ \(i, j) ->
                         newAssigned (\w -> w i - w j)
@@ -46,20 +47,14 @@ instance (Symbolic c, Haskell.Eq (BaseField c), Z.Zip f, Traversable f)
     x /= y =
         let
             result = symbolic2F x y
-                (\x' y' -> Z.zipWith (\i j -> bool zero one (i Haskell./= j)) x' y')
+                (Z.zipWith (\i j -> bool zero one (i Haskell./= j)))
                 (\x' y' -> do
                     difference <- for (Z.zip x' y') $ \(i, j) ->
                         newAssigned (\w -> w i - w j)
                     (isZeros, _) <- runInvert difference
-                    notIsZeros <- for isZeros $ \isZ ->
+                    for isZeros $ \isZ ->
                       newAssigned (\w -> one - w isZ)
-                    return notIsZeros
                 )
         in
             any Bool (unpacked result)
 
-runInvert :: (MonadCircuit i a m, Z.Zip f, Traversable f) => f i -> m (f i, f i)
-runInvert is = do
-    js <- for is $ \i -> newConstrained (\x j -> x i * x j) (\x -> let xi = x i in one - xi // xi)
-    ks <- for (Z.zip is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv . ($ i))
-    return (js, ks)

@@ -33,26 +33,27 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         checkClosedCircuit
     ) where
 
-import           Control.Monad.State                                    (execState)
-import           Data.Map                                               hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                         take)
-import           GHC.Generics                                           (U1 (..))
-import           Numeric.Natural                                        (Natural)
-import           Prelude                                                hiding (Num (..), drop, length, product,
-                                                                         splitAt, sum, take, (!!), (^))
-import           Test.QuickCheck                                        (Arbitrary, Property, conjoin, property, vector,
-                                                                         withMaxSuccess, (===))
-import           Text.Pretty.Simple                                     (pPrint)
+import           Control.Monad                                       (foldM)
+import           Control.Monad.State                                 (execState)
+import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                      take)
+import           GHC.Generics                                        (U1 (..))
+import           Numeric.Natural                                     (Natural)
+import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
+                                                                      sum, take, (!!), (^))
+import           Test.QuickCheck                                     (Arbitrary, Property, conjoin, property, vector,
+                                                                      withMaxSuccess, (===))
+import           Text.Pretty.Simple                                  (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate           (evalMonomial, evalPolynomial)
-import           ZkFold.Prelude                                         (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Combinators (desugarRange)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance    ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal    (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                         apply, eval, eval1, exec, exec1,
-                                                                         witnessGenerator)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial)
+import           ZkFold.Prelude                                      (length)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
+                                                                      apply, eval, eval1, exec, exec1, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
+import           ZkFold.Symbolic.Data.Combinators                    (expansion)
+import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
 
 --------------------------------- High-level functions --------------------------------
 
@@ -66,6 +67,23 @@ applyArgs r args =
 -- TODO: Implement nontrivial optimizations.
 optimize :: ArithmeticCircuit a f -> ArithmeticCircuit a f
 optimize = id
+
+
+desugarRange :: (Arithmetic a, MonadCircuit i a m) => i -> a -> m ()
+desugarRange i b
+  | b == negate one = return ()
+  | otherwise = do
+    let bs = binaryExpansion b
+    is <- expansion (length bs) i
+    case dropWhile ((== one) . fst) (zip bs is) of
+      [] -> return ()
+      ((_, k0):ds) -> do
+        z <- newAssigned (one - ($ k0))
+        ge <- foldM (\j (c, k) -> newAssigned $ forceGE j c k) z ds
+        constraint (($ ge) - one)
+  where forceGE j c k
+          | c == zero = ($ j) * (one - ($ k))
+          | otherwise = one + ($ k) * (($ j) - one)
 
 -- | Desugars range constraints into polynomial constraints
 desugarRanges :: Arithmetic a => ArithmeticCircuit a f -> ArithmeticCircuit a f
