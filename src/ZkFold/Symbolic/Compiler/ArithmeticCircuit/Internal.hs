@@ -27,10 +27,10 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
-import           Control.Monad.State                          (MonadState (..), State, gets, modify, runState)
+import           Control.Monad.State                          (MonadState (..), State, modify, runState)
 import           Data.Aeson
 import           Data.Containers.ListUtils                    (nubOrd)
-import           Data.Foldable                                (fold)
+import           Data.Foldable                                (fold, toList)
 import           Data.Functor.Rep
 import           Data.List                                    (sort)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take,
@@ -39,7 +39,6 @@ import qualified Data.Map.Strict                              as M hiding (toLis
 import           Data.Semialign                               (unzipDefault)
 import qualified Data.Set                                     as S
 import           GHC.Generics                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
-import           GHC.IsList                                   (IsList (toList))
 import           Optics
 import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum,
                                                                take, (!!), (^))
@@ -281,8 +280,8 @@ apply xs ac = ac
     -- let inputs = acInput
     -- zoom #acWitness . modify . union . fromList $ zip inputs (map const xs)
 
-getAllVars :: MultiplicativeMonoid a => ArithmeticCircuit a i o -> [Natural]
-getAllVars ac = nubOrd $ sort $ 0 : acInput ac ++ concatMap (toList . variables) (elems $ acSystem ac)
+getAllVars :: (MultiplicativeMonoid a, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuit a i o -> [Var i]
+getAllVars ac = nubOrd $ sort $ NewVar 0 : toList acInput ++ concatMap (toList . variables) (elems $ acSystem ac)
 
 -- TODO: Add proper symbolic application functions
 

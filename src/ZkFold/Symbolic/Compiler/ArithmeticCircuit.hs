@@ -35,13 +35,15 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
 
 import           Control.Monad                                       (foldM)
 import           Control.Monad.State                                 (execState)
+import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
                                                                       take)
+import           Data.Void                                           (absurd)
 import           GHC.Generics                                        (U1 (..))
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))
-import           Test.QuickCheck                                     (Arbitrary, Property, conjoin, property, vector,
+import           Test.QuickCheck                                     (Arbitrary, Property, arbitrary, conjoin, property,
                                                                       withMaxSuccess, (===))
 import           Text.Pretty.Simple                                  (pPrint)
 
@@ -49,8 +51,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial)
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                      apply, eval, eval1, exec, exec1, witnessGenerator)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint, acInput,
+                                                                      apply, eval, eval1, exec, exec1, witnessGenerator, Var (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))

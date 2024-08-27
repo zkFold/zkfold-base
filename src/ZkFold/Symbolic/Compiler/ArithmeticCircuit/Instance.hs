@@ -7,16 +7,15 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Data.Aeson                                          hiding (Bool)
+import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
 import           GHC.Generics                                        (Par1 (..))
-import           GHC.Num                                             (integerToNatural)
 import           Prelude                                             (Show, mempty, pure, return, show, ($), (++),
                                                                       (<$>))
 import qualified Prelude                                             as Haskell
 import           System.Random                                       (mkStdGen)
-import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, chooseInteger,
-                                                                      elements)
+import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number

@@ -6,22 +6,19 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         ArithmeticCircuitTest(..)
     ) where
 
+import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, fromList, map, null,
                                                                       splitAt, take, toList)
 import qualified Data.Map                                            as Map
 import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
-import           GHC.Natural                                         (naturalToInteger)
-import           GHC.Num                                             (integerToInt)
-import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))
-import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, vector)
+import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen)
 
-import           ZkFold.Base.Algebra.Basic.Class                     (MultiplicativeMonoid (..))
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Prelude                                      (length)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), getAllVars)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), getAllVars, Var (..))
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
