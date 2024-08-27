@@ -290,7 +290,7 @@ apply xs ac = ac
     -- zoom #acWitness . modify . union . fromList $ zip inputs (map const xs)
 
 getAllVars :: (MultiplicativeMonoid a, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuit a i o -> [Var i]
-getAllVars ac = nubOrd $ sort $ NewVar 0 : toList acInput ++ concatMap (toList . variables) (elems $ acSystem ac)
+getAllVars ac = nubOrd $ sort $ toList acInput ++ concatMap (toList . variables) (elems $ acSystem ac)
 
 -- TODO: Add proper symbolic application functions
 
