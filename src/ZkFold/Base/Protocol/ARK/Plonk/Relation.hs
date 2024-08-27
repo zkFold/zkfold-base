@@ -3,7 +3,7 @@
 
 module ZkFold.Base.Protocol.ARK.Plonk.Relation where
 
-import           Data.Map                                            (elems, Map)
+import           Data.Map                                            (Map, elems)
 import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,

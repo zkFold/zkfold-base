@@ -3,33 +3,34 @@
 
 module Tests.NonInteractiveProof.Plonk (PlonkBS, specPlonk) where
 
-import           Data.ByteString                             (ByteString)
-import           Data.Functor ((<&>))
-import           Data.Functor.Rep                            (Representable (..))
-import           Data.List                                   (transpose)
-import qualified Data.Map as Map
-import           Data.Maybe                                  (fromJust)
-import qualified Data.Vector                                 as V
-import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     hiding (Fractional (..), Num (..), drop, length, replicate,
-                                                              take)
+import           Data.ByteString                                     (ByteString)
+import           Data.Functor                                        ((<&>))
+import           Data.Functor.Rep                                    (Representable (..))
+import           Data.List                                           (transpose)
+import qualified Data.Map                                            as Map
+import           Data.Maybe                                          (fromJust)
+import qualified Data.Vector                                         as V
+import           GHC.IsList                                          (IsList (..))
+import           Prelude                                             hiding (Fractional (..), Num (..), drop, length,
+                                                                      replicate, take)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), AdditiveSemigroup (..), FiniteField,
-                                                              MultiplicativeSemigroup (..), negate, zero, (-!))
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, value)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_G2)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
-                                                              polyVecLinear, polyVecZero, toPolyVec)
-import           ZkFold.Base.Data.Vector                     (fromVector)
+import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGroup (..), AdditiveSemigroup (..),
+                                                                      FiniteField, MultiplicativeSemigroup (..), negate,
+                                                                      zero, (-!))
+import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, value)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
+import           ZkFold.Base.Algebra.Polynomials.Univariate          (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
+                                                                      polyVecLinear, polyVecZero, toPolyVec)
+import           ZkFold.Base.Data.Vector                             (fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
-import           ZkFold.Base.Protocol.ARK.Plonk.Relation     (PlonkRelation (..), toPlonkRelation)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..),
-                                                              NonInteractiveProofTestData (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
+import           ZkFold.Base.Protocol.NonInteractiveProof            (HaskellCore, NonInteractiveProof (..),
+                                                                      NonInteractiveProofTestData (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 type PlonkPolyLengthBS = 32
 type PlonkBS n = Plonk 1 PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
