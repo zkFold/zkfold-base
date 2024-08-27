@@ -138,8 +138,8 @@ instance (Show (BaseField c), EllipticCurve c) => Show (PlonkCircuitCommitments 
         ++ show cmS2 ++ " "
         ++ show cmS3
 
-newtype PlonkWitnessMap n l c = PlonkWitnessMap
-    (Vector l (ScalarField c) -> (PolyVec (ScalarField c) n, PolyVec (ScalarField c) n, PolyVec (ScalarField c) n))
+newtype PlonkWitnessMap n i c = PlonkWitnessMap
+    (Vector i (ScalarField c) -> (PolyVec (ScalarField c) n, PolyVec (ScalarField c) n, PolyVec (ScalarField c) n))
 
 newtype PlonkWitnessInput i c = PlonkWitnessInput (Vector i (ScalarField c))
 instance Show (ScalarField c) => Show (PlonkWitnessInput i c) where
