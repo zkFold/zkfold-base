@@ -141,6 +141,22 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r c)
         return $ UInt $ embed $ V.unsafeToVector (lo <> [hi])
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (UInt n r c) where
+    from (ByteString b) = UInt $ fromCircuitF b solve
+        where
+            solve :: forall i m. MonadCircuit i (BaseField c) m => Vector n i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
+            solve bits = do
+                let bsBits = V.fromVector bits
+                V.unsafeToVector . Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bsBits
+
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (ByteString n c) where
+    from (UInt v) =  ByteString $ fromCircuitF v solve
+        where
+            solve :: forall i m. MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector n i)
+            solve ui = do
+                let regs = V.fromVector ui
+                V.unsafeToVector <$> toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
+
 -- --------------------------------------------------------------------------------
 
 instance
@@ -203,22 +219,6 @@ instance
             longDivisionStep (q', r') i =
                 let rs = force $ addBit (r' + r') (value @n -! i -! 1)
                  in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (UInt n r c) where
-    from (ByteString bits) = UInt $ symbolicF bits (\v -> naturalToVector @c @n @r $ vectorToNatural v (registerSize @(BaseField c) @n @r)) solve
-        where
-            solve :: MonadCircuit v a m => Vector n v -> m (Vector (NumberOfRegisters a n r) v)
-            solve xv = do
-                let bsBits = V.fromVector xv
-                V.unsafeToVector . Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bsBits
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (ByteString n c) where
-    from (UInt ac) = ByteString $ symbolicF ac (\v -> V.unsafeToVector $ fromConstant <$> toBsBits (vectorToNatural v (registerSize @(BaseField c) @n @r)) (value @n)) solve
-        where
-            solve :: MonadCircuit v (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) v -> m (Vector n v)
-            solve xv = do
-                let regs = V.fromVector xv
-                V.unsafeToVector <$> toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Ord (Bool c) (UInt n r c) where
     x <= y = y >= x
