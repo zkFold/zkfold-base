@@ -12,31 +12,31 @@ module ZkFold.Base.Protocol.ARK.Plonk (
     plonkVerifierInput
 ) where
 
-import           Data.Functor                               ((<&>))
-import           Data.Functor.Rep                           (Representable (..))
-import           Data.Maybe                                 (fromJust)
-import qualified Data.Map                                   as Map
-import qualified Data.Vector                                as V
-import           GHC.Generics                               (Par1)
-import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    hiding (Num (..), div, drop, length, replicate, sum, take,
-                                                             (!!), (/), (^))
-import qualified Prelude                                    as P hiding (length)
-import           Test.QuickCheck                            (Arbitrary (..), Gen)
+import           Data.Functor                                        ((<&>))
+import           Data.Functor.Rep                                    (Representable (..))
+import qualified Data.Map                                            as Map
+import           Data.Maybe                                          (fromJust)
+import qualified Data.Vector                                         as V
+import           GHC.Generics                                        (Par1)
+import           GHC.IsList                                          (IsList (..))
+import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
+                                                                      sum, take, (!!), (/), (^))
+import qualified Prelude                                             as P hiding (length)
+import           Test.QuickCheck                                     (Arbitrary (..), Gen)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Permutations     (fromPermutation)
-import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Pairing (..), Point, PointCompressed,
-                                                             compress)
-import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
-import           ZkFold.Base.Data.Vector                    (Vector (..), fromVector)
+import           ZkFold.Base.Algebra.Basic.Permutations              (fromPermutation)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), Point,
+                                                                      PointCompressed, compress)
+import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
+import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk.Internal
-import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
+import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Prelude                             (log2ceiling)
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuitTest (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Prelude                                      (log2ceiling)
+import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.

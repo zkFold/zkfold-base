@@ -3,22 +3,23 @@
 
 module ZkFold.Base.Protocol.ARK.Plonk.Constraint where
 
-import           Control.Monad                                (guard)
-import           Data.Containers.ListUtils                    (nubOrd)
-import           Data.List                                    (find, permutations, sort)
-import           Data.Map                                     (Map, empty, fromListWith)
-import           Data.Maybe                                   (mapMaybe)
-import           GHC.IsList                                   (IsList (..))
-import           GHC.TypeNats                                 (KnownNat)
-import           Numeric.Natural                              (Natural)
-import           Prelude                                      hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
-import           Test.QuickCheck                              (Arbitrary (..))
+import           Control.Monad                                       (guard)
+import           Data.Containers.ListUtils                           (nubOrd)
+import           Data.List                                           (find, permutations, sort)
+import           Data.Map                                            (Map, empty, fromListWith)
+import           Data.Maybe                                          (mapMaybe)
+import           GHC.IsList                                          (IsList (..))
+import           GHC.TypeNats                                        (KnownNat)
+import           Numeric.Natural                                     (Natural)
+import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
+                                                                      (/), (^))
+import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, polynomial, variables)
-import           ZkFold.Prelude                               (length, take, (!!))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial, variables)
 import           ZkFold.Base.Data.Vector                             (Vector)
+import           ZkFold.Prelude                                      (length, take, (!!))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 data PlonkConstraint i a = PlonkConstraint
     { qm :: a

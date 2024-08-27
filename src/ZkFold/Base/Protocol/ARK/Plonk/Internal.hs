@@ -3,23 +3,24 @@
 
 module ZkFold.Base.Protocol.ARK.Plonk.Internal where
 
-import           Data.Bifunctor                             (first)
-import           Data.Bool                                  (bool)
-import           Data.Map.Strict                            (Map)
-import qualified Data.Vector                                as V
-import           GHC.Generics                               (Generic)
-import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
-import           System.Random                              (RandomGen, mkStdGen, uniformR)
-import           Test.QuickCheck                            (Arbitrary (..), Gen, shuffle)
+import           Data.Bifunctor                                      (first)
+import           Data.Bool                                           (bool)
+import           Data.Map.Strict                                     (Map)
+import qualified Data.Vector                                         as V
+import           GHC.Generics                                        (Generic)
+import           GHC.IsList                                          (IsList (..))
+import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
+                                                                      (/), (^))
+import           System.Random                                       (RandomGen, mkStdGen, uniformR)
+import           Test.QuickCheck                                     (Arbitrary (..), Gen, shuffle)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
-import           ZkFold.Base.Data.Vector                    (Vector)
-import           ZkFold.Prelude                             (log2ceiling, take)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Point)
+import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
+import           ZkFold.Base.Data.Vector                             (Vector)
+import           ZkFold.Prelude                                      (log2ceiling, take)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
