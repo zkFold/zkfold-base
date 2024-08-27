@@ -141,8 +141,8 @@ instance (Show (BaseField c), EllipticCurve c) => Show (PlonkCircuitCommitments 
 newtype PlonkWitnessMap n l c = PlonkWitnessMap
     (Vector l (ScalarField c) -> (PolyVec (ScalarField c) n, PolyVec (ScalarField c) n, PolyVec (ScalarField c) n))
 
-newtype PlonkWitnessInput l c = PlonkWitnessInput (Vector l (ScalarField c))
-instance Show (ScalarField c) => Show (PlonkWitnessInput l c) where
+newtype PlonkWitnessInput i c = PlonkWitnessInput (Vector i (ScalarField c))
+instance Show (ScalarField c) => Show (PlonkWitnessInput i c) where
     show (PlonkWitnessInput m) = "Witness Input: " ++ show m
 
 data PlonkProverSecret c = PlonkProverSecret {

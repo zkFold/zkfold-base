@@ -30,7 +30,7 @@ import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonIn
                                                               NonInteractiveProofTestData (..))
 
 type PlonkPolyLengthBS = 32
-type PlonkBS n = Plonk PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
+type PlonkBS n = Plonk 1 PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
 type PlonkPolyExtendedLengthBS = PlonkPolyExtendedLength PlonkPolyLengthBS
 
 propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint a -> Bool
@@ -39,7 +39,7 @@ propPlonkConstraintConversion p =
 
 propPlonkConstraintSatisfaction :: forall n core . KnownNat n => NonInteractiveProofTestData (PlonkBS n) core -> Bool
 propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
-    let pr   = fromJust $ toPlonkRelation @PlonkPolyLengthBS iPub ac
+    let pr   = fromJust $ toPlonkRelation @1 @PlonkPolyLengthBS iPub ac
         (PlonkWitnessInput wInput, _) = w
         (w1', w2', w3') = wmap pr wInput
 
@@ -57,7 +57,7 @@ propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
 
     in all ((== zero) . f) $ transpose [ql', qr', qo', qm', qc', toList $ fromPolyVec w1', toList $ fromPolyVec w2', toList $ fromPolyVec w3', toList $ fromPolyVec wPub]
 
-propPlonkPolyIdentity :: forall n  core . KnownNat n => NonInteractiveProofTestData (PlonkBS n) core -> Bool
+propPlonkPolyIdentity :: forall n  core . NonInteractiveProofTestData (PlonkBS n) core -> Bool
 propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS
 

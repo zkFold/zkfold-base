@@ -21,25 +21,26 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 -- Here `n` is the total number of constraints, `l` is the number of public inputs, and `a` is the field type.
-data PlonkRelation n l a = PlonkRelation
+data PlonkRelation n i a = PlonkRelation
     { qM    :: PolyVec a n
     , qL    :: PolyVec a n
     , qR    :: PolyVec a n
     , qO    :: PolyVec a n
     , qC    :: PolyVec a n
     , sigma :: Permutation (3 * n)
-    , wmap  :: Vector l a -> (PolyVec a n, PolyVec a n, PolyVec a n)
+    , wmap  :: Vector i a -> (PolyVec a n, PolyVec a n, PolyVec a n)
     }
 
-toPlonkRelation :: forall n l a .
-       KnownNat n
+toPlonkRelation :: forall i n l a .
+       KnownNat i
+    => KnownNat n
     => KnownNat (3 * n)
     => KnownNat l
     => Arithmetic a
     => Scale a a
     => Vector l Natural
-    -> ArithmeticCircuit a (Vector l) Par1
-    -> Maybe (PlonkRelation n l a)
+    -> ArithmeticCircuit a (Vector i) Par1
+    -> Maybe (PlonkRelation n i a)
 toPlonkRelation xPub ac0 =
     let ac = desugarRanges ac0
 

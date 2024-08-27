@@ -57,7 +57,7 @@ testOnlyOutputZKP x ps targetValue =
         indexOutputBool = V.singleton $ case unPar1 $ acOutput ac of
           NewVar ix -> ix + 1
           InVar _   -> 1
-        plonk   = Plonk @32 omega k1 k2 indexOutputBool ac x
+        plonk   = Plonk @1 @32 omega k1 k2 indexOutputBool ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
         witness = (PlonkWitnessInput witnessInputs, ps)
@@ -75,7 +75,7 @@ testSafeOneInputZKP x ps targetValue =
         (omega, k1, k2) = getParams 32
         witnessInputs  = V.singleton targetValue
         indexTargetValue = V.singleton (1 :: Natural)
-        plonk   = Plonk @32 omega k1 k2 indexTargetValue ac x
+        plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
         witness = (PlonkWitnessInput witnessInputs, ps)
@@ -92,7 +92,7 @@ testAttackSafeOneInputZKP x ps targetValue =
         (omega, k1, k2) = getParams 32
         witnessInputs  = V.singleton (targetValue + 1)
         indexTargetValue = V.singleton (1 :: Natural)
-        plonk   = Plonk @32 omega k1 k2 indexTargetValue ac x
+        plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
         witness = (PlonkWitnessInput witnessInputs, ps)
