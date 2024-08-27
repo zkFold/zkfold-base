@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ConstraintMonomial,
         Constraint,
         witnessGenerator,
+        indexW,
         -- low-level functions
         constraint,
         rangeConstraint,
@@ -36,6 +37,7 @@ import           Data.List                                    (sort)
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take,
                                                                toList)
 import qualified Data.Map.Strict                              as M hiding (toList)
+import           Data.Maybe                                   (fromMaybe)
 import           Data.Semialign                               (unzipDefault)
 import qualified Data.Set                                     as S
 import           GHC.Generics                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
@@ -101,6 +103,13 @@ witnessGenerator circuit inputs =
         result = fmap (\k -> k inputs result) (acWitness circuit)
     in
         result
+
+indexW :: Representable i => ArithmeticCircuit a i o -> i a -> Var i -> a
+indexW circuit inputs = \case
+  InVar j -> index inputs j
+  NewVar j -> fromMaybe
+    (error ("no such NewVar: " <> show j))
+    (witnessGenerator circuit inputs M.!? j)
 
 ------------------------------ Symbolic compiler context ----------------------------
 

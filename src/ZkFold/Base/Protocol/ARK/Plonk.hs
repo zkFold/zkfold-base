@@ -12,8 +12,10 @@ module ZkFold.Base.Protocol.ARK.Plonk (
     plonkVerifierInput
 ) where
 
+import           Data.Functor                               ((<&>))
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Maybe                                 (fromJust)
+import qualified Data.Map                                   as Map
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Par1)
 import           GHC.IsList                                 (IsList (..))
@@ -33,8 +35,8 @@ import           ZkFold.Base.Protocol.ARK.Plonk.Internal
 import           ZkFold.Base.Protocol.ARK.Plonk.Relation    (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                             (log2ceiling)
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit (..), ArithmeticCircuitTest (..))
-import           ZkFold.Symbolic.MonadCircuit               (Arithmetic)
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuitTest (..))
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
@@ -45,7 +47,7 @@ data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
-        iPub  :: Vector l Natural,
+        iPub  :: Vector l (Var (Vector i)),
         ac    :: ArithmeticCircuit (ScalarField curve1) (Vector i) Par1,
         x     :: ScalarField curve1
     }
@@ -58,8 +60,9 @@ instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbit
         ac <- arbitrary
         let fullInp = value @i
         vecPubInp <- genSubset (value @l) fullInp
-        let (omega, k1, k2) = getParams (value @n)
-        Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        let vecPubInVars = [InVar (fromConstant ix) | ix <- vecPubInp]
+            (omega, k1, k2) = getParams (value @n)
+        Plonk omega k1 k2 (Vector vecPubInVars) ac <$> arbitrary
 
 instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
         Witness (Plonk i n l c1 c2 t) ~ (PlonkWitnessInput i c1, PlonkProverSecret c1), NonInteractiveProof (Plonk i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
@@ -67,10 +70,11 @@ instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithm
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) Par1)
         let inputLen = value @i
         vecPubInp <- genSubset (value @l) inputLen
-        let (omega, k1, k2) = getParams $ value @n
-        pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        let vecPubInVars = [InVar (fromConstant ix) | ix <- vecPubInp]
+            (omega, k1, k2) = getParams $ value @n
+        pl <- Plonk omega k1 k2 (Vector vecPubInVars) ac <$> arbitrary
         secret <- arbitrary
-        return $ TestData pl (PlonkWitnessInput wi, secret)
+        return $ TestData pl (PlonkWitnessInput wi (witnessGenerator ac wi), secret)
 
 plonkPermutation :: forall i n l c1 c2 t .
     (KnownNat n, FiniteField (ScalarField c1)) => Plonk i n l c1 c2 t -> PlonkRelation n i (ScalarField c1) -> PlonkPermutation n c1
@@ -129,7 +133,7 @@ instance forall i n l c1 c2 t plonk f g1 core.
         , CoreFunction c1 core
         ) => NonInteractiveProof (Plonk i n l c1 c2 t) core where
     type Transcript (Plonk i n l c1 c2 t)  = t
-    type SetupProve (Plonk i n l c1 c2 t)  = (PlonkSetupParamsProve c1 c2, PlonkPermutation n c1, PlonkCircuitPolynomials n c1 , PlonkWitnessMap n i c1)
+    type SetupProve (Plonk i n l c1 c2 t)  = (PlonkSetupParamsProve i c1 c2, PlonkPermutation n c1, PlonkCircuitPolynomials n c1 , PlonkWitnessMap n i c1)
     type SetupVerify (Plonk i n l c1 c2 t) = (PlonkSetupParamsVerify c1 c2, PlonkCircuitCommitments c1)
     type Witness (Plonk i n l c1 c2 t)     = (PlonkWitnessInput i c1, PlonkProverSecret c1)
     type Input (Plonk i n l c1 c2 t)       = PlonkInput c1
@@ -137,7 +141,7 @@ instance forall i n l c1 c2 t plonk f g1 core.
 
     setupProve :: plonk -> SetupProve plonk
     setupProve plonk@(Plonk omega' k1' k2' iPub ac x) =
-        (PlonkSetupParamsProve {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkWitnessMap $ wmap pr)
+        (PlonkSetupParamsProve {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkWitnessMap $ \(PlonkWitnessInput win wnv) -> wmap pr win wnv)
         where
             d     = value @n + 6
             xs    = fromList $ map (x^) [0..d-!1]
@@ -180,15 +184,17 @@ instance forall i n l c1 c2 t plonk f g1 core.
 
     prove :: SetupProve plonk -> Witness plonk -> (Input plonk, Proof plonk)
     prove (PlonkSetupParamsProve {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap)
-          (PlonkWitnessInput wInput, PlonkProverSecret {..})
+          (PlonkWitnessInput wInput wNewVars, PlonkProverSecret {..})
         = (PlonkInput wPub, PlonkProof {..})
         where
             n = value @n
             zH = polyVecZero @f @n @(PlonkPolyExtendedLength n)
 
-            (w1, w2, w3) = wmap wInput
+            (w1, w2, w3) = wmap (PlonkWitnessInput wInput wNewVars)
 
-            wPub = fmap (negate . index wInput . P.fromIntegral) iPub'
+            wPub = iPub' <&> negate . \case
+              InVar j -> index wInput j
+              NewVar j -> wNewVars Map.! j
 
             pubPoly = polyVecInLagrangeBasis omega' $ toPolyVec @f @n wPub
 

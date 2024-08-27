@@ -4,7 +4,6 @@
 module Tests.Arithmetization.Test4 (specArithmetization4) where
 
 import           GHC.Generics                                        (Par1 (unPar1))
-import           GHC.Num                                             (Natural)
 import           Prelude                                             hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
 import qualified Prelude                                             as Haskell
 import           Test.Hspec                                          (Spec, describe, it)
@@ -22,7 +21,7 @@ import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFuncti
                                                                       NonInteractiveProof (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuit (..), compile, compileForceOne,
-                                                                      eval)
+                                                                      eval, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Var (..))
 import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
@@ -54,13 +53,12 @@ testOnlyOutputZKP x ps targetValue =
 
         (omega, k1, k2) = getParams 32
         witnessInputs = V.singleton targetValue
-        indexOutputBool = V.singleton $ case unPar1 $ acOutput ac of
-          NewVar ix -> ix + 1
-          InVar _   -> 1
+        witnessNewVars = witnessGenerator ac witnessInputs
+        indexOutputBool = V.singleton $ unPar1 $ acOutput ac
         plonk   = Plonk @1 @32 omega k1 k2 indexOutputBool ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
-        witness = (PlonkWitnessInput witnessInputs, ps)
+        witness = (PlonkWitnessInput witnessInputs witnessNewVars, ps)
         (input, proof) = prove @(PlonkBS N) @core setupP witness
 
         -- `one` corresponds to `True`
@@ -74,11 +72,12 @@ testSafeOneInputZKP x ps targetValue =
 
         (omega, k1, k2) = getParams 32
         witnessInputs  = V.singleton targetValue
-        indexTargetValue = V.singleton (1 :: Natural)
+        witnessNewVars = witnessGenerator ac witnessInputs
+        indexTargetValue = V.singleton (InVar zero)
         plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
-        witness = (PlonkWitnessInput witnessInputs, ps)
+        witness = (PlonkWitnessInput witnessInputs witnessNewVars, ps)
         (input, proof) = prove @(PlonkBS N) @core setupP witness
 
         onePublicInput = plonkVerifierInput $ V.singleton targetValue
@@ -91,11 +90,12 @@ testAttackSafeOneInputZKP x ps targetValue =
 
         (omega, k1, k2) = getParams 32
         witnessInputs  = V.singleton (targetValue + 1)
-        indexTargetValue = V.singleton (1 :: Natural)
+        witnessNewVars = witnessGenerator ac witnessInputs
+        indexTargetValue = V.singleton (InVar zero)
         plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
-        witness = (PlonkWitnessInput witnessInputs, ps)
+        witness = (PlonkWitnessInput witnessInputs witnessNewVars, ps)
         (input, proof) = prove @(PlonkBS N) @core setupP witness
 
         onePublicInput = plonkVerifierInput $ V.singleton $ targetValue + 1

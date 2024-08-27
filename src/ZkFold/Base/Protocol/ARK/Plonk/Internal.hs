@@ -5,6 +5,7 @@ module ZkFold.Base.Protocol.ARK.Plonk.Internal where
 
 import           Data.Bifunctor                             (first)
 import           Data.Bool                                  (bool)
+import           Data.Map.Strict                            (Map)
 import qualified Data.Vector                                as V
 import           GHC.Generics                               (Generic)
 import           GHC.IsList                                 (IsList (..))
@@ -18,6 +19,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..),
 import           ZkFold.Base.Algebra.Polynomials.Univariate hiding (qr)
 import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Prelude                             (log2ceiling, take)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
@@ -46,17 +48,17 @@ type PlonkPolyExtendedLength n = 4 * n + 6
 
 type PlonkPolyExtended n c = PolyVec (ScalarField c) (PlonkPolyExtendedLength n)
 
-data PlonkSetupParamsProve c1 c2 = PlonkSetupParamsProve {
+data PlonkSetupParamsProve i c1 c2 = PlonkSetupParamsProve {
         omega' :: ScalarField c1,
         k1'    :: ScalarField c1,
         k2'    :: ScalarField c1,
         gs'    :: V.Vector (Point c1),
         h0'    :: Point c2,
         h1'    :: Point c2,
-        iPub'  :: V.Vector Natural
+        iPub'  :: V.Vector (Var (Vector i))
     }
 instance (Show (ScalarField c1), Show (BaseField c1), Show (BaseField c2),
-        EllipticCurve c1, EllipticCurve c2) => Show (PlonkSetupParamsProve c1 c2) where
+        EllipticCurve c1, EllipticCurve c2) => Show (PlonkSetupParamsProve i c1 c2) where
     show (PlonkSetupParamsProve omega' k1' k2' gs' h0' h1' iPub') =
         "Setup Parameters (Prove): "
         ++ show omega' ++ " "
@@ -139,11 +141,11 @@ instance (Show (BaseField c), EllipticCurve c) => Show (PlonkCircuitCommitments 
         ++ show cmS3
 
 newtype PlonkWitnessMap n i c = PlonkWitnessMap
-    (Vector i (ScalarField c) -> (PolyVec (ScalarField c) n, PolyVec (ScalarField c) n, PolyVec (ScalarField c) n))
+    (PlonkWitnessInput i c -> (PolyVec (ScalarField c) n, PolyVec (ScalarField c) n, PolyVec (ScalarField c) n))
 
-newtype PlonkWitnessInput i c = PlonkWitnessInput (Vector i (ScalarField c))
+data PlonkWitnessInput i c = PlonkWitnessInput (Vector i (ScalarField c)) (Map Natural (ScalarField c))
 instance Show (ScalarField c) => Show (PlonkWitnessInput i c) where
-    show (PlonkWitnessInput m) = "Witness Input: " ++ show m
+    show (PlonkWitnessInput v m) = "Witness Input: " ++ show v <> "Witness New Vars: " ++ show m
 
 data PlonkProverSecret c = PlonkProverSecret {
         b1  :: ScalarField c,

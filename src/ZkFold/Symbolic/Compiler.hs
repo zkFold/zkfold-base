@@ -21,7 +21,7 @@ import           Prelude                                    (FilePath, IO, Monoi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                    (Vector, unsafeToVector)
+import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit

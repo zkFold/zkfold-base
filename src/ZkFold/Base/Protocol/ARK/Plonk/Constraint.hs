@@ -9,6 +9,7 @@ import           Data.List                                    (find, permutation
 import           Data.Map                                     (Map, empty, fromListWith)
 import           Data.Maybe                                   (mapMaybe)
 import           GHC.IsList                                   (IsList (..))
+import           GHC.TypeNats                                 (KnownNat)
 import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 import           Test.QuickCheck                              (Arbitrary (..))
@@ -16,48 +17,50 @@ import           Test.QuickCheck                              (Arbitrary (..))
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, polynomial, variables)
 import           ZkFold.Prelude                               (length, take, (!!))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Base.Data.Vector                             (Vector)
 
-data PlonkConstraint a = PlonkConstraint
+data PlonkConstraint i a = PlonkConstraint
     { qm :: a
     , ql :: a
     , qr :: a
     , qo :: a
     , qc :: a
-    , x1 :: Natural
-    , x2 :: Natural
-    , x3 :: Natural
+    , x1 :: Var (Vector i)
+    , x2 :: Var (Vector i)
+    , x3 :: Var (Vector i)
     }
     deriving (Show, Eq)
 
-instance (Arbitrary a, Finite a, ToConstant a Natural) => Arbitrary (PlonkConstraint a) where
+instance (Arbitrary a, Finite a, KnownNat i) => Arbitrary (PlonkConstraint i a) where
     arbitrary = do
         qm <- arbitrary
         ql <- arbitrary
         qr <- arbitrary
         qo <- arbitrary
         qc <- arbitrary
-        x1 <- toConstant <$> arbitrary @a
-        x2 <- toConstant <$> arbitrary @a
-        x3 <- toConstant <$> arbitrary @a
+        x1 <- InVar <$> arbitrary
+        x2 <- InVar <$> arbitrary
+        x3 <- InVar <$> arbitrary
         let xs = sort [x1, x2, x3]
         return $ PlonkConstraint qm ql qr qo qc (xs !! 0) (xs !! 1) (xs !! 2)
 
-toPlonkConstraint :: forall a . (Eq a, FiniteField a) => Poly a Natural Natural -> PlonkConstraint a
+toPlonkConstraint :: forall a i . (Eq a, FiniteField a, KnownNat i) => Poly a (Var (Vector i)) Natural -> PlonkConstraint i a
 toPlonkConstraint p =
     let xs    = toList $ variables p
-        i     = zero
+        i     = NewVar zero
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
             0 -> [i, i, i]
             1 -> [i, i, head xs, head xs]
             2 -> [i] ++ xs ++ xs
             _ -> xs ++ xs
 
-        getCoef :: Map Natural Natural -> a
+        getCoef :: Map (Var (Vector i)) Natural -> a
         getCoef m = case find (\(_, as) -> m == as) (toList p) of
             Just (c, _) -> c
             _           -> zero
 
-        getCoefs :: [Natural] -> Maybe (PlonkConstraint a)
+        getCoefs :: [Var (Vector i)] -> Maybe (PlonkConstraint i a)
         getCoefs [a, b, c] = do
             let xa = [(a, 1)]
                 xb = [(b, 1)]
@@ -75,7 +78,7 @@ toPlonkConstraint p =
 
     in head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (Eq a, Field a) => PlonkConstraint a -> Poly a Natural Natural
+fromPlonkConstraint :: (Eq a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var (Vector i)) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
     let xa = [(a, 1)]
         xb = [(b, 1)]

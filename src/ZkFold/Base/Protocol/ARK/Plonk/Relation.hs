@@ -3,7 +3,7 @@
 
 module ZkFold.Base.Protocol.ARK.Plonk.Relation where
 
-import           Data.Map                                            (elems, (!))
+import           Data.Map                                            (elems, Map)
 import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
@@ -12,7 +12,7 @@ import           Prelude                                             hiding (Num
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations              (Permutation, fromCycles, mkIndexPartition)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec, toPolyVec)
 import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint           (PlonkConstraint (..), toPlonkConstraint)
@@ -28,7 +28,7 @@ data PlonkRelation n i a = PlonkRelation
     , qO    :: PolyVec a n
     , qC    :: PolyVec a n
     , sigma :: Permutation (3 * n)
-    , wmap  :: Vector i a -> (PolyVec a n, PolyVec a n, PolyVec a n)
+    , wmap  :: Vector i a -> Map Natural a -> (PolyVec a n, PolyVec a n, PolyVec a n)
     }
 
 toPlonkRelation :: forall i n l a .
@@ -37,19 +37,14 @@ toPlonkRelation :: forall i n l a .
     => KnownNat (3 * n)
     => KnownNat l
     => Arithmetic a
-    => Scale a a
-    => Vector l Natural
+    => Vector l (Var (Vector i))
     -> ArithmeticCircuit a (Vector i) Par1
     -> Maybe (PlonkRelation n i a)
 toPlonkRelation xPub ac0 =
     let ac = desugarRanges ac0
 
-        varF (NewVar ix) = if ix == 0 then one else var (ix + value @l)
-        varF (InVar ix)  = var (toConstant ix)
-        evalX0 = evalPolynomial evalMonomial varF
-
         pubInputConstraints = map var (fromVector xPub)
-        acConstraints       = map evalX0 $ elems (acSystem ac)
+        acConstraints       = elems (acSystem ac)
         extraConstraints    = replicate (value @n -! acSizeN ac -! value @l) zero
 
         system = map toPlonkConstraint $ pubInputConstraints ++ acConstraints ++ extraConstraints
@@ -66,11 +61,10 @@ toPlonkRelation xPub ac0 =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c
 
-        wmap'  = witnessGenerator ac
-        w1 i   = toPolyVec $ fromList $ map (wmap' i !) a
-        w2 i   = toPolyVec $ fromList $ map (wmap' i !) b
-        w3 i   = toPolyVec $ fromList $ map (wmap' i !) c
-        wmap i = (w1 i, w2 i, w3 i)
+        w1 i   = toPolyVec $ fromList $ map (indexW ac i) a
+        w2 i   = toPolyVec $ fromList $ map (indexW ac i) b
+        w3 i   = toPolyVec $ fromList $ map (indexW ac i) c
+        wmap i _ = (w1 i, w2 i, w3 i)
 
     in if (acSizeN ac + value @l) <= value @n
         then Just $ PlonkRelation {..}
