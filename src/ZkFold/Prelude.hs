@@ -5,6 +5,7 @@ import           Data.ByteString.Lazy (readFile, writeFile)
 import           Data.List            (foldl', genericIndex)
 import           Data.Map             (Map, lookup)
 import           GHC.Num              (Natural, integerToNatural)
+import           GHC.Stack            (HasCallStack)
 import           Prelude              hiding (drop, lookup, readFile, replicate, take, writeFile, (!!))
 import           Test.QuickCheck      (Gen, chooseInteger)
 
@@ -14,7 +15,7 @@ log2ceiling = ceiling @Double . logBase 2 . fromIntegral
 length :: Foldable t => t a -> Natural
 length = foldl' (\c _ -> c + 1) 0
 
-take :: Natural -> [a] -> [a]
+take :: HasCallStack => Natural -> [a] -> [a]
 take 0 _      = []
 take n (x:xs) = x : take (n - 1) xs
 take _ []     = error "ZkFold.Prelude.take: empty list"

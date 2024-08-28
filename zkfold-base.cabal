@@ -215,6 +215,7 @@ library
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
+      distributive                               ,
       lens                                       ,
       mtl                                   < 2.4,
       optics                                < 0.5,
@@ -287,6 +288,7 @@ test-suite zkfold-base-test
       Tests.Univariate.PolyVec
     build-depends:
       base                          >= 4.9 && < 5,
+      adjunctions                           < 4.5,
       binary                               < 0.11,
       bytestring                                 ,
       blake2                                     ,
@@ -330,6 +332,7 @@ benchmark compiler-benchmark
       -fprof-cafs
       -O3
     build-depends:
+      adjunctions,
       base,
       bytestring,
       containers,

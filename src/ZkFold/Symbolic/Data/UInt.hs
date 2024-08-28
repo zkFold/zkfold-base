@@ -141,7 +141,6 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r c)
         return $ UInt $ embed $ V.unsafeToVector (lo <> [hi])
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
-
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (UInt n r c) where
     from (ByteString b) = UInt $ fromCircuitF b solve
         where

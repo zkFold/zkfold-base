@@ -10,8 +10,9 @@ import           GHC.Generics                                        (Generic)
 import           Prelude                                             (($), (==))
 import qualified Prelude                                             as P
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector                             as V
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial, var)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -42,10 +43,10 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 data RecursiveCircuit n a
     = RecursiveCircuit
         { iterations :: Natural
-        , circuit    :: ArithmeticCircuit a (Vector n)
+        , circuit    :: ArithmeticCircuit a (Vector n) (Vector n)
         } deriving (Generic, NFData)
 
-instance Arithmetic a => SpecialSoundProtocol a (RecursiveCircuit n a) where
+instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (RecursiveCircuit n a) where
     type Witness a (RecursiveCircuit n a) = Map Natural a
     type Input a (RecursiveCircuit n a) = Vector n a
     type ProverMessage a (RecursiveCircuit n a) = Vector n a
@@ -59,13 +60,20 @@ instance Arithmetic a => SpecialSoundProtocol a (RecursiveCircuit n a) where
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
-    prover rc _ i _ = eval (circuit rc) (M.fromList $ P.zip [1..] (V.fromVector i))
+    prover rc _ i _ = eval (circuit rc) i
 
     -- We can use the polynomial system from the circuit, no need to build it from scratch
     --
-    algebraicMap rc _ _ _ = M.elems $ acSystem (circuit rc)
+    algebraicMap rc _ _ _ =
+        let
+            varF (NewVar ix) = var (ix P.+ value @n)
+            varF (InVar ix)  = var (toConstant ix)
+        in
+            [ evalPolynomial evalMonomial varF poly
+            | poly <- M.elems $ acSystem (circuit rc)
+            ]
 
     -- The transcript is only one prover message since this is a one-round protocol
     --
-    verifier rc i pm _ = eval (circuit rc) (M.fromList $ P.zip [1..] (V.fromVector i)) == P.head pm
+    verifier rc i pm _ = eval (circuit rc) i == P.head pm
 

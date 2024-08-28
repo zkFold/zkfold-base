@@ -9,6 +9,8 @@ import qualified Control.Monad                    as M
 import           Control.Parallel.Strategies      (parMap, rpar)
 import           Data.Aeson                       (ToJSON (..))
 import           Data.Bifunctor                   (first)
+import           Data.Distributive                (Distributive (..))
+import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep)
 import qualified Data.List                        as List
 import           Data.List.Split                  (chunksOf)
 import           Data.These                       (These (..))
@@ -21,6 +23,7 @@ import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.ByteString      (Binary (..))
 import qualified ZkFold.Prelude                   as ZP
@@ -28,6 +31,15 @@ import           ZkFold.Prelude                   (length, replicate)
 
 newtype Vector (size :: Natural) a = Vector [a]
     deriving (Show, Eq, Functor, Foldable, Traversable, Generic, NFData)
+
+instance KnownNat size => Representable (Vector size) where
+  type Rep (Vector size) = Zp size
+  index (Vector v) ix = v Prelude.!! (fromIntegral (fromZp ix))
+  tabulate f = Vector [f (toZp ix) | ix <- [0 .. fromIntegral (value @size) Prelude.- 1]]
+
+instance KnownNat size => Distributive (Vector size) where
+  distribute = distributeRep
+  collect = collectRep
 
 parFmap :: (a -> b) -> Vector size a -> Vector size b
 parFmap f (Vector lst) = Vector $ parMap rpar f lst

@@ -12,6 +12,7 @@ import           Test.QuickCheck                             (property)
 
 import           ZkFold.Base.Algebra.Basic.Class             (one)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
+import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
@@ -25,8 +26,8 @@ tautology x y = (x /= y) || (x == y)
 
 testTautology :: forall a . Arithmetic a => a -> a -> Haskell.Bool
 testTautology x y =
-    let Bool ac = compile @a (tautology @(ArithmeticCircuit a))
-        b       = unPar1 $ acValue (applyArgs ac [x, y])
+    let Bool (ac :: ArithmeticCircuit a (Vector 2) Par1) = compile @a (tautology @(ArithmeticCircuit a (Vector 2)))
+        b       = unPar1 (eval ac (unsafeToVector [x, y]))
     in b Haskell.== one
 
 specArithmetization2 :: Spec

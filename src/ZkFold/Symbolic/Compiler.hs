@@ -21,7 +21,7 @@ import           Prelude                                    (FilePath, IO, Monoi
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                    (Vector, unsafeToVector)
+import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
@@ -43,33 +43,34 @@ forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) 
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder ::
-    forall a c f .
+    forall a c f ni .
     ( Eq a
     , MultiplicativeMonoid a
-    , c ~ ArithmeticCircuit a
+    , KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
-    , KnownNat (TypeSize (Support f))
     ) => f -> c (Vector (TypeSize f))
 solder f = pieces f (restore @(Support f) $ const inputC)
     where
-        inputList = [1..(typeSize @(Support f))]
-        inputC = mempty { acInput = inputList, acOutput = unsafeToVector inputList }
+        inputC = mempty { acOutput = acInput }
 
 -- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
-    forall a c f y .
-    ( c ~ ArithmeticCircuit a
+    forall a c f y ni .
+    ( KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
     , Arithmetic a
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
-    , KnownNat (TypeSize (Support f))
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
@@ -79,16 +80,17 @@ compileForceOne = restore . const . optimize . forceOne . solder @a
 
 -- | Compiles function `f` into an arithmetic circuit.
 compile ::
-    forall a c f y .
+    forall a c f y ni .
     ( Eq a
     , MultiplicativeMonoid a
-    , c ~ ArithmeticCircuit a
+    , KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
-    , KnownNat (TypeSize (Support f))
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
@@ -98,17 +100,18 @@ compile = restore . const . optimize . solder @a
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::
-    forall a c f .
+    forall a c f ni .
     ( Eq a
     , MultiplicativeMonoid a
-    , c ~ ArithmeticCircuit a
+    , KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
     , ToJSON a
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
-    , KnownNat (TypeSize (Support f))
     ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = optimize (solder @a f) :: c (Vector (TypeSize f))
