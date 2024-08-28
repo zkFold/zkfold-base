@@ -4,7 +4,6 @@ module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
 import           Data.Maybe                                     (fromJust)
 import           Data.Zip                                       (zip)
-import           GHC.Generics                                   (Par1)
 import           Numeric.Natural                                (Natural)
 import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
                                                                  (*), (+))
@@ -29,23 +28,11 @@ type Tx context = Transaction 6 0 11 Tokens 0 () context
 hash :: forall context x . (Symbolic context, MiMCHash (BaseField context) context x) => x -> FieldElement context
 hash = mimcHash @(BaseField context) mimcConstants zero
 
-type Sig context =
-    ( Symbolic context
-    , StrictConv (context Par1) (UInt 256 Auto context)
-    , FromConstant Natural (UInt 256 Auto context)
-    , MultiplicativeSemigroup (UInt 256 Auto context)
-    , MiMCHash (BaseField context) context (TxOut context, TxOut context)
-    , Eq (Bool context) (UInt 256 Auto context)
-    , Eq (Bool context) (TxOut context)
-    , Iso (UInt 256 Auto context) (ByteString 256 context)
-    , Extend (ByteString 224 context) (ByteString 256 context))
-
 verifySignature ::
-    forall context . Sig context =>
-    ByteString 224 context ->
-    (TxOut context, TxOut context) ->
-    ByteString 256 context ->
-    Bool context
+    forall context . 
+    ( Symbolic context
+    , MiMCHash (BaseField context) context (TxOut context, TxOut context)
+    ) => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (extend pub :: ByteString 256 context))
     where
         base :: UInt 256 Auto context
@@ -55,10 +42,11 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFi
         mimc = hash (pay, change)
 
 batchTransfer ::
-    forall context.  Sig context
-    => Tx context
-    -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)
-    -> Bool context
+    forall context.  
+    ( Symbolic context
+    , MiMCHash (BaseField context) context (TxOut context, TxOut context)
+    , Eq (Bool context) (TxOut context)
+    ) => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)-> Bool context
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures
         pkhs       = fromJust $ toVector @5 $ map (paymentCredential . txoAddress . txiOutput) $ init $ fromVector $ txInputs tx

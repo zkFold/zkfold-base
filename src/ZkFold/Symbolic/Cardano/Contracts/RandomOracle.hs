@@ -25,23 +25,13 @@ type Tx context = Transaction 1 0 2 Tokens 1 () context
 hash :: forall context x . (Symbolic context, MiMCHash (BaseField context) context x )=> x -> FieldElement context
 hash = mimcHash @(BaseField context) mimcConstants zero
 
-type Sig context =
+randomOracle :: forall context . 
     ( Symbolic context
     , FromConstant (BaseField context) (FieldElement context)
-    , MultiplicativeMonoid (UInt 64 Auto context)
-    , Eq (Bool context) (FieldElement context)
-    , Eq (Bool context) (UInt 64 Auto context)
     , Eq (Bool context) (ByteString 224 context)
     , Eq (Bool context) (ByteString 256 context)
-    , Extend (ByteString 224 context) (ByteString 256 context)
-    , Extend (AssetName context) (AssetName context)
-    , BinaryExpansion (FieldElement context)
     , Bits (FieldElement context) ~ FieldElementBits context
-    , MiMCHash (BaseField context) context (FieldElement context)
-    , MiMCHash (BaseField context) context (OutputRef context)
-    , MiMCHash (BaseField context) context (FieldElement context, FieldElement context))
-
-randomOracle :: forall context . Sig context => BaseField context -> Tx context -> FieldElement context -> Bool context
+    ) => BaseField context -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =
     let -- The secret key is correct
         conditionSecretKey = fromConstant c == hash @context w
