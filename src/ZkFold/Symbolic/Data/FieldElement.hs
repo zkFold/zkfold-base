@@ -4,31 +4,26 @@
 
 module ZkFold.Symbolic.Data.FieldElement where
 
-import           Data.Bool                          (bool)
-import           Data.Foldable                      (foldlM, foldr)
-import           Data.Function                      (($), (.))
-import           Data.Functor                       (fmap, (<$>))
-import           Data.Ord                           (Ordering (..), compare)
-import           Data.Traversable                   (for)
-import           Data.Tuple                         (fst, snd)
-import           Data.Zip                           (zip)
-import           GHC.Generics                       (Par1 (..))
-import           Prelude                            (Integer)
-import qualified Prelude                            as Haskell
+import           Data.Foldable                    (foldr)
+import           Data.Function                    (($), (.))
+import           Data.Functor                     (fmap, (<$>))
+import           Data.Tuple                       (snd)
+import           GHC.Generics                     (Par1 (..))
+import           Prelude                          (Integer)
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor          (HFunctor, hmap)
-import           ZkFold.Base.Data.Par1              ()
-import           ZkFold.Base.Data.Vector            (Vector, fromVector, unsafeToVector)
+import           ZkFold.Base.Data.HFunctor        (HFunctor, hmap)
+import           ZkFold.Base.Data.Par1            ()
+import           ZkFold.Base.Data.Vector          (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool          (Bool (Bool))
+import           ZkFold.Symbolic.Data.Bool        (Bool)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators   (expansion, horner, runInvert)
-import           ZkFold.Symbolic.Data.DiscreteField
-import           ZkFold.Symbolic.Data.Eq            (Eq)
+import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
+import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
 
@@ -102,30 +97,3 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
   fromBinary bits =
     FieldElement $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
       $ fmap Par1 . horner . fromVector
-
-instance Symbolic c => DiscreteField' (FieldElement c) where
-  equal x y = let Bool c = isZero (x - y) in FieldElement c
-
-instance Symbolic c => TrichotomyField (FieldElement c) where
-  trichotomy (FieldElement x) (FieldElement y) =
-    FieldElement $ symbolic2F x y
-      (\u v -> Par1 $ case compare u v of { LT -> negate one; EQ -> zero; GT -> one })
-      $ \(Par1 i) (Par1 j) -> do
-        is <- expansion (numberOfBits @(BaseField c)) i
-        js <- expansion (numberOfBits @(BaseField c)) j
-        -- zip pairs of bits in {0,1} to orderings in {-1,0,1}
-        delta <- for (zip is js) $ \(bi, bj) -> newAssigned (\w -> w bi - w bj)
-        -- least significant bit first,
-        -- reverse lexicographical ordering
-        let reverseLexicographical v u = do
-              is0 <- newAssigned (\p -> one - p u * p u)
-              v' <- newAssigned (\p -> p is0 * p v)
-              newAssigned (\p -> p v' + p u)
-        Par1 <$> case delta of
-          []     -> newAssigned zero
-          (d:ds) -> foldlM reverseLexicographical d ds
-
-instance Symbolic c => DiscreteField (Bool c) (FieldElement c) where
-  isZero (FieldElement x) =
-    Bool $ symbolicF x (Par1 . bool zero one . (Haskell.== Par1 zero))
-      $ fmap fst . runInvert

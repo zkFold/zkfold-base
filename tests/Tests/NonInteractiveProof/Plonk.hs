@@ -3,47 +3,54 @@
 
 module Tests.NonInteractiveProof.Plonk (PlonkBS, specPlonk) where
 
-import           Data.ByteString                             (ByteString)
-import           Data.List                                   (transpose)
-import           Data.Map                                    ((!))
-import           Data.Maybe                                  (fromJust)
-import qualified Data.Vector                                 as V
-import           GHC.IsList                                  (IsList (..))
-import           GHC.Natural                                 (Natural)
-import           Prelude                                     hiding (Fractional (..), Num (..), drop, length, replicate,
-                                                              take)
+import           Data.ByteString                                     (ByteString)
+import           Data.Functor                                        ((<&>))
+import           Data.Functor.Rep                                    (Representable (..))
+import           Data.List                                           (transpose)
+import qualified Data.Map                                            as Map
+import           Data.Maybe                                          (fromJust)
+import qualified Data.Vector                                         as V
+import           GHC.IsList                                          (IsList (..))
+import           Prelude                                             hiding (Fractional (..), Num (..), drop, length,
+                                                                      replicate, take)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), AdditiveSemigroup (..), FiniteField,
-                                                              MultiplicativeSemigroup (..), negate, zero, (-!))
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, value)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_G2)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
-                                                              polyVecLinear, polyVecZero, toPolyVec)
-import           ZkFold.Base.Data.Vector                     (fromVector)
+import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGroup (..), AdditiveSemigroup (..),
+                                                                      FiniteField, FromConstant (..),
+                                                                      MultiplicativeSemigroup (..), Scale (..), negate,
+                                                                      zero, (-!))
+import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, value)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
+import           ZkFold.Base.Algebra.Polynomials.Univariate          (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
+                                                                      polyVecLinear, polyVecZero, toPolyVec)
+import           ZkFold.Base.Data.Vector                             (fromVector)
 import           ZkFold.Base.Protocol.ARK.Plonk
 import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
-import           ZkFold.Base.Protocol.ARK.Plonk.Relation     (PlonkRelation (..), toPlonkRelation)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..),
-                                                              NonInteractiveProofTestData (..))
+import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
+import           ZkFold.Base.Protocol.NonInteractiveProof            (HaskellCore, NonInteractiveProof (..),
+                                                                      NonInteractiveProofTestData (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 type PlonkPolyLengthBS = 32
-type PlonkBS n = Plonk PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
+type PlonkBS n = Plonk 1 PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
 type PlonkPolyExtendedLengthBS = PlonkPolyExtendedLength PlonkPolyLengthBS
 
-propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint a -> Bool
+propPlonkConstraintConversion :: (Eq a, Scale a a, FromConstant a a, FiniteField a) => PlonkConstraint 1 a -> Bool
 propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
 propPlonkConstraintSatisfaction :: forall n core . KnownNat n => NonInteractiveProofTestData (PlonkBS n) core -> Bool
 propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
-    let pr   = fromJust $ toPlonkRelation @PlonkPolyLengthBS iPub ac
-        (PlonkWitnessInput wInput, _) = w
-        (w1', w2', w3') = wmap pr wInput
+    let pr   = fromJust $ toPlonkRelation @1 @PlonkPolyLengthBS iPub ac
+        (PlonkWitnessInput wInput wNewVars, _) = w
+        (w1', w2', w3') = wmap pr wInput wNewVars
 
-        wPub = toPolyVec @_ @PlonkPolyLengthBS $ fmap (negate . (wInput !)) $ fromList @(V.Vector Natural) $ fromVector iPub
+        wPub = toPolyVec @_ @PlonkPolyLengthBS $
+          fromList (fromVector iPub) <&> negate . \case
+            InVar j -> index wInput j
+            NewVar j -> wNewVars Map.! j
 
         qm' = V.toList $ fromPolyVec $ qM pr
         ql' = V.toList $ fromPolyVec $ qL pr
@@ -63,11 +70,15 @@ propPlonkPolyIdentity (TestData plonk w) =
 
         s = setupProve @(PlonkBS n) @core plonk
         (PlonkSetupParamsProve {..}, _, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap) = s
-        (PlonkWitnessInput wInput, ps) = w
+        (pw@(PlonkWitnessInput wInput wNewVars), ps) = w
         PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
-        (w1, w2, w3) = wmap wInput
+        (w1, w2, w3) = wmap pw
 
-        wPub = fmap (negate . (wInput !)) iPub'
+        wPub = iPub' <&> negate . \case
+            InVar j -> index wInput j
+            NewVar j -> wNewVars Map.! j
+
+        -- wPub = fmap (negate . index wInput . fromIntegral) iPub'
         pubPoly = polyVecInLagrangeBasis @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS omega' $
             toPolyVec @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS wPub
 

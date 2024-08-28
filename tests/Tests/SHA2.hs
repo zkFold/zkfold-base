@@ -10,6 +10,7 @@ import           Data.Functor                                ((<$>))
 import           Data.List                                   (isPrefixOf, isSuffixOf, take, (++))
 import           Data.List.Split                             (splitOn)
 import           Data.Proxy                                  (Proxy (..))
+import           GHC.Generics                                (U1)
 import           GHC.TypeLits                                (KnownSymbol, Symbol, symbolVal)
 import           Prelude                                     (String, fmap, otherwise, pure, read, (<>), (==))
 import qualified Prelude                                     as Haskell
@@ -133,13 +134,13 @@ specSHA2Natural = do
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . ByteString n (ArithmeticCircuit a) -> Vector n a
+eval :: forall a n . ByteString n (ArithmeticCircuit a U1) -> Vector n a
 eval (ByteString bits) = exec bits
 
 specSHA2bs
     :: forall (n :: Natural) (algorithm :: Symbol)
     .  KnownSymbol algorithm
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) n
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) n
     => SHA2N algorithm (Interpreter (Zp BLS12_381_Scalar))
     => Spec
 specSHA2bs = do
@@ -147,7 +148,7 @@ specSHA2bs = do
         m = 2 ^ n -! 1
     it ("calculates " <> symbolVal (Proxy @algorithm) <> " of a " <> Haskell.show n <> "-bit bytestring") $ withMaxSuccess 2 $ do
         x <- toss m
-        let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @n $ fromConstant x
+        let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar) U1) @n $ fromConstant x
             ByteString (Interpreter hashZP) = sha2Natural @algorithm @(Interpreter (Zp BLS12_381_Scalar)) n x
         pure $ eval @(Zp BLS12_381_Scalar) @(ResultSize algorithm) hashAC === hashZP
 
@@ -158,10 +159,10 @@ specSHA2'
     :: forall (algorithm :: Symbol)
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter (Zp BLS12_381_Scalar))
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 1
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 63
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 64
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar)) 1900
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 1
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 63
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 64
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 1900
     => IO ()
 specSHA2' = hspec $ do
     specSHA2bs @1    @algorithm

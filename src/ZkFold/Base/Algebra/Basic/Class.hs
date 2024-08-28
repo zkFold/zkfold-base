@@ -9,6 +9,7 @@ module ZkFold.Base.Algebra.Basic.Class where
 import           Data.Bool                        (bool)
 import           Data.Foldable                    (foldl')
 import           Data.Kind                        (Type)
+import           Data.Void                        (Void, absurd)
 import           GHC.Natural                      (naturalFromInteger)
 import           Prelude                          hiding (Num (..), div, divMod, length, mod, negate, product,
                                                    replicate, sum, (/), (^))
@@ -42,6 +43,9 @@ class ToConstant a b where
 
 instance ToConstant a a where
     toConstant = id
+
+instance ToConstant Void b where
+    toConstant = absurd
 
 --------------------------------------------------------------------------------
 

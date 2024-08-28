@@ -49,7 +49,6 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit     (ClosedPoly, MonadCircuit, newAssigned)
 
-
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
@@ -249,7 +248,7 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
       | otherwise = ByteString $ symbolicF oldBits (\v ->  V.shift v s (fromConstant (0 :: Integer))) solve
       where
-        solve :: forall i m. MonadCircuit i (BaseField c) m => Vector n i -> m (Vector n i)
+        solve :: forall a m. MonadCircuit a (BaseField c) m => Vector n a -> m (Vector n a)
         solve bitsV = do
             let bits = V.fromVector bitsV
             zeros <- replicateM (Haskell.fromIntegral $ Haskell.abs s) $ newAssigned (Haskell.const zero)
