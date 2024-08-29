@@ -15,35 +15,24 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.ByteString             (ByteString, Concat, ReverseEndianness, ShiftBits,
-                                                              ToWords (..), Truncate (..))
+import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (pieces)
-import           ZkFold.Symbolic.Data.Combinators            (Extend)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
+import ZkFold.Symbolic.Class (Symbolic)
 
--- TODO: We need a proper test for both numeric and symbolic blake2b hashing
+-- TODO: We need a proper test for coth numeric and symbolic clake2b hashing
 
-blake2bSimple :: forall b .
-    ( Extend (ByteString 0 b) (ByteString 1024 b)
-    , ShiftBits (ByteString 1024 b)
-    , ReverseEndianness 64 (ByteString 1024 b)
-    , ToWords (ByteString 1024 b) (ByteString 64 b)
-    , Truncate (ByteString 512 b) (ByteString 512 b)
-    , Blake2bSig b
-    , Concat (ByteString 8 b) (ByteString 512 b)
-    , FromConstant Natural (ByteString 0 b)
-    , FromConstant Natural (ByteString 8 b)
-    , Eq (b (Vector 512))
-    ) => Spec
+blake2bSimple :: forall c .
+    ( Symbolic c, Eq (c (Vector 512))) => Spec
 blake2bSimple =
-    let a = blake2b_512 @0 @b $ fromConstant (0 :: Natural)
-        b = hash 64 BI.empty BI.empty
-    in  it "computes blake2b_512 correctly on empty bytestring" $ a == fromConstant b
+    let a = blake2b_512 @0 @c $ fromConstant (0 :: Natural)
+        c = hash 64 BI.empty BI.empty
+    in  it "computes blake2b_512 correctly on empty bytestring" $ a == fromConstant c
 
 blake2bAC :: Spec
 blake2bAC =
-    let bs = compile blake2b_512 :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 8))
-        ac = pieces bs Proxy
+    let cs = compile blake2b_512 :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 8))
+        ac = pieces cs Proxy
     in it "simple test with cardano-crypto " $ acSizeN ac == 564239
 
 specBlake2b :: IO ()

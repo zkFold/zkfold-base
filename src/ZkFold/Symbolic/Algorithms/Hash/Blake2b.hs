@@ -16,7 +16,7 @@ import           Prelude                                           hiding (Num (
 
 import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGroup (..), AdditiveSemigroup (..),
                                                                     EuclideanDomain (..), Exponent (..),
-                                                                    FromConstant (..), MultiplicativeMonoid,
+                                                                    FromConstant (..),
                                                                     MultiplicativeSemigroup (..), divMod, one, zero,
                                                                     (-!))
 import           ZkFold.Base.Algebra.Basic.Number
@@ -26,51 +26,42 @@ import           ZkFold.Symbolic.Data.Bool                         (BoolType (..
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Concat (..),
                                                                     ReverseEndianness (..), ShiftBits (..),
                                                                     ToWords (..), Truncate (..))
-import           ZkFold.Symbolic.Data.Combinators                  (Extend, Iso (..), RegisterSize (..), extend)
+import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
+import ZkFold.Symbolic.Class (Symbolic)
 
 -- TODO: This module is not finished yet. The hash computation is not correct.
 
 -- | BLAKE2b Cryptographic hash. Reference:
 -- https://tools.ietf.org/html/rfc7693
 
-type Blake2bSig b =
-    ( Iso (UInt 64 Auto b) (ByteString 64 b)
-    , ShiftBits (ByteString 64 b)
-    , Concat (ByteString 64 b) (ByteString 512 b)
-    , ReverseEndianness 64 (ByteString 512 b)
-    , BoolType (ByteString 64 b)
-    , AdditiveGroup (UInt 64 Auto b)
-    , FromConstant Natural (UInt 64 Auto b)
-    , MultiplicativeMonoid (UInt 64 Auto b)
-    )
 
 pow2 :: forall a . FromConstant Natural a => Natural -> a
 pow2 = fromConstant @Natural . (2 ^)
 
-shiftUIntR :: forall b . Blake2bSig b => UInt 64 Auto b -> Natural -> UInt 64 Auto b
+shiftUIntR :: forall b . Symbolic b => UInt 64 Auto b -> Natural -> UInt 64 Auto b
 shiftUIntR u n = from @_ @(UInt 64 Auto b) $ from @_ @(ByteString 64 b) u `shiftBitsR` n
 
-shiftUIntL :: forall b . Blake2bSig b => UInt 64 Auto b -> Natural -> UInt 64 Auto b
+shiftUIntL :: forall b . Symbolic b => UInt 64 Auto b -> Natural -> UInt 64 Auto b
 shiftUIntL u n = u * pow2 n
 
-xorUInt :: forall b . Blake2bSig b => UInt 64 Auto b ->  UInt 64 Auto b ->  UInt 64 Auto b
-xorUInt u1 u2 = from @(ByteString 64 b) @(UInt 64 Auto b) $ from u1 `xor` from u2
+xorUInt :: forall c . Symbolic c => UInt 64 Auto c ->  UInt 64 Auto c ->  UInt 64 Auto c
+xorUInt u1 u2 = from @(ByteString 64 c) @(UInt 64 Auto c) $ from u1 `xor` from u2
 
 -- | state context
-data Blake2bCtx b = Blake2bCtx
-   { h :: V.Vector (UInt 64 Auto b) -- chained state 8
-   , m :: V.Vector (UInt 64 Auto b) -- input buffer 16
+data Blake2bCtx c = Blake2bCtx
+   { h :: V.Vector (UInt 64 Auto c) -- chained state 8
+   , m :: V.Vector (UInt 64 Auto c) -- input buffer 16
    , t :: (Natural, Natural)     -- total number of bytes
    }
 
 -- | Cyclic right rotation.
-rotr64 :: Blake2bSig b => (UInt 64 Auto b, Natural) -> UInt 64 Auto b
+rotr64 :: Symbolic c => (UInt 64 Auto c, Natural) -> UInt 64 Auto c
 rotr64 (x, y) = (x `shiftUIntR` y) `xorUInt` (x `shiftUIntL` (64 -! y))
 
 -- | Little-endian byte access.
-b2b_g :: forall b . Blake2bSig b =>
-    V.Vector (UInt 64 Auto b) -> (Int, Int, Int, Int, UInt 64 Auto b, UInt 64 Auto b) -> V.Vector (UInt 64 Auto b)
+b2b_g :: forall c . Symbolic c =>
+    V.Vector (UInt 64 Auto c) -> (Int, Int, Int, Int, UInt 64 Auto c, UInt 64 Auto c) -> V.Vector (UInt 64 Auto c)
 b2b_g v (a, b, c, d, x, y) =
     let va1 = (v ! a) + (v ! b) + x                 -- v[a] = v[a] + v[b] + x;         \
         vd1 = rotr64 ((v ! d) `xorUInt` va1, 32)    -- v[d] = ROTR64(v[d] ^ v[a], 32); \
@@ -83,8 +74,7 @@ b2b_g v (a, b, c, d, x, y) =
     in v // [(a, va2), (b, vb2), (c, vc2), (d, vd2)]
 
 -- | Compression function. "last" flag indicates the last block.
-blake2b_compress :: forall b . Blake2bSig b =>
-    Blake2bCtx b -> Bool -> V.Vector (UInt 64 Auto b)
+blake2b_compress :: forall c . Symbolic c => Blake2bCtx c -> Bool -> V.Vector (UInt 64 Auto c)
 blake2b_compress Blake2bCtx{h, m, t} lastBlock =
     let v'  = h V.++ blake2b_iv -- init work variables
         v'' = v' V.// [ (12, (v' ! 12) `xorUInt` fromConstant (fst t))  -- low word of the offset
@@ -109,14 +99,15 @@ blake2b_compress Blake2bCtx{h, m, t} lastBlock =
         v1 = V.foldl hashRound v0 $ fromList [0..11] -- twelve rounds
     in fmap (\(i, hi) -> hi `xorUInt` (v1 ! i) `xorUInt` (v1 ! (i GHC.+ 8))) (V.zip (fromList [0..7]) h)
 
-blake2b' :: forall bb' kk' ll' nn' b .
-    ( KnownNat bb'
+blake2b' :: forall bb' kk' ll' nn' c .
+    ( Symbolic c
+    , KnownNat bb'
     , KnownNat kk'
     , KnownNat ll'
     , KnownNat nn'
-    , Truncate (ByteString 512 b) (ByteString (8 * nn') b)
-    , Blake2bSig b
-    ) => [V.Vector (UInt 64 Auto b)] -> ByteString (8 * nn') b
+    , KnownNat (8 * nn')
+    , 8 * nn' <= 512
+    ) => [V.Vector (UInt 64 Auto c)] -> ByteString (8 * nn') c
 blake2b' d =
     let bb = value @bb'
         ll = value @ll'
@@ -127,7 +118,7 @@ blake2b' d =
         toOffset :: forall x . (FromConstant Natural x) => Natural -> (x, x)
         toOffset x = let (hi, lo) = x `divMod` pow2 64 in (fromConstant lo, fromConstant hi)
 
-        h = blake2b_iv :: V.Vector (UInt 64 Auto b)
+        h = blake2b_iv :: V.Vector (UInt 64 Auto c)
 
         -- Parameter block p[0]
         h' = h // [(0, (h ! 0) `xorUInt` fromConstant @Natural 0x01010000 `xorUInt` (fromConstant kk `shiftUIntR` 8) `xorUInt` fromConstant nn)]
@@ -142,31 +133,34 @@ blake2b' d =
             then blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll)) True
             else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
-        bs = reverseEndianness @64 $ concat @(ByteString 64 b) $ map from $ toList h''' :: ByteString (64 * 8) b
+        bs = reverseEndianness @64 $ concat @(ByteString 64 c) $ map from $ toList h''' :: ByteString (64 * 8) c
     in truncate bs
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
-type ExtendedInputByteString inputLen b = ByteString (8 * inputLen + ExtensionBits inputLen) b
+type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
 
-blake2b :: forall keyLen inputLen outputLen b .
-    ( KnownNat keyLen
+
+blake2b :: forall keyLen inputLen outputLen c n .
+    ( Symbolic c
+    , KnownNat keyLen
     , KnownNat inputLen
     , KnownNat outputLen
     , KnownNat (ExtensionBits inputLen)
-    , Extend (ByteString (8 * inputLen) b) (ExtendedInputByteString inputLen b)
-    , ShiftBits (ExtendedInputByteString inputLen b)
-    , ReverseEndianness 64 (ExtendedInputByteString inputLen b)
-    , ToWords (ExtendedInputByteString inputLen b) (ByteString 64 b)
-    , Truncate (ByteString 512 b) (ByteString (8 * outputLen) b)
-    , Blake2bSig b
-    ) => Natural -> ByteString (8 * inputLen) b -> ByteString (8 * outputLen) b
+    , KnownNat (8 * inputLen)
+    , KnownNat (8 * outputLen)
+    , n ~ (8 * inputLen + ExtensionBits inputLen)
+    , KnownNat n
+    , (Div n 64) * 64 ~ n
+    , 8 * inputLen <= n
+    , 8 * outputLen <= 512
+    ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
     let input' = map from (toWords $
             reverseEndianness @64 $
             flip rotateBitsL (value @(ExtensionBits inputLen)) $
-            extend @_ @(ExtendedInputByteString inputLen b) input :: [ByteString 64 b])
+            extend @_ @(ExtendedInputByteString inputLen c) input :: [ByteString 64 c])
 
-        key'    = fromConstant @_ key :: UInt 64 Auto b
+        key'    = fromConstant @_ key :: UInt 64 Auto c
         input'' = if value @keyLen > 0
             then key' : input'
             else input'
@@ -186,40 +180,40 @@ blake2b key input =
         d
 
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
-blake2b_224 :: forall inputLen b .
-    ( KnownNat inputLen
+blake2b_224 :: forall inputLen c n . 
+    ( Symbolic c
+    , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
-    , Extend (ByteString (8 * inputLen) b) (ExtendedInputByteString inputLen b)
-    , ShiftBits (ExtendedInputByteString inputLen b)
-    , ReverseEndianness 64 (ExtendedInputByteString inputLen b)
-    , ToWords (ExtendedInputByteString inputLen b) (ByteString 64 b)
-    , Truncate (ByteString 512 b) (ByteString 224 b)
-    , Blake2bSig b
-    ) => ByteString (8 * inputLen) b -> ByteString 224 b
+    , KnownNat (8 * inputLen)
+    , n ~ (8 * inputLen + ExtensionBits inputLen)
+    , KnownNat n
+    , (Div n 64) * 64 ~ n
+    , 8 * inputLen <= n
+    ) => ByteString (8 * inputLen) c -> ByteString 224 c
 blake2b_224 = blake2b @0 @inputLen @28 (fromConstant @Natural 0)
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_256 :: forall inputLen b .
-    ( KnownNat inputLen
+blake2b_256 :: forall inputLen c n . 
+    ( Symbolic c
+    , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
-    , Extend (ByteString (8 * inputLen) b) (ExtendedInputByteString inputLen b)
-    , ShiftBits (ExtendedInputByteString inputLen b)
-    , ReverseEndianness 64 (ExtendedInputByteString inputLen b)
-    , ToWords (ExtendedInputByteString inputLen b) (ByteString 64 b)
-    , Truncate (ByteString 512 b) (ByteString 256 b)
-    , Blake2bSig b
-    ) => ByteString (8 * inputLen) b -> ByteString 256 b
+    , KnownNat (8 * inputLen)
+    , n ~ (8 * inputLen + ExtensionBits inputLen)
+    , KnownNat n
+    , (Div n 64) * 64 ~ n
+    , 8 * inputLen <= n
+    ) => ByteString (8 * inputLen) c -> ByteString 256 c
 blake2b_256 = blake2b @0 @inputLen @32 (fromConstant @Natural 0)
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_512 :: forall inputLen b .
-    ( KnownNat inputLen
+blake2b_512 :: forall inputLen c n . 
+    ( Symbolic c
+    , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
-    , Extend (ByteString (8 * inputLen) b) (ExtendedInputByteString inputLen b)
-    , ShiftBits (ExtendedInputByteString inputLen b)
-    , ReverseEndianness 64 (ExtendedInputByteString inputLen b)
-    , ToWords (ExtendedInputByteString inputLen b) (ByteString 64 b)
-    , Truncate (ByteString 512 b) (ByteString 512 b)
-    , Blake2bSig b
-    ) => ByteString (8 * inputLen) b -> ByteString 512 b
+    , KnownNat (8 * inputLen)
+    , n ~ (8 * inputLen + ExtensionBits inputLen)
+    , KnownNat n
+    , (Div n 64) * 64 ~ n
+    , 8 * inputLen <= n
+    ) => ByteString (8 * inputLen) c -> ByteString 512 c
 blake2b_512 = blake2b @0 @inputLen @64 (fromConstant @Natural 0)

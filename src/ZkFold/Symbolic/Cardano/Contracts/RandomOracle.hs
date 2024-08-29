@@ -28,8 +28,6 @@ hash = mimcHash @(BaseField context) mimcConstants zero
 randomOracle :: forall context . 
     ( Symbolic context
     , FromConstant (BaseField context) (FieldElement context)
-    , Eq (Bool context) (ByteString 224 context)
-    , Eq (Bool context) (ByteString 256 context)
     , Bits (FieldElement context) ~ FieldElementBits context
     ) => BaseField context -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =

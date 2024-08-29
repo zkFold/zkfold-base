@@ -1,9 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingVia          #-}
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
@@ -48,6 +48,8 @@ import           ZkFold.Symbolic.Data.Class       (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit     (ClosedPoly, MonadCircuit, newAssigned)
+import ZkFold.Symbolic.Data.Eq.Structural
+import ZkFold.Symbolic.Data.Eq (Eq)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -59,6 +61,10 @@ deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString 
 deriving stock instance Haskell.Eq (c (Vector n)) => Haskell.Eq (ByteString n c)
 deriving anyclass instance NFData (c (Vector n)) => NFData (ByteString n c)
 deriving newtype instance SymbolicData (ByteString n c)
+
+
+deriving via (Structural (ByteString n c))
+         instance (Symbolic c) => Eq (Bool c) (ByteString n c)
 
 instance
     ( FromConstant Natural (ByteString 8 c)
@@ -229,7 +235,6 @@ instance
 
 instance
   ( Symbolic c
-  , Mod k m ~ 0
   , (Div k m) * m ~ k
   ) => Concat (ByteString m c) (ByteString k c) where
     concat bs = (ByteString . packed) $ V.unsafeConcat @(Div k m) ( Haskell.map (\(ByteString bits) -> unpacked bits) bs)
