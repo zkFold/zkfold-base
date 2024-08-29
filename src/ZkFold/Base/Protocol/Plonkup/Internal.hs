@@ -103,18 +103,20 @@ data PlonkCircuitPolynomials n c = PlonkCircuitPolynomials {
         qo     :: PlonkPolyExtended n c,
         qm     :: PlonkPolyExtended n c,
         qc     :: PlonkPolyExtended n c,
+        qk     :: PlonkPolyExtended n c,
         sigma1 :: PlonkPolyExtended n c,
         sigma2 :: PlonkPolyExtended n c,
         sigma3 :: PlonkPolyExtended n c
     }
 instance Show (ScalarField c) => Show (PlonkCircuitPolynomials n c) where
-    show (PlonkCircuitPolynomials ql qr qo qm qc sigma1 sigma2 sigma3) =
+    show (PlonkCircuitPolynomials ql qr qo qm qc qk sigma1 sigma2 sigma3) =
         "Circuit Polynomials: "
         ++ show ql ++ " "
         ++ show qr ++ " "
         ++ show qo ++ " "
         ++ show qm ++ " "
         ++ show qc ++ " "
+        ++ show qk ++ " "
         ++ show sigma1 ++ " "
         ++ show sigma2 ++ " "
         ++ show sigma3
@@ -125,18 +127,20 @@ data PlonkCircuitCommitments c = PlonkCircuitCommitments {
         cmQo :: Point c,
         cmQm :: Point c,
         cmQc :: Point c,
+        cmQk :: Point c,
         cmS1 :: Point c,
         cmS2 :: Point c,
         cmS3 :: Point c
     }
 instance (Show (BaseField c), EllipticCurve c) => Show (PlonkCircuitCommitments c) where
-    show (PlonkCircuitCommitments cmQl cmQr cmQo cmQm cmQc cmS1 cmS2 cmS3) =
+    show (PlonkCircuitCommitments cmQl cmQr cmQo cmQm cmQc cmQk cmS1 cmS2 cmS3) =
         "Circuit Commitments: "
         ++ show cmQl ++ " "
         ++ show cmQr ++ " "
         ++ show cmQo ++ " "
         ++ show cmQm ++ " "
         ++ show cmQc ++ " "
+        ++ show cmQk ++ " "
         ++ show cmS1 ++ " "
         ++ show cmS2 ++ " "
         ++ show cmS3
@@ -159,11 +163,19 @@ data PlonkProverSecret c = PlonkProverSecret {
         b8  :: ScalarField c,
         b9  :: ScalarField c,
         b10 :: ScalarField c,
-        b11 :: ScalarField c
+        b11 :: ScalarField c,
+        b12 :: ScalarField c,
+        b13 :: ScalarField c,
+        b14 :: ScalarField c,
+        b15 :: ScalarField c,
+        b16 :: ScalarField c,
+        b17 :: ScalarField c,
+        b18 :: ScalarField c,
+        b19 :: ScalarField c
     } deriving Generic
 
 instance Show (ScalarField c) => Show (PlonkProverSecret c) where
-    show (PlonkProverSecret b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11) =
+    show (PlonkProverSecret b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19) =
         "Prover Secret: "
         ++ show b1 ++ " "
         ++ show b2 ++ " "
@@ -175,12 +187,22 @@ instance Show (ScalarField c) => Show (PlonkProverSecret c) where
         ++ show b8 ++ " "
         ++ show b9 ++ " "
         ++ show b10 ++ " "
-        ++ show b11
+        ++ show b11 ++ " "
+        ++ show b12 ++ " "
+        ++ show b13 ++ " "
+        ++ show b14 ++ " "
+        ++ show b15 ++ " "
+        ++ show b16 ++ " "
+        ++ show b17 ++ " "
+        ++ show b18 ++ " "
+        ++ show b19
 
 instance Arbitrary (ScalarField c) => Arbitrary (PlonkProverSecret c) where
     arbitrary = PlonkProverSecret <$>
         arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
         <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+        <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+        <*> arbitrary <*> arbitrary <*> arbitrary
 
 newtype PlonkInput c = PlonkInput { unPlonkInput :: V.Vector (ScalarField c) }
 instance Show (ScalarField c) => Show (PlonkInput c) where

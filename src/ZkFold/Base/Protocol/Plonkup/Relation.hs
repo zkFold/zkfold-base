@@ -18,7 +18,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec, t
 import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
 import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint(..))
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint        (PlonkConstraint (..), toPlonkConstraint)
-import           ZkFold.Prelude                                      (replicate)
+import           ZkFold.Prelude                                      (replicate, length)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
@@ -55,7 +55,7 @@ data PlonkupRelation n i a = PlonkupRelation
     , qO    :: PolyVec a n
     , qC    :: PolyVec a n
     , qK    :: PolyVec a n
-    , t     :: [Natural]
+    , t     :: PolyVec a n
     , sigma :: Permutation (3 * n)
     , wmap  :: Vector i a -> Map Natural a -> (PolyVec a n, PolyVec a n, PolyVec a n)
     }
@@ -73,7 +73,7 @@ toPlonkupRelation xPub ac =
     let pubInputConstraints = map var (fromVector xPub)
         plonkConstraints    = elems (acSystem ac)
         rs = map (toConstant @_ @Natural) $ elems $ acRange ac
-        t = bool [] [ 0 .. head rs ] (not $ null rs)
+        t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         xLookup = NewVar <$> keys (acRange ac)
 

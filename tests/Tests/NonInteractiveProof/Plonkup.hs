@@ -71,7 +71,7 @@ propPlonkPolyIdentity (TestData plonk w) =
         s = setupProve @(PlonkBS n) @core plonk
         (PlonkSetupParamsProve {..}, _, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap) = s
         (pw@(PlonkWitnessInput wInput wNewVars), ps) = w
-        PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ = ps
+        PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ _ _ _ _ _ _ _ _ = ps
         (w1, w2, w3) = wmap pw
 
         wPub = iPub' <&> negate . \case

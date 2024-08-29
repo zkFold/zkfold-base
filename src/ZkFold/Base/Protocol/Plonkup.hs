@@ -103,6 +103,7 @@ plonkCircuitPolynomials
         qr     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qR
         qo     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qO
         qc     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qC
+        qk     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qK
         sigma1 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega s1
         sigma2 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega s2
         sigma3 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega s3
@@ -174,6 +175,7 @@ instance forall i n l c1 c2 t plonk f g1 core.
             cmQo = gs `com` qo
             cmQm = gs `com` qm
             cmQc = gs `com` qc
+            cmQk = gs `com` qk
             cmS1 = gs `com` sigma1
             cmS2 = gs `com` sigma2
             cmS3 = gs `com` sigma3
