@@ -29,7 +29,7 @@ hash :: forall context x . (Symbolic context, MiMCHash (BaseField context) conte
 hash = mimcHash @(BaseField context) mimcConstants zero
 
 verifySignature ::
-    forall context . 
+    forall context .
     ( Symbolic context
     , MiMCHash (BaseField context) context (TxOut context, TxOut context)
     ) => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
@@ -42,7 +42,7 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFi
         mimc = hash (pay, change)
 
 batchTransfer ::
-    forall context.  
+    forall context.
     ( Symbolic context
     , MiMCHash (BaseField context) context (TxOut context, TxOut context)
     , Eq (Bool context) (TxOut context)

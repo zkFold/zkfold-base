@@ -23,17 +23,17 @@ import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector                        (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHashes, sha256InitialHashes,
                                                                  sha384InitialHashes, sha512InitialHashes,
                                                                  sha512_224InitialHashes, sha512_256InitialHashes,
                                                                  word32RoundConstants, word64RoundConstants)
+import           ZkFold.Symbolic.Class                          (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), Concat (..), ShiftBits (..),
                                                                  ToWords (..), Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
-import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Base.Data.Vector (Vector)
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
@@ -170,7 +170,7 @@ type SHA2 algorithm context k =
 --
 sha2
     :: forall (algorithm :: Symbol) context k
-    .  SHA2 algorithm context k 
+    .  SHA2 algorithm context k
     => ByteString k context -> ByteString (ResultSize algorithm) context
 sha2 messageBits = sha2Blocks @algorithm @context chunks
     where
@@ -188,7 +188,7 @@ sha2Pad
     => KnownNat k
     => KnownNat (PaddedLength k padTo lenBits)
     => k <= PaddedLength k padTo lenBits
-    => ByteString k context 
+    => ByteString k context
     -> ByteString (PaddedLength k padTo lenBits) context
 sha2Pad bs = grown || fromConstant padValue
     where

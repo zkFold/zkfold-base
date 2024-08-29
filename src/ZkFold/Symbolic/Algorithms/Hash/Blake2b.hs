@@ -16,19 +16,18 @@ import           Prelude                                           hiding (Num (
 
 import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGroup (..), AdditiveSemigroup (..),
                                                                     EuclideanDomain (..), Exponent (..),
-                                                                    FromConstant (..),
-                                                                    MultiplicativeSemigroup (..), divMod, one, zero,
-                                                                    (-!))
+                                                                    FromConstant (..), MultiplicativeSemigroup (..),
+                                                                    divMod, one, zero, (-!))
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                                    (length, replicate, splitAt, (!!))
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
+import           ZkFold.Symbolic.Class                             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Concat (..),
                                                                     ReverseEndianness (..), ShiftBits (..),
                                                                     ToWords (..), Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
-import ZkFold.Symbolic.Class (Symbolic)
 
 -- TODO: This module is not finished yet. The hash computation is not correct.
 
@@ -180,7 +179,7 @@ blake2b key input =
         d
 
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
-blake2b_224 :: forall inputLen c n . 
+blake2b_224 :: forall inputLen c n .
     ( Symbolic c
     , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
@@ -193,7 +192,7 @@ blake2b_224 :: forall inputLen c n .
 blake2b_224 = blake2b @0 @inputLen @28 (fromConstant @Natural 0)
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_256 :: forall inputLen c n . 
+blake2b_256 :: forall inputLen c n .
     ( Symbolic c
     , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
@@ -206,7 +205,7 @@ blake2b_256 :: forall inputLen c n .
 blake2b_256 = blake2b @0 @inputLen @32 (fromConstant @Natural 0)
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_512 :: forall inputLen c n . 
+blake2b_512 :: forall inputLen c n .
     ( Symbolic c
     , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)

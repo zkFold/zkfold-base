@@ -6,8 +6,8 @@ import           Prelude                                 hiding (Bool, Eq, lengt
 
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b (blake2b_256)
 import           ZkFold.Symbolic.Cardano.Types.Basic
-import           ZkFold.Symbolic.Data.ByteString         (emptyByteString)
 import           ZkFold.Symbolic.Class                   (Symbolic)
+import           ZkFold.Symbolic.Data.ByteString         (emptyByteString)
 
 type DatumHash context = ByteString 256 context
 

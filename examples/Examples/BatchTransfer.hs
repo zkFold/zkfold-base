@@ -1,14 +1,14 @@
 module Examples.BatchTransfer (exampleBatchTransfer) where
 
 import           ZkFold.Base.Data.Vector                         (Vector)
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC            (MiMCHash)
 import           ZkFold.Symbolic.Cardano.Contracts.BatchTransfer (Tx, TxOut, batchTransfer)
 import           ZkFold.Symbolic.Cardano.Types                   (Bool, ByteString)
-import ZkFold.Symbolic.Class ( Symbolic, Symbolic(BaseField) )
-import ZkFold.Symbolic.Algorithms.Hash.MiMC (MiMCHash)
-import ZkFold.Symbolic.Data.Eq (Eq)
+import           ZkFold.Symbolic.Class                           (Symbolic (BaseField))
+import           ZkFold.Symbolic.Data.Eq                         (Eq)
 
 
-exampleBatchTransfer :: 
+exampleBatchTransfer ::
     ( Symbolic c
     , MiMCHash (BaseField c) c (TxOut c, TxOut c)
     , Eq (Bool c) (TxOut c)

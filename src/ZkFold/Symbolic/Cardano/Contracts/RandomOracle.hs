@@ -25,7 +25,7 @@ type Tx context = Transaction 1 0 2 Tokens 1 () context
 hash :: forall context x . (Symbolic context, MiMCHash (BaseField context) context x )=> x -> FieldElement context
 hash = mimcHash @(BaseField context) mimcConstants zero
 
-randomOracle :: forall context . 
+randomOracle :: forall context .
     ( Symbolic context
     , FromConstant (BaseField context) (FieldElement context)
     , Bits (FieldElement context) ~ FieldElementBits context
