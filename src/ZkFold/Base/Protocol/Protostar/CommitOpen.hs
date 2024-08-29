@@ -2,13 +2,13 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.ARK.Protostar.CommitOpen where
+module ZkFold.Base.Protocol.Protostar.CommitOpen where
 
 import           Prelude                                         hiding (length)
 
 import           ZkFold.Base.Algebra.Basic.Class                 (Bits)
 import           ZkFold.Base.Data.ByteString
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound     (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Prelude                                  (length)
 
 data CommitOpen f c a = CommitOpen ([ProverMessage f a] -> c) a

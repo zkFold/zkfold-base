@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Tests.NonInteractiveProof.Plonk (PlonkBS, specPlonk) where
+module Tests.NonInteractiveProof.Plonkup (PlonkBS, specPlonk) where
 
 import           Data.ByteString                                     (ByteString)
 import           Data.Functor                                        ((<&>))
@@ -26,9 +26,9 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (evalPolyVec, fromPolyVec, polyVecInLagrangeBasis,
                                                                       polyVecLinear, polyVecZero, toPolyVec)
 import           ZkFold.Base.Data.Vector                             (fromVector)
-import           ZkFold.Base.Protocol.ARK.Plonk
-import           ZkFold.Base.Protocol.ARK.Plonk.Constraint
-import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
+import           ZkFold.Base.Protocol.Plonkup
+import           ZkFold.Base.Protocol.Plonkup.Constraint
+import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (HaskellCore, NonInteractiveProof (..),
                                                                       NonInteractiveProofTestData (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal

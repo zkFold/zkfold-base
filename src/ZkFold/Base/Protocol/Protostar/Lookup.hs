@@ -1,4 +1,4 @@
-module ZkFold.Base.Protocol.ARK.Protostar.Lookup where
+module ZkFold.Base.Protocol.Protostar.Lookup where
 
 import           Data.Map                                        (fromList, mapWithKey)
 import           Data.These                                      (These (..))
@@ -11,7 +11,7 @@ import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Sparse.Vector                  (SVector (..))
 import           ZkFold.Base.Data.Vector                         (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
+import           ZkFold.Base.Protocol.Protostar.SpecialSound     (LMap, SpecialSoundProtocol (..),
                                                                   SpecialSoundTranscript)
 import           ZkFold.Symbolic.MonadCircuit                    (Arithmetic)
 

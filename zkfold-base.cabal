@@ -115,22 +115,22 @@ library
       ZkFold.Base.Data.Sparse.Vector
       ZkFold.Base.Data.Type
       ZkFold.Base.Data.Vector
-      ZkFold.Base.Protocol.ARK.Plonk
-      ZkFold.Base.Protocol.ARK.Plonk.Constraint
-      ZkFold.Base.Protocol.ARK.Plonk.Internal
-      ZkFold.Base.Protocol.ARK.Plonk.Relation
-      ZkFold.Base.Protocol.ARK.Protostar
-      ZkFold.Base.Protocol.ARK.Protostar.Accumulator
-      ZkFold.Base.Protocol.ARK.Protostar.AccumulatorScheme
-      ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
-      ZkFold.Base.Protocol.ARK.Protostar.FiatShamir
-      ZkFold.Base.Protocol.ARK.Protostar.Internal
-      ZkFold.Base.Protocol.ARK.Protostar.Gate
-      ZkFold.Base.Protocol.ARK.Protostar.Lookup
-      ZkFold.Base.Protocol.ARK.Protostar.Oracle
-      ZkFold.Base.Protocol.ARK.Protostar.Permutation
-      ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
-      ZkFold.Base.Protocol.Commitment.KZG
+      ZkFold.Base.Protocol.KZG
+      ZkFold.Base.Protocol.Plonkup
+      ZkFold.Base.Protocol.Plonkup.Constraint
+      ZkFold.Base.Protocol.Plonkup.Internal
+      ZkFold.Base.Protocol.Plonkup.Relation
+      ZkFold.Base.Protocol.Protostar
+      ZkFold.Base.Protocol.Protostar.Accumulator
+      ZkFold.Base.Protocol.Protostar.AccumulatorScheme
+      ZkFold.Base.Protocol.Protostar.CommitOpen
+      ZkFold.Base.Protocol.Protostar.FiatShamir
+      ZkFold.Base.Protocol.Protostar.Internal
+      ZkFold.Base.Protocol.Protostar.Gate
+      ZkFold.Base.Protocol.Protostar.Lookup
+      ZkFold.Base.Protocol.Protostar.Oracle
+      ZkFold.Base.Protocol.Protostar.Permutation
+      ZkFold.Base.Protocol.Protostar.SpecialSound
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Base.Protocol.NonInteractiveProof.Internal
       ZkFold.Base.Protocol.NonInteractiveProof.Prover
@@ -278,7 +278,7 @@ test-suite zkfold-base-test
       Tests.GroebnerBasis
       Tests.Group
       Tests.NonInteractiveProof
-      Tests.NonInteractiveProof.Plonk
+      Tests.NonInteractiveProof.Plonkup
       Tests.Pairing
       Tests.Permutations
       Tests.SHA2

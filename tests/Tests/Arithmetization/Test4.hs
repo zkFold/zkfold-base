@@ -8,15 +8,15 @@ import           Prelude                                             hiding (Boo
 import qualified Prelude                                             as Haskell
 import           Test.Hspec                                          (Spec, describe, it)
 import           Test.QuickCheck                                     (Testable (..), withMaxSuccess, (==>))
-import           Tests.NonInteractiveProof.Plonk                     (PlonkBS)
+import           Tests.NonInteractiveProof.Plonkup                   (PlonkBS)
 
 import           ZkFold.Base.Algebra.Basic.Class                     (FromConstant (..), one, zero, (+))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
 import qualified ZkFold.Base.Data.Vector                             as V
-import           ZkFold.Base.Protocol.ARK.Plonk                      (Plonk (..), PlonkInput (..), PlonkProverSecret,
+import           ZkFold.Base.Protocol.Plonkup                        (Plonk (..), PlonkInput (..), PlonkProverSecret,
                                                                       PlonkWitnessInput (..), plonkVerifierInput)
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal             (getParams)
+import           ZkFold.Base.Protocol.Plonkup.Internal               (getParams)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction, HaskellCore,
                                                                       NonInteractiveProof (..))
 import           ZkFold.Symbolic.Class

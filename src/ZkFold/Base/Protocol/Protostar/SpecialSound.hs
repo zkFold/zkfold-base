@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module ZkFold.Base.Protocol.ARK.Protostar.SpecialSound where
+module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
 import           Numeric.Natural                              (Natural)
 import           Prelude                                      hiding (length)

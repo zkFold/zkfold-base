@@ -1,7 +1,7 @@
 {-# LANGUAGE NoStarIsType  #-}
 {-# LANGUAGE TypeOperators #-}
 
-module ZkFold.Base.Protocol.ARK.Plonk.Relation where
+module ZkFold.Base.Protocol.Plonkup.Relation where
 
 import           Data.Map                                            (Map, elems)
 import           GHC.Generics                                        (Par1)
@@ -15,12 +15,12 @@ import           ZkFold.Base.Algebra.Basic.Permutations              (Permutatio
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec, toPolyVec)
 import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
-import           ZkFold.Base.Protocol.ARK.Plonk.Constraint           (PlonkConstraint (..), toPlonkConstraint)
+import           ZkFold.Base.Protocol.Plonkup.Constraint             (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Prelude                                      (replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
--- Here `n` is the total number of constraints, `l` is the number of public inputs, and `a` is the field type.
+-- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkRelation n i a = PlonkRelation
     { qM    :: PolyVec a n
     , qL    :: PolyVec a n

@@ -1,4 +1,4 @@
-module ZkFold.Base.Protocol.ARK.Protostar.Internal where
+module ZkFold.Base.Protocol.Protostar.Internal where
 
 import           Numeric.Natural                              (Natural)
 import           Prelude                                      (Eq, Integer, Ord, Show)

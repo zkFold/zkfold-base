@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.ARK.Protostar.AccumulatorScheme where
+module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
 import           Control.Lens                                    ((^.))
 import qualified Data.Vector                                     as DV
@@ -15,11 +15,11 @@ import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate    as PM
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate      as PU
 import qualified ZkFold.Base.Data.Vector                         as V
-import           ZkFold.Base.Protocol.ARK.Protostar.Accumulator
-import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen   (CommitOpen (..))
-import           ZkFold.Base.Protocol.ARK.Protostar.FiatShamir   (FiatShamir (..))
-import           ZkFold.Base.Protocol.ARK.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (Input, LMap, ProverMessage, SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.Accumulator
+import           ZkFold.Base.Protocol.Protostar.CommitOpen       (CommitOpen (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir       (FiatShamir (..))
+import           ZkFold.Base.Protocol.Protostar.Oracle           (RandomOracle (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound     (Input, LMap, ProverMessage, SpecialSoundProtocol (..))
 import           ZkFold.Prelude                                  ((!!))
 
 

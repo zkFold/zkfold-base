@@ -1,4 +1,4 @@
-module ZkFold.Base.Protocol.ARK.Protostar.Gate where
+module ZkFold.Base.Protocol.Protostar.Gate where
 
 import           Data.Zip                                        (zipWith)
 import           Numeric.Natural                                 (Natural)
@@ -11,8 +11,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Poly, evalMono
 import           ZkFold.Base.Data.Matrix                         (Matrix (..), outer, sum1, transpose)
 import qualified ZkFold.Base.Data.Vector                         as V
 import           ZkFold.Base.Data.Vector                         (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProtostar (..))
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
+import           ZkFold.Base.Protocol.Protostar.Internal         (PolynomialProtostar (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound     (LMap, SpecialSoundProtocol (..),
                                                                   SpecialSoundTranscript)
 import           ZkFold.Symbolic.MonadCircuit                    (Arithmetic)
 

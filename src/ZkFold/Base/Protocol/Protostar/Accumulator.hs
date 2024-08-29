@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TemplateHaskell     #-}
 
-module ZkFold.Base.Protocol.ARK.Protostar.Accumulator where
+module ZkFold.Base.Protocol.Protostar.Accumulator where
 
 import           Control.Lens.Combinators (makeLenses)
 import           Prelude                  hiding (length)
