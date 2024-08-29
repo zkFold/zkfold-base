@@ -38,7 +38,7 @@ import           ZkFold.Symbolic.Data.UInt                      (UInt)
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
 --
-class 
+class
     (Symbolic context
     , NFData (context (Vector (WordSize algorithm)))
     , KnownNat (ChunkSize algorithm)
@@ -71,7 +71,7 @@ class
     sumShifts :: (Natural, Natural, Natural, Natural, Natural, Natural)
     -- ^ Round rotation values for Sum in the internal loop.
 
-instance 
+instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA256")))
     ) => AlgorithmSetup "SHA256" c where
@@ -85,7 +85,7 @@ instance
     sumShifts = (2, 13, 22, 6, 11, 25)
 
 
-instance 
+instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA224")))
     ) => AlgorithmSetup "SHA224" c where
@@ -98,7 +98,7 @@ instance
     sigmaShifts = (7, 18, 3, 17, 19, 10)
     sumShifts = (2, 13, 22, 6, 11, 25)
 
-instance 
+instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA512")))
     )  => AlgorithmSetup "SHA512" c where
@@ -111,7 +111,7 @@ instance
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance 
+instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA384")))
     ) => AlgorithmSetup "SHA384" c where
@@ -124,7 +124,7 @@ instance
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance 
+instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA512/224")))
     ) => AlgorithmSetup "SHA512/224" c where
@@ -137,7 +137,7 @@ instance
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance 
+instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA512/256" )))
     ) => AlgorithmSetup "SHA512/256" c where
