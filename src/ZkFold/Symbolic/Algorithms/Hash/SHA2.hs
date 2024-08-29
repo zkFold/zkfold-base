@@ -13,13 +13,13 @@ import           Data.Kind                                      (Type)
 import           Data.Proxy                                     (Proxy (..))
 import qualified Data.STRef                                     as ST
 import           Data.Type.Bool                                 (If)
+import           Data.Type.Equality                             (type (~))
 import qualified Data.Vector                                    as V
 import qualified Data.Vector.Mutable                            as VM
 import           GHC.TypeLits                                   (Symbol)
 import           GHC.TypeNats                                   (natVal, type (<=?))
 import           Prelude                                        (Int, id, pure, zip, ($!), ($), (.), (>>=))
 import qualified Prelude                                        as P
-import           Data.Type.Equality                             (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
