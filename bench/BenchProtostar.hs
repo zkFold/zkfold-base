@@ -39,9 +39,6 @@ fact
     => c ~ ArithmeticCircuit a
     => KnownNat n
     => MultiplicativeSemigroup (FieldElement c)
---    => SymbolicData (ArithmeticCircuit a (Vector n))
---    => TypeSize (ArithmeticCircuit a (Vector n)) ~ 1
---    => Support (ArithmeticCircuit a (Vector n)) ~ ()
     => Vector n (FieldElement c) -> Vector n (FieldElement c)
 fact v = V.generate (\i -> if i == 0 then v V.!! 0 * v V.!! 1 else v V.!! 0)
 
@@ -74,7 +71,7 @@ foldFact iter inp = fold (fact @(Zp BLS12_381_Scalar) @2 @(ArithmeticCircuit (Zp
 
 main :: IO ()
 main = do
-    print $ foldFact 20 (V.unsafeToVector [1, 2])
+    print $ foldFact 1 (V.unsafeToVector [1, 2])
     defaultMain
       [ benchOps @2 @32  @BLS12_381_Scalar
       , benchOps @2 @64  @BLS12_381_Scalar

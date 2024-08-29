@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.ARK.Protostar.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
@@ -32,6 +33,8 @@ instance PedersonSetup (Zp BLS12_381_Scalar) where
     pedersonGH = (g, h)
         where
             -- Random elements of Zp BLS12_381_Scalar
+            -- The only requirement for them is so that nobody knows discrete logarithm of g base h
+            -- Keeping these numbers open seems safe as there is no known efficient algorithm to calculate discrete logarithm
             -- TODO: Consider choosing these elements randomly each time instead of hardcoding them
             g = toZp 40136933577475258330825008995712625700732059996343366400386587459390107738728
             h = toZp 33848815739574706259584769715284676658282333449257982457879775984963591668910
@@ -39,9 +42,10 @@ instance PedersonSetup (Zp BLS12_381_Scalar) where
 -- | Pedersen commitment scheme
 -- Commitment key consists of field elements g and h, and randomness r
 --
-instance {-# OVERLAPPABLE #-} (Exponent a b, Exponent a a, PedersonSetup a) => HomomorphicCommit a b a where
-    hcommit r b = let (g, h) = pedersonGH @a
+instance {-# OVERLAPPABLE #-} (Exponent (Zp BLS12_381_Scalar) b, Exponent (Zp BLS12_381_Scalar) a) => HomomorphicCommit a b (Zp BLS12_381_Scalar) where
+    hcommit r b = let (g, h) = pedersonGH @(Zp BLS12_381_Scalar)
                    in g^b * h^r
+
 
 -- Pedersen commitment scheme for lists extending the homomorphism to elementwise sums:
 -- (hcommit ck l1) * (hcommit ck l2) = hcommit ck (zipWith (+) l1 l2)
@@ -49,3 +53,4 @@ instance {-# OVERLAPPABLE #-} (Exponent a b, Exponent a a, PedersonSetup a) => H
 --
 instance (MultiplicativeMonoid a, Exponent a Natural, HomomorphicCommit a b a) => HomomorphicCommit a [b] a where
     hcommit ck lst = product $ zipWith (^) (hcommit ck <$> lst) [1 :: Natural ..]
+

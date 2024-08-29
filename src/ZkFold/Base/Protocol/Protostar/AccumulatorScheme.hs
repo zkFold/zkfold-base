@@ -59,6 +59,7 @@ instance
     , AdditiveGroup c
     , Ring m
     , Scale m c
+    , Exponent f f
     , IsList (Input f (CommitOpen f c a))
     , Input f a ~ i
     , Item i ~ f
@@ -134,10 +135,10 @@ instance
 
           -- Fig. 3, steps 5, 6
           mu'  = alpha            + acc^.x^.mu
-          pi'' = P.zipWith (\li i' -> scale alpha li + i') (toList pubi) $ toList (acc^.x^.pi)
-          ri'' = P.zipWith (\rl r' -> scale alpha rl + r') r_i  $ acc^.x^.r
-          ci'' = P.zipWith (\cl c' -> scale alpha cl + c') pi_x $ acc^.x^.c
-          mi'' = P.zipWith (\ml m' -> scale alpha ml + m') pi_w $ acc^.w
+          pi'' = P.zipWith (\i_pi i_acc -> alpha * i_pi + i_acc) (toList pubi) $ toList (acc^.x^.pi)
+          ri'' = P.zipWith (\r_pi r_acc -> alpha * r_pi + r_acc) r_i  $ acc^.x^.r
+          ci'' = P.zipWith (\c_pi c_acc -> c_pi^alpha   * c_acc) pi_x $ acc^.x^.c
+          mi'' = P.zipWith (\m_pi m_acc -> alpha * m_pi + m_acc) pi_w $ acc^.w
 
           -- Fig. 3, step 7
           eCapital' = acc^.x^.e + sum (P.zipWith (\e' p -> scale (alpha ^ p) e') eCapital_j [1::Natural ..])
@@ -155,9 +156,9 @@ instance
 
           -- Fig. 4, step 3
           mu'  = alpha + acc^.mu
-          pi'' = P.zipWith (\il pi' -> scale alpha il + pi') (toList pubi) $ (toList $ acc^.pi)
-          ri'' = P.zipWith (\rl r'  -> scale alpha rl + r')  r_i  $ acc^.r
-          ci'' = P.zipWith (\cl c'  -> scale alpha cl + c')  c_i  $ acc^.c
+          pi'' = P.zipWith (\i_pi pi_acc -> alpha * i_pi + pi_acc) (toList pubi) $ (toList $ acc^.pi)
+          ri'' = P.zipWith (\r_pi r_acc  -> alpha * r_pi + r_acc)  r_i  $ acc^.r
+          ci'' = P.zipWith (\c_pi c_acc  -> c_pi^alpha   * c_acc)  c_i  $ acc^.c
 
           -- Fig 4, step 4
           muEq = acc'^.mu == mu'
@@ -177,9 +178,8 @@ instance
           k :: Natural
           k = rounds @f sps
 
-
           -- Fig. 5, step 1
-          commitsEq = P.and $ P.zipWith (\cl m -> hcommit ck [m] == cl) (acc^.x^.c) (acc^.w)
+          commitsEq = P.and $ P.zipWith (\cm m_acc -> cm == hcommit (scale (acc^.x^.mu) ck) [m_acc]) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           f_sps = mulDeg (acc^.x^.mu) d <$> algebraicMap @f sps (acc^.x^.pi) [Open $ acc^.w] (acc^.x^.r)

@@ -12,7 +12,8 @@ import           Data.List                                            (foldl')
 import           Data.Map.Strict                                      (Map, (!))
 import qualified Data.Map.Strict                                      as M
 import           GHC.Generics                                         (Generic)
-import           Prelude                                              (and, otherwise, type (~), ($), (<$>), (<=), (==), (<>))
+import           Prelude                                              (and, otherwise, type (~), ($), (<$>), (<=), (<>),
+                                                                       (==))
 import qualified Prelude                                              as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -138,6 +139,7 @@ fold
     .  Arithmetic a
     => P.Show a
     => Scale a a
+    => Exponent a a
     => RandomOracle a a
     => HomomorphicCommit a [a] a
     => KnownNat n
@@ -145,32 +147,35 @@ fold
     -> Natural                             -- ^ The number of iterations to perform
     -> SPS.Input a (RecursiveCircuit n a)  -- ^ Input for the first iteration
     -> FoldResult n a
-fold f iter i = foldN ck rc i [] initialAccumulator
+fold f iter i = foldN iter ck rc i [] initialAccumulator
     where
         rc :: RecursiveCircuit n a
         rc = RecursiveCircuit iter (compile @a f)
 
-        m = oracle $ executeAc rc i
+        m = SPS.prover @a rc M.empty i []
 
         ck = oracle i
 
         initialAccumulator :: Accumulator (Vector n a) a a a
-        initialAccumulator = Accumulator (AccumulatorInstance i [commit ck [m]] [] zero one) [m]
+        initialAccumulator = Accumulator (AccumulatorInstance i [hcommit ck [m]] [] zero one) [m]
 
 
 instanceProof
     :: forall n a
-    .  RandomOracle (Vector n a) a
+    .  Arithmetic a
+    => KnownNat n
+    => RandomOracle (Vector n a) a
     => RandomOracle a a
+    => HomomorphicCommit a [a] a
     => P.Show a
     => Ring a
     => a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> InstanceProofPair (Vector n a) a a
-instanceProof ck rc i = InstanceProofPair i (NARKProof [commit ck [m]] [m])
+instanceProof ck rc i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where
-        m = oracle $ executeAc rc i
+        m = SPS.prover @a rc M.empty i []
 
 foldN
     :: forall n a
@@ -178,18 +183,20 @@ foldN
     => P.Show a
     => KnownNat n
     => Scale a a
+    => Exponent a a
     => RandomOracle a a
     => HomomorphicCommit a [a] a
-    => a
+    => Natural
+    -> a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> [P.Bool]
     -> Accumulator (Vector n a) a a a
     -> FoldResult n a
-foldN ck rc i verifierResults acc
+foldN iter ck rc i verifierResults acc
   | iterations rc == 0 = FoldResult i acc (and verifierResults) (Acc.decider (transform rc i) ck acc)
   | otherwise = let (output, newAcc, newVerifierResult) = foldStep ck rc i acc
-                 in foldN ck (rc {iterations = iterations rc -! 1}) output (newVerifierResult : verifierResults) newAcc
+                 in foldN iter ck (rc {iterations = iterations rc -! 1}) output (newVerifierResult : verifierResults) newAcc
 
 executeAc :: forall n a . RecursiveCircuit n a -> Vector n a -> Vector n a
 executeAc (RecursiveCircuit _ rc) i = eval rc (M.fromList $ P.zip [1..] (V.fromVector i))
@@ -200,6 +207,7 @@ foldStep
     => P.Show a
     => KnownNat n
     => Scale a a
+    => Exponent a a
     => RandomOracle a a
     => HomomorphicCommit a [a] a
     => a
