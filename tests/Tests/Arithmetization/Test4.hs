@@ -14,11 +14,11 @@ import           ZkFold.Base.Algebra.Basic.Class                     (FromConsta
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
 import qualified ZkFold.Base.Data.Vector                             as V
+import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction, HaskellCore,
+                                                                      NonInteractiveProof (..))
 import           ZkFold.Base.Protocol.Plonkup                        (Plonk (..), PlonkInput (..), PlonkProverSecret,
                                                                       PlonkWitnessInput (..), plonkVerifierInput)
 import           ZkFold.Base.Protocol.Plonkup.Internal               (getParams)
-import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction, HaskellCore,
-                                                                      NonInteractiveProof (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuit (..), compile, compileForceOne,
                                                                       eval, witnessGenerator)

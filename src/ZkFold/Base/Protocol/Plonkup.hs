@@ -31,9 +31,9 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
                                                                       PointCompressed, compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
+import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup.Internal
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkRelation (..), toPlonkRelation)
-import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                                      (log2ceiling)
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal

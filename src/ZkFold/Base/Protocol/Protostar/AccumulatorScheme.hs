@@ -4,23 +4,23 @@
 
 module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
-import           Control.Lens                                    ((^.))
-import qualified Data.Vector                                     as DV
-import           Prelude                                         (fmap, otherwise, type (~), ($), (&&), (.), (<$>),
-                                                                  (<=), (==))
-import qualified Prelude                                         as P
+import           Control.Lens                                 ((^.))
+import qualified Data.Vector                                  as DV
+import           Prelude                                      (fmap, otherwise, type (~), ($), (&&), (.), (<$>), (<=),
+                                                               (==))
+import qualified Prelude                                      as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate    as PM
-import qualified ZkFold.Base.Algebra.Polynomials.Univariate      as PU
-import qualified ZkFold.Base.Data.Vector                         as V
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate as PM
+import qualified ZkFold.Base.Algebra.Polynomials.Univariate   as PU
+import qualified ZkFold.Base.Data.Vector                      as V
 import           ZkFold.Base.Protocol.Protostar.Accumulator
-import           ZkFold.Base.Protocol.Protostar.CommitOpen       (CommitOpen (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir       (FiatShamir (..))
-import           ZkFold.Base.Protocol.Protostar.Oracle           (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound     (Input, LMap, ProverMessage, SpecialSoundProtocol (..))
-import           ZkFold.Prelude                                  ((!!))
+import           ZkFold.Base.Protocol.Protostar.CommitOpen    (CommitOpen (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir    (FiatShamir (..))
+import           ZkFold.Base.Protocol.Protostar.Oracle        (RandomOracle (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound  (Input, LMap, ProverMessage, SpecialSoundProtocol (..))
+import           ZkFold.Prelude                               ((!!))
 
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
