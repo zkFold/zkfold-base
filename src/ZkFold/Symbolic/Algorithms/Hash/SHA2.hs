@@ -38,7 +38,14 @@ import           ZkFold.Symbolic.Data.UInt                      (UInt)
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
 --
-class AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type) where
+class 
+    (Symbolic context
+    , NFData (context (Vector (WordSize algorithm)))
+    , KnownNat (ChunkSize algorithm)
+    , KnownNat (WordSize algorithm)
+    , (Div (ChunkSize algorithm) (WordSize algorithm)) * (WordSize algorithm) ~ ChunkSize algorithm
+    , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
+    ) => AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type) where
     type WordSize algorithm :: Natural
     -- ^ The length of words the algorithm operates internally, in bits.
 
@@ -64,7 +71,10 @@ class AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type) w
     sumShifts :: (Natural, Natural, Natural, Natural, Natural, Natural)
     -- ^ Round rotation values for Sum in the internal loop.
 
-instance Symbolic c => AlgorithmSetup "SHA256" c where
+instance 
+    (Symbolic c
+    , NFData (c (Vector (WordSize "SHA256")))
+    ) => AlgorithmSetup "SHA256" c where
     type WordSize "SHA256" = 32
     type ChunkSize "SHA256" = 512
     type ResultSize "SHA256" = 256
@@ -75,7 +85,10 @@ instance Symbolic c => AlgorithmSetup "SHA256" c where
     sumShifts = (2, 13, 22, 6, 11, 25)
 
 
-instance Symbolic c => AlgorithmSetup "SHA224" c where
+instance 
+    (Symbolic c
+    , NFData (c (Vector (WordSize "SHA224")))
+    ) => AlgorithmSetup "SHA224" c where
     type WordSize "SHA224" = 32
     type ChunkSize "SHA224" = 512
     type ResultSize "SHA224" = 224
@@ -85,7 +98,10 @@ instance Symbolic c => AlgorithmSetup "SHA224" c where
     sigmaShifts = (7, 18, 3, 17, 19, 10)
     sumShifts = (2, 13, 22, 6, 11, 25)
 
-instance Symbolic c => AlgorithmSetup "SHA512" c where
+instance 
+    (Symbolic c
+    , NFData (c (Vector (WordSize "SHA512")))
+    )  => AlgorithmSetup "SHA512" c where
     type WordSize "SHA512" = 64
     type ChunkSize "SHA512" = 1024
     type ResultSize "SHA512" = 512
@@ -95,7 +111,10 @@ instance Symbolic c => AlgorithmSetup "SHA512" c where
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance Symbolic c => AlgorithmSetup "SHA384" c where
+instance 
+    (Symbolic c
+    , NFData (c (Vector (WordSize "SHA384")))
+    ) => AlgorithmSetup "SHA384" c where
     type WordSize "SHA384" = 64
     type ChunkSize "SHA384" = 1024
     type ResultSize "SHA384" = 384
@@ -105,7 +124,10 @@ instance Symbolic c => AlgorithmSetup "SHA384" c where
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance Symbolic c => AlgorithmSetup "SHA512/224" c where
+instance 
+    (Symbolic c
+    , NFData (c (Vector (WordSize "SHA512/224")))
+    ) => AlgorithmSetup "SHA512/224" c where
     type WordSize "SHA512/224" = 64
     type ChunkSize "SHA512/224" = 1024
     type ResultSize "SHA512/224" = 224
@@ -115,7 +137,10 @@ instance Symbolic c => AlgorithmSetup "SHA512/224" c where
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance Symbolic c => AlgorithmSetup "SHA512/256" c where
+instance 
+    (Symbolic c
+    , NFData (c (Vector (WordSize "SHA512/256" )))
+    ) => AlgorithmSetup "SHA512/256" c where
     type WordSize "SHA512/256" = 64
     type ChunkSize "SHA512/256" = 1024
     type ResultSize "SHA512/256" = 256
@@ -149,15 +174,9 @@ type family PaddedLength (msg :: Natural) (block :: Natural) (lenBits :: Natural
 --
 type SHA2 algorithm context k =
    ( AlgorithmSetup algorithm context
-   , Symbolic context
    , KnownNat k
-   , NFData (context (Vector (WordSize algorithm)))
-   , KnownNat (ChunkSize algorithm)
-   , KnownNat (WordSize algorithm)
    , KnownNat (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))
-   , (Div (ChunkSize algorithm) (WordSize algorithm)) * (WordSize algorithm) ~ ChunkSize algorithm
    , (Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm)) * (ChunkSize algorithm) ~ PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
-   , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
    , k <= PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
    )
 
@@ -221,15 +240,7 @@ instance (KnownNat n, FromConstant Natural (ByteString n c)) => ToWords Natural 
 
 -- | Constraints required for a SHA2 of a Natural number.
 --
-type SHA2N algorithm context =
-   ( AlgorithmSetup algorithm context
-    , Symbolic context
-    , NFData (context (Vector (WordSize algorithm)))
-    , KnownNat (ChunkSize algorithm)
-    , KnownNat (WordSize algorithm)
-    , (Div (ChunkSize algorithm) (WordSize algorithm)) * (WordSize algorithm) ~ ChunkSize algorithm
-    , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
-    )
+type SHA2N algorithm context = AlgorithmSetup algorithm context
 
 
 -- | Same as @sha2@ but accepts a Natural number and length of message in bits instead of a ByteString.
@@ -272,11 +283,6 @@ sha2Natural numBits messageBits = sha2Blocks @algorithm @context chunks
 sha2Blocks
     :: forall algorithm (context :: (Type -> Type) -> Type)
     .  AlgorithmSetup algorithm context
-    => Symbolic context
-    => NFData (context (Vector (WordSize algorithm)))
-    => KnownNat (WordSize algorithm)
-    => (Div (ChunkSize algorithm) (WordSize algorithm)) * (WordSize algorithm) ~ ChunkSize algorithm
-    => (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
     => [ByteString (ChunkSize algorithm) context] -> ByteString (ResultSize algorithm) context
 sha2Blocks chunks = truncateResult @algorithm @context $ concat $ V.toList hashParts
     where

@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
@@ -19,19 +20,27 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement              (fromFieldElement)
 import           ZkFold.Symbolic.Data.UInt                      (StrictConv (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData(..))
+import ZkFold.Base.Algebra.Basic.Number (KnownNat)
+import Data.Proxy (Proxy)
 
 type Tokens = 10
 type TxOut context = Output Tokens () context
 type TxIn context  = Input Tokens () context
 type Tx context = Transaction 6 0 11 Tokens 0 () context
 
-hash :: forall context x . (Symbolic context, MiMCHash (BaseField context) context x) => x -> FieldElement context
+hash :: forall context x . 
+    ( Symbolic context
+    , SymbolicData x
+    , Context x ~ context
+    , Support x ~ Proxy context
+    ) => x -> FieldElement context
 hash = mimcHash @(BaseField context) mimcConstants zero
 
 verifySignature ::
     forall context .
     ( Symbolic context
-    , MiMCHash (BaseField context) context (TxOut context, TxOut context)
+    , SymbolicData (TxOut context, TxOut context)
     ) => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (extend pub :: ByteString 256 context))
     where
@@ -44,8 +53,9 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFi
 batchTransfer ::
     forall context.
     ( Symbolic context
-    , MiMCHash (BaseField context) context (TxOut context, TxOut context)
-    , Eq (Bool context) (TxOut context)
+    , KnownNat (TypeSize (SingleAsset context))
+    , KnownNat (TypeSize (Value Tokens context))
+    , SymbolicData (TxOut context, TxOut context)
     ) => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)-> Bool context
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures

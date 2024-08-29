@@ -20,7 +20,7 @@ import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (pieces)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
--- TODO: We need a proper test for coth numeric and symbolic clake2b hashing
+-- TODO: We need a proper test for both numeric and symbolic blake2b hashing
 
 blake2bSimple :: forall c .
     ( Symbolic c, Eq (c (Vector 512))) => Spec
