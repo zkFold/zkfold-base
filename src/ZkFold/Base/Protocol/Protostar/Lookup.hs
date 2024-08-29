@@ -1,19 +1,18 @@
 module ZkFold.Base.Protocol.Protostar.Lookup where
 
-import           Data.Map                                        (fromList, mapWithKey)
-import           Data.These                                      (These (..))
+import           Data.Map                                    (fromList, mapWithKey)
+import           Data.These                                  (These (..))
 import           Data.Zip
-import           Prelude                                         hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/),
-                                                                  (^))
+import           Prelude                                     hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/),
+                                                              (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Sparse.Vector                  (SVector (..))
-import           ZkFold.Base.Data.Vector                         (Vector)
-import           ZkFold.Base.Protocol.Protostar.SpecialSound     (LMap, SpecialSoundProtocol (..),
-                                                                  SpecialSoundTranscript)
-import           ZkFold.Symbolic.MonadCircuit                    (Arithmetic)
+import           ZkFold.Base.Data.Sparse.Vector              (SVector (..))
+import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 data ProtostarLookup (l :: Natural) (sizeT :: Natural)
 

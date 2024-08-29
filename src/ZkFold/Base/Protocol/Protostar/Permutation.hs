@@ -1,16 +1,15 @@
 module ZkFold.Base.Protocol.Protostar.Permutation where
 
-import           Data.Zip                                        (Zip (..))
-import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
+import           Data.Zip                                     (Zip (..))
+import           Prelude                                      hiding (Num (..), zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Permutations          (Permutation, applyPermutation)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate    (var)
-import           ZkFold.Base.Data.Vector                         as V
-import           ZkFold.Base.Protocol.Protostar.SpecialSound     (LMap, SpecialSoundProtocol (..),
-                                                                  SpecialSoundTranscript)
-import           ZkFold.Symbolic.MonadCircuit                    (Arithmetic)
+import           ZkFold.Base.Algebra.Basic.Permutations       (Permutation, applyPermutation)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (var)
+import           ZkFold.Base.Data.Vector                      as V
+import           ZkFold.Base.Protocol.Protostar.SpecialSound  (LMap, SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
 
