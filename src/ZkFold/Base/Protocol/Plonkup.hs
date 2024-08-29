@@ -32,7 +32,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.Plonkup.Internal
-import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkRelation (..), toPlonkRelation)
+import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Prelude                                      (log2ceiling)
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
@@ -73,8 +73,8 @@ instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithm
         return $ TestData pl (PlonkWitnessInput wi (witnessGenerator ac wi), secret)
 
 plonkPermutation :: forall i n l c1 c2 t .
-    (KnownNat n, FiniteField (ScalarField c1)) => Plonk i n l c1 c2 t -> PlonkRelation n i (ScalarField c1) -> PlonkPermutation n c1
-plonkPermutation (Plonk omega k1 k2 _ _ _) PlonkRelation {..} = PlonkPermutation {..}
+    (KnownNat n, FiniteField (ScalarField c1)) => Plonk i n l c1 c2 t -> PlonkupRelation n i (ScalarField c1) -> PlonkPermutation n c1
+plonkPermutation (Plonk omega k1 k2 _ _ _) PlonkupRelation {..} = PlonkPermutation {..}
     where
         f i = case (i-!1) `div` value @n of
             0 -> omega^i
@@ -91,12 +91,12 @@ plonkCircuitPolynomials :: forall i n l c1 c2 t .
     (KnownNat n, KnownNat (PlonkPolyExtendedLength n), Eq (ScalarField c1), Field (ScalarField c1))
     => Plonk i n l c1 c2 t
     -> PlonkPermutation n c1
-    -> PlonkRelation n i (ScalarField c1)
+    -> PlonkupRelation n i (ScalarField c1)
     -> PlonkCircuitPolynomials n c1
 plonkCircuitPolynomials
    (Plonk omega _ _ _ _ _)
    PlonkPermutation {..}
-   PlonkRelation {..} = PlonkCircuitPolynomials {..}
+   PlonkupRelation {..} = PlonkCircuitPolynomials {..}
     where
         qm     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qM
         ql     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qL
