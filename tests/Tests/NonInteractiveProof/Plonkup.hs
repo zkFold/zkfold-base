@@ -27,7 +27,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate          (evalPolyVe
                                                                       polyVecLinear, polyVecZero, toPolyVec)
 import           ZkFold.Base.Data.Vector                             (fromVector)
 import           ZkFold.Base.Protocol.Plonkup
-import           ZkFold.Base.Protocol.Plonkup.Constraint
+import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (HaskellCore, NonInteractiveProof (..),
                                                                       NonInteractiveProofTestData (..))
