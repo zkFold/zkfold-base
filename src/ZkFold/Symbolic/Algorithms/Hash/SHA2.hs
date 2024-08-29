@@ -3,7 +3,6 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# OPTIONS_GHC -Wno-type-equality-out-of-scope #-}
 
 module ZkFold.Symbolic.Algorithms.Hash.SHA2 (AlgorithmSetup (..), SHA2, sha2, SHA2N, sha2Natural) where
 
@@ -20,6 +19,7 @@ import           GHC.TypeLits                                   (Symbol)
 import           GHC.TypeNats                                   (natVal, type (<=?))
 import           Prelude                                        (Int, id, pure, zip, ($!), ($), (.), (>>=))
 import qualified Prelude                                        as P
+import           Data.Type.Equality                             (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -155,7 +155,6 @@ type SHA2 algorithm context k =
    , KnownNat (ChunkSize algorithm)
    , KnownNat (WordSize algorithm)
    , KnownNat (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))
-   , Extend (ByteString k context) (ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) context)
    , (Div (ChunkSize algorithm) (WordSize algorithm)) * (WordSize algorithm) ~ ChunkSize algorithm
    , (Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm)) * (ChunkSize algorithm) ~ PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
    , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
