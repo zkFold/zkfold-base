@@ -32,7 +32,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString
-import           ZkFold.Prelude                             (log2ceiling)
+import           ZkFold.Prelude                             (log2ceiling, replicateA)
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -160,15 +160,19 @@ instance FromJSON (Zp p) where
     parseJSON = fmap Zp . parseJSON
 
 instance KnownNat p => Binary (Zp p) where
-    put (Zp x) = go x wordCount
+    put (Zp x) = go x (wordCount @p)
       where
-        wordCount = ceiling $ log2ceiling @_ @Natural (value @p -! 1) % 8
-
         go _ 0      = pure ()
         go n count =
             let (n', r) = n `Haskell.divMod` 256
             in putWord8 (fromIntegral r) <> go n' (count -! 1)
-    get = fromConstant . unLittleEndian <$> get
+    get = toZp . go <$> replicateA (wordCount @p) getWord8
+      where
+        go [] = 0
+        go (x:xs) = fromIntegral x + 256 * go xs
+
+wordCount :: forall p. KnownNat p => Natural
+wordCount = ceiling $ log2ceiling (value @p -! 1) % (8 :: Natural)
 
 instance KnownNat p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, fromIntegral (value @p) - 1)
