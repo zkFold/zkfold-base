@@ -1,20 +1,19 @@
-module ZkFold.Base.Protocol.ARK.Protostar.Gate where
+module ZkFold.Base.Protocol.Protostar.Gate where
 
-import           Data.Zip                                        (zipWith)
-import           Numeric.Natural                                 (Natural)
-import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
+import           Data.Zip                                     (zipWith)
+import           Numeric.Natural                              (Natural)
+import           Prelude                                      hiding (Num (..), zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                (KnownNat, value)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate    (Poly, evalMonomial, evalPolynomial, subs, var)
-import           ZkFold.Base.Data.Matrix                         (Matrix (..), outer, sum1, transpose)
-import qualified ZkFold.Base.Data.Vector                         as V
-import           ZkFold.Base.Data.Vector                         (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar.Internal     (PolynomialProtostar (..))
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..),
-                                                                  SpecialSoundTranscript)
-import           ZkFold.Symbolic.MonadCircuit                    (Arithmetic)
+import           ZkFold.Base.Algebra.Basic.Field              (Zp)
+import           ZkFold.Base.Algebra.Basic.Number             (KnownNat, value)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, evalMonomial, evalPolynomial, subs, var)
+import           ZkFold.Base.Data.Matrix                      (Matrix (..), outer, sum1, transpose)
+import qualified ZkFold.Base.Data.Vector                      as V
+import           ZkFold.Base.Data.Vector                      (Vector)
+import           ZkFold.Base.Protocol.Protostar.Internal      (PolynomialProtostar (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound  (LMap, SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
 
 data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedLists      #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.ARK.Plonk.Constraint where
+module ZkFold.Base.Protocol.Plonkup.PlonkConstraint where
 
 import           Control.Monad                                       (guard)
 import           Data.Containers.ListUtils                           (nubOrd)

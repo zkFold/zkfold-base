@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
-module ZkFold.Base.Protocol.ARK.Protostar where
+module ZkFold.Base.Protocol.Protostar where
 
 
 import           Control.DeepSeq                                     (NFData)
@@ -14,17 +14,17 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial, var)
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar.SpecialSound
+import           ZkFold.Base.Protocol.Protostar.SpecialSound
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 {--
 
 1. Compress verification checks (Section 3.5; )
-2. Commit (Section 3.2; ZkFold.Base.Protocol.ARK.Protostar.CommitOpen)
-3. Fiat-Shamir transform (Section 3.3; ZkFold.Base.Protocol.ARK.Protostar.FiatShamir)
+2. Commit (Section 3.2; ZkFold.Base.Protocol.Protostar.CommitOpen)
+3. Fiat-Shamir transform (Section 3.3; ZkFold.Base.Protocol.Protostar.FiatShamir)
    A technique for taking an interactive proof of knowledge and creating a digital signature based on it.
    This way, some fact (for example, knowledge of a certain secret number) can be publicly proven without revealing underlying information.
-4. Accumulation scheme (Section 3.4; ZkFold.Base.Protocol.ARK.Protostar.AccumulatorScheme)
+4. Accumulation scheme (Section 3.4; ZkFold.Base.Protocol.Protostar.AccumulatorScheme)
 5. Obtain the IVC scheme (Theorem 1 from “Proof-Carrying Data Without Succinct Arguments”; )
 
 --}
