@@ -129,7 +129,6 @@ specByteString'
     => n <= n + 10
     => n <= n + 128
     => n <= n + n
-    => Mod (3 * n) n ~ 0
     => (Div (3 * n) n) * n ~ 3 * n
     => (Div n n) * n ~ n
     => (Div n 4) * 4 ~ n
