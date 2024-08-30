@@ -168,7 +168,7 @@ instance KnownNat p => Binary (Zp p) where
             in putWord8 (fromIntegral r) <> go n' (count -! 1)
     get = toZp . go <$> replicateA (wordCount @p) getWord8
       where
-        go [] = 0
+        go []     = 0
         go (x:xs) = fromIntegral x + 256 * go xs
 
 wordCount :: forall p. KnownNat p => Natural
