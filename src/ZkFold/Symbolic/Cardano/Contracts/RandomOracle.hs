@@ -7,7 +7,7 @@ import           Prelude                                        hiding (Bool, Eq
                                                                  (!!), (&&), (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Data.Vector ( (!!), Vector )
+import           ZkFold.Base.Data.Vector                        (Vector, (!!))
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (MiMCHash, mimcHash)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
