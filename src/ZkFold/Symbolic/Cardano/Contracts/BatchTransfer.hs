@@ -40,7 +40,8 @@ hash = mimcHash @(BaseField context) mimcConstants zero
 verifySignature ::
     forall context .
     ( Symbolic context
-    , SymbolicData (TxOut context, TxOut context)
+    , SymbolicData (TxOut context)
+    , KnownNat (TypeSize (TxOut context))
     ) => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (extend pub :: ByteString 256 context))
     where
@@ -53,9 +54,10 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFi
 batchTransfer ::
     forall context.
     ( Symbolic context
+    , SymbolicData (TxOut context)
+    , KnownNat (TypeSize (TxOut context))
     , KnownNat (TypeSize (SingleAsset context))
     , KnownNat (TypeSize (Value Tokens context))
-    , SymbolicData (TxOut context, TxOut context)
     ) => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)-> Bool context
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures

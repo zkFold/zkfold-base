@@ -11,8 +11,9 @@ import           ZkFold.Symbolic.Data.Class                      (SymbolicData (
 
 exampleBatchTransfer ::
     ( Symbolic c
+    , SymbolicData (TxOut c)
+    , KnownNat (TypeSize (TxOut c))
     , KnownNat (TypeSize (SingleAsset c))
     , KnownNat (TypeSize (Value Tokens c))
-    , SymbolicData (TxOut c, TxOut c)
     )  => Tx c -> Vector 5 (TxOut c, TxOut c, ByteString 256 c) -> Bool c
 exampleBatchTransfer = batchTransfer

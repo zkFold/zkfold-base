@@ -7,7 +7,7 @@ import           Prelude                                        hiding (Bool, Eq
                                                                  (!!), (&&), (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                        ((!!))
+import ZkFold.Base.Data.Vector ( (!!), Vector )
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (MiMCHash, mimcHash)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
@@ -28,7 +28,7 @@ hash = mimcHash @(BaseField context) mimcConstants zero
 randomOracle :: forall context .
     ( Symbolic context
     , FromConstant (BaseField context) (FieldElement context)
-    , Bits (FieldElement context) ~ FieldElementBits context
+    , Bits (FieldElement context) ~  context (Vector 256)
     ) => BaseField context -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =
     let -- The secret key is correct
