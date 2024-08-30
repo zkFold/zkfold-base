@@ -20,14 +20,15 @@ import           Data.Binary                                (Binary (..))
 import           Data.Bool                                  ((&&))
 import           Data.Eq                                    (Eq (..))
 import           Data.Function                              (($))
-import           Prelude                                    (Integer, error)
+import           Prelude                                    (Integer)
+import           Text.Show                                  (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field            (Ext2 (..), Ext3, IrreduciblePoly (..), Zp)
+import           ZkFold.Base.Algebra.Basic.Field            (Ext2 (..), Ext3 (..), IrreduciblePoly (..), Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Pairing
-import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, toPoly)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (toPoly)
 
 -------------------------- Scalar field & field towers -------------------------
 
@@ -43,30 +44,22 @@ instance Prime BN254_Base
 type Fr = Zp BN254_Scalar
 type Fp = Zp BN254_Base
 
-x :: (Ring a, Eq a) => Poly a
-x = toPoly [zero, one]
-
-u :: Poly Fp
-u = x
-
 instance IrreduciblePoly Fp "IP1" where
-  irreduciblePoly = u ^ (2 :: Natural) + one
+  irreduciblePoly = toPoly [1, 0, 1]
 
 type Fp2 = Ext2 Fp "IP1"
 
-v :: Poly Fp2
-v = x
+-- cubic nonresidue in @Fp2@.
+xi :: Fp2
+xi = Ext2 9 1
 
 instance IrreduciblePoly Fp2 "IP2" where
-  irreduciblePoly = v ^ (3 :: Natural) - fromConstant (9 :: Natural) - fromConstant u
+  irreduciblePoly = toPoly [negate xi, zero, zero, one]
 
 type Fp6 = Ext3 Fp2 "IP2"
 
-w :: Poly Fp6
-w = x
-
 instance IrreduciblePoly Fp6 "IP3" where
-  irreduciblePoly = w ^ (2 :: Natural) - fromConstant v
+  irreduciblePoly = toPoly [Ext3 zero (negate one) zero, zero, one]
 
 type Fp12 = Ext2 Fp6 "IP3"
 
@@ -79,7 +72,7 @@ instance EllipticCurve BN254_G1 where
   type BaseField BN254_G1 = Fp
   inf = Inf
   gen = Point 1 2
-  add = pointAdd
+  add = addPoints
   mul = pointMul
 
 instance StandardEllipticCurve BN254_G1 where
@@ -95,21 +88,23 @@ instance EllipticCurve BN254_G2 where
   type BaseField BN254_G2 = Fp2
   inf = Inf
   gen = Point
-    (Ext2 10857046999023057135944570762232829481370756359578518086990519993285655852781
-          11559732032986387107991004021392285783925812861821192530917403151452391805634)
-    (Ext2 8495653923123431417604973247489272438418190587263600148770280649306958101930
-          4082367875863433681332203403145435568316851327593401208105741076214120093531)
-  add = pointAdd
+    (Ext2 0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed
+          0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2)
+    (Ext2 0x12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa
+          0x90689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b)
+  add = addPoints
   mul = pointMul
 
 instance StandardEllipticCurve BN254_G2 where
   aParameter = zero
-  bParameter = Ext2 3 0 // Ext2 9 1
+  bParameter =
+    Ext2 0x2b149d40ceb8aaae81be18991be06ac3b5b4c5e559dbefa33267e6dc24a138e5
+         0x9713b03af0fed4cd2cafadeed8fdf4a74fa084e52d1852e4a2bd0685c315d2
 
 ------------------------------- Pairing ----------------------------------------
 
 newtype BN254_GT = BN254_GT Fp12
-  deriving (Eq, MultiplicativeSemigroup, MultiplicativeMonoid)
+  deriving (Eq, Show, MultiplicativeSemigroup, MultiplicativeMonoid)
 
 instance Exponent BN254_GT Natural where
   BN254_GT e ^ p = BN254_GT (e ^ p)
@@ -124,17 +119,17 @@ instance Finite BN254_GT where
 
 instance Pairing BN254_G1 BN254_G2 where
   type TargetGroup BN254_G1 BN254_G2 = BN254_GT
-  pairing p q = BN254_GT $ finalExponentiation @BN254_G2 $ finalStep (millerLoop param p q)
-
-param :: Integer
--- | Each curve needs a separate miller loop parameter.
--- TODO: find param for BN254
-param = error "TODO"
-
-finalStep :: Fp12 -> Fp12
--- | BN curves need another final step after Miller loop.
--- TODO: implement final step for BN254
-finalStep _ = error "TODO"
+  pairing p q
+    = BN254_GT
+    $ finalExponentiation @BN254_G2
+    $ millerAlgorithmBN xi param p q
+    where
+      param = [ 1
+        , 1, 0, 1, 0, 0,-1, 0, 1, 1, 0, 0, 0,-1, 0, 0, 1
+        , 1, 0, 0,-1, 0, 0, 0, 0, 0, 1, 0, 0,-1, 0, 0, 1
+        , 1, 1, 0, 0, 0, 0,-1, 0, 1, 0, 0,-1, 0, 1, 1, 0
+        , 0, 1, 0, 0,-1, 1, 0, 0,-1, 0, 1, 0, 1, 0, 0, 0
+        ]
 
 ------------------------------ Encoding ----------------------------------------
 

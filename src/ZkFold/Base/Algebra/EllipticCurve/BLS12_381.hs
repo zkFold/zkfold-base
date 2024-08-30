@@ -248,7 +248,7 @@ instance Binary (PointCompressed BLS12_381_G2) where
 -- | An image of a pairing is a cyclic multiplicative subgroup of @'Fq12'@
 -- of order @'BLS12_381_Scalar'@.
 newtype BLS12_381_GT = BLS12_381_GT Fq12
-    deriving newtype (Eq, MultiplicativeSemigroup, MultiplicativeMonoid)
+    deriving newtype (Eq, Show, MultiplicativeSemigroup, MultiplicativeMonoid)
 
 instance Exponent BLS12_381_GT Natural where
     BLS12_381_GT a ^ p = BLS12_381_GT (a ^ p)
@@ -263,4 +263,14 @@ instance Finite BLS12_381_GT where
 
 instance Pairing BLS12_381_G1 BLS12_381_G2 where
     type TargetGroup BLS12_381_G1 BLS12_381_G2 = BLS12_381_GT
-    pairing a b = BLS12_381_GT $ finalExponentiation @BLS12_381_G2 (millerLoop 0xd201000000010000 a b)
+    pairing a b
+      = BLS12_381_GT
+      $ finalExponentiation @BLS12_381_G2
+      $ millerAlgorithmBLS12 param a b
+      where
+        param = [-1
+          ,-1, 0,-1, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+          ]

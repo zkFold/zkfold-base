@@ -41,14 +41,14 @@ specField' = hspec $ do
 
 specField :: IO ()
 specField = do
-    specField' @BLS12_381.Fr
-    specField' @BLS12_381.Fq
-    specField' @BLS12_381.Fq2
-    specField' @BLS12_381.Fq6
-    specField' @BLS12_381.Fq12
-
     specField' @BN254.Fr
     specField' @BN254.Fp
     specField' @BN254.Fp2
     specField' @BN254.Fp6
     specField' @BN254.Fp12
+
+    specField' @BLS12_381.Fr
+    specField' @BLS12_381.Fq
+    specField' @BLS12_381.Fq2
+    specField' @BLS12_381.Fq6
+    specField' @BLS12_381.Fq12

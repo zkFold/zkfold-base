@@ -2,116 +2,129 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Pairing
-  ( millerLoop
+  ( millerAlgorithmBN
+  , millerAlgorithmBLS12
   , finalExponentiation
   ) where
 
-import           Data.Bits                               (shiftR)
-import           Data.Bool                               (Bool, otherwise, (&&))
-import           Data.Eq                                 (Eq, (==))
-import           Data.Function                           (($))
-import           Data.List                               (reverse, tail, unfoldr)
-import           Data.Maybe                              (Maybe (..))
-import           Data.Ord                                ((<=))
+import           Data.Bool                               (otherwise)
+import           Data.Eq                                 (Eq (..))
+import           Data.Function                           (($), (.))
+import           Data.Functor                            ((<$>))
+import           Data.Int                                (Int8)
+import           Data.Ord                                ((>))
+import           Data.Tuple                              (snd)
 import           Data.Type.Equality                      (type (~))
 import           Numeric.Natural                         (Natural)
-import           Prelude                                 (Integer, error, even, odd)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field         (Ext2 (..), Ext3 (..))
+import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 
--- Adapted from:
--- https://github.com/nccgroup/pairing-bls12381/blob/master/Crypto/Pairing_bls12381.hs
+-- Ate pairing implementation adapted from:
 -- https://github.com/sdiehl/pairing/blob/master/src/Data/Pairing/Ate.hs
 
-type Untwisted c i1 i2 = Ext2 (Ext3 (BaseField c) i1) i2
-
--- Untwist point on E2 for pairing calculation
--- FIXME: this works for BLS12-381 only
-untwist ::
-  (Field (BaseField c), Untwisted c i1 i2 ~ g, Field g) => Point c -> (g, g)
-untwist (Point x1 y1) = (wideX, wideY)
-  where
-    root = Ext3 zero one zero
-    wideX = Ext2 zero (Ext3 zero zero x1) // Ext2 zero root
-    wideY = Ext2 zero (Ext3 zero zero y1) // Ext2 root zero
-untwist Inf = error "untwist: point at infinity"
-
--- Used in miller loop for computing line functions l_r,r and v_2r
-doubleEval ::
-  Field (BaseField c2) => Untwisted c2 i1 i2 ~ g =>
-  FromConstant (BaseField c1) g => Field g =>
-  Point c2 -> Point c1 -> g
-doubleEval r (Point px py) = fromConstant py - (fromConstant px * slope) - v
-  where
-    (rx, ry) = untwist r
-    slope = (rx * rx + rx * rx + rx * rx) // (ry + ry)
-    v = ry - slope * rx
-doubleEval _ Inf = error "doubleEval: point at infinity"
-
--- Used in miller loop for computer line function l_r,p and v_r+p
-addEval ::
-  (BaseField c2 ~ f, Field f, Eq f) =>
-  (Untwisted c2 i1 i2 ~ g, FromConstant (BaseField c1) g, Field g) =>
-  Point c2 -> Point c2 -> Point c1 -> g
-addEval r q p@(Point px _) = if (rx == qx) && (ry + qy == zero)
-                then fromConstant px - rx
-                else addEval' (rx, ry) (qx, qy) p
-  where
-    (rx, ry) = untwist r
-    (qx, qy) = untwist q
-addEval _ _ Inf = error "addEval: point at infinity"
-
--- Helper function for addEval
-addEval' ::
-  (FromConstant (BaseField c) g, Field g) => (g, g) -> (g, g) -> Point c -> g
-addEval' (rx, ry) (qx, qy) (Point px py) =
-  fromConstant py - (fromConstant px * slope) - v
-  where
-    slope = (qy - ry) // (qx - rx)
-    v = ((qy * rx) - (ry * qx)) // (rx - qx)
-addEval' _ _ Inf = error "addEval': point at infinity"
-
--- Classic Miller loop for Ate pairing
-millerLoop ::
-  (BaseField c2 ~ f, Field f, Eq f) =>
-  (Untwisted c2 i1 i2 ~ g, FromConstant (BaseField c1) g, Field g) =>
-  Integer -> Point c1 -> Point c2 -> g
-millerLoop param p q = miller' p q q iterations one
-  where
-    iterations = tail $ reverse $  -- list of true/false per bits of operand
-      unfoldr (\b -> if b == (0 :: Integer) then Nothing
-                     else Just(odd b, shiftR b 1)) param
-
--- Double and add loop helper for Miller (iterative)
-miller' ::
-  (BaseField c2 ~ f, Field f, Eq f) =>
-  (Untwisted c2 i1 i2 ~ g, FromConstant (BaseField c1) g, Field g) =>
-  Point c1 -> Point c2 -> Point c2 -> [Bool] -> g -> g
-miller' _ _ _ [] result = result
-miller' p q r (i:iters) result =
-  if i then miller' p q (pointAdd doubleR q) iters (accum * addEval doubleR q p)
-       else miller' p q doubleR iters accum
-  where
-    accum = result * result * doubleEval r p
-    doubleR = pointDouble r
+type Untwisted c i j = Ext2 (Ext3 (BaseField c) i) j
 
 finalExponentiation ::
-  forall c a.
-  (Finite (ScalarField c), Finite (BaseField c), MultiplicativeMonoid a) =>
-  a -> a
-finalExponentiation x = pow' x ((p ^ (12 :: Natural) -! 1) `div` r) one
+  forall c g i j.
+  (Finite (ScalarField c), Finite (BaseField c)) =>
+  (g ~ Untwisted c i j, Exponent g Natural) =>
+  g -> g
+finalExponentiation x = x ^ ((p ^ (12 :: Natural) -! 1) `div` r)
   where
     p = order @(BaseField c)
     r = order @(ScalarField c)
 
--- Used for the final exponentiation; opportunity for further perf optimization
-pow' :: MultiplicativeSemigroup a => a -> Natural -> a -> a
-pow' a0 e result
-  | e <= 1    = a0
-  | even e    = accum2
-  | otherwise = accum2 * a0
+millerAlgorithmBLS12 ::
+  (Field (BaseField c), Scale (BaseField c) (BaseField d)) =>
+  (Field (BaseField d), Eq (BaseField d)) =>
+  (EllipticCurve d, Untwisted d i j ~ g, Field g) =>
+  [Int8] -> Point c -> Point d -> g
+millerAlgorithmBLS12 (x:xs) p q = snd $
+  millerLoop p q xs (if x > 0 then q else negate q, one)
+millerAlgorithmBLS12 _ _ _ = one
+
+millerAlgorithmBN ::
+  (PrimeField (BaseField c), Scale (BaseField c) (BaseField d)) =>
+  (Field (BaseField d), Eq (BaseField d)) =>
+  (EllipticCurve d, Untwisted d i j ~ g, Field g) =>
+  BaseField d -> [Int8] -> Point c -> Point d -> g
+millerAlgorithmBN xi (x:xs) p q = finalStepBN xi p q $
+  millerLoop p q xs (if x > 0 then q else negate q, one)
+millerAlgorithmBN _ _ _ _ = one
+
+--------------------------------------------------------------------------------
+
+finalStepBN ::
+  forall c d i j g.
+  (PrimeField (BaseField c), Scale (BaseField c) (BaseField d)) =>
+  (Field (BaseField d), Eq (BaseField d)) =>
+  (EllipticCurve d, Untwisted d i j ~ g, Field g) =>
+  BaseField d -> Point c -> Point d -> (Point d, g) -> g
+finalStepBN xi p q (t, f) = f * f' * f''
   where
-    accum  = pow' a0 (shiftR e 1) result
-    accum2 = accum * accum
+    o = order @(BaseField c)
+    q1 = frobTwisted o xi q
+    (t', f') = lineFunction p t q1
+    q2 = negate (frobTwisted o xi q1)
+    (_, f'') = lineFunction p t' q2
+
+millerLoop ::
+  (Field (BaseField c), Scale (BaseField c) (BaseField d)) =>
+  (EllipticCurve d, Field (BaseField d), Eq (BaseField d)) =>
+  (Untwisted d i j ~ g, Field g) =>
+  Point c -> Point d -> [Int8] -> (Point d, g) -> (Point d, g)
+millerLoop p q = impl
+  where impl []     tf = tf
+        impl (x:xs) tf
+          | x == 0    = impl xs tf2
+          | x == 1    = impl xs $ additionStep p q tf2
+          | otherwise = impl xs $ additionStep p (negate q) tf2
+          where tf2 = doublingStep p tf
+
+--------------------------------------------------------------------------------
+
+frobTwisted ::
+  forall c. Field (BaseField c) => Natural -> BaseField c -> Point c -> Point c
+frobTwisted q xi (Point x y) = Point ((x ^ q) * (xi ^ tx)) ((y ^ q) * (xi ^ ty))
+  where
+    tx = (q -! 1) `div` 3
+    ty = q `div` 2
+frobTwisted _ _ _ = Inf
+
+additionStep ::
+  (Field (BaseField c), Scale (BaseField c) (BaseField d)) =>
+  (Field (BaseField d), Eq (BaseField d)) =>
+  (Untwisted d i j ~ g, Field g) =>
+  Point c -> Point d -> (Point d, g) -> (Point d, g)
+additionStep p q (t, f) = (* f) <$> lineFunction p q t
+
+doublingStep ::
+  (Field (BaseField c), Scale (BaseField c) (BaseField d)) =>
+  (Field (BaseField d), Eq (BaseField d)) =>
+  (Untwisted d i j ~ g, Field g) =>
+  Point c -> (Point d, g) -> (Point d, g)
+doublingStep p (t, f) = (* f) . (* f) <$> lineFunction p t t
+
+lineFunction ::
+  (Field (BaseField c), Scale (BaseField c) (BaseField d)) =>
+  (Untwisted d i j ~ g, Field (BaseField d), Eq (BaseField d)) =>
+  Point c -> Point d -> Point d -> (Point d, g)
+lineFunction (Point x y) (Point x1 y1) (Point x2 y2)
+  | x1 /= x2 =
+    (Point x3 y3, untwist (negate y) (x `scale` l) (y1 - l * x1))
+  | y1 + y2 == zero =
+    (Inf, untwist x (negate x1) zero)
+  | otherwise =
+    (Point x3' y3', untwist (negate y) (x `scale` l') (y1 - l' * x1))
+  where
+    l   = (y2 - y1) // (x2 - x1)
+    x3  = l * l - x1 - x2
+    y3  = l * (x1 - x3) - y1
+    x12 = x1 * x1
+    l'  = (x12 + x12 + x12) // (y1 + y1)
+    x3' = l' * l' - x1 - x2
+    y3' = l' * (x1 - x3') - y1
+    untwist a b c = Ext2 (Ext3 (a `scale` one) zero zero) (Ext3 b c zero)
+lineFunction _ _ _ = (Inf, Ext2 (Ext3 one zero zero) zero)

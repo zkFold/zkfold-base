@@ -32,8 +32,8 @@ specAdditiveGroup' = hspec $ do
 
 specAdditiveGroup :: IO ()
 specAdditiveGroup = do
-    specAdditiveGroup' @(Point BLS12_381_G1)
-    specAdditiveGroup' @(Point BLS12_381_G2)
-
     specAdditiveGroup' @(Point BN254_G1)
     specAdditiveGroup' @(Point BN254_G2)
+
+    specAdditiveGroup' @(Point BLS12_381_G1)
+    specAdditiveGroup' @(Point BLS12_381_G2)
