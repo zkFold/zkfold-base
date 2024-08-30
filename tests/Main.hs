@@ -21,27 +21,27 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
-    -- -- Base
-    -- specBinary
+    -- Base
+    specBinary
 
-    -- -- Algebra
-    -- specPermutations
-    -- specField
-    -- specAdditiveGroup
-    -- specPairing
-    -- specUnivariate
-    -- specGroebner
+    -- Algebra
+    specPermutations
+    specField
+    specAdditiveGroup
+    specPairing
+    specUnivariate
+    specGroebner
 
-    -- -- Symbolic types and operations
-    -- specUInt
-    -- specFFA
-    -- specByteString
+    -- Symbolic types and operations
+    specUInt
+    specFFA
+    specByteString
 
-    -- -- Arithmetic circuit
-    -- specArithmeticCircuit
+    -- Arithmetic circuit
+    specArithmeticCircuit
 
-    -- -- Arithmetization
-    -- specArithmetization
+    -- Arithmetization
+    specArithmetization
 
     -- Non-interactive proofs
     specNonInteractiveProof

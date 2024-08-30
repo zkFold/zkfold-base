@@ -20,7 +20,6 @@ import           ZkFold.Base.Protocol.Plonkup
 import           ZkFold.Base.Protocol.Plonkup.Instance
 import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (getParams)
-import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuit (..), compile, compileForceOne,

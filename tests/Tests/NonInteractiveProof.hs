@@ -34,7 +34,7 @@ specNonInteractiveProof' = hspec $ do
 
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
-    -- specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
+    specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
 
     specPlonk
     specNonInteractiveProof' @(PlonkBS 2) @HaskellCore
