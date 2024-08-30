@@ -15,8 +15,10 @@ module ZkFold.Base.Algebra.EllipticCurve.BN254
   , BN254_G2
   , BN254_GT) where
 
+import           Control.Monad                              (return, (>>))
 import           Data.Binary                                (Binary (..))
-import           Data.Eq                                    (Eq)
+import           Data.Bool                                  ((&&))
+import           Data.Eq                                    (Eq (..))
 import           Data.Function                              (($))
 import           Prelude                                    (Integer, error)
 
@@ -24,7 +26,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field            (Ext2 (..), Ext3, IrreduciblePoly (..), Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Encoding
 import           ZkFold.Base.Algebra.EllipticCurve.Pairing
 import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, toPoly)
 
@@ -138,17 +139,23 @@ finalStep _ = error "TODO"
 ------------------------------ Encoding ----------------------------------------
 
 instance Binary (Point BN254_G1) where
-  put = putPointZp
-  get = getPointZp
-
-instance Binary (PointCompressed BN254_G1) where
-  put = putCompressedPointZp
-  get = getCompressedPointZp
+  put Inf           = put (Point @BN254_G1 zero zero)
+  put (Point xp yp) = put xp >> put yp
+  get = do
+    xp <- get
+    yp <- get
+    return $
+      if xp == zero && yp == zero
+      then Inf
+      else Point xp yp
 
 instance Binary (Point BN254_G2) where
-  put = putPointExt2
-  get = getPointExt2
-
-instance Binary (PointCompressed BN254_G2) where
-  put = putCompressedPointExt2
-  get = getCompressedPointExt2
+  put Inf           = put (Point @BN254_G2 zero zero)
+  put (Point xp yp) = put xp >> put yp
+  get = do
+    xp <- get
+    yp <- get
+    return $
+      if xp == zero && yp == zero
+      then Inf
+      else Point xp yp
