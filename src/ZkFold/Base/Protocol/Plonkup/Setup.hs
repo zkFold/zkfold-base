@@ -16,9 +16,10 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction(..))
-import           ZkFold.Base.Protocol.Plonkup.Internal               (Plonk(..))
+import           ZkFold.Base.Protocol.Plonkup.Internal
+import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkupRelation)
-import           ZkFold.Base.Protocol.Plonkup.Utils
+import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 data PlonkupSetup i n l c1 c2 = PlonkupSetup

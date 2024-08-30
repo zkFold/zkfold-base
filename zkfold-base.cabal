@@ -119,12 +119,21 @@ library
       ZkFold.Base.Protocol.Plonkup
       ZkFold.Base.Protocol.Plonkup.LookupConstraint
       ZkFold.Base.Protocol.Plonkup.PlonkConstraint
+      ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
+      ZkFold.Base.Protocol.Plonkup.Instance
       ZkFold.Base.Protocol.Plonkup.Internal
+      ZkFold.Base.Protocol.Plonkup.Proof
       ZkFold.Base.Protocol.Plonkup.Prover
+      ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
+      ZkFold.Base.Protocol.Plonkup.Prover.Secret
+      ZkFold.Base.Protocol.Plonkup.Prover.Setup
       ZkFold.Base.Protocol.Plonkup.Relation
       ZkFold.Base.Protocol.Plonkup.Setup
       ZkFold.Base.Protocol.Plonkup.Utils
       ZkFold.Base.Protocol.Plonkup.Verifier
+      ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
+      ZkFold.Base.Protocol.Plonkup.Verifier.Setup
+      ZkFold.Base.Protocol.Plonkup.Witness
       ZkFold.Base.Protocol.Protostar
       ZkFold.Base.Protocol.Protostar.Accumulator
       ZkFold.Base.Protocol.Protostar.AccumulatorScheme

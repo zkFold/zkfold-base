@@ -30,8 +30,9 @@ import           ZkFold.Base.Protocol.NonInteractiveProof            (HaskellCor
                                                                       NonInteractiveProofTestData (..))
 import           ZkFold.Base.Protocol.Plonkup
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint
-import           ZkFold.Base.Protocol.Plonkup.Prover                 (PlonkupProverSetup(..))
+import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkRelation)
+import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 type PlonkPolyLengthBS = 32

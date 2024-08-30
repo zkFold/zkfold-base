@@ -16,9 +16,12 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction, HaskellCore,
                                                                       NonInteractiveProof (..))
-import           ZkFold.Base.Protocol.Plonkup                        (Plonk (..), PlonkInput (..), PlonkProverSecret,
-                                                                      PlonkWitnessInput (..), plonkVerifierInput)
-import           ZkFold.Base.Protocol.Plonkup.Internal               (getParams)
+import           ZkFold.Base.Protocol.Plonkup
+import           ZkFold.Base.Protocol.Plonkup.Instance
+import           ZkFold.Base.Protocol.Plonkup.Prover
+import           ZkFold.Base.Protocol.Plonkup.Utils                  (getParams)
+import           ZkFold.Base.Protocol.Plonkup.Verifier
+import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuit (..), compile, compileForceOne,
                                                                       eval, witnessGenerator)

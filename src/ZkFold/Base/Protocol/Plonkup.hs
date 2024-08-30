@@ -6,10 +6,7 @@
 
 module ZkFold.Base.Protocol.Plonkup (
     module ZkFold.Base.Protocol.Plonkup.Internal,
-    Plonk(..),
-    plonkPermutation,
-    plonkCircuitPolynomials,
-    plonkVerifierInput
+    Plonk(..)
 ) where
 
 import           Data.Functor                                        ((<&>))
@@ -25,68 +22,22 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Permutations              (fromPermutation)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), Point,
                                                                       PointCompressed, compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.NonInteractiveProof
+import           ZkFold.Base.Protocol.Plonkup.Instance
 import           ZkFold.Base.Protocol.Plonkup.Internal
+import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
 import           ZkFold.Base.Protocol.Plonkup.Setup
+import           ZkFold.Base.Protocol.Plonkup.Utils
 import           ZkFold.Base.Protocol.Plonkup.Verifier
+import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-
-instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
-        Witness (Plonk i n l c1 c2 t) ~ (PlonkWitnessInput i c1, PlonkProverSecret c1), NonInteractiveProof (Plonk i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
-    arbitrary = do
-        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) Par1)
-        vecPubInp <- genSubset (getAllVars ac) (value @l)
-        let (omega, k1, k2) = getParams $ value @n
-        pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
-        secret <- arbitrary
-        return $ TestData pl (PlonkWitnessInput wi (witnessGenerator ac wi), secret)
-
-plonkPermutation :: forall i n l c1 c2 t .
-    (KnownNat n, FiniteField (ScalarField c1)) => Plonk i n l c1 c2 t -> PlonkupRelation n i (ScalarField c1) -> PlonkPermutation n c1
-plonkPermutation (Plonk omega k1 k2 _ _ _) PlonkupRelation {..} = PlonkPermutation {..}
-    where
-        f i = case (i-!1) `div` value @n of
-            0 -> omega^i
-            1 -> k1 * (omega^i)
-            2 -> k2 * (omega^i)
-            _ -> error "setup: invalid index"
-
-        s = fromList $ map f $ fromPermutation @(PlonkPermutationSize n) sigma
-        s1 = toPolyVec $ V.take (fromIntegral $ value @n) s
-        s2 = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
-        s3 = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
-
-plonkCircuitPolynomials :: forall i n l c1 c2 t .
-    (KnownNat n, KnownNat (PlonkPolyExtendedLength n), Eq (ScalarField c1), Field (ScalarField c1))
-    => Plonk i n l c1 c2 t
-    -> PlonkPermutation n c1
-    -> PlonkupRelation n i (ScalarField c1)
-    -> PlonkCircuitPolynomials n c1
-plonkCircuitPolynomials
-   (Plonk omega _ _ _ _ _)
-   PlonkPermutation {..}
-   PlonkupRelation {..} = PlonkCircuitPolynomials {..}
-    where
-        qm     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qM
-        ql     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qL
-        qr     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qR
-        qo     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qO
-        qc     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qC
-        qk     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qK
-        sigma1 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega s1
-        sigma2 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega s2
-        sigma3 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega s3
-
-plonkVerifierInput :: Field (ScalarField c) => Vector l (ScalarField c) -> PlonkInput l c
-plonkVerifierInput input = PlonkInput $ fmap negate input
 
 instance forall i n l c1 c2 t plonk f g1 core.
         ( Plonk i n l c1 c2 t ~ plonk
@@ -248,90 +199,14 @@ instance forall i n l c1 c2 t plonk f g1 core.
             proof2 = gs `com` proof2Poly
 
     verify :: SetupVerify plonk -> Input plonk -> Proof plonk -> Bool
-    verify
-        PlonkupVerifierSetup {..}
-        (PlonkInput wPub)
-        (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi _) = p1 == p2
-        where
-            PlonkCircuitCommitments {..} = commitments
+    verify = plonkupVerify @i @n @l @c1 @c2 @t
 
-            n = value @n
-
-            (beta, ts) = challenge $ mempty
-                `transcript` compress cmA
-                `transcript` compress cmB
-                `transcript` compress cmC :: (f, Transcript plonk)
-            (gamma, ts') = challenge ts
-
-            (alpha, ts'') = challenge $ ts' `transcript` compress cmZ
-
-            (xi, ts''') = challenge $ ts''
-                `transcript` compress cmT1
-                `transcript` compress cmT2
-                `transcript` compress cmT3
-
-            (v, ts'''') = challenge $ ts'''
-                `transcript` a_xi
-                `transcript` b_xi
-                `transcript` c_xi
-                `transcript` s1_xi
-                `transcript` s2_xi
-                `transcript` z_xi
-
-            (u, _) = challenge $ ts''''
-                `transcript` compress proof1
-                `transcript` compress proof2
-
-            zH_xi        = polyVecZero @f @n @(PlonkPolyExtendedLength n) `evalPolyVec` xi
-            lagrange1_xi = polyVecLagrange @f @n @(PlonkPolyExtendedLength n) 1 omega `evalPolyVec` xi
-            pubPoly_xi   = polyVecInLagrangeBasis @f @n @(PlonkPolyExtendedLength n) omega (toPolyVec $ fromList $ fromVector wPub) `evalPolyVec` xi
-
-            r0 =
-                  pubPoly_xi
-                - alpha * alpha * lagrange1_xi
-                - alpha
-                    * (a_xi + beta * s1_xi + gamma)
-                    * (b_xi + beta * s2_xi + gamma)
-                    * (c_xi + gamma)
-                    * z_xi
-            d  =
-                  mul (a_xi * b_xi) cmQm
-                + mul a_xi cmQl
-                + mul b_xi cmQr
-                + mul c_xi cmQo
-                + cmQc
-                + mul (
-                          alpha
-                        * (a_xi + beta * xi + gamma)
-                        * (b_xi + beta * k1 * xi + gamma)
-                        * (c_xi + beta * k2 * xi + gamma)
-                    +     alpha * alpha * lagrange1_xi
-                    +     u
-                    ) cmZ
-                - mul (
-                      alpha
-                    * beta
-                    * (a_xi + beta * s1_xi + gamma)
-                    * (b_xi + beta * s2_xi + gamma)
-                    * z_xi
-                    ) cmS3
-                - mul zH_xi (cmT1 + (xi^n) `mul` cmT2 + (xi^(2*n)) `mul` cmT3)
-            f  =
-                  d
-                + v `mul` cmA
-                + (v * v) `mul` cmB
-                + (v * v * v) `mul` cmC
-                + (v * v * v * v) `mul` cmS1
-                + (v * v * v * v * v) `mul` cmS2
-            e  = (
-                negate r0
-                + v * a_xi
-                + v * v * b_xi
-                + v * v * v * c_xi
-                + v * v * v * v * s1_xi
-                + v * v * v * v * v * s2_xi
-                + u * z_xi
-                ) `mul` gen
-
-            p1 = pairing @c1 @c2 (xi `mul` proof1 + (u * xi * omega) `mul` proof2 + f - e) (gen :: Point c2)
-            p2 = pairing (proof1 + u `mul` proof2) h1
+instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
+        Witness (Plonk i n l c1 c2 t) ~ (PlonkWitnessInput i c1, PlonkProverSecret c1), NonInteractiveProof (Plonk i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
+    arbitrary = do
+        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) Par1)
+        vecPubInp <- genSubset (getAllVars ac) (value @l)
+        let (omega, k1, k2) = getParams $ value @n
+        pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        secret <- arbitrary
+        return $ TestData pl (PlonkWitnessInput wi (witnessGenerator ac wi), secret)
