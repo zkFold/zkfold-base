@@ -4,8 +4,8 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.ARK.Plonk (
-    module ZkFold.Base.Protocol.ARK.Plonk.Internal,
+module ZkFold.Base.Protocol.Plonkup (
+    module ZkFold.Base.Protocol.Plonkup.Internal,
     Plonk(..),
     plonkPermutation,
     plonkCircuitPolynomials,
@@ -31,9 +31,9 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
                                                                       PointCompressed, compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
-import           ZkFold.Base.Protocol.ARK.Plonk.Internal
-import           ZkFold.Base.Protocol.ARK.Plonk.Relation             (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Base.Protocol.NonInteractiveProof
+import           ZkFold.Base.Protocol.Plonkup.Internal
+import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkRelation (..), toPlonkRelation)
 import           ZkFold.Prelude                                      (log2ceiling)
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal

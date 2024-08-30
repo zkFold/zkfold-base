@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.Commitment.KZG where
+module ZkFold.Base.Protocol.KZG where
 
 import           Control.Monad                              (replicateM)
 import           Data.ByteString                            (ByteString, empty)

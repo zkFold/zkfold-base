@@ -7,10 +7,10 @@ import           Data.Typeable                               (Proxy (..), Typeab
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (Arbitrary, Testable (property), withMaxSuccess)
-import           Tests.NonInteractiveProof.Plonk             (PlonkBS, specPlonk)
+import           Tests.NonInteractiveProof.Plonkup           (PlonkBS, specPlonk)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Protocol.Commitment.KZG         (KZG)
+import           ZkFold.Base.Protocol.KZG                    (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..),
                                                               NonInteractiveProofTestData (..))
 

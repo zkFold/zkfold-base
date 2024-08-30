@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.ARK.Plonk.Internal where
+module ZkFold.Base.Protocol.Plonkup.Internal where
 
 import           Data.Bifunctor                                      (first)
 import           Data.Bool                                           (bool)
