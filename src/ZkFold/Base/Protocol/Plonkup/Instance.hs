@@ -2,16 +2,15 @@
 
 module ZkFold.Base.Protocol.Plonkup.Instance where
 
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
-import           Test.QuickCheck                                     (Arbitrary (..))
+import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+import           Test.QuickCheck                         (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
-import           ZkFold.Base.Data.Vector                             (Vector(..), unsafeToVector)
-import           ZkFold.Prelude                                      (take)
-import           ZkFold.Symbolic.Compiler                            ()
+import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
+import           ZkFold.Base.Data.Vector                 (Vector (..), unsafeToVector)
+import           ZkFold.Prelude                          (take)
+import           ZkFold.Symbolic.Compiler                ()
 
 newtype PlonkInput l c = PlonkInput { unPlonkInput :: Vector l (ScalarField c) }
 

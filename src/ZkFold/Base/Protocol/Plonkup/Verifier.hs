@@ -7,7 +7,7 @@ module ZkFold.Base.Protocol.Plonkup.Verifier
     , plonkupVerify
     ) where
 
-import           GHC.IsList                                          (IsList(..))
+import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 
@@ -16,13 +16,13 @@ import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, 
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (fromVector)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Base.Protocol.NonInteractiveProof            hiding (verify)
-import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
-import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
 import           ZkFold.Base.Protocol.Plonkup.Instance
 import           ZkFold.Base.Protocol.Plonkup.Internal
 import           ZkFold.Base.Protocol.Plonkup.Proof
+import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
+import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 plonkupVerify :: forall i n l c1 c2 ts .
     ( KnownNat n

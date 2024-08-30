@@ -2,13 +2,12 @@
 
 module ZkFold.Base.Protocol.Plonkup.Witness where
 
-import           Data.Map.Strict                                     (Map)
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
+import           Data.Map.Strict                         (Map)
+import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
-import           ZkFold.Base.Data.Vector                             (Vector)
+import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
+import           ZkFold.Base.Data.Vector                 (Vector)
 
 data PlonkWitnessInput i c = PlonkWitnessInput (Vector i (ScalarField c)) (Map Natural (ScalarField c))
 

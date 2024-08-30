@@ -9,9 +9,9 @@ import           Prelude                                             hiding (Num
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 data PlonkupProverSetup i n l c1 c2 = PlonkupProverSetup
     { omega       :: ScalarField c1

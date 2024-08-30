@@ -11,7 +11,7 @@ import           Test.QuickCheck                                     (Gen, shuff
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                             (Vector(..))
+import           ZkFold.Base.Data.Vector                             (Vector (..))
 import           ZkFold.Prelude                                      (log2ceiling, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 

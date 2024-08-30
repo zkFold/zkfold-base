@@ -2,10 +2,9 @@
 
 module ZkFold.Base.Protocol.Plonkup.Proof where
 
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
+import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..), Point)
 
 data PlonkProof c = PlonkProof {
         cmA       :: Point c,

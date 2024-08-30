@@ -12,10 +12,10 @@ import           Prelude                                             hiding (Num
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations              (fromPermutation)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Point, Pairing)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing, Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction(..))
+import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction (..))
 import           ZkFold.Base.Protocol.Plonkup.Internal
 import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkupRelation)

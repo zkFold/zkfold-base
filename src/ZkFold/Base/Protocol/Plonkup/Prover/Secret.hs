@@ -2,12 +2,11 @@
 
 module ZkFold.Base.Protocol.Plonkup.Prover.Secret where
 
-import           GHC.Generics                                        (Generic)
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
-import           Test.QuickCheck                                     (Arbitrary (..))
+import           GHC.Generics                            (Generic)
+import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+import           Test.QuickCheck                         (Arbitrary (..))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
 
 data PlonkProverSecret c = PlonkProverSecret {
         b1  :: ScalarField c,

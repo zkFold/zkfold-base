@@ -11,10 +11,10 @@ import           Test.QuickCheck                                     (Arbitrary 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec)
-import           ZkFold.Base.Data.Vector                             (Vector(..))
+import           ZkFold.Base.Data.Vector                             (Vector (..))
+import           ZkFold.Base.Protocol.Plonkup.Utils
 import           ZkFold.Symbolic.Compiler                            ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Base.Protocol.Plonkup.Utils
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.

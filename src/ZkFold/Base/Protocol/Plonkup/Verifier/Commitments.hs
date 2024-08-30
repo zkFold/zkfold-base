@@ -2,10 +2,9 @@
 
 module ZkFold.Base.Protocol.Plonkup.Verifier.Commitments where
 
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
+import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..), Point)
 
 data PlonkCircuitCommitments c = PlonkCircuitCommitments {
         cmQl :: Point c,

@@ -2,11 +2,10 @@
 
 module ZkFold.Base.Protocol.Plonkup.Prover.Polynomials where
 
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
+import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
-import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkPolyExtended)
+import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
+import           ZkFold.Base.Protocol.Plonkup.Internal   (PlonkPolyExtended)
 
 data PlonkCircuitPolynomials n c = PlonkCircuitPolynomials {
         ql     :: PlonkPolyExtended n c,

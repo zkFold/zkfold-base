@@ -6,7 +6,7 @@ import           Prelude                                             hiding (Num
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint(..))
+import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint (..))
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint        (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 

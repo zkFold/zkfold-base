@@ -1,5 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE OverloadedLists      #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedLists     #-}
 
 module ZkFold.Base.Protocol.Plonkup.Prover
     ( module ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
@@ -12,27 +12,26 @@ import           Data.Functor                                        ((<&>))
 import           Data.Functor.Rep                                    (index)
 import qualified Data.Map.Strict                                     as Map
 import qualified Data.Vector                                         as V
-import           GHC.IsList                                          (IsList(..))
+import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
-import qualified Prelude as P
+import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, value)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), compress, PointCompressed)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), PointCompressed, compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (fromVector)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
+import           ZkFold.Base.Protocol.Plonkup.Instance
 import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkPolyExtendedLength)
-
+import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Base.Protocol.Plonkup.Prover.Setup
+import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
 import           ZkFold.Base.Protocol.Plonkup.Witness
-import           ZkFold.Base.Protocol.Plonkup.Instance
-import           ZkFold.Base.Protocol.Plonkup.Proof
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 plonkupProve :: forall i n l c1 c2 ts core .
     ( KnownNat i

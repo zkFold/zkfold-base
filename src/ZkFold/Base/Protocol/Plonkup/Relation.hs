@@ -16,10 +16,10 @@ import           ZkFold.Base.Algebra.Basic.Permutations              (Permutatio
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec, toPolyVec)
 import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
-import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint(..))
+import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint (..))
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint        (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
-import           ZkFold.Prelude                                      (replicate, length)
+import           ZkFold.Prelude                                      (length, replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
