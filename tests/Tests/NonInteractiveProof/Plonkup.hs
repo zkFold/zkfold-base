@@ -30,6 +30,7 @@ import           ZkFold.Base.Protocol.NonInteractiveProof            (HaskellCor
                                                                       NonInteractiveProofTestData (..))
 import           ZkFold.Base.Protocol.Plonkup
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint
+import           ZkFold.Base.Protocol.Plonkup.Prover                 (PlonkupProverSetup(..))
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkRelation)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
@@ -68,23 +69,22 @@ propPlonkPolyIdentity :: forall n  core . NonInteractiveProofTestData (PlonkBS n
 propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS
 
-        s = setupProve @(PlonkBS n) @core plonk
-        (PlonkSetupParamsProve {..}, _, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap) = s
-        (pw@(PlonkWitnessInput wInput wNewVars), ps) = w
+        PlonkupProverSetup {..} = setupProve @(PlonkBS n) @core plonk
+        PlonkCircuitPolynomials {..} = polynomials
+        (PlonkWitnessInput wInput wNewVars, ps) = w
         PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ _ _ _ _ _ _ _ _ = ps
-        (w1, w2, w3) = wmap pw
+        (w1, w2, w3) = wmap relation wInput wNewVars
 
-        wPub = iPub' <&> negate . \case
+        wPub = iPub <&> negate . \case
             InVar j -> index wInput j
             NewVar j -> wNewVars Map.! j
 
-        -- wPub = fmap (negate . index wInput . fromIntegral) iPub'
-        pubPoly = polyVecInLagrangeBasis @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS omega' $
-            toPolyVec @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS wPub
+        pubPoly = polyVecInLagrangeBasis @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS omega $
+            toPolyVec @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS $ fromList $ fromVector wPub
 
-        a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega' w1
-        b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega' w2
-        c = polyVecLinear b6 b5 * zH + polyVecInLagrangeBasis omega' w3
+        a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega w1
+        b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega w2
+        c = polyVecLinear b6 b5 * zH + polyVecInLagrangeBasis omega w3
 
         f x =
             let qlX = ql `evalPolyVec` x
@@ -98,7 +98,7 @@ propPlonkPolyIdentity (TestData plonk w) =
                 pubX = pubPoly `evalPolyVec` x
             in qlX * aX + qrX * bX + qoX * cX + qmX * aX * bX + qcX + pubX
 
-    in all ((== zero) . f . (omega'^)) [0 .. value @PlonkPolyLengthBS -! 1]
+    in all ((== zero) . f . (omega^)) [0 .. value @PlonkPolyLengthBS -! 1]
 
 specPlonk :: IO ()
 specPlonk = hspec $ do

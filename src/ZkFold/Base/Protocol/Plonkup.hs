@@ -1,8 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE OverloadedLists      #-}
-{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Protocol.Plonkup (
     module ZkFold.Base.Protocol.Plonkup.Internal,
@@ -15,7 +15,6 @@ module ZkFold.Base.Protocol.Plonkup (
 import           Data.Functor                                        ((<&>))
 import           Data.Functor.Rep                                    (Representable (..))
 import qualified Data.Map                                            as Map
-import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
 import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
@@ -33,34 +32,12 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector (..), fromVector)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup.Internal
-import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkRelation)
-import           ZkFold.Prelude                                      (log2ceiling)
+import           ZkFold.Base.Protocol.Plonkup.Prover
+import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
+import           ZkFold.Base.Protocol.Plonkup.Setup
+import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-
-{-
-    NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
-    Additionally, we don't want this library to depend on Cardano libraries.
--}
-
-data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
-        omega :: ScalarField curve1,
-        k1    :: ScalarField curve1,
-        k2    :: ScalarField curve1,
-        iPub  :: Vector l (Var (Vector i)),
-        ac    :: ArithmeticCircuit (ScalarField curve1) (Vector i) Par1,
-        x     :: ScalarField curve1
-    }
-instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonk i n l c1 c2 t) where
-    show (Plonk omega k1 k2 iPub ac x) =
-        "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show iPub ++ " " ++ show ac ++ " " ++ show x
-
-instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonk i n l c1 c2 t) where
-    arbitrary = do
-        ac <- arbitrary
-        vecPubInp <- genSubset (getAllVars ac) (value @l)
-        let (omega, k1, k2) = getParams (value @n)
-        Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
 
 instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
         Witness (Plonk i n l c1 c2 t) ~ (PlonkWitnessInput i c1, PlonkProverSecret c1), NonInteractiveProof (Plonk i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
@@ -108,8 +85,8 @@ plonkCircuitPolynomials
         sigma2 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega s2
         sigma3 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega s3
 
-plonkVerifierInput :: Field (ScalarField c) => Vector n (ScalarField c) -> PlonkInput c
-plonkVerifierInput input = PlonkInput $ fromList $ map negate $ fromVector input
+plonkVerifierInput :: Field (ScalarField c) => Vector l (ScalarField c) -> PlonkInput l c
+plonkVerifierInput input = PlonkInput $ fmap negate input
 
 instance forall i n l c1 c2 t plonk f g1 core.
         ( Plonk i n l c1 c2 t ~ plonk
@@ -130,80 +107,48 @@ instance forall i n l c1 c2 t plonk f g1 core.
         , CoreFunction c1 core
         ) => NonInteractiveProof (Plonk i n l c1 c2 t) core where
     type Transcript (Plonk i n l c1 c2 t)  = t
-    type SetupProve (Plonk i n l c1 c2 t)  = (PlonkSetupParamsProve i c1 c2, PlonkPermutation n c1, PlonkCircuitPolynomials n c1 , PlonkWitnessMap n i c1)
-    type SetupVerify (Plonk i n l c1 c2 t) = (PlonkSetupParamsVerify c1 c2, PlonkCircuitCommitments c1)
+    type SetupProve (Plonk i n l c1 c2 t)  = PlonkupProverSetup i n l c1 c2
+    type SetupVerify (Plonk i n l c1 c2 t) = PlonkupVerifierSetup i n l c1 c2
     type Witness (Plonk i n l c1 c2 t)     = (PlonkWitnessInput i c1, PlonkProverSecret c1)
-    type Input (Plonk i n l c1 c2 t)       = PlonkInput c1
+    type Input (Plonk i n l c1 c2 t)       = PlonkInput l c1
     type Proof (Plonk i n l c1 c2 t)       = PlonkProof c1
 
     setupProve :: plonk -> SetupProve plonk
-    setupProve plonk@(Plonk omega' k1' k2' iPub ac x) =
-        (PlonkSetupParamsProve {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkWitnessMap $ \(PlonkWitnessInput win wnv) -> wmap pr win wnv)
-        where
-            d     = value @n + 6
-            xs    = fromList $ map (x^) [0..d-!1]
-            gs'   = fmap (`mul` gen) xs
-            h0'   = gen
-            h1'   = x `mul` gen
-            iPub' = fromList . fromVector $ iPub
-
-            pr    = fromJust $ toPlonkRelation @i @n @l @f iPub ac
-
-            perm@PlonkPermutation {..}   = plonkPermutation plonk pr
-            PlonkCircuitPolynomials {..} = plonkCircuitPolynomials plonk perm pr
+    setupProve plonk =
+        let PlonkupSetup {..} = plonkupSetup @_ @_ @_ @c1 @_ @_ @core plonk
+        in PlonkupProverSetup {..}
 
     setupVerify :: plonk -> SetupVerify plonk
-    setupVerify plonk@(Plonk omega k1 k2 iPub ac x) = (PlonkSetupParamsVerify {..}, PlonkCircuitCommitments {..})
-        where
-            d = value @n + 6
-            xs = fromList $ map (x^) [0..d-!1]
-            gs = fmap (`mul` gen) xs
-            omega'' = omega
-            k1''    = k1
-            k2''    = k2
-            x2''    = x `mul` gen
-            pow''   = log2ceiling $ value @n
-            n''     = fromIntegral $ value @n
-
-            pr   = fromJust $ toPlonkRelation @i @n @l @f iPub ac
-            perm = plonkPermutation plonk pr
-            PlonkCircuitPolynomials {..} = plonkCircuitPolynomials plonk perm pr
-
-            com = msm @c1 @core
-            cmQl = gs `com` ql
-            cmQr = gs `com` qr
-            cmQo = gs `com` qo
-            cmQm = gs `com` qm
-            cmQc = gs `com` qc
-            cmQk = gs `com` qk
-            cmS1 = gs `com` sigma1
-            cmS2 = gs `com` sigma2
-            cmS3 = gs `com` sigma3
+    setupVerify plonk =
+        let PlonkupSetup {..} = plonkupSetup @_ @_ @_ @c1 @_ @_ @core plonk
+        in PlonkupVerifierSetup {..}
 
     prove :: SetupProve plonk -> Witness plonk -> (Input plonk, Proof plonk)
-    prove (PlonkSetupParamsProve {..}, PlonkPermutation {..}, PlonkCircuitPolynomials {..}, PlonkWitnessMap wmap)
+    prove PlonkupProverSetup {..}
           (PlonkWitnessInput wInput wNewVars, PlonkProverSecret {..})
         = (PlonkInput wPub, PlonkProof {..})
         where
+            PlonkCircuitPolynomials {..} = polynomials
+
             n = value @n
             zH = polyVecZero @f @n @(PlonkPolyExtendedLength n)
 
-            (w1, w2, w3) = wmap (PlonkWitnessInput wInput wNewVars)
+            (w1, w2, w3) = wmap relation wInput wNewVars
 
-            wPub = iPub' <&> negate . \case
+            wPub = iPub <&> negate . \case
               InVar j -> index wInput j
               NewVar j -> wNewVars Map.! j
 
-            pubPoly = polyVecInLagrangeBasis omega' $ toPolyVec @f @n wPub
+            pubPoly = polyVecInLagrangeBasis omega $ toPolyVec @f @n $ fromList $ fromVector wPub
 
-            a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega' w1
-            b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega' w2
-            c = polyVecLinear b6 b5 * zH + polyVecInLagrangeBasis omega' w3
+            a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega w1
+            b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega w2
+            c = polyVecLinear b6 b5 * zH + polyVecInLagrangeBasis omega w3
 
             com = msm @c1 @core
-            cmA = gs' `com` a
-            cmB = gs' `com` b
-            cmC = gs' `com` c
+            cmA = gs `com` a
+            cmB = gs `com` b
+            cmC = gs `com` c
 
             (beta, ts) = challenge $ mempty
                 `transcript` compress cmA
@@ -211,28 +156,28 @@ instance forall i n l c1 c2 t plonk f g1 core.
                 `transcript` compress cmC
             (gamma, ts') = challenge ts
 
-            omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega') omega'
-            omegas' =  V.iterateN (V.length (fromPolyVec z) P.+ 1) (* omega') one
-            zs1 = polyVecGrandProduct w1 omegas s1 beta gamma
-            zs2 = polyVecGrandProduct w2 (scalePV k1' omegas) s2 beta gamma
-            zs3 = polyVecGrandProduct w3 (scalePV k2' omegas) s3 beta gamma
+            omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
+            omegas' =  V.iterateN (V.length (fromPolyVec z) P.+ 1) (* omega) one
+            zs1 = polyVecGrandProduct w1 omegas sigma1s beta gamma
+            zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) sigma2s beta gamma
+            zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) sigma3s beta gamma
             gp = rewrapPolyVec (V.zipWith (*) (V.zipWith (*) (fromPolyVec zs1) (fromPolyVec zs2))) zs3
-            z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @f @n @(PlonkPolyExtendedLength n) omega' gp
+            z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @f @n @(PlonkPolyExtendedLength n) omega gp
             zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
-            cmZ = gs' `com` z
+            cmZ = gs `com` z
 
             (alpha, ts'') = challenge $ ts' `transcript` compress cmZ :: (f, Transcript plonk)
 
             t1  = a * b * qm + a * ql + b * qr + c * qo + pubPoly + qc
             t2  = (a + polyVecLinear gamma beta)
-                * (b + polyVecLinear gamma (beta * k1'))
-                * (c + polyVecLinear gamma (beta * k2'))
+                * (b + polyVecLinear gamma (beta * k1))
+                * (c + polyVecLinear gamma (beta * k2))
                 * z
             t3  = (a + scalePV beta sigma1 + scalePV gamma one)
                 * (b + scalePV beta sigma2 + scalePV gamma one)
                 * (c + scalePV beta sigma3 + scalePV gamma one)
                 * zo
-            t4 = (z - one) * polyVecLagrange @f @n @(PlonkPolyExtendedLength n) 1 omega'
+            t4 = (z - one) * polyVecLagrange @f @n @(PlonkPolyExtendedLength n) 1 omega
             t = (t1 + scalePV alpha (t2 - t3) + scalePV (alpha * alpha) t4) `polyVecDiv` zH
 
             t_lo'  = toPolyVec $ V.take (fromIntegral n) $ fromPolyVec t
@@ -241,9 +186,9 @@ instance forall i n l c1 c2 t plonk f g1 core.
             t_lo   = t_lo' + scalePV b10 (polyVecZero @f @n @(PlonkPolyExtendedLength n) + one)
             t_mid  = t_mid' + scalePV b11 (polyVecZero @f @n @(PlonkPolyExtendedLength n) + one) - scalePV b10 one
             t_hi   = t_hi' - scalePV b11 one
-            cmT1   = gs' `com` t_lo
-            cmT2   = gs' `com` t_mid
-            cmT3   = gs' `com` t_hi
+            cmT1   = gs `com` t_lo
+            cmT2   = gs `com` t_mid
+            cmT3   = gs `com` t_hi
 
             (xi, ts''') = challenge $ ts''
                 `transcript` compress cmT1
@@ -255,8 +200,8 @@ instance forall i n l c1 c2 t plonk f g1 core.
             c_xi  = evalPolyVec c xi
             s1_xi = evalPolyVec sigma1 xi
             s2_xi = evalPolyVec sigma2 xi
-            z_xi  = evalPolyVec z (xi * omega')
-            l1_xi_mul = one // (scale n one * (xi - omega'))
+            z_xi  = evalPolyVec z (xi * omega)
+            l1_xi_mul = one // (scale n one * (xi - omega))
 
             (v, _) = challenge $ ts'''
                 `transcript` a_xi
@@ -266,7 +211,7 @@ instance forall i n l c1 c2 t plonk f g1 core.
                 `transcript` s2_xi
                 `transcript` z_xi
 
-            lagrange1_xi = polyVecLagrange @f @n @(PlonkPolyExtendedLength n) 1 omega' `evalPolyVec` xi
+            lagrange1_xi = polyVecLagrange @f @n @(PlonkPolyExtendedLength n) 1 omega `evalPolyVec` xi
             zH_xi = zH `evalPolyVec` xi
             r   = scalePV (a_xi * b_xi) qm
                 + scalePV a_xi ql
@@ -277,8 +222,8 @@ instance forall i n l c1 c2 t plonk f g1 core.
                 + scalePV alpha (
                     scalePV (
                           (a_xi + beta * xi + gamma)
-                        * (b_xi + beta * k1' * xi + gamma)
-                        * (c_xi + beta * k2' * xi + gamma)
+                        * (b_xi + beta * k1 * xi + gamma)
+                        * (c_xi + beta * k2 * xi + gamma)
                         ) z
                     - scalePV (
                           (a_xi + beta * s1_xi + gamma)
@@ -297,17 +242,19 @@ instance forall i n l c1 c2 t plonk f g1 core.
                     + scalePV (v * v * v * v * v) (sigma2 - scalePV s2_xi one)
                 ) `polyVecDiv` polyVecLinear (negate xi) one
 
-            proof2Poly = (z - scalePV z_xi one) `polyVecDiv` toPolyVec [negate (xi * omega'), one]
+            proof2Poly = (z - scalePV z_xi one) `polyVecDiv` toPolyVec [negate (xi * omega), one]
 
-            proof1 = gs' `com` proof1Poly
-            proof2 = gs' `com` proof2Poly
+            proof1 = gs `com` proof1Poly
+            proof2 = gs `com` proof2Poly
 
     verify :: SetupVerify plonk -> Input plonk -> Proof plonk -> Bool
     verify
-        (PlonkSetupParamsVerify {..}, PlonkCircuitCommitments {..})
+        PlonkupVerifierSetup {..}
         (PlonkInput wPub)
         (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi _) = p1 == p2
         where
+            PlonkCircuitCommitments {..} = commitments
+
             n = value @n
 
             (beta, ts) = challenge $ mempty
@@ -336,8 +283,8 @@ instance forall i n l c1 c2 t plonk f g1 core.
                 `transcript` compress proof2
 
             zH_xi        = polyVecZero @f @n @(PlonkPolyExtendedLength n) `evalPolyVec` xi
-            lagrange1_xi = polyVecLagrange @f @n @(PlonkPolyExtendedLength n) 1 omega'' `evalPolyVec` xi
-            pubPoly_xi   = polyVecInLagrangeBasis @f @n @(PlonkPolyExtendedLength n) omega'' (toPolyVec wPub) `evalPolyVec` xi
+            lagrange1_xi = polyVecLagrange @f @n @(PlonkPolyExtendedLength n) 1 omega `evalPolyVec` xi
+            pubPoly_xi   = polyVecInLagrangeBasis @f @n @(PlonkPolyExtendedLength n) omega (toPolyVec $ fromList $ fromVector wPub) `evalPolyVec` xi
 
             r0 =
                   pubPoly_xi
@@ -356,8 +303,8 @@ instance forall i n l c1 c2 t plonk f g1 core.
                 + mul (
                           alpha
                         * (a_xi + beta * xi + gamma)
-                        * (b_xi + beta * k1'' * xi + gamma)
-                        * (c_xi + beta * k2'' * xi + gamma)
+                        * (b_xi + beta * k1 * xi + gamma)
+                        * (c_xi + beta * k2 * xi + gamma)
                     +     alpha * alpha * lagrange1_xi
                     +     u
                     ) cmZ
@@ -386,5 +333,5 @@ instance forall i n l c1 c2 t plonk f g1 core.
                 + u * z_xi
                 ) `mul` gen
 
-            p1 = pairing @c1 @c2 (xi `mul` proof1 + (u * xi * omega'') `mul` proof2 + f - e) (gen :: Point c2)
-            p2 = pairing (proof1 + u `mul` proof2) x2''
+            p1 = pairing @c1 @c2 (xi `mul` proof1 + (u * xi * omega) `mul` proof2 + f - e) (gen :: Point c2)
+            p2 = pairing (proof1 + u `mul` proof2) h1
