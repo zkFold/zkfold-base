@@ -17,6 +17,7 @@ import           Prelude                                              (and, othe
 import qualified Prelude                                              as P
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate         as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
@@ -31,7 +32,6 @@ import           ZkFold.Base.Protocol.ARK.Protostar.Oracle
 import qualified ZkFold.Base.Protocol.ARK.Protostar.SpecialSound      as SPS
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.FieldElement                    (FieldElement)
 
 
@@ -54,7 +54,7 @@ import           ZkFold.Symbolic.Data.FieldElement                    (FieldElem
 data RecursiveCircuit n a
     = RecursiveCircuit
         { iterations :: Natural
-        , circuit    :: ArithmeticCircuit a (Vector n)
+        , circuit    :: ArithmeticCircuit a (Vector n) (Vector n)
         } deriving (Generic, NFData)
 
 instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCircuit n a) where
@@ -71,7 +71,7 @@ instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCirc
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
-    prover rc@(RecursiveCircuit _ ac) _ i _ = oracle $ witnessGenerator ac (M.fromList $ P.zip [1..] (V.fromVector i))
+    prover rc@(RecursiveCircuit _ ac) _ i _ = oracle $ witnessGenerator ac i
 
     -- We can modify the polynomial system from the circuit.
     -- The result is a system of @n+1@-variate polynomials
@@ -85,10 +85,14 @@ instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCirc
             n :: Natural
             n = value @n
 
-            witness = witnessGenerator ac (M.fromList $ P.zip [1..] (V.fromVector i))
+            witness = witnessGenerator ac i
+
+            varToNatural :: Var (Vector n) -> Natural
+            varToNatural (NewVar v) = v + value @n
+            varToNatural (InVar i) = fromZp i
 
             sys :: [Poly a Natural Natural]
-            sys = M.elems $ acSystem (circuit rc)
+            sys = mapVars varToNatural <$> M.elems (acSystem $ circuit rc)
 
             -- Substitutes all non-input variab;es with their actual values.
             -- Decreases indices of input variables by one
@@ -116,37 +120,42 @@ instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCirc
             zeros = P.const zero <$> amap
             varMap = M.fromList $ P.zip [0..] (V.fromVector i <> pm)
 
-data FoldResult n a
+data FoldResult n c a
     = FoldResult
     { output          :: Vector n a
-    , lastAccumulator :: Accumulator (Vector n a) a a a
+    , lastAccumulator :: Accumulator (Vector n a) a c a
     , verifierOutput  :: P.Bool
     , deciderOutput   :: P.Bool
     } deriving (P.Show, Generic, NFData)
 
-type FS_CM n a = FiatShamir a (CommitOpen a a (RecursiveCircuit n a))
+type FS_CM n c a = FiatShamir a (CommitOpen a c (RecursiveCircuit n a))
 
 transform
-    :: forall n a
-    .  RandomOracle [a] a
-    => RecursiveCircuit n a
+    :: forall n c a
+    .  HomomorphicCommit a [a] c
+    => a
+    -> RecursiveCircuit n a
     -> Vector n a
-    -> FS_CM n a
-transform rc v = FiatShamir (CommitOpen oracle rc) v
+    -> FS_CM n c a
+transform ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
 
 fold
-    :: forall a n
+    :: forall a n c x
     .  Arithmetic a
+    => x ~ ArithmeticCircuit a (Vector n)
     => P.Show a
-    => Scale a a
-    => Exponent a a
+    => P.Eq c
+    => P.Show c
+    => Scale a c
+    => AdditiveGroup c
+    => RandomOracle c a
     => RandomOracle a a
-    => HomomorphicCommit a [a] a
+    => HomomorphicCommit a [a] c
     => KnownNat n
-    => (Vector n (FieldElement (ArithmeticCircuit a)) -> Vector n (FieldElement (ArithmeticCircuit a)))  -- ^ An arithmetisable function to be applied recursively
+    => (Vector n (FieldElement x) -> Vector n (FieldElement x))  -- ^ An arithmetisable function to be applied recursively
     -> Natural                             -- ^ The number of iterations to perform
     -> SPS.Input a (RecursiveCircuit n a)  -- ^ Input for the first iteration
-    -> FoldResult n a
+    -> FoldResult n c a
 fold f iter i = foldN iter ck rc i [] initialAccumulator
     where
         rc :: RecursiveCircuit n a
@@ -156,71 +165,73 @@ fold f iter i = foldN iter ck rc i [] initialAccumulator
 
         ck = oracle i
 
-        initialAccumulator :: Accumulator (Vector n a) a a a
+        initialAccumulator :: Accumulator (Vector n a) a c a
         initialAccumulator = Accumulator (AccumulatorInstance i [hcommit ck [m]] [] zero one) [m]
 
 
 instanceProof
-    :: forall n a
+    :: forall n c a
     .  Arithmetic a
     => KnownNat n
-    => RandomOracle (Vector n a) a
-    => RandomOracle a a
-    => HomomorphicCommit a [a] a
-    => P.Show a
-    => Ring a
+    => HomomorphicCommit a [a] c
     => a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
-    -> InstanceProofPair (Vector n a) a a
+    -> InstanceProofPair (Vector n a) c a
 instanceProof ck rc i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where
         m = SPS.prover @a rc M.empty i []
 
 foldN
-    :: forall n a
+    :: forall n c a
     .  Arithmetic a
     => P.Show a
+    => P.Eq c
+    => P.Show c
+    => AdditiveGroup c
+    => Scale a c
     => KnownNat n
-    => Scale a a
-    => Exponent a a
     => RandomOracle a a
-    => HomomorphicCommit a [a] a
+    => RandomOracle c a
+    => HomomorphicCommit a [a] c
     => Natural
     -> a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> [P.Bool]
-    -> Accumulator (Vector n a) a a a
-    -> FoldResult n a
+    -> Accumulator (Vector n a) a c a
+    -> FoldResult n c a
 foldN iter ck rc i verifierResults acc
-  | iterations rc == 0 = FoldResult i acc (and verifierResults) (Acc.decider (transform rc i) ck acc)
+  | iterations rc == 0 = FoldResult i acc (and verifierResults) (Acc.decider (transform ck rc i :: FS_CM n c a) ck acc)
   | otherwise = let (output, newAcc, newVerifierResult) = foldStep ck rc i acc
                  in foldN iter ck (rc {iterations = iterations rc -! 1}) output (newVerifierResult : verifierResults) newAcc
 
-executeAc :: forall n a . RecursiveCircuit n a -> Vector n a -> Vector n a
-executeAc (RecursiveCircuit _ rc) i = eval rc (M.fromList $ P.zip [1..] (V.fromVector i))
+executeAc :: forall n a . KnownNat n => RecursiveCircuit n a -> Vector n a -> Vector n a
+executeAc (RecursiveCircuit _ rc) i = eval rc i
 
 foldStep
-    :: forall n a
+    :: forall n c a
     .  Arithmetic a
     => P.Show a
+    => P.Show c
+    => P.Eq c
+    => AdditiveGroup c
     => KnownNat n
-    => Scale a a
-    => Exponent a a
+    => Scale a c
     => RandomOracle a a
-    => HomomorphicCommit a [a] a
+    => RandomOracle c a
+    => HomomorphicCommit a [a] c
     => a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
-    -> Accumulator (Vector n a) a a a
-    -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a a a, P.Bool)
+    -> Accumulator (Vector n a) a c a
+    -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a c a, P.Bool)
 foldStep ck rc i acc = (newInput, newAcc, verifierAccepts)
     where
-        fs :: FS_CM n a
-        fs = transform rc i
+        fs :: FS_CM n c a
+        fs = transform ck rc i
 
         nark@(InstanceProofPair _ narkProof) = instanceProof ck rc i
         (newAcc, accProof) = Acc.prover fs ck acc nark
-        verifierAccepts = Acc.verifier @_ @_ @_ @a @(FS_CM n a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
+        verifierAccepts = Acc.verifier @_ @_ @_ @a @(FS_CM n c a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
         newInput = executeAc rc i

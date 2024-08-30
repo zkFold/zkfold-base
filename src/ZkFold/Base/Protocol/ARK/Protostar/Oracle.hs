@@ -28,8 +28,8 @@ class RandomOracle a b where
 instance (AdditiveMonoid b, RandomOracle a b) => RandomOracle (Map k a) b where
     oracle = oracle . M.elems
 
-instance (Ring a, FromConstant Natural a) => RandomOracle (ArithmeticCircuit a (Vector n)) a where
-    oracle ArithmeticCircuit{..} = oracle (acRange, fromConstant @_ @a <$> acInput, fromConstant @_ @a <$> acVarOrder, fromConstant @_ @a <$> acOutput)
+--instance (Ring a, FromConstant Natural a) => RandomOracle (ArithmeticCircuit a (Vector n) (Vector k)) a where
+--    oracle ArithmeticCircuit{..} = oracle (acRange, fromConstant @_ @a <$> acInput, fromConstant @_ @a <$> acVarOrder, fromConstant @_ @a <$> acOutput)
 
 instance Ring a => RandomOracle a a where
     oracle a = mimcHash2 mimcConstants a zero zero

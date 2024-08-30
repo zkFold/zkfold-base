@@ -50,6 +50,9 @@ evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 variables :: forall c v . Ord v => Poly c v Natural -> Set v
 variables (P p) = foldMap ((\(M m) -> keysSet m) . snd) p
 
+mapVars :: Variable i2 => (i1 -> i2) -> Poly c i1 j -> Poly c i2 j
+mapVars f (P ms) = P $ (\(c, M m) -> (c, M $ M.mapKeys f m)) <$> ms
+
 mapVarPolynomial :: Variable i => Map i i-> Poly c i j -> Poly c i j
 mapVarPolynomial m (P ms) = P $ second (mapVarMonomial m) <$> ms
 

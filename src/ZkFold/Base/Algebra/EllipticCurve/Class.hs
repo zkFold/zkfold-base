@@ -105,12 +105,12 @@ pointNegate Inf         = Inf
 pointNegate (Point x y) = Point x (negate y)
 
 pointMul
-    :: forall curve
+    :: forall curve s
     .  EllipticCurve curve
-    => BinaryExpansion (ScalarField curve)
-    => Bits (ScalarField curve) ~ [ScalarField curve]
-    => Eq (ScalarField curve)
-    => ScalarField curve
+    => BinaryExpansion (s)
+    => Bits s ~ [s] 
+    => Eq s 
+    => s 
     -> Point curve
     -> Point curve
 pointMul = natScale . fromBinary . castBits . binaryExpansion

@@ -21,6 +21,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.EllipticCurve.Class
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.ARK.Protostar
@@ -36,7 +37,7 @@ import           ZkFold.Symbolic.Data.UInt
 fact
     :: forall a n c
     .  Arithmetic a
-    => c ~ ArithmeticCircuit a
+    => c ~ ArithmeticCircuit a (Vector n)
     => KnownNat n
     => MultiplicativeSemigroup (FieldElement c)
     => Vector n (FieldElement c) -> Vector n (FieldElement c)
@@ -60,14 +61,13 @@ benchOps
     .  KnownNat n
     => KnownNat k
     => PrimeField (Zp p)
-    => PedersonSetup (Zp p)
     => Benchmark
 benchOps = env (input @n @k) $ \ ~inp ->
     bench ("Folding a function of size " <> show (value @n) <> " arguments with " <> show (value @k) <> " iterations") $
-        nf (\(iter, inp) -> fold (fact @(Zp p) @n @(ArithmeticCircuit (Zp p))) iter inp :: FoldResult n (Zp p)) inp
+        nf (\(iter, inp) -> fold @(Zp p) @n @(Point BLS12_381_G1) (fact @(Zp p) @n) iter inp) inp
 
-foldFact :: Natural -> Vector 2 Natural -> FoldResult 2 (Zp BLS12_381_Scalar)
-foldFact iter inp = fold (fact @(Zp BLS12_381_Scalar) @2 @(ArithmeticCircuit (Zp BLS12_381_Scalar))) iter (toZp . fromIntegral <$> inp)
+foldFact :: Natural -> Vector 2 Natural -> FoldResult 2 (Point BLS12_381_G1) (Zp BLS12_381_Scalar)
+foldFact iter inp = fold (fact @(Zp BLS12_381_Scalar) @2) iter (toZp . fromIntegral <$> inp)
 
 main :: IO ()
 main = do

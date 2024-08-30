@@ -53,25 +53,23 @@ instance
     ( P.Eq c
     , P.Eq i
     , P.Show f
+    , P.Show c 
     , P.Show i
-    , f ~ c   -- These two constraints seem the only way to make the algorithm work. The algorithm performs various algebraic operations on combinations of them.
-    , f ~ m   -- If they are actually not the same, replace them with hashes.
+    , f ~ m   -- If they are actually not the same, replace m with hashes.
     , AdditiveGroup c
-    , Ring m
-    , Scale m c
-    , Exponent f f
+    , Ring f
+    , Scale f c
     , IsList (Input f (CommitOpen f c a))
     , Input f a ~ i
     , Item i ~ f
     , ProverMessage Natural a ~ m
     , KnownNat (Degree (CommitOpen f c a))
     , SpecialSoundProtocol f (CommitOpen f c a)
-    , RandomOracle (f, c) f                                    -- Random oracle ρ_NARK
-    , RandomOracle i f                                         -- Random oracle for compressing public input
-    , RandomOracle (AccumulatorInstance i f c, i, [c], [c]) f  -- Random oracle ρ_acc
-    , HomomorphicCommit f [f] f
+    , RandomOracle c f                                    -- Random oracle ρ_NARK
+    , RandomOracle i f                                    -- Random oracle for compressing public input
+    , HomomorphicCommit f [m] c
     ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen f c a)) where
-  prover (FiatShamir sps i) ck acc ip@(InstanceProofPair pubi (NARKProof pi_x pi_w)) = -- trace traceStr $ -- P.undefined
+  prover fs@(FiatShamir sps i) ck acc ip@(InstanceProofPair pubi (NARKProof pi_x pi_w)) = -- trace traceStr $ -- P.undefined
         (Accumulator (AccumulatorInstance (fromList pi'') ci'' ri'' eCapital' mu') mi'', eCapital_j)
       where
           traceStr :: P.String
@@ -93,7 +91,8 @@ instance
           r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) (zero : pi_x)
 
           -- Fig. 3, step 2
-          f_sps = degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps pubi [Open pi_w] pi_x
+          
+          f_sps = degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps pubi [Open pi_w] r_i 
 
           -- X + mu as a univariate polynomial
           xMu :: PU.Poly f
@@ -135,10 +134,10 @@ instance
 
           -- Fig. 3, steps 5, 6
           mu'  = alpha            + acc^.x^.mu
-          pi'' = P.zipWith (\i_pi i_acc -> alpha * i_pi + i_acc) (toList pubi) $ toList (acc^.x^.pi)
-          ri'' = P.zipWith (\r_pi r_acc -> alpha * r_pi + r_acc) r_i  $ acc^.x^.r
-          ci'' = P.zipWith (\c_pi c_acc -> c_pi^alpha   * c_acc) pi_x $ acc^.x^.c
-          mi'' = P.zipWith (\m_pi m_acc -> alpha * m_pi + m_acc) pi_w $ acc^.w
+          pi'' = P.zipWith (\i_pi i_acc -> scale alpha i_pi + i_acc) (toList pubi) $ toList (acc^.x^.pi)
+          ri'' = P.zipWith (\r_pi r_acc -> scale alpha r_pi + r_acc) r_i  $ acc^.x^.r
+          ci'' = P.zipWith (\c_pi c_acc -> scale alpha c_pi + c_acc) pi_x $ acc^.x^.c
+          mi'' = P.zipWith (\m_pi m_acc -> scale alpha m_pi + m_acc) pi_w $ acc^.w
 
           -- Fig. 3, step 7
           eCapital' = acc^.x^.e + sum (P.zipWith (\e' p -> scale (alpha ^ p) e') eCapital_j [1::Natural ..])
@@ -156,9 +155,9 @@ instance
 
           -- Fig. 4, step 3
           mu'  = alpha + acc^.mu
-          pi'' = P.zipWith (\i_pi pi_acc -> alpha * i_pi + pi_acc) (toList pubi) $ (toList $ acc^.pi)
-          ri'' = P.zipWith (\r_pi r_acc  -> alpha * r_pi + r_acc)  r_i  $ acc^.r
-          ci'' = P.zipWith (\c_pi c_acc  -> c_pi^alpha   * c_acc)  c_i  $ acc^.c
+          pi'' = P.zipWith (\i_pi pi_acc -> scale alpha i_pi + pi_acc) (toList pubi) $ (toList $ acc^.pi)
+          ri'' = P.zipWith (\r_pi r_acc  -> scale alpha r_pi + r_acc)  r_i  $ acc^.r
+          ci'' = P.zipWith (\c_pi c_acc  -> scale alpha c_pi + c_acc)  c_i  $ acc^.c
 
           -- Fig 4, step 4
           muEq = acc'^.mu == mu'
