@@ -17,7 +17,7 @@ import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction, HaskellCore,
                                                                       NonInteractiveProof (..))
 import           ZkFold.Base.Protocol.Plonkup
-import           ZkFold.Base.Protocol.Plonkup.Instance
+import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (getParams)
 import           ZkFold.Base.Protocol.Plonkup.Witness
@@ -64,9 +64,9 @@ testOnlyOutputZKP x ps targetValue =
         (input, proof) = prove @(PlonkBS N) @core setupP witness
 
         -- `one` corresponds to `True`
-        circuitOutputsTrue = plonkVerifierInput $ V.singleton one
+        circuitOutputsTrue = plonkupVerifierInput $ V.singleton one
 
-    in unPlonkInput input Haskell.== unPlonkInput circuitOutputsTrue Haskell.&& verify @(PlonkBS N) @core setupV circuitOutputsTrue proof
+    in unPlonkupInput input Haskell.== unPlonkupInput circuitOutputsTrue Haskell.&& verify @(PlonkBS N) @core setupV circuitOutputsTrue proof
 
 testSafeOneInputZKP :: forall core . (CoreFunction C core) => F -> PlonkProverSecret C -> F -> Haskell.Bool
 testSafeOneInputZKP x ps targetValue =
@@ -82,9 +82,9 @@ testSafeOneInputZKP x ps targetValue =
         witness = (PlonkWitnessInput witnessInputs witnessNewVars, ps)
         (input, proof) = prove @(PlonkBS N) @core setupP witness
 
-        onePublicInput = plonkVerifierInput $ V.singleton targetValue
+        onePublicInput = plonkupVerifierInput $ V.singleton targetValue
 
-    in unPlonkInput input Haskell.== unPlonkInput onePublicInput Haskell.&& verify @(PlonkBS N) @core setupV onePublicInput proof
+    in unPlonkupInput input Haskell.== unPlonkupInput onePublicInput Haskell.&& verify @(PlonkBS N) @core setupV onePublicInput proof
 
 testAttackSafeOneInputZKP :: forall core . (CoreFunction C core) => F -> PlonkProverSecret C -> F -> Haskell.Bool
 testAttackSafeOneInputZKP x ps targetValue =
@@ -100,9 +100,9 @@ testAttackSafeOneInputZKP x ps targetValue =
         witness = (PlonkWitnessInput witnessInputs witnessNewVars, ps)
         (input, proof) = prove @(PlonkBS N) @core setupP witness
 
-        onePublicInput = plonkVerifierInput $ V.singleton $ targetValue + 1
+        onePublicInput = plonkupVerifierInput $ V.singleton $ targetValue + 1
 
-    in unPlonkInput input Haskell.== unPlonkInput onePublicInput Haskell.&& Haskell.not (verify @(PlonkBS N) @core setupV onePublicInput proof)
+    in unPlonkupInput input Haskell.== unPlonkupInput onePublicInput Haskell.&& Haskell.not (verify @(PlonkBS N) @core setupV onePublicInput proof)
 
 specArithmetization4 :: Spec
 specArithmetization4 = do

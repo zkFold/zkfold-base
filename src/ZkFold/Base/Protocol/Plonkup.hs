@@ -20,7 +20,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
                                                                       PointCompressed)
 import           ZkFold.Base.Data.Vector                             (Vector (..))
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Base.Protocol.Plonkup.Instance
+import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal
 import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Prover
@@ -53,7 +53,7 @@ instance forall i n l c1 c2 t plonk f g1 core.
     type SetupProve (Plonk i n l c1 c2 t)  = PlonkupProverSetup i n l c1 c2
     type SetupVerify (Plonk i n l c1 c2 t) = PlonkupVerifierSetup i n l c1 c2
     type Witness (Plonk i n l c1 c2 t)     = (PlonkWitnessInput i c1, PlonkProverSecret c1)
-    type Input (Plonk i n l c1 c2 t)       = PlonkInput l c1
+    type Input (Plonk i n l c1 c2 t)       = PlonkupInput l c1
     type Proof (Plonk i n l c1 c2 t)       = PlonkProof c1
 
     setupProve :: plonk -> SetupProve plonk

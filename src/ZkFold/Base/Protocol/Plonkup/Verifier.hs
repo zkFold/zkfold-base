@@ -17,7 +17,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (fromVector)
 import           ZkFold.Base.Protocol.NonInteractiveProof            hiding (verify)
-import           ZkFold.Base.Protocol.Plonkup.Instance
+import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal
 import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
@@ -34,10 +34,10 @@ plonkupVerify :: forall i n l c1 c2 ts .
     , ToTranscript ts (ScalarField c1)
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
-    ) => PlonkupVerifierSetup i n l c1 c2 -> PlonkInput l c1 -> PlonkProof c1 -> Bool
+    ) => PlonkupVerifierSetup i n l c1 c2 -> PlonkupInput l c1 -> PlonkProof c1 -> Bool
 plonkupVerify
     PlonkupVerifierSetup {..}
-    (PlonkInput wPub)
+    (PlonkupInput wPub)
     (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi _) = p1 == p2
     where
         PlonkCircuitCommitments {..} = commitments

@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.Plonkup.Instance where
+module ZkFold.Base.Protocol.Plonkup.Input where
 
 import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 import           Test.QuickCheck                         (Arbitrary (..))
@@ -12,14 +12,14 @@ import           ZkFold.Base.Data.Vector                 (Vector (..), unsafeToV
 import           ZkFold.Prelude                          (take)
 import           ZkFold.Symbolic.Compiler                ()
 
-newtype PlonkInput l c = PlonkInput { unPlonkInput :: Vector l (ScalarField c) }
+newtype PlonkupInput l c = PlonkupInput { unPlonkupInput :: Vector l (ScalarField c) }
 
-instance Show (ScalarField c) => Show (PlonkInput l c) where
-    show (PlonkInput v) = "Input: " ++ show v
+instance Show (ScalarField c) => Show (PlonkupInput l c) where
+    show (PlonkupInput v) = "Input: " ++ show v
 
-instance (KnownNat l, Arbitrary (ScalarField c)) => Arbitrary (PlonkInput l c) where
+instance (KnownNat l, Arbitrary (ScalarField c)) => Arbitrary (PlonkupInput l c) where
     arbitrary = do
-        PlonkInput . unsafeToVector . take (value @l) <$> arbitrary
+        PlonkupInput . unsafeToVector . take (value @l) <$> arbitrary
 
-plonkVerifierInput :: Field (ScalarField c) => Vector l (ScalarField c) -> PlonkInput l c
-plonkVerifierInput input = PlonkInput $ fmap negate input
+plonkupVerifierInput :: Field (ScalarField c) => Vector l (ScalarField c) -> PlonkupInput l c
+plonkupVerifierInput input = PlonkupInput $ fmap negate input

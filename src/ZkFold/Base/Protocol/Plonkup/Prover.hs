@@ -23,7 +23,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (fromVector)
 import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Base.Protocol.Plonkup.Instance
+import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkPolyExtendedLength)
 import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
@@ -44,10 +44,10 @@ plonkupProve :: forall i n l c1 c2 ts core .
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
     , CoreFunction c1 core
-    ) => PlonkupProverSetup i n l c1 c2 -> (PlonkWitnessInput i c1, PlonkProverSecret c1) -> (PlonkInput l c1, PlonkProof c1)
+    ) => PlonkupProverSetup i n l c1 c2 -> (PlonkWitnessInput i c1, PlonkProverSecret c1) -> (PlonkupInput l c1, PlonkProof c1)
 plonkupProve PlonkupProverSetup {..}
         (PlonkWitnessInput wInput wNewVars, PlonkProverSecret {..})
-    = (PlonkInput wPub, PlonkProof {..})
+    = (PlonkupInput wPub, PlonkProof {..})
     where
         PlonkCircuitPolynomials {..} = polynomials
 
