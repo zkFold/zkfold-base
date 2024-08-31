@@ -40,7 +40,7 @@ plonkupVerify
     (PlonkupInput wPub)
     (PlonkupProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi _) = p1 == p2
     where
-        PlonkCircuitCommitments {..} = commitments
+        PlonkupCircuitCommitments {..} = commitments
 
         n = value @n
 

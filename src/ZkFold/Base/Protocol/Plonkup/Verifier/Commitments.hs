@@ -6,7 +6,7 @@ import           Prelude                                 hiding (Num (..), drop,
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..), Point)
 
-data PlonkCircuitCommitments c = PlonkCircuitCommitments {
+data PlonkupCircuitCommitments c = PlonkupCircuitCommitments {
         cmQl :: Point c,
         cmQr :: Point c,
         cmQo :: Point c,
@@ -17,9 +17,9 @@ data PlonkCircuitCommitments c = PlonkCircuitCommitments {
         cmS2 :: Point c,
         cmS3 :: Point c
     }
-instance (Show (BaseField c), EllipticCurve c) => Show (PlonkCircuitCommitments c) where
-    show (PlonkCircuitCommitments cmQl cmQr cmQo cmQm cmQc cmQk cmS1 cmS2 cmS3) =
-        "Circuit Commitments: "
+instance (Show (BaseField c), EllipticCurve c) => Show (PlonkupCircuitCommitments c) where
+    show (PlonkupCircuitCommitments cmQl cmQr cmQo cmQm cmQc cmQk cmS1 cmS2 cmS3) =
+        "Plonkup Circuit Commitments: "
         ++ show cmQl ++ " "
         ++ show cmQr ++ " "
         ++ show cmQo ++ " "

@@ -9,7 +9,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
-import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments   (PlonkCircuitCommitments (..))
+import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments   (PlonkupCircuitCommitments (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 data PlonkupVerifierSetup i n l c1 c2 = PlonkupVerifierSetup
@@ -22,7 +22,7 @@ data PlonkupVerifierSetup i n l c1 c2 = PlonkupVerifierSetup
     , sigma2s     :: PolyVec (ScalarField c1) n
     , sigma3s     :: PolyVec (ScalarField c1) n
     , relation    :: PlonkupRelation n i (ScalarField c1)
-    , commitments :: PlonkCircuitCommitments c1
+    , commitments :: PlonkupCircuitCommitments c1
     }
 
 instance

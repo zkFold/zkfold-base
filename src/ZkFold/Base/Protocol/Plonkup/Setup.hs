@@ -35,7 +35,7 @@ data PlonkupSetup i n l c1 c2 = PlonkupSetup
     , sigma3s     :: PolyVec (ScalarField c1) n
     , relation    :: PlonkupRelation n i (ScalarField c1)
     , polynomials :: PlonkCircuitPolynomials n c1
-    , commitments :: PlonkCircuitCommitments c1
+    , commitments :: PlonkupCircuitCommitments c1
     }
 
 instance
@@ -110,6 +110,6 @@ plonkupSetup Plonk {..} =
         cmS1 = gs `com` sigma1
         cmS2 = gs `com` sigma2
         cmS3 = gs `com` sigma3
-        commitments = PlonkCircuitCommitments {..}
+        commitments = PlonkupCircuitCommitments {..}
 
     in PlonkupSetup {..}
