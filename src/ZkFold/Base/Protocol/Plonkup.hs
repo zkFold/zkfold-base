@@ -52,7 +52,7 @@ instance forall i n l c1 c2 t plonk f g1 core.
     type Transcript (Plonk i n l c1 c2 t)  = t
     type SetupProve (Plonk i n l c1 c2 t)  = PlonkupProverSetup i n l c1 c2
     type SetupVerify (Plonk i n l c1 c2 t) = PlonkupVerifierSetup i n l c1 c2
-    type Witness (Plonk i n l c1 c2 t)     = (PlonkWitnessInput i c1, PlonkProverSecret c1)
+    type Witness (Plonk i n l c1 c2 t)     = (PlonkupWitnessInput i c1, PlonkProverSecret c1)
     type Input (Plonk i n l c1 c2 t)       = PlonkupInput l c1
     type Proof (Plonk i n l c1 c2 t)       = PlonkupProof c1
 
@@ -73,11 +73,11 @@ instance forall i n l c1 c2 t plonk f g1 core.
     verify = plonkupVerify @i @n @l @c1 @c2 @t
 
 instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
-        Witness (Plonk i n l c1 c2 t) ~ (PlonkWitnessInput i c1, PlonkProverSecret c1), NonInteractiveProof (Plonk i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
+        Witness (Plonk i n l c1 c2 t) ~ (PlonkupWitnessInput i c1, PlonkProverSecret c1), NonInteractiveProof (Plonk i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) Par1)
         vecPubInp <- genSubset (getAllVars ac) (value @l)
         let (omega, k1, k2) = getParams $ value @n
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
-        return $ TestData pl (PlonkWitnessInput wi (witnessGenerator ac wi), secret)
+        return $ TestData pl (PlonkupWitnessInput wi (witnessGenerator ac wi), secret)

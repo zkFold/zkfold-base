@@ -44,9 +44,9 @@ plonkupProve :: forall i n l c1 c2 ts core .
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
     , CoreFunction c1 core
-    ) => PlonkupProverSetup i n l c1 c2 -> (PlonkWitnessInput i c1, PlonkProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1)
+    ) => PlonkupProverSetup i n l c1 c2 -> (PlonkupWitnessInput i c1, PlonkProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1)
 plonkupProve PlonkupProverSetup {..}
-        (PlonkWitnessInput wInput wNewVars, PlonkProverSecret {..})
+        (PlonkupWitnessInput wInput wNewVars, PlonkProverSecret {..})
     = (PlonkupInput wPub, PlonkupProof {..})
     where
         PlonkCircuitPolynomials {..} = polynomials

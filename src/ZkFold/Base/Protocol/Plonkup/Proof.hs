@@ -26,7 +26,7 @@ data PlonkupProof c = PlonkupProof {
     }
 instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (PlonkupProof c) where
     show PlonkupProof {..} =
-        "Plonkup proof: "
+        "Plonkup Proof: "
         ++ show cmA ++ " "
         ++ show cmB ++ " "
         ++ show cmC ++ " "

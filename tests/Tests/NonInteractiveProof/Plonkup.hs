@@ -46,7 +46,7 @@ propPlonkConstraintConversion p =
 propPlonkConstraintSatisfaction :: forall n core . KnownNat n => NonInteractiveProofTestData (PlonkBS n) core -> Bool
 propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
     let pr   = fromJust $ toPlonkRelation @1 @PlonkPolyLengthBS iPub ac
-        (PlonkWitnessInput wInput wNewVars, _) = w
+        (PlonkupWitnessInput wInput wNewVars, _) = w
         (w1', w2', w3') = wmap pr wInput wNewVars
 
         wPub = toPolyVec @_ @PlonkPolyLengthBS $
@@ -72,7 +72,7 @@ propPlonkPolyIdentity (TestData plonk w) =
 
         PlonkupProverSetup {..} = setupProve @(PlonkBS n) @core plonk
         PlonkCircuitPolynomials {..} = polynomials
-        (PlonkWitnessInput wInput wNewVars, ps) = w
+        (PlonkupWitnessInput wInput wNewVars, ps) = w
         PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ _ _ _ _ _ _ _ _ = ps
         (w1, w2, w3) = wmap relation wInput wNewVars
 

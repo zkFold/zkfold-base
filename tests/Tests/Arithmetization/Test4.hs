@@ -60,7 +60,7 @@ testOnlyOutputZKP x ps targetValue =
         plonk   = Plonk @1 @32 omega k1 k2 indexOutputBool ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
-        witness = (PlonkWitnessInput witnessInputs witnessNewVars, ps)
+        witness = (PlonkupWitnessInput witnessInputs witnessNewVars, ps)
         (input, proof) = prove @(PlonkBS N) @core setupP witness
 
         -- `one` corresponds to `True`
@@ -79,7 +79,7 @@ testSafeOneInputZKP x ps targetValue =
         plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
-        witness = (PlonkWitnessInput witnessInputs witnessNewVars, ps)
+        witness = (PlonkupWitnessInput witnessInputs witnessNewVars, ps)
         (input, proof) = prove @(PlonkBS N) @core setupP witness
 
         onePublicInput = plonkupVerifierInput $ V.singleton targetValue
@@ -97,7 +97,7 @@ testAttackSafeOneInputZKP x ps targetValue =
         plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
-        witness = (PlonkWitnessInput witnessInputs witnessNewVars, ps)
+        witness = (PlonkupWitnessInput witnessInputs witnessNewVars, ps)
         (input, proof) = prove @(PlonkBS N) @core setupP witness
 
         onePublicInput = plonkupVerifierInput $ V.singleton $ targetValue + 1

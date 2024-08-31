@@ -15,7 +15,7 @@ import           ZkFold.Symbolic.Compiler                ()
 newtype PlonkupInput l c = PlonkupInput { unPlonkupInput :: Vector l (ScalarField c) }
 
 instance Show (ScalarField c) => Show (PlonkupInput l c) where
-    show (PlonkupInput v) = "Input: " ++ show v
+    show (PlonkupInput v) = "Plonkup Input: " ++ show v
 
 instance (KnownNat l, Arbitrary (ScalarField c)) => Arbitrary (PlonkupInput l c) where
     arbitrary = do
