@@ -32,7 +32,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString
-import           ZkFold.Prelude                             (log2ceiling)
+import           ZkFold.Prelude                             (log2ceiling, replicateA)
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -160,15 +160,19 @@ instance FromJSON (Zp p) where
     parseJSON = fmap Zp . parseJSON
 
 instance KnownNat p => Binary (Zp p) where
-    put (Zp x) = go x wordCount
+    put (Zp x) = go x (wordCount @p)
       where
-        wordCount = ceiling $ log2ceiling @_ @Natural (value @p -! 1) % 8
-
         go _ 0      = pure ()
         go n count =
             let (n', r) = n `Haskell.divMod` 256
             in putWord8 (fromIntegral r) <> go n' (count -! 1)
-    get = fromConstant . unLittleEndian <$> get
+    get = toZp . go <$> replicateA (wordCount @p) getWord8
+      where
+        go []     = 0
+        go (x:xs) = fromIntegral x + 256 * go xs
+
+wordCount :: forall p. KnownNat p => Natural
+wordCount = ceiling $ log2ceiling (value @p -! 1) % (8 :: Natural)
 
 instance KnownNat p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, fromIntegral (value @p) - 1)
@@ -218,10 +222,7 @@ instance Field f => AdditiveGroup (Ext2 f e) where
     Ext2 a b - Ext2 c d = Ext2 (a - c) (b - d)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext2 f e) where
-    Ext2 a b * Ext2 c d = case fromPoly . snd $ qr (toPoly [a, b] * toPoly [c, d]) (irreduciblePoly @f @e) of
-            []  -> Ext2 zero zero
-            [x] -> Ext2 x zero
-            v   -> Ext2 (v V.! 0) (v V.! 1)
+    Ext2 a b * Ext2 c d = fromConstant (toPoly [a, b] * toPoly [c, d])
 
 instance MultiplicativeMonoid (Ext2 f e) => Exponent (Ext2 f e) Natural where
     (^) = natPow
@@ -244,6 +245,12 @@ instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext2 f e) where
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
+
+instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly f e) => FromConstant (Poly f) (Ext2 f e) where
+    fromConstant p = case fromPoly . snd $ qr p (irreduciblePoly @f @e) of
+      []  -> zero
+      [x] -> fromConstant x
+      v   -> Ext2 (v V.! 0) (v V.! 1)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext2 f e)
 
@@ -279,11 +286,7 @@ instance Field f => AdditiveGroup (Ext3 f e) where
     Ext3 a b c - Ext3 d e f = Ext3 (a - d) (b - e) (c - f)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext3 f e) where
-    Ext3 a b c * Ext3 d e f = case fromPoly . snd $ qr (toPoly [a, b, c] * toPoly [d, e, f]) (irreduciblePoly @f @e) of
-            []     -> Ext3 zero zero zero
-            [x]    -> Ext3 x zero zero
-            [x, y] -> Ext3 x y zero
-            v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
+    Ext3 a b c * Ext3 d e f = fromConstant (toPoly [a, b, c] * toPoly [d, e, f])
 
 instance MultiplicativeMonoid (Ext3 f e) => Exponent (Ext3 f e) Natural where
     (^) = natPow
@@ -307,6 +310,13 @@ instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where
 
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero
+
+instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly f e) => FromConstant (Poly f) (Ext3 f e) where
+    fromConstant p = case fromPoly . snd $ qr p (irreduciblePoly @f @e) of
+      []     -> zero
+      [x]    -> fromConstant x
+      [x, y] -> Ext3 x y zero
+      v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext3 f e)
 

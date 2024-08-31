@@ -1,23 +1,21 @@
-{-# LANGUAGE DerivingVia      #-}
-{-# LANGUAGE OverloadedLists  #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DerivingVia     #-}
+{-# LANGUAGE OverloadedLists #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
-import           Control.Monad
-import           Data.Bits
-import           Data.Foldable
-import           Data.List                                  (unfoldr)
-import           Data.Word
+import           Control.Monad                              (replicateM)
+import           Data.Binary                                (Word8, bitReverse8)
+import           Data.Bits                                  (bit, clearBit, testBit, (.|.))
+import           Data.Foldable                              (foldl')
 import           Prelude                                    hiding (Num (..), (/), (^))
-import qualified Prelude                                    as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Algebra.EllipticCurve.Pairing
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString
 
@@ -53,15 +51,9 @@ instance IrreduciblePoly Fq6 IP3 where
         in toPoly [e, zero, one]
 type Fq12 = Ext2 Fq6 IP3
 
-instance StandardEllipticCurve BLS12_381_G1 where
-    aParameter = zero
-
-    bParameter = fromConstant (4 :: Natural)
-
 ------------------------------------ BLS12-381 G1 ------------------------------------
 
 data BLS12_381_G1
-
 
 instance EllipticCurve BLS12_381_G1 where
     type ScalarField BLS12_381_G1 = Fr
@@ -77,6 +69,11 @@ instance EllipticCurve BLS12_381_G1 where
     add = addPoints
 
     mul = pointMul
+
+instance StandardEllipticCurve BLS12_381_G1 where
+    aParameter = zero
+
+    bParameter = fromConstant (4 :: Natural)
 
 ------------------------------------ BLS12-381 G2 ------------------------------------
 
@@ -251,7 +248,7 @@ instance Binary (PointCompressed BLS12_381_G2) where
 -- | An image of a pairing is a cyclic multiplicative subgroup of @'Fq12'@
 -- of order @'BLS12_381_Scalar'@.
 newtype BLS12_381_GT = BLS12_381_GT Fq12
-    deriving newtype (Eq, MultiplicativeSemigroup, MultiplicativeMonoid)
+    deriving newtype (Eq, Show, MultiplicativeSemigroup, MultiplicativeMonoid)
 
 instance Exponent BLS12_381_GT Natural where
     BLS12_381_GT a ^ p = BLS12_381_GT (a ^ p)
@@ -266,77 +263,14 @@ instance Finite BLS12_381_GT where
 
 instance Pairing BLS12_381_G1 BLS12_381_G2 where
     type TargetGroup BLS12_381_G1 BLS12_381_G2 = BLS12_381_GT
-    pairing a b = BLS12_381_GT (pairingBLS a b)
-
--- Adapted from https://github.com/nccgroup/pairing-bls12381/blob/master/Crypto/Pairing_bls12381.hs
-
--- Untwist point on E2 for pairing calculation
-untwist :: Point BLS12_381_G2 -> (Fq12, Fq12)
-untwist (Point x1 y1) = (wideX, wideY)
-  where
-    root = Ext3 zero one zero
-    wideX = Ext2 zero (Ext3 zero zero x1) // Ext2 zero root
-    wideY = Ext2 zero (Ext3 zero zero y1) // Ext2 root zero
-untwist Inf = error "untwist: point at infinity"
-
--- Used in miller loop for computing line functions l_r,r and v_2r
-doubleEval :: Point BLS12_381_G2 -> Point BLS12_381_G1 -> Fq12
-doubleEval r (Point px py) = fromConstant py - (fromConstant px * slope) - v
-  where
-    (rx, ry) = untwist r
-    slope = (rx * rx + rx * rx + rx * rx) // (ry + ry)
-    v = ry - slope * rx
-doubleEval _ Inf = error "doubleEval: point at infinity"
-
--- Used in miller loop for computer line function l_r,p and v_r+p
-addEval :: Point BLS12_381_G2 -> Point BLS12_381_G2 -> Point BLS12_381_G1 -> Fq12
-addEval r q p@(Point px _) = if (rx == qx) && (ry + qy == zero)
-                then fromConstant px - rx
-                else addEval' (rx, ry) (qx, qy) p
-  where
-    (rx, ry) = untwist r
-    (qx, qy) = untwist q
-addEval _ _ Inf = error "addEval: point at infinity"
-
--- Helper function for addEval
-addEval' :: (Fq12, Fq12) -> (Fq12, Fq12) -> Point BLS12_381_G1 -> Fq12
-addEval' (rx, ry) (qx, qy) (Point px py) = fromConstant py - (fromConstant px * slope) - v
-  where
-    slope = (qy - ry) // (qx - rx)
-    v = ((qy * rx) - (ry * qx)) // (rx - qx)
-addEval' _ _ Inf = error "addEval': point at infinity"
-
--- Classic Miller loop for Ate pairing
-miller :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> Fq12
-miller p q = miller' p q q iterations one
-  where
-    iterations = tail $ reverse $  -- list of true/false per bits of operand
-      unfoldr (\b -> if b == (0 :: Integer) then Nothing
-                     else Just(odd b, shiftR b 1)) 0xd201000000010000
-
--- Double and add loop helper for Miller (iterative)
-miller' :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> Point BLS12_381_G2 -> [Bool] -> Fq12 -> Fq12
-miller' _ _ _ [] result = result
-miller' p q r (i:iters) result =
-  if i then miller' p q (pointAdd doubleR q) iters (accum * addEval doubleR q p)
-       else miller' p q doubleR iters accum
-  where
-    accum = result * result * doubleEval r p
-    doubleR = pointDouble r
-
--- | Pairing calculation for a valid point in G1 and another valid point in G2.
-pairingBLS :: Point BLS12_381_G1 -> Point BLS12_381_G2 -> Fq12
-pairingBLS Inf _ = zero
-pairingBLS _ Inf = zero
-pairingBLS p q   = pow' (miller p q) (((order @(BaseField BLS12_381_G1))^(12 :: Natural) -! 1) `Haskell.div` (order @(ScalarField BLS12_381_G1))) one
-
--- Used for the final exponentiation; opportunity for further perf optimization
-pow' :: MultiplicativeSemigroup a => a -> Natural -> a -> a
-pow' a0 e result
-  | e <= 1    = a0
-  | even e    = accum2
-  | otherwise = accum2 * a0
-  where
-    accum  = pow' a0 (shiftR e 1) result
-    accum2 = accum * accum
-
+    pairing a b
+      = BLS12_381_GT
+      $ finalExponentiation @BLS12_381_G2
+      $ millerAlgorithmBLS12 param a b
+      where
+        param = [-1
+          ,-1, 0,-1, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+          ]

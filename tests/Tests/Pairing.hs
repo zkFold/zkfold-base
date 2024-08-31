@@ -14,6 +14,7 @@ import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.EllipticCurve.BN254
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, deg, evalPolyVec, polyVecDiv, scalePV, toPolyVec,
                                                               vec2poly)
@@ -61,8 +62,10 @@ specPairing'
     => Eq f
     => Show f
     => Arbitrary f
+    => Eq (BaseField c2)
     => Show (BaseField c2)
     => AdditiveGroup (BaseField c1)
+    => Eq (BaseField c1)
     => Show (BaseField c1)
     => IO ()
 specPairing' = hspec $ do
@@ -70,13 +73,17 @@ specPairing' = hspec $ do
         describe ("Type: " ++ show (typeOf (pairing @c1 @c2))) $ do
             describe "Pairing axioms" $ do
                 it "should satisfy bilinearity" $ withMaxSuccess 10 $ do
-                    property $ \a b p q -> pairing @c1 @c2 (a `mul` p) (b `mul` q) == pairing p q ^ (a * b)
+                    property $ \a b p q ->
+                        pairing @c1 @c2 (a `mul` p) (b `mul` q)
+                            == pairing p q ^ (a * b)
                 it "should satisfy non-degeneracy" $ withMaxSuccess 10 $ do
-                    property $ \p q -> pairing @c1 @c2 p q /= one
+                    property $ \p q ->
+                        (p /= zero && q /= zero) ==> pairing @c1 @c2 p q /= one
             describe "Pairing verification" $ do
                 it "should verify KZG commitments" $ withMaxSuccess 10 $ do
                     property $ propVerificationKZG @c1 @c2 @f @HaskellCore
 
 specPairing :: IO ()
 specPairing = do
+    specPairing' @BN254_G1 @BN254_G2
     specPairing' @BLS12_381_G1 @BLS12_381_G2
