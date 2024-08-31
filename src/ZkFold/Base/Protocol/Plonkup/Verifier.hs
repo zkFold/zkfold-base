@@ -34,11 +34,11 @@ plonkupVerify :: forall i n l c1 c2 ts .
     , ToTranscript ts (ScalarField c1)
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
-    ) => PlonkupVerifierSetup i n l c1 c2 -> PlonkupInput l c1 -> PlonkProof c1 -> Bool
+    ) => PlonkupVerifierSetup i n l c1 c2 -> PlonkupInput l c1 -> PlonkupProof c1 -> Bool
 plonkupVerify
     PlonkupVerifierSetup {..}
     (PlonkupInput wPub)
-    (PlonkProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi _) = p1 == p2
+    (PlonkupProof cmA cmB cmC cmZ cmT1 cmT2 cmT3 proof1 proof2 a_xi b_xi c_xi s1_xi s2_xi z_xi _) = p1 == p2
     where
         PlonkCircuitCommitments {..} = commitments
 

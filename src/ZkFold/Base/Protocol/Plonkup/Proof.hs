@@ -6,7 +6,7 @@ import           Prelude                                 hiding (Num (..), drop,
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..), Point)
 
-data PlonkProof c = PlonkProof {
+data PlonkupProof c = PlonkupProof {
         cmA       :: Point c,
         cmB       :: Point c,
         cmC       :: Point c,
@@ -24,9 +24,9 @@ data PlonkProof c = PlonkProof {
         z_xi      :: ScalarField c,
         l1_xi_mul :: ScalarField c
     }
-instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (PlonkProof c) where
-    show PlonkProof {..} =
-        "Proof: "
+instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (PlonkupProof c) where
+    show PlonkupProof {..} =
+        "Plonkup proof: "
         ++ show cmA ++ " "
         ++ show cmB ++ " "
         ++ show cmC ++ " "

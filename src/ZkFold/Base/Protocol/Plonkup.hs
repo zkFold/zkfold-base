@@ -54,7 +54,7 @@ instance forall i n l c1 c2 t plonk f g1 core.
     type SetupVerify (Plonk i n l c1 c2 t) = PlonkupVerifierSetup i n l c1 c2
     type Witness (Plonk i n l c1 c2 t)     = (PlonkWitnessInput i c1, PlonkProverSecret c1)
     type Input (Plonk i n l c1 c2 t)       = PlonkupInput l c1
-    type Proof (Plonk i n l c1 c2 t)       = PlonkProof c1
+    type Proof (Plonk i n l c1 c2 t)       = PlonkupProof c1
 
     setupProve :: plonk -> SetupProve plonk
     setupProve plonk =
