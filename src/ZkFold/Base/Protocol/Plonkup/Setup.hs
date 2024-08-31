@@ -34,7 +34,7 @@ data PlonkupSetup i n l c1 c2 = PlonkupSetup
     , sigma2s     :: PolyVec (ScalarField c1) n
     , sigma3s     :: PolyVec (ScalarField c1) n
     , relation    :: PlonkupRelation n i (ScalarField c1)
-    , polynomials :: PlonkCircuitPolynomials n c1
+    , polynomials :: PlonkupCircuitPolynomials n c1
     , commitments :: PlonkupCircuitCommitments c1
     }
 
@@ -66,12 +66,12 @@ plonkupSetup :: forall i n l c1 c2 ts core.
     ( KnownNat i
     , KnownNat l
     , KnownNat n
-    , KnownNat (PlonkPermutationSize n)
-    , KnownNat (PlonkPolyExtendedLength n)
+    , KnownNat (PlonkupPermutationSize n)
+    , KnownNat (PlonkupPolyExtendedLength n)
     , Arithmetic (ScalarField c1)
     , Pairing c1 c2
-    , CoreFunction c1 core) => Plonk i n l c1 c2 ts -> PlonkupSetup i n l c1 c2
-plonkupSetup Plonk {..} =
+    , CoreFunction c1 core) => Plonkup i n l c1 c2 ts -> PlonkupSetup i n l c1 c2
+plonkupSetup Plonkup {..} =
     let xs   = fromList $ map (x^) [0 .. (value @n + 5)]
         gs   = fmap (`mul` gen) xs
         h0   = gen
@@ -84,21 +84,21 @@ plonkupSetup Plonk {..} =
             1 -> k1 * (omega^i)
             2 -> k2 * (omega^i)
             _ -> error "setup: invalid index"
-        s = fromList $ map f $ fromPermutation @(PlonkPermutationSize n) $ sigma
+        s = fromList $ map f $ fromPermutation @(PlonkupPermutationSize n) $ sigma
         sigma1s = toPolyVec $ V.take (fromIntegral $ value @n) s
         sigma2s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
         sigma3s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
 
-        qm     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qM
-        ql     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qL
-        qr     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qR
-        qo     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qO
-        qc     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qC
-        qk     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega qK
-        sigma1 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega sigma1s
-        sigma2 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega sigma2s
-        sigma3 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega sigma3s
-        polynomials = PlonkCircuitPolynomials {..}
+        qm     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qM
+        ql     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qL
+        qr     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qR
+        qo     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qO
+        qc     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qC
+        qk     = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qK
+        sigma1 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma1s
+        sigma2 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma2s
+        sigma3 = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma3s
+        polynomials = PlonkupCircuitPolynomials {..}
 
         com = msm @c1 @core
         cmQl = gs `com` ql

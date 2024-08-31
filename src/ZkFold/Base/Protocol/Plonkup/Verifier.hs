@@ -26,7 +26,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 plonkupVerify :: forall i n l c1 c2 ts .
     ( KnownNat n
-    , KnownNat (PlonkPolyExtendedLength n)
+    , KnownNat (PlonkupPolyExtendedLength n)
     , Pairing c1 c2
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
@@ -69,9 +69,9 @@ plonkupVerify
             `transcript` compress proof1
             `transcript` compress proof2
 
-        zH_xi        = polyVecZero @(ScalarField c1) @n @(PlonkPolyExtendedLength n) `evalPolyVec` xi
-        lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkPolyExtendedLength n) 1 omega `evalPolyVec` xi
-        pubPoly_xi   = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega (toPolyVec $ fromList $ fromVector wPub) `evalPolyVec` xi
+        zH_xi        = polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi
+        lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
+        pubPoly_xi   = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega (toPolyVec $ fromList $ fromVector wPub) `evalPolyVec` xi
 
         r0 =
                 pubPoly_xi

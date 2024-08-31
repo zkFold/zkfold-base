@@ -49,7 +49,7 @@ testDifferentValue targetValue otherValue =
         b       = unPar1 (eval ac (V.singleton otherValue))
     in b Haskell.== zero
 
-testOnlyOutputZKP :: forall core . (CoreFunction C core) => F -> PlonkProverSecret C -> F -> Haskell.Bool
+testOnlyOutputZKP :: forall core . (CoreFunction C core) => F -> PlonkupProverSecret C -> F -> Haskell.Bool
 testOnlyOutputZKP x ps targetValue =
     let Bool ac = compile @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
 
@@ -57,7 +57,7 @@ testOnlyOutputZKP x ps targetValue =
         witnessInputs = V.singleton targetValue
         witnessNewVars = witnessGenerator ac witnessInputs
         indexOutputBool = V.singleton $ unPar1 $ acOutput ac
-        plonk   = Plonk @1 @32 omega k1 k2 indexOutputBool ac x
+        plonk   = Plonkup @1 @32 omega k1 k2 indexOutputBool ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
         witness = (PlonkupWitnessInput witnessInputs witnessNewVars, ps)
@@ -68,7 +68,7 @@ testOnlyOutputZKP x ps targetValue =
 
     in unPlonkupInput input Haskell.== unPlonkupInput circuitOutputsTrue Haskell.&& verify @(PlonkBS N) @core setupV circuitOutputsTrue proof
 
-testSafeOneInputZKP :: forall core . (CoreFunction C core) => F -> PlonkProverSecret C -> F -> Haskell.Bool
+testSafeOneInputZKP :: forall core . (CoreFunction C core) => F -> PlonkupProverSecret C -> F -> Haskell.Bool
 testSafeOneInputZKP x ps targetValue =
     let Bool ac = compileForceOne @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
 
@@ -76,7 +76,7 @@ testSafeOneInputZKP x ps targetValue =
         witnessInputs  = V.singleton targetValue
         witnessNewVars = witnessGenerator ac witnessInputs
         indexTargetValue = V.singleton (InVar zero)
-        plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
+        plonk   = Plonkup @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
         witness = (PlonkupWitnessInput witnessInputs witnessNewVars, ps)
@@ -86,7 +86,7 @@ testSafeOneInputZKP x ps targetValue =
 
     in unPlonkupInput input Haskell.== unPlonkupInput onePublicInput Haskell.&& verify @(PlonkBS N) @core setupV onePublicInput proof
 
-testAttackSafeOneInputZKP :: forall core . (CoreFunction C core) => F -> PlonkProverSecret C -> F -> Haskell.Bool
+testAttackSafeOneInputZKP :: forall core . (CoreFunction C core) => F -> PlonkupProverSecret C -> F -> Haskell.Bool
 testAttackSafeOneInputZKP x ps targetValue =
     let Bool ac = compileForceOne @F (lockedByTxId @F @(ArithmeticCircuit F (V.Vector 1)) targetValue) :: Bool (ArithmeticCircuit F (V.Vector 1))
 
@@ -94,7 +94,7 @@ testAttackSafeOneInputZKP x ps targetValue =
         witnessInputs  = V.singleton (targetValue + 1)
         witnessNewVars = witnessGenerator ac witnessInputs
         indexTargetValue = V.singleton (InVar zero)
-        plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
+        plonk   = Plonkup @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
         witness = (PlonkupWitnessInput witnessInputs witnessNewVars, ps)

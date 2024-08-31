@@ -5,7 +5,7 @@
 
 module ZkFold.Base.Protocol.Plonkup (
     module ZkFold.Base.Protocol.Plonkup.Internal,
-    Plonk(..)
+    Plonkup (..)
 ) where
 
 import           GHC.Generics                                        (Par1)
@@ -32,14 +32,14 @@ import           ZkFold.Symbolic.Compiler                            (Arithmetic
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 instance forall i n l c1 c2 t plonk f g1 core.
-        ( Plonk i n l c1 c2 t ~ plonk
+        ( Plonkup i n l c1 c2 t ~ plonk
         , ScalarField c1 ~ f
         , Point c1 ~ g1
         , KnownNat n
         , KnownNat l
         , KnownNat i
-        , KnownNat (PlonkPermutationSize n)
-        , KnownNat (PlonkPolyExtendedLength n)
+        , KnownNat (PlonkupPermutationSize n)
+        , KnownNat (PlonkupPolyExtendedLength n)
         , Arithmetic f
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
@@ -48,13 +48,13 @@ instance forall i n l c1 c2 t plonk f g1 core.
         , ToTranscript t (PointCompressed c1)
         , FromTranscript t (ScalarField c1)
         , CoreFunction c1 core
-        ) => NonInteractiveProof (Plonk i n l c1 c2 t) core where
-    type Transcript (Plonk i n l c1 c2 t)  = t
-    type SetupProve (Plonk i n l c1 c2 t)  = PlonkupProverSetup i n l c1 c2
-    type SetupVerify (Plonk i n l c1 c2 t) = PlonkupVerifierSetup i n l c1 c2
-    type Witness (Plonk i n l c1 c2 t)     = (PlonkupWitnessInput i c1, PlonkProverSecret c1)
-    type Input (Plonk i n l c1 c2 t)       = PlonkupInput l c1
-    type Proof (Plonk i n l c1 c2 t)       = PlonkupProof c1
+        ) => NonInteractiveProof (Plonkup i n l c1 c2 t) core where
+    type Transcript (Plonkup i n l c1 c2 t)  = t
+    type SetupProve (Plonkup i n l c1 c2 t)  = PlonkupProverSetup i n l c1 c2
+    type SetupVerify (Plonkup i n l c1 c2 t) = PlonkupVerifierSetup i n l c1 c2
+    type Witness (Plonkup i n l c1 c2 t)     = (PlonkupWitnessInput i c1, PlonkupProverSecret c1)
+    type Input (Plonkup i n l c1 c2 t)       = PlonkupInput l c1
+    type Proof (Plonkup i n l c1 c2 t)       = PlonkupProof c1
 
     setupProve :: plonk -> SetupProve plonk
     setupProve plonk =
@@ -73,11 +73,11 @@ instance forall i n l c1 c2 t plonk f g1 core.
     verify = plonkupVerify @i @n @l @c1 @c2 @t
 
 instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
-        Witness (Plonk i n l c1 c2 t) ~ (PlonkupWitnessInput i c1, PlonkProverSecret c1), NonInteractiveProof (Plonk i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
+        Witness (Plonkup i n l c1 c2 t) ~ (PlonkupWitnessInput i c1, PlonkupProverSecret c1), NonInteractiveProof (Plonkup i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) Par1)
         vecPubInp <- genSubset (getAllVars ac) (value @l)
         let (omega, k1, k2) = getParams $ value @n
-        pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        pl <- Plonkup omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
         return $ TestData pl (PlonkupWitnessInput wi (witnessGenerator ac wi), secret)

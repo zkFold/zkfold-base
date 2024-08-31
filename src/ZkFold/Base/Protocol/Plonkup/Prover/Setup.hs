@@ -25,7 +25,7 @@ data PlonkupProverSetup i n l c1 c2 = PlonkupProverSetup
     , sigma2s     :: PolyVec (ScalarField c1) n
     , sigma3s     :: PolyVec (ScalarField c1) n
     , relation    :: PlonkupRelation n i (ScalarField c1)
-    , polynomials :: PlonkCircuitPolynomials n c1
+    , polynomials :: PlonkupCircuitPolynomials n c1
     }
 
 instance

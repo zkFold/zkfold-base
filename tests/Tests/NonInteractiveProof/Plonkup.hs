@@ -36,15 +36,15 @@ import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 type PlonkPolyLengthBS = 32
-type PlonkBS n = Plonk 1 PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
-type PlonkPolyExtendedLengthBS = PlonkPolyExtendedLength PlonkPolyLengthBS
+type PlonkBS n = Plonkup 1 PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
+type PlonkPolyExtendedLengthBS = PlonkupPolyExtendedLength PlonkPolyLengthBS
 
 propPlonkConstraintConversion :: (Eq a, Scale a a, FromConstant a a, FiniteField a) => PlonkConstraint 1 a -> Bool
 propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
 propPlonkConstraintSatisfaction :: forall n core . KnownNat n => NonInteractiveProofTestData (PlonkBS n) core -> Bool
-propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
+propPlonkConstraintSatisfaction (TestData (Plonkup _ _ _ iPub ac _) w) =
     let pr   = fromJust $ toPlonkRelation @1 @PlonkPolyLengthBS iPub ac
         (PlonkupWitnessInput wInput wNewVars, _) = w
         (w1', w2', w3') = wmap pr wInput wNewVars
@@ -71,9 +71,9 @@ propPlonkPolyIdentity (TestData plonk w) =
     let zH = polyVecZero @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS
 
         PlonkupProverSetup {..} = setupProve @(PlonkBS n) @core plonk
-        PlonkCircuitPolynomials {..} = polynomials
+        PlonkupCircuitPolynomials {..} = polynomials
         (PlonkupWitnessInput wInput wNewVars, ps) = w
-        PlonkProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ _ _ _ _ _ _ _ _ = ps
+        PlonkupProverSecret b1 b2 b3 b4 b5 b6 _ _ _ _ _ _ _ _ _ _ _ _ _ = ps
         (w1, w2, w3) = wmap relation wInput wNewVars
 
         wPub = iPub <&> negate . \case

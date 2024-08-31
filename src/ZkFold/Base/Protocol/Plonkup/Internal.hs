@@ -21,7 +21,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
 
-data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
+data Plonkup (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonkup {
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
@@ -30,20 +30,20 @@ data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript
         x     :: ScalarField curve1
     }
 
-type PlonkPermutationSize n = 3 * n
+type PlonkupPermutationSize n = 3 * n
 
 -- The maximum degree of the polynomials we need in the protocol is `4 * n + 5`.
-type PlonkPolyExtendedLength n = 4 * n + 6
+type PlonkupPolyExtendedLength n = 4 * n + 6
 
-type PlonkPolyExtended n c = PolyVec (ScalarField c) (PlonkPolyExtendedLength n)
+type PlonkupPolyExtended n c = PolyVec (ScalarField c) (PlonkupPolyExtendedLength n)
 
-instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonk i n l c1 c2 t) where
-    show (Plonk omega k1 k2 iPub ac x) =
-        "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show iPub ++ " " ++ show ac ++ " " ++ show x
+instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonkup i n l c1 c2 t) where
+    show (Plonkup omega k1 k2 iPub ac x) =
+        "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show iPub ++ " " ++ show ac ++ " " ++ show x
 
-instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonk i n l c1 c2 t) where
+instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonkup i n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
         vecPubInp <- genSubset (getAllVars ac) (value @l)
         let (omega, k1, k2) = getParams (value @n)
-        Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        Plonkup omega k1 k2 (Vector vecPubInp) ac <$> arbitrary

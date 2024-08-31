@@ -5,21 +5,21 @@ module ZkFold.Base.Protocol.Plonkup.Prover.Polynomials where
 import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
-import           ZkFold.Base.Protocol.Plonkup.Internal   (PlonkPolyExtended)
+import           ZkFold.Base.Protocol.Plonkup.Internal   (PlonkupPolyExtended)
 
-data PlonkCircuitPolynomials n c = PlonkCircuitPolynomials {
-        ql     :: PlonkPolyExtended n c,
-        qr     :: PlonkPolyExtended n c,
-        qo     :: PlonkPolyExtended n c,
-        qm     :: PlonkPolyExtended n c,
-        qc     :: PlonkPolyExtended n c,
-        qk     :: PlonkPolyExtended n c,
-        sigma1 :: PlonkPolyExtended n c,
-        sigma2 :: PlonkPolyExtended n c,
-        sigma3 :: PlonkPolyExtended n c
+data PlonkupCircuitPolynomials n c = PlonkupCircuitPolynomials {
+        ql     :: PlonkupPolyExtended n c,
+        qr     :: PlonkupPolyExtended n c,
+        qo     :: PlonkupPolyExtended n c,
+        qm     :: PlonkupPolyExtended n c,
+        qc     :: PlonkupPolyExtended n c,
+        qk     :: PlonkupPolyExtended n c,
+        sigma1 :: PlonkupPolyExtended n c,
+        sigma2 :: PlonkupPolyExtended n c,
+        sigma3 :: PlonkupPolyExtended n c
     }
-instance Show (ScalarField c) => Show (PlonkCircuitPolynomials n c) where
-    show (PlonkCircuitPolynomials ql qr qo qm qc qk sigma1 sigma2 sigma3) =
+instance Show (ScalarField c) => Show (PlonkupCircuitPolynomials n c) where
+    show (PlonkupCircuitPolynomials ql qr qo qm qc qk sigma1 sigma2 sigma3) =
         "Circuit Polynomials: "
         ++ show ql ++ " "
         ++ show qr ++ " "

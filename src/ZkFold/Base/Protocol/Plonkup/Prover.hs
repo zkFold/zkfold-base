@@ -24,7 +24,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (fromVector)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup.Input
-import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkPolyExtendedLength)
+import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPolyExtendedLength)
 import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
@@ -36,7 +36,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 plonkupProve :: forall i n l c1 c2 ts core .
     ( KnownNat i
     , KnownNat n
-    , KnownNat (PlonkPolyExtendedLength n)
+    , KnownNat (PlonkupPolyExtendedLength n)
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
     , Arithmetic (ScalarField c1)
@@ -44,15 +44,15 @@ plonkupProve :: forall i n l c1 c2 ts core .
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
     , CoreFunction c1 core
-    ) => PlonkupProverSetup i n l c1 c2 -> (PlonkupWitnessInput i c1, PlonkProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1)
+    ) => PlonkupProverSetup i n l c1 c2 -> (PlonkupWitnessInput i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1)
 plonkupProve PlonkupProverSetup {..}
-        (PlonkupWitnessInput wInput wNewVars, PlonkProverSecret {..})
+        (PlonkupWitnessInput wInput wNewVars, PlonkupProverSecret {..})
     = (PlonkupInput wPub, PlonkupProof {..})
     where
-        PlonkCircuitPolynomials {..} = polynomials
+        PlonkupCircuitPolynomials {..} = polynomials
 
         n = value @n
-        zH = polyVecZero @(ScalarField c1) @n @(PlonkPolyExtendedLength n)
+        zH = polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n)
 
         (w1, w2, w3) = wmap relation wInput wNewVars
 
@@ -83,7 +83,7 @@ plonkupProve PlonkupProverSetup {..}
         zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) sigma2s beta gamma
         zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) sigma3s beta gamma
         gp = rewrapPolyVec (V.zipWith (*) (V.zipWith (*) (fromPolyVec zs1) (fromPolyVec zs2))) zs3
-        z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkPolyExtendedLength n) omega gp
+        z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega gp
         zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
         cmZ = gs `com` z
 
@@ -98,14 +98,14 @@ plonkupProve PlonkupProverSetup {..}
             * (b + scalePV beta sigma2 + scalePV gamma one)
             * (c + scalePV beta sigma3 + scalePV gamma one)
             * zo
-        t4 = (z - one) * polyVecLagrange @(ScalarField c1) @n @(PlonkPolyExtendedLength n) 1 omega
+        t4 = (z - one) * polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega
         t = (t1 + scalePV alpha (t2 - t3) + scalePV (alpha * alpha) t4) `polyVecDiv` zH
 
         t_lo'  = toPolyVec $ V.take (fromIntegral n) $ fromPolyVec t
         t_mid' = toPolyVec $ V.take (fromIntegral n) $ V.drop (fromIntegral n) $ fromPolyVec t
         t_hi'  = toPolyVec $ V.drop (fromIntegral $ 2*n) $ fromPolyVec t
-        t_lo   = t_lo' + scalePV b10 (polyVecZero @(ScalarField c1) @n @(PlonkPolyExtendedLength n) + one)
-        t_mid  = t_mid' + scalePV b11 (polyVecZero @(ScalarField c1) @n @(PlonkPolyExtendedLength n) + one) - scalePV b10 one
+        t_lo   = t_lo' + scalePV b10 (polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) + one)
+        t_mid  = t_mid' + scalePV b11 (polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) + one) - scalePV b10 one
         t_hi   = t_hi' - scalePV b11 one
         cmT1   = gs `com` t_lo
         cmT2   = gs `com` t_mid
@@ -132,7 +132,7 @@ plonkupProve PlonkupProverSetup {..}
             `transcript` s2_xi
             `transcript` z_xi
 
-        lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkPolyExtendedLength n) 1 omega `evalPolyVec` xi
+        lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
         zH_xi = zH `evalPolyVec` xi
         r   = scalePV (a_xi * b_xi) qm
             + scalePV a_xi ql

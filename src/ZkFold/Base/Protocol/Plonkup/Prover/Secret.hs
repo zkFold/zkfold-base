@@ -8,7 +8,7 @@ import           Test.QuickCheck                         (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
 
-data PlonkProverSecret c = PlonkProverSecret {
+data PlonkupProverSecret c = PlonkupProverSecret {
         b1  :: ScalarField c,
         b2  :: ScalarField c,
         b3  :: ScalarField c,
@@ -30,8 +30,8 @@ data PlonkProverSecret c = PlonkProverSecret {
         b19 :: ScalarField c
     } deriving Generic
 
-instance Show (ScalarField c) => Show (PlonkProverSecret c) where
-    show (PlonkProverSecret b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19) =
+instance Show (ScalarField c) => Show (PlonkupProverSecret c) where
+    show (PlonkupProverSecret b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19) =
         "Prover Secret: "
         ++ show b1 ++ " "
         ++ show b2 ++ " "
@@ -53,8 +53,8 @@ instance Show (ScalarField c) => Show (PlonkProverSecret c) where
         ++ show b18 ++ " "
         ++ show b19
 
-instance Arbitrary (ScalarField c) => Arbitrary (PlonkProverSecret c) where
-    arbitrary = PlonkProverSecret <$>
+instance Arbitrary (ScalarField c) => Arbitrary (PlonkupProverSecret c) where
+    arbitrary = PlonkupProverSecret <$>
         arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
         <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
         <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
