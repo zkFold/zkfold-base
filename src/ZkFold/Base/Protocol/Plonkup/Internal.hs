@@ -44,6 +44,6 @@ instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownN
 instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonkup i n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
-        vecPubInp <- genSubset (getAllVars ac) (value @l)
+        vecPubInp <- genVarSet (value @l) ac
         let (omega, k1, k2) = getParams (value @n)
         Plonkup omega k1 k2 (Vector vecPubInp) ac <$> arbitrary

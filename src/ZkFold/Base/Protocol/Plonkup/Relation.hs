@@ -11,7 +11,7 @@ import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
-import           Test.QuickCheck                                     (Arbitrary(..), Gen, shuffle)
+import           Test.QuickCheck                                     (Arbitrary(..), Gen)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -23,7 +23,8 @@ import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPer
 import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint (..))
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint        (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
-import           ZkFold.Prelude                                      (length, replicate, take)
+import           ZkFold.Base.Protocol.Plonkup.Utils                  (genVarSet)
+import           ZkFold.Prelude                                      (length, replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
@@ -53,7 +54,7 @@ instance Show a => Show (PlonkupRelation i n l a) where
         ++ show t ++ " "
         ++ show sigma
 
-instance 
+instance
         ( KnownNat i
         , KnownNat n
         , KnownNat (PlonkupPermutationSize n)
@@ -63,7 +64,7 @@ instance
         ) => Arbitrary (PlonkupRelation i n l a) where
     arbitrary = do
         ac   <- arbitrary :: Gen (ArithmeticCircuit a (Vector i) Par1)
-        xPub <- fmap unsafeToVector $ shuffle $ take (value @l) $ getAllVars ac
+        xPub <- unsafeToVector <$> genVarSet (value @l) ac
         return $ fromJust $ toPlonkupRelation xPub ac
 
 toPlonkupRelation :: forall i n l a .
