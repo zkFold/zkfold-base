@@ -16,12 +16,12 @@ data PlonkupVerifierSetup i n l c1 c2 = PlonkupVerifierSetup
     { omega       :: ScalarField c1
     , k1          :: ScalarField c1
     , k2          :: ScalarField c1
-    , iPub        :: Vector l (Var (Vector i))
+    , xPub        :: Vector l (Var (Vector i))
     , h1          :: Point c2
     , sigma1s     :: PolyVec (ScalarField c1) n
     , sigma2s     :: PolyVec (ScalarField c1) n
     , sigma3s     :: PolyVec (ScalarField c1) n
-    , relation    :: PlonkupRelation n i (ScalarField c1)
+    , relation    :: PlonkupRelation i n l (ScalarField c1)
     , commitments :: PlonkupCircuitCommitments c1
     }
 
@@ -31,14 +31,14 @@ instance
         , Show (BaseField c1)
         , Show (BaseField c2)
         , Show (ScalarField c1)
-        , Show (PlonkupRelation n i (ScalarField c1))
+        , Show (PlonkupRelation i n l (ScalarField c1))
         ) => Show (PlonkupVerifierSetup i n l c1 c2) where
     show PlonkupVerifierSetup {..} =
         "Verifier setup: "
         ++ show omega ++ " "
         ++ show k1 ++ " "
         ++ show k2 ++ " "
-        ++ show iPub ++ " "
+        ++ show xPub ++ " "
         ++ show h1 ++ " "
         ++ show sigma1s ++ " "
         ++ show sigma2s ++ " "

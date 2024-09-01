@@ -3,6 +3,7 @@ module Main where
 import           Control.Monad             (unless)
 import           Prelude                   hiding (Bool, Fractional (..), Num (..), drop, length, replicate, take, (==))
 import           System.Environment        (lookupEnv)
+
 import           Tests.ArithmeticCircuit   (specArithmeticCircuit)
 import           Tests.Arithmetization     (specArithmetization)
 import           Tests.Binary              (specBinary)
@@ -15,6 +16,7 @@ import           Tests.Group               (specAdditiveGroup)
 import           Tests.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
+import           Tests.Plonkup             (specPlonkup)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
 import           Tests.Univariate          (specUnivariate)
@@ -43,7 +45,8 @@ main = do
     -- Arithmetization
     specArithmetization
 
-    -- Non-interactive proofs
+    -- Protocols
+    specPlonkup
     specNonInteractiveProof
 
     -- Cryptography

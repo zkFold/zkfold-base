@@ -17,6 +17,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , PolyVec
     , fromPolyVec
     , toPolyVec
+    , (.*)
     , rewrapPolyVec
     , castPolyVec
     , evalPolyVec
@@ -40,6 +41,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
 import           Control.DeepSeq                  (NFData (..))
 import qualified Data.Vector                      as V
 import           GHC.Generics                     (Generic)
+import           GHC.IsList                       (IsList(..))
 import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/),
                                                    (^))
 import qualified Prelude                          as P
@@ -289,6 +291,9 @@ instance (Field c, KnownNat size, Eq c) => MultiplicativeMonoid (PolyVec c size)
 
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec <$> V.replicateM (fromIntegral $ value @size) arbitrary
+
+(.*) :: forall c size . (Field c, KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
+l .* r = toPolyVec $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
 
 -- p(x) = a0 + a1 * x
 polyVecLinear :: forall c size . (Ring c, KnownNat size) => c -> c -> PolyVec c size

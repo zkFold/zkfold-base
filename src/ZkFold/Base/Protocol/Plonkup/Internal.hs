@@ -25,7 +25,7 @@ data Plonkup (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcri
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
-        iPub  :: Vector l (Var (Vector i)),
+        xPub  :: Vector l (Var (Vector i)),
         ac    :: ArithmeticCircuit (ScalarField curve1) (Vector i) Par1,
         x     :: ScalarField curve1
     }

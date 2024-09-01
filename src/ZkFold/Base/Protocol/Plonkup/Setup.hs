@@ -26,14 +26,14 @@ data PlonkupSetup i n l c1 c2 = PlonkupSetup
     { omega       :: ScalarField c1
     , k1          :: ScalarField c1
     , k2          :: ScalarField c1
-    , iPub        :: Vector l (Var (Vector i))
+    , xPub        :: Vector l (Var (Vector i))
     , gs          :: V.Vector (Point c1)
     , h0          :: Point c2
     , h1          :: Point c2
     , sigma1s     :: PolyVec (ScalarField c1) n
     , sigma2s     :: PolyVec (ScalarField c1) n
     , sigma3s     :: PolyVec (ScalarField c1) n
-    , relation    :: PlonkupRelation n i (ScalarField c1)
+    , relation    :: PlonkupRelation i n l (ScalarField c1)
     , polynomials :: PlonkupCircuitPolynomials n c1
     , commitments :: PlonkupCircuitCommitments c1
     }
@@ -44,14 +44,14 @@ instance
         , Show (BaseField c1)
         , Show (BaseField c2)
         , Show (ScalarField c1)
-        , Show (PlonkupRelation n i (ScalarField c1))
+        , Show (PlonkupRelation i n l (ScalarField c1))
         ) => Show (PlonkupSetup i n l c1 c2) where
     show PlonkupSetup {..} =
         "Setup: "
         ++ show omega ++ " "
         ++ show k1 ++ " "
         ++ show k2 ++ " "
-        ++ show iPub ++ " "
+        ++ show xPub ++ " "
         ++ show gs ++ " "
         ++ show h0 ++ " "
         ++ show h1 ++ " "
@@ -77,7 +77,7 @@ plonkupSetup Plonkup {..} =
         h0   = gen
         h1   = x `mul` gen
 
-        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation iPub ac :: PlonkupRelation n i (ScalarField c1)
+        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation xPub ac :: PlonkupRelation i n l (ScalarField c1)
 
         f i = case (i-!1) `Prelude.div` value @n of
             0 -> omega^i

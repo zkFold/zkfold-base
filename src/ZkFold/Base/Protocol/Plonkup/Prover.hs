@@ -8,9 +8,6 @@ module ZkFold.Base.Protocol.Plonkup.Prover
     , plonkupProve
     ) where
 
-import           Data.Functor                                        ((<&>))
-import           Data.Functor.Rep                                    (index)
-import qualified Data.Map.Strict                                     as Map
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
@@ -34,8 +31,7 @@ import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 plonkupProve :: forall i n l c1 c2 ts core .
-    ( KnownNat i
-    , KnownNat n
+    ( KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
@@ -46,7 +42,7 @@ plonkupProve :: forall i n l c1 c2 ts core .
     , CoreFunction c1 core
     ) => PlonkupProverSetup i n l c1 c2 -> (PlonkupWitnessInput i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1)
 plonkupProve PlonkupProverSetup {..}
-        (PlonkupWitnessInput wInput wNewVars, PlonkupProverSecret {..})
+        (PlonkupWitnessInput wInput, PlonkupProverSecret {..})
     = (PlonkupInput wPub, PlonkupProof {..})
     where
         PlonkupCircuitPolynomials {..} = polynomials
@@ -54,13 +50,10 @@ plonkupProve PlonkupProverSetup {..}
         n = value @n
         zH = polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n)
 
-        (w1, w2, w3) = wmap relation wInput wNewVars
+        (w1, w2, w3) = witness relation wInput
+        wPub = pubInput relation wInput
 
-        wPub = iPub <&> negate . \case
-            InVar j -> index wInput j
-            NewVar j -> wNewVars Map.! j
-
-        pubPoly = polyVecInLagrangeBasis omega $ toPolyVec @(ScalarField c1) @n $ fromList $ fromVector wPub
+        pubPoly = polyVecInLagrangeBasis omega $ toPolyVec @(ScalarField c1) @n $ fromList $ fromVector (negate <$> wPub)
 
         a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega w1
         b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega w2

@@ -80,4 +80,4 @@ instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithm
         let (omega, k1, k2) = getParams $ value @n
         pl <- Plonkup omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
-        return $ TestData pl (PlonkupWitnessInput wi (witnessGenerator ac wi), secret)
+        return $ TestData pl (PlonkupWitnessInput wi, secret)

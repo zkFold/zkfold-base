@@ -71,7 +71,7 @@ plonkupVerify
 
         zH_xi        = polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi
         lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
-        pubPoly_xi   = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega (toPolyVec $ fromList $ fromVector wPub) `evalPolyVec` xi
+        pubPoly_xi   = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega (toPolyVec $ fromList $ fromVector (negate <$> wPub)) `evalPolyVec` xi
 
         r0 =
                 pubPoly_xi

@@ -1,40 +1,70 @@
-{-# LANGUAGE NoStarIsType  #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoStarIsType         #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Relation where
 
 import           Data.Bool                                           (bool)
-import           Data.Map                                            (Map, elems, keys)
+import           Data.Map                                            (elems, keys)
+import           Data.Maybe                                          (fromJust)
 import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
+import           Test.QuickCheck                                     (Arbitrary(..), Gen, shuffle)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations              (Permutation, fromCycles, mkIndexPartition)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec, toPolyVec)
-import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
+import           ZkFold.Base.Data.Vector                             (Vector, fromVector, unsafeToVector)
+import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPermutationSize)
 import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint (..))
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint        (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
-import           ZkFold.Prelude                                      (length, replicate)
+import           ZkFold.Prelude                                      (length, replicate, take)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
-data PlonkupRelation n i a = PlonkupRelation
-    { qM    :: PolyVec a n
-    , qL    :: PolyVec a n
-    , qR    :: PolyVec a n
-    , qO    :: PolyVec a n
-    , qC    :: PolyVec a n
-    , qK    :: PolyVec a n
-    , t     :: PolyVec a n
-    , sigma :: Permutation (3 * n)
-    , wmap  :: Vector i a -> Map Natural a -> (PolyVec a n, PolyVec a n, PolyVec a n)
+data PlonkupRelation i n l a = PlonkupRelation
+    { qM       :: PolyVec a n
+    , qL       :: PolyVec a n
+    , qR       :: PolyVec a n
+    , qO       :: PolyVec a n
+    , qC       :: PolyVec a n
+    , qK       :: PolyVec a n
+    , t        :: PolyVec a n
+    , sigma    :: Permutation (3 * n)
+    , witness  :: Vector i a -> (PolyVec a n, PolyVec a n, PolyVec a n)
+    , pubInput :: Vector i a -> Vector l a
     }
+
+instance Show a => Show (PlonkupRelation i n l a) where
+    show PlonkupRelation {..} =
+        "Plonkup Relation: "
+        ++ show qM ++ " "
+        ++ show qL ++ " "
+        ++ show qR ++ " "
+        ++ show qO ++ " "
+        ++ show qC ++ " "
+        ++ show qK ++ " "
+        ++ show t ++ " "
+        ++ show sigma
+
+instance 
+        ( KnownNat i
+        , KnownNat n
+        , KnownNat (PlonkupPermutationSize n)
+        , KnownNat l
+        , Arbitrary a
+        , Arithmetic a
+        ) => Arbitrary (PlonkupRelation i n l a) where
+    arbitrary = do
+        ac   <- arbitrary :: Gen (ArithmeticCircuit a (Vector i) Par1)
+        xPub <- fmap unsafeToVector $ shuffle $ take (value @l) $ getAllVars ac
+        return $ fromJust $ toPlonkupRelation xPub ac
 
 toPlonkupRelation :: forall i n l a .
        KnownNat i
@@ -44,7 +74,7 @@ toPlonkupRelation :: forall i n l a .
     => Arithmetic a
     => Vector l (Var (Vector i))
     -> ArithmeticCircuit a (Vector i) Par1
-    -> Maybe (PlonkupRelation n i a)
+    -> Maybe (PlonkupRelation i n l a)
 toPlonkupRelation xPub ac =
     let pubInputConstraints = map var (fromVector xPub)
         plonkConstraints    = elems (acSystem ac)
@@ -74,10 +104,11 @@ toPlonkupRelation xPub ac =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c
 
-        w1 i   = toPolyVec $ fromList $ map (indexW ac i) a
-        w2 i   = toPolyVec $ fromList $ map (indexW ac i) b
-        w3 i   = toPolyVec $ fromList $ map (indexW ac i) c
-        wmap i _ = (w1 i, w2 i, w3 i)
+        w1 i   = toPolyVec $ fromList $ fmap (indexW ac i) a
+        w2 i   = toPolyVec $ fromList $ fmap (indexW ac i) b
+        w3 i   = toPolyVec $ fromList $ fmap (indexW ac i) c
+        witness i  = (w1 i, w2 i, w3 i)
+        pubInput i = fmap (indexW ac i) xPub
 
     in if n' <= value @n
         then Just $ PlonkupRelation {..}
@@ -91,7 +122,7 @@ toPlonkRelation :: forall i n l a .
     => Arithmetic a
     => Vector l (Var (Vector i))
     -> ArithmeticCircuit a (Vector i) Par1
-    -> Maybe (PlonkupRelation n i a)
+    -> Maybe (PlonkupRelation i n l a)
 toPlonkRelation xPub ac0 =
     let ac = desugarRanges ac0
     in toPlonkupRelation xPub ac

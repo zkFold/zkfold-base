@@ -7,7 +7,7 @@ import           Data.Typeable                               (Proxy (..), Typeab
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (Arbitrary, Testable (property), withMaxSuccess)
-import           Tests.NonInteractiveProof.Plonkup           (PlonkBS, specPlonk)
+import           Tests.Plonkup                               (PlonkBS)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.KZG                    (KZG)
@@ -35,6 +35,4 @@ specNonInteractiveProof' = hspec $ do
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
-
-    specPlonk
     specNonInteractiveProof' @(PlonkBS 2) @HaskellCore
