@@ -130,13 +130,19 @@ instance (Eq a, MultiplicativeMonoid a) => Package (ArithmeticCircuit a i) where
     unpackWith f (behead -> (c, o)) = crown c <$> f o
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
-instance (Arithmetic a, Ord (Rep i), Representable i, Foldable i, ToConstant (Rep i) Natural) => Symbolic (ArithmeticCircuit a i) where
+instance
+  ( Arithmetic a, Ord (Rep i), Representable i, Foldable i
+  , ToConstant (Rep i), Const (Rep i) ~ Natural
+  ) => Symbolic (ArithmeticCircuit a i) where
     type BaseField (ArithmeticCircuit a i) = a
     symbolicF (behead -> (c, o)) _ f = uncurry (set #acOutput) (runState (f o) c)
 
 -------------------------------- MonadCircuit instance ------------------------------
 
-instance (Arithmetic a, Ord (Rep i), Representable i, Foldable i, o ~ U1, ToConstant (Rep i) Natural) => MonadCircuit (Var i) a (State (ArithmeticCircuit a i o)) where
+instance
+  ( Arithmetic a, Ord (Rep i), Representable i, Foldable i, o ~ U1
+  , ToConstant (Rep i), Const (Rep i) ~ Natural
+  ) => MonadCircuit (Var i) a (State (ArithmeticCircuit a i o)) where
     newRanged upperBound witness = do
         let s   = sources @a witness
             b   = fromConstant upperBound
@@ -211,7 +217,10 @@ toField :: Arithmetic a => a -> VarField
 toField = toZp . fromConstant . fromBinary @Natural . castBits . binaryExpansion
 
 -- TODO: Remove the hardcoded constant.
-toVar :: forall a i. (Arithmetic a, ToConstant (Rep i) Natural, Representable i, Foldable i) => [Var i] -> Constraint a i -> Natural
+toVar ::
+  forall a i.
+  (Arithmetic a, ToConstant (Rep i), Const (Rep i) ~ Natural) =>
+  (Representable i, Foldable i) => [Var i] -> Constraint a i -> Natural
 toVar srcs c = force $ fromZp ex
     where
         l  = Haskell.fromIntegral (Haskell.length (tabulate @i (\_ -> error "can't reach")))
@@ -221,9 +230,13 @@ toVar srcs c = force $ fromZp ex
         varF (InVar inV) = toConstant inV
         v  = (+ r) . fromConstant . varF
         x  = g ^ fromZp (evalPolynomial evalMonomial v $ mapCoeffs toField c)
-        ex = foldr (\p y -> x ^ (varF p) + y) x srcs
+        ex = foldr (\p y -> x ^ varF p + y) x srcs
 
-newVariableWithSource :: (Arithmetic a, ToConstant (Rep i) Natural, Representable i, Foldable i) => [Var i] -> (Var i -> Constraint a i) -> State (ArithmeticCircuit a i U1) Natural
+newVariableWithSource ::
+  (Arithmetic a, ToConstant (Rep i), Const (Rep i) ~ Natural) =>
+  (Representable i, Foldable i) =>
+  [Var i] -> (Var i -> Constraint a i) ->
+  State (ArithmeticCircuit a i U1) Natural
 newVariableWithSource srcs con = toVar srcs . con . NewVar . fst <$> do
     zoom #acRNG $ get >>= traverse put . uniformR (0, order @VarField -! 1)
 
@@ -241,7 +254,10 @@ type ConstraintMonomial = Mono Natural Natural
 type Constraint c i = Poly c (Var i) Natural
 
 -- | Adds a constraint to the arithmetic circuit.
-addConstraint :: (Arithmetic a, Foldable i, Representable i, ToConstant (Rep i) Natural) => Constraint a i -> State (ArithmeticCircuit a i U1) ()
+addConstraint ::
+  (Arithmetic a, Foldable i, Representable i) =>
+  (ToConstant (Rep i), Const (Rep i) ~ Natural) =>
+  Constraint a i -> State (ArithmeticCircuit a i U1) ()
 addConstraint c = zoom #acSystem . modify $ insert (toVar [] c) c
 
 rangeConstraint :: Natural -> a -> State (ArithmeticCircuit a i U1) ()

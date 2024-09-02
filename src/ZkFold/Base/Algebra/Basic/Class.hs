@@ -38,13 +38,13 @@ class FromConstant a b where
 instance FromConstant a a where
     fromConstant = id
 
-class ToConstant a b where
-    toConstant :: a -> b
+class ToConstant a where
+    type Const a :: Type
+    toConstant :: a -> Const a
 
-instance ToConstant a a where
-    toConstant = id
-
-instance ToConstant Void b where
+-- FIXME to be removed in #223
+instance ToConstant Void where
+    type Const Void = Natural
     toConstant = absurd
 
 --------------------------------------------------------------------------------

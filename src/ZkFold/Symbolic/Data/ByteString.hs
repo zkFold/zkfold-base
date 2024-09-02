@@ -144,7 +144,8 @@ class BitState c n b where
     isUnset :: c n b -> Natural -> Bool b
 
 
-instance ToConstant (ByteString n (Interpreter (Zp p))) Natural where
+instance ToConstant (ByteString n (Interpreter (Zp p))) where
+    type Const (ByteString n (Interpreter (Zp p))) = Natural
     toConstant (ByteString (Interpreter bits)) = Haskell.foldl (\y p -> toConstant p + base * y) 0 bits
         where base = 2
 

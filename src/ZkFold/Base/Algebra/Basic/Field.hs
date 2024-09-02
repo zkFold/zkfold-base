@@ -52,7 +52,8 @@ residue = (`Haskell.mod` fromIntegral (value @p))
 toZp :: forall p . KnownNat p => Integer -> Zp p
 toZp = Zp . residue @p
 
-instance ToConstant (Zp p) Natural where
+instance ToConstant (Zp p) where
+    type Const (Zp p) = Natural
     toConstant = fromZp
 
 instance (KnownNat p, KnownNat (NumberOfBits (Zp p))) => Finite (Zp p) where
