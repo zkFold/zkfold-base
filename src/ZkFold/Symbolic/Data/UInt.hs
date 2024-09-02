@@ -391,7 +391,7 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize rs) => StrictConv Natural (U
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r c) where
     strictConv = strictConv . toConstant @_ @Natural
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r, NumberOfBits (BaseField c) <= n) => StrictConv (c Par1) (UInt n r c) where
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictConv (c Par1) (UInt n r c) where
     strictConv a = UInt $ symbolicF a (\p -> V.unsafeToVector [unPar1 p]) solve
         where
             solve :: MonadCircuit i (BaseField c) m => Par1 i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)

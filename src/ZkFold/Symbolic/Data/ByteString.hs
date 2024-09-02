@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -19,35 +19,37 @@ module ZkFold.Symbolic.Data.ByteString
     , toBsBits
     ) where
 
-import           Control.DeepSeq                  (NFData)
-import           Control.Monad                    (replicateM)
-import qualified Data.ByteString                  as Bytes
-import           Data.Kind                        (Type)
-import           Data.List                        (reverse, unfoldr)
-import           Data.Maybe                       (Maybe (..))
-import           Data.String                      (IsString (..))
-import           Data.Traversable                 (for)
-import           GHC.Generics                     (Generic, Par1 (..))
-import           GHC.Natural                      (naturalFromInteger)
-import           Prelude                          (Integer, drop, fmap, otherwise, pure, return, take, type (~), ($),
-                                                   (.), (<$>), (<), (<>), (==), (>=))
-import qualified Prelude                          as Haskell
-import           Test.QuickCheck                  (Arbitrary (..), chooseInteger)
+import           Control.DeepSeq                    (NFData)
+import           Control.Monad                      (replicateM)
+import qualified Data.ByteString                    as Bytes
+import           Data.Kind                          (Type)
+import           Data.List                          (reverse, unfoldr)
+import           Data.Maybe                         (Maybe (..))
+import           Data.String                        (IsString (..))
+import           Data.Traversable                   (for)
+import           GHC.Generics                       (Generic, Par1 (..))
+import           GHC.Natural                        (naturalFromInteger)
+import           Prelude                            (Integer, drop, fmap, otherwise, pure, return, take, type (~), ($),
+                                                     (.), (<$>), (<), (<>), (==), (>=))
+import qualified Prelude                            as Haskell
+import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor        (HFunctor (..))
-import           ZkFold.Base.Data.Package         (packed, unpacked)
-import qualified ZkFold.Base.Data.Vector          as V
-import           ZkFold.Base.Data.Vector          (Vector (..))
-import           ZkFold.Prelude                   (replicateA, (!!))
+import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
+import           ZkFold.Base.Data.Package           (packed, unpacked)
+import qualified ZkFold.Base.Data.Vector            as V
+import           ZkFold.Base.Data.Vector            (Vector (..))
+import           ZkFold.Prelude                     (replicateA, (!!))
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool        (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Class       (SymbolicData)
+import           ZkFold.Symbolic.Data.Bool          (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Class         (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit     (ClosedPoly, MonadCircuit, newAssigned)
+import           ZkFold.Symbolic.Data.Eq            (Eq)
+import           ZkFold.Symbolic.Data.Eq.Structural
+import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -59,6 +61,10 @@ deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString 
 deriving stock instance Haskell.Eq (c (Vector n)) => Haskell.Eq (ByteString n c)
 deriving anyclass instance NFData (c (Vector n)) => NFData (ByteString n c)
 deriving newtype instance SymbolicData (ByteString n c)
+
+
+deriving via (Structural (ByteString n c))
+         instance (Symbolic c) => Eq (Bool c) (ByteString n c)
 
 instance
     ( FromConstant Natural (ByteString 8 c)
@@ -229,7 +235,6 @@ instance
 
 instance
   ( Symbolic c
-  , Mod k m ~ 0
   , (Div k m) * m ~ k
   ) => Concat (ByteString m c) (ByteString k c) where
     concat bs = (ByteString . packed) $ V.unsafeConcat @(Div k m) ( Haskell.map (\(ByteString bits) -> unpacked bits) bs)

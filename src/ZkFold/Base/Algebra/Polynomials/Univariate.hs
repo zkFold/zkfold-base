@@ -64,6 +64,9 @@ toPoly = removeZeros . P
 fromPoly :: Poly c -> V.Vector c
 fromPoly (P cs) = cs
 
+instance FromConstant c c' => FromConstant c (Poly c') where
+    fromConstant = P . V.singleton . fromConstant
+
 instance (Ring c, Eq c) => AdditiveSemigroup (Poly c) where
     P l + P r = removeZeros $ P $ V.zipWith (+) lPadded rPadded
       where

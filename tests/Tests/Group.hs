@@ -13,6 +13,7 @@ import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.EllipticCurve.BN254
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 
 specAdditiveGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
@@ -31,5 +32,8 @@ specAdditiveGroup' = hspec $ do
 
 specAdditiveGroup :: IO ()
 specAdditiveGroup = do
+    specAdditiveGroup' @(Point BN254_G1)
+    specAdditiveGroup' @(Point BN254_G2)
+
     specAdditiveGroup' @(Point BLS12_381_G1)
     specAdditiveGroup' @(Point BLS12_381_G2)
