@@ -5,31 +5,29 @@
 
 module ZkFold.Base.Protocol.ARK.Protostar.Oracle where
 
-import           Data.Char                                           (ord)
-import           Data.Map.Strict                                     (Map)
-import qualified Data.Map.Strict                                     as M
-import           Data.Proxy                                          (Proxy (..))
+import           Data.Char                                      (ord)
+import           Data.Map.Strict                                (Map)
+import qualified Data.Map.Strict                                as M
+import           Data.Proxy                                     (Proxy (..))
 import           GHC.Generics
 import           GHC.TypeLits
-import           Prelude                                             (($), (.), (<$>))
-import qualified Prelude                                             as P
+import           Prelude                                        (($), (.), (<$>))
+import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC                (mimcHash2)
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants      (mimcConstants)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHash2)
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 
 class RandomOracle a b where
     oracle :: a -> b
     default oracle :: (Generic a, RandomOracle' (Rep a) b) => a -> b
     oracle = oracle' . from
 
+instance (Ring a, FromConstant P.Integer a) => RandomOracle P.Integer a where
+    oracle = oracle @a . fromConstant
+
 instance (AdditiveMonoid b, RandomOracle a b) => RandomOracle (Map k a) b where
     oracle = oracle . M.elems
-
---instance (Ring a, FromConstant Natural a) => RandomOracle (ArithmeticCircuit a (Vector n) (Vector k)) a where
---    oracle ArithmeticCircuit{..} = oracle (acRange, fromConstant @_ @a <$> acInput, fromConstant @_ @a <$> acVarOrder, fromConstant @_ @a <$> acOutput)
 
 instance Ring a => RandomOracle a a where
     oracle a = mimcHash2 mimcConstants a zero zero

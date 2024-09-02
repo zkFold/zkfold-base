@@ -12,7 +12,7 @@ import           Data.List                                            (foldl')
 import           Data.Map.Strict                                      (Map, (!))
 import qualified Data.Map.Strict                                      as M
 import           GHC.Generics                                         (Generic)
-import           Prelude                                              (and, otherwise, type (~), ($), (<$>), (<=), (<>),
+import           Prelude                                              (and, otherwise, type (~), ($), (<$>), (<=), (<>), (<),
                                                                        (==))
 import qualified Prelude                                              as P
 
@@ -34,6 +34,17 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                    (FieldElement)
 
+
+import Debug.Trace
+
+fact
+    :: forall a n c
+    .  Arithmetic a
+    => c ~ ArithmeticCircuit a (Vector n)
+    => KnownNat n
+    => MultiplicativeSemigroup (FieldElement c)
+    => Vector n (FieldElement c) -> Vector n (FieldElement c)
+fact v = V.generate (\i -> if i == 0 then v V.!! 0 * v V.!! 1 else v V.!! 0)
 
 {--
 
@@ -57,7 +68,7 @@ data RecursiveCircuit n a
         , circuit    :: ArithmeticCircuit a (Vector n) (Vector n)
         } deriving (Generic, NFData)
 
-instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCircuit n a) where
+instance (KnownNat n, Arithmetic a, P.Show a) => SPS.SpecialSoundProtocol a (RecursiveCircuit n a) where
     type Witness a (RecursiveCircuit n a) = Map Natural a
     type Input a (RecursiveCircuit n a) = Vector n a
     type ProverMessage t (RecursiveCircuit n a) = a
@@ -87,29 +98,28 @@ instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (RecursiveCirc
 
             witness = witnessGenerator ac i
 
-            varToNatural :: Var (Vector n) -> Natural
-            varToNatural (NewVar v) = v + value @n
-            varToNatural (InVar i) = fromZp i
-
-            sys :: [Poly a Natural Natural]
-            sys = mapVars varToNatural <$> M.elems (acSystem $ circuit rc)
+            sys :: [Poly a (Var (Vector n)) Natural]
+            sys = M.elems (acSystem $ circuit rc)
 
             -- Substitutes all non-input variab;es with their actual values.
             -- Decreases indices of input variables by one
             --
-            remap :: (a, Map Natural Natural) -> (a, Map Natural Natural)
+            remap :: (a, Map (Var (Vector n)) Natural) -> (a, Map Natural Natural)
             remap (coeff, vars) =
                 foldl'
-                    (\(cf, m) (v, p) -> if v <= n then (cf, M.insert (v -! 1) p m) else (cf * fromConstant ((witness ! v)^p), m))
+                    (\(cf, m) (v, p) -> 
+                        case v of
+                          InVar i -> (cf, M.insert (fromZp i) p m) 
+                          NewVar nv -> (cf * fromConstant ((witness ! nv)^p), m))
                     (coeff, M.empty)
                     (M.toList vars)
 
-            remapMono :: (a, Mono Natural Natural) -> (a, Mono Natural Natural)
+            remapMono :: (a, Mono (Var (Vector n)) Natural) -> (a, Mono Natural Natural)
             remapMono (coeff, M vars) =
                 let (newCoeff, newVars) = remap (coeff, vars)
                  in (newCoeff, M newVars)
 
-            remapPoly :: Poly a Natural Natural -> Poly a Natural Natural
+            remapPoly :: Poly a (Var (Vector n)) Natural -> Poly a Natural Natural
             remapPoly (P monos) = P (remapMono <$> monos)
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
@@ -173,6 +183,7 @@ instanceProof
     :: forall n c a
     .  Arithmetic a
     => KnownNat n
+    => P.Show a
     => HomomorphicCommit a [a] c
     => a
     -> RecursiveCircuit n a

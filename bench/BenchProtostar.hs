@@ -33,7 +33,7 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
 import           ZkFold.Symbolic.Data.UInt
 
-
+    {--
 fact
     :: forall a n c
     .  Arithmetic a
@@ -42,6 +42,8 @@ fact
     => MultiplicativeSemigroup (FieldElement c)
     => Vector n (FieldElement c) -> Vector n (FieldElement c)
 fact v = V.generate (\i -> if i == 0 then v V.!! 0 * v V.!! 1 else v V.!! 0)
+--}
+
 
 -- | Generate random addition circuit of given size
 --
@@ -57,21 +59,21 @@ input = do
     evaluate . force $ (value @k, v)
 
 benchOps
-    :: forall n k p
+    :: forall n k p 
     .  KnownNat n
     => KnownNat k
-    => PrimeField (Zp p)
+    => p ~ BLS12_381_Scalar
     => Benchmark
 benchOps = env (input @n @k) $ \ ~inp ->
     bench ("Folding a function of size " <> show (value @n) <> " arguments with " <> show (value @k) <> " iterations") $
         nf (\(iter, inp) -> fold @(Zp p) @n @(Point BLS12_381_G1) (fact @(Zp p) @n) iter inp) inp
 
 foldFact :: Natural -> Vector 2 Natural -> FoldResult 2 (Point BLS12_381_G1) (Zp BLS12_381_Scalar)
-foldFact iter inp = fold (fact @(Zp BLS12_381_Scalar) @2) iter (toZp . fromIntegral <$> inp)
+foldFact iter inp = fold fact iter (toZp . fromIntegral <$> inp)
 
 main :: IO ()
 main = do
-    print $ foldFact 1 (V.unsafeToVector [1, 2])
+    print $ foldFact 10 (V.unsafeToVector [1, 2])
     defaultMain
       [ benchOps @2 @32  @BLS12_381_Scalar
       , benchOps @2 @64  @BLS12_381_Scalar

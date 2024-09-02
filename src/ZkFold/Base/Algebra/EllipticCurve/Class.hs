@@ -1,18 +1,25 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
-import           Data.Functor                    ((<&>))
-import           Data.Kind                       (Type)
-import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), div, sum, (/), (^))
-import           Test.QuickCheck                 hiding (scale)
+import           Control.DeepSeq                  (NFData)
+import           Data.Functor                     ((<&>))
+import           Data.Kind                        (Type)
+import           GHC.Generics                     (Generic)
+import           Prelude                          hiding (Num (..), sum, (/), (^))
+import           Test.QuickCheck                  hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number
 
 data Point curve = Point { _x :: BaseField curve, _y :: BaseField curve } | Inf
+    deriving (Generic)
+
+deriving instance NFData (BaseField curve) => NFData (Point curve)
 
 class EllipticCurve curve where
 
@@ -40,8 +47,21 @@ instance (EllipticCurve curve, Eq (BaseField curve)) => Eq (Point curve) where
 instance EllipticCurve curve => AdditiveSemigroup (Point curve) where
     (+) = add
 
+instance {-# OVERLAPPABLE #-}
+    ( EllipticCurve curve
+    , Eq s
+    , BinaryExpansion s
+    , Bits s ~ [s]
+    , MultiplicativeMonoid s
+--    , pc ~ Point curve
+    ) => Scale s (Point curve) where
+    scale = pointMul
+
 instance EllipticCurve curve => Scale Natural (Point curve) where
     scale = natScale
+
+--instance (EllipticCurve curve, KnownNat p, pc ~ Point curve) => Scale (Zp p) pc where
+--    scale = natScale . fromZp
 
 instance EllipticCurve curve => AdditiveMonoid (Point curve) where
     zero = Inf
@@ -108,9 +128,9 @@ pointMul
     :: forall curve s
     .  EllipticCurve curve
     => BinaryExpansion (s)
-    => Bits s ~ [s] 
-    => Eq s 
-    => s 
+    => Bits s ~ [s]
+    => Eq s
+    => s
     -> Point curve
     -> Point curve
 pointMul = natScale . fromBinary . castBits . binaryExpansion

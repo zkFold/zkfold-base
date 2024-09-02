@@ -59,7 +59,10 @@ unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector
 
 generate :: forall size a . KnownNat size => (Natural -> a) -> Vector size a
-generate f = Vector $ f <$> [0 .. value @size -! 1]
+generate f = Vector $ 
+    case value @size of
+      0 -> [] -- avoid arithmetic underflow
+      n -> f <$> [0 .. n -! 1]
 
 unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
 unfold f = Vector . ZP.take (value @size) . List.unfoldr (Just . f)
