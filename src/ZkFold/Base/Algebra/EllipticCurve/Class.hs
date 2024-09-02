@@ -10,6 +10,7 @@ import           Data.Functor                     ((<&>))
 import           Data.Kind                        (Type)
 import           GHC.Generics                     (Generic)
 import           Prelude                          hiding (Num (..), sum, (/), (^))
+import qualified Prelude                          as P
 import           Test.QuickCheck                  hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -174,7 +175,7 @@ decompress = \case
     let a = aParameter @curve
         b = bParameter @curve
         p = order @(BaseField curve)
-        sqrt_ z = z ^ ((p + 1) `div` 2)
+        sqrt_ z = z ^ ((p + 1) `P.div` 2)
         y' = sqrt_ (x * x * x + a * x + b)
         y = (if bigY then maximum else minimum) [y', negate y']
     in

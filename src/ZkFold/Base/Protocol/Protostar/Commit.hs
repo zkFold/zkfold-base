@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.ARK.Protostar.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
+module ZkFold.Base.Protocol.Protostar.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
 import           Prelude                                     (type (~), zipWith, ($), (<$>))
 import qualified Prelude                                     as P
@@ -11,7 +11,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Protocol.ARK.Protostar.Oracle
+import           ZkFold.Base.Protocol.Protostar.Oracle
 
 -- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
 --

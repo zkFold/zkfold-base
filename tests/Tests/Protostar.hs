@@ -18,7 +18,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar
+import           ZkFold.Base.Protocol.Protostar
 import           ZkFold.Prelude                              ((!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
@@ -55,10 +55,7 @@ instance
 
 evaluateRF
     :: forall n c a
-    .  TypeSize (ArithmeticCircuit a) (FieldElement c) ~ 1
-    => Support (ArithmeticCircuit a) (FieldElement c) ~ ()
-    => SymbolicData (ArithmeticCircuit a) (FieldElement c)
-    => P.Eq a
+    .  P.Eq a
     => MultiplicativeMonoid a
     => KnownNat n
     => RecursiveFunction n c a
@@ -79,9 +76,6 @@ it desc prop = Test.Hspec.it desc (property prop)
 specProtostarN
     :: forall (c :: (Type -> Type) -> Type) n
     .  KnownNat n
-    => TypeSize (ArithmeticCircuit (Zp BLS12_381_Scalar)) (FieldElement c) ~ 1
-    => Support (ArithmeticCircuit (Zp BLS12_381_Scalar)) (FieldElement c) ~ ()
-    => SymbolicData (ArithmeticCircuit (Zp BLS12_381_Scalar)) (FieldElement c)
     => Symbolic c
     => IO ()
 specProtostarN = hspec $ do
@@ -92,8 +86,8 @@ specProtostarN = hspec $ do
 
 specProtostar :: IO ()
 specProtostar = do
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @1
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @2
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @3
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @10
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar)) @100
+    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 1)) @1
+    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 2)) @2
+    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 3)) @3
+    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 10)) @10
+    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 100)) @100

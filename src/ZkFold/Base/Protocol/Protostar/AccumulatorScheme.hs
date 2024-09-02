@@ -4,27 +4,27 @@
 
 module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
-import           Control.Lens                                    ((^.))
-import qualified Data.Vector                                     as DV
-import Data.List (foldl')
+import           Control.Lens                                 ((^.))
+import           Data.List                                    (foldl')
+import qualified Data.Vector                                  as DV
 import           Debug.Trace
-import           GHC.IsList                                      (IsList (..))
-import           Prelude                                         (fmap, otherwise, type (~), ($), (&&), (.), (<$>), (<),
-                                                                  (<=), (==))
-import qualified Prelude                                         as P
+import           GHC.IsList                                   (IsList (..))
+import           Prelude                                      (fmap, otherwise, type (~), ($), (&&), (.), (<$>), (<),
+                                                               (<=), (==))
+import qualified Prelude                                      as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate    as PM
-import qualified ZkFold.Base.Algebra.Polynomials.Univariate      as PU
-import qualified ZkFold.Base.Data.Vector                         as V
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate as PM
+import qualified ZkFold.Base.Algebra.Polynomials.Univariate   as PU
+import qualified ZkFold.Base.Data.Vector                      as V
 import           ZkFold.Base.Protocol.Protostar.Accumulator
-import           ZkFold.Base.Protocol.Protostar.Commit       (Commit (..))
-import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), CommitOpenProverMessage (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
-import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (Input, LMap, SpecialSoundProtocol (..))
-import           ZkFold.Prelude                                  (length, (!!))
+import           ZkFold.Base.Protocol.Protostar.Commit        (Commit (..), HomomorphicCommit (..))
+import           ZkFold.Base.Protocol.Protostar.CommitOpen    (CommitOpen (..), CommitOpenProverMessage (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir    (FiatShamir (..))
+import           ZkFold.Base.Protocol.Protostar.Oracle        (RandomOracle (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound  (Input, LMap, SpecialSoundProtocol (..))
+import           ZkFold.Prelude                               (length, (!!))
 
 traceP :: P.Show a => P.String -> a -> a
 traceP s a = trace (s P.<> P.show a) a
@@ -54,7 +54,7 @@ instance
     ( P.Eq c
     , P.Eq i
     , P.Show f
-    , P.Show c 
+    , P.Show c
     , P.Show i
     , f ~ m   -- If they are actually not the same, replace m with hashes.
     , AdditiveGroup c
@@ -93,8 +93,8 @@ instance
           r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) (zero : pi_x)
 
           -- Fig. 3, step 2
-          
-          f_sps = degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps pubi [Open pi_w] r_i 
+
+          f_sps = degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps pubi [Open pi_w] r_i
 
           -- X + mu as a univariate polynomial
           xMu :: PU.Poly f
@@ -185,13 +185,13 @@ instance
 
           -- Fig. 5, step 2
           f_sps :: [LMap f]
-          f_sps = V.fromVector $ degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps (acc^.x^.pi) [Open $ acc^.w] (acc^.x^.r) 
+          f_sps = V.fromVector $ degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps (acc^.x^.pi) [Open $ acc^.w] (acc^.x^.r)
 
           f_sps_mu :: [LMap f]
           f_sps_mu = P.zipWith (\muDeg p -> fmap (scale ((acc^.x^.mu)^muDeg)) p) [d, d -! 1 .. 0] f_sps
-          
+
           f_sps_sum :: [PM.Poly f Natural Natural]
-          f_sps_sum = foldl' (P.zipWith (+)) (P.repeat zero) f_sps_mu 
+          f_sps_sum = foldl' (P.zipWith (+)) (P.repeat zero) f_sps_mu
 
           l_in :: Natural
           l_in = length $ toList (acc^.x^.pi)

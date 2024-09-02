@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.ARK.Protostar.ArithmeticCircuit where
+module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
 
 
 import           Control.DeepSeq                                      (NFData)
@@ -23,13 +23,13 @@ import qualified ZkFold.Base.Algebra.Polynomials.Multivariate         as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import qualified ZkFold.Base.Data.Vector                              as V
 import           ZkFold.Base.Data.Vector                              (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar.Accumulator
-import qualified ZkFold.Base.Protocol.ARK.Protostar.AccumulatorScheme as Acc
-import           ZkFold.Base.Protocol.ARK.Protostar.Commit
-import           ZkFold.Base.Protocol.ARK.Protostar.CommitOpen
-import           ZkFold.Base.Protocol.ARK.Protostar.FiatShamir
-import           ZkFold.Base.Protocol.ARK.Protostar.Oracle
-import qualified ZkFold.Base.Protocol.ARK.Protostar.SpecialSound      as SPS
+import           ZkFold.Base.Protocol.Protostar.Accumulator
+import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
+import           ZkFold.Base.Protocol.Protostar.Commit
+import           ZkFold.Base.Protocol.Protostar.CommitOpen
+import           ZkFold.Base.Protocol.Protostar.FiatShamir
+import           ZkFold.Base.Protocol.Protostar.Oracle
+import qualified ZkFold.Base.Protocol.Protostar.SpecialSound      as SPS
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                    (FieldElement)

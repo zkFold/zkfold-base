@@ -24,8 +24,8 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Base.Protocol.ARK.Protostar
-import           ZkFold.Base.Protocol.ARK.Protostar.Commit
+import           ZkFold.Base.Protocol.Protostar
+import           ZkFold.Base.Protocol.Protostar.Commit
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Class
