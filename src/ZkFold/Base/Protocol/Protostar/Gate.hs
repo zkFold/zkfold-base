@@ -1,9 +1,9 @@
 module ZkFold.Base.Protocol.Protostar.Gate where
 
-import           Data.Zip                                        (zipWith)
+import           Data.Zip                                     (zipWith)
 import           GHC.Generics
-import           Numeric.Natural                                 (Natural)
-import           Prelude                                         hiding (Num (..), zipWith, (!!), (^))
+import           Numeric.Natural                              (Natural)
+import           Prelude                                      hiding (Num (..), zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp)

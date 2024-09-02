@@ -6,36 +6,34 @@
 module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
 
 
-import           Control.DeepSeq                                      (NFData)
-import           Control.Lens                                         ((^.))
-import           Data.List                                            (foldl')
-import           Data.Map.Strict                                      (Map, (!))
-import qualified Data.Map.Strict                                      as M
-import           GHC.Generics                                         (Generic)
-import           Prelude                                              (and, otherwise, type (~), ($), (<$>), (<=), (<>), (<),
-                                                                       (==))
-import qualified Prelude                                              as P
+import           Control.DeepSeq                                     (NFData)
+import           Control.Lens                                        ((^.))
+import           Data.List                                           (foldl')
+import           Data.Map.Strict                                     (Map, (!))
+import qualified Data.Map.Strict                                     as M
+import           Debug.Trace
+import           GHC.Generics                                        (Generic)
+import           Prelude                                             (and, otherwise, type (~), ($), (<$>), (<), (<=),
+                                                                      (<>), (==))
+import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate         as PM
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import qualified ZkFold.Base.Data.Vector                              as V
-import           ZkFold.Base.Data.Vector                              (Vector)
+import qualified ZkFold.Base.Data.Vector                             as V
+import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
-import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
+import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme    as Acc
 import           ZkFold.Base.Protocol.Protostar.Commit
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import qualified ZkFold.Base.Protocol.Protostar.SpecialSound      as SPS
+import qualified ZkFold.Base.Protocol.Protostar.SpecialSound         as SPS
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.FieldElement                    (FieldElement)
-
-
-import Debug.Trace
+import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
 
 fact
     :: forall a n c
@@ -107,9 +105,9 @@ instance (KnownNat n, Arithmetic a, P.Show a) => SPS.SpecialSoundProtocol a (Rec
             remap :: (a, Map (Var (Vector n)) Natural) -> (a, Map Natural Natural)
             remap (coeff, vars) =
                 foldl'
-                    (\(cf, m) (v, p) -> 
+                    (\(cf, m) (v, p) ->
                         case v of
-                          InVar i -> (cf, M.insert (fromZp i) p m) 
+                          InVar i   -> (cf, M.insert (fromZp i) p m)
                           NewVar nv -> (cf * fromConstant ((witness ! nv)^p), m))
                     (coeff, M.empty)
                     (M.toList vars)

@@ -4,8 +4,8 @@ import           Data.Map                                    (fromList, mapWithK
 import           Data.These                                  (These (..))
 import           Data.Zip
 import           GHC.Generics
-import           Prelude                                         hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/),
-                                                                  (^))
+import           Prelude                                     hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/),
+                                                              (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)

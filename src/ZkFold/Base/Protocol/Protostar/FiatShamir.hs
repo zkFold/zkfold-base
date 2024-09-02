@@ -4,16 +4,15 @@
 
 module ZkFold.Base.Protocol.Protostar.FiatShamir where
 
-import           Data.ByteString                                 (ByteString)
+import           Data.ByteString                             (ByteString)
 import           GHC.Generics
-import           Prelude                                         hiding (length)
+import           Prelude                                     hiding (length)
 
-import           ZkFold.Base.Data.ByteString                     (Binary (..))
+import           ZkFold.Base.Data.ByteString                 (Binary (..))
+import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..), ToTranscript (..), challenge)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound as SpS
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
-import           ZkFold.Base.Protocol.NonInteractiveProof        (NonInteractiveProof (..), ToTranscript (..),
-                                                                  challenge)
 
 data FiatShamir f a = FiatShamir a (SpS.Input f a)
     deriving Generic
