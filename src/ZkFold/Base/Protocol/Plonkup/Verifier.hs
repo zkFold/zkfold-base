@@ -7,6 +7,7 @@ module ZkFold.Base.Protocol.Plonkup.Verifier
     , plonkupVerify
     ) where
 
+import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
@@ -31,6 +32,7 @@ plonkupVerify :: forall i n l c1 c2 ts .
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
     , Arithmetic (ScalarField c1)
+    , ToTranscript ts Word8
     , ToTranscript ts (ScalarField c1)
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
@@ -44,30 +46,22 @@ plonkupVerify
 
         n = value @n
 
-        (beta, ts) = challenge $ mempty
-            `transcript` compress cmA
-            `transcript` compress cmB
-            `transcript` compress cmC :: (ScalarField c1, ts)
-        (gamma, ts') = challenge ts
+        ts0   = mempty `transcript` compress cmA `transcript` compress cmB `transcript` compress cmC :: ts
+        beta  = challenge ts0
+        ts1   = ts0 `transcript` (0 :: Word8)
+        gamma = challenge ts1
 
-        (alpha, ts'') = challenge $ ts' `transcript` compress cmZ
+        ts2   = ts1 `transcript` compress cmZ
+        alpha = challenge ts2
 
-        (xi, ts''') = challenge $ ts''
-            `transcript` compress cmT1
-            `transcript` compress cmT2
-            `transcript` compress cmT3
+        ts3 = ts2 `transcript` compress cmT1 `transcript` compress cmT2 `transcript` compress cmT3
+        xi = challenge ts3
 
-        (v, ts'''') = challenge $ ts'''
-            `transcript` a_xi
-            `transcript` b_xi
-            `transcript` c_xi
-            `transcript` s1_xi
-            `transcript` s2_xi
-            `transcript` z_xi
+        ts4 = ts3 `transcript` a_xi `transcript` b_xi `transcript` c_xi `transcript` s1_xi `transcript` s2_xi `transcript` z_xi
+        v   = challenge ts4
 
-        (u, _) = challenge $ ts''''
-            `transcript` compress proof1
-            `transcript` compress proof2
+        ts5 = ts4 `transcript` compress proof1 `transcript` compress proof2
+        u   = challenge ts5
 
         zH_xi        = polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi
         lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi

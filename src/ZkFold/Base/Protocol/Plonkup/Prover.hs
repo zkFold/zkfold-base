@@ -9,6 +9,7 @@ module ZkFold.Base.Protocol.Plonkup.Prover
     ) where
 
 import qualified Data.Vector                                         as V
+import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^), pi)
@@ -36,6 +37,7 @@ plonkupProve :: forall i n l c1 c2 ts core .
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
     , Arithmetic (ScalarField c1)
+    , ToTranscript ts Word8
     , ToTranscript ts (ScalarField c1)
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
@@ -69,11 +71,10 @@ plonkupProve PlonkupProverSetup {..}
         cmB = gs `com` b
         cmC = gs `com` c
 
-        (beta, ts) = challenge $ mempty
-            `transcript` compress cmA
-            `transcript` compress cmB
-            `transcript` compress cmC
-        (gamma, ts') = challenge ts
+        ts0   = mempty `transcript` compress cmA `transcript` compress cmB `transcript` compress cmC :: ts
+        beta  = challenge ts0
+        ts1   = ts0 `transcript` (0 :: Word8)
+        gamma = challenge ts1
 
         omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
         omegas' =  V.iterateN (V.length (fromPolyVec z) P.+ 1) (* omega) one
@@ -85,7 +86,8 @@ plonkupProve PlonkupProverSetup {..}
         zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
         cmZ = gs `com` z
 
-        (alpha, ts'') = challenge $ ts' `transcript` compress cmZ :: (ScalarField c1, ts)
+        ts2   = ts1 `transcript` compress cmZ
+        alpha = challenge ts2
 
         t1  = a * b * qmX + a * qlX + b * qrX + c * qoX + piX + qcX
         t2  = (a + polyVecLinear beta gamma)
@@ -109,10 +111,8 @@ plonkupProve PlonkupProverSetup {..}
         cmT2   = gs `com` t_mid
         cmT3   = gs `com` t_hi
 
-        (xi, ts''') = challenge $ ts''
-            `transcript` compress cmT1
-            `transcript` compress cmT2
-            `transcript` compress cmT3
+        ts3 = ts2 `transcript` compress cmT1 `transcript` compress cmT2 `transcript` compress cmT3
+        xi = challenge ts3
 
         a_xi  = evalPolyVec a xi
         b_xi  = evalPolyVec b xi
@@ -122,13 +122,8 @@ plonkupProve PlonkupProverSetup {..}
         z_xi  = evalPolyVec z (xi * omega)
         l1_xi_mul = one // (scale n one * (xi - omega))
 
-        (v, _) = challenge $ ts'''
-            `transcript` a_xi
-            `transcript` b_xi
-            `transcript` c_xi
-            `transcript` s1_xi
-            `transcript` s2_xi
-            `transcript` z_xi
+        ts4 = ts3 `transcript` a_xi `transcript` b_xi `transcript` c_xi `transcript` s1_xi `transcript` s2_xi `transcript` z_xi
+        v   = challenge ts4
 
         lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
         zH_xi = zhX `evalPolyVec` xi

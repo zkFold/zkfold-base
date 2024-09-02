@@ -12,6 +12,7 @@ import           Data.Kind                                  (Type)
 import           Data.Map.Strict                            (Map, fromList, insert, keys, toList, (!))
 import qualified Data.Vector                                as V
 import           Data.Vector.Binary                         ()
+import           Data.Word                                  (Word8)
 import           Prelude                                    hiding (Num (..), length, sum, (/), (^))
 import           Test.QuickCheck                            (Arbitrary (..), chooseInt)
 
@@ -87,18 +88,17 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
             proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
                      -> (f, V.Vector (PolyVec f d))
                      -> (Transcript kzg, (Input kzg, Proof kzg))
-            proveOne (ts, (iMap, pMap)) (z, fs) = (ts'', (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
+            proveOne (ts0, (iMap, pMap)) (z, fs) = (ts3, (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
                     com = msm @c1 @core
                     cms  = fmap (com gs) fs
                     fzs  = fmap (`evalPolyVec` z) fs
 
-                    (gamma, ts') = flip challenges (fromIntegral $ V.length cms) $ ts
-                        `transcript` z
-                        `transcript` fzs
-                        `transcript` cms
+                    ts1 = ts0 `transcript` z `transcript` fzs `transcript` cms
+                    (gamma, ts2) = challenges ts1 (fromIntegral $ V.length cms)
+                    ts3 = ts2 `transcript` (0 :: Word8)
+
                     h            = sum $ V.zipWith scalePV (V.fromList gamma) $ fmap (`provePolyVecEval` z) fs
-                    ts''         = if ts == empty then ts' else snd $ challenge @(Transcript kzg) @f ts'
 
     verify :: SetupVerify kzg -> Input kzg -> Proof kzg -> Bool
     verify (gs, h0, h1) input proof =
@@ -112,17 +112,18 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
                 -> (Transcript kzg, (g1, g1))
                 -> ScalarField c1
                 -> (Transcript kzg, (g1, g1))
-            prepareVerifyOne (iMap, pMap) (ts, (v0, v1)) z = (ts'', (v0 + v0', v1 + v1'))
+            prepareVerifyOne (iMap, pMap) (ts0, (v0, v1)) z = (ts3, (v0 + v0', v1 + v1'))
                 where
                     (cms, fzs) = iMap ! z
                     w          = pMap ! z
 
-                    (gamma', ts') = flip challenges (fromIntegral $ V.length cms) $ ts
-                        `transcript` z
-                        `transcript` fzs
-                        `transcript` cms
+                    ts1 = ts0 `transcript` z `transcript` fzs `transcript` cms
+                    (gamma', ts2) = challenges ts1 (fromIntegral $ V.length cms)
+
+                    ts3 = ts2 `transcript` (0 :: Word8)
+                    r   = challenge ts3
+
                     gamma = V.fromList gamma'
-                    (r, ts'')    = if ts == empty then (one, ts') else challenge ts'
 
                     com = msm @c1 @core
 

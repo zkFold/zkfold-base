@@ -1,13 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof.Internal where
 
 import           Crypto.Hash.BLAKE2.BLAKE2b                 (hash)
-import           Data.ByteString                            (ByteString, cons)
+import           Data.ByteString                            (ByteString)
 import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
+import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (sum)
 
@@ -16,34 +16,31 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..),
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, fromPolyVec)
 import           ZkFold.Base.Data.ByteString
 
-class Monoid t => ToTranscript t a where
-    toTranscript :: a -> t
+class Monoid ts => ToTranscript ts a where
+    toTranscript :: a -> ts
 
 instance Binary a => ToTranscript ByteString a where
     toTranscript = toByteString
 
-transcript :: ToTranscript t a => t -> a -> t
+transcript :: ToTranscript ts a => ts -> a -> ts
 transcript ts a = ts <> toTranscript a
 
-class Monoid t => FromTranscript t a where
-    newTranscript  :: t -> t
-    fromTranscript :: t -> a
+class Monoid ts => FromTranscript ts a where
+    fromTranscript :: ts -> a
 
 instance Binary a => FromTranscript ByteString a where
-    newTranscript  = cons 0
     fromTranscript = fromJust . fromByteString . hash 28 mempty
 
-challenge :: forall t a . FromTranscript t a => t -> (a, t)
-challenge ts =
-    let ts' = newTranscript @t @a ts
-    in (fromTranscript ts', ts')
+challenge :: forall ts a . FromTranscript ts a => ts -> a
+challenge = fromTranscript
 
-challenges :: FromTranscript t a => t -> Natural -> ([a], t)
+challenges :: (ToTranscript ts Word8, FromTranscript ts a) => ts -> Natural -> ([a], ts)
 challenges ts0 n = go ts0 n []
   where
     go ts 0 acc = (acc, ts)
     go ts k acc =
-        let (c, ts') = challenge ts
+        let c   = challenge ts
+            ts' = ts `transcript` (0 :: Word8)
         in go ts' (k - 1) (c : acc)
 
 class NonInteractiveProof a core where
