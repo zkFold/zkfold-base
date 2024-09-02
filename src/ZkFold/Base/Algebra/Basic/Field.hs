@@ -15,6 +15,7 @@ module ZkFold.Base.Algebra.Basic.Field (
     Ext3(..)
     ) where
 
+import           Control.Applicative                        ((<|>))
 import           Control.DeepSeq                            (NFData (..))
 import           Data.Aeson                                 (FromJSON (..), ToJSON (..))
 import           Data.Bifunctor                             (first)
@@ -32,7 +33,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString
-import           ZkFold.Prelude                             (log2ceiling, replicateA)
+import           ZkFold.Prelude                             (log2ceiling)
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -166,10 +167,11 @@ instance KnownNat p => Binary (Zp p) where
         go n count =
             let (n', r) = n `Haskell.divMod` 256
             in putWord8 (fromIntegral r) <> go n' (count -! 1)
-    get = toZp . go <$> replicateA (wordCount @p) getWord8
+    get = toZp <$> go (wordCount @p)
       where
-        go []     = 0
-        go (x:xs) = fromIntegral x + 256 * go xs
+        go 0 = pure zero
+        go n = liftA2 combine getWord8 (go $ n -! 1) <|> pure zero
+        combine r d = fromIntegral r + 256 * d
 
 wordCount :: forall p. KnownNat p => Natural
 wordCount = ceiling $ log2ceiling (value @p -! 1) % (8 :: Natural)
