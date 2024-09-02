@@ -11,7 +11,7 @@ module ZkFold.Base.Protocol.Plonkup.Prover
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
+                                                                      (/), (^), pi)
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -48,16 +48,21 @@ plonkupProve PlonkupProverSetup {..}
         PlonkupCircuitPolynomials {..} = polynomials
 
         n = value @n
-        zH = polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n)
+        zhX = polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n)
 
         (w1, w2, w3) = witness relation wInput
         wPub = pubInput relation wInput
 
-        pubPoly = polyVecInLagrangeBasis omega $ toPolyVec @(ScalarField c1) @n $ fromList $ fromVector (negate <$> wPub)
+        w1X = polyVecInLagrangeBasis omega w1
+        w2X = polyVecInLagrangeBasis omega w2
+        w3X = polyVecInLagrangeBasis omega w3
 
-        a = polyVecLinear b2 b1 * zH + polyVecInLagrangeBasis omega w1
-        b = polyVecLinear b4 b3 * zH + polyVecInLagrangeBasis omega w2
-        c = polyVecLinear b6 b5 * zH + polyVecInLagrangeBasis omega w3
+        pi  = toPolyVec @(ScalarField c1) @n $ fromList $ fromVector (negate <$> wPub)
+        piX = polyVecInLagrangeBasis omega pi
+
+        a = polyVecLinear b1 b2 * zhX + w1X
+        b = polyVecLinear b3 b4 * zhX + w2X
+        c = polyVecLinear b5 b6 * zhX + w3X
 
         com = msm @c1 @core
         cmA = gs `com` a
@@ -76,23 +81,23 @@ plonkupProve PlonkupProverSetup {..}
         zs2 = polyVecGrandProduct w2 (scalePV k1 omegas) sigma2s beta gamma
         zs3 = polyVecGrandProduct w3 (scalePV k2 omegas) sigma3s beta gamma
         gp = rewrapPolyVec (V.zipWith (*) (V.zipWith (*) (fromPolyVec zs1) (fromPolyVec zs2))) zs3
-        z  = polyVecQuadratic b9 b8 b7 * zH + polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega gp
+        z  = polyVecQuadratic b7 b8 b9 * zhX + polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega gp
         zo = toPolyVec $ V.zipWith (*) (fromPolyVec z) omegas'
         cmZ = gs `com` z
 
         (alpha, ts'') = challenge $ ts' `transcript` compress cmZ :: (ScalarField c1, ts)
 
-        t1  = a * b * qm + a * ql + b * qr + c * qo + pubPoly + qc
-        t2  = (a + polyVecLinear gamma beta)
-            * (b + polyVecLinear gamma (beta * k1))
-            * (c + polyVecLinear gamma (beta * k2))
+        t1  = a * b * qmX + a * qlX + b * qrX + c * qoX + piX + qcX
+        t2  = (a + polyVecLinear beta gamma)
+            * (b + polyVecLinear (beta * k1) gamma)
+            * (c + polyVecLinear (beta * k2) gamma)
             * z
-        t3  = (a + scalePV beta sigma1 + scalePV gamma one)
-            * (b + scalePV beta sigma2 + scalePV gamma one)
-            * (c + scalePV beta sigma3 + scalePV gamma one)
+        t3  = (a + scalePV beta s1X + scalePV gamma one)
+            * (b + scalePV beta s2X + scalePV gamma one)
+            * (c + scalePV beta s3X + scalePV gamma one)
             * zo
         t4 = (z - one) * polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega
-        t = (t1 + scalePV alpha (t2 - t3) + scalePV (alpha * alpha) t4) `polyVecDiv` zH
+        t = (t1 + scalePV alpha (t2 - t3) + scalePV (alpha * alpha) t4) `polyVecDiv` zhX
 
         t_lo'  = toPolyVec $ V.take (fromIntegral n) $ fromPolyVec t
         t_mid' = toPolyVec $ V.take (fromIntegral n) $ V.drop (fromIntegral n) $ fromPolyVec t
@@ -112,8 +117,8 @@ plonkupProve PlonkupProverSetup {..}
         a_xi  = evalPolyVec a xi
         b_xi  = evalPolyVec b xi
         c_xi  = evalPolyVec c xi
-        s1_xi = evalPolyVec sigma1 xi
-        s2_xi = evalPolyVec sigma2 xi
+        s1_xi = evalPolyVec s1X xi
+        s2_xi = evalPolyVec s2X xi
         z_xi  = evalPolyVec z (xi * omega)
         l1_xi_mul = one // (scale n one * (xi - omega))
 
@@ -126,13 +131,13 @@ plonkupProve PlonkupProverSetup {..}
             `transcript` z_xi
 
         lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
-        zH_xi = zH `evalPolyVec` xi
-        r   = scalePV (a_xi * b_xi) qm
-            + scalePV a_xi ql
-            + scalePV b_xi qr
-            + scalePV c_xi qo
-            + scalePV (pubPoly `evalPolyVec` xi) one
-            + qc
+        zH_xi = zhX `evalPolyVec` xi
+        r   = scalePV (a_xi * b_xi) qmX
+            + scalePV a_xi qlX
+            + scalePV b_xi qrX
+            + scalePV c_xi qoX
+            + scalePV (piX `evalPolyVec` xi) one
+            + qcX
             + scalePV alpha (
                 scalePV (
                         (a_xi + beta * xi + gamma)
@@ -143,7 +148,7 @@ plonkupProve PlonkupProverSetup {..}
                         (a_xi + beta * s1_xi + gamma)
                     * (b_xi + beta * s2_xi + gamma)
                     * z_xi
-                    ) (scalePV beta sigma3 + scalePV (c_xi + gamma) one)
+                    ) (scalePV beta s3X + scalePV (c_xi + gamma) one)
                 )
             + scalePV (alpha * alpha * lagrange1_xi) (z - one)
             - scalePV zH_xi (scalePV (xi^(2 * n)) t_hi + scalePV (xi^n) t_mid + t_lo)
@@ -152,9 +157,9 @@ plonkupProve PlonkupProverSetup {..}
                 + scalePV v (a - scalePV a_xi one)
                 + scalePV (v * v) (b - scalePV b_xi one)
                 + scalePV (v * v * v) (c - scalePV c_xi one)
-                + scalePV (v * v * v * v) (sigma1 - scalePV s1_xi one)
-                + scalePV (v * v * v * v * v) (sigma2 - scalePV s2_xi one)
-            ) `polyVecDiv` polyVecLinear (negate xi) one
+                + scalePV (v * v * v * v) (s1X - scalePV s1_xi one)
+                + scalePV (v * v * v * v * v) (s2X - scalePV s2_xi one)
+            ) `polyVecDiv` polyVecLinear one (negate xi)
 
         proof2Poly = (z - scalePV z_xi one) `polyVecDiv` toPolyVec [negate (xi * omega), one]
 

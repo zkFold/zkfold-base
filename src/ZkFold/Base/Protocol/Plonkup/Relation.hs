@@ -80,6 +80,7 @@ toPlonkupRelation xPub ac =
     let pubInputConstraints = map var (fromVector xPub)
         plonkConstraints    = elems (acSystem ac)
         rs = map (toConstant @_ @Natural) $ elems $ acRange ac
+        -- TODO: We are expecting at most one range.
         t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         xLookup = NewVar <$> keys (acRange ac)

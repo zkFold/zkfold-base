@@ -8,25 +8,26 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
 import           ZkFold.Base.Protocol.Plonkup.Internal   (PlonkupPolyExtended)
 
 data PlonkupCircuitPolynomials n c = PlonkupCircuitPolynomials {
-        ql     :: PlonkupPolyExtended n c,
-        qr     :: PlonkupPolyExtended n c,
-        qo     :: PlonkupPolyExtended n c,
-        qm     :: PlonkupPolyExtended n c,
-        qc     :: PlonkupPolyExtended n c,
-        qk     :: PlonkupPolyExtended n c,
-        sigma1 :: PlonkupPolyExtended n c,
-        sigma2 :: PlonkupPolyExtended n c,
-        sigma3 :: PlonkupPolyExtended n c
+        qlX :: PlonkupPolyExtended n c,
+        qrX :: PlonkupPolyExtended n c,
+        qoX :: PlonkupPolyExtended n c,
+        qmX :: PlonkupPolyExtended n c,
+        qcX :: PlonkupPolyExtended n c,
+        qkX :: PlonkupPolyExtended n c,
+        s1X :: PlonkupPolyExtended n c,
+        s2X :: PlonkupPolyExtended n c,
+        s3X :: PlonkupPolyExtended n c,
+        tX  :: PlonkupPolyExtended n c
     }
 instance Show (ScalarField c) => Show (PlonkupCircuitPolynomials n c) where
-    show (PlonkupCircuitPolynomials ql qr qo qm qc qk sigma1 sigma2 sigma3) =
+    show PlonkupCircuitPolynomials {..} =
         "Circuit Polynomials: "
-        ++ show ql ++ " "
-        ++ show qr ++ " "
-        ++ show qo ++ " "
-        ++ show qm ++ " "
-        ++ show qc ++ " "
-        ++ show qk ++ " "
-        ++ show sigma1 ++ " "
-        ++ show sigma2 ++ " "
-        ++ show sigma3
+        ++ show qlX ++ " "
+        ++ show qrX ++ " "
+        ++ show qoX ++ " "
+        ++ show qmX ++ " "
+        ++ show qcX ++ " "
+        ++ show qkX ++ " "
+        ++ show s1X ++ " "
+        ++ show s2X ++ " "
+        ++ show s3X

@@ -297,11 +297,11 @@ l .* r = toPolyVec $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ f
 
 -- p(x) = a0 + a1 * x
 polyVecLinear :: forall c size . (Ring c, KnownNat size) => c -> c -> PolyVec c size
-polyVecLinear a0 a1 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ value @size -! 2) zero
+polyVecLinear a1 a0 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ value @size -! 2) zero
 
 -- p(x) = a0 + a1 * x + a2 * x^2
 polyVecQuadratic :: forall c size . (Ring c, KnownNat size) => c -> c -> c -> PolyVec c size
-polyVecQuadratic a0 a1 a2 = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ value @size -! 3) zero
+polyVecQuadratic a2 a1 a0  = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ value @size -! 3) zero
 
 scalePV :: Ring c => c -> PolyVec c size -> PolyVec c size
 scalePV c (PV as) = PV $ fmap (*c) as
@@ -322,7 +322,7 @@ polyVecZero = poly2vec $ scaleP one (value @n) one - one
 -- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
 polyVecLagrange :: forall c n size . (Field c, Eq c, KnownNat n, KnownNat size) =>
     Natural -> c -> PolyVec c size
-polyVecLagrange i omega = scalePV (omega^i // fromConstant (value @n)) $ (polyVecZero @c @n @size - one) `polyVecDiv` polyVecLinear (negate $ omega^i) one
+polyVecLagrange i omega = scalePV (omega^i // fromConstant (value @n)) $ (polyVecZero @c @n @size - one) `polyVecDiv` polyVecLinear one (negate $ omega^i)
 
 -- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
 polyVecInLagrangeBasis :: forall c n size . (Field c, Eq c, KnownNat n, KnownNat size) =>
