@@ -59,7 +59,7 @@ input = do
     evaluate . force $ (value @k, v)
 
 benchOps
-    :: forall n k p 
+    :: forall n k p
     .  KnownNat n
     => KnownNat k
     => p ~ BLS12_381_Scalar

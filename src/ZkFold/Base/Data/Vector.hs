@@ -59,7 +59,7 @@ unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector
 
 generate :: forall size a . KnownNat size => (Natural -> a) -> Vector size a
-generate f = Vector $ 
+generate f = Vector $
     case value @size of
       0 -> [] -- avoid arithmetic underflow
       n -> f <$> [0 .. n -! 1]
