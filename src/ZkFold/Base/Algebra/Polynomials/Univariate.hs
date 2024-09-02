@@ -41,7 +41,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
 import           Control.DeepSeq                  (NFData (..))
 import qualified Data.Vector                      as V
 import           GHC.Generics                     (Generic)
-import           GHC.IsList                       (IsList(..))
+import           GHC.IsList                       (IsList (..))
 import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/),
                                                    (^))
 import qualified Prelude                          as P

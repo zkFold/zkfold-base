@@ -3,21 +3,21 @@
 
 module Tests.Arithmetization.Test4 (specArithmetization4) where
 
-import           GHC.Generics                                        (Par1 (unPar1))
-import           Prelude                                             hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
-import qualified Prelude                                             as Haskell
-import           Test.Hspec                                          (Spec, describe, it)
-import           Test.QuickCheck                                     (Testable (..), (==>))
+import           GHC.Generics                                (Par1 (unPar1))
+import           Prelude                                     hiding (Bool, Eq (..), Num (..), Ord (..), (&&))
+import qualified Prelude                                     as Haskell
+import           Test.Hspec                                  (Spec, describe, it)
+import           Test.QuickCheck                             (Testable (..), (==>))
 
-import           ZkFold.Base.Algebra.Basic.Class                     (FromConstant (..), one, zero)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
-import qualified ZkFold.Base.Data.Vector                             as V
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1)
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
+import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuit (..), compile, eval)
-import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
-import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
-import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), compile, eval)
+import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
+import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 type C = BLS12_381_G1
 type F = ScalarField C

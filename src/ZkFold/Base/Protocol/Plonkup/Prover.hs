@@ -11,8 +11,8 @@ module ZkFold.Base.Protocol.Plonkup.Prover
 import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^), pi)
+import           Prelude                                             hiding (Num (..), drop, length, pi, sum, take,
+                                                                      (!!), (/), (^))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class

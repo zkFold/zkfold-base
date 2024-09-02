@@ -11,7 +11,7 @@ import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
-import           Test.QuickCheck                                     (Arbitrary(..), Gen)
+import           Test.QuickCheck                                     (Arbitrary (..), Gen)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number

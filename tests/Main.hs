@@ -3,7 +3,6 @@ module Main where
 import           Control.Monad             (unless)
 import           Prelude                   hiding (Bool, Fractional (..), Num (..), drop, length, replicate, take, (==))
 import           System.Environment        (lookupEnv)
-
 import           Tests.ArithmeticCircuit   (specArithmeticCircuit)
 import           Tests.Arithmetization     (specArithmetization)
 import           Tests.Binary              (specBinary)
