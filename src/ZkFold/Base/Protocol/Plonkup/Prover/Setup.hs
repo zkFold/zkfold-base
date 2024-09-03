@@ -19,8 +19,6 @@ data PlonkupProverSetup i n l c1 c2 = PlonkupProverSetup
     , k2          :: ScalarField c1
     , xPub        :: Vector l (Var (Vector i))
     , gs          :: V.Vector (Point c1)
-    , h0          :: Point c2
-    , h1          :: Point c2
     , sigma1s     :: PolyVec (ScalarField c1) n
     , sigma2s     :: PolyVec (ScalarField c1) n
     , sigma3s     :: PolyVec (ScalarField c1) n
@@ -43,8 +41,6 @@ instance
         ++ show k2 ++ " "
         ++ show xPub ++ " "
         ++ show gs ++ " "
-        ++ show h0 ++ " "
-        ++ show h1 ++ " "
         ++ show sigma1s ++ " "
         ++ show sigma2s ++ " "
         ++ show sigma3s ++ " "

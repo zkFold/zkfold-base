@@ -16,7 +16,7 @@ import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGr
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
-import           ZkFold.Base.Algebra.Polynomials.Univariate          (toPolyVec, (.*))
+import           ZkFold.Base.Algebra.Polynomials.Univariate          (toPolyVec, (.*.))
 import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
 import           ZkFold.Base.Protocol.Plonkup
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint
@@ -34,7 +34,7 @@ propPlonkupRelationHolds :: forall i n l a . (KnownNat n, Arithmetic a) => Plonk
 propPlonkupRelationHolds PlonkupRelation {..} w =
     let (w1, w2, w3) = witness w
         pub          = negate $ toPolyVec $ fromList $ fromVector $ pubInput w
-    in qL .* w1 + qR .* w2 + qO .* w3 + qM .* w1 .* w2 + qC + pub == zero
+    in qL .*. w1 + qR .*. w2 + qO .*. w3 + qM .*. w1 .*. w2 + qC + pub == zero
 
 specPlonkup :: IO ()
 specPlonkup = hspec $ do

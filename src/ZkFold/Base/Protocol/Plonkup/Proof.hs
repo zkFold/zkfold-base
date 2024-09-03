@@ -10,10 +10,14 @@ data PlonkupProof c = PlonkupProof {
         cmA       :: Point c,
         cmB       :: Point c,
         cmC       :: Point c,
-        cmZ       :: Point c,
-        cmT1      :: Point c,
-        cmT2      :: Point c,
-        cmT3      :: Point c,
+        cmF       :: Point c,
+        cmH1      :: Point c,
+        cmH2      :: Point c,
+        cmZ1      :: Point c,
+        cmZ2      :: Point c,
+        cmQlow    :: Point c,
+        cmQmid    :: Point c,
+        cmQhigh   :: Point c,
         proof1    :: Point c,
         proof2    :: Point c,
         a_xi      :: ScalarField c,
@@ -21,8 +25,14 @@ data PlonkupProof c = PlonkupProof {
         c_xi      :: ScalarField c,
         s1_xi     :: ScalarField c,
         s2_xi     :: ScalarField c,
-        z_xi      :: ScalarField c,
-        l1_xi_mul :: ScalarField c
+        f_xi      :: ScalarField c,
+        t_xi      :: ScalarField c,
+        t_xi'     :: ScalarField c,
+        z1_xi     :: ScalarField c,
+        z2_xi     :: ScalarField c,
+        h1_xi     :: ScalarField c,
+        h2_xi     :: ScalarField c,
+        lag1_xi   :: ScalarField c
     }
 instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (PlonkupProof c) where
     show PlonkupProof {..} =
@@ -30,10 +40,14 @@ instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (Pl
         ++ show cmA ++ " "
         ++ show cmB ++ " "
         ++ show cmC ++ " "
-        ++ show cmZ ++ " "
-        ++ show cmT1 ++ " "
-        ++ show cmT2 ++ " "
-        ++ show cmT3 ++ " "
+        ++ show cmF ++ " "
+        ++ show cmH1 ++ " "
+        ++ show cmH2 ++ " "
+        ++ show cmZ1 ++ " "
+        ++ show cmZ2 ++ " "
+        ++ show cmQlow ++ " "
+        ++ show cmQmid ++ " "
+        ++ show cmQhigh ++ " "
         ++ show proof1 ++ " "
         ++ show proof2 ++ " "
         ++ show a_xi ++ " "
@@ -41,5 +55,11 @@ instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (Pl
         ++ show c_xi ++ " "
         ++ show s1_xi ++ " "
         ++ show s2_xi ++ " "
-        ++ show z_xi
-        ++ show l1_xi_mul
+        ++ show f_xi ++ " "
+        ++ show t_xi ++ " "
+        ++ show t_xi' ++ " "
+        ++ show z1_xi ++ " "
+        ++ show z2_xi ++ " "
+        ++ show h1_xi ++ " "
+        ++ show h2_xi ++ " "
+        ++ show lag1_xi

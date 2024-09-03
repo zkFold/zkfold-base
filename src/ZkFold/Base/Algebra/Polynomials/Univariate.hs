@@ -17,7 +17,12 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , PolyVec
     , fromPolyVec
     , toPolyVec
+    , (.*.)
+    , (./.)
     , (.*)
+    , (*.)
+    , (.+)
+    , (+.)
     , rewrapPolyVec
     , castPolyVec
     , evalPolyVec
@@ -270,6 +275,11 @@ poly2vec (P cs) = toPolyVec cs
 vec2poly :: (Ring c, Eq c) => PolyVec c size -> Poly c
 vec2poly (PV cs) = removeZeros $ P cs
 
+instance (KnownNat size, Ring c) => IsList (PolyVec c size) where
+    type Item (PolyVec c size) = c
+    fromList = toPolyVec . V.fromList
+    toList = V.toList . fromPolyVec
+
 instance Scale c' c => Scale c' (PolyVec c size) where
     scale c (PV p) = PV (scale c p)
 
@@ -295,8 +305,23 @@ instance (Field c, KnownNat size, Eq c) => MultiplicativeMonoid (PolyVec c size)
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec <$> V.replicateM (fromIntegral $ value @size) arbitrary
 
-(.*) :: forall c size . (Field c, KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
-l .* r = toPolyVec $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
+(.*.) :: forall c size . (Field c, KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
+l .*. r = toPolyVec $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
+
+(./.) :: forall c size . (Field c, KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
+l ./. r = toPolyVec $ fromList $ zipWith (//) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
+
+(.*) :: forall c size . (Field c) => PolyVec c size -> c -> PolyVec c size
+(PV cs) .* a = PV $ fmap (* a) cs
+
+(*.) :: forall c size . (Field c) => c -> PolyVec c size -> PolyVec c size
+a *. (PV cs) = PV $ fmap (a *) cs
+
+(.+) :: forall c size . (Field c) => PolyVec c size -> c -> PolyVec c size
+(PV cs) .+ a = PV $ fmap (+ a) cs
+
+(+.) :: forall c size . (Field c) => c -> PolyVec c size -> PolyVec c size
+a +. (PV cs) = PV $ fmap (+ a) cs
 
 -- p(x) = a0 + a1 * x
 polyVecLinear :: forall c size . (Ring c, KnownNat size) => c -> c -> PolyVec c size

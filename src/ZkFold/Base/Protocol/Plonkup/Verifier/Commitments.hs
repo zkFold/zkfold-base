@@ -15,10 +15,11 @@ data PlonkupCircuitCommitments c = PlonkupCircuitCommitments {
         cmQk :: Point c,
         cmS1 :: Point c,
         cmS2 :: Point c,
-        cmS3 :: Point c
+        cmS3 :: Point c,
+        cmT1 :: Point c
     }
 instance (Show (BaseField c), EllipticCurve c) => Show (PlonkupCircuitCommitments c) where
-    show (PlonkupCircuitCommitments cmQl cmQr cmQo cmQm cmQc cmQk cmS1 cmS2 cmS3) =
+    show PlonkupCircuitCommitments {..} =
         "Plonkup Circuit Commitments: "
         ++ show cmQl ++ " "
         ++ show cmQr ++ " "
@@ -28,4 +29,5 @@ instance (Show (BaseField c), EllipticCurve c) => Show (PlonkupCircuitCommitment
         ++ show cmQk ++ " "
         ++ show cmS1 ++ " "
         ++ show cmS2 ++ " "
-        ++ show cmS3
+        ++ show cmS3 ++ " "
+        ++ show cmT1
