@@ -52,7 +52,7 @@ plonkupVerify
             `transcript` compress cmA
             `transcript` compress cmB
             `transcript` compress cmC :: ts
-        
+
         ts2 = ts1
             `transcript` compress cmF
             `transcript` compress cmH1
@@ -120,7 +120,7 @@ plonkupVerify
             - alpha5 * lagrange1_xi
 
         -- Step 10: Compute D
-        d = 
+        d =
                 (a_xi * b_xi) `mul` cmQm + a_xi `mul` cmQl + b_xi `mul` cmQr + c_xi `mul` cmQo + cmQc
               + ((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * xi + gamma) * alpha + lagrange1_xi * alpha2 + eta) `mul` cmZ1
               - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * alpha * beta * z1_xi) `mul` cmS3
@@ -128,7 +128,7 @@ plonkupVerify
               + ((one + delta) * (epsilon + f_xi) * (epsilon * (one + delta) + t_xi + delta * t_xi') * alpha4 + lagrange1_xi * alpha5 + eta * vn 2) `mul` cmZ2
               + (eta * vn 3 - z2_xi * (epsilon * (one + delta) + h2_xi + delta * h1_xi) * alpha4) `mul` cmH1
               - zhX_xi `mul` (cmQlow + (xi^(n+2)) `mul` cmQmid + (xi^(2*n+4)) `mul` cmQhigh)
-        
+
         -- Step 11: Compute F
         f = d
             + v `mul` cmA
@@ -143,7 +143,7 @@ plonkupVerify
             + (eta * v) `mul` cmT_zeta
             + (eta * vn 2) `mul` cmZ2
             + (eta * vn 3) `mul` cmH1
-        
+
         -- Step 12: Compute E
         e = (
                 negate r0 + v * a_xi + vn 2 * b_xi + vn 3 * c_xi + vn 4 * s1_xi + vn 5 * s2_xi + vn 6 * f_xi

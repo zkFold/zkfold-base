@@ -4,16 +4,16 @@ module ZkFold.Base.Protocol.Plonkup.Utils where
 
 import           Data.Bifunctor                                      (first)
 import           Data.Bool                                           (bool)
-import           Data.Map                                            (insertWith, fromList, toList)
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, replicate, (!!),
-                                                                      (/), (^))
+import           Data.Map                                            (fromList, insertWith, toList)
+import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
+                                                                      take, (!!), (/), (^))
 import           System.Random                                       (RandomGen, mkStdGen, uniformR)
 import           Test.QuickCheck                                     (Gen, shuffle)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Prelude                                      (log2ceiling, take, replicate)
+import           ZkFold.Prelude                                      (log2ceiling, replicate, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
