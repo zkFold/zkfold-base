@@ -17,7 +17,8 @@ import           Prelude                                             hiding (Num
 import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial, var, variables, evalPolynomial, evalMonomial)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, evalMonomial, evalPolynomial, polynomial,
+                                                                      var, variables)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length, take, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
