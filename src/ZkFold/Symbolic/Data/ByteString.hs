@@ -50,6 +50,7 @@ import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
+import qualified Data.Bits as B
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -206,8 +207,17 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                             xj = x j
                         in xi * xj
 
-    xor l r = bitwiseOperation l r cons
+    xor (ByteString l) (ByteString r) = ByteString $ symbolic2F l r (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n)) solve 
         where
+            vecToNat :: (ToConstant a Natural) => Vector n a -> Natural
+            vecToNat =  Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0 
+
+            solve :: MonadCircuit i (BaseField c) m => Vector n i -> Vector n i -> m (Vector n i)
+            solve lv rv = do
+                let varsLeft = lv
+                    varsRight = rv
+                V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+
             cons i j x =
                         let xi = x i
                             xj = x j
