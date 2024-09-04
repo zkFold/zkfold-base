@@ -27,7 +27,8 @@ import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (Extend (..), KnownRegisterSize, NumberOfRegisters,
+import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), KnownRegisterSize, NumberOfRegisters,
                                                               RegisterSize (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
@@ -42,6 +43,9 @@ evalBool (Bool ac) = exec1 ac
 
 evalBoolVec :: forall a . Bool (Interpreter a) -> a
 evalBoolVec (Bool (Interpreter (Par1 v))) = v
+
+evalBS :: forall a n . ByteString n (ArithmeticCircuit a U1) -> ByteString n (Interpreter a)
+evalBS (ByteString bits) = ByteString $ Interpreter (exec bits)
 
 execAcUint :: forall a n r . UInt n r (ArithmeticCircuit a U1) -> Vector (NumberOfRegisters a n r) a
 execAcUint (UInt v) = exec v
@@ -59,6 +63,7 @@ isHom f g x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (f
 specUInt'
     :: forall p n r r2n rs
     .  PrimeField (Zp p)
+    => Iso (ByteString n (ArithmeticCircuit (Zp p) U1)) (UInt n rs (ArithmeticCircuit (Zp p) U1))
     => KnownNat n
     => KnownNat (2 * n)
     => KnownRegisterSize rs
@@ -87,6 +92,16 @@ specUInt' = hspec $ do
             return $ execAcUint @(Zp p) @n @rs (negate (fromConstant x)) === execZpUint @_ @n @rs (negate (fromConstant x))
         it "subtracts correctly" $ isHom @n @p @rs (-) (-) <$> toss m <*> toss m
         it "multiplies correctly" $ isHom @n @p @rs (*) (*) <$> toss m <*> toss m
+        it "iso uint correctly" $ do
+            x <- toss m
+            let bx = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1) 
+                ux = fromConstant x :: UInt n rs (ArithmeticCircuit (Zp p) U1)
+            return $ execAcUint (from bx :: UInt n rs (ArithmeticCircuit (Zp p) U1)) === execAcUint ux 
+        it "iso bytestring correctly" $ do
+            x <- toss m
+            let ux = fromConstant x :: UInt n Auto (ArithmeticCircuit (Zp p) U1)
+                bx = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
+            return $ evalBS (from ux :: ByteString n (ArithmeticCircuit (Zp p) U1)) === evalBS bx
 
         -- TODO: reduce the number of constraints in divMod or wait for lookup arguments
         when (n <= 128) $ it "performs divMod correctly" $ withMaxSuccess 10 $ do
