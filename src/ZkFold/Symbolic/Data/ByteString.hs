@@ -21,6 +21,7 @@ module ZkFold.Symbolic.Data.ByteString
 
 import           Control.DeepSeq                    (NFData)
 import           Control.Monad                      (replicateM)
+import qualified Data.Bits                          as B
 import qualified Data.ByteString                    as Bytes
 import           Data.Kind                          (Type)
 import           Data.List                          (reverse, unfoldr)
@@ -50,7 +51,6 @@ import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
-import qualified Data.Bits as B
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -207,10 +207,10 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                             xj = x j
                         in xi * xj
 
-    xor (ByteString l) (ByteString r) = ByteString $ symbolic2F l r (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n)) solve 
+    xor (ByteString l) (ByteString r) = ByteString $ symbolic2F l r (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n)) solve
         where
             vecToNat :: (ToConstant a Natural) => Vector n a -> Natural
-            vecToNat =  Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0 
+            vecToNat =  Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0
 
             solve :: MonadCircuit i (BaseField c) m => Vector n i -> Vector n i -> m (Vector n i)
             solve lv rv = do
