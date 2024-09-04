@@ -28,8 +28,8 @@ import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), KnownRegisterSize, NumberOfRegisters,
-                                                              RegisterSize (..), Shrink (..))
+import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), KnownRegisterSize,
+                                                              NumberOfRegisters, RegisterSize (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -94,9 +94,9 @@ specUInt' = hspec $ do
         it "multiplies correctly" $ isHom @n @p @rs (*) (*) <$> toss m <*> toss m
         it "iso uint correctly" $ do
             x <- toss m
-            let bx = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1) 
+            let bx = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
                 ux = fromConstant x :: UInt n rs (ArithmeticCircuit (Zp p) U1)
-            return $ execAcUint (from bx :: UInt n rs (ArithmeticCircuit (Zp p) U1)) === execAcUint ux 
+            return $ execAcUint (from bx :: UInt n rs (ArithmeticCircuit (Zp p) U1)) === execAcUint ux
         it "iso bytestring correctly" $ do
             x <- toss m
             let ux = fromConstant x :: UInt n Auto (ArithmeticCircuit (Zp p) U1)
