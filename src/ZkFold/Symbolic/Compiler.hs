@@ -11,7 +11,6 @@ module ZkFold.Symbolic.Compiler (
 ) where
 
 import           Data.Aeson                                 (ToJSON)
-import           Data.Eq                                    (Eq)
 import           Data.Function                              (const, (.))
 import           Data.Functor                               (($>))
 import           Data.Proxy                                 (Proxy)
@@ -40,13 +39,10 @@ import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
 forceOne :: (Symbolic c, Traversable f) => c f -> c f
 forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) $> i)
 
-
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder ::
     forall a c f ni .
-    ( Eq a
-    , MultiplicativeMonoid a
-    , KnownNat ni
+    ( KnownNat ni
     , ni ~ TypeSize (Support f)
     , c ~ ArithmeticCircuit a (Vector ni)
     , SymbolicData f
@@ -81,9 +77,7 @@ compileForceOne = restore . const . optimize . forceOne . solder @a
 -- | Compiles function `f` into an arithmetic circuit.
 compile ::
     forall a c f y ni .
-    ( Eq a
-    , MultiplicativeMonoid a
-    , KnownNat ni
+    ( KnownNat ni
     , ni ~ TypeSize (Support f)
     , c ~ ArithmeticCircuit a (Vector ni)
     , SymbolicData f
@@ -101,9 +95,7 @@ compile = restore . const . optimize . solder @a
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::
     forall a c f ni .
-    ( Eq a
-    , MultiplicativeMonoid a
-    , KnownNat ni
+    ( KnownNat ni
     , ni ~ TypeSize (Support f)
     , c ~ ArithmeticCircuit a (Vector ni)
     , ToJSON a

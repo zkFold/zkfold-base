@@ -6,7 +6,8 @@ module ZkFold.Base.Protocol.Plonkup.PlonkConstraint where
 import           Control.Monad                                       (guard)
 import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.List                                           (find, permutations, sort)
-import           Data.Map                                            (Map, empty, fromListWith)
+import           Data.Map                                            (Map)
+import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (mapMaybe)
 import           GHC.IsList                                          (IsList (..))
 import           GHC.TypeNats                                        (KnownNat)
@@ -16,7 +17,7 @@ import           Prelude                                             hiding (Num
 import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial, var, variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial, var, variables, evalPolynomial, evalMonomial)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length, take, (!!))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -27,9 +28,9 @@ data PlonkConstraint i a = PlonkConstraint
     , qr :: a
     , qo :: a
     , qc :: a
-    , x1 :: Var (Vector i)
-    , x2 :: Var (Vector i)
-    , x3 :: Var (Vector i)
+    , x1 :: Maybe (Var (Vector i))
+    , x2 :: Maybe (Var (Vector i))
+    , x3 :: Maybe (Var (Vector i))
     }
     deriving (Show, Eq)
 
@@ -40,40 +41,39 @@ instance (Arbitrary a, Finite a, ToConstant a Natural, KnownNat i) => Arbitrary 
         qr <- arbitrary
         qo <- arbitrary
         qc <- arbitrary
-        x1 <- NewVar . toConstant @a <$> arbitrary
-        x2 <- NewVar . toConstant @a <$> arbitrary
-        x3 <- NewVar . toConstant @a <$> arbitrary
+        x1 <- Just . NewVar . toConstant @a <$> arbitrary
+        x2 <- Just . NewVar . toConstant @a <$> arbitrary
+        x3 <- Just . NewVar . toConstant @a <$> arbitrary
         let xs = sort [x1, x2, x3]
         return $ PlonkConstraint qm ql qr qo qc (xs !! 0) (xs !! 1) (xs !! 2)
 
-toPlonkConstraint :: forall a i . (Eq a, FiniteField a, KnownNat i) => Poly a (Var (Vector i)) Natural -> PlonkConstraint i a
+toPlonkConstraint :: forall a i . (Eq a, FiniteField a, Scale a a, KnownNat i) => Poly a (Var (Vector i)) Natural -> PlonkConstraint i a
 toPlonkConstraint p =
-    let xs    = toList $ variables p
-        i     = NewVar zero
+    let xs    = map Just $ toList (variables p)
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
-            0 -> [i, i, i]
-            1 -> [i, i, head xs, head xs]
-            2 -> [i] ++ xs ++ xs
+            0 -> [Nothing, Nothing, Nothing]
+            1 -> [Nothing, Nothing, head xs, head xs]
+            2 -> [Nothing] ++ xs ++ xs
             _ -> xs ++ xs
 
-        getCoef :: Map (Var (Vector i)) Natural -> a
-        getCoef m = case find (\(_, as) -> m == as) (toList p) of
+        getCoef :: Map (Maybe (Var (Vector i))) Natural -> a
+        getCoef m = case find (\(_, as) -> m == Map.mapKeys Just as) (toList p) of
             Just (c, _) -> c
             _           -> zero
 
-        getCoefs :: [Var (Vector i)] -> Maybe (PlonkConstraint i a)
+        getCoefs :: [Maybe (Var (Vector i))] -> Maybe (PlonkConstraint i a)
         getCoefs [a, b, c] = do
             let xa = [(a, 1)]
                 xb = [(b, 1)]
                 xc = [(c, 1)]
-                xaxb = [(a, 1), (b, 1)]
+                xaxb = xa <> xb
 
-                qm = getCoef $ fromListWith (+) xaxb
+                qm = getCoef $ Map.fromListWith (+) xaxb
                 ql = getCoef $ fromList xa
                 qr = getCoef $ fromList xb
                 qo = getCoef $ fromList xc
-                qc = getCoef $ empty
-            guard $ p - polynomial [(qm, fromList xaxb), (ql, fromList xa), (qr, fromList xb), (qo, fromList xc), (qc, one)] == zero
+                qc = getCoef Map.empty
+            guard $ evalPolynomial evalMonomial (var . Just) p - polynomial [(qm, fromList xaxb), (ql, fromList xa), (qr, fromList xb), (qo, fromList xc), (qc, one)] == zero
             return $ PlonkConstraint qm ql qr qo qc a b c
         getCoefs _ = Nothing
 
@@ -81,7 +81,7 @@ toPlonkConstraint p =
 
 fromPlonkConstraint :: (Eq a, Scale a a, FromConstant a a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var (Vector i)) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
-    let xvar v = if v == NewVar zero then zero else var v
+    let xvar = maybe zero var
         xa = xvar a
         xb = xvar b
         xc = xvar c
