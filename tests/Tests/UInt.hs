@@ -63,7 +63,6 @@ isHom f g x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (f
 specUInt'
     :: forall p n r r2n rs
     .  PrimeField (Zp p)
-    => Iso (ByteString n (ArithmeticCircuit (Zp p) U1)) (UInt n rs (ArithmeticCircuit (Zp p) U1))
     => KnownNat n
     => KnownNat (2 * n)
     => KnownRegisterSize rs
