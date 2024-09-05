@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans     #-}
@@ -10,6 +11,7 @@ import           Data.Aeson                                          hiding (Boo
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
+import           Data.Type.Equality                                  (type (~))
 import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (Show, mempty, pure, return, show, ($), (++),
                                                                       (<$>))
@@ -25,13 +27,23 @@ import           ZkFold.Symbolic.Data.FieldElement                   (FieldEleme
 
 ------------------------------------- Instances -------------------------------------
 
-instance (Arithmetic a, Arbitrary a, Arbitrary (Rep i), Haskell.Ord (Rep i), Representable i, Haskell.Foldable i, ToConstant (Rep i) Natural) => Arbitrary (ArithmeticCircuit a i Par1) where
+instance
+  ( Arithmetic a, Arbitrary a, Arbitrary (Rep i), Haskell.Ord (Rep i)
+  , Representable i, Haskell.Foldable i
+  , ToConstant (Rep i), Const (Rep i) ~ Natural
+  ) => Arbitrary (ArithmeticCircuit a i Par1) where
     arbitrary = do
         outVar <- InVar <$> arbitrary
         let ac = mempty {acOutput = Par1 outVar}
         fromFieldElement <$> arbitrary' (FieldElement ac) 10
 
-arbitrary' :: forall a i . (Arithmetic a, Arbitrary a, FromConstant a a, Haskell.Ord (Rep i), Representable i, Haskell.Foldable i, ToConstant (Rep i) Natural) => FieldElement (ArithmeticCircuit a i) -> Natural -> Gen (FieldElement (ArithmeticCircuit a i))
+arbitrary' ::
+  forall a i .
+  (Arithmetic a, Arbitrary a, FromConstant a a) =>
+  (Haskell.Ord (Rep i), Representable i, Haskell.Foldable i) =>
+  (ToConstant (Rep i), Const (Rep i) ~ Natural) =>
+  FieldElement (ArithmeticCircuit a i) -> Natural ->
+  Gen (FieldElement (ArithmeticCircuit a i))
 arbitrary' ac 0 = return ac
 arbitrary' ac iter = do
     let vars = getAllVars (fromFieldElement ac)

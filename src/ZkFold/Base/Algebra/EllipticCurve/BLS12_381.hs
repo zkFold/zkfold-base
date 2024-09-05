@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingVia     #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE TypeOperators   #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -115,7 +116,7 @@ leBytesOf n =
         (n', fromIntegral r) : leBytesOf n'
 
 -- finite list of bytes, big endian order
-bytesOf :: ToConstant a Natural => Int -> a -> [Word8]
+bytesOf :: (ToConstant a, Const a ~ Natural) => Int -> a -> [Word8]
 bytesOf n
     = reverse
     . take n

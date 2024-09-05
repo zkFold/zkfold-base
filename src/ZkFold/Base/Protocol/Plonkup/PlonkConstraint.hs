@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedLists      #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.PlonkConstraint where
@@ -38,7 +39,7 @@ data PlonkConstraint i a = PlonkConstraint
     }
     deriving (Show, Eq)
 
-instance (Arbitrary a, Finite a, ToConstant a Natural, KnownNat i) => Arbitrary (PlonkConstraint i a) where
+instance (Arbitrary a, Finite a, ToConstant a, Const a ~ Natural, KnownNat i) => Arbitrary (PlonkConstraint i a) where
     arbitrary = do
         qm <- arbitrary
         ql <- arbitrary
