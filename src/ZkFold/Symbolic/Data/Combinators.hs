@@ -187,11 +187,12 @@ bitsOf :: MonadCircuit i a m => Natural -> i -> m [i]
 bitsOf n k = for [0 .. n -! 1] $ \j ->
     newConstrained (\x i -> let xi = x i in xi * (xi - one)) (repr j . ($ k))
     where
+        repr :: WitnessField n x => Natural -> x -> x
         repr j =
-            fromConstant
-            . (`mod` fromConstant @Natural 2)
-            . (`div` fromConstant @Natural (2 ^ j))
-            . toConstant
+              fromConstant
+              . (`mod` fromConstant @Natural 2)
+              . (`div` fromConstant @Natural (2 ^ j))
+              . toConstant
 
 horner :: MonadCircuit i a m => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using

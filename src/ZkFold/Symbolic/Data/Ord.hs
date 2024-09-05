@@ -91,9 +91,9 @@ getBitsBE ::
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
 getBitsBE x =
-  hmap unsafeToVector
+  hmap (V.reverse . unsafeToVector)
     $ symbolicF (pieces x Proxy)
-        (map fromConstant . padBits n . binaryExpansion . toConstant . V.item)
+        (padBits n . map fromConstant . binaryExpansion . toConstant . V.item)
         (expansion n . V.item)
   where n = numberOfBits @(BaseField c)
 
