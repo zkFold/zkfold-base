@@ -38,8 +38,19 @@ class FromConstant a b where
 instance FromConstant a a where
     fromConstant = id
 
+-- | A class of algebraic structures which can be converted to "constant type"
+-- related with it: natural numbers, integers, rationals etc. Subject to the
+-- following law:
+--
+-- [Inverse] @'fromConstant' ('toConstant' x) == x@
 class ToConstant a where
+    -- | One of "constant types" related with @a@.
+    -- Typically the smallest type among them by inclusion.
     type Const a :: Type
+
+    -- | A way to turn element of @a@ into a @'Const' a@.
+    -- According to the law of @'ToConstant'@,
+    -- has to be right inverse to @'fromConstant'@.
     toConstant :: a -> Const a
 
 -- FIXME to be removed in #223
