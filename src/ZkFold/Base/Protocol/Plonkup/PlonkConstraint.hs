@@ -3,24 +3,27 @@
 
 module ZkFold.Base.Protocol.Plonkup.PlonkConstraint where
 
-import           Control.Monad                                       (guard)
+import           Control.Monad                                       (guard, return)
 import           Data.Containers.ListUtils                           (nubOrd)
-import           Data.List                                           (find, permutations, sort)
+import           Data.Eq                                             (Eq (..))
+import           Data.Function                                       (($), (.))
+import           Data.Functor                                        ((<$>))
+import           Data.List                                           (find, head, map, permutations, sort, (++))
 import           Data.Map                                            (Map)
 import qualified Data.Map                                            as Map
-import           Data.Maybe                                          (mapMaybe)
+import           Data.Maybe                                          (Maybe (..), mapMaybe, maybe)
 import           GHC.IsList                                          (IsList (..))
 import           GHC.TypeNats                                        (KnownNat)
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
-import           Test.QuickCheck                                     (Arbitrary (..))
+import           Prelude                                             (error)
+import           Test.QuickCheck                                     (Arbitrary (..), elements)
+import           Text.Show                                           (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, evalMonomial, evalPolynomial, polynomial,
                                                                       var, variables)
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Prelude                                      (length, take, (!!))
+import           ZkFold.Prelude                                      (length, replicate, replicateA, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 data PlonkConstraint i a = PlonkConstraint
@@ -42,11 +45,12 @@ instance (Arbitrary a, Finite a, ToConstant a Natural, KnownNat i) => Arbitrary 
         qr <- arbitrary
         qo <- arbitrary
         qc <- arbitrary
-        x1 <- Just . NewVar . toConstant @a <$> arbitrary
-        x2 <- Just . NewVar . toConstant @a <$> arbitrary
-        x3 <- Just . NewVar . toConstant @a <$> arbitrary
-        let xs = sort [x1, x2, x3]
-        return $ PlonkConstraint qm ql qr qo qc (xs !! 0) (xs !! 1) (xs !! 2)
+        k <- elements [1, 2, 3]
+        xs0 <- sort <$> replicateA k (Just . NewVar . toConstant @a <$> arbitrary)
+        let (x, y, z) = case replicate (3 -! k) Nothing ++ xs0 of
+              [x', y', z'] -> (x', y', z')
+              _            -> error "impossible"
+        return $ PlonkConstraint qm ql qr qo qc x y z
 
 toPlonkConstraint :: forall a i . (Eq a, FiniteField a, Scale a a, KnownNat i) => Poly a (Var (Vector i)) Natural -> PlonkConstraint i a
 toPlonkConstraint p =
@@ -67,7 +71,7 @@ toPlonkConstraint p =
             let xa = [(a, 1)]
                 xb = [(b, 1)]
                 xc = [(c, 1)]
-                xaxb = xa <> xb
+                xaxb = xa ++ xb
 
                 qm = getCoef $ Map.fromListWith (+) xaxb
                 ql = getCoef $ fromList xa
