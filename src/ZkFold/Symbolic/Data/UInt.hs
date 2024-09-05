@@ -141,7 +141,7 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r c)
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (UInt n r c) where
-    from (ByteString b) = UInt $ fromCircuitF b solve
+    from (ByteString b) = UInt $ symbolicF b (naturalToVector @c @n @r . Haskell.foldl (\y p -> toConstant p + 2 * y) 0) solve
         where
             solve :: forall i m. MonadCircuit i (BaseField c) m => Vector n i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
             solve bits = do
@@ -149,7 +149,7 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (
                 V.unsafeToVector . Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bsBits
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (ByteString n c) where
-    from (UInt v) =  ByteString $ fromCircuitF v solve
+    from (UInt u) =  ByteString $ symbolicF u (\ v ->  V.unsafeToVector $ fromConstant <$> toBsBits (vectorToNatural v (registerSize @(BaseField c) @n @r)) (value @n)) solve
         where
             solve :: forall i m. MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector n i)
             solve ui = do
@@ -171,7 +171,7 @@ instance
             solve xv = do
                 let regs = V.fromVector xv
                 zeros <- replicateA (value @k -! (value @n)) (newAssigned (Haskell.const zero))
-                bsBits <- toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r)(registerSize @(BaseField c) @n @r)
+                bsBits <- toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
                 extended <- fromBits (highRegisterSize @(BaseField c) @k @r) (registerSize @(BaseField c) @k @r) (zeros <> bsBits)
                 return $ V.unsafeToVector $ Haskell.reverse extended
 
@@ -407,7 +407,7 @@ class StrictNum a where
     strictMul :: a -> a -> a
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c) where
-    strictAdd (UInt x) (UInt y) = UInt $ symbolic2F x y (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) + vectorToNatural v (registerSize @(BaseField c) @n @r))solve
+    strictAdd (UInt x) (UInt y) = UInt $ symbolic2F x y (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) + vectorToNatural v (registerSize @(BaseField c) @n @r)) solve
         where
             solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) n r) i)
             solve xv yv = do
