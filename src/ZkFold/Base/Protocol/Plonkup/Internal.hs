@@ -39,7 +39,7 @@ getParams n = findK' $ mkStdGen 0
                 all (`notElem` hGroup) (hGroup' k1)
                 && all (`notElem` hGroup' k1) (hGroup' k2)
 
-genSubset :: [Var (Vector i)] -> Natural -> Gen [Var (Vector i)]
+genSubset :: [Var a (Vector i)] -> Natural -> Gen [Var a (Vector i)]
 genSubset vars maxLength = take maxLength <$> shuffle vars
 
 type PlonkPermutationSize n = 3 * n
@@ -56,7 +56,7 @@ data PlonkSetupParamsProve i c1 c2 = PlonkSetupParamsProve {
         gs'    :: V.Vector (Point c1),
         h0'    :: Point c2,
         h1'    :: Point c2,
-        iPub'  :: V.Vector (Var (Vector i))
+        iPub'  :: V.Vector (Var (ScalarField c1) (Vector i))
     }
 instance (Show (ScalarField c1), Show (BaseField c1), Show (BaseField c2),
         EllipticCurve c1, EllipticCurve c2) => Show (PlonkSetupParamsProve i c1 c2) where

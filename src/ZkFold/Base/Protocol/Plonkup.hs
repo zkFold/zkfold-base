@@ -47,7 +47,7 @@ data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
-        iPub  :: Vector l (Var (Vector i)),
+        iPub  :: Vector l (Var (ScalarField curve1) (Vector i)),
         ac    :: ArithmeticCircuit (ScalarField curve1) (Vector i) Par1,
         x     :: ScalarField curve1
     }

@@ -17,7 +17,7 @@ import           Prelude                                             hiding (Num
 import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, evalMonomial, evalPolynomial, polynomial,
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial,
                                                                       var, variables)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length, take, (!!))
@@ -29,40 +29,40 @@ data PlonkConstraint i a = PlonkConstraint
     , qr :: a
     , qo :: a
     , qc :: a
-    , x1 :: Maybe (Var (Vector i))
-    , x2 :: Maybe (Var (Vector i))
-    , x3 :: Maybe (Var (Vector i))
+    , x1 :: Var a (Vector i)
+    , x2 :: Var a (Vector i)
+    , x3 :: Var a (Vector i)
     }
     deriving (Show, Eq)
 
-instance (Arbitrary a, Finite a, ToConstant a Natural, KnownNat i) => Arbitrary (PlonkConstraint i a) where
+instance (Arbitrary a, Finite a, ToConstant a Natural, KnownNat i, Ord a) => Arbitrary (PlonkConstraint i a) where
     arbitrary = do
         qm <- arbitrary
         ql <- arbitrary
         qr <- arbitrary
         qo <- arbitrary
         qc <- arbitrary
-        x1 <- Just . NewVar . toConstant @a <$> arbitrary
-        x2 <- Just . NewVar . toConstant @a <$> arbitrary
-        x3 <- Just . NewVar . toConstant @a <$> arbitrary
+        x1 <- SysVar . NewVar . toConstant @a <$> arbitrary
+        x2 <- SysVar . NewVar . toConstant @a <$> arbitrary
+        x3 <- SysVar . NewVar . toConstant @a <$> arbitrary
         let xs = sort [x1, x2, x3]
         return $ PlonkConstraint qm ql qr qo qc (xs !! 0) (xs !! 1) (xs !! 2)
 
-toPlonkConstraint :: forall a i . (Eq a, FiniteField a, Scale a a, KnownNat i) => Poly a (Var (Vector i)) Natural -> PlonkConstraint i a
+toPlonkConstraint :: forall a i . (FiniteField a, Scale a a, KnownNat i, Ord a) => Poly a (Var a (Vector i)) Natural -> PlonkConstraint i a
 toPlonkConstraint p =
-    let xs    = map Just $ toList (variables p)
+    let xs    = toList (variables p)
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
-            0 -> [Nothing, Nothing, Nothing]
-            1 -> [Nothing, Nothing, head xs, head xs]
-            2 -> [Nothing] ++ xs ++ xs
+            0 -> [ConstVar one, ConstVar one, ConstVar one]
+            1 -> [ConstVar one, ConstVar one, head xs, head xs]
+            2 -> [ConstVar one] ++ xs ++ xs
             _ -> xs ++ xs
 
-        getCoef :: Map (Maybe (Var (Vector i))) Natural -> a
-        getCoef m = case find (\(_, as) -> m == Map.mapKeys Just as) (toList p) of
+        getCoef :: Map (Var a (Vector i)) Natural -> a
+        getCoef m = case find (\(_, as) -> m == as) (toList p) of
             Just (c, _) -> c
             _           -> zero
 
-        getCoefs :: [Maybe (Var (Vector i))] -> Maybe (PlonkConstraint i a)
+        getCoefs :: [Var a (Vector i)] -> Maybe (PlonkConstraint i a)
         getCoefs [a, b, c] = do
             let xa = [(a, 1)]
                 xb = [(b, 1)]
@@ -74,18 +74,17 @@ toPlonkConstraint p =
                 qr = getCoef $ fromList xb
                 qo = getCoef $ fromList xc
                 qc = getCoef Map.empty
-            guard $ evalPolynomial evalMonomial (var . Just) p - polynomial [(qm, fromList xaxb), (ql, fromList xa), (qr, fromList xb), (qo, fromList xc), (qc, one)] == zero
+            guard $ p - polynomial [(qm, fromList xaxb), (ql, fromList xa), (qr, fromList xb), (qo, fromList xc), (qc, one)] == zero
             return $ PlonkConstraint qm ql qr qo qc a b c
         getCoefs _ = Nothing
 
     in head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (Eq a, Scale a a, FromConstant a a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var (Vector i)) Natural
+fromPlonkConstraint :: (Ord a, Scale a a, FromConstant a a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var a (Vector i)) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
-    let xvar = maybe zero var
-        xa = xvar a
-        xb = xvar b
-        xc = xvar c
+    let xa = var a
+        xb = var b
+        xc = var c
         xaxb = xa * xb
     in
               scale qm xaxb
