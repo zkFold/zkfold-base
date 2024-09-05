@@ -123,11 +123,10 @@ eea a b = eea' 1 a b one zero zero one
                 rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
 
 --------------------------------------------------------------------------------
-instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Natural where
-    toConstant (UInt (Interpreter xs)) = vectorToNatural xs (registerSize @(Zp p) @n @r)
 
-instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) Integer where
-    toConstant = Haskell.fromIntegral @Natural . toConstant
+instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) where
+    type Const (UInt n r (Interpreter (Zp p))) = Natural
+    toConstant (UInt (Interpreter xs)) = vectorToNatural xs (registerSize @(Zp p) @n @r)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (UInt n r c) where
     one = fromConstant (1 :: Natural)
@@ -389,7 +388,7 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize rs) => StrictConv Natural (U
         _            -> error "strictConv: overflow"
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r c) where
-    strictConv = strictConv . toConstant @_ @Natural
+    strictConv = strictConv . toConstant
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictConv (c Par1) (UInt n r c) where
     strictConv a = UInt $ symbolicF a (\p -> V.unsafeToVector [unPar1 p]) solve
@@ -524,7 +523,7 @@ naturalToVector c = let (lo, hi, _) = cast @(BaseField c) @n @r . (`Haskell.mod`
     in V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
 
 
-vectorToNatural :: (ToConstant a Natural) => Vector n a -> Natural -> Natural
+vectorToNatural :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural -> Natural
 vectorToNatural v n = foldr (\l r -> fromConstant l  + b * r) 0 vs where
     vs = Haskell.map toConstant $ V.fromVector v :: [Natural]
     b = 2 ^ n

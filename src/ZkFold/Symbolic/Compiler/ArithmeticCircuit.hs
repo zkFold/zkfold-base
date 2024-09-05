@@ -84,7 +84,10 @@ desugarRange i b
           | otherwise = one + ($ k) * (($ j) - one)
 
 -- | Desugars range constraints into polynomial constraints
-desugarRanges :: (Arithmetic a, Ord (Rep i), Foldable i, Representable i, ToConstant (Rep i) Natural) => ArithmeticCircuit a i o -> ArithmeticCircuit a i o
+desugarRanges ::
+  (Arithmetic a, Ord (Rep i), Foldable i, Representable i) =>
+  (ToConstant (Rep i), Const (Rep i) ~ Natural) =>
+  ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
   let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(NewVar k, v) | (k,v) <- toList (acRange c)]
    in r' { acRange = mempty, acOutput = acOutput c }
