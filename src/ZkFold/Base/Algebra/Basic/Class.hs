@@ -279,9 +279,10 @@ If @a@ and @b@ are in @R@ and @b@ is nonzero, then there exist @q@ and @r@ in @R
 The function @divMod@ associated with this class produces @q@ and @r@ given @a@ and @b@.
 -}
 class Semiring a => EuclideanDomain a where
-    {-# MINIMAL divMod #-}
+    {-# MINIMAL divMod | (div, mod) #-}
 
     divMod :: a -> a -> (a, a)
+    divMod n d = (n `div` d, n `mod` d)
 
     div :: a -> a -> a
     div n d = Haskell.fst $ divMod n d

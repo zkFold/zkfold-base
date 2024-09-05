@@ -8,6 +8,7 @@ import           Data.Functor                     (Functor (fmap), (<$>))
 import           Data.Kind                        (Type)
 import           Data.Type.Equality               (type (~))
 import           GHC.Generics                     (Par1 (Par1), type (:.:) (unComp1))
+import           Numeric.Natural                  (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative (HApplicative (hpair, hunit))
@@ -49,7 +50,7 @@ class (HApplicative c, Package c, Arithmetic (BaseField c)) => Symbolic c where
     -- | A wrapper around @'symbolicF'@ which extracts the pure computation
     -- from the circuit computation using the @'Witnesses'@ newtype.
     fromCircuitF :: c f -> CircuitFun f g (BaseField c) -> c g
-    fromCircuitF x f = symbolicF x (runWitnesses @(BaseField c) . f) f
+    fromCircuitF x f = symbolicF x (runWitnesses @Natural @(BaseField c) . f) f
 
 -- | Embeds the pure value(s) into generic context @c@.
 embed :: (Symbolic c, Foldable f, Functor f) => f (BaseField c) -> c f

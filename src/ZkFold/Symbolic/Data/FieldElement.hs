@@ -92,8 +92,9 @@ instance
 instance Symbolic c => BinaryExpansion (FieldElement c) where
   type Bits (FieldElement c) = c (Vector (NumberOfBits (BaseField c)))
   binaryExpansion (FieldElement c) = hmap unsafeToVector $ symbolicF c
-    (\(Par1 v) -> padBits (numberOfBits @(BaseField c)) $ binaryExpansion v)
-    (\(Par1 i) -> expansion (numberOfBits @(BaseField c)) i)
+    (padBits n . fmap fromConstant . binaryExpansion . toConstant . unPar1)
+    (expansion n . unPar1)
+    where n = numberOfBits @(BaseField c)
   fromBinary bits =
     FieldElement $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
       $ fmap Par1 . horner . fromVector

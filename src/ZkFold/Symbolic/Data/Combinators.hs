@@ -7,7 +7,7 @@
 module ZkFold.Symbolic.Data.Combinators where
 
 import           Control.Monad                    (mapM)
-import           Data.Foldable                    (Foldable (..), foldlM)
+import           Data.Foldable                    (foldlM)
 import           Data.Kind                        (Type)
 import           Data.List                        (find, splitAt)
 import           Data.List.Split                  (chunksOf)
@@ -16,7 +16,6 @@ import           Data.Proxy                       (Proxy (..))
 import           Data.Ratio                       ((%))
 import           Data.Traversable                 (Traversable, for)
 import           Data.Type.Bool                   (If)
-import           Data.Type.Equality               (type (~))
 import           Data.Type.Ord
 import qualified Data.Zip                         as Z
 import           GHC.Base                         (const, return)
@@ -28,7 +27,6 @@ import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
-import           ZkFold.Prelude                   (drop, take, (!!))
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | A class for isomorphic types.
@@ -47,8 +45,6 @@ class Extend a b where
 class Shrink a b where
     shrink :: a -> b
 
-
-
 -- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 --
 toBits
@@ -61,12 +57,9 @@ toBits
 toBits regs hiBits loBits = do
     let lows = tail regs
         high = head regs
-
     bitsLow  <- Haskell.concatMap Haskell.reverse <$> mapM (expansion loBits) lows
     bitsHigh <- Haskell.reverse <$> expansion hiBits high
-
     pure $ bitsHigh <> bitsLow
-
 
 -- | The inverse of @toBits@.
 --
@@ -78,10 +71,8 @@ fromBits
 fromBits hiBits loBits bits = do
     let (bitsHighNew, bitsLowNew) = splitAt (Haskell.fromIntegral hiBits) bits
     let lowVarsNew = chunksOf (Haskell.fromIntegral loBits) bitsLowNew
-
     lowsNew <- mapM (horner . Haskell.reverse) lowVarsNew
     highNew <- horner . Haskell.reverse $  bitsHighNew
-
     pure $ highNew : lowsNew
 
 data RegisterSize = Auto | Fixed Natural
@@ -135,9 +126,7 @@ type family MaxRegisterSize (a :: Type) (regCount :: Natural) :: Natural where
 
 type family ListRange (from :: Natural) (to :: Natural) :: [Natural] where
     ListRange from from = '[from]
-    ListRange from to = from ': (ListRange (from + 1) to)
-
-
+    ListRange from to = from ': ListRange (from + 1) to
 
 numberOfRegisters :: forall a n r . ( Finite a, KnownNat n, KnownRegisterSize r) => Natural
 numberOfRegisters =  case regSize @r of
@@ -175,12 +164,12 @@ highRegisterBits :: forall p n. (Finite p, KnownNat n) => Natural
 highRegisterBits = case getNatural @n `mod` maxBitsPerFieldElement @p of
                      0 -> maxBitsPerFieldElement @p
                      m -> m
+
 -- | The lowest possible number of registers to encode @n@ bits using Field elements from @p@
 -- assuming that each register storest the largest possible number of bits.
 --
 minNumberOfRegisters :: forall p n. (Finite p, KnownNat n) => Natural
 minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` maxBitsPerRegister @p @n
-
 
 ---------------------------------------------------------------
 
@@ -196,10 +185,13 @@ bitsOf :: MonadCircuit i a m => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
 bitsOf n k = for [0 .. n -! 1] $ \j ->
-    newConstrained (\x i -> let xi = x i in xi * (xi - one)) ((!! j) . repr . ($ k))
+    newConstrained (\x i -> let xi = x i in xi * (xi - one)) (repr j . ($ k))
     where
-        repr :: forall b . (BinaryExpansion b, Bits b ~ [b], Finite b) => b -> [b]
-        repr = padBits (numberOfBits @b) . binaryExpansion
+        repr j =
+            fromConstant
+            . (`mod` fromConstant @Natural 2)
+            . (`div` fromConstant @Natural (2 ^ j))
+            . toConstant
 
 horner :: MonadCircuit i a m => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
@@ -213,15 +205,21 @@ splitExpansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> Natural -> i 
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).
 splitExpansion n1 n2 k = do
-    let f x y = x + y + y
-    l <- newRanged (fromConstant $ (2 :: Natural) ^ n1 -! 1) $ foldr f zero . take n1 . repr . ($ k)
-    h <- newRanged (fromConstant $ (2 :: Natural) ^ n2 -! 1) $ foldr f zero . take n2 . drop n1 . repr . ($ k)
+    l <- newRanged (fromConstant @Natural $ 2 ^ n1 -! 1) $ lower . ($ k)
+    h <- newRanged (fromConstant @Natural $ 2 ^ n2 -! 1) $ upper . ($ k)
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where
-        repr :: forall b . (BinaryExpansion b, Bits b ~ [b]) => b -> [b]
-        repr = padBits (n1 + n2) . binaryExpansion
+        lower :: WitnessField n a => a -> a
+        lower =
+            fromConstant . (`mod` fromConstant @Natural (2 ^ n1)) . toConstant
 
+        upper :: WitnessField n a => a -> a
+        upper =
+            fromConstant
+            . (`mod` fromConstant @Natural (2 ^ n2))
+            . (`div` fromConstant @Natural (2 ^ n1))
+            . toConstant
 
 runInvert :: (MonadCircuit i a m, Z.Zip f, Traversable f) => f i -> m (f i, f i)
 runInvert is = do
