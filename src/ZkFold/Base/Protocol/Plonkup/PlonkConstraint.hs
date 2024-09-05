@@ -13,6 +13,7 @@ import           Data.List                                           (find, head
 import           Data.Map                                            (Map)
 import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (Maybe (..), mapMaybe, maybe)
+import           Data.Type.Equality                                  (type (~))
 import           GHC.IsList                                          (IsList (..))
 import           GHC.TypeNats                                        (KnownNat)
 import           Numeric.Natural                                     (Natural)

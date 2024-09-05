@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
