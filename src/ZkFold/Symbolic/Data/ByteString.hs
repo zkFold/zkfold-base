@@ -210,7 +210,7 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
 
     xor (ByteString l) (ByteString r) = ByteString $ symbolic2F l r (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n)) solve
         where
-            vecToNat :: (ToConstant a Natural) => Vector n a -> Natural
+            vecToNat :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural
             vecToNat =  Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0
 
             solve :: MonadCircuit i (BaseField c) m => Vector n i -> Vector n i -> m (Vector n i)
