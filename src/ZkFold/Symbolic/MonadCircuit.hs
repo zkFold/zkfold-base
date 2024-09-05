@@ -69,13 +69,13 @@ type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
 -- * That provided witnesses satisfy the provided constraints. To check this,
 --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
 -- * That introduced constraints are supported by the zk-SNARK utilized for later proving.
-class Monad m => MonadCircuit i a m | m -> i, m -> a where
+class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a where
     -- | Creates new variable from witness constrained with an inclusive upper bound.
     -- E.g., @'newRanged' b (\\x -> x i - one)@ creates new variable whose value
     -- is equal to @x i - one@ and which is expected to be in range @[0..b]@.
     --
     -- NOTE: this adds a range constraint to the system.
-    newRanged :: a -> Witness i a -> m i
+    newRanged :: a -> Witness var a -> m var
 
     -- | Creates new variable from witness constrained by a polynomial.
     -- E.g., @'newConstrained' (\\x i -> x i * (x i - one)) (\\x -> x j - one)@
@@ -86,14 +86,14 @@ class Monad m => MonadCircuit i a m | m -> i, m -> a where
     --
     -- NOTE: it is not checked (yet) whether provided constraint is in
     -- appropriate form for zkSNARK in use.
-    newConstrained :: NewConstraint i a -> Witness i a -> m i
+    newConstrained :: NewConstraint var a -> Witness var a -> m var
 
     -- | Adds new polynomial constraint to the system.
     -- E.g., @'constraint' (\\x -> x i)@ forces variable @i@ to be zero.
     --
     -- NOTE: it is not checked (yet) whether provided constraint is in
     -- appropriate form for zkSNARK in use.
-    constraint :: ClosedPoly i a -> m ()
+    constraint :: ClosedPoly var a -> m ()
 
     -- | A wrapper around @'newConstrained'@ which creates
     -- new variable given a polynomial witness.
@@ -104,7 +104,7 @@ class Monad m => MonadCircuit i a m | m -> i, m -> a where
     --
     -- NOTE: is is not checked (yet) whether the corresponding constraint is in
     -- appropriate form for zkSNARK in use.
-    newAssigned :: ClosedPoly i a -> m i
+    newAssigned :: ClosedPoly var a -> m var
     newAssigned p = newConstrained (\x i -> p x - x i) p
 
 -- | Field of witnesses with decidable equality and ordering
