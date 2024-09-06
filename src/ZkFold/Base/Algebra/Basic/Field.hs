@@ -95,7 +95,7 @@ instance KnownNat p => FromConstant Natural (Zp p) where
 
 instance KnownNat p => Semiring (Zp p)
 
-instance KnownNat p => EuclideanDomain (Zp p) where
+instance KnownNat p => SemiEuclidean (Zp p) where
     divMod a b = let (q, r) = Haskell.divMod (fromZp a) (fromZp b)
                   in (toZp . fromIntegral $ q, toZp . fromIntegral $ r)
 

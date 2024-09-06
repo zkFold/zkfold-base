@@ -77,6 +77,6 @@ instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where
   type Bits (Sources a i) = [Sources a i]
   binaryExpansion = replicate (numberOfBits @a)
 
-instance Ord i => EuclideanDomain (Sources a i) where
+instance Ord i => SemiEuclidean (Sources a i) where
   div = (<>)
   mod = (<>)

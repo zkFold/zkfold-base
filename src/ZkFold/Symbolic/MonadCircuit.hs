@@ -18,7 +18,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 -- | A @'WitnessField'@ should support all algebraic operations
 -- used inside an arithmetic circuit.
 type WitnessField n a = ( FiniteField a, ToConstant a, Const a ~ n
-                        , FromConstant n a, EuclideanDomain n)
+                        , FromConstant n a, SemiEuclidean n)
 
 -- | A type of witness builders. @i@ is a type of variables, @a@ is a base field.
 --

@@ -269,16 +269,20 @@ intScale n a | n < 0     = naturalFromInteger (-n) `scale` negate a
 -}
 class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semiring a
 
-{- | A Euclidean domain @R@ is an integral domain which can be endowed
-with at least one function @f : R\{0} -> R+@ s.t.
-If @a@ and @b@ are in @R@ and @b@ is nonzero, then there exist @q@ and @r@ in @R@ such that
-@a = bq + r@ and either @r = 0@ or @f(r) < f(b)@.
+{- | A semi-Euclidean-domain @a@ is a semiring without zero divisors which can
+be endowed with at least one function @f : a\{0} -> R+@ s.t. if @x@ and @y@ are
+in @a@ and @y@ is nonzero, then there exist @q@ and @r@ in @a@ such that
+@x = qy + r@ and either @r = 0@ or @f(r) < f(y)@.
 
-@q@ and @r@ are called respectively a quotient and a remainder of the division (or Euclidean division) of @a@ by @b@.
+@q@ and @r@ are called respectively a quotient and a remainder of the division
+(or Euclidean division) of @x@ by @y@.
 
-The function @divMod@ associated with this class produces @q@ and @r@ given @a@ and @b@.
+The function @divMod@ associated with this class produces @q@ and @r@
+given @a@ and @b@.
+
+This is a generalization of a notion of Euclidean domains to semirings.
 -}
-class Semiring a => EuclideanDomain a where
+class Semiring a => SemiEuclidean a where
     {-# MINIMAL divMod | (div, mod) #-}
 
     divMod :: a -> a -> (a, a)
@@ -479,7 +483,7 @@ instance AdditiveMonoid Natural where
 
 instance Semiring Natural
 
-instance EuclideanDomain Natural where
+instance SemiEuclidean Natural where
     divMod = Haskell.divMod
 
 instance BinaryExpansion Natural where
@@ -517,7 +521,7 @@ instance FromConstant Natural Integer where
 
 instance Semiring Integer
 
-instance EuclideanDomain Integer where
+instance SemiEuclidean Integer where
     divMod = Haskell.divMod
 
 instance Ring Integer
