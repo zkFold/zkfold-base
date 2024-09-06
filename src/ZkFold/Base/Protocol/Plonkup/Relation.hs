@@ -3,7 +3,8 @@
 
 module ZkFold.Base.Protocol.Plonkup.Relation where
 
-import           Data.Map                                            (Map, elems)
+import           Data.Functor.Rep                                    (index)
+import           Data.Map                                            (Map, elems, (!))
 import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
@@ -37,6 +38,7 @@ toPlonkRelation :: forall i n l a .
     => KnownNat (3 * n)
     => KnownNat l
     => Arithmetic a
+    => Scale a a
     => Vector l (Var (Vector i))
     -> ArithmeticCircuit a (Vector i) Par1
     -> Maybe (PlonkRelation n i a)
@@ -61,9 +63,13 @@ toPlonkRelation xPub ac0 =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c
 
-        w1 i   = toPolyVec $ fromList $ map (indexW ac i) a
-        w2 i   = toPolyVec $ fromList $ map (indexW ac i) b
-        w3 i   = toPolyVec $ fromList $ map (indexW ac i) c
+        indexW _ Nothing           = one
+        indexW i (Just (InVar v))  = index i v
+        indexW i (Just (NewVar v)) = witnessGenerator ac i ! v
+
+        w1 i   = toPolyVec $ fromList $ map (indexW i) a
+        w2 i   = toPolyVec $ fromList $ map (indexW i) b
+        w3 i   = toPolyVec $ fromList $ map (indexW i) c
         wmap i _ = (w1 i, w2 i, w3 i)
 
     in if (acSizeN ac + value @l) <= value @n

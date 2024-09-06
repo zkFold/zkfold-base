@@ -61,25 +61,26 @@ arbitrary' ac iter = do
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var i)), Haskell.Ord (Rep i), Show (Var i)) => Show (ArithmeticCircuit a i o) where
-    show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r) ++ "\n, acOutput = " ++ show (acOutput r) ++ "\n, acVarOrder = " ++ show (acVarOrder r) ++ " }"
+    show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r)
+                          ++ "\n, acRange = " ++ show (acRange r)
+                          ++ "\n, acOutput = " ++ show (acOutput r)
+                          ++ " }"
 
 -- TODO: add witness generation info to the JSON object
 instance (ToJSON a, ToJSON (o (Var i)), ToJSONKey (Var i), FromJSONKey (Var i)) => ToJSON (ArithmeticCircuit a i o) where
     toJSON r = object
         [
             "system" .= acSystem r,
-            "output" .= acOutput r,
-            "order"  .= acVarOrder r
+            "range"  .= acRange r,
+            "output" .= acOutput r
         ]
 
 -- TODO: properly restore the witness generation function
--- TODO: Check that there are exactly N outputs
 instance (FromJSON a, FromJSON (o (Var i)), ToJSONKey (Var i), FromJSONKey (Var i), Haskell.Ord (Rep i)) => FromJSON (ArithmeticCircuit a i o) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"
             acRange    <- v .: "range"
-            acVarOrder <- v .: "order"
             acOutput   <- v .: "output"
             let acWitness = empty
                 acRNG     = mkStdGen 0

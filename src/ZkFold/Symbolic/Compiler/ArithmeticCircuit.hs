@@ -25,7 +25,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         mapVarArithmeticCircuit,
         -- Arithmetization type fields
         acWitness,
-        acVarOrder,
         acInput,
         acOutput,
         -- Testing functions
@@ -66,7 +65,6 @@ import           ZkFold.Symbolic.MonadCircuit                        (MonadCircu
 optimize :: ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 optimize = id
 
-
 desugarRange :: (Arithmetic a, MonadCircuit i a m) => i -> a -> m ()
 desugarRange i b
   | b == negate one = return ()
@@ -99,9 +97,8 @@ acSizeN :: ArithmeticCircuit a i o -> Natural
 acSizeN = length . acSystem
 
 -- | Calculates the number of variables in the system.
--- The constant `1` is not counted.
 acSizeM :: ArithmeticCircuit a i o -> Natural
-acSizeM = length . acVarOrder
+acSizeM = length . acWitness
 
 -- | Calculates the number of range lookups in the system.
 acSizeR :: ArithmeticCircuit a i o -> Natural
@@ -119,7 +116,6 @@ acPrint ac = do
     let m = elems (acSystem ac)
         w = witnessGenerator ac U1
         v = acValue ac
-        vo = acVarOrder ac
         o = acOutput ac
     putStr "System size: "
     pPrint $ acSizeN ac
@@ -129,8 +125,6 @@ acPrint ac = do
     pPrint m
     putStr "Witness: "
     pPrint w
-    putStr "Variable order: "
-    pPrint vo
     putStr "Output: "
     pPrint o
     putStr "Value: "
@@ -168,4 +162,3 @@ checkCircuit c = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
                 varF (NewVar v) = w ! v
                 varF (InVar v)  = index ins v
             return $ evalPolynomial evalMonomial varF p === zero
-
