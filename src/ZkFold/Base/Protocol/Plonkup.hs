@@ -69,7 +69,9 @@ instance forall i n l c1 c2 ts plonk f g1 core.
         in PlonkupVerifierSetup {..}
 
     prove :: SetupProve plonk -> Witness plonk -> (Input plonk, Proof plonk)
-    prove = plonkupProve @i @n @l @c1 @c2 @ts @core
+    prove setup witness =
+        let (input, proof, _) = plonkupProve @i @n @l @c1 @c2 @ts @core setup witness
+        in (input, proof)
 
     verify :: SetupVerify plonk -> Input plonk -> Proof plonk -> Bool
     verify = plonkupVerify @i @n @l @c1 @c2 @ts

@@ -27,6 +27,7 @@ import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Base.Protocol.Plonkup.Prover.Setup
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
+import           ZkFold.Base.Protocol.Plonkup.Testing                (PlonkupProverTestInfo(..))
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -42,10 +43,10 @@ plonkupProve :: forall i n l c1 c2 ts core .
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
     , CoreFunction c1 core
-    ) => PlonkupProverSetup i n l c1 c2 -> (PlonkupWitnessInput i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1)
+    ) => PlonkupProverSetup i n l c1 c2 -> (PlonkupWitnessInput i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1, PlonkupProverTestInfo n c1)
 plonkupProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wInput, PlonkupProverSecret {..})
-    = (PlonkupInput wPub, PlonkupProof {..})
+    = (PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})
     where
         PlonkupCircuitPolynomials {..} = polynomials
 
@@ -64,14 +65,14 @@ plonkupProve PlonkupProverSetup {..}
 
         -- Round 1
 
-        a = polyVecLinear b1 b2 * zhX + w1X :: PlonkupPolyExtended n c1
-        b = polyVecLinear b3 b4 * zhX + w2X :: PlonkupPolyExtended n c1
-        c = polyVecLinear b5 b6 * zhX + w3X :: PlonkupPolyExtended n c1
+        aX = polyVecLinear b1 b2 * zhX + w1X :: PlonkupPolyExtended n c1
+        bX = polyVecLinear b3 b4 * zhX + w2X :: PlonkupPolyExtended n c1
+        cX = polyVecLinear b5 b6 * zhX + w3X :: PlonkupPolyExtended n c1
 
         com = msm @c1 @core @_ @(PlonkupPolyExtendedLength n)
-        cmA = gs `com` a
-        cmB = gs `com` b
-        cmC = gs `com` c
+        cmA = gs `com` aX
+        cmB = gs `com` bX
+        cmC = gs `com` cX
 
         -- Round 2
 
@@ -149,11 +150,11 @@ plonkupProve PlonkupProverSetup {..}
         alpha5 = alpha4 * alpha
 
         qX = (
-                (qmX * a * b + qlX * a + qrX * b + qoX * c + piX + qcX)
-              + (polyVecLinear beta gamma + a) * (polyVecLinear (beta * k1) gamma + b) * (polyVecLinear (beta * k2) gamma + c) * z1 .* alpha
-              - (a + beta *. s1X .+ gamma) * (b + beta *. s2X .+ gamma) * (c + beta *. s3X .+ gamma) * (z1 .*. omegas') .* alpha
+                (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
+              + (polyVecLinear beta gamma + aX) * (polyVecLinear (beta * k1) gamma + bX) * (polyVecLinear (beta * k2) gamma + cX) * z1 .* alpha
+              - (aX + beta *. s1X .+ gamma) * (bX + beta *. s2X .+ gamma) * (cX + beta *. s3X .+ gamma) * (z1 .*. omegas') .* alpha
               + (z1 - one) * polyVecLagrange @_ @n 1 omega .* alpha2
-              + qkX * (a - fX) .* alpha3
+              + qkX * (aX - fX) .* alpha3
               + z2 .* (one + delta) .*. (epsilon +. fX) .*. ((epsilon * (one + delta)) +. tX + delta *. (tX .*. omegas')) .* alpha4
               - (z2 .*. omegas') * ((epsilon * (one - delta)) +. h1X + delta *. h2X) * ((epsilon * (one - delta)) +. h2X + delta *. (h1X .*. omegas')) .* alpha4
               + (z2 - one) * polyVecLagrange @_ @n 1 omega .* alpha5
@@ -174,9 +175,9 @@ plonkupProve PlonkupProverSetup {..}
             `transcript` compress cmQhigh
         xi = challenge ts4
 
-        a_xi  = a `evalPolyVec` xi
-        b_xi  = b `evalPolyVec` xi
-        c_xi  = c `evalPolyVec` xi
+        a_xi  = aX `evalPolyVec` xi
+        b_xi  = bX `evalPolyVec` xi
+        c_xi  = cX `evalPolyVec` xi
         s1_xi = s1X `evalPolyVec` xi
         s2_xi = s2X `evalPolyVec` xi
         f_xi  = fX `evalPolyVec` xi
@@ -225,9 +226,9 @@ plonkupProve PlonkupProverSetup {..}
 
         proofX1 = (
                   rX
-                + (vn 1 *. (a - (a_xi *. one)))
-                + (vn 2 *. (b - (b_xi *. one)))
-                + (vn 3 *. (c - (c_xi *. one)))
+                + (vn 1 *. (aX - (a_xi *. one)))
+                + (vn 2 *. (bX - (b_xi *. one)))
+                + (vn 3 *. (cX - (c_xi *. one)))
                 + (vn 4 *. (s1X - (s1_xi *. one)))
                 + (vn 5 *. (s2X - (s2_xi *. one)))
                 + (vn 6 *. (fX - (f_xi *. one)))
