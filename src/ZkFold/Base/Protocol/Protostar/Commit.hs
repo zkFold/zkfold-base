@@ -57,7 +57,7 @@ instance {-# OVERLAPPABLE #-}
     , Bits b ~ [b]
     ) => HomomorphicCommit a b (Point BLS12_381_G1) where
     hcommit r b = let (g, h) = pedersonGH @(Point BLS12_381_G1)
-                   in pointMul b g + pointMul r h
+                   in pointMul b g -- + pointMul r h
 
 
 -- Pedersen commitment scheme for lists extending the homomorphism to elementwise sums:

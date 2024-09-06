@@ -73,10 +73,10 @@ foldFact iter inp = fold fact iter (toZp . fromIntegral <$> inp)
 
 main :: IO ()
 main = do
-    print $ foldFact 10 (V.unsafeToVector [1, 2])
-    defaultMain
-      [ benchOps @2 @32  @BLS12_381_Scalar
-      , benchOps @2 @64  @BLS12_381_Scalar
-      , benchOps @2 @128 @BLS12_381_Scalar
-      ]
+    print $ foldFact 5 (V.unsafeToVector [1, 2])
+--    defaultMain
+--      [ benchOps @2 @32  @BLS12_381_Scalar
+--      , benchOps @2 @64  @BLS12_381_Scalar
+--      , benchOps @2 @128 @BLS12_381_Scalar
+--      ]
 

@@ -17,10 +17,10 @@ data CommitOpen f c a = CommitOpen ([ProverMessage f a] -> c) a
 instance RandomOracle a b => RandomOracle (CommitOpen f c a) b where
     oracle (CommitOpen _ a) = oracle a
 
-data CommitOpenProverMessage t c a = Commit c | Open [ProverMessage t a]
+data CommitOpenProverMessage f c a = Commit c | Open [ProverMessage f a]
     deriving Generic
 
-instance (Binary c, Binary (ProverMessage t a)) => Binary (CommitOpenProverMessage t c a) where
+instance (Binary c, Binary (ProverMessage f a)) => Binary (CommitOpenProverMessage f c a) where
       put (Commit c)  = putWord8 0 <> put c
       put (Open msgs) = putWord8 1 <> put msgs
       get = do
@@ -32,8 +32,8 @@ instance (Binary c, Binary (ProverMessage t a)) => Binary (CommitOpenProverMessa
 instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen f c a) where
       type Witness f (CommitOpen f c a)         = (Witness f a, [ProverMessage f a])
       type Input f (CommitOpen f c a)           = Input f a
-      type ProverMessage t (CommitOpen f c a)   = CommitOpenProverMessage t c a
-      type VerifierMessage t (CommitOpen f c a) = VerifierMessage t a
+      type ProverMessage f (CommitOpen f c a)   = CommitOpenProverMessage f c a
+      type VerifierMessage f (CommitOpen f c a) = VerifierMessage f a
 
       type Degree (CommitOpen f c a)            = Degree a
 
@@ -54,7 +54,7 @@ instance (SpecialSoundProtocol f a, Eq c) => SpecialSoundProtocol f (CommitOpen 
                   f _          = error "Invalid message"
       verifier _ _ _ _ = error "Invalid transcript"
 
-commits :: SpecialSoundTranscript t (CommitOpen f c a) -> [c]
+commits :: SpecialSoundTranscript f (CommitOpen f c a) -> [c]
 commits = map f
       where f (Commit c, _) = c
             f _             = error "Invalid message"
@@ -70,6 +70,6 @@ opening a'@(CommitOpen _ a) w i challenge =
                   let rs  = snd <$> ts
                       tsA = zip ms rs
                       m   = prover @f a w i tsA
-                      c   = prover a' (w, ms) i ts
+                      c   = prover @f a' (w, ms) i ts
                   in (ms ++ [m], ts ++ [(c, challenge ts c)])
       in foldl f ([], []) [1 .. rounds @f a]

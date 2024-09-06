@@ -2,15 +2,10 @@
 
 module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
-import           Numeric.Natural                              (Natural)
-import           Prelude                                      hiding (length)
-
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly)
-import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
+import           Numeric.Natural (Natural)
+import           Prelude         hiding (length)
 
 type SpecialSoundTranscript t a = [(ProverMessage t a, VerifierMessage t a)]
-
-type LMap f = [Poly f Natural Natural]
 
 {-- | Section 3.1
 
@@ -23,11 +18,11 @@ challenge ri ∈ F. After the final message mk, the verifier computes the algebr
 and checks that the output is a zero vector of length l.
 
 --}
-class Arithmetic f => SpecialSoundProtocol f a where
+class SpecialSoundProtocol f a where
       type Witness f a
       type Input f a
-      type ProverMessage t a
-      type VerifierMessage t a
+      type ProverMessage f a
+      type VerifierMessage f a
 
       type Degree a :: Natural
       -- ^ d in the paper, the verifier degree
@@ -43,15 +38,10 @@ class Arithmetic f => SpecialSoundProtocol f a where
       algebraicMap
           :: a
           -> Input f a  -- ^ public input
-          -> [ProverMessage Natural a]  -- ^ NARK proof witness (the list of prover messages)
+          -> [ProverMessage f a]  -- ^ NARK proof witness (the list of prover messages)
           -> [f]        -- ^ Verifier random challenges
-          -> LMap f
+          -> f          -- ^ Slack variable for padding
+          -> [f]
       -- ^ the algebraic map V_sps computed by the verifier.
-      -- The j-th element of the vector is a homogeneous degree-j algebraic map that outputs a vector of @Dimension a@ field elements.
-      -- Variables have natural indices from @0@ to @2k@:
-      -- Variables @0@ to @l_in - 1@ are reserved for public input
-      -- Variables @l_in@ to @l_in + k@ are prover messages from the transcript
-      -- Variables @l_in + k + 1@ to @l_in + 2k@ are random challenges from the verifier
 
       verifier :: a -> Input f a -> [ProverMessage f a] -> [f] -> Bool
-

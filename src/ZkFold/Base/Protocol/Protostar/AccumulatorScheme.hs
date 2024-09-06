@@ -5,7 +5,7 @@
 module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
 import           Control.Lens                                 ((^.))
-import           Data.List                                    (foldl')
+import           Data.List                                    (foldl', transpose)
 import qualified Data.Vector                                  as DV
 import           Debug.Trace
 import           GHC.IsList                                   (IsList (..))
@@ -23,8 +23,8 @@ import           ZkFold.Base.Protocol.Protostar.Commit        (Commit (..), Homo
 import           ZkFold.Base.Protocol.Protostar.CommitOpen    (CommitOpen (..), CommitOpenProverMessage (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir    (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle        (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound  (Input, LMap, SpecialSoundProtocol (..))
-import           ZkFold.Prelude                               (length, (!!))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound  (Input, SpecialSoundProtocol (..))
+import           ZkFold.Prelude                               (length, take, (!!))
 
 traceP :: P.Show a => P.String -> a -> a
 traceP s a = trace (s P.<> P.show a) a
@@ -53,25 +53,33 @@ class AccumulatorScheme i f c m a where
 instance
     ( P.Eq c
     , P.Eq i
+    , P.Eq f
+    , P.Show i
     , P.Show f
     , P.Show c
-    , P.Show i
-    , f ~ m   -- If they are actually not the same, replace m with hashes.
+    , P.Show m
     , AdditiveGroup c
+    , AdditiveSemigroup m
     , Ring f
     , Scale f c
+    , Scale f m
+    , IsList (Input (PU.Poly f) (CommitOpen f c a))
     , IsList (Input f (CommitOpen f c a))
+    , Item (Input (PU.Poly f) (CommitOpen f c a)) ~ PU.Poly f
+    , IsList (Input (PU.Poly f) a)
     , Input f a ~ i
     , Item i ~ f
-    , ProverMessage Natural a ~ m
+    , Item (Input (PU.Poly f) a) ~ PU.Poly f
+    , ProverMessage f a ~ m
     , KnownNat (Degree (CommitOpen f c a))
     , KnownNat (Degree (CommitOpen f c a) + 1)
     , SpecialSoundProtocol f (CommitOpen f c a)
     , RandomOracle c f                                    -- Random oracle ρ_NARK
     , RandomOracle i f                                    -- Random oracle for compressing public input
     , HomomorphicCommit f [m] c
+    , HomomorphicCommit f [f] c
     ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen f c a)) where
-  prover fs@(FiatShamir sps i) ck acc ip@(InstanceProofPair pubi (NARKProof pi_x pi_w)) = -- trace traceStr $ -- P.undefined
+  prover fs@(FiatShamir sps i) ck acc ip@(InstanceProofPair pubi (NARKProof pi_x pi_w)) =  trace traceStr $ -- P.undefined
         (Accumulator (AccumulatorInstance (fromList pi'') ci'' ri'' eCapital' mu') mi'', eCapital_j)
       where
           traceStr :: P.String
@@ -79,14 +87,17 @@ instance
             [ "Acc " P.<> P.show acc
             , "Instance proof " P.<> P.show ip
             , "r_i " P.<> P.show r_i
-            , "k " P.<> P.show k
-            , P.show $ PU.toPoly $ DV.fromList [(acc^.w) !! (2 -! l_in), pi_w !! (2 -! l_in)]
-            , P.show (ixToPoly 2)
-            , P.show (ixToPoly 2 * ixToPoly 2)
-            , "mappedVars " P.<> P.show mappedVars
             , "e_uni " P.<> P.show e_uni
+            , "e_all " P.<> P.show e_all
             , "e_j " P.<> P.show e_j
+            , "e_prev " P.<> P.show e_prev
+            , "commit " P.<> P.show (hcommit @_ @_ @c ck e_prev)
+            , "e_capital " P.<> P.show eCapital'
+            , "evaluated " P.<> P.show (P.flip PU.evalPoly alpha <$> e_uni)
+            , "commit evaluated " P.<> P.show (hcommit @_ @_ @c ck $ P.flip PU.evalPoly alpha <$> e_uni)
             ]
+
+          d = value @(Degree (CommitOpen f c a))
 
           -- Fig. 3, step 1
           r_i :: [f]
@@ -94,39 +105,34 @@ instance
 
           -- Fig. 3, step 2
 
-          f_sps = degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps pubi [Open pi_w] r_i
-
           -- X + mu as a univariate polynomial
-          xMu :: PU.Poly f
-          xMu = PU.toPoly $ DV.fromList [acc^.x^.mu, one]
+          polyMu :: PU.Poly f
+          polyMu = PU.toPoly $ DV.fromList [acc^.x^.mu, one]
+    
+          -- X * pi + pi' as a list of univariate polynomials
+          polyPi = fromList $ P.zipWith (\accPi proofPi -> PU.toPoly $ DV.fromList [accPi, proofPi]) (toList $ acc^.x^.pi) (toList pubi) 
 
-          d :: Natural
-          d = value @(Degree (CommitOpen f c a))
+          -- X * mi + mi'
+          polyW = P.undefined
+          -- PU.toPoly $ DV.fromList [(acc^.w) !! (n -! l_in), pi_w !! (n -! l_in)]
 
-          k :: Natural
-          k = rounds @f sps
-
-          l_in :: Natural
-          l_in = length $ toList $ (acc^.x^.pi)
-
-          ixToPoly :: Natural -> PU.Poly f
-          ixToPoly n
-            | n < l_in      = PU.toPoly $ DV.fromList [(toList $ acc^.x^.pi) !! n, toList pubi !! n]        -- X * pi + pi'
-            | n <= k + l_in = PU.toPoly $ DV.fromList [(acc^.w) !! (n -! l_in), pi_w !! (n -! l_in)]        -- X * mi + mi'
-            | otherwise     = PU.toPoly $ DV.fromList [(acc^.x^.r) !! (n -! k -! l_in -! 1), r_i !! (n -! k -! l_in -! 1)]  -- X * ri + ri'
+          -- X * ri + ri'
+          polyR = P.undefined
+          -- PU.toPoly $ DV.fromList [(acc^.x^.r) !! (n -! k -! l_in), r_i !! (n -! k -! l_in)]  
 
           -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
-          mappedVars = fmap (PM.evalPolynomial PM.evalMonomial ixToPoly) <$> f_sps
-
           e_uni :: [PU.Poly f]
-          e_uni = P.foldl (P.zipWith (+)) (P.repeat zero) $ V.mapWithIx (\j p -> ((xMu ^ (d -! j)) *) <$> p) $ mappedVars
+          e_uni = algebraicMap @(PU.Poly f) sps polyPi polyW polyR polyMu 
 
-          e_all = (DV.toList . PU.fromPoly) <$> e_uni
+          -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
+          e_all = transpose $ (take (d + 1) . (P.<> (P.repeat zero)) . DV.toList . PU.fromPoly) <$> e_uni
 
           -- e_j are coefficients of degree-j homogenous polynomials where j is from the range [1, d - 1]
           e_j :: [[f]]
           e_j = P.tail $ P.init $ e_all
+
+          e_prev = P.head e_all
 
           -- Fig. 3, step 3
           eCapital_j = hcommit ck <$> e_j
@@ -171,7 +177,7 @@ instance
           -- Fig 4, step 5
           eEq = acc'^.e == acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf)
 
-  decider (FiatShamir sps i) ck acc = traceShow (commitsEq) $ commitsEq && eEq
+  decider (FiatShamir sps i) ck acc = traceShow (commitsEq, eEq) $ commitsEq && eEq
   --decider (FiatShamir sps i) ck acc = commitsEq && eEq
       where
           d :: Natural
@@ -184,40 +190,10 @@ instance
           commitsEq = P.and $ P.zipWith (\cm m_acc -> cm == hcommit (scale (acc^.x^.mu) ck) [m_acc]) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
-          f_sps :: [LMap f]
-          f_sps = V.fromVector $ degreeDecomposition @(Degree (CommitOpen f c a)) $ algebraicMap @f sps (acc^.x^.pi) [Open $ acc^.w] (acc^.x^.r)
+          err :: [f]
+          err = algebraicMap @f sps (acc^.x^.pi) [Open $ acc^.w] (acc^.x^.r) (acc^.x^.mu)
 
-          f_sps_mu :: [LMap f]
-          f_sps_mu = P.zipWith (\muDeg p -> fmap (scale ((acc^.x^.mu)^muDeg)) p) [d, d -! 1 .. 0] f_sps
-
-          f_sps_sum :: [PM.Poly f Natural Natural]
-          f_sps_sum = foldl' (P.zipWith (+)) (P.repeat zero) f_sps_mu
-
-          l_in :: Natural
-          l_in = length $ toList (acc^.x^.pi)
-
-          ixToVal :: Natural -> f
-          ixToVal n
-            | n < l_in      = toList (acc^.x^.pi) !! n               -- pi
-            | n <= k + l_in = (acc^.w) !! (n -! l_in)                -- mi
-            | otherwise     = (acc^.x^.r) !! (n -! k  -! l_in -! 1)  -- ri
-
-          err = PM.evalPolynomial PM.evalMonomial ixToVal <$> f_sps_sum
 
           -- Fig. 5, step 3
-          eEq = acc^.x^.e == hcommit ck err
-
--- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @n@
---
-degreeDecomposition :: forall n f . KnownNat (n + 1) => LMap f -> V.Vector (n + 1) (LMap f)
-degreeDecomposition lmap = V.generate degree_j
-    where
-        degree_j :: Natural -> LMap f
-        degree_j j = P.fmap (leaveDeg j) lmap
-        --degree_j j = trace ("Leaving degree " P.<> P.show j P.<> " of " P.<> P.show (value @n)) $ P.fmap (leaveDeg j) lmap
-
-        leaveDeg :: Natural -> PM.Poly f Natural Natural -> PM.Poly f Natural Natural
-        leaveDeg j (PM.P monomials) = PM.P $ P.filter (\(_, m) -> deg m == j) monomials
-
-deg :: PM.Mono Natural Natural -> Natural
-deg (PM.M m) = sum m
+          --eEq = (acc^.x^.e) == hcommit (scale (acc^.x^.mu) ck) err
+          eEq = (acc^.x^.e) == hcommit ck err

@@ -7,6 +7,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     ( toPoly
     , fromPoly
     , Poly
+    , evalPoly
     , removeZeros
     , scaleP
     , qr
@@ -73,6 +74,9 @@ fromPoly :: Poly c -> V.Vector c
 fromPoly (P cs) = cs
 
 instance {-# OVERLAPPING #-} FromConstant (Poly c) (Poly c)
+
+evalPoly :: Ring c => Poly c -> c -> c
+evalPoly (P cs) x = sum $ V.zipWith (*) cs $ fmap (x^) (V.generate (V.length cs) (fromIntegral @_ @Natural))
 
 instance FromConstant c c' => FromConstant c (Poly c') where
     fromConstant = P . V.singleton . fromConstant

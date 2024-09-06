@@ -13,8 +13,8 @@ import           Data.Map.Strict                                     (Map, (!))
 import qualified Data.Map.Strict                                     as M
 import           Debug.Trace
 import           GHC.Generics                                        (Generic)
-import           Prelude                                             (and, otherwise, type (~), ($), (<$>), (<), (<=),
-                                                                      (<>), (==))
+import           Prelude                                             (and, fmap, otherwise, type (~), ($), (.), (<$>),
+                                                                      (<), (<=), (<>), (==))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -34,15 +34,6 @@ import qualified ZkFold.Base.Protocol.Protostar.SpecialSound         as SPS
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
-
-fact
-    :: forall a n c
-    .  Arithmetic a
-    => c ~ ArithmeticCircuit a (Vector n)
-    => KnownNat n
-    => MultiplicativeSemigroup (FieldElement c)
-    => Vector n (FieldElement c) -> Vector n (FieldElement c)
-fact v = V.generate (\i -> if i == 0 then v V.!! 0 * v V.!! 1 else v V.!! 0)
 
 {--
 
@@ -66,181 +57,69 @@ data RecursiveCircuit n a
         , circuit    :: ArithmeticCircuit a (Vector n) (Vector n)
         } deriving (Generic, NFData)
 
-instance (KnownNat n, Arithmetic a, P.Show a) => SPS.SpecialSoundProtocol a (RecursiveCircuit n a) where
-    type Witness a (RecursiveCircuit n a) = Map Natural a
-    type Input a (RecursiveCircuit n a) = Vector n a
-    type ProverMessage t (RecursiveCircuit n a) = a
-    type VerifierMessage t (RecursiveCircuit n a) = a
+instance (KnownNat n, Arithmetic a, P.Show a) => SPS.SpecialSoundProtocol f (RecursiveCircuit n a) where
+    type Witness f (RecursiveCircuit n a) = Map Natural f
+    type Input f (RecursiveCircuit n a) = Vector n f
+    type ProverMessage f (RecursiveCircuit n a) = Map Natural f
+    type VerifierMessage f (RecursiveCircuit n a) = a
     type Degree (RecursiveCircuit n a) = 2
 
     -- One round for Plonk
     rounds = P.const 1
 
-    outputLength (RecursiveCircuit _ ac) = P.fromIntegral $ M.size $ acSystem ac
+    outputLength (RecursiveCircuit _ ac) = (P.fromIntegral $ M.size (acSystem ac)) + 1
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
-    prover rc@(RecursiveCircuit _ ac) _ i _ = oracle $ witnessGenerator ac i
+    prover rc@(RecursiveCircuit _ ac) _ i _ = witnessGenerator ac i
 
     -- We can modify the polynomial system from the circuit.
     -- The result is a system of @n+1@-variate polynomials
     -- where variables @0@ to @n-1@ are inputs and variable @n@ is hash of the prover message
     --
-    algebraicMap rc@(RecursiveCircuit _ ac) i pm _ = proverPoly : P.fmap remapPoly sys
+    algebraicMap rc@(RecursiveCircuit _ ac) i pm _ mu = result
         where
-            proverPoly :: Poly a Natural Natural
-            proverPoly = var n - constant (P.head pm)
-
-            n :: Natural
-            n = value @n
-
-            witness = witnessGenerator ac i
+            witness = P.head pm
 
             sys :: [Poly a (Var (Vector n)) Natural]
             sys = M.elems (acSystem $ circuit rc)
 
-            -- Substitutes all non-input variab;es with their actual values.
-            -- Decreases indices of input variables by one
-            --
-            remap :: (a, Map (Var (Vector n)) Natural) -> (a, Map Natural Natural)
-            remap (coeff, vars) =
-                foldl'
-                    (\(cf, m) (v, p) ->
-                        case v of
-                          InVar i   -> (cf, M.insert (fromZp i) p m)
-                          NewVar nv -> (cf * fromConstant ((witness ! nv)^p), m))
-                    (coeff, M.empty)
-                    (M.toList vars)
+            paddedSum :: [Poly a (Var (Vector n)) Natural]
+            paddedSum = padDecomposition mu . degreeDecomposition @(SPS.Degree (RecursiveCircuit n a)) $ sys
 
-            remapMono :: (a, Mono (Var (Vector n)) Natural) -> (a, Mono Natural Natural)
-            remapMono (coeff, M vars) =
-                let (newCoeff, newVars) = remap (coeff, vars)
-                 in (newCoeff, M newVars)
+            varMap :: Var (Vector n) -> t
+            varMap (InVar iv)  = i V.!! (fromZp iv)
+            varMap (NewVar nv) = witness ! nv
 
-            remapPoly :: Poly a (Var (Vector n)) Natural -> Poly a Natural Natural
-            remapPoly (P monos) = P (remapMono <$> monos)
+            result = fmap (PM.evalPolynomial PM.evalMonomial varMap) paddedSum
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --
-    verifier rc i pm ts = P.fmap (PM.evalPolynomial PM.evalMonomial (varMap !)) amap == zeros
-        where
-            amap = SPS.algebraicMap rc i pm ts
-            zeros = P.const zero <$> amap
-            varMap = M.fromList $ P.zip [0..] (V.fromVector i <> pm)
+    verifier rc i pm ts = P.all (== zero) $ SPS.algebraicMap @f rc i pm ts one
 
-data FoldResult n c a
-    = FoldResult
-    { output          :: Vector n a
-    , lastAccumulator :: Accumulator (Vector n a) a c a
-    , verifierOutput  :: P.Bool
-    , deciderOutput   :: P.Bool
-    } deriving (P.Show, Generic, NFData)
-
-type FS_CM n c a = FiatShamir a (CommitOpen a c (RecursiveCircuit n a))
-
-transform
-    :: forall n c a
-    .  HomomorphicCommit a [a] c
-    => a
-    -> RecursiveCircuit n a
-    -> Vector n a
-    -> FS_CM n c a
-transform ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
-
-fold
-    :: forall a n c x
-    .  Arithmetic a
-    => x ~ ArithmeticCircuit a (Vector n)
-    => P.Show a
-    => P.Eq c
-    => P.Show c
-    => Scale a c
-    => AdditiveGroup c
-    => RandomOracle c a
-    => RandomOracle a a
-    => HomomorphicCommit a [a] c
-    => KnownNat n
-    => (Vector n (FieldElement x) -> Vector n (FieldElement x))  -- ^ An arithmetisable function to be applied recursively
-    -> Natural                             -- ^ The number of iterations to perform
-    -> SPS.Input a (RecursiveCircuit n a)  -- ^ Input for the first iteration
-    -> FoldResult n c a
-fold f iter i = foldN iter ck rc i [] initialAccumulator
+padDecomposition
+    :: forall mu f v d
+    .  Exponent mu Natural
+    => Scale mu (Poly f v Natural)
+    => KnownNat d
+    => Field f
+    => P.Eq f
+    => P.Ord v
+    => mu -> V.Vector d [Poly f v Natural] -> [Poly f v Natural]
+padDecomposition mu = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> (scale (mu ^ (d -! j))) <$> p)
     where
-        rc :: RecursiveCircuit n a
-        rc = RecursiveCircuit iter (compile @a f)
+        d = value @d
 
-        m = SPS.prover @a rc M.empty i []
-
-        ck = oracle i
-
-        initialAccumulator :: Accumulator (Vector n a) a c a
-        initialAccumulator = Accumulator (AccumulatorInstance i [hcommit ck [m]] [] zero one) [m]
-
-
-instanceProof
-    :: forall n c a
-    .  Arithmetic a
-    => KnownNat n
-    => P.Show a
-    => HomomorphicCommit a [a] c
-    => a
-    -> RecursiveCircuit n a
-    -> SPS.Input a (RecursiveCircuit n a)
-    -> InstanceProofPair (Vector n a) c a
-instanceProof ck rc i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
+-- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @n@
+--
+degreeDecomposition :: forall n f v . KnownNat (n + 1) => [Poly f v Natural] -> V.Vector (n + 1) [Poly f v Natural]
+degreeDecomposition lmap = V.generate degree_j
     where
-        m = SPS.prover @a rc M.empty i []
+        degree_j :: Natural -> [Poly f v Natural]
+        degree_j j = P.fmap (leaveDeg j) lmap
 
-foldN
-    :: forall n c a
-    .  Arithmetic a
-    => P.Show a
-    => P.Eq c
-    => P.Show c
-    => AdditiveGroup c
-    => Scale a c
-    => KnownNat n
-    => RandomOracle a a
-    => RandomOracle c a
-    => HomomorphicCommit a [a] c
-    => Natural
-    -> a
-    -> RecursiveCircuit n a
-    -> SPS.Input a (RecursiveCircuit n a)
-    -> [P.Bool]
-    -> Accumulator (Vector n a) a c a
-    -> FoldResult n c a
-foldN iter ck rc i verifierResults acc
-  | iterations rc == 0 = FoldResult i acc (and verifierResults) (Acc.decider (transform ck rc i :: FS_CM n c a) ck acc)
-  | otherwise = let (output, newAcc, newVerifierResult) = foldStep ck rc i acc
-                 in foldN iter ck (rc {iterations = iterations rc -! 1}) output (newVerifierResult : verifierResults) newAcc
+        leaveDeg :: Natural -> PM.Poly f v Natural -> PM.Poly f v Natural
+        leaveDeg j (PM.P monomials) = PM.P $ P.filter (\(_, m) -> deg m == j) monomials
 
-executeAc :: forall n a . KnownNat n => RecursiveCircuit n a -> Vector n a -> Vector n a
-executeAc (RecursiveCircuit _ rc) i = eval rc i
-
-foldStep
-    :: forall n c a
-    .  Arithmetic a
-    => P.Show a
-    => P.Show c
-    => P.Eq c
-    => AdditiveGroup c
-    => KnownNat n
-    => Scale a c
-    => RandomOracle a a
-    => RandomOracle c a
-    => HomomorphicCommit a [a] c
-    => a
-    -> RecursiveCircuit n a
-    -> SPS.Input a (RecursiveCircuit n a)
-    -> Accumulator (Vector n a) a c a
-    -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a c a, P.Bool)
-foldStep ck rc i acc = (newInput, newAcc, verifierAccepts)
-    where
-        fs :: FS_CM n c a
-        fs = transform ck rc i
-
-        nark@(InstanceProofPair _ narkProof) = instanceProof ck rc i
-        (newAcc, accProof) = Acc.prover fs ck acc nark
-        verifierAccepts = Acc.verifier @_ @_ @_ @a @(FS_CM n c a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
-        newInput = executeAc rc i
+deg :: PM.Mono v Natural -> Natural
+deg (PM.M m) = sum m
