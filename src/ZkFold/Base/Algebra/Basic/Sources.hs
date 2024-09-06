@@ -2,7 +2,7 @@
 
 module ZkFold.Base.Algebra.Basic.Sources (Sources (..)) where
 
-import           Data.Function                   (const, id, (.))
+import           Data.Function                   (const, id)
 import           Data.Kind                       (Type)
 import           Data.Maybe                      (Maybe (..))
 import           Data.Monoid                     (Monoid (..))
@@ -28,12 +28,14 @@ instance {-# OVERLAPPING #-} FromConstant (Sources a i) (Sources a i) where
 instance {-# OVERLAPPING #-} Ord i => Scale (Sources a i) (Sources a i) where
   scale = (<>)
 
+instance {-# OVERLAPPABLE #-} FromConstant c (Sources a i) where
+  fromConstant = const empty
+
+instance {-# OVERLAPPABLE #-} MultiplicativeMonoid c => Scale c (Sources a i) where
+  scale = const id
+
 instance Ord i => AdditiveSemigroup (Sources a i) where
   (+) = (<>)
-
-instance {-# OVERLAPPABLE #-}
-    MultiplicativeMonoid c => Scale c (Sources a i) where
-  scale = const id
 
 instance Ord i => AdditiveMonoid (Sources a i) where
   zero = mempty
@@ -59,9 +61,6 @@ instance Exponent (Sources a i) Integer where
 instance Ord i => MultiplicativeGroup (Sources a i) where
   invert = id
 
-instance {-# OVERLAPPABLE #-} FromConstant c (Sources a i) where
-  fromConstant = const empty
-
 instance Ord i => Semiring (Sources a i)
 
 instance Ord i => Ring (Sources a i)
@@ -71,8 +70,8 @@ instance Ord i => Field (Sources a i) where
   rootOfUnity _ = Just mempty
 
 instance ToConstant (Sources (a :: Type) i) where
-  type Const (Sources a i) = Sources (Const a) i
-  toConstant = Sources . runSources
+  type Const (Sources a i) = Sources a i
+  toConstant = id
 
 instance (Finite a, Ord i) => BinaryExpansion (Sources a i) where
   type Bits (Sources a i) = [Sources a i]

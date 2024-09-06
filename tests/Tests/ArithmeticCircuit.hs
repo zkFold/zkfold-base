@@ -22,6 +22,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
+import           ZkFold.Symbolic.Data.Ord                    ((<=))
 
 correctHom0 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = fromFieldElement f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a
@@ -63,6 +64,9 @@ specArithmeticCircuit' = hspec $ do
         it "internal equality is reflexive" $ \(x :: a) ->
           let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1)) == fromConstant x
            in checkClosedCircuit @a r .&&. exec1 r === one
+        it "<=s correctly" $ withMaxSuccess 10 $ \(x :: a) (y :: a) ->
+          let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1)) <= fromConstant y
+           in checkClosedCircuit @a r .&&. exec1 r === bool zero one (x Haskell.<= y)
 
 specArithmeticCircuit :: IO ()
 specArithmeticCircuit = do
