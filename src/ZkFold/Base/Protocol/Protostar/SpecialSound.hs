@@ -32,7 +32,7 @@ class SpecialSoundProtocol f a where
 
       rounds :: a -> Natural
       -- ^ k in the paper
-
+      
       prover :: a -> Witness f a -> Input f a -> SpecialSoundTranscript f a -> ProverMessage f a
 
       algebraicMap

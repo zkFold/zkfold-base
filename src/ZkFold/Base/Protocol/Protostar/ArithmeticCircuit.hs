@@ -22,6 +22,7 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
+import qualified ZkFold.Base.Algebra.Polynomials.Univariate          as PU
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
@@ -33,6 +34,7 @@ import           ZkFold.Base.Protocol.Protostar.Oracle
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound         as SPS
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Data.Combinators                    (Iso (..))
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
 
 {--
@@ -48,7 +50,7 @@ import           ZkFold.Symbolic.Data.FieldElement                   (FieldEleme
 --}
 
 
--- | A data for recurcive computations.
+-- | A type for recurcive computations.
 -- @circuit@ is an Arithmetic circuit with @n@ inputs and @n@ outputs applied to itself (i.e. outputs are fed as inputs at the next iteration) @iterations@ times.
 --
 data RecursiveCircuit n a
@@ -57,8 +59,27 @@ data RecursiveCircuit n a
         , circuit    :: ArithmeticCircuit a (Vector n) (Vector n)
         } deriving (Generic, NFData)
 
-instance (KnownNat n, Arithmetic a, P.Show a) => SPS.SpecialSoundProtocol f (RecursiveCircuit n a) where
-    type Witness f (RecursiveCircuit n a) = Map Natural f
+instance (Ring f, P.Eq f) => Iso (PU.Poly f) f where
+    from = P.flip PU.evalPoly zero
+
+instance (Ring f, P.Eq f) => Iso f (PU.Poly f) where
+    from = PU.constant
+
+instance Iso a a where
+    from = P.id
+
+instance
+  ( KnownNat n
+  , Arithmetic a
+  , P.Eq f
+  , Scale a f
+  , MultiplicativeMonoid f
+  , Exponent f Natural
+  , AdditiveMonoid f
+  , Iso a f
+  ) => SPS.SpecialSoundProtocol f (RecursiveCircuit n a) where
+
+    type Witness f (RecursiveCircuit n a) = Map Natural a
     type Input f (RecursiveCircuit n a) = Vector n f
     type ProverMessage f (RecursiveCircuit n a) = Map Natural f
     type VerifierMessage f (RecursiveCircuit n a) = a
@@ -71,44 +92,42 @@ instance (KnownNat n, Arithmetic a, P.Show a) => SPS.SpecialSoundProtocol f (Rec
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
-    prover rc@(RecursiveCircuit _ ac) _ i _ = witnessGenerator ac i
+    prover rc@(RecursiveCircuit _ ac) _ i _ = from @a <$> witnessGenerator ac (from @f <$> i)
 
-    -- We can modify the polynomial system from the circuit.
-    -- The result is a system of @n+1@-variate polynomials
-    -- where variables @0@ to @n-1@ are inputs and variable @n@ is hash of the prover message
+    -- We can use thepolynomial system from the xircuit as a base for V_sps.
     --
-    algebraicMap rc@(RecursiveCircuit _ ac) i pm _ mu = result
+    algebraicMap rc@(RecursiveCircuit _ ac) i pm _ mu = padDecomposition mu f_sps_uni
         where
             witness = P.head pm
 
-            sys :: [Poly a (Var (Vector n)) Natural]
-            sys = M.elems (acSystem $ circuit rc)
+            sys :: [PM.Poly a (Var (Vector n)) Natural]
+            sys = M.elems (acSystem ac)
 
-            paddedSum :: [Poly a (Var (Vector n)) Natural]
-            paddedSum = padDecomposition mu . degreeDecomposition @(SPS.Degree (RecursiveCircuit n a)) $ sys
-
-            varMap :: Var (Vector n) -> t
+            varMap :: Var (Vector n) -> f
             varMap (InVar iv)  = i V.!! (fromZp iv)
-            varMap (NewVar nv) = witness ! nv
+            varMap (NewVar nv) = M.findWithDefault zero nv witness
 
-            result = fmap (PM.evalPolynomial PM.evalMonomial varMap) paddedSum
+            f_sps :: Vector 3 [PM.Poly a (Var (Vector n)) Natural]
+            f_sps = degreeDecomposition @(SPS.Degree (RecursiveCircuit n a)) $ sys
+
+            f_sps_uni :: Vector 3 [f]
+            f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
+
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --
     verifier rc i pm ts = P.all (== zero) $ SPS.algebraicMap @f rc i pm ts one
 
 padDecomposition
-    :: forall mu f v d
-    .  Exponent mu Natural
-    => Scale mu (Poly f v Natural)
-    => KnownNat d
-    => Field f
-    => P.Eq f
-    => P.Ord v
-    => mu -> V.Vector d [Poly f v Natural] -> [Poly f v Natural]
-padDecomposition mu = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> (scale (mu ^ (d -! j))) <$> p)
+    :: forall f d
+    .  KnownNat d
+    => MultiplicativeSemigroup f
+    => Exponent f Natural
+    => AdditiveMonoid f
+    => f -> V.Vector d [f] -> [f]
+padDecomposition mu = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((mu ^ (d -! j)) * ) <$> p)
     where
-        d = value @d
+        d = value @d -! 1
 
 -- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @n@
 --

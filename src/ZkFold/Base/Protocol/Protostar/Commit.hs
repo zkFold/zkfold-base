@@ -4,6 +4,7 @@
 
 module ZkFold.Base.Protocol.Protostar.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
+import           Data.Foldable                               (Foldable, toList)
 import           Prelude                                     (type (~), zipWith, ($), (<$>))
 import qualified Prelude                                     as P
 
@@ -57,12 +58,14 @@ instance {-# OVERLAPPABLE #-}
     , Bits b ~ [b]
     ) => HomomorphicCommit a b (Point BLS12_381_G1) where
     hcommit r b = let (g, h) = pedersonGH @(Point BLS12_381_G1)
-                   in pointMul b g -- + pointMul r h
+                   in pointMul b g + pointMul r h
 
 
 -- Pedersen commitment scheme for lists extending the homomorphism to elementwise sums:
--- (hcommit ck l1) + (hcommit ck l2) = hcommit ck (zipWith (+) l1 l2)
+-- (hcommit ck l1) + (hcommit ck l2) = hcommit ck (zipWith (+) l1 l2), provided l1 and l2 have the same length.
 -- This is required for AccumulatorScheme
 --
-instance HomomorphicCommit a b (Point BLS12_381_G1) => HomomorphicCommit a [b] (Point BLS12_381_G1) where
-    hcommit ck lst = sum $ zipWith pointMul [1 :: Natural ..] (hcommit ck <$> lst)
+instance (HomomorphicCommit a b (Point BLS12_381_G1), Foldable t) => HomomorphicCommit a (t b) (Point BLS12_381_G1) where
+    hcommit ck t = sum $ zipWith pointMul [1 :: Natural ..] (hcommit ck <$> toList t)
+
+

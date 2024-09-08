@@ -5,6 +5,8 @@
 
 module ZkFold.Base.Algebra.Polynomials.Univariate
     ( toPoly
+    , constant
+    , monomial
     , fromPoly
     , Poly
     , evalPoly
@@ -56,7 +58,7 @@ import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                   (zipWithDefault)
+import           ZkFold.Prelude                   (replicate, zipWithDefault)
 
 infixl 7 .*, *., .*., ./.
 infixl 6 .+, +.
@@ -69,6 +71,14 @@ newtype Poly c = P (V.Vector c)
 
 toPoly :: (Ring c, Eq c) => V.Vector c -> Poly c
 toPoly = removeZeros . P
+
+constant :: (Ring c, Eq c) => c -> Poly c
+constant = toPoly . V.singleton
+
+-- | A polynomial of form cx^d
+--
+monomial :: (Ring c, Eq c) => Natural -> c -> Poly c
+monomial d c = toPoly $ V.fromList (replicate d zero P.<> [c])
 
 fromPoly :: Poly c -> V.Vector c
 fromPoly (P cs) = cs
