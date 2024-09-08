@@ -102,7 +102,7 @@ cast n =
 eea
     :: forall n c r
     .  Symbolic c
-    => EuclideanDomain (UInt n r c)
+    => SemiEuclidean (UInt n r c)
     => KnownNat n
     => KnownNat (NumberOfRegisters (BaseField c) n r)
     => AdditiveGroup (UInt n r c)
@@ -200,7 +200,7 @@ instance
     , KnownRegisterSize rs
     , r ~ NumberOfRegisters (BaseField c) n rs
     , NFData (c (Vector r))
-    ) => EuclideanDomain (UInt n rs c) where
+    ) => SemiEuclidean (UInt n rs c) where
     divMod numerator d = bool @(Bool c) (q, r) (zero, zero) (d == zero)
         where
             (q, r) = Haskell.foldl longDivisionStep (zero, zero) [value @n -! 1, value @n -! 2 .. 0]

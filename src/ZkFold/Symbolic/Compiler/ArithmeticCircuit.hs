@@ -69,7 +69,7 @@ desugarRange :: (Arithmetic a, MonadCircuit i a m) => i -> a -> m ()
 desugarRange i b
   | b == negate one = return ()
   | otherwise = do
-    let bs = binaryExpansion b
+    let bs = binaryExpansion (toConstant b)
     is <- expansion (length bs) i
     case dropWhile ((== one) . fst) (zip bs is) of
       [] -> return ()

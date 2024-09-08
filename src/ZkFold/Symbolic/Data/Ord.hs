@@ -11,6 +11,7 @@ import           Data.Data                        (Proxy (..))
 import           Data.Foldable                    (Foldable, toList)
 import           Data.Function                    ((.))
 import           Data.Functor                     ((<$>))
+import           Data.List                        (map)
 import qualified Data.Zip                         as Z
 import           GHC.Generics                     (Par1 (..))
 import           Prelude                          (type (~), ($))
@@ -90,9 +91,11 @@ getBitsBE ::
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
 getBitsBE x =
-  hmap unsafeToVector
-    $ symbolicF (pieces x Proxy) (binaryExpansion . V.item)
-      $ expansion (numberOfBits @(BaseField c)) . V.item
+  hmap (V.reverse . unsafeToVector)
+    $ symbolicF (pieces x Proxy)
+        (padBits n . map fromConstant . binaryExpansion . toConstant . V.item)
+        (expansion n . V.item)
+  where n = numberOfBits @(BaseField c)
 
 bitwiseGE :: forall c f . (Symbolic c, Z.Zip f, Foldable f) => c f -> c f -> Bool c
 -- ^ Given two lists of bits of equal length, compares them lexicographically.

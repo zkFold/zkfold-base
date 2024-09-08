@@ -4,6 +4,7 @@
 module Tests.ArithmeticCircuit (exec1, it, specArithmeticCircuit) where
 
 import           Data.Bool                                   (bool)
+import           Data.Functor                                ((<$>))
 import           GHC.Generics                                (U1 (..))
 import           Prelude                                     (IO, Show, String, id, ($))
 import qualified Prelude                                     as Haskell
@@ -21,6 +22,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
+import           ZkFold.Symbolic.Data.Ord                    ((<=))
 
 correctHom0 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = fromFieldElement f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a
@@ -54,13 +56,17 @@ specArithmeticCircuit' = hspec $ do
         --    in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === one
         it "computes binary expansion" $ \(x :: a) ->
           let rs = binaryExpansion (fromConstant x :: FieldElement (ArithmeticCircuit a U1))
-           in checkClosedCircuit rs .&&. V.fromVector (exec rs) === padBits (numberOfBits @a) (binaryExpansion x)
+              as = padBits (numberOfBits @a) $ fromConstant <$> binaryExpansion (toConstant x)
+           in checkClosedCircuit rs .&&. V.fromVector (exec rs) === as
         it "internalizes equality" $ \(x :: a) (y :: a) ->
           let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1)) == fromConstant y
            in checkClosedCircuit @a r .&&. exec1 r === bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
           let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1)) == fromConstant x
            in checkClosedCircuit @a r .&&. exec1 r === one
+        it "<=s correctly" $ withMaxSuccess 10 $ \(x :: a) (y :: a) ->
+          let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1)) <= fromConstant y
+           in checkClosedCircuit @a r .&&. exec1 r === bool zero one (x Haskell.<= y)
 
 specArithmeticCircuit :: IO ()
 specArithmeticCircuit = do

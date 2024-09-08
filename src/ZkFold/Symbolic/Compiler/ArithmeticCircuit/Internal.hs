@@ -196,7 +196,7 @@ instance o ~ U1 => Monoid (ArithmeticCircuit a i o) where
 type VarField = Zp BLS12_381_Scalar
 
 toField :: Arithmetic a => a -> VarField
-toField = toZp . fromConstant . fromBinary @Natural . castBits . binaryExpansion
+toField = fromConstant . toConstant
 
 -- TODO: Remove the hardcoded constant.
 toVar ::
