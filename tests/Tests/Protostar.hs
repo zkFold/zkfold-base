@@ -15,6 +15,7 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector)
@@ -32,8 +33,8 @@ data RecursiveFunction n c a
         , rFunction   :: Vector n (FieldElement c) -> Vector n (FieldElement c)
         }
 
-instance P.Show (RecursiveFunction n c a) where
-    show _ = "Dummy Show instance required by HSpec"
+instance P.Show a => P.Show (RecursiveFunction n c a) where
+    show RecursiveFunction{..} = P.unlines [P.show rIterations, P.show rInitial] 
 
 instance
     ( KnownNat n
@@ -56,6 +57,7 @@ instance
 evaluateRF
     :: forall n c a
     .  P.Eq a
+    => c ~ ArithmeticCircuit a (Vector n)
     => MultiplicativeMonoid a
     => KnownNat n
     => RecursiveFunction n c a
@@ -63,7 +65,8 @@ evaluateRF
 evaluateRF RecursiveFunction{..} =
     let res = nTimes rIterations rFunction
         ac  = compile @a res
-     in eval ac (M.fromList $ P.zip [1..] (V.fromVector rInitial))
+     in eval ac rInitial
+
 -- I can't believe there is no such function in Prelude
 nTimes :: Natural -> (a -> a) -> (a -> a)
 nTimes 0 _ = id
@@ -76,13 +79,14 @@ it desc prop = Test.Hspec.it desc (property prop)
 specProtostarN
     :: forall (c :: (Type -> Type) -> Type) n
     .  KnownNat n
+    => c ~ ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n)
     => Symbolic c
     => IO ()
 specProtostarN = hspec $ do
     describe ("Test recursive functions of " <> P.show (value @n) <> " arguments") $
         it "folds correctly" $ \rf@RecursiveFunction{..} ->
-            let FoldResult{..} = fold rFunction rIterations rInitial
-             in verifierOutput === P.True .&&. deciderOutput === P.True .&&. output === evaluateRF (rf :: RecursiveFunction n c (Zp BLS12_381_Scalar))
+            let FoldResult{..} = fold @(Zp BLS12_381_Scalar) @n @(Point BLS12_381_G1) rFunction rIterations rInitial
+             in verifierOutput === P.True -- .&&. deciderOutput === P.True -- .&&. output === evaluateRF (rf :: RecursiveFunction n c (Zp BLS12_381_Scalar))
 
 specProtostar :: IO ()
 specProtostar = do

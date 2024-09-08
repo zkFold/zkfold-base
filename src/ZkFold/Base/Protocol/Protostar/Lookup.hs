@@ -12,7 +12,7 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Sparse.Vector              (SVector (..))
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 data ProtostarLookup (l :: Natural) (sizeT :: Natural)
@@ -26,9 +26,9 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
     -- ^ w in the paper
     type Input f (ProtostarLookup l sizeT)           = ProtostarLookupParams f sizeT
     -- ^ t and t^{-1} from the paper
-    type ProverMessage t (ProtostarLookup l sizeT)   = (Vector l t, SVector sizeT t)
+    type ProverMessage f (ProtostarLookup l sizeT)   = (Vector l f, SVector sizeT f)
     -- ^ (w, m) or (h, g) in the paper
-    type VerifierMessage t (ProtostarLookup l sizeT) = t
+    type VerifierMessage f (ProtostarLookup l sizeT) = f
 
     type Degree (ProtostarLookup l sizeT)            = 2
 
@@ -54,9 +54,10 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
     -- TODO: implement this
     algebraicMap :: ProtostarLookup l sizeT
                  -> Input f (ProtostarLookup l sizeT)
-                 -> [ProverMessage Natural (ProtostarLookup l sizeT)]
+                 -> [ProverMessage f (ProtostarLookup l sizeT)]
                  -> [f]
-                 -> LMap f
+                 -> f
+                 -> [f]
     algebraicMap = undefined
 
     verifier :: ProtostarLookup l sizeT

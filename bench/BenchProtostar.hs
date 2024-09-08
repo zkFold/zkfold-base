@@ -34,7 +34,7 @@ fact
     => MultiplicativeSemigroup (FieldElement c)
     => AdditiveSemigroup (FieldElement c)
     => Vector n (FieldElement c) -> Vector n (FieldElement c)
-fact v = V.generate (\i -> if i == 0 then v V.!! 0 * v V.!! 1 else (v V.!! 0) + (v V.!! 1 * v V.!! 2))
+fact v = V.generate (\i -> if i == 0 then v V.!! 0 * v V.!! 1 else (v V.!! i) + (v V.!! 1 * v V.!! 2 * v V.!! i))
 
 -- | Generate random addition circuit of given size
 --
@@ -63,7 +63,7 @@ foldFact iter inp = fold fact iter (toZp . fromIntegral <$> inp)
 
 main :: IO ()
 main = do
-    print $ foldFact 10 (V.unsafeToVector [1, 2, 3])
+    print $ foldFact 100 (V.unsafeToVector [1, 2, 3])
     defaultMain
       [ benchOps @3 @32  @BLS12_381_Scalar
       , benchOps @3 @64  @BLS12_381_Scalar
