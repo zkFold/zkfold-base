@@ -24,6 +24,7 @@ import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (Input, SpecialSoundProtocol (..))
 import           ZkFold.Prelude                              (take)
 
+
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
 class AccumulatorScheme i f c m a where

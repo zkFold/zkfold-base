@@ -27,10 +27,10 @@ import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound         as SPS
+import           ZkFold.Prelude                                      (replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
-
 
 data FoldResult n c a
     = FoldResult
@@ -91,7 +91,7 @@ fold f iter i = foldN iter ck rc i [] initialAccumulator (Acc.KeyScale one one)
         rc :: RecursiveCircuit n a
         rc = RecursiveCircuit iter (compile @a f)
 
-        initE = hcommit ck $ SPS.algebraicMap @a rc (P.pure zero) [zero] [] one
+        initE = hcommit ck $ replicate (SPS.outputLength @a rc) (zero :: a)
 
         ck = oracle i
 

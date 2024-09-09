@@ -79,7 +79,7 @@ instance
     -- One round for Plonk
     rounds = P.const 1
 
-    outputLength (RecursiveCircuit _ ac) = (P.fromIntegral $ M.size (acSystem ac)) + 1
+    outputLength (RecursiveCircuit _ ac) = (P.fromIntegral $ M.size (acSystem ac))
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --

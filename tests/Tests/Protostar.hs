@@ -5,7 +5,6 @@ module Tests.Protostar (specProtostar) where
 
 import           Control.Monad                               (replicateM)
 import           Data.Kind                                   (Type)
-import qualified Data.Map.Strict                             as M
 import           Prelude                                     (IO, id, type (~), ($), (.), (<$>), (<*>), (<>))
 import qualified Prelude                                     as P
 import qualified Test.Hspec
@@ -23,7 +22,6 @@ import           ZkFold.Base.Protocol.Protostar
 import           ZkFold.Prelude                              ((!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 data RecursiveFunction n c a
@@ -56,9 +54,7 @@ instance
 
 evaluateRF
     :: forall n c a
-    .  P.Eq a
-    => c ~ ArithmeticCircuit a (Vector n)
-    => MultiplicativeMonoid a
+    .  c ~ ArithmeticCircuit a (Vector n)
     => KnownNat n
     => RecursiveFunction n c a
     -> Vector n a
@@ -82,16 +78,19 @@ specProtostarN
     => c ~ ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n)
     => Symbolic c
     => IO ()
-specProtostarN = hspec $ do
+specProtostarN = hspec $
     describe ("Test recursive functions of " <> P.show (value @n) <> " arguments") $
-        it "folds correctly" $ \rf@RecursiveFunction{..} ->
+        it "folds correctly" $ withMaxSuccess 10 $ \rf@RecursiveFunction{..} ->
             let FoldResult{..} = fold @(Zp BLS12_381_Scalar) @n @(Point BLS12_381_G1) rFunction rIterations rInitial
-             in verifierOutput === P.True -- .&&. deciderOutput === P.True -- .&&. output === evaluateRF (rf :: RecursiveFunction n c (Zp BLS12_381_Scalar))
+             in verifierOutput === P.True .&&. deciderOutput === P.True .&&. output === evaluateRF (rf :: RecursiveFunction n c (Zp BLS12_381_Scalar))
 
 specProtostar :: IO ()
 specProtostar = do
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 1)) @1
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 2)) @2
+
+{--  Too optimistic these tests will work fast enough...
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 3)) @3
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 10)) @10
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 100)) @100
+--}
