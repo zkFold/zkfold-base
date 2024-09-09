@@ -53,15 +53,11 @@ instance {-# OVERLAPPABLE #-}
     , BinaryExpansion s
     , Bits s ~ [s]
     , MultiplicativeMonoid s
---    , pc ~ Point curve
     ) => Scale s (Point curve) where
     scale = pointMul
 
 instance EllipticCurve curve => Scale Natural (Point curve) where
     scale = natScale
-
---instance (EllipticCurve curve, KnownNat p, pc ~ Point curve) => Scale (Zp p) pc where
---    scale = natScale . fromZp
 
 instance EllipticCurve curve => AdditiveMonoid (Point curve) where
     zero = Inf

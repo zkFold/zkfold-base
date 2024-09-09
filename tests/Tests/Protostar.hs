@@ -89,7 +89,7 @@ specProtostar = do
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 1)) @1
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 2)) @2
 
-{--  Too optimistic these tests will work fast enough...
+{--  Too optimistic to think these tests will work fast enough...
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 3)) @3
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 10)) @10
     specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 100)) @100
