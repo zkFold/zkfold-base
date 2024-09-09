@@ -24,9 +24,9 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar
+import           ZkFold.Symbolic.Class                       (Symbolic (..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-import           ZkFold.Symbolic.Class                          (Symbolic (..))
 
 fact
     :: forall a n c
