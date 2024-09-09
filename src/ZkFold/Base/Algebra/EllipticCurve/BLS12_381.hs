@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE OverloadedLists      #-}
 {-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -12,7 +13,6 @@ import           Control.DeepSeq                            (NFData)
 import           Control.Monad
 import           Data.Bits
 import           Data.Foldable
-import           Data.List                                  (unfoldr)
 import           Data.Word
 import           GHC.Generics                               (Generic)
 import           Prelude                                    hiding (Num (..), (/), (^))

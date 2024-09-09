@@ -2,28 +2,22 @@
 {-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module ZkFold.Base.Protocol.Protostar.Fold where
 
 
 import           Control.DeepSeq                                     (NFData)
 import           Control.Lens                                        ((^.))
-import           Data.List                                           (foldl')
-import           Data.Map.Strict                                     (Map, (!))
+import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
-import           Debug.Trace
 import           GHC.Generics                                        (Generic)
-import           Prelude                                             (and, otherwise, type (~), ($), (<$>), (<), (<*>),
-                                                                      (<=), (<>), (==))
+import           Prelude                                             (and, otherwise, type (~), ($), (<$>), (<*>), (==))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
-import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate          as PU
-import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme    as Acc
@@ -72,15 +66,13 @@ instance (Ring a, P.Eq a, KnownNat n) => Acc.LinearCombination (Vector n a) (Vec
     linearCombination mx ma = (+) <$> (PU.monomial 1 <$> mx) <*> (PU.constant <$> ma)
 
 instance (Ring a, KnownNat n) => Acc.LinearCombinationWith a (Vector n a) where
-    linearCombinationWith c a b = (+) <$> (P.fmap (c *) a) <*> b
+    linearCombinationWith coeff a b = (+) <$> (P.fmap (coeff *) a) <*> b
 
 fold
     :: forall a n c x
     .  Arithmetic a
     => x ~ ArithmeticCircuit a (Vector n)
-    => P.Show a
     => P.Eq c
-    => P.Show c
     => Scale a c
     => Scale a a
     => AdditiveGroup c
@@ -124,9 +116,7 @@ instanceProof ck rc i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
 foldN
     :: forall n c a
     .  Arithmetic a
-    => P.Show a
     => P.Eq c
-    => P.Show c
     => AdditiveGroup c
     => Scale a c
     => Scale a a
@@ -156,7 +146,6 @@ foldStep
     :: forall n c a
     .  Arithmetic a
     => P.Eq c
-    => P.Show a
     => AdditiveGroup c
     => KnownNat n
     => Scale a c

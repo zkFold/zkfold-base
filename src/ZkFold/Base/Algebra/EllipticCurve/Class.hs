@@ -14,7 +14,6 @@ import qualified Prelude                          as P
 import           Test.QuickCheck                  hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 
 data Point curve = Point { _x :: BaseField curve, _y :: BaseField curve } | Inf

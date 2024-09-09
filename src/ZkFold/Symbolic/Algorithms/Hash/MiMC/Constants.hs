@@ -1,15 +1,8 @@
 module ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants) where
 
-import           Crypto.Hash.SHA256              (hash)
-import           Data.Maybe                      (fromJust)
-import           Debug.Trace
 import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class (FromConstant (..))
-import           ZkFold.Base.Data.ByteString
-
-mimcSeed :: LittleEndian
-mimcSeed = 42
 
 cs :: [Integer]
 cs = [42,

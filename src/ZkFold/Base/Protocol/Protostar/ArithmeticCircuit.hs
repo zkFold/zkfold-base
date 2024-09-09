@@ -2,19 +2,17 @@
 {-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
 
 
 import           Control.DeepSeq                                     (NFData)
-import           Control.Lens                                        ((^.))
 import           Data.List                                           (foldl')
-import           Data.Map.Strict                                     (Map, (!))
+import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
-import           Debug.Trace
 import           GHC.Generics                                        (Generic)
-import           Prelude                                             (and, fmap, otherwise, type (~), ($), (.), (<$>),
-                                                                      (<), (<=), (<>), (==))
+import           Prelude                                             (fmap, ($), (.), (<$>), (==))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -25,17 +23,10 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate          as PU
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Base.Protocol.Protostar.Accumulator
-import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme    as Acc
-import           ZkFold.Base.Protocol.Protostar.Commit
-import           ZkFold.Base.Protocol.Protostar.CommitOpen
-import           ZkFold.Base.Protocol.Protostar.FiatShamir
-import           ZkFold.Base.Protocol.Protostar.Oracle
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound         as SPS
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Combinators                    (Iso (..))
-import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
 
 {--
 
@@ -92,11 +83,11 @@ instance
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
-    prover rc@(RecursiveCircuit _ ac) _ i _ = from @a <$> witnessGenerator ac (from @f <$> i)
+    prover (RecursiveCircuit _ ac) _ i _ = from @a <$> witnessGenerator ac (from @f <$> i)
 
     -- We can use thepolynomial system from the xircuit as a base for V_sps.
     --
-    algebraicMap rc@(RecursiveCircuit _ ac) i pm _ mu = padDecomposition mu f_sps_uni
+    algebraicMap (RecursiveCircuit _ ac) i pm _ pad = padDecomposition pad f_sps_uni
         where
             witness = P.head pm
 
@@ -125,7 +116,7 @@ padDecomposition
     => Exponent f Natural
     => AdditiveMonoid f
     => f -> V.Vector d [f] -> [f]
-padDecomposition mu = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((mu ^ (d -! j)) * ) <$> p)
+padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) * ) <$> p)
     where
         d = value @d -! 1
 
