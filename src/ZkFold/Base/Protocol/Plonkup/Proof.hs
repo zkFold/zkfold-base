@@ -28,9 +28,9 @@ data PlonkupProof c = PlonkupProof {
         f_xi    :: ScalarField c,
         t_xi    :: ScalarField c,
         t_xi'   :: ScalarField c,
-        z1_xi   :: ScalarField c,
-        z2_xi   :: ScalarField c,
-        h1_xi   :: ScalarField c,
+        z1_xi'  :: ScalarField c,
+        z2_xi'  :: ScalarField c,
+        h1_xi'  :: ScalarField c,
         h2_xi   :: ScalarField c,
         lag1_xi :: ScalarField c
     }
@@ -58,8 +58,8 @@ instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (Pl
         ++ show f_xi ++ " "
         ++ show t_xi ++ " "
         ++ show t_xi' ++ " "
-        ++ show z1_xi ++ " "
-        ++ show z2_xi ++ " "
-        ++ show h1_xi ++ " "
+        ++ show z1_xi' ++ " "
+        ++ show z2_xi' ++ " "
+        ++ show h1_xi' ++ " "
         ++ show h2_xi ++ " "
         ++ show lag1_xi

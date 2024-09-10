@@ -57,6 +57,9 @@ import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                   (zipWithDefault)
 
+infixl 7 .*, *., .*., ./.
+infixl 6 .+, +.
+
 -------------------------------- Arbitrary degree polynomials --------------------------------
 
 -- TODO (Issue #17): hide constructor
