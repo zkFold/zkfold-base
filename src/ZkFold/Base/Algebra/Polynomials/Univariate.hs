@@ -62,6 +62,8 @@ toPoly = removeZeros . P
 fromPoly :: Poly c -> V.Vector c
 fromPoly (P cs) = cs
 
+instance {-# OVERLAPPING #-} FromConstant (Poly c) (Poly c)
+
 instance FromConstant c c' => FromConstant c (Poly c') where
     fromConstant = P . V.singleton . fromConstant
 
@@ -72,6 +74,11 @@ instance (Ring c, Eq c) => AdditiveSemigroup (Poly c) where
 
         lPadded = l V.++ V.replicate (len P.- V.length l) zero
         rPadded = r V.++ V.replicate (len P.- V.length r) zero
+
+instance {-# OVERLAPPING #-} (Field c, Eq c) => Scale (Poly c) (Poly c)
+
+instance Scale k c => Scale k (Poly c) where
+    scale = fmap . scale
 
 instance (Ring c, Eq c) => AdditiveMonoid (Poly c) where
     zero = P V.empty
@@ -269,7 +276,7 @@ vec2poly :: (Ring c, Eq c) => PolyVec c size -> Poly c
 vec2poly (PV cs) = removeZeros $ P cs
 
 instance Scale c' c => Scale c' (PolyVec c size) where
-    scale c (PV p) = PV (scale c p)
+    scale c (PV p) = PV (scale c <$> p)
 
 instance Ring c => AdditiveSemigroup (PolyVec c size) where
     PV l + PV r = PV $ V.zipWith (+) l r
@@ -282,6 +289,8 @@ instance (Ring c, KnownNat size) => AdditiveGroup (PolyVec c size) where
 
 instance (Field c, KnownNat size, Eq c) => Exponent (PolyVec c size) Natural where
     (^) = natPow
+
+instance {-# OVERLAPPING #-} (Field c, KnownNat size, Eq c) => Scale (PolyVec c size) (PolyVec c size)
 
 -- TODO (Issue #18): check for overflow
 instance (Field c, KnownNat size, Eq c) => MultiplicativeSemigroup (PolyVec c size) where

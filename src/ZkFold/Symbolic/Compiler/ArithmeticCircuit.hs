@@ -135,7 +135,6 @@ acPrint ac = do
 checkClosedCircuit
     :: forall a n
      . Arithmetic a
-    => Scale a a
     => Show a
     => ArithmeticCircuit a U1 n
     -> Property
@@ -149,7 +148,6 @@ checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acS
 checkCircuit
     :: Arbitrary (i a)
     => Arithmetic a
-    => Scale a a
     => Show a
     => Representable i
     => ArithmeticCircuit a i n

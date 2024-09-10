@@ -39,7 +39,7 @@ instance
 
 arbitrary' ::
   forall a i .
-  (Arithmetic a, Arbitrary a, FromConstant a a) =>
+  (Arithmetic a, Arbitrary a) =>
   (Haskell.Ord (Rep i), Representable i, Haskell.Foldable i) =>
   (ToConstant (Rep i), Const (Rep i) ~ Natural) =>
   FieldElement (ArithmeticCircuit a i) -> Natural ->
