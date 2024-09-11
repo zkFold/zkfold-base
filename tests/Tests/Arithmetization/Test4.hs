@@ -22,7 +22,7 @@ import           ZkFold.Base.Protocol.Plonkup.Internal               (getParams)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuit (..), compile, compileForceOne,
                                                                       eval, witnessGenerator)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Var (..), SysVar (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (SysVar (..), Var (..))
 import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)

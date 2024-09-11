@@ -9,7 +9,7 @@ import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.Eq                                             (Eq (..))
 import           Data.Function                                       (($), (.))
 import           Data.Functor                                        ((<$>))
-import           Data.List                                           (find, head, map, permutations, sort, (++), (!!))
+import           Data.List                                           (find, head, map, permutations, sort, (!!), (++))
 import           Data.Map                                            (Map)
 import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (Maybe (..), mapMaybe)
@@ -22,8 +22,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 import           Text.Show                                           (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial,
-                                                                      var, variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial, var, variables)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal

@@ -51,8 +51,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomi
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                      Var (..), SysVar (..), acInput, eval, eval1, exec, exec1,
-                                                                      witnessGenerator)
+                                                                      SysVar (..), Var (..), acInput, eval, eval1, exec,
+                                                                      exec1, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))

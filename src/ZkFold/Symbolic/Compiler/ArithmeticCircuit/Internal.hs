@@ -34,8 +34,8 @@ import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.Foldable                                (fold, toList)
 import           Data.Functor.Rep
 import           Data.List                                    (sort)
-import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take,
-                                                               toList, mapMaybe)
+import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, mapMaybe, null, splitAt,
+                                                               take, toList)
 import qualified Data.Map.Strict                              as M
 import           Data.Maybe                                   (fromMaybe)
 import           Data.Semialign                               (unzipDefault)
@@ -70,7 +70,7 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
         -- ^ The witness generation functions
         acRNG     :: StdGen,
         -- ^ random generator for generating unique variables
-        acOutput   :: o (Var a i)
+        acOutput  :: o (Var a i)
         -- ^ The output variables
     } deriving (Generic)
 deriving instance (NFData a, NFData (o (Var a i)), NFData (Rep i))

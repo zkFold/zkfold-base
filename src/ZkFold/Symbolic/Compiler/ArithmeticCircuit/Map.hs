@@ -18,8 +18,8 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Var (..), SysVar (..),
-                                                                      getAllVars)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), SysVar (..),
+                                                                      Var (..), getAllVars)
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
@@ -57,6 +57,6 @@ mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
             }
         varG = \case
           SysVar v -> SysVar (varF v)
-          ConstVar c -> ConstVar c 
+          ConstVar c -> ConstVar c
         mappedOutputs = varG <$> acOutput ac
     in ArithmeticCircuitTest (mappedCircuit {acOutput = mappedOutputs}) wi

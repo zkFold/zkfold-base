@@ -13,8 +13,8 @@ import           Data.Map                                            hiding (dro
                                                                       splitAt, take, toList)
 import           Data.Type.Equality                                  (type (~))
 import           GHC.Generics                                        (Par1 (..))
-import           Prelude                                             (Show, mempty, pure, return, show, ($), (++),
-                                                                      (<$>), (.))
+import           Prelude                                             (Show, mempty, pure, return, show, ($), (++), (.),
+                                                                      (<$>))
 import qualified Prelude                                             as Haskell
 import           System.Random                                       (mkStdGen)
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
