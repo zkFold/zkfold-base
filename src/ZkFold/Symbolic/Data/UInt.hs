@@ -65,7 +65,9 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Integer (UInt n r c) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r, FromConstant a (UInt n r c), MultiplicativeMonoid a) => Scale a (UInt n r c)
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Natural (UInt n r c)
+
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Integer (UInt n r c)
 
 instance MultiplicativeMonoid (UInt n r c) => Exponent (UInt n r c) Natural where
     (^) = natPow
@@ -237,7 +239,6 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Ord (Bool c) (UInt n r
     max x y = bool @(Bool c) x y $ x < y
 
     min x y = bool @(Bool c) x y $ x > y
-
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt xc + UInt yc = UInt $ symbolic2F xc yc (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) + vectorToNatural v (registerSize @(BaseField c) @n @r)) solve

@@ -31,7 +31,7 @@ instance {-# OVERLAPPING #-} Ord i => Scale (Sources a i) (Sources a i) where
 instance {-# OVERLAPPABLE #-} FromConstant c (Sources a i) where
   fromConstant = const empty
 
-instance {-# OVERLAPPABLE #-} MultiplicativeMonoid c => Scale c (Sources a i) where
+instance {-# OVERLAPPABLE #-} Scale c (Sources a i) where
   scale = const id
 
 instance Ord i => AdditiveSemigroup (Sources a i) where

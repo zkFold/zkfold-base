@@ -265,7 +265,7 @@ exec :: Functor o => ArithmeticCircuit a U1 o -> o a
 exec ac = eval ac U1
 
 -- | Applies the values of the first couple of inputs to the arithmetic circuit.
-apply :: (Eq a, Field a, Ord (Rep j), Scale a a, FromConstant a a, Representable i) => i a -> ArithmeticCircuit a (i :*: j) U1 -> ArithmeticCircuit a j U1
+apply :: (Eq a, Field a, Ord (Rep j), Representable i) => i a -> ArithmeticCircuit a (i :*: j) U1 -> ArithmeticCircuit a j U1
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
   , acWitness = fmap witF (acWitness ac)

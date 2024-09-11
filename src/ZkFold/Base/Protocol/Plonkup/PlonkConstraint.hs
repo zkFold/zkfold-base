@@ -54,7 +54,7 @@ instance (Arbitrary a, Finite a, ToConstant a, Const a ~ Natural, KnownNat i) =>
               _            -> error "impossible"
         return $ PlonkConstraint qm ql qr qo qc x y z
 
-toPlonkConstraint :: forall a i . (Eq a, FiniteField a, Scale a a, KnownNat i) => Poly a (Var (Vector i)) Natural -> PlonkConstraint i a
+toPlonkConstraint :: forall a i . (Eq a, FiniteField a, KnownNat i) => Poly a (Var (Vector i)) Natural -> PlonkConstraint i a
 toPlonkConstraint p =
     let xs    = map Just $ toList (variables p)
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
@@ -86,7 +86,7 @@ toPlonkConstraint p =
 
     in head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (Eq a, Scale a a, FromConstant a a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var (Vector i)) Natural
+fromPlonkConstraint :: (Eq a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var (Vector i)) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
     let xvar = maybe zero var
         xa = xvar a

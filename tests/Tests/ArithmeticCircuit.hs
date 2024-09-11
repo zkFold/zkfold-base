@@ -24,20 +24,20 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Ord                    ((<=))
 
-correctHom0 :: forall a . (Arithmetic a, Scale a a, Show a) => (forall b . Field b => b) -> Property
+correctHom0 :: forall a . (Arithmetic a, Show a) => (forall b . Field b => b) -> Property
 correctHom0 f = let r = fromFieldElement f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a
 
-correctHom1 :: forall a . (Arithmetic a, Scale a a, Show a, FromConstant a (FieldElement (ArithmeticCircuit a U1))) => (forall b . Field b => b -> b) -> a -> Property
+correctHom1 :: forall a . (Arithmetic a, Show a) => (forall b . Field b => b -> b) -> a -> Property
 correctHom1 f x = let r = fromFieldElement $ f (fromConstant x) in checkClosedCircuit r .&&. exec1 r === f x
 
-correctHom2 :: forall a . (Arithmetic a, Scale a a, Show a, FromConstant a (FieldElement (ArithmeticCircuit a U1))) => (forall b . Field b => b -> b -> b) -> a -> a -> Property
+correctHom2 :: forall a . (Arithmetic a, Show a) => (forall b . Field b => b -> b -> b) -> a -> a -> Property
 correctHom2 f x y = let r = fromFieldElement $ f (fromConstant x) (fromConstant y)
                     in checkClosedCircuit r .&&. exec1 r === f x y
 
 it :: Testable prop => String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
 
-specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, Scale a a, Show a, FromConstant a (FieldElement (ArithmeticCircuit a U1))) => IO ()
+specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, Show a) => IO ()
 specArithmeticCircuit' = hspec $ do
     describe "ArithmeticCircuit specification" $ do
         it "embeds constants" $ correctHom1 @a id
