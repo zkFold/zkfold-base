@@ -15,8 +15,8 @@ import           Prelude                                           hiding (Num (
                                                                     replicate, splitAt, truncate, (!!), (&&), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGroup (..), AdditiveSemigroup (..),
-                                                                    EuclideanDomain (..), Exponent (..),
-                                                                    FromConstant (..), MultiplicativeSemigroup (..),
+                                                                    Exponent (..), FromConstant (..),
+                                                                    MultiplicativeSemigroup (..), SemiEuclidean (..),
                                                                     divMod, one, zero, (-!))
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                                    (length, replicate, splitAt, (!!))

@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.SHA2 (specSHA2Natural, specSHA2) where
 
@@ -10,6 +11,7 @@ import           Data.Functor                                ((<$>))
 import           Data.List                                   (isPrefixOf, isSuffixOf, take, (++))
 import           Data.List.Split                             (splitOn)
 import           Data.Proxy                                  (Proxy (..))
+import           Data.Type.Equality                          (type (~))
 import           GHC.Generics                                (U1)
 import           GHC.TypeLits                                (KnownSymbol, Symbol, symbolVal)
 import           Prelude                                     (String, fmap, otherwise, pure, read, (<>), (==))
@@ -97,7 +99,8 @@ testAlgorithm
     :: forall (algorithm :: Symbol) element
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter element)
-    => ToConstant (ByteString (ResultSize algorithm) (Interpreter element)) Natural
+    => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
+    => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
     => FilePath
     -> IO ()
 testAlgorithm file = do
@@ -116,7 +119,8 @@ specSHA2Natural'
     :: forall (algorithm :: Symbol) element
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter element)
-    => ToConstant (ByteString (ResultSize algorithm) (Interpreter element)) Natural
+    => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
+    => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
     => IO ()
 specSHA2Natural' = do
     testFiles <- getTestFiles @algorithm

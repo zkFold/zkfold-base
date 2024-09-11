@@ -48,9 +48,7 @@ evalPolynomial
     -> b
 evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 
-variables :: forall c v .
-    (Ord v, MultiplicativeMonoid c) =>
-    Poly c v Natural -> Set v
+variables :: forall c v . Ord v => Poly c v Natural -> Set v
 variables = runSources . evalPolynomial evalMonomial (Sources @c . singleton)
 
 mapVarPolynomial :: Variable i => Map i i-> Poly c i j -> Poly c i j
@@ -83,6 +81,8 @@ instance Polynomial c i j => Ord (Poly c i j) where
 instance (Arbitrary c, Arbitrary (Mono i j)) => Arbitrary (Poly c i j) where
     arbitrary = P <$> arbitrary
 
+instance {-# OVERLAPPING #-} FromConstant (Poly c i j) (Poly c i j)
+
 instance Polynomial c i j => AdditiveSemigroup (Poly c i j) where
     P l + P r = P $ go l r
         where
@@ -105,6 +105,8 @@ instance Polynomial c i j => AdditiveMonoid (Poly c i j) where
 
 instance Polynomial c i j => AdditiveGroup (Poly c i j) where
     negate (P p) = P $ map (first negate) p
+
+instance {-# OVERLAPPING #-} Polynomial c i j => Scale (Poly c i j) (Poly c i j)
 
 instance Polynomial c i j => MultiplicativeSemigroup (Poly c i j) where
     P l * r = foldl' (+) (P []) $ map (`scaleM` r) l

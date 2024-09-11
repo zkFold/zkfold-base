@@ -140,7 +140,8 @@ natPowM f z n x
 oneM :: MonadCircuit i a m => m (Vector Size i)
 oneM = pure <$> newAssigned (const one)
 
-instance (KnownNat p, Arithmetic a) => ToConstant (FFA p (Interpreter a)) (Zp p) where
+instance (KnownNat p, Arithmetic a) => ToConstant (FFA p (Interpreter a)) where
+  type Const (FFA p (Interpreter a)) = Zp p
   toConstant (FFA (Interpreter rs)) = toZp rs
 
 instance (FromConstant a (Zp p), Symbolic c) => FromConstant a (FFA p c) where
@@ -148,6 +149,10 @@ instance (FromConstant a (Zp p), Symbolic c) => FromConstant a (FFA p c) where
     where
       impl :: Natural -> Vector Size (BaseField c)
       impl x = fromConstant . (x `mod`) <$> coprimes @(BaseField c)
+
+instance {-# OVERLAPPING #-} FromConstant (FFA p c) (FFA p c)
+
+instance {-# OVERLAPPING #-} (KnownNat p, Symbolic c) => Scale (FFA p c) (FFA p c)
 
 instance (KnownNat p, Symbolic c) => MultiplicativeSemigroup (FFA p c) where
   FFA x * FFA y =

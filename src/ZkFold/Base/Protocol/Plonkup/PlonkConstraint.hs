@@ -1,26 +1,31 @@
 {-# LANGUAGE OverloadedLists      #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.PlonkConstraint where
 
-import           Control.Monad                                       (guard)
+import           Control.Monad                                       (guard, return)
 import           Data.Containers.ListUtils                           (nubOrd)
-import           Data.List                                           (find, permutations, sort)
+import           Data.Eq                                             (Eq (..))
+import           Data.Function                                       (($), (.))
+import           Data.Functor                                        ((<$>))
+import           Data.List                                           (find, head, map, permutations, sort, (++), (!!))
 import           Data.Map                                            (Map)
 import qualified Data.Map                                            as Map
-import           Data.Maybe                                          (mapMaybe)
+import           Data.Maybe                                          (Maybe (..), mapMaybe)
+import           Data.Ord                                            (Ord)
+import           Data.Type.Equality                                  (type (~))
 import           GHC.IsList                                          (IsList (..))
 import           GHC.TypeNats                                        (KnownNat)
 import           Numeric.Natural                                     (Natural)
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
+import           Text.Show                                           (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial,
                                                                       var, variables)
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Prelude                                      (length, take, (!!))
+import           ZkFold.Prelude                                      (length, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 data PlonkConstraint i a = PlonkConstraint
@@ -35,7 +40,7 @@ data PlonkConstraint i a = PlonkConstraint
     }
     deriving (Show, Eq)
 
-instance (Arbitrary a, Finite a, ToConstant a Natural, KnownNat i, Ord a) => Arbitrary (PlonkConstraint i a) where
+instance (Arbitrary a, Finite a, ToConstant a, Const a ~ Natural, KnownNat i, Ord a) => Arbitrary (PlonkConstraint i a) where
     arbitrary = do
         qm <- arbitrary
         ql <- arbitrary
@@ -48,7 +53,7 @@ instance (Arbitrary a, Finite a, ToConstant a Natural, KnownNat i, Ord a) => Arb
         let xs = sort [x1, x2, x3]
         return $ PlonkConstraint qm ql qr qo qc (xs !! 0) (xs !! 1) (xs !! 2)
 
-toPlonkConstraint :: forall a i . (FiniteField a, Scale a a, KnownNat i, Ord a) => Poly a (Var a (Vector i)) Natural -> PlonkConstraint i a
+toPlonkConstraint :: forall a i . (Ord a, FiniteField a, KnownNat i) => Poly a (Var a (Vector i)) Natural -> PlonkConstraint i a
 toPlonkConstraint p =
     let xs    = toList (variables p)
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
@@ -67,7 +72,7 @@ toPlonkConstraint p =
             let xa = [(a, 1)]
                 xb = [(b, 1)]
                 xc = [(c, 1)]
-                xaxb = xa <> xb
+                xaxb = xa ++ xb
 
                 qm = getCoef $ Map.fromListWith (+) xaxb
                 ql = getCoef $ fromList xa
@@ -80,7 +85,7 @@ toPlonkConstraint p =
 
     in head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (Ord a, Scale a a, FromConstant a a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var a (Vector i)) Natural
+fromPlonkConstraint :: (Ord a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var a (Vector i)) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
     let xa = var a
         xb = var b

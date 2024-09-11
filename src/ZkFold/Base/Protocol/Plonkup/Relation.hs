@@ -37,7 +37,6 @@ toPlonkRelation :: forall i n l a .
     => KnownNat (3 * n)
     => KnownNat l
     => Arithmetic a
-    => Scale a a
     => Vector l (Var a (Vector i))
     -> ArithmeticCircuit a (Vector i) Par1
     -> Maybe (PlonkRelation n i a)
