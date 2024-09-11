@@ -42,7 +42,7 @@ instance (Arithmetic a, Arbitrary (i a), Arbitrary (ArithmeticCircuit a i Par1),
             , witnessInput = wi
             }
 
-mapVarArithmeticCircuit :: (Field a, Scale a a, Eq a, Functor o, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuitTest a i o -> ArithmeticCircuitTest a i o
+mapVarArithmeticCircuit :: (Field a, Eq a, Functor o, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuitTest a i o -> ArithmeticCircuitTest a i o
 mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
     let vars = [v | NewVar v <- getAllVars ac]
         forward = Map.fromAscList $ zip vars [0..]

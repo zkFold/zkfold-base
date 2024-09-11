@@ -20,17 +20,17 @@ isLookupConstraint :: FiniteField a => PlonkupConstraint i a -> a
 isLookupConstraint (ConsLookup _) = one
 isLookupConstraint _              = zero
 
-getA :: forall a i . (Eq a, FiniteField a, KnownNat i) => PlonkupConstraint i a -> Var (Vector i)
+getA :: forall a i . (Eq a, FiniteField a, KnownNat i) => PlonkupConstraint i a -> Maybe (Var (Vector i))
 getA (ConsPlonk c)  = x1 c
-getA (ConsLookup c) = lkVar c
+getA (ConsLookup c) = Just $ lkVar c
 getA ConsExtra      = x1 (toPlonkConstraint @a zero)
 
-getB :: forall a i . (Eq a, FiniteField a, KnownNat i) => PlonkupConstraint i a -> Var (Vector i)
+getB :: forall a i . (Eq a, FiniteField a, KnownNat i) => PlonkupConstraint i a -> Maybe (Var (Vector i))
 getB (ConsPlonk c)  = x2 c
-getB (ConsLookup c) = lkVar c
+getB (ConsLookup c) = Just $ lkVar c
 getB ConsExtra      = x2 (toPlonkConstraint @a zero)
 
-getC :: forall a i . (Eq a, FiniteField a, KnownNat i) => PlonkupConstraint i a -> Var (Vector i)
+getC :: forall a i . (Eq a, FiniteField a, KnownNat i) => PlonkupConstraint i a -> Maybe (Var (Vector i))
 getC (ConsPlonk c)  = x3 c
-getC (ConsLookup c) = lkVar c
+getC (ConsLookup c) = Just $ lkVar c
 getC ConsExtra      = x3 (toPlonkConstraint @a zero)

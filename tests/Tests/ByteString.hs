@@ -147,7 +147,7 @@ specByteString' = hspec $ do
             x <- toss m
             return $ toConstant @(ByteString n (Interpreter (Zp p))) (fromConstant x) === x
         it "Integer embeds Zp" $ \(x :: ByteString n (Interpreter (Zp p))) ->
-            fromConstant (toConstant @_ @Natural x) === x
+            fromConstant (toConstant x) === x
         it "AC embeds Integer" $ do
             x <- toss m
             return $ eval @(Zp p) @n (fromConstant x) === fromConstant x

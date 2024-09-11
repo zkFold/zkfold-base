@@ -5,7 +5,8 @@
 module ZkFold.Base.Protocol.Plonkup.Relation where
 
 import           Data.Bool                                           (bool)
-import           Data.Map                                            (elems, keys)
+import           Data.Functor.Rep                                    (index)
+import           Data.Map                                            (elems, keys, (!))
 import           Data.Maybe                                          (fromJust)
 import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
@@ -79,7 +80,7 @@ toPlonkupRelation :: forall i n l a .
 toPlonkupRelation xPub ac =
     let pubInputConstraints = map var (fromVector xPub)
         plonkConstraints    = elems (acSystem ac)
-        rs = map (toConstant @_ @Natural) $ elems $ acRange ac
+        rs = map toConstant $ elems $ acRange ac
         -- TODO: We are expecting at most one range.
         t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
         nLookup = bool 0 (head rs + 1) (not $ null rs)
@@ -106,11 +107,15 @@ toPlonkupRelation xPub ac =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c
 
-        w1 i   = toPolyVec $ fromList $ fmap (indexW ac i) a
-        w2 i   = toPolyVec $ fromList $ fmap (indexW ac i) b
-        w3 i   = toPolyVec $ fromList $ fmap (indexW ac i) c
+        indexW _ Nothing           = one
+        indexW i (Just (InVar v))  = index i v
+        indexW i (Just (NewVar v)) = witnessGenerator ac i ! v
+
+        w1 i   = toPolyVec $ fromList $ fmap (indexW i) a
+        w2 i   = toPolyVec $ fromList $ fmap (indexW i) b
+        w3 i   = toPolyVec $ fromList $ fmap (indexW i) c
         witness i  = (w1 i, w2 i, w3 i)
-        pubInput i = fmap (indexW ac i) xPub
+        pubInput i = fmap (indexW i . Just) xPub
 
     in if n' <= value @n
         then Just $ PlonkupRelation {..}

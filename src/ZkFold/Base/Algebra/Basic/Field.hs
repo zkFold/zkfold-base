@@ -52,7 +52,8 @@ residue = (`Haskell.mod` fromIntegral (value @p))
 toZp :: forall p . KnownNat p => Integer -> Zp p
 toZp = Zp . residue @p
 
-instance ToConstant (Zp p) Natural where
+instance ToConstant (Zp p) where
+    type Const (Zp p) = Natural
     toConstant = fromZp
 
 instance (KnownNat p, KnownNat (NumberOfBits (Zp p))) => Finite (Zp p) where
@@ -94,7 +95,7 @@ instance KnownNat p => FromConstant Natural (Zp p) where
 
 instance KnownNat p => Semiring (Zp p)
 
-instance KnownNat p => EuclideanDomain (Zp p) where
+instance KnownNat p => SemiEuclidean (Zp p) where
     divMod a b = let (q, r) = Haskell.divMod (fromZp a) (fromZp b)
                   in (toZp . fromIntegral $ q, toZp . fromIntegral $ r)
 
@@ -193,7 +194,7 @@ instance KnownNat p => Random (Zp p) where
 --
 -- Note that left distributivity is satisfied, meaning
 -- @a ^ (m + n) = (a ^ m) * (a ^ n)@.
-instance (KnownNat p, MultiplicativeGroup a, Order a ~ p) => Exponent a (Zp p) where
+instance (MultiplicativeGroup a, Order a ~ p) => Exponent a (Zp p) where
     a ^ n = a ^ fromZp n
 
 ----------------------------- Field Extensions --------------------------------
@@ -210,6 +211,8 @@ instance Ord f => Ord (Ext2 f e) where
 instance (KnownNat (Order (Ext2 f e)), KnownNat (NumberOfBits (Ext2 f e))) => Finite (Ext2 f e) where
     type Order (Ext2 f e) = Order f ^ 2
 
+instance {-# OVERLAPPING #-} FromConstant (Ext2 f e) (Ext2 f e)
+
 instance Field f => AdditiveSemigroup (Ext2 f e) where
     Ext2 a b + Ext2 c d = Ext2 (a + c) (b + d)
 
@@ -222,6 +225,8 @@ instance Field f => AdditiveMonoid (Ext2 f e) where
 instance Field f => AdditiveGroup (Ext2 f e) where
     negate (Ext2 a b) = Ext2 (negate a) (negate b)
     Ext2 a b - Ext2 c d = Ext2 (a - c) (b - d)
+
+instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly f e) => Scale (Ext2 f e) (Ext2 f e)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext2 f e) where
     Ext2 a b * Ext2 c d = fromConstant (toPoly [a, b] * toPoly [c, d])
@@ -274,6 +279,8 @@ instance Ord f => Ord (Ext3 f e) where
 instance (KnownNat (Order (Ext3 f e)), KnownNat (NumberOfBits (Ext3 f e))) => Finite (Ext3 f e) where
     type Order (Ext3 f e) = Order f ^ 3
 
+instance {-# OVERLAPPING #-} FromConstant (Ext3 f e) (Ext3 f e)
+
 instance Field f => AdditiveSemigroup (Ext3 f e) where
     Ext3 a b c + Ext3 d e f = Ext3 (a + d) (b + e) (c + f)
 
@@ -286,6 +293,8 @@ instance Field f => AdditiveMonoid (Ext3 f e) where
 instance Field f => AdditiveGroup (Ext3 f e) where
     negate (Ext3 a b c) = Ext3 (negate a) (negate b) (negate c)
     Ext3 a b c - Ext3 d e f = Ext3 (a - d) (b - e) (c - f)
+
+instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly f e) => Scale (Ext3 f e) (Ext3 f e)
 
 instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext3 f e) where
     Ext3 a b c * Ext3 d e f = fromConstant (toPoly [a, b, c] * toPoly [d, e, f])

@@ -17,7 +17,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 
 -- | A @'WitnessField'@ should support all algebraic operations
 -- used inside an arithmetic circuit.
-type WitnessField a = (FiniteField a, BinaryExpansion a, Bits a ~ [a])
+type WitnessField n a = ( FiniteField a, ToConstant a, Const a ~ n
+                        , FromConstant n a, SemiEuclidean n)
 
 -- | A type of witness builders. @i@ is a type of variables, @a@ is a base field.
 --
@@ -27,7 +28,7 @@ type WitnessField a = (FiniteField a, BinaryExpansion a, Bits a ~ [a])
 --
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
-type Witness i a = forall x . (Algebra a x, WitnessField x) => (i -> x) -> x
+type Witness i a = forall x n . (Algebra a x, WitnessField n x) => (i -> x) -> x
 
 -- | A type of constraints for new variables.
 -- @i@ is a type of variables, @a@ is a base field.
@@ -109,14 +110,14 @@ class Monad m => MonadCircuit i a m | m -> i, m -> a where
 
 -- | Field of witnesses with decidable equality and ordering
 -- is called an ``arithmetic'' field.
-type Arithmetic a = (WitnessField a, ToConstant a Natural, Eq a, Ord a)
+type Arithmetic a = (WitnessField Natural a, Eq a, Ord a)
 
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.
-newtype Witnesses a x = Witnesses { runWitnesses :: x }
+newtype Witnesses n a x = Witnesses { runWitnesses :: x }
   deriving (Functor, Applicative, Monad) via Identity
 
-instance WitnessField a => MonadCircuit a a (Witnesses a) where
+instance WitnessField n a => MonadCircuit a a (Witnesses n a) where
     newRanged _ w = return (w id)
     newConstrained _ w = return (w id)
     constraint _ = return ()

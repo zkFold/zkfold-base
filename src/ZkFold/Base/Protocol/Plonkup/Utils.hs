@@ -33,7 +33,7 @@ getParams n = findK' $ mkStdGen 0
                 all (`notElem` hGroup) (hGroup' k1)
                 && all (`notElem` hGroup' k1) (hGroup' k2)
 
-genVarSet :: (KnownNat i, Arithmetic a) => Natural -> ArithmeticCircuit a (Vector i) f -> Gen [Var (Vector i)]
+genVarSet :: KnownNat i => Natural -> ArithmeticCircuit a (Vector i) f -> Gen [Var (Vector i)]
 genVarSet l ac = take l <$> shuffle (getAllVars ac)
 
 sortByList :: Ord a => [a] -> [a] -> [a]

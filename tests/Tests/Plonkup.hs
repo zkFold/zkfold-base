@@ -3,17 +3,19 @@
 
 module Tests.Plonkup (specPlonkup) where
 
+import           Data.Bool                                           (Bool)
 import           Data.ByteString                                     (ByteString)
-import           Data.List                                           (sort)
+import           Data.Eq                                             (Eq (..))
+import           Data.Function                                       (($))
+import           Data.Int                                            (Int)
+import           Data.List                                           (head, sort)
+import           Data.Ord                                            (Ord)
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             hiding (Fractional (..), Num (..), drop, length,
-                                                                      replicate, take)
+import           System.IO                                           (IO)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGroup (..), AdditiveSemigroup (..), MultiplicativeSemigroup (..),
-                                                                      FiniteField, FromConstant (..), Scale (..),
-                                                                      negate, zero, one)
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2)
@@ -31,7 +33,7 @@ import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList
 import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
-propPlonkConstraintConversion :: (Eq a, Scale a a, FromConstant a a, FiniteField a) => PlonkConstraint 1 a -> Bool
+propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint 1 a -> Bool
 propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
