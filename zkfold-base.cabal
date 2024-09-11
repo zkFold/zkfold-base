@@ -118,6 +118,7 @@ library
       ZkFold.Base.Data.Type
       ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.KZG
+      ZkFold.Base.Protocol.Plonk
       ZkFold.Base.Protocol.Plonkup
       ZkFold.Base.Protocol.Plonkup.LookupConstraint
       ZkFold.Base.Protocol.Plonkup.PlonkConstraint

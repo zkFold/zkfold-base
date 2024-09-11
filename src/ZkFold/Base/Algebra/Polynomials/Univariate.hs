@@ -320,9 +320,11 @@ l ./. r = toPolyVec $ fromList $ zipWith (//) (toList $ fromPolyVec l) (toList $
 (*.) :: forall c size . (Field c) => c -> PolyVec c size -> PolyVec c size
 a *. (PV cs) = PV $ fmap (a *) cs
 
+-- | Add a constant to every coefficient of the polynomial.
 (.+) :: forall c size . (Field c) => PolyVec c size -> c -> PolyVec c size
 (PV cs) .+ a = PV $ fmap (+ a) cs
 
+-- | Add a constant to every coefficient of the polynomial.
 (+.) :: forall c size . (Field c) => c -> PolyVec c size -> PolyVec c size
 a +. (PV cs) = PV $ fmap (+ a) cs
 

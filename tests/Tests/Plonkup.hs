@@ -4,6 +4,7 @@
 module Tests.Plonkup (specPlonkup) where
 
 import           Data.ByteString                                     (ByteString)
+import           Data.List                                           (sort)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Fractional (..), Num (..), drop, length,
                                                                       replicate, take)
@@ -26,6 +27,7 @@ import           ZkFold.Base.Protocol.Plonkup.Prover                 (plonkupPro
 import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
 import           ZkFold.Base.Protocol.Plonkup.Testing
+import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
@@ -38,6 +40,9 @@ propPlonkupRelationHolds PlonkupRelation {..} w =
     let (w1, w2, w3) = witness w
         pub          = negate $ toPolyVec $ fromList $ fromVector $ pubInput w
     in qL .*. w1 + qR .*. w2 + qO .*. w3 + qM .*. w1 .*. w2 + qC + pub == zero
+
+propSortByListIsCorrect :: Ord a => [a] -> Bool
+propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs
 
 propPlonkPolyEquality :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationSize n), KnownNat (PlonkupPolyExtendedLength n), KnownNat l)
     => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
@@ -136,6 +141,8 @@ specPlonkup = hspec $ do
     describe "Plonkup specification" $ do
         describe "Conversion to Plonk constraints and back" $ do
             it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @(ScalarField BLS12_381_G1)
+        describe "Sort by list is correct" $ do
+            it "should hold" $ property $ propSortByListIsCorrect @Int
         describe "Plonkup relation" $ do
             it "should hold" $ property $ propPlonkupRelationHolds @2 @32 @3 @(ScalarField BLS12_381_G1)
         describe "Plonk polynomials equality" $ do

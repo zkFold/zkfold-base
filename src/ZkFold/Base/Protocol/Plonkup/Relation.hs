@@ -115,16 +115,3 @@ toPlonkupRelation xPub ac =
     in if n' <= value @n
         then Just $ PlonkupRelation {..}
         else Nothing
-
-toPlonkRelation :: forall i n l a .
-       KnownNat i
-    => KnownNat n
-    => KnownNat (3 * n)
-    => KnownNat l
-    => Arithmetic a
-    => Vector l (Var (Vector i))
-    -> ArithmeticCircuit a (Vector i) Par1
-    -> Maybe (PlonkupRelation i n l a)
-toPlonkRelation xPub ac0 =
-    let ac = desugarRanges ac0
-    in toPlonkupRelation xPub ac

@@ -38,8 +38,8 @@ type PlonkupPolyExtendedLength n = 4 * n + 6
 type PlonkupPolyExtended n c = PolyVec (ScalarField c) (PlonkupPolyExtendedLength n)
 
 instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonkup i n l c1 c2 t) where
-    show (Plonkup omega k1 k2 iPub ac x) =
-        "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show iPub ++ " " ++ show ac ++ " " ++ show x
+    show Plonkup {..} =
+        "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show xPub ++ " " ++ show ac ++ " " ++ show x
 
 instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonkup i n l c1 c2 t) where
     arbitrary = do

@@ -17,8 +17,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), Point,
-                                                                      PointCompressed)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), PointCompressed)
 import           ZkFold.Base.Data.Vector                             (Vector (..))
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup.Input
@@ -32,19 +31,16 @@ import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
-instance forall i n l c1 c2 ts plonk f g1 core.
-        ( Plonkup i n l c1 c2 ts ~ plonk
-        , ScalarField c1 ~ f
-        , Point c1 ~ g1
-        , KnownNat n
+instance forall i n l c1 c2 ts core.
+        ( KnownNat n
         , KnownNat l
         , KnownNat i
         , KnownNat (PlonkupPermutationSize n)
         , KnownNat (PlonkupPolyExtendedLength n)
-        , Arithmetic f
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
+        , Arithmetic (ScalarField c1)
         , ToTranscript ts Word8
         , ToTranscript ts (ScalarField c1)
         , ToTranscript ts (PointCompressed c1)
@@ -58,26 +54,27 @@ instance forall i n l c1 c2 ts plonk f g1 core.
     type Input (Plonkup i n l c1 c2 ts)       = PlonkupInput l c1
     type Proof (Plonkup i n l c1 c2 ts)       = PlonkupProof c1
 
-    setupProve :: plonk -> SetupProve plonk
+    setupProve :: Plonkup i n l c1 c2 ts -> SetupProve (Plonkup i n l c1 c2 ts)
     setupProve plonk =
         let PlonkupSetup {..} = plonkupSetup @_ @_ @_ @c1 @_ @_ @core plonk
         in PlonkupProverSetup {..}
 
-    setupVerify :: plonk -> SetupVerify plonk
+    setupVerify :: Plonkup i n l c1 c2 ts -> SetupVerify (Plonkup i n l c1 c2 ts)
     setupVerify plonk =
         let PlonkupSetup {..} = plonkupSetup @_ @_ @_ @c1 @_ @_ @core plonk
         in PlonkupVerifierSetup {..}
 
-    prove :: SetupProve plonk -> Witness plonk -> (Input plonk, Proof plonk)
+    prove :: SetupProve (Plonkup i n l c1 c2 ts) -> Witness (Plonkup i n l c1 c2 ts) -> (Input (Plonkup i n l c1 c2 ts), Proof (Plonkup i n l c1 c2 ts))
     prove setup witness =
         let (input, proof, _) = plonkupProve @i @n @l @c1 @c2 @ts @core setup witness
         in (input, proof)
 
-    verify :: SetupVerify plonk -> Input plonk -> Proof plonk -> Bool
+    verify :: SetupVerify (Plonkup i n l c1 c2 ts) -> Input (Plonkup i n l c1 c2 ts) -> Proof (Plonkup i n l c1 c2 ts) -> Bool
     verify = plonkupVerify @i @n @l @c1 @c2 @ts
 
 instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
-        Witness (Plonkup i n l c1 c2 t) ~ (PlonkupWitnessInput i c1, PlonkupProverSecret c1), NonInteractiveProof (Plonkup i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core) where
+            Witness (Plonkup i n l c1 c2 t) ~ (PlonkupWitnessInput i c1, PlonkupProverSecret c1), NonInteractiveProof (Plonkup i n l c1 c2 t) core)
+        => Arbitrary (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) Par1)
         vecPubInp <- genVarSet (value @l) ac
