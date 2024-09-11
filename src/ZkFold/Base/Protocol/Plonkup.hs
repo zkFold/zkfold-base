@@ -58,7 +58,7 @@ instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownN
 instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonk i n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
-        vecPubInp <- genSubset (getAllVars ac) (value @l)
+        vecPubInp <- genSubset (SysVar <$> getAllVars ac) (value @l)
         let (omega, k1, k2) = getParams (value @n)
         Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
 
@@ -66,7 +66,7 @@ instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithm
         Witness (Plonk i n l c1 c2 t) ~ (PlonkWitnessInput i c1, PlonkProverSecret c1), NonInteractiveProof (Plonk i n l c1 c2 t) core) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) Par1)
-        vecPubInp <- genSubset (getAllVars ac) (value @l)
+        vecPubInp <- genSubset (SysVar <$> getAllVars ac) (value @l)
         let (omega, k1, k2) = getParams $ value @n
         pl <- Plonk omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
         secret <- arbitrary
@@ -189,8 +189,9 @@ instance forall i n l c1 c2 t plonk f g1 core.
             (w1, w2, w3) = wmap (PlonkWitnessInput wInput wNewVars)
 
             wPub = iPub' <&> negate . \case
-              InVar j -> index wInput j
-              NewVar j -> wNewVars Map.! j
+              SysVar (InVar j) -> index wInput j
+              SysVar (NewVar j) -> wNewVars Map.! j
+              ConstVar c' -> c'
 
             pubPoly = polyVecInLagrangeBasis omega' $ toPolyVec @f @n wPub
 
