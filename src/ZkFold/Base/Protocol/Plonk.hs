@@ -43,8 +43,9 @@ fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 toPlonkup :: Plonk i n l c1 c2 ts -> Plonkup i n l c1 c2 ts
 toPlonkup Plonk {..} = Plonkup {..}
 
-instance Show (Plonkup i n l c1 c2 t) => Show (Plonk i n l c1 c2 t) where
-    show = show . toPlonkup
+instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonk i n l c1 c2 t) where
+    show Plonk {..} =
+        "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show xPub ++ " " ++ show ac ++ " " ++ show x
 
 instance (KnownNat i, Arithmetic (ScalarField c1), Arbitrary (Plonkup i n l c1 c2 t))
         => Arbitrary (Plonk i n l c1 c2 t) where
