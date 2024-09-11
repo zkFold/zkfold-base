@@ -34,7 +34,7 @@ data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript
         x     :: ScalarField curve1
     }
 
-fromPlonkup :: 
+fromPlonkup ::
     ( KnownNat i
     , Arithmetic (ScalarField c1)
     ) => Plonkup i n l c1 c2 ts -> Plonk i n l c1 c2 ts

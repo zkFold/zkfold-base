@@ -27,7 +27,7 @@ import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Base.Protocol.Plonkup.Prover.Setup
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
-import           ZkFold.Base.Protocol.Plonkup.Testing                (PlonkupProverTestInfo(..))
+import           ZkFold.Base.Protocol.Plonkup.Testing                (PlonkupProverTestInfo (..))
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
