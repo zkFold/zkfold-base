@@ -13,7 +13,7 @@ import           Test.QuickCheck                                     (Gen)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Prelude                                      (log2ceiling, replicate, genSubset)
+import           ZkFold.Prelude                                      (genSubset, log2ceiling, replicate)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
