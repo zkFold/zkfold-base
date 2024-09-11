@@ -308,15 +308,19 @@ instance (Field c, KnownNat size, Eq c) => MultiplicativeMonoid (PolyVec c size)
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec <$> V.replicateM (fromIntegral $ value @size) arbitrary
 
+-- | Multiply the corresponding coefficients of two polynomials.
 (.*.) :: forall c size . (Field c, KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
 l .*. r = toPolyVec $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
 
+-- | Divide the corresponding coefficients of two polynomials.
 (./.) :: forall c size . (Field c, KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
 l ./. r = toPolyVec $ fromList $ zipWith (//) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
 
+-- | Multiply every coefficient of the polynomial by a constant.
 (.*) :: forall c size . (Field c) => PolyVec c size -> c -> PolyVec c size
 (PV cs) .* a = PV $ fmap (* a) cs
 
+-- | Multiply every coefficient of the polynomial by a constant.
 (*.) :: forall c size . (Field c) => c -> PolyVec c size -> PolyVec c size
 a *. (PV cs) = PV $ fmap (a *) cs
 
