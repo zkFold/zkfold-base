@@ -22,7 +22,7 @@ import           ZkFold.Base.Protocol.Plonkup.Internal               (getParams)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuit (..), compile, compileForceOne,
                                                                       eval, witnessGenerator)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Var (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Var (..), SysVar (..))
 import           ZkFold.Symbolic.Data.Bool                           (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                             (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
@@ -73,7 +73,7 @@ testSafeOneInputZKP x ps targetValue =
         (omega, k1, k2) = getParams 32
         witnessInputs  = V.singleton targetValue
         witnessNewVars = witnessGenerator ac witnessInputs
-        indexTargetValue = V.singleton (InVar zero)
+        indexTargetValue = V.singleton (SysVar (InVar zero))
         plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk
@@ -91,7 +91,7 @@ testAttackSafeOneInputZKP x ps targetValue =
         (omega, k1, k2) = getParams 32
         witnessInputs  = V.singleton (targetValue + 1)
         witnessNewVars = witnessGenerator ac witnessInputs
-        indexTargetValue = V.singleton (InVar zero)
+        indexTargetValue = V.singleton (SysVar (InVar zero))
         plonk   = Plonk @1 @32 omega k1 k2 indexTargetValue ac x
         setupP  = setupProve @(PlonkBS N) @core plonk
         setupV  = setupVerify @(PlonkBS N) @core plonk

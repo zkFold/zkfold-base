@@ -37,7 +37,7 @@ type PlonkPolyLengthBS = 32
 type PlonkBS n = Plonk 1 PlonkPolyLengthBS n BLS12_381_G1 BLS12_381_G2 ByteString
 type PlonkPolyExtendedLengthBS = PlonkPolyExtendedLength PlonkPolyLengthBS
 
-propPlonkConstraintConversion :: (Eq a, Scale a a, FromConstant a a, FiniteField a) => PlonkConstraint 1 a -> Bool
+propPlonkConstraintConversion :: (Ord a, Scale a a, FromConstant a a, FiniteField a) => PlonkConstraint 1 a -> Bool
 propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
@@ -49,8 +49,9 @@ propPlonkConstraintSatisfaction (TestData (Plonk _ _ _ iPub ac _) w) =
 
         wPub = toPolyVec @_ @PlonkPolyLengthBS $
           fromList (fromVector iPub) <&> negate . \case
-            InVar j -> index wInput j
-            NewVar j -> wNewVars Map.! j
+            SysVar (InVar j) -> index wInput j
+            SysVar (NewVar j) -> wNewVars Map.! j
+            ConstVar j -> j
 
         qm' = V.toList $ fromPolyVec $ qM pr
         ql' = V.toList $ fromPolyVec $ qL pr
@@ -75,8 +76,9 @@ propPlonkPolyIdentity (TestData plonk w) =
         (w1, w2, w3) = wmap pw
 
         wPub = iPub' <&> negate . \case
-            InVar j -> index wInput j
-            NewVar j -> wNewVars Map.! j
+            SysVar (InVar j) -> index wInput j
+            SysVar (NewVar j) -> wNewVars Map.! j
+            ConstVar j -> j
 
         -- wPub = fmap (negate . index wInput . fromIntegral) iPub'
         pubPoly = polyVecInLagrangeBasis @(ScalarField BLS12_381_G1) @PlonkPolyLengthBS @PlonkPolyExtendedLengthBS omega' $
