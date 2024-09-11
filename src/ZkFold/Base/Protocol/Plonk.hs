@@ -25,6 +25,8 @@ import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
+{-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
+
 data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,

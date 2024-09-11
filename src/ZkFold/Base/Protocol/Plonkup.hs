@@ -31,6 +31,8 @@ import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
+{-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
+
 instance forall i n l c1 c2 ts core.
         ( KnownNat n
         , KnownNat l
