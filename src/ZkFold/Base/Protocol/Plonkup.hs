@@ -9,7 +9,6 @@ module ZkFold.Base.Protocol.Plonkup (
 ) where
 
 import           Data.Word                                           (Word8)
-import           GHC.Generics                                        (Par1)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P hiding (length)
@@ -78,9 +77,8 @@ instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithm
             Witness (Plonkup i n l c1 c2 t) ~ (PlonkupWitnessInput i c1, PlonkupProverSecret c1), NonInteractiveProof (Plonkup i n l c1 c2 t) core)
         => Arbitrary (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core) where
     arbitrary = do
-        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) Par1)
-        vecPubInp <- genVarSet (value @l) ac
+        ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) (Vector l))
         let (omega, k1, k2) = getParams $ value @n
-        pl <- Plonkup omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        pl <- Plonkup omega k1 k2 ac <$> arbitrary
         secret <- arbitrary
         return $ TestData pl (PlonkupWitnessInput wi, secret)

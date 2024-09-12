@@ -14,7 +14,6 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations              (fromPermutation)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing, Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
-import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction (..))
 import           ZkFold.Base.Protocol.Plonkup.Internal
 import           ZkFold.Base.Protocol.Plonkup.Prover
@@ -26,7 +25,6 @@ data PlonkupSetup i n l c1 c2 = PlonkupSetup
     { omega       :: ScalarField c1
     , k1          :: ScalarField c1
     , k2          :: ScalarField c1
-    , xPub        :: Vector l (Var (Vector i))
     , gs          :: V.Vector (Point c1)
     , h0          :: Point c2
     , h1          :: Point c2
@@ -51,7 +49,6 @@ instance
         ++ show omega ++ " "
         ++ show k1 ++ " "
         ++ show k2 ++ " "
-        ++ show xPub ++ " "
         ++ show gs ++ " "
         ++ show h0 ++ " "
         ++ show h1 ++ " "
@@ -77,7 +74,7 @@ plonkupSetup Plonkup {..} =
         h0   = gen
         h1   = x `mul` gen
 
-        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation xPub ac :: PlonkupRelation i n l (ScalarField c1)
+        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation ac :: PlonkupRelation i n l (ScalarField c1)
 
         f i = case (i-!1) `Prelude.div` value @n of
             0 -> omega^i

@@ -18,7 +18,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), PointCompressed, compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
-import           ZkFold.Base.Data.Vector                             (fromVector)
+import           ZkFold.Base.Data.Vector                             (fromVector, (!!))
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPolyExtended, PlonkupPolyExtendedLength)
@@ -45,10 +45,11 @@ plonkupProve :: forall i n l c1 c2 ts core .
     , CoreFunction c1 core
     ) => PlonkupProverSetup i n l c1 c2 -> (PlonkupWitnessInput i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1, PlonkupProverTestInfo n c1)
 plonkupProve PlonkupProverSetup {..}
-        (PlonkupWitnessInput wInput, PlonkupProverSecret {..})
+        (PlonkupWitnessInput wInput, PlonkupProverSecret ps)
     = (PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})
     where
         PlonkupCircuitPolynomials {..} = polynomials
+        secret i = ps !! (i -! 1)
 
         n = value @n
         zhX = polyVecZero @_ @n @(PlonkupPolyExtendedLength n)
@@ -65,9 +66,9 @@ plonkupProve PlonkupProverSetup {..}
 
         -- Round 1
 
-        aX = polyVecLinear b1 b2 * zhX + w1X :: PlonkupPolyExtended n c1
-        bX = polyVecLinear b3 b4 * zhX + w2X :: PlonkupPolyExtended n c1
-        cX = polyVecLinear b5 b6 * zhX + w3X :: PlonkupPolyExtended n c1
+        aX = polyVecLinear (secret 1) (secret 2) * zhX + w1X :: PlonkupPolyExtended n c1
+        bX = polyVecLinear (secret 3) (secret 4) * zhX + w2X :: PlonkupPolyExtended n c1
+        cX = polyVecLinear (secret 5) (secret 6) * zhX + w3X :: PlonkupPolyExtended n c1
 
         com = msm @c1 @core @_ @(PlonkupPolyExtendedLength n)
         cmA = gs `com` aX
@@ -85,14 +86,14 @@ plonkupProve PlonkupProverSetup {..}
         t_zeta = t relation
         f_zeta = fromList $ zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (toList $ qK relation) (toList $ t relation) (toList w1) :: PolyVec (ScalarField c1) n
 
-        fX = polyVecLinear b7 b8 * zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n c1
+        fX = polyVecLinear (secret 7) (secret 8) * zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n c1
 
         s  = sortByList (toList f_zeta ++ toList t_zeta) (toList t_zeta)
         h1 = toPolyVec $ V.ifilter (\i _ -> odd i) $ fromList s  :: PolyVec (ScalarField c1) n
         h2 = toPolyVec $ V.ifilter (\i _ -> even i) $ fromList s :: PolyVec (ScalarField c1) n
 
-        h1X = polyVecQuadratic b9 b10 b11 * zhX + polyVecInLagrangeBasis omega h1 :: PlonkupPolyExtended n c1
-        h2X = polyVecLinear b12 b13 * zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n c1
+        h1X = polyVecQuadratic (secret 9) (secret 10) (secret 11) * zhX + polyVecInLagrangeBasis omega h1 :: PlonkupPolyExtended n c1
+        h2X = polyVecLinear (secret 12) (secret 13) * zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n c1
 
         cmF  = gs `com` fX
         cmH1 = gs `com` h1X
@@ -129,14 +130,14 @@ plonkupProve PlonkupProverSetup {..}
             ./. (w1 + (beta *. sigma1s) .+ gamma)
             ./. (w2 + (beta *. sigma2s) .+ gamma)
             ./. (w3 + (beta *. sigma3s) .+ gamma)
-        z1X = polyVecQuadratic b14 b15 b16 * zhX + polyVecInLagrangeBasis omega grandProduct1 :: PlonkupPolyExtended n c1
+        z1X = polyVecQuadratic (secret 14) (secret 15) (secret 16) * zhX + polyVecInLagrangeBasis omega grandProduct1 :: PlonkupPolyExtended n c1
 
         grandProduct2 = rotR . cumprod $
                 (one + delta) *. (epsilon +. f_zeta)
             .*. ((epsilon * (one + delta)) +. t_zeta + delta *. rotL t_zeta)
             ./. ((epsilon * (one + delta)) +. h1 + delta *. h2)
             ./. ((epsilon * (one + delta)) +. h2 + delta *. rotL h1)
-        z2X = polyVecQuadratic b17 b18 b19 * zhX + polyVecInLagrangeBasis omega grandProduct2 :: PlonkupPolyExtended n c1
+        z2X = polyVecQuadratic (secret 17) (secret 18) (secret 19) * zhX + polyVecInLagrangeBasis omega grandProduct2 :: PlonkupPolyExtended n c1
 
         cmZ1 = gs `com` z1X
         cmZ2 = gs `com` z2X

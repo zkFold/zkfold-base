@@ -3,7 +3,6 @@
 
 module ZkFold.Base.Protocol.Plonkup.Internal where
 
-import           GHC.Generics                                        (Par1)
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -25,8 +24,7 @@ data Plonkup (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcri
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
-        xPub  :: Vector l (Var (Vector i)),
-        ac    :: ArithmeticCircuit (ScalarField curve1) (Vector i) Par1,
+        ac    :: ArithmeticCircuit (ScalarField curve1) (Vector i) (Vector l),
         x     :: ScalarField curve1
     }
 
@@ -39,11 +37,10 @@ type PlonkupPolyExtended n c = PolyVec (ScalarField c) (PlonkupPolyExtendedLengt
 
 instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonkup i n l c1 c2 t) where
     show Plonkup {..} =
-        "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show xPub ++ " " ++ show ac ++ " " ++ show x
+        "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac)  ++ " " ++ show ac ++ " " ++ show x
 
 instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonkup i n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
-        vecPubInp <- genVarSet (value @l) ac
         let (omega, k1, k2) = getParams (value @n)
-        Plonkup omega k1 k2 (Vector vecPubInp) ac <$> arbitrary
+        Plonkup omega k1 k2 ac <$> arbitrary

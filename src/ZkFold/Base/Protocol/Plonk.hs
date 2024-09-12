@@ -6,7 +6,6 @@ module ZkFold.Base.Protocol.Plonk (
 ) where
 
 import           Data.Kind                                           (Type)
-import           GHC.Generics                                        (Par1)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P hiding (length)
@@ -31,8 +30,7 @@ data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
-        xPub  :: Vector l (Var (Vector i)),
-        ac    :: ArithmeticCircuit (ScalarField curve1) (Vector i) Par1,
+        ac    :: ArithmeticCircuit (ScalarField curve1) (Vector i) (Vector l),
         x     :: ScalarField curve1
     }
 
@@ -47,7 +45,7 @@ toPlonkup Plonk {..} = Plonkup {..}
 
 instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonk i n l c1 c2 t) where
     show Plonk {..} =
-        "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show xPub ++ " " ++ show ac ++ " " ++ show x
+        "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac) ++ " " ++ show ac ++ " " ++ show x
 
 instance (KnownNat i, Arithmetic (ScalarField c1), Arbitrary (Plonkup i n l c1 c2 t))
         => Arbitrary (Plonk i n l c1 c2 t) where

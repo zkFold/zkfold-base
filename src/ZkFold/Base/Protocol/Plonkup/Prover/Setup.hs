@@ -8,16 +8,13 @@ import           Prelude                                             hiding (Num
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
-import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 data PlonkupProverSetup i n l c1 c2 = PlonkupProverSetup
     { omega       :: ScalarField c1
     , k1          :: ScalarField c1
     , k2          :: ScalarField c1
-    , xPub        :: Vector l (Var (Vector i))
     , gs          :: V.Vector (Point c1)
     , sigma1s     :: PolyVec (ScalarField c1) n
     , sigma2s     :: PolyVec (ScalarField c1) n
@@ -39,7 +36,6 @@ instance
         ++ show omega ++ " "
         ++ show k1 ++ " "
         ++ show k2 ++ " "
-        ++ show xPub ++ " "
         ++ show gs ++ " "
         ++ show sigma1s ++ " "
         ++ show sigma2s ++ " "

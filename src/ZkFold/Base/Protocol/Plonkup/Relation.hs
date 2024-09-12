@@ -8,23 +8,21 @@ import           Data.Bool                                           (bool)
 import           Data.Functor.Rep                                    (index)
 import           Data.Map                                            (elems, keys, (!))
 import           Data.Maybe                                          (fromJust)
-import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
-import           Test.QuickCheck                                     (Arbitrary (..), Gen)
+import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations              (Permutation, fromCycles, mkIndexPartition)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec, toPolyVec)
-import           ZkFold.Base.Data.Vector                             (Vector, fromVector, unsafeToVector)
+import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
 import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPermutationSize)
 import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint (..))
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint        (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
-import           ZkFold.Base.Protocol.Plonkup.Utils                  (genVarSet)
 import           ZkFold.Prelude                                      (length, replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -63,10 +61,7 @@ instance
         , Arbitrary a
         , Arithmetic a
         ) => Arbitrary (PlonkupRelation i n l a) where
-    arbitrary = do
-        ac   <- arbitrary :: Gen (ArithmeticCircuit a (Vector i) Par1)
-        xPub <- unsafeToVector <$> genVarSet (value @l) ac
-        return $ fromJust $ toPlonkupRelation xPub ac
+    arbitrary = fromJust . toPlonkupRelation <$> arbitrary
 
 toPlonkupRelation :: forall i n l a .
        KnownNat i
@@ -74,11 +69,11 @@ toPlonkupRelation :: forall i n l a .
     => KnownNat (3 * n)
     => KnownNat l
     => Arithmetic a
-    => Vector l (Var (Vector i))
-    -> ArithmeticCircuit a (Vector i) Par1
+    => ArithmeticCircuit a (Vector i) (Vector l)
     -> Maybe (PlonkupRelation i n l a)
-toPlonkupRelation xPub ac =
-    let pubInputConstraints = map var (fromVector xPub)
+toPlonkupRelation ac =
+    let xPub                = acOutput ac
+        pubInputConstraints = map var (fromVector xPub)
         plonkConstraints    = elems (acSystem ac)
         rs = map toConstant $ elems $ acRange ac
         -- TODO: We are expecting at most one range.
