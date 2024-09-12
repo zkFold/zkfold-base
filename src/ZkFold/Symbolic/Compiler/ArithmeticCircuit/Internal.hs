@@ -24,7 +24,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec1,
         apply,
         getAllVars,
-        indexW
+        genVarSet
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
@@ -46,6 +46,7 @@ import           Prelude                                      hiding (Num (..), 
                                                                take, (!!), (^))
 import qualified Prelude                                      as Haskell
 import           System.Random                                (StdGen, mkStdGen, uniform, uniformR)
+import           Test.QuickCheck                              (Gen)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
@@ -56,6 +57,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate (Mono, Poly, evalM
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
+import           ZkFold.Prelude                               (genSubset)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -328,6 +330,9 @@ apply xs ac = ac
 
 getAllVars :: (Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuit a i o -> [SysVar i]
 getAllVars ac = nubOrd $ sort $ toList acInput0 ++ map NewVar (keys $ acWitness ac)
+
+genVarSet :: (Ord (Rep i), Representable i, Foldable i) => Natural -> ArithmeticCircuit a i o -> Gen [Var i]
+genVarSet l = genSubset l . getAllVars
 
 -- TODO: Add proper symbolic application functions
 

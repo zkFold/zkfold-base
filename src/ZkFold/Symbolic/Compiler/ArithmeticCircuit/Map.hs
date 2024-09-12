@@ -10,7 +10,6 @@ import           Data.Functor.Rep                                    (Representa
 import           Data.Map                                            hiding (drop, foldl, foldr, fromList, map, null,
                                                                       splitAt, take, toList)
 import qualified Data.Map                                            as Map
-import           GHC.Generics                                        (Par1)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))
@@ -32,8 +31,8 @@ data ArithmeticCircuitTest a i o = ArithmeticCircuitTest
 instance (Show (ArithmeticCircuit a i o), Show a, Show (i a)) => Show (ArithmeticCircuitTest a i o) where
     show (ArithmeticCircuitTest ac wi) = show ac ++ ",\nwitnessInput: " ++ show wi
 
-instance (Arithmetic a, Arbitrary (i a), Arbitrary (ArithmeticCircuit a i Par1), Representable i) => Arbitrary (ArithmeticCircuitTest a i Par1) where
-    arbitrary :: Gen (ArithmeticCircuitTest a i Par1)
+instance (Arithmetic a, Arbitrary (i a), Arbitrary (ArithmeticCircuit a i f), Representable i) => Arbitrary (ArithmeticCircuitTest a i f) where
+    arbitrary :: Gen (ArithmeticCircuitTest a i f)
     arbitrary = do
         ac <- arbitrary
         wi <- arbitrary
