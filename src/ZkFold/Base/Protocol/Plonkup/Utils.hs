@@ -2,16 +2,15 @@
 
 module ZkFold.Base.Protocol.Plonkup.Utils where
 
-import           Data.Bifunctor                                      (first)
-import           Data.Bool                                           (bool)
-import           Data.Map                                            (fromList, insertWith, toList)
-import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
-                                                                      take, (!!), (/), (^))
-import           System.Random                                       (RandomGen, mkStdGen, uniformR)
+import           Data.Bifunctor                   (first)
+import           Data.Bool                        (bool)
+import           Data.Map                         (fromList, insertWith, toList)
+import           Prelude                          hiding (Num (..), drop, length, replicate, sum, take, (!!), (/), (^))
+import           System.Random                    (RandomGen, mkStdGen, uniformR)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                                      (log2ceiling, replicate)
+import           ZkFold.Prelude                   (log2ceiling, replicate)
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
