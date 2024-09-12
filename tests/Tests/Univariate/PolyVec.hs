@@ -49,6 +49,7 @@ propPolyVecDivision p q =
         d2 = deg $ vec2poly q
     in (p * q) `polyVecDiv` q == p || (d1 + d2 > fromIntegral (value @s) - 1)
 
+-- TODO: Don't use a hardcoded root of unity
 propPolyVecZero
     :: forall c s d .
     (KnownNat s, KnownNat d) =>
@@ -60,6 +61,7 @@ propPolyVecZero i =
         x = omega^abs i
     in p `evalPolyVec` x == zero
 
+-- TODO: Don't use a hardcoded root of unity
 propPolyVecLagrange
     :: forall c s d .
     (KnownNat s, KnownNat d) =>

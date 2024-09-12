@@ -22,7 +22,7 @@ type TxOut context = Output Tokens () context
 type TxIn context  = Input Tokens () context
 type Tx context = Transaction 1 0 2 Tokens 1 () context
 
-hash :: forall context x . (Symbolic context, MiMCHash (BaseField context) context x )=> x -> FieldElement context
+hash :: forall context x . (Symbolic context, MiMCHash (BaseField context) context x) => x -> FieldElement context
 hash = mimcHash @(BaseField context) mimcConstants zero
 
 randomOracle :: forall context .
