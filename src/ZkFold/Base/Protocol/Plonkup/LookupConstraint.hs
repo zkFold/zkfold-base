@@ -12,7 +12,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
-newtype LookupConstraint i a = LookupConstraint { lkVar :: Var (Vector i) }
+newtype LookupConstraint i a = LookupConstraint { lkVar :: SysVar (Vector i) }
     deriving (Show, Eq)
 
 instance (Arbitrary a, Finite a, ToConstant a, Const a ~ Natural, KnownNat i) => Arbitrary (LookupConstraint i a) where

@@ -24,7 +24,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec1,
         apply,
         getAllVars,
-        genVarSet
+        genVarSet,
+        indexW
     ) where
 
 import           Control.DeepSeq                              (NFData, force)
@@ -331,7 +332,7 @@ apply xs ac = ac
 getAllVars :: (Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuit a i o -> [SysVar i]
 getAllVars ac = nubOrd $ sort $ toList acInput0 ++ map NewVar (keys $ acWitness ac)
 
-genVarSet :: (Ord (Rep i), Representable i, Foldable i) => Natural -> ArithmeticCircuit a i o -> Gen [Var i]
+genVarSet :: (Ord (Rep i), Representable i, Foldable i) => Natural -> ArithmeticCircuit a i o -> Gen [SysVar i]
 genVarSet l = genSubset l . getAllVars
 
 -- TODO: Add proper symbolic application functions

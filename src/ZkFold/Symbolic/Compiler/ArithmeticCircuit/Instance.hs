@@ -56,7 +56,7 @@ instance
     arbitrary = do
         ac <- arbitrary @(ArithmeticCircuit a i Par1)
         o  <- unsafeToVector <$> genVarSet (value @l) ac
-        return ac {acOutput = o}
+        return ac {acOutput = SysVar <$> o}
 
 arbitrary' ::
   forall a i .
