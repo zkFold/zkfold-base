@@ -8,13 +8,10 @@ import           Data.Map                                            (fromList, 
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
 import           System.Random                                       (RandomGen, mkStdGen, uniformR)
-import           Test.QuickCheck                                     (Gen)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                             (Vector (..))
-import           ZkFold.Prelude                                      (genSubset, log2ceiling, replicate)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Prelude                                      (log2ceiling, replicate)
 
 getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
@@ -32,9 +29,6 @@ getParams n = findK' $ mkStdGen 0
             in bool (findK' g'') (omega, k1, k2) $
                 all (`notElem` hGroup) (hGroup' k1)
                 && all (`notElem` hGroup' k1) (hGroup' k2)
-
-genVarSet :: KnownNat i => Natural -> ArithmeticCircuit a (Vector i) f -> Gen [Var (Vector i)]
-genVarSet l = genSubset l . getAllVars
 
 sortByList :: Ord a => [a] -> [a] -> [a]
 sortByList f t =

@@ -13,7 +13,7 @@ import           Data.Map                                            hiding (dro
                                                                       splitAt, take, toList)
 import           Data.Type.Equality                                  (type (~))
 import           GHC.Generics                                        (Par1 (..))
-import           Prelude                                             (Show, const, fmap, id, mapM, mempty, pure, return,
+import           Prelude                                             (Show, mempty, pure, return,
                                                                       show, ($), (++), (<$>))
 import qualified Prelude                                             as Haskell
 import           System.Random                                       (mkStdGen)
@@ -21,9 +21,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Package                            (packWith)
-import           ZkFold.Base.Data.Par1                               ()
-import           ZkFold.Base.Data.Vector                             (Vector, generate)
+import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 
@@ -55,7 +53,10 @@ instance
   , Const (Rep i) ~ Natural
   , KnownNat l
   ) => Arbitrary (ArithmeticCircuit a i (Vector l)) where
-    arbitrary = packWith (fmap unPar1) <$> mapM (const arbitrary) (generate @l id)
+    arbitrary = do
+        ac <- arbitrary @(ArithmeticCircuit a i Par1)
+        o  <- unsafeToVector <$> genVarSet (value @l) ac
+        return ac {acOutput = o}
 
 arbitrary' ::
   forall a i .

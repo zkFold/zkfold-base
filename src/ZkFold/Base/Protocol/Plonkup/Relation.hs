@@ -78,10 +78,13 @@ toPlonkupRelation ac =
         rs = map toConstant $ elems $ acRange ac
         -- TODO: We are expecting at most one range.
         t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
+        -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
+        -- Lookup queries.
         xLookup = NewVar <$> keys (acRange ac)
 
-        n'      = acSizeN ac + value @l + nLookup
+        -- The total number of constraints in the relation.
+        n'      = acSizeN ac + value @l + length xLookup
 
         plonkupSystem = concat
             [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
@@ -112,6 +115,6 @@ toPlonkupRelation ac =
         witness i  = (w1 i, w2 i, w3 i)
         pubInput i = fmap (indexW i . Just) xPub
 
-    in if n' <= value @n
+    in if max n' nLookup <= value @n
         then Just $ PlonkupRelation {..}
         else Nothing
