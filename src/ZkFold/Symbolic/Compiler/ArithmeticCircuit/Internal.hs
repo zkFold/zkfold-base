@@ -120,7 +120,7 @@ witnessGenerator circuit inputs =
     in
         result
 
---------------------------- Symbolic compiler context ----------------------------
+--------------------------- Symbolic compiler context --------------------------
 
 indexW :: Representable i => ArithmeticCircuit a i o -> i a -> Var a i -> a
 indexW circuit inputs = \case
