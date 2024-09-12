@@ -210,6 +210,7 @@ library
       adjunctions                           < 4.5,
       aeson                                 < 2.3,
       base64-bytestring                          ,
+      base16-bytestring                          ,
       binary                               < 0.11,
       -- TODO: remove `blake2` after refactoring of ZK protocols
       blake2                                < 0.4,
@@ -293,6 +294,7 @@ test-suite zkfold-base-test
       adjunctions                           < 4.5,
       binary                               < 0.11,
       bytestring                                 ,
+      base16-bytestring                          ,
       blake2                                     ,
       containers                                 ,
       deepseq                                    ,

@@ -13,7 +13,7 @@ import           GHC.IsList                                        (IsList (..))
 import qualified GHC.Num                                           as GHC
 import           Prelude                                           hiding (Num (..), concat, divMod, length, mod,
                                                                     replicate, splitAt, truncate, (!!), (&&), (^))
-
+import qualified Prelude as P
 import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGroup (..), AdditiveSemigroup (..),
                                                                     Exponent (..), FromConstant (..),
                                                                     MultiplicativeSemigroup (..), SemiEuclidean (..),
@@ -28,6 +28,9 @@ import           ZkFold.Symbolic.Data.ByteString                   (ByteString (
                                                                     ToWords (..), Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
+import qualified Data.ByteString.Internal as BI
+import qualified Data.ByteString.Base16 as Hex
+import Data.Char (ord)
 
 -- TODO: This module is not finished yet. The hash computation is not correct.
 
@@ -215,4 +218,24 @@ blake2b_512 :: forall inputLen c n .
     , (Div n 64) * 64 ~ n
     , 8 * inputLen <= n
     ) => ByteString (8 * inputLen) c -> ByteString 512 c
-blake2b_512 = blake2b @0 @inputLen @64 (fromConstant @Natural 0)
+blake2b_512 = blake2b @0 @inputLen @64 0
+-- blake2b_512 = blake2b @64 @inputLen @64 key64 -- I use this when test a 64 byte key
+
+key0 :: Natural
+key0 = 0
+
+hexDecode :: BI.ByteString -- ^ Assumed to be valid hexadecimal
+    -> BI.ByteString
+hexDecode x = case Hex.decode x of
+    Left e -> error e
+    Right y -> y
+
+
+toNatural :: BI.ByteString-> Natural
+toNatural s = fromIntegral $ foldl (\l r -> base P.* l P.+ r) 0 (map ord chars)
+    where
+        base = 2 P.^ 8
+        chars = BI.unpackChars s
+
+key64 :: Natural
+key64 = toNatural . hexDecode $ "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
