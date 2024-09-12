@@ -2,13 +2,13 @@
 
 module ZkFold.Base.Protocol.Plonkup.Verifier.Setup where
 
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
+import           Prelude                                           hiding (Num (..), drop, length, sum, take, (!!), (/),
+                                                                    (^))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
-import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
-import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments   (PlonkupCircuitCommitments (..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class           (EllipticCurve (..), Point)
+import           ZkFold.Base.Algebra.Polynomials.Univariate        hiding (qr)
+import           ZkFold.Base.Protocol.Plonkup.Relation             (PlonkupRelation (..))
+import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 
 data PlonkupVerifierSetup i n l c1 c2 = PlonkupVerifierSetup
     { omega       :: ScalarField c1
