@@ -85,8 +85,6 @@ acInput0 = fmapRep InVar (tabulate id)
 acInput :: Representable i => i (Var a i)
 acInput = fmapRep (SysVar . InVar) (tabulate id)
 
------------------------------- Symbolic compiler context ----------------------------
-
 data SysVar i
   = InVar (Rep i)
   | NewVar Natural
@@ -121,6 +119,8 @@ witnessGenerator circuit inputs =
         result = fmap (\k -> k inputs result) (acWitness circuit)
     in
         result
+
+------------------------------ Symbolic compiler context ----------------------------
 
 indexW :: Representable i => ArithmeticCircuit a i o -> i a -> Var a i -> a
 indexW circuit inputs = \case
