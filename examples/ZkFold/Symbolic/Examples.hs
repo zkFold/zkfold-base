@@ -9,6 +9,7 @@ import           Data.Type.Equality                          (type (~))
 import           Examples.BatchTransfer                      (exampleBatchTransfer)
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
+import           Examples.Constant                           (exampleConst5, exampleEq5)
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
@@ -52,6 +53,8 @@ examples :: [(String, ExampleOutput)]
 examples =
   [ ("Eq", exampleOutput exampleEq)
   , ("Conditional", exampleOutput exampleConditional)
+  , ("Constant.5", exampleOutput exampleConst5)
+  , ("Eq.Constant.5", exampleOutput exampleEq5)
   , ("ByteString.And.32", exampleOutput $ exampleByteStringAnd @32)
   , ("ByteString.Or.64", exampleOutput $ exampleByteStringOr @64)
   , ("UInt.Mul.64.Auto", exampleOutput $ exampleUIntMul @64 @Auto)

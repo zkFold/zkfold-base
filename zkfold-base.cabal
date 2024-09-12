@@ -261,6 +261,7 @@ library zkfold-symbolic-examples
       Examples.BatchTransfer
       Examples.ByteString
       Examples.Conditional
+      Examples.Constant
       Examples.Eq
       Examples.FFA
       Examples.Fibonacci
