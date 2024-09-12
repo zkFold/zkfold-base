@@ -120,8 +120,6 @@ witnessGenerator circuit inputs =
     in
         result
 
---------------------------- Symbolic compiler context --------------------------
-
 indexW :: Representable i => ArithmeticCircuit a i o -> i a -> Var a i -> a
 indexW circuit inputs = \case
   SysVar (InVar j) -> index inputs j
@@ -129,6 +127,8 @@ indexW circuit inputs = \case
     (error ("no such NewVar: " <> show j))
     (witnessGenerator circuit inputs M.!? j)
   ConstVar c -> c
+
+--------------------------- Symbolic compiler context --------------------------
 
 crown :: ArithmeticCircuit a i g -> f (Var a i) -> ArithmeticCircuit a i f
 crown = flip (set #acOutput)
