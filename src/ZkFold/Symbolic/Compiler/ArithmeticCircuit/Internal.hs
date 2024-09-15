@@ -7,6 +7,7 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
         Var (..),
+        VarField,
         acInput,
         Arithmetic,
         ConstraintMonomial,
@@ -26,9 +27,12 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         genVarSet
     ) where
 
+import           ByteString.Aeson.Orphans                     ()
 import           Control.DeepSeq                              (NFData, force)
 import           Control.Monad.State                          (MonadState (..), State, modify, runState)
-import           Data.Aeson
+import           Data.Aeson                                   hiding (decode)
+import           Data.Binary                                  (decode)
+import           Data.ByteString                              (ByteString, fromStrict, toStrict)
 import           Data.Containers.ListUtils                    (nubOrd)
 import           Data.Foldable                                (fold, toList)
 import           Data.Functor.Rep
@@ -61,11 +65,11 @@ import           ZkFold.Symbolic.MonadCircuit
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a i o = ArithmeticCircuit
     {
-        acSystem  :: Map Natural (Constraint a i),
+        acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acRange   :: Map Natural a,
+        acRange   :: Map ByteString a,
         -- ^ The range constraints [0, a] for the selected variables
-        acWitness :: Map Natural (i a -> Map Natural a -> a),
+        acWitness :: Map ByteString (i a -> Map ByteString a -> a),
         -- ^ The witness generation functions
         acRNG     :: StdGen,
         -- ^ random generator for generating unique variables
@@ -80,7 +84,7 @@ acInput = fmapRep InVar (tabulate id)
 
 data Var i
   = InVar (Rep i)
-  | NewVar Natural
+  | NewVar ByteString
   deriving Generic
 deriving anyclass instance FromJSON (Rep i) => FromJSON (Var i)
 deriving anyclass instance FromJSON (Rep i) => FromJSONKey (Var i)
@@ -91,7 +95,7 @@ deriving stock instance Eq (Rep i) => Eq (Var i)
 deriving stock instance Ord (Rep i) => Ord (Var i)
 deriving instance NFData (Rep i) => NFData (Var i)
 
-witnessGenerator :: ArithmeticCircuit a i o -> i a -> Map Natural a
+witnessGenerator :: ArithmeticCircuit a i o -> i a -> Map ByteString a
 witnessGenerator circuit inputs =
     let
         result = fmap (\k -> k inputs result) (acWitness circuit)
@@ -151,10 +155,8 @@ instance
         -> State (ArithmeticCircuit a i U1) (Var i)
     newConstrained new witness = do
         let ws = sources @a witness
-            varF (NewVar v) = NewVar (v + 1)
-            varF (InVar v)  = InVar v
             -- | We need a throwaway variable to feed into `new` which definitely would not be present in a witness
-            x = maximum (S.mapMonotonic varF ws <> S.singleton (NewVar 0))
+            x = NewVar mempty
             -- | `s` is meant to be a set of variables used in a witness not present in a constraint.
             s = ws `S.difference` sources @a (`new` x)
         i <- newVariableWithSource (S.toList s) (new var)
@@ -205,13 +207,13 @@ toField = fromConstant . toConstant
 toVar ::
   forall a i.
   (Arithmetic a, ToConstant (Rep i), Const (Rep i) ~ Natural) =>
-  (Representable i, Foldable i) => [Var i] -> Constraint a i -> Natural
-toVar srcs c = force $ fromZp ex
+  (Representable i, Foldable i) => [Var i] -> Constraint a i -> ByteString
+toVar srcs c = force $ toStrict (encode ex)
     where
         l  = Haskell.fromIntegral (Haskell.length (tabulate @i (\_ -> error "can't reach")))
         r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: VarField
-        varF (NewVar w)  = w + l
+        varF (NewVar w)  = toConstant (decode @VarField $ fromStrict w) + l
         varF (InVar inV) = toConstant inV
         v  = (+ r) . fromConstant . varF
         x  = g ^ fromZp (evalPolynomial evalMonomial v $ mapCoeffs toField c)
@@ -221,13 +223,13 @@ newVariableWithSource ::
   (Arithmetic a, ToConstant (Rep i), Const (Rep i) ~ Natural) =>
   (Representable i, Foldable i) =>
   [Var i] -> (Var i -> Constraint a i) ->
-  State (ArithmeticCircuit a i U1) Natural
-newVariableWithSource srcs con = toVar srcs . con . NewVar . fst <$> do
+  State (ArithmeticCircuit a i U1) ByteString
+newVariableWithSource srcs con = toVar srcs . con . NewVar . toStrict . encode @VarField . fromConstant . fst <$> do
     zoom #acRNG $ get >>= traverse put . uniformR (0, order @VarField -! 1)
 
 ---------------------------------- Low-level functions --------------------------------
 
-type ConstraintMonomial = Mono Natural Natural
+type ConstraintMonomial = Mono ByteString Natural
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (Var i) Natural
@@ -239,12 +241,12 @@ addConstraint ::
   Constraint a i -> State (ArithmeticCircuit a i U1) ()
 addConstraint c = zoom #acSystem . modify $ insert (toVar [] c) c
 
-rangeConstraint :: Natural -> a -> State (ArithmeticCircuit a i U1) ()
+rangeConstraint :: ByteString -> a -> State (ArithmeticCircuit a i U1) ()
 rangeConstraint i b = zoom #acRange . modify $ insert i b
 
 -- | Adds a new variable assignment to the arithmetic circuit.
 -- TODO: forbid reassignment of variables
-assignment :: Natural -> (i a -> Map Natural a -> a) -> State (ArithmeticCircuit a i U1) ()
+assignment :: ByteString -> (i a -> Map ByteString a -> a) -> State (ArithmeticCircuit a i U1) ()
 assignment i f = zoom #acWitness . modify $ insert i f
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
