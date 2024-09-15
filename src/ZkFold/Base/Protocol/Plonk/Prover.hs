@@ -99,9 +99,9 @@ plonkProve PlonkupProverSetup {..}
         -- Round 3
 
         ts2 = ts1
-            `transcript` compress cmF
-            `transcript` compress cmH1
-            `transcript` compress cmH2
+            -- `transcript` compress cmF
+            -- `transcript` compress cmH1
+            -- `transcript` compress cmH2
         beta    = challenge (ts2 `transcript` (1 :: Word8))
         gamma   = challenge (ts2 `transcript` (2 :: Word8))
         delta   = challenge (ts2 `transcript` (3 :: Word8))
@@ -143,25 +143,25 @@ plonkProve PlonkupProverSetup {..}
 
         ts3 = ts2
             `transcript` compress cmZ1
-            `transcript` compress cmZ2
+            -- `transcript` compress cmZ2
         alpha  = challenge ts3
         alpha2 = alpha * alpha
-        alpha3 = alpha2 * alpha
-        alpha4 = alpha3 * alpha
-        alpha5 = alpha4 * alpha
+        -- alpha3 = alpha2 * alpha
+        -- alpha4 = alpha3 * alpha
+        -- alpha5 = alpha4 * alpha
 
         gammaX   = scalePV gamma one
-        deltaX   = scalePV delta one
-        epsilonX = scalePV epsilon one
+        -- deltaX   = scalePV delta one
+        -- epsilonX = scalePV epsilon one
         qX = (
                 (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
               + (aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha
               - (aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha
               + (z1X - one) * polyVecLagrange @_ @n 1 omega .* alpha2
-              + qkX * (aX - fX) .* alpha3
-              + z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4
-              - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4
-              + (z2X - one) * polyVecLagrange @_ @n 1 omega .* alpha5
+            --   + qkX * (aX - fX) .* alpha3
+            --   + z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4
+            --   - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4
+            --   + (z2X - one) * polyVecLagrange @_ @n 1 omega .* alpha5
             ) `polyVecDiv` zhX
         qlowX  = toPolyVec $ V.take (fromIntegral (n+2)) $ fromPolyVec qX
         qmidX  = toPolyVec $ V.take (fromIntegral (n+2)) $ V.drop (fromIntegral (n+2)) $ fromPolyVec qX
@@ -201,13 +201,13 @@ plonkProve PlonkupProverSetup {..}
             `transcript` c_xi
             `transcript` s1_xi
             `transcript` s2_xi
-            `transcript` f_xi
-            `transcript` t_xi
-            `transcript` t_xi'
+            -- `transcript` f_xi
+            -- `transcript` t_xi
+            -- `transcript` t_xi'
             `transcript` z1_xi'
-            `transcript` z2_xi'
-            `transcript` h1_xi'
-            `transcript` h2_xi
+            -- `transcript` z2_xi'
+            -- `transcript` h1_xi'
+            -- `transcript` h2_xi
         v = challenge ts5
 
         pi_xi = piX `evalPolyVec` xi
@@ -219,11 +219,11 @@ plonkProve PlonkupProverSetup {..}
                         - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi') *. (one .* c_xi + beta *. s3X + one .* gamma)
                     )
               + (alpha2 * lag1_xi) *. (z1X - one)
-              + (alpha3 * (a_xi - f_xi)) *. qkX
-              + alpha4 *. (((one + delta) * (epsilon + f_xi) * ((epsilon * (one + delta)) + t_xi + delta * t_xi')) *. z2X
-                        - (z2_xi' * ((epsilon * (one + delta)) + h2_xi + delta * h1_xi')) *. (one .* (epsilon * (one + delta)) + h1X + one .* (delta * h2_xi))
-                    )
-              + (alpha5 * lag1_xi) *. (z2X - one)
+            --   + (alpha3 * (a_xi - f_xi)) *. qkX
+            --   + alpha4 *. (((one + delta) * (epsilon + f_xi) * ((epsilon * (one + delta)) + t_xi + delta * t_xi')) *. z2X
+            --             - (z2_xi' * ((epsilon * (one + delta)) + h2_xi + delta * h1_xi')) *. (one .* (epsilon * (one + delta)) + h1X + one .* (delta * h2_xi))
+            --         )
+            --   + (alpha5 * lag1_xi) *. (z2X - one)
               - zhX_xi *. (qlowX + (xi^(n+2)) *. qmidX + (xi^(2*n+4)) *. qhighX)
 
         vn i = v ^ (i :: Natural)
@@ -235,15 +235,15 @@ plonkProve PlonkupProverSetup {..}
                 + (vn 3 *. (cX - (c_xi *. one)))
                 + (vn 4 *. (s1X - (s1_xi *. one)))
                 + (vn 5 *. (s2X - (s2_xi *. one)))
-                + (vn 6 *. (fX - (f_xi *. one)))
-                + (vn 7 *. (tX - (t_xi *. one)))
-                + (vn 8 *. (h2X - (h2_xi *. one)))
+                -- + (vn 6 *. (fX - (f_xi *. one)))
+                -- + (vn 7 *. (tX - (t_xi *. one)))
+                -- + (vn 8 *. (h2X - (h2_xi *. one)))
             ) `polyVecDiv` polyVecLinear one (negate xi)
         proofX2 = (
                   z1X - (z1_xi' *. one)
-                + (vn 1 *. (tX - (t_xi' *. one)))
-                + (vn 2 *. (z2X - (z2_xi' *. one)))
-                + (vn 3 *. (h1X - (h1_xi' *. one)))
+                -- + (vn 1 *. (tX - (t_xi' *. one)))
+                -- + (vn 2 *. (z2X - (z2_xi' *. one)))
+                -- + (vn 3 *. (h1X - (h1_xi' *. one)))
             ) `polyVecDiv` polyVecLinear one (negate (xi * omega))
 
         proof1 = gs `com` proofX1

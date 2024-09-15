@@ -52,22 +52,22 @@ plonkVerify
             `transcript` compress cmC :: ts
 
         ts2 = ts1
-            `transcript` compress cmF
-            `transcript` compress cmH1
-            `transcript` compress cmH2
+            -- `transcript` compress cmF
+            -- `transcript` compress cmH1
+            -- `transcript` compress cmH2
         beta    = challenge (ts2 `transcript` (1 :: Word8))
         gamma   = challenge (ts2 `transcript` (2 :: Word8))
-        delta   = challenge (ts2 `transcript` (3 :: Word8))
-        epsilon = challenge (ts2 `transcript` (4 :: Word8))
+        -- delta   = challenge (ts2 `transcript` (3 :: Word8))
+        -- epsilon = challenge (ts2 `transcript` (4 :: Word8))
 
         ts3 = ts2
             `transcript` compress cmZ1
-            `transcript` compress cmZ2
+            -- `transcript` compress cmZ2
         alpha  = challenge ts3
         alpha2 = alpha * alpha
-        alpha3 = alpha2 * alpha
-        alpha4 = alpha3 * alpha
-        alpha5 = alpha4 * alpha
+        -- alpha3 = alpha2 * alpha
+        -- alpha4 = alpha3 * alpha
+        -- alpha5 = alpha4 * alpha
 
         ts4 = ts3
             `transcript` compress cmQlow
@@ -81,13 +81,13 @@ plonkVerify
             `transcript` c_xi
             `transcript` s1_xi
             `transcript` s2_xi
-            `transcript` f_xi
-            `transcript` t_xi
-            `transcript` t_xi'
+            -- `transcript` f_xi
+            -- `transcript` t_xi
+            -- `transcript` t_xi'
             `transcript` z1_xi'
-            `transcript` z2_xi'
-            `transcript` h1_xi'
-            `transcript` h2_xi
+            -- `transcript` z2_xi'
+            -- `transcript` h1_xi'
+            -- `transcript` h2_xi
         v = challenge ts5
         vn i = v ^ (i :: Natural)
 
@@ -108,23 +108,23 @@ plonkVerify
             `evalPolyVec` xi
 
         -- Step 8: Compute the public table commitment
-        cmT_zeta = cmT1
+        -- cmT_zeta = cmT1
 
         -- Step 9: Compute r0
         r0 = pi_xi
             - alpha * (a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * (c_xi + gamma) * z1_xi'
             - alpha2 * lagrange1_xi
-            - alpha4 * z2_xi' * (epsilon * (one + delta) + delta * h2_xi) * (epsilon * (one + delta) + h2_xi + delta * h1_xi')
-            - alpha5 * lagrange1_xi
+            -- - alpha4 * z2_xi' * (epsilon * (one + delta) + delta * h2_xi) * (epsilon * (one + delta) + h2_xi + delta * h1_xi')
+            -- - alpha5 * lagrange1_xi
 
         -- Step 10: Compute D
         d =
                 (a_xi * b_xi) `mul` cmQm + a_xi `mul` cmQl + b_xi `mul` cmQr + c_xi `mul` cmQo + cmQc
               + ((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * k2 * xi + gamma) * alpha + lagrange1_xi * alpha2) `mul` cmZ1
               - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * alpha * beta * z1_xi') `mul` cmS3
-              + ((a_xi - f_xi) * alpha3) `mul` cmQk
-              + ((one + delta) * (epsilon + f_xi) * (epsilon * (one + delta) + t_xi + delta * t_xi') * alpha4 + lagrange1_xi * alpha5) `mul` cmZ2
-              - (z2_xi' * (epsilon * (one + delta) + h2_xi + delta * h1_xi') * alpha4) `mul` cmH1
+            --   + ((a_xi - f_xi) * alpha3) `mul` cmQk
+            --   + ((one + delta) * (epsilon + f_xi) * (epsilon * (one + delta) + t_xi + delta * t_xi') * alpha4 + lagrange1_xi * alpha5) `mul` cmZ2
+            --   - (z2_xi' * (epsilon * (one + delta) + h2_xi + delta * h1_xi') * alpha4) `mul` cmH1
               - zhX_xi `mul` (cmQlow + (xi^(n+2)) `mul` cmQmid + (xi^(2*n+4)) `mul` cmQhigh)
 
         -- Step 11: Compute F
@@ -134,18 +134,17 @@ plonkVerify
             + vn 3 `mul` cmC
             + vn 4 `mul` cmS1
             + vn 5 `mul` cmS2
-            + vn 6 `mul` cmF
-            + vn 7 `mul` cmT_zeta
-            + vn 8 `mul` cmH2
+            -- + vn 6 `mul` cmF
+            -- + vn 7 `mul` cmT_zeta
+            -- + vn 8 `mul` cmH2
             + eta `mul` cmZ1
-            + (eta * v) `mul` cmT_zeta
-            + (eta * vn 2) `mul` cmZ2
-            + (eta * vn 3) `mul` cmH1
+            -- + (eta * v) `mul` cmT_zeta
+            -- + (eta * vn 2) `mul` cmZ2
+            -- + (eta * vn 3) `mul` cmH1
 
         -- Step 12: Compute E
         e = (
-                negate r0 + v * a_xi + vn 2 * b_xi + vn 3 * c_xi + vn 4 * s1_xi + vn 5 * s2_xi + vn 6 * f_xi
-                + vn 7 * t_xi + vn 8 * h2_xi + eta * z1_xi' + eta * v * t_xi' + eta * vn 2 * z2_xi' + eta * vn 3 * h1_xi'
+                negate r0 + v * a_xi + vn 2 * b_xi + vn 3 * c_xi + vn 4 * s1_xi + vn 5 * s2_xi + eta * z1_xi'
             ) `mul` gen
 
         -- Step 13: Compute the pairing
