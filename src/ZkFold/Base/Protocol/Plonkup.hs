@@ -33,9 +33,9 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
 instance forall i n l c1 c2 ts core.
-        ( KnownNat n
+        ( KnownNat i
+        , KnownNat n
         , KnownNat l
-        , KnownNat i
         , KnownNat (PlonkupPermutationSize n)
         , KnownNat (PlonkupPolyExtendedLength n)
         , Ord (BaseField c1)
