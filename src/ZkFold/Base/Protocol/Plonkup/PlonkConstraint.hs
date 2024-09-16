@@ -4,8 +4,7 @@
 module ZkFold.Base.Protocol.Plonkup.PlonkConstraint where
 
 import           Control.Monad                                       (guard, return)
-import           Data.Binary                                         (Binary, encode)
-import           Data.ByteString                                     (toStrict)
+import           Data.Binary                                         (Binary)
 import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.Eq                                             (Eq (..))
 import           Data.Function                                       (($), (.))
@@ -24,6 +23,7 @@ import           Text.Show                                           (Show)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, evalMonomial, evalPolynomial, polynomial,
                                                                       var, variables)
+import           ZkFold.Base.Data.ByteString                         (toByteString)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length, replicate, replicateA, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -48,7 +48,7 @@ instance (Arbitrary a, Binary a, KnownNat i) => Arbitrary (PlonkConstraint i a) 
         qo <- arbitrary
         qc <- arbitrary
         k <- elements [1, 2, 3]
-        xs0 <- sort <$> replicateA k (Just . NewVar . toStrict . encode @a <$> arbitrary)
+        xs0 <- sort <$> replicateA k (Just . NewVar . toByteString @a <$> arbitrary)
         let (x, y, z) = case replicate (3 -! k) Nothing ++ xs0 of
               [x', y', z'] -> (x', y', z')
               _            -> error "impossible"

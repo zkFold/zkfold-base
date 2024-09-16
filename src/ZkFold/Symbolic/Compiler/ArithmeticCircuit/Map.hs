@@ -6,8 +6,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         ArithmeticCircuitTest(..)
     ) where
 
-import           Data.Binary                                         (encode)
-import           Data.ByteString                                     (toStrict)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, fromList, map, null,
                                                                       splitAt, take, toList)
@@ -20,6 +18,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
+import           ZkFold.Base.Data.ByteString                         (toByteString)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Var (..),
                                                                       VarField, getAllVars)
 
@@ -47,8 +46,8 @@ instance (Arithmetic a, Arbitrary (i a), Arbitrary (ArithmeticCircuit a i f), Re
 mapVarArithmeticCircuit :: (Field a, Eq a, Functor o, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuitTest a i o -> ArithmeticCircuitTest a i o
 mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
     let vars = [v | NewVar v <- getAllVars ac]
-        asc = [ toStrict (encode @VarField (fromConstant @Natural x)) | x <- [0..] ]
-        forward = Map.fromList $ zip vars asc
+        asc = [ toByteString @VarField (fromConstant @Natural x) | x <- [0..] ]
+        forward = Map.fromAscList $ zip vars asc
         backward = Map.fromAscList $ zip asc vars
         varF (InVar v)  = InVar v
         varF (NewVar v) = NewVar (forward ! v)

@@ -233,7 +233,6 @@ library
       -- TODO: remove `blake2` after refactoring of ZK protocols
       blake2                                < 0.4,
       bytestring                           < 0.12,
-      bytestring-aeson-orphans                   ,
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
