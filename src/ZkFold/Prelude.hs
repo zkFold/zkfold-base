@@ -7,7 +7,7 @@ import           Data.Map             (Map, lookup)
 import           GHC.Num              (Natural, integerToNatural)
 import           GHC.Stack            (HasCallStack)
 import           Prelude              hiding (drop, lookup, readFile, replicate, take, writeFile, (!!))
-import           Test.QuickCheck      (Gen, chooseInteger)
+import           Test.QuickCheck      (Gen, chooseInteger, shuffle)
 
 log2ceiling :: (Integral a, Integral b) => a -> b
 log2ceiling = ceiling @Double . logBase 2 . fromIntegral
@@ -77,3 +77,6 @@ assert statement obj x = if statement then x else error $ show obj
 
 chooseNatural :: (Natural, Natural) -> Gen Natural
 chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (fromIntegral lo, fromIntegral hi)
+
+genSubset :: Natural -> [a] -> Gen [a]
+genSubset l as = take l <$> shuffle as

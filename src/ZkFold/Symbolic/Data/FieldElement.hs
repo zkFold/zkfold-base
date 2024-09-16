@@ -49,10 +49,13 @@ instance Symbolic c => Exponent (FieldElement c) Natural where
 instance Symbolic c => Exponent (FieldElement c) Integer where
   (^) = intPowF
 
-instance (Symbolic c, MultiplicativeMonoid k, Scale k (BaseField c)) =>
-    Scale k (FieldElement c) where
+instance (Symbolic c, Scale k (BaseField c)) => Scale k (FieldElement c) where
   scale k (FieldElement c) = FieldElement $ fromCircuitF c $ \(Par1 i) ->
     Par1 <$> newAssigned (\x -> fromConstant (scale k one :: BaseField c) * x i)
+
+instance {-# OVERLAPPING #-} FromConstant (FieldElement c) (FieldElement c)
+
+instance {-# OVERLAPPING #-} Symbolic c => Scale (FieldElement c) (FieldElement c)
 
 instance Symbolic c => MultiplicativeSemigroup (FieldElement c) where
   FieldElement x * FieldElement y = FieldElement $ fromCircuit2F x y
