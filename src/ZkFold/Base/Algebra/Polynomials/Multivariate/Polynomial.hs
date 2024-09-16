@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveAnyClass               #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
-{-# LANGUAGE TypeApplications             #-}
 
 module ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial where
 
@@ -9,8 +8,8 @@ import           Data.Aeson                                            (FromJSON
 import           Data.Bifunctor                                        (Bifunctor (..))
 import           Data.Functor                                          ((<&>))
 import           Data.List                                             (foldl', intercalate)
-import           Data.Map.Strict                                       (Map, empty)
-import           Data.Set                                              (Set, singleton)
+import           Data.Map.Strict                                       (Map, empty, keysSet)
+import           Data.Set                                              (Set)
 import           GHC.Generics                                          (Generic)
 import           GHC.IsList                                            (IsList (..))
 import           Numeric.Natural                                       (Natural)
@@ -19,7 +18,6 @@ import           Prelude                                               hiding (N
 import           Test.QuickCheck                                       (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
 
 -- | A class for polynomials.
@@ -49,7 +47,7 @@ evalPolynomial
 evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 
 variables :: forall c v . Ord v => Poly c v Natural -> Set v
-variables = runSources . evalPolynomial evalMonomial (Sources @c . singleton)
+variables (P p) = foldMap ((\(M m) -> keysSet m) . snd) p
 
 mapVarPolynomial :: Variable i => Map i i-> Poly c i j -> Poly c i j
 mapVarPolynomial m (P ms) = P $ second (mapVarMonomial m) <$> ms

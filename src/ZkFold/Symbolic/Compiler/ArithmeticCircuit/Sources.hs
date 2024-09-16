@@ -1,6 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 
-module ZkFold.Base.Algebra.Basic.Sources (Sources (..)) where
+module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Sources (Sources (..)) where
 
 import           Data.Function                   (const, id)
 import           Data.Kind                       (Type)

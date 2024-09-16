@@ -22,35 +22,35 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         apply,
     ) where
 
-import           Control.DeepSeq                              (NFData, force)
-import           Control.Monad.State                          (MonadState (..), State, modify, runState)
+import           Control.DeepSeq                                    (NFData, force)
+import           Control.Monad.State                                (MonadState (..), State, modify, runState)
 import           Data.Aeson
-import           Data.ByteString                              (ByteString)
-import           Data.Foldable                                (fold, toList)
+import           Data.ByteString                                    (ByteString)
+import           Data.Foldable                                      (fold, toList)
 import           Data.Functor.Rep
-import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take,
-                                                               toList)
-import           Data.Maybe                                   (fromJust)
-import           Data.Semialign                               (unzipDefault)
-import qualified Data.Set                                     as S
-import           GHC.Generics                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
+import           Data.Map.Strict                                    hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                     take, toList)
+import           Data.Maybe                                         (fromJust)
+import           Data.Semialign                                     (unzipDefault)
+import qualified Data.Set                                           as S
+import           GHC.Generics                                       (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics
-import           Prelude                                      hiding (Num (..), drop, length, product, splitAt, sum,
-                                                               take, (!!), (^))
-import qualified Prelude                                      as Haskell
-import           System.Random                                (StdGen, mkStdGen, uniform, uniformR)
+import           Prelude                                            hiding (Num (..), drop, length, product, splitAt,
+                                                                     sum, take, (!!), (^))
+import qualified Prelude                                            as Haskell
+import           System.Random                                      (StdGen, mkStdGen, uniform, uniformR)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field              (Zp, fromZp, toZp)
+import           ZkFold.Base.Algebra.Basic.Field                    (Zp, fromZp, toZp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Sources
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381        (BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate       (Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
 import           ZkFold.Base.Control.HApplicative
-import           ZkFold.Base.Data.ByteString                  (fromByteString, toByteString)
+import           ZkFold.Base.Data.ByteString                        (fromByteString, toByteString)
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Sources
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | The type that represents a constraint in the arithmetic circuit.
