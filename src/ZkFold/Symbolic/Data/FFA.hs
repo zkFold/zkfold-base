@@ -150,6 +150,10 @@ instance (FromConstant a (Zp p), Symbolic c) => FromConstant a (FFA p c) where
       impl :: Natural -> Vector Size (BaseField c)
       impl x = fromConstant . (x `mod`) <$> coprimes @(BaseField c)
 
+instance {-# OVERLAPPING #-} FromConstant (FFA p c) (FFA p c)
+
+instance {-# OVERLAPPING #-} (KnownNat p, Symbolic c) => Scale (FFA p c) (FFA p c)
+
 instance (KnownNat p, Symbolic c) => MultiplicativeSemigroup (FFA p c) where
   FFA x * FFA y =
     FFA $ symbolic2F x y (\u v -> fromZp (toZp u * toZp v :: Zp p)) (mul @p)

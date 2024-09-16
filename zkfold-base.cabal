@@ -119,10 +119,28 @@ library
       ZkFold.Base.Data.Type
       ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.KZG
+      ZkFold.Base.Protocol.Plonk
+      ZkFold.Base.Protocol.Plonk.Prover
+      ZkFold.Base.Protocol.Plonk.Verifier
       ZkFold.Base.Protocol.Plonkup
+      ZkFold.Base.Protocol.Plonkup.LookupConstraint
       ZkFold.Base.Protocol.Plonkup.PlonkConstraint
+      ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
+      ZkFold.Base.Protocol.Plonkup.Input
       ZkFold.Base.Protocol.Plonkup.Internal
+      ZkFold.Base.Protocol.Plonkup.Proof
+      ZkFold.Base.Protocol.Plonkup.Prover
+      ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
+      ZkFold.Base.Protocol.Plonkup.Prover.Secret
+      ZkFold.Base.Protocol.Plonkup.Prover.Setup
       ZkFold.Base.Protocol.Plonkup.Relation
+      ZkFold.Base.Protocol.Plonkup.Setup
+      ZkFold.Base.Protocol.Plonkup.Testing
+      ZkFold.Base.Protocol.Plonkup.Utils
+      ZkFold.Base.Protocol.Plonkup.Verifier
+      ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
+      ZkFold.Base.Protocol.Plonkup.Verifier.Setup
+      ZkFold.Base.Protocol.Plonkup.Witness
       ZkFold.Base.Protocol.Protostar
       ZkFold.Base.Protocol.Protostar.Accumulator
       ZkFold.Base.Protocol.Protostar.AccumulatorScheme
@@ -215,6 +233,7 @@ library
       -- TODO: remove `blake2` after refactoring of ZK protocols
       blake2                                < 0.4,
       bytestring                           < 0.12,
+      bytestring-aeson-orphans                   ,
       containers                            < 0.7,
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
@@ -281,9 +300,9 @@ test-suite zkfold-base-test
       Tests.GroebnerBasis
       Tests.Group
       Tests.NonInteractiveProof
-      Tests.NonInteractiveProof.Plonkup
       Tests.Pairing
       Tests.Permutations
+      Tests.Plonkup
       Tests.SHA2
       Tests.UInt
       Tests.Univariate

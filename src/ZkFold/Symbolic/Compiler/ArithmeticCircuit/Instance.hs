@@ -21,25 +21,46 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Par1                               ()
+import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 
 ------------------------------------- Instances -------------------------------------
 
 instance
-  ( Arithmetic a, Arbitrary a, Arbitrary (Rep i), Haskell.Ord (Rep i)
-  , Representable i, Haskell.Foldable i
-  , ToConstant (Rep i), Const (Rep i) ~ Natural
+  ( Arithmetic a
+  , Arbitrary a
+  , Arbitrary (Rep i)
+  , Haskell.Ord (Rep i)
+  , Representable i
+  , Haskell.Foldable i
+  , ToConstant (Rep i)
+  , Const (Rep i) ~ Natural
   ) => Arbitrary (ArithmeticCircuit a i Par1) where
     arbitrary = do
         outVar <- InVar <$> arbitrary
         let ac = mempty {acOutput = Par1 outVar}
         fromFieldElement <$> arbitrary' (FieldElement ac) 10
 
+instance
+  ( Arithmetic a
+  , Arbitrary a
+  , Arbitrary (Rep i)
+  , Haskell.Ord (Rep i)
+  , Representable i
+  , Haskell.Foldable i
+  , ToConstant (Rep i)
+  , Const (Rep i) ~ Natural
+  , KnownNat l
+  ) => Arbitrary (ArithmeticCircuit a i (Vector l)) where
+    arbitrary = do
+        ac <- arbitrary @(ArithmeticCircuit a i Par1)
+        o  <- unsafeToVector <$> genVarSet (value @l) ac
+        return ac {acOutput = o}
+
 arbitrary' ::
   forall a i .
-  (Arithmetic a, Arbitrary a, FromConstant a a) =>
+  (Arithmetic a, Arbitrary a) =>
   (Haskell.Ord (Rep i), Representable i, Haskell.Foldable i) =>
   (ToConstant (Rep i), Const (Rep i) ~ Natural) =>
   FieldElement (ArithmeticCircuit a i) -> Natural ->

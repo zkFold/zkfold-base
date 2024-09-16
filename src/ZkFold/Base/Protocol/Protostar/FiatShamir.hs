@@ -20,9 +20,9 @@ fsChallenge :: forall f a c . (Binary (SpS.Input f a), Binary (VerifierMessage f
       => FiatShamir f (CommitOpen f c a)
       -> SpecialSoundTranscript f (CommitOpen f c a) -> ProverMessage f (CommitOpen f c a) -> VerifierMessage f a
 fsChallenge (FiatShamir _ ip) []           c =
-      let r0 = fst $ challenge @ByteString $ toTranscript ip :: VerifierMessage f a
-      in fst $ challenge @ByteString $ toTranscript r0 <> toTranscript c
-fsChallenge _                 ((_, r) : _) c = fst $ challenge @ByteString $ toTranscript r <> toTranscript c
+      let r0 = challenge @ByteString $ toTranscript ip :: VerifierMessage f a
+      in challenge @ByteString $ toTranscript r0 <> toTranscript c
+fsChallenge _                 ((_, r) : _) c = challenge @ByteString $ toTranscript r <> toTranscript c
 
 instance (SpS.SpecialSoundProtocol f a, Eq c, Binary (SpS.Input f a), Binary (VerifierMessage f a),
             Binary c, Binary (ProverMessage f a), Bits a ~ [a]) => NonInteractiveProof (FiatShamir f (CommitOpen f c a)) core where

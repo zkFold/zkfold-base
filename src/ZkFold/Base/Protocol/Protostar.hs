@@ -4,6 +4,8 @@ module ZkFold.Base.Protocol.Protostar where
 
 
 import           Control.DeepSeq                                     (NFData)
+import           Data.Binary                                         (decode)
+import           Data.ByteString                                     (fromStrict)
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
 import           GHC.Generics                                        (Generic)
@@ -66,7 +68,7 @@ instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (RecursiveCircuit 
     --
     algebraicMap rc _ _ _ =
         let
-            varF (NewVar ix) = var (ix P.+ value @n)
+            varF (NewVar ix) = var (toConstant (decode @VarField $ fromStrict ix) P.+ value @n)
             varF (InVar ix)  = var (toConstant ix)
         in
             [ evalPolynomial evalMonomial varF poly

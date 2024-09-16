@@ -3,16 +3,18 @@
 
 module Tests.NonInteractiveProof (specNonInteractiveProof) where
 
+import           Data.ByteString                             (ByteString)
 import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (Arbitrary, Testable (property), withMaxSuccess)
-import           Tests.NonInteractiveProof.Plonkup           (PlonkBS, specPlonk)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.KZG                    (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..),
                                                               NonInteractiveProofTestData (..))
+import           ZkFold.Base.Protocol.Plonk                  (Plonk)
+import           ZkFold.Base.Protocol.Plonkup                (Plonkup)
 
 propNonInteractiveProof :: forall a core .
     NonInteractiveProof a core =>
@@ -35,6 +37,5 @@ specNonInteractiveProof' = hspec $ do
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
-
-    specPlonk
-    specNonInteractiveProof' @(PlonkBS 2) @HaskellCore
+    specNonInteractiveProof' @(Plonk 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
+    specNonInteractiveProof' @(Plonkup 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
