@@ -13,6 +13,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.KZG                    (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..),
                                                               NonInteractiveProofTestData (..))
+import           ZkFold.Base.Protocol.Plonk                  (Plonk)
 import           ZkFold.Base.Protocol.Plonkup                (Plonkup)
 
 propNonInteractiveProof :: forall a core .
@@ -36,4 +37,5 @@ specNonInteractiveProof' = hspec $ do
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
+    specNonInteractiveProof' @(Plonk 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
     specNonInteractiveProof' @(Plonkup 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
