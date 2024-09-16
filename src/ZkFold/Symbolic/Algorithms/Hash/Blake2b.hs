@@ -30,7 +30,7 @@ import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), Re
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 import qualified Data.ByteString.Internal as BI
 import qualified Data.ByteString.Base16 as Hex
-import Data.Char (ord)
+import           Data.Char (ord)
 
 -- TODO: This module is not finished yet. The hash computation is not correct.
 
@@ -238,4 +238,4 @@ toNatural s = fromIntegral $ foldl (\l r -> base P.* l P.+ r) 0 (map ord chars)
         chars = BI.unpackChars s
 
 key64 :: Natural
-key64 = toNatural . hexDecode $ "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+key64 = fromConstant @Natural $ read "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
