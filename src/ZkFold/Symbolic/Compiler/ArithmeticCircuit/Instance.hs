@@ -22,7 +22,8 @@ import           Test.QuickCheck                                     (Arbitrary 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal hiding (constraint)
+import           ZkFold.Prelude                                      (genSubset)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 
 ------------------------------------- Instances -------------------------------------
@@ -55,7 +56,7 @@ instance
   ) => Arbitrary (ArithmeticCircuit a i (Vector l)) where
     arbitrary = do
         ac <- arbitrary @(ArithmeticCircuit a i Par1)
-        o  <- unsafeToVector <$> genVarSet (value @l) ac
+        o  <- unsafeToVector <$> genSubset (value @l) (getAllVars ac)
         return ac {acOutput = o}
 
 arbitrary' ::
