@@ -22,16 +22,15 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         apply,
     ) where
 
-import           ByteString.Aeson.Orphans                     ()
 import           Control.DeepSeq                              (NFData, force)
 import           Control.Monad.State                          (MonadState (..), State, modify, runState)
-import           Data.Aeson                                   hiding (decode)
-import           Data.Binary                                  (decode)
-import           Data.ByteString                              (ByteString, fromStrict, toStrict)
+import           Data.Aeson
+import           Data.ByteString                              (ByteString)
 import           Data.Foldable                                (fold, toList)
 import           Data.Functor.Rep
 import           Data.Map.Strict                              hiding (drop, foldl, foldr, map, null, splitAt, take,
                                                                toList)
+import           Data.Maybe                                   (fromJust)
 import           Data.Semialign                               (unzipDefault)
 import qualified Data.Set                                     as S
 import           GHC.Generics                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
@@ -48,6 +47,7 @@ import           ZkFold.Base.Algebra.Basic.Sources
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381  (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
 import           ZkFold.Base.Control.HApplicative
+import           ZkFold.Base.Data.ByteString                  (fromByteString, toByteString)
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
@@ -157,11 +157,11 @@ unconstrained ::
   Witness (Var i) a -> NewConstraint (Var i) a ->
   State (ArithmeticCircuit a i U1) ByteString
 unconstrained witness con = do
-  raw <- encode @VarField . fromConstant . fst <$> do
+  raw <- toByteString @VarField . fromConstant . fst <$> do
     zoom #acRNG (get >>= traverse put . uniformR (0, order @VarField -! 1))
   let sources = runSources . ($ Sources @a . S.singleton)
       srcs = sources witness `S.difference` sources (`con` NewVar mempty)
-      v = toVar @a @i (S.toList srcs) . con var $ NewVar (toStrict raw)
+      v = toVar @a @i (S.toList srcs) $ con var (NewVar raw)
   -- TODO: forbid reassignment of variables
   zoom #acWitness . modify $ insert v $ \i w -> witness $ \case
     InVar inV -> index i inV
@@ -173,12 +173,12 @@ toVar ::
   forall a i.
   (Arithmetic a, ToConstant (Rep i), Const (Rep i) ~ Natural) =>
   (Representable i, Foldable i) => [Var i] -> Constraint a i -> ByteString
-toVar srcs c = force $ toStrict (encode ex)
+toVar srcs c = force (toByteString ex)
     where
         l  = Haskell.fromIntegral (Haskell.length @i acInput)
         r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
         g  = toZp 89175291725091202781479751781509570912743212325 :: VarField
-        varF (NewVar w)  = toConstant (decode @VarField $ fromStrict w) + l
+        varF (NewVar w)  = toConstant (fromJust $ fromByteString @VarField w) + l
         varF (InVar inV) = toConstant inV
         v  = (+ r) . fromConstant . varF
         x  = g ^ fromZp (evalPolynomial evalMonomial v $ mapCoeffs toConstant c)
