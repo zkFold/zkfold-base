@@ -1,10 +1,11 @@
 {-# LANGUAGE OverloadedLists      #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.PlonkConstraint where
 
 import           Control.Monad                                       (guard, return)
+import           Data.Binary                                         (Binary, encode)
+import           Data.ByteString                                     (toStrict)
 import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.Eq                                             (Eq (..))
 import           Data.Function                                       (($), (.))
@@ -13,7 +14,6 @@ import           Data.List                                           (find, head
 import           Data.Map                                            (Map)
 import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (Maybe (..), mapMaybe, maybe)
-import           Data.Type.Equality                                  (type (~))
 import           GHC.IsList                                          (IsList (..))
 import           GHC.TypeNats                                        (KnownNat)
 import           Numeric.Natural                                     (Natural)
@@ -40,7 +40,7 @@ data PlonkConstraint i a = PlonkConstraint
     }
     deriving (Show, Eq)
 
-instance (Arbitrary a, Finite a, ToConstant a, Const a ~ Natural, KnownNat i) => Arbitrary (PlonkConstraint i a) where
+instance (Arbitrary a, Binary a, KnownNat i) => Arbitrary (PlonkConstraint i a) where
     arbitrary = do
         qm <- arbitrary
         ql <- arbitrary
@@ -48,7 +48,7 @@ instance (Arbitrary a, Finite a, ToConstant a, Const a ~ Natural, KnownNat i) =>
         qo <- arbitrary
         qc <- arbitrary
         k <- elements [1, 2, 3]
-        xs0 <- sort <$> replicateA k (Just . NewVar . toConstant @a <$> arbitrary)
+        xs0 <- sort <$> replicateA k (Just . NewVar . toStrict . encode @a <$> arbitrary)
         let (x, y, z) = case replicate (3 -! k) Nothing ++ xs0 of
               [x', y', z'] -> (x', y', z')
               _            -> error "impossible"
