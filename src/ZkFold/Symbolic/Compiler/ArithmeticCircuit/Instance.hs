@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans     #-}
@@ -8,10 +7,10 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
 import           Data.Aeson                                          hiding (Bool)
+import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
-import           Data.Type.Equality                                  (type (~))
 import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (Show, mempty, pure, return, show, ($), (++),
                                                                       (<$>))
@@ -31,12 +30,12 @@ import           ZkFold.Symbolic.Data.FieldElement                   (FieldEleme
 instance
   ( Arithmetic a
   , Arbitrary a
+  , Binary a
   , Arbitrary (Rep i)
+  , Binary (Rep i)
   , Haskell.Ord (Rep i)
   , Representable i
   , Haskell.Foldable i
-  , ToConstant (Rep i)
-  , Const (Rep i) ~ Natural
   ) => Arbitrary (ArithmeticCircuit a i Par1) where
     arbitrary = do
         outVar <- InVar <$> arbitrary
@@ -46,12 +45,12 @@ instance
 instance
   ( Arithmetic a
   , Arbitrary a
+  , Binary a
   , Arbitrary (Rep i)
+  , Binary (Rep i)
   , Haskell.Ord (Rep i)
   , Representable i
   , Haskell.Foldable i
-  , ToConstant (Rep i)
-  , Const (Rep i) ~ Natural
   , KnownNat l
   ) => Arbitrary (ArithmeticCircuit a i (Vector l)) where
     arbitrary = do
@@ -61,9 +60,8 @@ instance
 
 arbitrary' ::
   forall a i .
-  (Arithmetic a, Arbitrary a) =>
-  (Haskell.Ord (Rep i), Representable i, Haskell.Foldable i) =>
-  (ToConstant (Rep i), Const (Rep i) ~ Natural) =>
+  (Arithmetic a, Binary a, Binary (Rep i), Haskell.Ord (Rep i)) =>
+  (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a i))
 arbitrary' ac 0 = return ac

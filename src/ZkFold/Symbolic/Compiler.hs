@@ -26,14 +26,16 @@ import           ZkFold.Symbolic.Class                      (Arithmetic, Symboli
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
+import Data.Binary (Binary)
 
 {-
     ZkFold Symbolic compiler module dependency order:
-    1. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-    2. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
-    3. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
-    4. ZkFold.Symbolic.Compiler.ArithmeticCircuit
-    5. ZkFold.Symbolic.Compiler
+    1. ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
+    2. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+    3. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
+    4. ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
+    5. ZkFold.Symbolic.Compiler.ArithmeticCircuit
+    6. ZkFold.Symbolic.Compiler
 -}
 
 forceOne :: (Symbolic c, Traversable f) => c f -> c f
@@ -62,6 +64,7 @@ compileForceOne ::
     , ni ~ TypeSize (Support f)
     , c ~ ArithmeticCircuit a (Vector ni)
     , Arithmetic a
+    , Binary a
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)

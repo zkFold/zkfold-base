@@ -34,6 +34,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
 
 import           Control.Monad                                       (foldM)
 import           Control.Monad.State                                 (execState)
+import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
                                                                       take)
@@ -83,8 +84,7 @@ desugarRange i b
 
 -- | Desugars range constraints into polynomial constraints
 desugarRanges ::
-  (Arithmetic a, Ord (Rep i), Foldable i, Representable i) =>
-  (ToConstant (Rep i), Const (Rep i) ~ Natural) =>
+  (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
   let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(NewVar k, v) | (k,v) <- toList (acRange c)]

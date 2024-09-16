@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -22,35 +23,32 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         apply,
     ) where
 
-import           Control.DeepSeq                                    (NFData, force)
-import           Control.Monad.State                                (MonadState (..), State, modify, runState)
+import           Control.DeepSeq                                       (NFData)
+import           Control.Monad.State                                   (State, modify, runState)
 import           Data.Aeson
-import           Data.ByteString                                    (ByteString)
-import           Data.Foldable                                      (fold, toList)
+import           Data.Binary                                           (Binary)
+import           Data.ByteString                                       (ByteString)
+import           Data.Foldable                                         (fold, toList)
 import           Data.Functor.Rep
-import           Data.Map.Strict                                    hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                     take, toList)
-import           Data.Maybe                                         (fromJust)
-import           Data.Semialign                                     (unzipDefault)
-import qualified Data.Set                                           as S
-import           GHC.Generics                                       (Generic, Par1 (..), U1 (..), (:*:) (..))
+import           Data.Map.Strict                                       hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                        take, toList)
+import           Data.Semialign                                        (unzipDefault)
+import           GHC.Generics                                          (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics
-import           Prelude                                            hiding (Num (..), drop, length, product, splitAt,
-                                                                     sum, take, (!!), (^))
-import qualified Prelude                                            as Haskell
-import           System.Random                                      (StdGen, mkStdGen, uniform, uniformR)
+import           Prelude                                               hiding (Num (..), drop, length, product, splitAt,
+                                                                        sum, take, (!!), (^))
+import qualified Prelude                                               as Haskell
+import           System.Random                                         (StdGen, mkStdGen, uniform)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                    (Zp, fromZp, toZp)
+import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381        (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate       (Poly, evalMonomial, evalPolynomial, mapCoeffs, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, var)
 import           ZkFold.Base.Control.HApplicative
-import           ZkFold.Base.Data.ByteString                        (fromByteString, toByteString)
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Sources
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | The type that represents a constraint in the arithmetic circuit.
@@ -73,9 +71,8 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
 deriving instance (NFData a, NFData (o (Var i)), NFData (Rep i))
     => NFData (ArithmeticCircuit a i o)
 
--- | A finite field of a large order.
--- It is used in the compiler for generating new variable indices.
-type VarField = Zp BLS12_381_Scalar
+-- | Variables are SHA256 digests (32 bytes)
+type VarField = Zp (2 ^ (32 * 8))
 
 data Var i
   = InVar (Rep i)
@@ -118,71 +115,46 @@ instance Package (ArithmeticCircuit a i) where
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
 instance
-  ( Arithmetic a, Ord (Rep i), Representable i, Foldable i
-  , ToConstant (Rep i), Const (Rep i) ~ Natural
-  ) => Symbolic (ArithmeticCircuit a i) where
+  (Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)) =>
+  Symbolic (ArithmeticCircuit a i) where
     type BaseField (ArithmeticCircuit a i) = a
     symbolicF (behead -> (c, o)) _ f = uncurry (set #acOutput) (runState (f o) c)
 
 ----------------------------- MonadCircuit instance ----------------------------
 
 instance
-  ( Arithmetic a, Ord (Rep i), Representable i, Foldable i, o ~ U1
-  , ToConstant (Rep i), Const (Rep i) ~ Natural
-  ) => MonadCircuit (Var i) a (State (ArithmeticCircuit a i o)) where
+  ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
+  , o ~ U1) => MonadCircuit (Var i) a (State (ArithmeticCircuit a i o)) where
 
     newRanged upperBound witness = do
       i <- unconstrained witness
-          (\x v -> let b = fromConstant upperBound
-                    in b * x v * (x v - b))
-          -- ^ A wild (and obviously incorrect) approximation of
-          -- x (x - 1) ... (x - upperBound)
-          -- It's ok because we only use it for variable generation anyway.
       zoom #acRange . modify $ insert i upperBound
       return (NewVar i)
 
     newConstrained new witness = do
-      i <- unconstrained witness new
+      i <- unconstrained witness
       constraint (`new` NewVar i)
       return (NewVar i)
 
-    constraint p = do
-      let c = p var
-      zoom #acSystem . modify $ insert (toVar [] c) c
+    constraint p = zoom #acSystem . modify $ insert (toVar @a p) (p var)
 
 unconstrained ::
-  forall a i.
-  (Arithmetic a, Ord (Rep i), ToConstant (Rep i), Const (Rep i) ~ Natural) =>
-  (Representable i, Foldable i) =>
-  Witness (Var i) a -> NewConstraint (Var i) a ->
-  State (ArithmeticCircuit a i U1) ByteString
-unconstrained witness con = do
-  raw <- toByteString @VarField . fromConstant . fst <$> do
-    zoom #acRNG (get >>= traverse put . uniformR (0, order @VarField -! 1))
-  let sources = runSources . ($ Sources @a . S.singleton)
-      srcs = sources witness `S.difference` sources (`con` NewVar mempty)
-      v = toVar @a @i (S.toList srcs) $ con var (NewVar raw)
+  forall a i. (Arithmetic a, Binary a, Representable i, Binary (Rep i)) =>
+  Witness (Var i) a -> State (ArithmeticCircuit a i U1) ByteString
+unconstrained witness = do
+  let v = toVar @a witness
   -- TODO: forbid reassignment of variables
   zoom #acWitness . modify $ insert v $ \i w -> witness $ \case
     InVar inV -> index i inV
     NewVar newV -> w ! newV
   return v
 
--- TODO: Remove the hardcoded constant.
 toVar ::
-  forall a i.
-  (Arithmetic a, ToConstant (Rep i), Const (Rep i) ~ Natural) =>
-  (Representable i, Foldable i) => [Var i] -> Constraint a i -> ByteString
-toVar srcs c = force (toByteString ex)
-    where
-        l  = Haskell.fromIntegral (Haskell.length @i acInput)
-        r  = toZp 903489679376934896793395274328947923579382759823 :: VarField
-        g  = toZp 89175291725091202781479751781509570912743212325 :: VarField
-        varF (NewVar w)  = toConstant (fromJust $ fromByteString @VarField w) + l
-        varF (InVar inV) = toConstant inV
-        v  = (+ r) . fromConstant . varF
-        x  = g ^ fromZp (evalPolynomial evalMonomial v $ mapCoeffs toConstant c)
-        ex = foldr (\p y -> x ^ varF p + y) x srcs
+  forall a i. (Finite a, Binary a, Binary (Rep i)) =>
+  Witness (Var i) a -> ByteString
+toVar witness = runHash @(Just (Order a)) $ witness $ \case
+  InVar inV -> merkleHash inV
+  NewVar newV -> M newV
 
 -------------------------------- Circuit monoid --------------------------------
 
