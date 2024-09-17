@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -33,6 +33,7 @@ import           Data.Functor.Rep
 import           Data.Map.Strict                                       hiding (drop, foldl, foldr, map, null, splitAt,
                                                                         take, toList)
 import           Data.Semialign                                        (unzipDefault)
+import           Data.Semigroup.Generic                                (GenericSemigroupMonoid (..))
 import           GHC.Generics                                          (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics
 import           Prelude                                               hiding (Num (..), drop, length, product, splitAt,
@@ -64,7 +65,14 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
         acOutput  :: o (Var i)
         -- ^ The output variables
     } deriving (Generic)
-deriving instance (NFData a, NFData (o (Var i)), NFData (Rep i))
+
+deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
+  instance o ~ U1 => Semigroup (ArithmeticCircuit a i o)
+
+deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
+  instance o ~ U1 => Monoid (ArithmeticCircuit a i o)
+
+instance (NFData a, NFData (o (Var i)), NFData (Rep i))
     => NFData (ArithmeticCircuit a i o)
 
 -- | Variables are SHA256 digests (32 bytes)
@@ -172,27 +180,6 @@ toVar ::
 toVar witness = runHash @(Just (Order a)) $ witness $ \case
   InVar inV -> merkleHash inV
   NewVar newV -> M newV
-
--------------------------------- Circuit monoid --------------------------------
-
-instance o ~ U1 => Semigroup (ArithmeticCircuit a i o) where
-    c1 <> c2 =
-        ArithmeticCircuit
-           {   acSystem   = acSystem c1 `union` acSystem c2
-           ,   acRange    = acRange c1 `union` acRange c2
-           ,   acWitness  = acWitness c1 `union` acWitness c2
-           ,   acOutput   = U1
-           }
-
-instance o ~ U1 => Monoid (ArithmeticCircuit a i o) where
-    mempty =
-        ArithmeticCircuit
-           {
-               acSystem   = empty,
-               acRange    = empty,
-               acWitness  = empty,
-               acOutput   = U1
-           }
 
 ----------------------------- Evaluation functions -----------------------------
 
