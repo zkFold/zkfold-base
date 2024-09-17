@@ -15,7 +15,6 @@ import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (Show, mempty, pure, return, show, ($), (++),
                                                                       (<$>))
 import qualified Prelude                                             as Haskell
-import           System.Random                                       (mkStdGen)
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -103,5 +102,4 @@ instance (FromJSON a, FromJSON (o (Var i)), ToJSONKey (Var i), FromJSONKey (Var 
             acRange    <- v .: "range"
             acOutput   <- v .: "output"
             let acWitness = empty
-                acRNG     = mkStdGen 0
             pure ArithmeticCircuit{..}

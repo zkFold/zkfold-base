@@ -37,8 +37,6 @@ import           GHC.Generics                                          (Generic,
 import           Optics
 import           Prelude                                               hiding (Num (..), drop, length, product, splitAt,
                                                                         sum, take, (!!), (^))
-import qualified Prelude                                               as Haskell
-import           System.Random                                         (StdGen, mkStdGen, uniform)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
@@ -63,8 +61,6 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (i a -> Map ByteString a -> a),
         -- ^ The witness generation functions
-        acRNG     :: StdGen,
-        -- ^ random generator for generating unique variables
         acOutput  :: o (Var i)
         -- ^ The output variables
     } deriving (Generic)
@@ -185,7 +181,6 @@ instance o ~ U1 => Semigroup (ArithmeticCircuit a i o) where
            {   acSystem   = acSystem c1 `union` acSystem c2
            ,   acRange    = acRange c1 `union` acRange c2
            ,   acWitness  = acWitness c1 `union` acWitness c2
-           ,   acRNG      = mkStdGen $ fst (uniform (acRNG c1)) Haskell.* fst (uniform (acRNG c2))
            ,   acOutput   = U1
            }
 
@@ -196,7 +191,6 @@ instance o ~ U1 => Monoid (ArithmeticCircuit a i o) where
                acSystem   = empty,
                acRange    = empty,
                acWitness  = empty,
-               acRNG      = mkStdGen 0,
                acOutput   = U1
            }
 
