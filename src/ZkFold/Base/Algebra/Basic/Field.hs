@@ -175,7 +175,7 @@ instance KnownNat p => Binary (Zp p) where
         combine r d = fromIntegral r + 256 * d
 
 wordCount :: forall p. KnownNat p => Natural
-wordCount = ceiling $ log2ceiling (value @p -! 1) % (8 :: Natural)
+wordCount = ceiling $ log2ceiling (value @p) % (8 :: Natural)
 
 instance KnownNat p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, fromIntegral (value @p) - 1)
