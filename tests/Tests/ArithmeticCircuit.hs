@@ -3,6 +3,7 @@
 
 module Tests.ArithmeticCircuit (exec1, it, specArithmeticCircuit) where
 
+import           Data.Binary                                 (Binary)
 import           Data.Bool                                   (bool)
 import           Data.Functor                                ((<$>))
 import           GHC.Generics                                (U1 (..))
@@ -23,7 +24,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Ord                    ((<=))
-import Data.Binary (Binary)
 
 correctHom0 ::
   forall a. (Arithmetic a, Binary a, Show a) =>

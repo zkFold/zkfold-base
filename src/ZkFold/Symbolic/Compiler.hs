@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Compiler (
 ) where
 
 import           Data.Aeson                                 (ToJSON)
+import           Data.Binary                                (Binary)
 import           Data.Function                              (const, (.))
 import           Data.Functor                               (($>))
 import           Data.Proxy                                 (Proxy)
@@ -26,7 +27,6 @@ import           ZkFold.Symbolic.Class                      (Arithmetic, Symboli
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
-import Data.Binary (Binary)
 
 {-
     ZkFold Symbolic compiler module dependency order:

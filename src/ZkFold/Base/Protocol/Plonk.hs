@@ -5,6 +5,7 @@ module ZkFold.Base.Protocol.Plonk (
     Plonk (..)
 ) where
 
+import           Data.Binary                                         (Binary)
 import           Data.Kind                                           (Type)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
@@ -27,7 +28,6 @@ import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import Data.Binary (Binary)
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
 
