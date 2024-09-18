@@ -89,7 +89,6 @@ library
     import: options
     exposed-modules:
       ZkFold.Base.Algebra.Basic.Class
-      ZkFold.Base.Algebra.Basic.Sources
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.Basic.Number
       ZkFold.Base.Algebra.Basic.Permutations
@@ -97,6 +96,7 @@ library
       ZkFold.Base.Algebra.Basic.VectorSpace
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.BN254
+      ZkFold.Base.Algebra.EllipticCurve.Pasta
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.EllipticCurve.Ed25519
       ZkFold.Base.Algebra.EllipticCurve.Pairing
@@ -119,6 +119,8 @@ library
       ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.KZG
       ZkFold.Base.Protocol.Plonk
+      ZkFold.Base.Protocol.Plonk.Prover
+      ZkFold.Base.Protocol.Plonk.Verifier
       ZkFold.Base.Protocol.Plonkup
       ZkFold.Base.Protocol.Plonkup.LookupConstraint
       ZkFold.Base.Protocol.Plonkup.PlonkConstraint
@@ -184,6 +186,7 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Class
@@ -242,6 +245,7 @@ library
       QuickCheck                           < 2.15,
       random                                < 1.3,
       semialign                             < 1.4,
+      semigroups                                 ,
       split                               < 0.2.6,
       -- TODO: remove `swagger2` after moving the related code to `zkfold-prover`
       swagger2                                   ,

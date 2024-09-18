@@ -1,20 +1,19 @@
 {-# LANGUAGE OverloadedLists      #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.PlonkConstraint where
 
-import           Control.Monad                                       (guard, return)
+import           Control.Monad                                       (guard, replicateM, return)
+import           Data.Binary                                         (Binary)
 import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.Eq                                             (Eq (..))
 import           Data.Function                                       (($), (.))
 import           Data.Functor                                        ((<$>))
-import           Data.List                                           (find, head, map, permutations, sort, (!!), (++))
+import           Data.List                                           (find, head, map, permutations, sort, (++), (!!))
+import           Data.Ord                                            (Ord)
 import           Data.Map                                            (Map)
 import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (Maybe (..), mapMaybe)
-import           Data.Ord                                            (Ord)
-import           Data.Type.Equality                                  (type (~))
 import           GHC.IsList                                          (IsList (..))
 import           GHC.TypeNats                                        (KnownNat)
 import           Numeric.Natural                                     (Natural)
@@ -23,6 +22,7 @@ import           Text.Show                                           (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial, var, variables)
+import           ZkFold.Base.Data.ByteString                         (toByteString)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -39,18 +39,17 @@ data PlonkConstraint i a = PlonkConstraint
     }
     deriving (Show, Eq)
 
-instance (Arbitrary a, Finite a, ToConstant a, Const a ~ Natural, KnownNat i, Ord a) => Arbitrary (PlonkConstraint i a) where
+instance (Ord a, Arbitrary a, Binary a, KnownNat i) => Arbitrary (PlonkConstraint i a) where
     arbitrary = do
         qm <- arbitrary
         ql <- arbitrary
         qr <- arbitrary
         qo <- arbitrary
         qc <- arbitrary
-        x1 <- SysVar . NewVar . toConstant @a <$> arbitrary
-        x2 <- SysVar . NewVar . toConstant @a <$> arbitrary
-        x3 <- SysVar . NewVar . toConstant @a <$> arbitrary
-        let xs = sort [x1, x2, x3]
-        return $ PlonkConstraint qm ql qr qo qc (xs !! 0) (xs !! 1) (xs !! 2)
+        let arbitraryNewVar = SysVar . NewVar . toByteString @a <$> arbitrary
+        xs <- sort <$> replicateM 3 arbitraryNewVar
+        let x1 = xs !! 0; x2 = xs !! 1; x3 = xs !! 2
+        return $ PlonkConstraint qm ql qr qo qc x1 x2 x3
 
 toPlonkConstraint :: forall a i . (Ord a, FiniteField a, KnownNat i) => Poly a (Var a (Vector i)) Natural -> PlonkConstraint i a
 toPlonkConstraint p =

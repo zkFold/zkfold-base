@@ -10,6 +10,7 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_G2, BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.BN254     (BN254_G1, BN254_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class     (Point, PointCompressed)
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas, Vesta)
 import           ZkFold.Base.Data.ByteString                 (LittleEndian, fromByteString, toByteString)
 
 doesRoundtrip :: (Binary a, Eq a, Show a) => a -> Property
@@ -28,3 +29,5 @@ specBinary = hspec $ describe "Binary instance" $ do
   prop "roundtrips PointCompressed BLS12_381_G1" $ doesRoundtrip @(PointCompressed BLS12_381_G1)
   prop "roundtrips Point BLS12_381_G2"           $ doesRoundtrip @(Point BLS12_381_G2)
   prop "roundtrips PointCompressed BLS12_381_G2" $ doesRoundtrip @(PointCompressed BLS12_381_G2)
+  prop "roundtrips Point Pallas"                 $ doesRoundtrip @(Point Pallas)
+  prop "roundtrips Point Vesta"                  $ doesRoundtrip @(Point Vesta)

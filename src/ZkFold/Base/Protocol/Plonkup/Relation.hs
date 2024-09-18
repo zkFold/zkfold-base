@@ -4,6 +4,7 @@
 
 module ZkFold.Base.Protocol.Plonkup.Relation where
 
+import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (bool)
 import           Data.Map                                            (elems, keys)
 import           Data.Maybe                                          (fromJust)
@@ -59,6 +60,7 @@ instance
         , KnownNat l
         , Arbitrary a
         , Arithmetic a
+        , Binary a
         ) => Arbitrary (PlonkupRelation i n l a) where
     arbitrary = fromJust . toPlonkupRelation <$> arbitrary
 

@@ -11,14 +11,16 @@ import           Data.Map                                            hiding (dro
                                                                       splitAt, take, toList)
 import qualified Data.Map                                            as Map
 import           GHC.IsList                                          (IsList (..))
+import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
+import           ZkFold.Base.Data.ByteString                         (toByteString)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), SysVar (..),
-                                                                      Var (..), getAllVars)
+                                                                      Var (..), VarField, getAllVars)
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
@@ -44,13 +46,14 @@ instance (Arithmetic a, Arbitrary (i a), Arbitrary (ArithmeticCircuit a i f), Re
 mapVarArithmeticCircuit :: (Field a, Eq a, Functor o, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuitTest a i o -> ArithmeticCircuitTest a i o
 mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
     let vars = [v | NewVar v <- getAllVars ac]
-        forward = Map.fromAscList $ zip vars [0..]
-        backward = Map.fromAscList $ zip [0..] vars
+        asc = [ toByteString @VarField (fromConstant @Natural x) | x <- [0..] ]
+        forward = Map.fromAscList $ zip vars asc
+        backward = Map.fromAscList $ zip asc vars
         varF (InVar v)  = InVar v
         varF (NewVar v) = NewVar (forward ! v)
         mappedCircuit = ac
             {
-                acSystem  = fromList $ zip [0..] $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac),
+                acSystem  = fromList $ zip asc $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac),
                 -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
                 acWitness = (`Map.compose` backward) $ (\f i m -> f i (Map.compose m forward)) <$> acWitness ac
             }

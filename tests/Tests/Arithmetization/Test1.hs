@@ -3,6 +3,7 @@
 
 module Tests.Arithmetization.Test1 (specArithmetization1) where
 
+import           Data.Binary                       (Binary)
 import           GHC.Generics                      (Par1 (unPar1))
 import           Numeric.Natural                   (Natural)
 import           Prelude                           hiding (Bool, Eq (..), Num (..), not, replicate, (/), (>), (^), (||))
@@ -34,7 +35,7 @@ testResult :: forall a . Arithmetic a => ArithmeticCircuit a (Vector 2) Par1 -> 
 testResult r x y = fromConstant (unPar1 $ eval r (unsafeToVector [x, y])) Haskell.==
     testFunc @(Interpreter a) (fromConstant x) (fromConstant y)
 
-specArithmetization1 :: forall a . (Arithmetic a, Arbitrary a, Show a) => Spec
+specArithmetization1 :: forall a . (Arithmetic a, Arbitrary a, Binary a, Show a) => Spec
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do

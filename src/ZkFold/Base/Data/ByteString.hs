@@ -1,5 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module ZkFold.Base.Data.ByteString
   ( Binary (..)
   , toByteString
@@ -11,16 +13,32 @@ module ZkFold.Base.Data.ByteString
   , BigEndian (..)
   ) where
 
-import           Control.Applicative  (many)
+import           Control.Applicative    (many)
+import qualified Data.Aeson             as Aeson
 import           Data.Binary
 import           Data.Binary.Get
 import           Data.Binary.Put
-import qualified Data.ByteString      as Strict
-import qualified Data.ByteString.Lazy as Lazy
-import           Data.Foldable        (foldl')
-import           Numeric.Natural      (Natural)
+import qualified Data.ByteString        as Strict
+import qualified Data.ByteString.Base64 as Base64
+import qualified Data.ByteString.Lazy   as Lazy
+import           Data.Foldable          (foldl')
+import qualified Data.Text.Encoding     as Text
+import           Numeric.Natural        (Natural)
 import           Prelude
-import           Test.QuickCheck      (Arbitrary (..))
+import           Test.QuickCheck        (Arbitrary (..))
+
+instance Aeson.FromJSON Strict.ByteString where
+  parseJSON o =
+    either fail return
+    . Base64.decode
+    . Text.encodeUtf8
+    =<< Aeson.parseJSON o
+
+instance Aeson.ToJSON Strict.ByteString where
+  toJSON = Aeson.toJSON . Text.decodeUtf8 . Base64.encode
+
+instance Aeson.FromJSONKey Strict.ByteString
+instance Aeson.ToJSONKey Strict.ByteString
 
 toByteString :: Binary a => a -> Strict.ByteString
 toByteString = Lazy.toStrict . runPut . put
