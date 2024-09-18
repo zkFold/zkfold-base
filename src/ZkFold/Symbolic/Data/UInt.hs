@@ -165,7 +165,6 @@ instance
     , KnownNat n
     , KnownNat k
     , KnownRegisterSize r
-    , n <= k
     ) => Extend (UInt n r c) (UInt k r c) where
     extend (UInt x) = UInt $ symbolicF x (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
         where

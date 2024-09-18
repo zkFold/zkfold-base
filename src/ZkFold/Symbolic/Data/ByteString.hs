@@ -11,9 +11,10 @@ module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
     , ShiftBits (..)
     , ReverseEndianness (..)
-    , BitState (..)
+    , isSet
+    , isUnset
     , ToWords (..)
-    , Concat (..)
+    , concat
     , Truncate (..)
     , emptyByteString
     , toBsBits
@@ -68,18 +69,20 @@ deriving via (Structural (ByteString n c))
          instance (Symbolic c) => Eq (Bool c) (ByteString n c)
 
 instance
-    ( FromConstant Natural (ByteString 8 c)
-    , Concat (ByteString 8 c) (ByteString n c)
+    ( Symbolic c
+    , FromConstant Natural (ByteString 8 c)
+    , m * 8 ~ n
     ) => IsString (ByteString n c) where
     fromString = fromConstant . fromString @Bytes.ByteString
 
 instance
-    ( FromConstant Natural (ByteString 8 c)
-    , Concat (ByteString 8 c) (ByteString n c)
+    ( Symbolic c
+    , FromConstant Natural (ByteString 8 c)
+    , m * 8 ~ n
     ) => FromConstant Bytes.ByteString (ByteString n c) where
-    fromConstant bytes = concat $ fmap (fromConstant @Natural @(ByteString 8 c)
+    fromConstant bytes = concat @8 @_ @n $ V.parFmap (fromConstant @Natural @(ByteString 8 c)
         . Haskell.fromIntegral
-        . Haskell.toInteger) (Bytes.unpack bytes)
+        . Haskell.toInteger) (V.unsafeToVector @m $ Bytes.unpack bytes)
 
 emptyByteString :: FromConstant Natural (ByteString 0 c) => ByteString 0 c
 emptyByteString = fromConstant @Natural 0
@@ -125,25 +128,10 @@ class ReverseEndianness wordSize a where
 class ToWords a b where
     toWords :: a -> [b]
 
-
--- | Describes types which can be made by concatenating several words of equal length.
---
-class Concat a b where
-    concat :: [a] -> b
-
-
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --
 class Truncate a b where
     truncate :: a -> b
-
-
--- | Allows to check state of bits in a container @c@ of size @n@ with computational context @b@
---
-class BitState c n b where
-    isSet :: c n b -> Natural -> Bool b
-    isUnset :: c n b -> Natural -> Bool b
-
 
 instance ToConstant (ByteString n (Interpreter (Zp p))) where
     type Const (ByteString n (Interpreter (Zp p))) = Natural
@@ -224,13 +212,18 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                             xj = x j
                         in xi + xj - (xi * xj + xi * xj)
 
+
+-- | Unfortunately, Haskell does not support dependent types yet,
+-- so we have no possibility to infer the exact type of the result
+-- (the list can contain an arbitrary number of words).
+-- We can only impose some restrictions on @n@ and @m@.
+--
 -- | A ByteString of length @n@ can only be split into words of length @wordSize@ if all of the following conditions are met:
 -- 1. @wordSize@ is not greater than @n@;
 -- 2. @wordSize@ is not zero;
 -- 3. The bytestring is not empty;
 -- 4. @wordSize@ divides @n@.
 --
-
 instance
   ( Symbolic c
   , KnownNat wordSize
@@ -238,17 +231,9 @@ instance
   ) => ToWords (ByteString n c) (ByteString wordSize c) where
     toWords (ByteString bits) = Haskell.map (ByteString . packed) $ V.fromVector . V.chunks @(Div n wordSize) @wordSize $ unpacked bits
 
--- | Unfortunately, Haskell does not support dependent types yet,
--- so we have no possibility to infer the exact type of the result
--- (the list can contain an arbitrary number of words).
--- We can only impose some restrictions on @n@ and @m@.
---
-
-instance
-  ( Symbolic c
-  , (Div k m) * m ~ k
-  ) => Concat (ByteString m c) (ByteString k c) where
-    concat bs = (ByteString . packed) $ V.unsafeConcat @(Div k m) ( Haskell.map (\(ByteString bits) -> unpacked bits) bs)
+-- | concatenating several words of equal length.
+concat :: forall m k n c. (Symbolic c, k * m ~ n) => Vector k (ByteString m c) -> ByteString n c
+concat bs = (ByteString . packed) $ V.concat ( V.parFmap (\(ByteString bits) -> unpacked bits) bs)
 
 instance
   ( Symbolic c
@@ -296,22 +281,25 @@ instance
 
         zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
 
-instance Symbolic c => BitState ByteString n c where
-    isSet (ByteString bits) ix = Bool $ fromCircuitF bits solve
-        where
-            solve :: forall i m . MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
-            solve v = do
-                let vs = V.fromVector v
-                return $ Par1 $ (!! ix) vs
+-- | Allows to check state of bits in a container @c@ of size @n@ with computational context @b@
 
-    isUnset (ByteString bits) ix = Bool $ fromCircuitF bits solve
-        where
-            solve :: forall i m . MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
-            solve v = do
-                let vs = V.fromVector v
-                    i = (!! ix) vs
-                j <- newAssigned $ \p -> one - p i
-                return $ Par1 j
+isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
+isSet (ByteString bits) ix = Bool $ fromCircuitF bits solve
+    where
+        solve :: forall i m . MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
+        solve v = do
+            let vs = V.fromVector v
+            return $ Par1 $ (!! ix) vs
+
+isUnset :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
+isUnset (ByteString bits) ix = Bool $ fromCircuitF bits solve
+    where
+        solve :: forall i m . MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
+        solve v = do
+            let vs = V.fromVector v
+                i = (!! ix) vs
+            j <- newAssigned $ \p -> one - p i
+            return $ Par1 j
 
 --------------------------------------------------------------------------------
 

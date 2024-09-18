@@ -28,6 +28,7 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import qualified ZkFold.Base.Data.Vector as V
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -198,8 +199,8 @@ specByteString' = hspec $ do
             z <- toss m
             let acs = fromConstant @Natural @(ByteString n (ArithmeticCircuit (Zp p) U1)) <$> [x, y, z]
                 zps = fromConstant @Natural @(ByteString n (Interpreter (Zp p))) <$> [x, y, z]
-            let ac = concat acs :: ByteString (3 * n) (ArithmeticCircuit (Zp p) U1)
-                zp = concat zps
+            let ac = concat @n @3 $ V.unsafeToVector @3 acs :: ByteString (3 * n) (ArithmeticCircuit (Zp p) U1)
+                zp = concat @n @3 $ V.unsafeToVector @3 zps
             return $ eval @(Zp p) @(3 * n) ac === zp
         testTruncate @n @1 @p
         testTruncate @n @4 @p

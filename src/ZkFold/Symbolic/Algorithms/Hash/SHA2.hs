@@ -23,14 +23,14 @@ import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                        (Vector)
+import           ZkFold.Base.Data.Vector                        (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHashes, sha256InitialHashes,
                                                                  sha384InitialHashes, sha512InitialHashes,
                                                                  sha512_224InitialHashes, sha512_256InitialHashes,
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Class                          (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), Concat (..), ShiftBits (..),
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), concat, ShiftBits (..),
                                                                  ToWords (..), Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
@@ -284,7 +284,7 @@ sha2Blocks
     :: forall algorithm (context :: (Type -> Type) -> Type)
     .  AlgorithmSetup algorithm context
     => [ByteString (ChunkSize algorithm) context] -> ByteString (ResultSize algorithm) context
-sha2Blocks chunks = truncateResult @algorithm @context $ concat $ V.toList hashParts
+sha2Blocks chunks = truncateResult @algorithm @context $ concat @(WordSize algorithm) @8 $ unsafeToVector @8 $ V.toList hashParts
     where
         rounds :: Int
         rounds = V.length $ roundConstants @algorithm @context

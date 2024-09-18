@@ -23,11 +23,14 @@ import           ZkFold.Prelude                                    (length, repl
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Class                             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Concat (..),
+import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), concat,
                                                                     ReverseEndianness (..), ShiftBits (..),
                                                                     ToWords (..), Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
+import Data.Constraint
+import Data.Constraint.Nat (timesNat)
+import qualified ZkFold.Base.Data.Vector as Vec
 
 -- TODO: This module is not finished yet. The hash computation is not correct.
 
@@ -104,7 +107,6 @@ blake2b' :: forall bb' kk' ll' nn' c .
     , KnownNat kk'
     , KnownNat ll'
     , KnownNat nn'
-    , KnownNat (8 * nn')
     , 8 * nn' <= 512
     ) => [V.Vector (UInt 64 Auto c)] -> ByteString (8 * nn') c
 blake2b' d =
@@ -132,8 +134,8 @@ blake2b' d =
             then blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll)) True
             else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
-        bs = reverseEndianness @64 $ concat @(ByteString 64 c) $ map from $ toList h''' :: ByteString (64 * 8) c
-    in truncate bs
+        bs = reverseEndianness @64 $ concat @64 @8 $ Vec.unsafeToVector @8 $ map from $ toList h''' :: ByteString (64 * 8) c
+    in withDict (timesNat @8 @nn') (truncate bs) 
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
@@ -146,7 +148,6 @@ blake2b :: forall keyLen inputLen outputLen c n .
     , KnownNat outputLen
     , KnownNat (ExtensionBits inputLen)
     , KnownNat (8 * inputLen)
-    , KnownNat (8 * outputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
     , KnownNat n
     , (Div n 64) * 64 ~ n
@@ -198,7 +199,7 @@ blake2b_256 :: forall inputLen c n .
     , KnownNat (ExtensionBits inputLen)
     , KnownNat (8 * inputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , KnownNat n
+    , KnownNat n    
     , (Div n 64) * 64 ~ n
     , 8 * inputLen <= n
     ) => ByteString (8 * inputLen) c -> ByteString 256 c
