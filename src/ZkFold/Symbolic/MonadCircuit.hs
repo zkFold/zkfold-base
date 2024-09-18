@@ -123,9 +123,9 @@ newRanged upperBound witness = do
 -- appropriate form for zkSNARK in use.
 newConstrained :: MonadCircuit var a m => NewConstraint var a -> Witness var a -> m var
 newConstrained poly witness = do
-  var <- unconstrained witness
-  constraint (`poly` var)
-  return var
+  v <- unconstrained witness
+  constraint (`poly` v)
+  return v
 
 -- | Field of witnesses with decidable equality and ordering
 -- is called an ``arithmetic'' field.
