@@ -158,16 +158,13 @@ instance
   ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
   , o ~ U1) => MonadCircuit (Var a i) a (State (ArithmeticCircuit a i o)) where
 
-    unconstrained witness' = do
-      let witness :: Witness (SysVar i) a
-          witness f = witness' $ \case
-            SysVar sysV -> f sysV
-            ConstVar cV -> fromConstant cV
-          v = toVar @a witness'
+    unconstrained witness = do
+      let v = toVar @a witness
       -- TODO: forbid reassignment of variables
       zoom #acWitness . modify $ insert v $ \i w -> witness $ \case
-        InVar inV -> index i inV
-        NewVar newV -> w ! newV
+        SysVar (InVar inV) -> index i inV
+        SysVar (NewVar newV) -> w ! newV
+        ConstVar cV -> fromConstant cV
       return (SysVar (NewVar v))
 
     constraint p =
