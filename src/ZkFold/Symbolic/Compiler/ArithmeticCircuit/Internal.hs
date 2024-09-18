@@ -130,28 +130,20 @@ instance
   ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
   , o ~ U1) => MonadCircuit (Var i) a (State (ArithmeticCircuit a i o)) where
 
-    newRanged upperBound witness = do
-      i <- unconstrained witness
-      zoom #acRange . modify $ insert i upperBound
-      return (NewVar i)
-
-    newConstrained new witness = do
-      i <- unconstrained witness
-      constraint (`new` NewVar i)
-      return (NewVar i)
+    unconstrained witness = do
+      let v = toVar @a witness
+      -- TODO: forbid reassignment of variables
+      zoom #acWitness . modify $ insert v $ \i w -> witness $ \case
+        InVar inV -> index i inV
+        NewVar newV -> w ! newV
+      return (NewVar v)
 
     constraint p = zoom #acSystem . modify $ insert (toVar @a p) (p var)
 
-unconstrained ::
-  forall a i. (Arithmetic a, Binary a, Representable i, Binary (Rep i)) =>
-  Witness (Var i) a -> State (ArithmeticCircuit a i U1) ByteString
-unconstrained witness = do
-  let v = toVar @a witness
-  -- TODO: forbid reassignment of variables
-  zoom #acWitness . modify $ insert v $ \i w -> witness $ \case
-    InVar inV -> index i inV
-    NewVar newV -> w ! newV
-  return v
+    rangeConstraint (NewVar v) upperBound =
+      zoom #acRange . modify $ insert v upperBound
+    -- FIXME range-constrain other variable types
+    rangeConstraint _ _ = error "Cannot range-constrain this variable"
 
 -- | Generates new variable index given a witness for it.
 --
