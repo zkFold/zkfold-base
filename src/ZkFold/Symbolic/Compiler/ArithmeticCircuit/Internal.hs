@@ -207,7 +207,7 @@ toVar ::
 toVar witness = runHash @(Just (Order a)) $ witness $ \case
   SysVar (InVar inV) -> merkleHash inV
   SysVar (NewVar newV) -> M newV
-  ConstVar cV -> merkleHash cV
+  ConstVar cV -> fromConstant cV
 
 ----------------------------- Evaluation functions -----------------------------
 
