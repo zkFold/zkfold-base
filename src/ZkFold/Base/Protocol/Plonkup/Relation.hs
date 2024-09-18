@@ -106,9 +106,9 @@ toPlonkupRelation ac =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c
 
-        w1 i   = toPolyVec $ fromList $ map (indexW ac i) a
-        w2 i   = toPolyVec $ fromList $ map (indexW ac i) b
-        w3 i   = toPolyVec $ fromList $ map (indexW ac i) c
+        w1 i   = toPolyVec $ fromList $ fmap (indexW ac i) a
+        w2 i   = toPolyVec $ fromList $ fmap (indexW ac i) b
+        w3 i   = toPolyVec $ fromList $ fmap (indexW ac i) c
         witness i  = (w1 i, w2 i, w3 i)
         pubInput i = fmap (indexW ac i) xPub
 
