@@ -7,6 +7,7 @@
 module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
 
 
+import           Data.ByteString                                     (ByteString)
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
@@ -58,9 +59,9 @@ instance
   , Iso a f
   ) => SPS.SpecialSoundProtocol f (ArithmeticCircuit a (Vector n) o) where
 
-    type Witness f (ArithmeticCircuit a (Vector n) o) = Map Natural a
+    type Witness f (ArithmeticCircuit a (Vector n) o) = Map ByteString a
     type Input f (ArithmeticCircuit a (Vector n) o) = Vector n f
-    type ProverMessage f (ArithmeticCircuit a (Vector n) o) = Map Natural f
+    type ProverMessage f (ArithmeticCircuit a (Vector n) o) = Map ByteString f
     type VerifierMessage f (ArithmeticCircuit a (Vector n) o) = f
     type Degree (ArithmeticCircuit a (Vector n) o) = 2
 
