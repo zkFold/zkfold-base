@@ -121,11 +121,11 @@ getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where
 
 indexW :: Representable i => ArithmeticCircuit a i o -> i a -> Var a i -> a
 indexW circuit inputs = \case
-  SysVar (InVar j) -> index inputs j
-  SysVar (NewVar j) -> fromMaybe
-    (error ("no such NewVar: " <> show j))
-    (witnessGenerator circuit inputs !? j)
-  ConstVar c -> c
+  SysVar (InVar inV) -> index inputs inV
+  SysVar (NewVar newV) -> fromMaybe
+    (error ("no such NewVar: " <> show newV))
+    (witnessGenerator circuit inputs !? newV)
+  ConstVar cV -> cV
 
 --------------------------- Symbolic compiler context --------------------------
 
