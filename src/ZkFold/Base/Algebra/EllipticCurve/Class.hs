@@ -52,7 +52,6 @@ instance {-# OVERLAPPABLE #-}
     , Eq s
     , BinaryExpansion s
     , Bits s ~ [s]
-    , MultiplicativeMonoid s
     ) => Scale s (Point curve) where
     scale = pointMul
 

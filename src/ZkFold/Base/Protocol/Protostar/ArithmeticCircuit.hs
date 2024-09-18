@@ -7,11 +7,9 @@
 module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
 
 
-import           Control.DeepSeq                                     (NFData)
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
-import           GHC.Generics                                        (Generic)
 import           Prelude                                             (fmap, ($), (.), (<$>), (==))
 import qualified Prelude                                             as P
 
@@ -40,16 +38,6 @@ import           ZkFold.Symbolic.Data.Combinators                    (Iso (..))
 
 --}
 
-
--- | A type for recurcive computations.
--- @circuit@ is an Arithmetic circuit with @n@ inputs and @n@ outputs applied to itself (i.e. outputs are fed as inputs at the next iteration) @iterations@ times.
---
-data RecursiveCircuit n a
-    = RecursiveCircuit
-        { iterations :: Natural
-        , circuit    :: ArithmeticCircuit a (Vector n) (Vector n)
-        } deriving (Generic, NFData)
-
 instance (Ring f, P.Eq f) => Iso (PU.Poly f) f where
     from = P.flip PU.evalPoly zero
 
@@ -68,26 +56,26 @@ instance
   , Exponent f Natural
   , AdditiveMonoid f
   , Iso a f
-  ) => SPS.SpecialSoundProtocol f (RecursiveCircuit n a) where
+  ) => SPS.SpecialSoundProtocol f (ArithmeticCircuit a (Vector n) o) where
 
-    type Witness f (RecursiveCircuit n a) = Map Natural a
-    type Input f (RecursiveCircuit n a) = Vector n f
-    type ProverMessage f (RecursiveCircuit n a) = Map Natural f
-    type VerifierMessage f (RecursiveCircuit n a) = a
-    type Degree (RecursiveCircuit n a) = 2
+    type Witness f (ArithmeticCircuit a (Vector n) o) = Map Natural a
+    type Input f (ArithmeticCircuit a (Vector n) o) = Vector n f
+    type ProverMessage f (ArithmeticCircuit a (Vector n) o) = Map Natural f
+    type VerifierMessage f (ArithmeticCircuit a (Vector n) o) = f
+    type Degree (ArithmeticCircuit a (Vector n) o) = 2
 
     -- One round for Plonk
     rounds = P.const 1
 
-    outputLength (RecursiveCircuit _ ac) = (P.fromIntegral $ M.size (acSystem ac))
+    outputLength ac = (P.fromIntegral $ M.size (acSystem ac))
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
-    prover (RecursiveCircuit _ ac) _ i _ = from @a <$> witnessGenerator ac (from @f <$> i)
+    prover ac _ i _ = from @a <$> witnessGenerator ac (from @f <$> i)
 
-    -- We can use thepolynomial system from the xircuit as a base for V_sps.
+    -- We can use the polynomial system from the xircuit as a base for V_sps.
     --
-    algebraicMap (RecursiveCircuit _ ac) i pm _ pad = padDecomposition pad f_sps_uni
+    algebraicMap ac i pm _ pad = padDecomposition pad f_sps_uni
         where
             witness = P.head pm
 
@@ -99,7 +87,7 @@ instance
             varMap (NewVar nv) = M.findWithDefault zero nv witness
 
             f_sps :: Vector 3 [PM.Poly a (Var (Vector n)) Natural]
-            f_sps = degreeDecomposition @(SPS.Degree (RecursiveCircuit n a)) $ sys
+            f_sps = degreeDecomposition @(SPS.Degree (ArithmeticCircuit a (Vector n) o)) $ sys
 
             f_sps_uni :: Vector 3 [f]
             f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps

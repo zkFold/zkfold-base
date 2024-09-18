@@ -72,13 +72,13 @@ newtype Poly c = P (V.Vector c)
 toPoly :: (Ring c, Eq c) => V.Vector c -> Poly c
 toPoly = removeZeros . P
 
-constant :: (Ring c, Eq c) => c -> Poly c
-constant = toPoly . V.singleton
+constant :: c -> Poly c
+constant = P . V.singleton
 
 -- | A polynomial of form cx^d
 --
-monomial :: (Ring c, Eq c) => Natural -> c -> Poly c
-monomial d c = toPoly $ V.fromList (replicate d zero P.<> [c])
+monomial :: Ring c => Natural -> c -> Poly c
+monomial d c = P $ V.fromList (replicate d zero P.<> [c])
 
 fromPoly :: Poly c -> V.Vector c
 fromPoly (P cs) = cs
@@ -316,16 +316,16 @@ instance (Ring c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
 instance (Ring c, KnownNat size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ fmap negate cs
 
-instance (Field c, KnownNat size, Eq c) => Exponent (PolyVec c size) Natural where
+instance (Field c, KnownNat size) => Exponent (PolyVec c size) Natural where
     (^) = natPow
 
-instance {-# OVERLAPPING #-} (Field c, KnownNat size, Eq c) => Scale (PolyVec c size) (PolyVec c size)
+instance {-# OVERLAPPING #-} (Field c, KnownNat size) => Scale (PolyVec c size) (PolyVec c size)
 
 -- TODO (Issue #18): check for overflow
-instance (Field c, KnownNat size, Eq c) => MultiplicativeSemigroup (PolyVec c size) where
-    l * r = poly2vec $ vec2poly l * vec2poly r
+instance (Field c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
+    (PV l) * (PV r) = toPolyVec $ mulAdaptive l r
 
-instance (Field c, KnownNat size, Eq c) => MultiplicativeMonoid (PolyVec c size) where
+instance (Field c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
     one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
 
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where

@@ -11,7 +11,7 @@ module Main where
 import           Control.DeepSeq                             (force)
 import           Control.Exception                           (evaluate)
 import           Control.Monad                               (replicateM)
-import           Prelude                                     hiding (divMod, not, sum, (&&), (*), (+), (-), (/), (^),
+import           Prelude                                     hiding (divMod, not, sum, (&&), (*), (+), (-), (/), (^), Bool (..),
                                                               (||))
 import           System.Random                               (randomIO)
 import           Test.Tasty.Bench
@@ -27,6 +27,18 @@ import           ZkFold.Base.Protocol.Protostar
 import           ZkFold.Symbolic.Class                       (Symbolic (..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+
+-- ...
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
+import ZkFold.Symbolic.Interpreter
+import ZkFold.Symbolic.Data.Ed25519
+import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.UInt
+import qualified ZkFold.Symbolic.Data.Eq as Eq 
+import           ZkFold.Symbolic.Data.Class
+import Data.Proxy
 
 fact
     :: forall a n c
@@ -63,8 +75,21 @@ benchOps = env (input @n @k) $ \ ~inp ->
 foldFact :: Natural -> Vector 3 Natural -> FoldResult 3 (Point BLS12_381_G1) (Zp BLS12_381_Scalar)
 foldFact iter inp = fold fact iter (toZp . fromIntegral <$> inp)
 
+type I = Interpreter (Zp BLS12_381_Scalar)
+type Pt = Point (Ed25519 I 'Auto)
+type UI = UInt 265 'Auto I
+
+pt :: Pt 
+pt = gen
+
 main :: IO ()
 main = do
+    print $ acDouble25519 pt
+    print $ acDouble25519 (Inf :: Pt) 
+    print $ acAdd25519 pt pt
+    print $ pt + Inf 
+    print $ Inf + (Inf :: Pt) 
+    print $ Inf + pt 
     print $ foldFact 10 (V.unsafeToVector [1, 2, 3])
     defaultMain
       [ benchOps @3 @32  @BLS12_381_Scalar

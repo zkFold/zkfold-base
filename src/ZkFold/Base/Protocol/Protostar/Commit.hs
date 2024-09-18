@@ -11,8 +11,10 @@ import qualified Prelude                                     as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Algebra.EllipticCurve.Class     as EC
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Base.Protocol.Protostar.Oracle
+import           ZkFold.Symbolic.Class
 
 -- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
 --
@@ -45,6 +47,23 @@ instance PedersonSetup (Point BLS12_381_G1) where
                   89212312271530513649036778047014309438687633223023480439497929919626414549107721779839342336160039318198182187102
                   1428833674135004724206317422667541391548200977592780696082498356495280179807693517101023736214529698214586243870416
 
+instance
+  ( Symbolic c
+  , FromConstant Natural (EC.BaseField (Ed25519 c))
+  )=> PedersonSetup (Point (Ed25519 c)) where
+    pedersonGH = (g, h)
+        where
+            -- Random points on Ed25519
+            -- The only requirement for them is so that nobody knows discrete logarithm of g base h
+            -- Keeping these numbers open seems safe as there is no known efficient algorithm to calculate discrete logarithm
+            -- TODO: Consider choosing these elements randomly each time instead of hardcoding them
+            g = Point
+                  (fromConstant @Natural 45227885944482439959027551729127369191274275081056396600348249292591790930260)
+                  (fromConstant @Natural 9659338654347744907807571808778983510552562195096080698048062169240435167699)
+
+            h = Point
+                  (fromConstant @Natural 11786464992768388791034908016886244722767117967376829028161961151214849049496)
+                  (fromConstant @Natural 37077270161988888430676469598430826385740357039952739548288460740953233965539)
 
 -- | Pedersen commitment scheme
 -- Commitment key consists of field elements g and h, and randomness r
@@ -56,8 +75,10 @@ instance {-# OVERLAPPABLE #-}
     , BinaryExpansion b
     , Bits a ~ [a]
     , Bits b ~ [b]
-    ) => HomomorphicCommit a b (Point BLS12_381_G1) where
-    hcommit r b = let (g, h) = pedersonGH @(Point BLS12_381_G1)
+    , EllipticCurve c
+    , PedersonSetup (Point c)
+    ) => HomomorphicCommit a b (Point c) where
+    hcommit r b = let (g, h) = pedersonGH @(Point c)
                    in pointMul b g + pointMul r h
 
 
@@ -65,7 +86,7 @@ instance {-# OVERLAPPABLE #-}
 -- (hcommit ck l1) + (hcommit ck l2) = hcommit ck (zipWith (+) l1 l2), provided l1 and l2 have the same length.
 -- This is required for AccumulatorScheme
 --
-instance (HomomorphicCommit a b (Point BLS12_381_G1), Foldable t) => HomomorphicCommit a (t b) (Point BLS12_381_G1) where
+instance (EllipticCurve c, HomomorphicCommit a b (Point c), Foldable t) => HomomorphicCommit a (t b) (Point c) where
     hcommit ck t = sum $ zipWith pointMul [1 :: Natural ..] (hcommit ck <$> toList t)
 
 

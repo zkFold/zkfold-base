@@ -35,7 +35,7 @@ import           ZkFold.Symbolic.Data.FieldElement                   (FieldEleme
 data FoldResult n c a
     = FoldResult
     { output          :: Vector n a
-    , lastAccumulator :: Accumulator (Vector n a) a c (Map Natural a)
+    , lastAccumulator :: Accumulator (Vector n a) a c (SPS.ProverMessage a (RecursiveCircuit n a))
     , verifierOutput  :: P.Bool
     , deciderOutput   :: P.Bool
     } deriving (P.Show, Generic, NFData)
@@ -44,15 +44,18 @@ type FS_CM n c a = FiatShamir a (CommitOpen a c (RecursiveCircuit n a))
 
 transform
     :: forall n c a
-    .  HomomorphicCommit a [Map Natural a] c
+    .  HomomorphicCommit a [SPS.ProverMessage a (RecursiveCircuit n a)] c
     => a
     -> RecursiveCircuit n a
     -> Vector n a
     -> FS_CM n c a
 transform ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
 
--- | These instances might seem off, but accumulator scheme requires this exact behaviour
+-- | These instances might seem off, but accumulator scheme requires this exact behaviour for ProverMessages which are Maps in this case.
 --
+instance Scale s a => Scale s (Map k a) where
+    scale s = P.fmap (scale s)
+
 instance AdditiveSemigroup a => AdditiveSemigroup (Map Natural a) where
     (+) = M.unionWith (+)
 
@@ -69,18 +72,17 @@ instance (Ring a, KnownNat n) => Acc.LinearCombinationWith a (Vector n a) where
     linearCombinationWith coeff a b = (+) <$> (P.fmap (coeff *) a) <*> b
 
 fold
-    :: forall a n c x
+    :: forall a n c o x
     .  Arithmetic a
     => x ~ ArithmeticCircuit a (Vector n)
     => P.Eq c
     => Scale a c
-    => Scale a a
     => AdditiveGroup c
     => RandomOracle a a
     => RandomOracle c a
     => RandomOracle [c] a
     => HomomorphicCommit a [a] c
-    => HomomorphicCommit a [Map Natural a] c
+    => HomomorphicCommit a [SPS.ProverMessage a (x o)] c
     => KnownNat n
     => (Vector n (FieldElement x) -> Vector n (FieldElement x))  -- ^ An arithmetisable function to be applied recursively
     -> Natural                             -- ^ The number of iterations to perform
@@ -88,27 +90,26 @@ fold
     -> FoldResult n c a
 fold f iter i = foldN iter ck rc i [] initialAccumulator (Acc.KeyScale one one)
     where
-        rc :: RecursiveCircuit n a
-        rc = RecursiveCircuit iter (compile @a f)
+        ac :: ArithmeticCircuit a (Vector n) o
+        ac = compile @a f
 
-        initE = hcommit ck $ replicate (SPS.outputLength @a rc) (zero :: a)
+        initE = hcommit ck $ replicate (SPS.outputLength @a ac) (zero :: a)
 
         ck = oracle i
 
-        initialAccumulator :: Accumulator (Vector n a) a c (Map Natural a)
-        initialAccumulator = Accumulator (AccumulatorInstance (P.pure zero) [hcommit ck [zero :: Map Natural a]] [] initE zero) [zero]
+        initialAccumulator :: Accumulator (Vector n a) a c (SPS.ProverMessage a (x o))
+        initialAccumulator = Accumulator (AccumulatorInstance (P.pure zero) [hcommit ck [zero :: SPS.ProverMessage a (x o)]] [] initE zero) [zero]
 
 
 instanceProof
     :: forall n c a
     .  Arithmetic a
     => KnownNat n
-    => Scale a a
-    => HomomorphicCommit a [Map Natural a] c
+    => HomomorphicCommit a [SPS.ProverMessage a (RecursiveCircuit n a)] c
     => a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
-    -> InstanceProofPair (Vector n a) c (Map Natural a)
+    -> InstanceProofPair (Vector n a) c (SPS.ProverMessage a (RecursiveCircuit n a))
 instanceProof ck rc i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where
         m = SPS.prover @a rc M.empty i []
@@ -119,19 +120,18 @@ foldN
     => P.Eq c
     => AdditiveGroup c
     => Scale a c
-    => Scale a a
     => KnownNat n
     => RandomOracle a a
     => RandomOracle c a
     => RandomOracle [c] a
     => HomomorphicCommit a [a] c
-    => HomomorphicCommit a [Map Natural a] c
+    => HomomorphicCommit a [SPS.ProverMessage a (RecursiveCircuit n a)] c
     => Natural
     -> a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> [P.Bool]
-    -> Accumulator (Vector n a) a c (Map Natural a)
+    -> Accumulator (Vector n a) a c (SPS.ProverMessage a (RecursiveCircuit n a))
     -> Acc.KeyScale a
     -> FoldResult n c a
 foldN iter ck rc i verifierResults acc ks
@@ -149,18 +149,17 @@ foldStep
     => AdditiveGroup c
     => KnownNat n
     => Scale a c
-    => Scale a a
     => RandomOracle a a
     => RandomOracle c a
     => RandomOracle [c] a
-    => HomomorphicCommit a [Map Natural a] c
+    => HomomorphicCommit a [SPS.ProverMessage a (RecursiveCircuit n a)] c
     => HomomorphicCommit a [a] c
     => a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
-    -> Accumulator (Vector n a) a c (Map Natural a)
+    -> Accumulator (Vector n a) a c (SPS.ProverMessage a (RecursiveCircuit n a))
     -> Acc.KeyScale a
-    -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a c (Map Natural a), P.Bool, Acc.KeyScale a)
+    -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a c (SPS.ProverMessage a (RecursiveCircuit n a)), P.Bool, Acc.KeyScale a)
 foldStep ck rc i acc (Acc.KeyScale alphaSum muSum) = (newInput, newAcc, verifierAccepts, Acc.KeyScale (alphaSum + alphaPows) (muSum + scale (6 :: Natural) alpha))
     where
         fs :: FS_CM n c a
@@ -174,6 +173,6 @@ foldStep ck rc i acc (Acc.KeyScale alphaSum muSum) = (newInput, newAcc, verifier
 
         alphaPows = sum $ P.take (P.length accProof) $ (alpha ^) <$> [1 :: Natural ..]
 
-        verifierAccepts = Acc.verifier @_ @_ @_ @(Map Natural a) @(FS_CM n c a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
+        verifierAccepts = Acc.verifier @_ @_ @_ @(SPS.ProverMessage a (RecursiveCircuit n a)) @(FS_CM n c a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
         newInput = executeAc rc i
 
