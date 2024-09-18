@@ -3,6 +3,7 @@
 
 module Tests.Arithmetization.Test2 (specArithmetization2) where
 
+import           Data.Binary                                 (Binary)
 import           GHC.Generics                                (Par1 (unPar1))
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), not, replicate, (/), (^),
                                                               (||))
@@ -21,10 +22,10 @@ import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 -- A true statement.
-tautology :: (Symbolic c, Eq (Bool c) (FieldElement c)) => FieldElement c -> FieldElement c -> Bool c
+tautology :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 tautology x y = (x /= y) || (x == y)
 
-testTautology :: forall a . Arithmetic a => a -> a -> Haskell.Bool
+testTautology :: forall a . (Arithmetic a, Binary a) => a -> a -> Haskell.Bool
 testTautology x y =
     let Bool (ac :: ArithmeticCircuit a (Vector 2) Par1) = compile @a (tautology @(ArithmeticCircuit a (Vector 2)))
         b       = unPar1 (eval ac (unsafeToVector [x, y]))

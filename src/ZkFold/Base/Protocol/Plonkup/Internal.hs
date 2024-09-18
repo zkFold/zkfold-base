@@ -3,6 +3,7 @@
 
 module ZkFold.Base.Protocol.Plonkup.Internal where
 
+import           Data.Binary                                         (Binary)
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -39,7 +40,10 @@ instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownN
     show Plonkup {..} =
         "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac)  ++ " " ++ show ac ++ " " ++ show x
 
-instance (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)) => Arbitrary (Plonkup i n l c1 c2 t) where
+instance
+  ( KnownNat i, KnownNat n, KnownNat l
+  , Arithmetic (ScalarField c1), Arbitrary (ScalarField c1), Binary (ScalarField c1)
+  ) => Arbitrary (Plonkup i n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
         let (omega, k1, k2) = getParams (value @n)
