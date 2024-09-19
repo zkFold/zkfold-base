@@ -12,7 +12,7 @@ import           Data.Functor.Rep                                    (Representa
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
 import           GHC.Generics                                        (Par1 (..))
-import           Prelude                                             (Show, mempty, pure, return, show, ($), (++),
+import           Prelude                                             (Show, mempty, pure, return, show, ($), (++), (.),
                                                                       (<$>))
 import qualified Prelude                                             as Haskell
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
@@ -37,7 +37,7 @@ instance
   , Haskell.Foldable i
   ) => Arbitrary (ArithmeticCircuit a i Par1) where
     arbitrary = do
-        outVar <- InVar <$> arbitrary
+        outVar <- SysVar . InVar <$> arbitrary
         let ac = mempty {acOutput = Par1 outVar}
         fromFieldElement <$> arbitrary' (FieldElement ac) 10
 
@@ -55,7 +55,7 @@ instance
     arbitrary = do
         ac <- arbitrary @(ArithmeticCircuit a i Par1)
         o  <- unsafeToVector <$> genSubset (value @l) (getAllVars ac)
-        return ac {acOutput = o}
+        return ac {acOutput = SysVar <$> o}
 
 arbitrary' ::
   forall a i .
@@ -68,8 +68,8 @@ arbitrary' ac iter = do
     let vars = getAllVars (fromFieldElement ac)
     li <- elements vars
     ri <- elements vars
-    let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure li }
-                 , FieldElement (fromFieldElement ac) { acOutput = pure ri })
+    let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (SysVar li) }
+                 , FieldElement (fromFieldElement ac) { acOutput = pure (SysVar ri) })
     ac' <- elements [
         l + r
         , l * r
@@ -79,14 +79,14 @@ arbitrary' ac iter = do
     arbitrary' ac' (iter -! 1)
 
 -- TODO: make it more readable
-instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var i)), Haskell.Ord (Rep i), Show (Var i)) => Show (ArithmeticCircuit a i o) where
+instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var a i)), Haskell.Ord (Rep i), Show (Var a i), Show (Rep i)) => Show (ArithmeticCircuit a i o) where
     show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r)
                           ++ "\n, acRange = " ++ show (acRange r)
                           ++ "\n, acOutput = " ++ show (acOutput r)
                           ++ " }"
 
 -- TODO: add witness generation info to the JSON object
-instance (ToJSON a, ToJSON (o (Var i)), ToJSONKey (Var i), FromJSONKey (Var i)) => ToJSON (ArithmeticCircuit a i o) where
+instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey (Var a i), ToJSON (Rep i)) => ToJSON (ArithmeticCircuit a i o) where
     toJSON r = object
         [
             "system" .= acSystem r,
@@ -95,7 +95,7 @@ instance (ToJSON a, ToJSON (o (Var i)), ToJSONKey (Var i), FromJSONKey (Var i)) 
         ]
 
 -- TODO: properly restore the witness generation function
-instance (FromJSON a, FromJSON (o (Var i)), ToJSONKey (Var i), FromJSONKey (Var i), Haskell.Ord (Rep i)) => FromJSON (ArithmeticCircuit a i o) where
+instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey (Var a i), Haskell.Ord (Rep i), FromJSON (Rep i)) => FromJSON (ArithmeticCircuit a i o) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"

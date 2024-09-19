@@ -2,17 +2,18 @@
 
 module ZkFold.Symbolic.Class (module ZkFold.Symbolic.Class, Arithmetic) where
 
+import           Control.Monad
 import           Data.Foldable                    (Foldable)
-import           Data.Function                    (const, ($), (.))
-import           Data.Functor                     (Functor (fmap), (<$>))
+import           Data.Function                    ((.))
+import           Data.Functor                     ((<$>))
 import           Data.Kind                        (Type)
 import           Data.Type.Equality               (type (~))
-import           GHC.Generics                     (Par1 (Par1), type (:.:) (unComp1))
+import           GHC.Generics                     (type (:.:) (unComp1))
 import           Numeric.Natural                  (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative (HApplicative (hpair, hunit))
-import           ZkFold.Base.Data.Package         (Package (pack), packed)
+import           ZkFold.Base.Data.Package         (Package (pack))
 import           ZkFold.Base.Data.Product         (uncurryP)
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -53,9 +54,8 @@ class (HApplicative c, Package c, Arithmetic (BaseField c)) => Symbolic c where
     fromCircuitF x f = symbolicF x (runWitnesses @Natural @(BaseField c) . f) f
 
 -- | Embeds the pure value(s) into generic context @c@.
-embed :: (Symbolic c, Foldable f, Functor f) => f (BaseField c) -> c f
-embed = packed . fmap (\x ->
-    fromCircuitF hunit $ const $ Par1 <$> newAssigned (const $ fromConstant x))
+embed :: (Symbolic c, Functor f) => f (BaseField c) -> c f
+embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
 
 symbolic2F ::
     (Symbolic c, BaseField c ~ a) => c f -> c g -> (f a -> g a -> h a) ->
