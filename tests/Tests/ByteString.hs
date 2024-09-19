@@ -29,6 +29,7 @@ import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 import qualified ZkFold.Base.Data.Vector as V
+import ZkFold.Base.Data.Vector (Vector)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -64,19 +65,20 @@ isLeftNeutral
 isLeftNeutral f g n1 n2 x = eval (n2 `g` fromConstant x) === n1 `f` fromConstant x
 
 testWords
-    :: forall n wordSize p
+    :: forall n wordSize k p
     .  KnownNat n
     => KnownNat wordSize
     => Prime p
     => KnownNat (Log2 (p - 1) + 1)
-    => ToWords (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString wordSize (ArithmeticCircuit (Zp p) U1))
-    => ToWords (ByteString n (Interpreter (Zp p))) (ByteString wordSize (Interpreter (Zp p)))
+    => n ~ k * wordSize
+    -- => ToWords (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString wordSize (ArithmeticCircuit (Zp p) U1))
+    -- => ToWords (ByteString n (Interpreter (Zp p))) (ByteString wordSize (Interpreter (Zp p)))
     => Spec
 testWords = it ("divides a bytestring of length " <> show (value @n) <> " into words of length " <> show (value @wordSize)) $ do
     x <- toss m
     let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
         zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (Haskell.fmap eval (toWords arithBS :: [ByteString wordSize (ArithmeticCircuit (Zp p) U1)]) === toWords zpBS)
+    return (Haskell.fmap eval (toWords @k @wordSize @n arithBS :: Vector k (ByteString wordSize (ArithmeticCircuit (Zp p) U1))) === toWords @k @wordSize @n zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -189,10 +191,10 @@ specByteString' = hspec $ do
             shift <- chooseInteger ((-3) * n, 3 * n)
             x <- toss m
             return $ eval @(Zp p) @n (rotateBits (fromConstant x) shift) === rotateBits (fromConstant x) shift
-        testWords @n @1 @p
-        testWords @n @2 @p
-        testWords @n @4 @p
-        testWords @n @n @p
+        testWords @n @1 @n          @p
+        testWords @n @2 @(Div n 2)  @p
+        testWords @n @4 @(Div n 4)  @p
+        testWords @n @n @1          @p
         it "concatenates bytestrings correctly" $ do
             x <- toss m
             y <- toss m

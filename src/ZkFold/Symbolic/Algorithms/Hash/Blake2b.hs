@@ -25,7 +25,7 @@ import           ZkFold.Symbolic.Class                             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), concat,
                                                                     ReverseEndianness (..), ShiftBits (..),
-                                                                    ToWords (..), Truncate (..))
+                                                                    toWords, Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 import Data.Constraint
@@ -141,7 +141,7 @@ type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
 
 
-blake2b :: forall keyLen inputLen outputLen c n .
+blake2b :: forall keyLen inputLen outputLen c n k.
     ( Symbolic c
     , KnownNat keyLen
     , KnownNat inputLen
@@ -150,20 +150,24 @@ blake2b :: forall keyLen inputLen outputLen c n .
     , KnownNat (8 * inputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
     , KnownNat n
-    , (Div n 64) * 64 ~ n
+    , k * 64 ~ n
     , 8 * inputLen <= n
     , 8 * outputLen <= 512
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
-    let input' = map from (toWords $
+    let input' = Vec.parFmap from $ toWords @k @64 $
             reverseEndianness @64 $
             flip rotateBitsL (value @(ExtensionBits inputLen)) $
-            extend @_ @(ExtendedInputByteString inputLen c) input :: [ByteString 64 c])
+            extend @_ @(ExtendedInputByteString inputLen c) input :: Vec.Vector k (UInt 64 Auto c)
+        --  input' = map from (toWords $
+        --     reverseEndianness @64 $
+        --     flip rotateBitsL (value @(ExtensionBits inputLen)) $
+        --     extend @_ @(ExtendedInputByteString inputLen c) input) -- :: Vec.Vector 16 (ByteString 64 c))
 
         key'    = fromConstant @_ key :: UInt 64 Auto c
         input'' = if value @keyLen > 0
-            then key' : input'
-            else input'
+            then key' : Vec.fromVector input'
+            else Vec.fromVector input'
 
         padding = length input'' `mod` 16
         input''' = input'' ++ replicate (16 -! padding) zero
@@ -180,7 +184,7 @@ blake2b key input =
         d
 
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
-blake2b_224 :: forall inputLen c n .
+blake2b_224 :: forall inputLen c n.
     ( Symbolic c
     , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)

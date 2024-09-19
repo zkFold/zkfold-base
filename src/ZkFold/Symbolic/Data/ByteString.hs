@@ -13,7 +13,7 @@ module ZkFold.Symbolic.Data.ByteString
     , ReverseEndianness (..)
     , isSet
     , isUnset
-    , ToWords (..)
+    , toWords
     , concat
     , Truncate (..)
     , emptyByteString
@@ -52,6 +52,9 @@ import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
+import Data.Constraint.Nat (timesNat)
+import Data.Constraint (withDict)
+import qualified ZkFold.Base.Data.Vector as Haskell
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -125,8 +128,8 @@ class ReverseEndianness wordSize a where
 -- | Describes types which can be split into words of equal size.
 -- Parameters have to be of different types as ByteString store their lengths on type level and hence after splitting they chagne types.
 --
-class ToWords a b where
-    toWords :: a -> [b]
+-- class ToWords a b where
+--     toWords :: a -> [b]
 
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --
@@ -152,23 +155,23 @@ instance (Symbolic c, KnownNat n) => Arbitrary (ByteString n c) where
     arbitrary = ByteString . embed @c . V.unsafeToVector <$> replicateA (value @n) (toss (1 :: Natural))
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
-reverseEndianness' :: forall wordSize n x .
+reverseEndianness' :: forall wordSize k m n x.
     ( KnownNat wordSize
-    , (Div n wordSize) * wordSize ~ n
-    , (Div wordSize 8) * 8 ~ wordSize
+    , k * wordSize ~ n
+    , m * 8 ~ wordSize
     ) => Vector n x -> Vector n x
 reverseEndianness' v =
-    let chunks = V.chunks @(Div n wordSize) @wordSize v
-        chunks' = fmap (V.concat . V.reverse . V.chunks @(Div wordSize 8) @8) chunks
+    let chunks = V.chunks @k @wordSize v
+        chunks' = fmap (V.concat . V.reverse . V.chunks @m @8) chunks
      in V.concat chunks'
 
 instance
     ( Symbolic c
     , KnownNat wordSize
-    , (Div n wordSize) * wordSize ~ n
-    , (Div wordSize 8) * 8 ~ wordSize
+    , k * wordSize ~ n
+    , m * 8 ~ wordSize
     ) => ReverseEndianness wordSize (ByteString n c) where
-    reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize) v
+    reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v
 
 instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
     false = fromConstant (0 :: Natural)
@@ -224,12 +227,13 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
 -- 3. The bytestring is not empty;
 -- 4. @wordSize@ divides @n@.
 --
-instance
-  ( Symbolic c
-  , KnownNat wordSize
-  , (Div n wordSize) * wordSize ~ n
-  ) => ToWords (ByteString n c) (ByteString wordSize c) where
-    toWords (ByteString bits) = Haskell.map (ByteString . packed) $ V.fromVector . V.chunks @(Div n wordSize) @wordSize $ unpacked bits
+-- instance
+--   ( Symbolic c
+--   , KnownNat wordSize
+--   , (Div n wordSize) * wordSize ~ n
+--   ) => ToWords (ByteString n c) (ByteString wordSize c) where
+toWords :: forall k wordSize n c. (Symbolic c, KnownNat wordSize, k * wordSize ~ n) => ByteString n c -> Vector k (ByteString wordSize c)
+toWords (ByteString bits) = Haskell.parFmap (ByteString . packed) $ V.chunks @k @wordSize $ unpacked bits
 
 -- | concatenating several words of equal length.
 concat :: forall m k n c. (Symbolic c, k * m ~ n) => Vector k (ByteString m c) -> ByteString n c
