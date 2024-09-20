@@ -9,7 +9,6 @@ module ZkFold.Base.Algebra.Basic.Class where
 import           Data.Bool                        (bool)
 import           Data.Foldable                    (foldl')
 import           Data.Kind                        (Type)
-import           Data.Void                        (Void, absurd)
 import           GHC.Natural                      (naturalFromInteger)
 import           Prelude                          hiding (Num (..), div, divMod, length, mod, negate, product,
                                                    replicate, sum, (/), (^))
@@ -37,7 +36,7 @@ class FromConstant a b where
     default fromConstant :: a ~ b => a -> b
     fromConstant = id
 
-instance {-# INCOHERENT #-} FromConstant a a
+instance FromConstant a a
 
 -- | A class of algebraic structures which can be converted to "constant type"
 -- related with it: natural numbers, integers, rationals etc. Subject to the
@@ -54,17 +53,42 @@ class ToConstant a where
     -- has to be right inverse to @'fromConstant'@.
     toConstant :: a -> Const a
 
--- FIXME to be removed in #223
-instance ToConstant Void where
-    type Const Void = Natural
-    toConstant = absurd
-
 --------------------------------------------------------------------------------
 
-{- | A class of types with a binary associative operation with a multiplicative
-feel to it. Not necessarily commutative.
--}
-class MultiplicativeSemigroup a where
+-- | A class for actions where multiplicative notation is the most natural
+-- (including multiplication by constant itself).
+class Scale b a where
+    -- | A left monoid action on a type. Should satisfy the following:
+    --
+    -- [Compatibility] @scale (c * d) a == scale c (scale d a)@
+    -- [Left identity] @scale one a == a@
+    --
+    -- If, in addition, a cast from constant is defined, they should agree:
+    --
+    -- [Scale agrees] @scale c a == fromConstant c * a@
+    -- [Cast agrees] @fromConstant c == scale c one@
+    --
+    -- If the action is on an abelian structure, scaling should respect it:
+    --
+    -- [Left distributivity] @scale c (a + b) == scale c a + scale c b@
+    -- [Right absorption] @scale c zero == zero@
+    --
+    -- If, in addition, the scaling itself is abelian, this structure should
+    -- propagate:
+    --
+    -- [Right distributivity] @scale (c + d) a == scale c a + scale d a@
+    -- [Left absorption] @scale zero a == zero@
+    --
+    -- The default implementation is the multiplication by a constant.
+    scale :: b -> a -> a
+    default scale :: (FromConstant b a, MultiplicativeSemigroup a) => b -> a -> a
+    scale = (*) . fromConstant
+
+instance MultiplicativeSemigroup a => Scale a a
+
+-- | A class of types with a binary associative operation with a multiplicative
+-- feel to it. Not necessarily commutative.
+class (FromConstant a a, Scale a a) => MultiplicativeSemigroup a where
     -- | A binary associative operation. The following should hold:
     --
     -- [Associativity] @x * (y * z) == (x * y) * z@
@@ -73,11 +97,12 @@ class MultiplicativeSemigroup a where
 product1 :: (Foldable t, MultiplicativeSemigroup a) => t a -> a
 product1 = foldl1 (*)
 
-{- | A class for semigroup (and monoid) actions on types where exponential
-notation is the most natural (including an exponentiation itself).
--}
-class MultiplicativeSemigroup b => Exponent a b where
-    -- | A right semigroup action on a type. The following should hold:
+-- | A class for actions on types where exponential notation is the most natural
+-- (including an exponentiation itself).
+class Exponent a b where
+    -- | A right action on a type.
+    --
+    -- If exponents form a semigroup, the following should hold:
     --
     -- [Compatibility] @a ^ (m * n) == (a ^ m) ^ n@
     --
@@ -131,41 +156,6 @@ product = foldl' (*) one
 multiExp :: (MultiplicativeMonoid a, Exponent a b, Foldable t) => a -> t b -> a
 multiExp a = foldl' (\x y -> x * (a ^ y)) one
 
-{- | A class for monoid actions where multiplicative notation is the most
-natural (including multiplication by constant itself).
--}
-class MultiplicativeMonoid b => Scale b a where
-    -- | A left monoid action on a type. Should satisfy the following:
-    --
-    -- [Compatibility] @scale (c * d) a == scale c (scale d a)@
-    -- [Left identity] @scale one a == a@
-    --
-    -- If, in addition, a cast from constant is defined, they should agree:
-    --
-    -- [Scale agrees] @scale c a == fromConstant c * a@
-    -- [Cast agrees] @fromConstant c == scale c one@
-    --
-    -- If the action is on an abelian structure, scaling should respect it:
-    --
-    -- [Left distributivity] @scale c (a + b) == scale c a + scale c b@
-    -- [Right absorption] @scale c zero == zero@
-    --
-    -- If, in addition, the scaling itself is abelian, this structure should
-    -- propagate:
-    --
-    -- [Right distributivity] @scale (c + d) a == scale c a + scale d a@
-    -- [Left absorption] @scale zero a == zero@
-    --
-    -- The default implementation is the multiplication by a constant.
-    scale :: b -> a -> a
-    default scale :: (FromConstant b a, MultiplicativeSemigroup a) => b -> a -> a
-    scale = (*) . fromConstant
-
-instance MultiplicativeMonoid a => Scale a a
-
-instance {-# OVERLAPPABLE #-} (Scale b a, Functor f) => Scale b (f a) where
-    scale = fmap . scale
-
 {- | A class of groups in a multiplicative notation.
 
 While exponentiation by an integer is specified in a constraint, a default
@@ -202,7 +192,7 @@ intPow a n | n < 0     = invert a ^ naturalFromInteger (-n)
 --------------------------------------------------------------------------------
 
 -- | A class of types with a binary associative, commutative operation.
-class AdditiveSemigroup a where
+class FromConstant a a => AdditiveSemigroup a where
     -- | A binary associative commutative operation. The following should hold:
     --
     -- [Associativity] @x + (y + z) == (x + y) + z@
@@ -629,6 +619,10 @@ instance MultiplicativeMonoid a => Exponent a Bool where
 
 --------------------------------------------------------------------------------
 
+instance {-# OVERLAPPING #-} FromConstant [a] [a]
+
+instance {-# OVERLAPPING #-} MultiplicativeSemigroup a => Scale [a] [a]
+
 instance MultiplicativeSemigroup a => MultiplicativeSemigroup [a] where
     (*) = zipWith (*)
 
@@ -643,6 +637,9 @@ instance MultiplicativeGroup a => MultiplicativeGroup [a] where
 
 instance AdditiveSemigroup a => AdditiveSemigroup [a] where
     (+) = zipWith (+)
+
+instance Scale b a => Scale b [a] where
+    scale = map . scale
 
 instance AdditiveMonoid a => AdditiveMonoid [a] where
     zero = repeat zero
@@ -659,6 +656,10 @@ instance Ring a => Ring [a]
 
 --------------------------------------------------------------------------------
 
+instance {-# OVERLAPPING #-} FromConstant (p -> a) (p -> a)
+
+instance {-# OVERLAPPING #-} MultiplicativeSemigroup a => Scale (p -> a) (p -> a)
+
 instance MultiplicativeSemigroup a => MultiplicativeSemigroup (p -> a) where
     p1 * p2 = \x -> p1 x * p2 x
 
@@ -673,6 +674,9 @@ instance MultiplicativeGroup a => MultiplicativeGroup (p -> a) where
 
 instance AdditiveSemigroup a => AdditiveSemigroup (p -> a) where
     p1 + p2 = \x -> p1 x + p2 x
+
+instance Scale b a => Scale b (p -> a) where
+    scale = (.) . scale
 
 instance AdditiveMonoid a => AdditiveMonoid (p -> a) where
     zero = const zero

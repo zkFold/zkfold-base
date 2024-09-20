@@ -6,6 +6,7 @@ module ZkFold.Base.Protocol.Protostar where
 import           Control.DeepSeq                                     (NFData)
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
+import           Data.Maybe                                          (fromJust)
 import           GHC.Generics                                        (Generic)
 import           Prelude                                             (($), (==))
 import qualified Prelude                                             as P
@@ -13,6 +14,7 @@ import qualified Prelude                                             as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial, var)
+import           ZkFold.Base.Data.ByteString                         (fromByteString)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.Protostar.SpecialSound
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -66,7 +68,7 @@ instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (RecursiveCircuit 
     --
     algebraicMap rc _ _ _ =
         let
-            varF (NewVar ix) = var (ix P.+ value @n)
+            varF (NewVar ix) = var (toConstant (fromJust $ fromByteString @VarField ix) P.+ value @n)
             varF (InVar ix)  = var (toConstant ix)
         in
             [ evalPolynomial evalMonomial varF poly

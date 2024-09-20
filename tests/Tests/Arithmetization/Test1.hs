@@ -3,6 +3,7 @@
 
 module Tests.Arithmetization.Test1 (specArithmetization1) where
 
+import           Data.Binary                       (Binary)
 import           GHC.Generics                      (Par1 (unPar1))
 import           Numeric.Natural                   (Natural)
 import           Prelude                           hiding (Bool, Eq (..), Num (..), not, replicate, (/), (>), (^), (||))
@@ -22,7 +23,7 @@ import           ZkFold.Symbolic.Interpreter       (Interpreter)
 import           ZkFold.Symbolic.MonadCircuit      (Arithmetic)
 
 -- f x y = if (2 / x > y) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)
-testFunc :: forall c . (Symbolic c, Field (FieldElement c)) => FieldElement c -> FieldElement c -> FieldElement c
+testFunc :: forall c . Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
 testFunc x y =
     let c  = fromConstant @Integer @(FieldElement c)
         g1 = x ^ (2 :: Natural) + c 3 * x + c 5
@@ -30,11 +31,11 @@ testFunc x y =
         g3 = c 2 // x
     in (g3 == y :: Bool c) ? g1 $ g2
 
-testResult :: forall a . (FromConstant a a, Arithmetic a) => ArithmeticCircuit a (Vector 2) Par1 -> a -> a -> Haskell.Bool
+testResult :: forall a . Arithmetic a => ArithmeticCircuit a (Vector 2) Par1 -> a -> a -> Haskell.Bool
 testResult r x y = fromConstant (unPar1 $ eval r (unsafeToVector [x, y])) Haskell.==
     testFunc @(Interpreter a) (fromConstant x) (fromConstant y)
 
-specArithmetization1 :: forall a . (FromConstant a a, Arithmetic a, Arbitrary a, Show a) => Spec
+specArithmetization1 :: forall a . (Arithmetic a, Arbitrary a, Binary a, Show a) => Spec
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do

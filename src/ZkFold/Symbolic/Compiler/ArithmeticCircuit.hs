@@ -34,6 +34,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
 
 import           Control.Monad                                       (foldM)
 import           Control.Monad.State                                 (execState)
+import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
                                                                       take)
@@ -51,8 +52,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomi
 import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                      Var (..), acInput, eval, eval1, exec, exec1,
-                                                                      witnessGenerator)
+                                                                      SysVar (..), Var (..), acInput, eval, eval1, exec,
+                                                                      exec1, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
@@ -83,11 +84,10 @@ desugarRange i b
 
 -- | Desugars range constraints into polynomial constraints
 desugarRanges ::
-  (Arithmetic a, Ord (Rep i), Foldable i, Representable i) =>
-  (ToConstant (Rep i), Const (Rep i) ~ Natural) =>
+  (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(NewVar k, v) | (k,v) <- toList (acRange c)]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar (NewVar k), v) | (k,v) <- toList (acRange c)]
    in r' { acRange = mempty, acOutput = acOutput c }
 
 ----------------------------------- Information -----------------------------------
@@ -111,7 +111,7 @@ acValue r = eval r U1
 --
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
-acPrint :: (Show a, Show (o (Var U1)), Show (o a), Functor o) => ArithmeticCircuit a U1 o -> IO ()
+acPrint :: (Show a, Show (o (Var a U1)), Show (o a), Functor o) => ArithmeticCircuit a U1 o -> IO ()
 acPrint ac = do
     let m = elems (acSystem ac)
         w = witnessGenerator ac U1
@@ -135,7 +135,6 @@ acPrint ac = do
 checkClosedCircuit
     :: forall a n
      . Arithmetic a
-    => Scale a a
     => Show a
     => ArithmeticCircuit a U1 n
     -> Property
@@ -149,7 +148,6 @@ checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acS
 checkCircuit
     :: Arbitrary (i a)
     => Arithmetic a
-    => Scale a a
     => Show a
     => Representable i
     => ArithmeticCircuit a i n
