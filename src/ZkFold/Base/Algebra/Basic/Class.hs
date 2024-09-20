@@ -34,9 +34,10 @@ class FromConstant a b where
     --
     -- [Homomorphism] @fromConstant (c + d) == fromConstant c + fromConstant d@
     fromConstant :: a -> b
-
-instance {-# INCOHERENT #-} FromConstant a a where
+    default fromConstant :: a ~ b => a -> b
     fromConstant = id
+
+instance {-# INCOHERENT #-} FromConstant a a
 
 -- | A class of algebraic structures which can be converted to "constant type"
 -- related with it: natural numbers, integers, rationals etc. Subject to the
