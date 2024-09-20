@@ -3,14 +3,16 @@
 
 module ZkFold.Symbolic.Algorithms.Hash.MiMC where
 
-import           Data.List.NonEmpty                (NonEmpty ((:|)), nonEmpty)
-import           Data.Proxy                        (Proxy (..))
-import           Numeric.Natural                   (Natural)
-import           Prelude                           hiding (Eq (..), Num (..), any, length, not, (!!), (/), (^), (||))
+import           Data.List.NonEmpty                             (NonEmpty ((:|)), nonEmpty)
+import           Data.Proxy                                     (Proxy (..))
+import           Numeric.Natural                                (Natural)
+import           Prelude                                        hiding (Eq (..), Num (..), any, length, not, (!!), (/),
+                                                                 (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Package          (unpacked)
-import           ZkFold.Base.Data.Vector           (fromVector)
+import           ZkFold.Base.Data.Package                       (unpacked)
+import           ZkFold.Base.Data.Vector                        (fromVector)
+import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.FieldElement
@@ -37,8 +39,11 @@ mimcHashN xs k = go
       [zL, zR]    -> mimcHash2 xs k zL zR
       (zL:zR:zs') -> go (mimcHash2 xs k zL zR : zs')
 
-class MiMCHash a c x where
-    mimcHash :: [a] -> a -> x -> FieldElement c
-
-instance (Symbolic c, BaseField c ~ a, SymbolicData x, Context x ~ c, Support x ~ Proxy c) => MiMCHash a c x where
-    mimcHash xs k = mimcHashN xs k . fromVector . fmap FieldElement . unpacked . flip pieces Proxy
+hash :: forall context x a .
+    ( Symbolic context
+    , SymbolicData x
+    , BaseField context ~ a
+    , Context x ~ context
+    , Support x ~ Proxy context
+    ) => x -> FieldElement context
+hash = mimcHashN mimcConstants (zero :: a) . fromVector . fmap FieldElement . unpacked . flip pieces Proxy

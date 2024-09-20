@@ -15,32 +15,35 @@ import           ZkFold.Symbolic.Cardano.Types.Value     (SingleAsset, Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
 
-newtype Input tokens datum context = Input (OutputRef context, Output tokens datum context)
+data Input tokens datum context = Input  {
+        txiOutputRef :: OutputRef context,
+        txiOutput    :: Output tokens datum context
+    }
 
 deriving instance
     ( Haskell.Eq (OutputRef context)
     , Haskell.Eq (Output tokens datum context)
     ) => Haskell.Eq (Input tokens datum context)
 
-deriving instance
+instance
     ( Symbolic context
     , KnownNat tokens
     , KnownNat (TypeSize (OutputRef context))
     , KnownNat (TypeSize (SingleAsset context))
     , KnownNat (TypeSize (Value tokens context))
-    ) => SymbolicData (Input tokens datum context)
+    ) => SymbolicData (Input tokens datum context) where
+  type Context (Input tokens datum context) = Context (OutputRef context, Output tokens datum context)
+  type Support (Input tokens datum context) = Support (OutputRef context, Output tokens datum context)
+  type TypeSize (Input tokens datum context) = TypeSize (OutputRef context, Output tokens datum context)
 
-txiOutputRef :: Input tokens datum context -> OutputRef context
-txiOutputRef (Input (ref, _)) = ref
-
-txiOutput :: Input tokens datum context -> Output tokens datum context
-txiOutput (Input (_, txo)) = txo
+  pieces (Input a b) = pieces (a, b)
+  restore f = let (a, b) = restore f in Input a b
 
 txiAddress :: Input tokens datum context -> Address context
-txiAddress (Input (_, txo)) = txoAddress txo
+txiAddress (Input _ txo) = txoAddress txo
 
 txiTokens :: Input tokens datum context -> Value tokens context
-txiTokens (Input (_, txo)) = txoTokens txo
+txiTokens (Input _ txo) = txoTokens txo
 
 txiDatumHash :: Input tokens datum context -> DatumHash context
-txiDatumHash (Input (_, txo)) = txoDatumHash txo
+txiDatumHash (Input _ txo) = txoDatumHash txo

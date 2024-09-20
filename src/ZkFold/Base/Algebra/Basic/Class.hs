@@ -35,7 +35,7 @@ class FromConstant a b where
     -- [Homomorphism] @fromConstant (c + d) == fromConstant c + fromConstant d@
     fromConstant :: a -> b
 
-instance FromConstant a a where
+instance {-# INCOHERENT #-} FromConstant a a where
     fromConstant = id
 
 -- | A class of algebraic structures which can be converted to "constant type"

@@ -106,6 +106,59 @@ instance
     restore f = let (a, (b, c)) = restore f in (a, b, c)
 
 instance
+    ( SymbolicData w
+    , SymbolicData x
+    , SymbolicData y
+    , SymbolicData z
+    , HApplicative (Context x)
+    , Context w ~ Context x
+    , Context x ~ Context y
+    , Context y ~ Context z
+    , Support w ~ Support x
+    , Support x ~ Support y
+    , Support y ~ Support z
+    , KnownNat (TypeSize w)
+    , KnownNat (TypeSize x)
+    , KnownNat (TypeSize y)
+    ) => SymbolicData (w, x, y, z) where
+
+    type Context (w, x, y, z) = Context (w, (x, y, z))
+    type Support (w, x, y, z) = Support (w, (x, y, z))
+    type TypeSize (w, x, y, z) = TypeSize (w, (x, y, z))
+
+    pieces (a, b, c, d) = pieces (a, (b, c, d))
+    restore f = let (a, (b, c, d)) = restore f in (a, b, c, d)
+
+instance
+    ( SymbolicData v
+    , SymbolicData w
+    , SymbolicData x
+    , SymbolicData y
+    , SymbolicData z
+    , HApplicative (Context x)
+    , Context v ~ Context w
+    , Context w ~ Context x
+    , Context x ~ Context y
+    , Context y ~ Context z
+    , Support v ~ Support w
+    , Support w ~ Support x
+    , Support x ~ Support y
+    , Support y ~ Support z
+    , KnownNat (TypeSize v)
+    , KnownNat (TypeSize w)
+    , KnownNat (TypeSize x)
+    , KnownNat (TypeSize y)
+    ) => SymbolicData (v, w, x, y, z) where
+
+    type Context (v, w, x, y, z) = Context (v, (w, x, y, z))
+    type Support (v, w, x, y, z) = Support (v, (w, x, y, z))
+    type TypeSize (v, w, x, y, z) = TypeSize (v, (w, x, y, z))
+
+    pieces (a, b, c, d, e) = pieces (a, (b, c, d, e))
+
+    restore f = let (a, (b, c, d, e)) = restore f in (a, b, c, d, e)
+
+instance
     ( SymbolicData x
     , Package (Context x)
     , KnownNat (TypeSize x)
