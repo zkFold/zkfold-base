@@ -368,10 +368,7 @@ benchmark compiler-benchmark
       tasty-bench,
       tasty-golden,
       zkfold-base,
-      zkfold-symbolic-examples,
-      time,
-      vector,
-      zkfold-base 
+      zkfold-symbolic-examples
 
 benchmark protostar 
     import:           options

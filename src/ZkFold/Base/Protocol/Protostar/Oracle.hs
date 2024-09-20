@@ -40,14 +40,6 @@ instance {-# OVERLAPPABLE #-} (Generic a, RandomOracle' (Rep a) b) => RandomOrac
 class RandomOracle' f b where
     oracle' :: f a -> b
 
-instance RandomOracle' V1 b where
-    oracle' = P.undefined -- No oracle for uninhabited types
-
-instance RandomOracle' U1 b where
-    oracle' = P.undefined -- No useful information can be extracted from U1.
-                          -- Oracle is calculated based on the constructor name instead in
-                          -- instance RandomOracle' (M1 C ('MetaCons conName fixity selectors) U1) b
-
 instance (RandomOracle' f b, RandomOracle' g b) => RandomOracle' (f :+: g) b where
     oracle' (L1 x) = oracle' x
     oracle' (R1 x) = oracle' x

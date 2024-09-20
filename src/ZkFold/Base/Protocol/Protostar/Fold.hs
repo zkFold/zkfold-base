@@ -44,9 +44,9 @@ type FS_CM n c a = FiatShamir a (CommitOpen a c (RecursiveCircuit n a))
 
 transform
     :: forall n c a
-    .  HomomorphicCommit a [SPS.ProverMessage a (RecursiveCircuit n a)] c
+    .  HomomorphicCommit a [SPS.ProverMessage a (ArithmeticCircuit a (Vector n) o)] c
     => a
-    -> RecursiveCircuit n a
+    -> ArithmeticCircuit a (Vector n) o
     -> Vector n a
     -> FS_CM n c a
 transform ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
