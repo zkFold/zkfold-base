@@ -49,6 +49,7 @@ import           ZkFold.Symbolic.Data.Class         (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
+import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
 
@@ -348,3 +349,9 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ fromC
             let varsLeft = lv
                 varsRight = rv
             V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+
+instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
+  from = ByteString . binaryExpansion
+
+instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (FieldElement c) where
+  from (ByteString a) = fromBinary a

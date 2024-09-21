@@ -30,7 +30,7 @@ import qualified ZkFold.Prelude                   as ZP
 import           ZkFold.Prelude                   (length, replicate)
 
 newtype Vector (size :: Natural) a = Vector [a]
-    deriving (Show, Eq, Functor, Foldable, Traversable, Generic, NFData)
+    deriving (Show, Eq, Functor, Foldable, Traversable, Generic, NFData, Ord)
 
 instance KnownNat size => Representable (Vector size) where
   type Rep (Vector size) = Zp size

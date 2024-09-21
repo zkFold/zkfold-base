@@ -1,14 +1,10 @@
 {-# LANGUAGE DerivingVia          #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module ZkFold.Symbolic.Cardano.Types.Output (
     module ZkFold.Symbolic.Cardano.Types.Output.Datum,
-    Output(..),
-    txoAddress,
-    txoTokens,
-    txoDatumHash
+    Output(..)
 ) where
 
 import           Prelude                                    hiding (Bool, Eq, length, splitAt, (*), (+))
@@ -24,7 +20,11 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq                    (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 
-newtype Output tokens datum context = Output (Address context, (Value tokens context, DatumHash context))
+data Output tokens datum context = Output {
+        txoAddress   :: Address context,
+        txoTokens    :: Value tokens context,
+        txoDatumHash :: DatumHash context
+    }
 
 deriving instance
     ( Haskell.Eq (Address context)
@@ -32,12 +32,19 @@ deriving instance
     , Haskell.Eq (DatumHash context)
     ) => Haskell.Eq (Output tokens datum context)
 
-deriving instance
+instance
     ( Symbolic context
     , KnownNat (TypeSize (Value tokens context))
     , KnownNat (TypeSize (SingleAsset context))
     , KnownNat tokens
-    ) => SymbolicData (Output tokens datum context)
+    ) => SymbolicData (Output tokens datum context) where
+
+  type Context (Output tokens datum context) = Context (Address context, Value tokens context, DatumHash context)
+  type Support (Output tokens datum context) = Support (Address context, Value tokens context, DatumHash context)
+  type TypeSize (Output tokens datum context) = TypeSize (Address context, Value tokens context, DatumHash context)
+
+  pieces (Output a b c) = pieces (a, b, c)
+  restore f = let (a, b, c) = restore f in Output a b c
 
 deriving via (Structural (Output tokens datum context))
          instance
@@ -46,12 +53,3 @@ deriving via (Structural (Output tokens datum context))
             , KnownNat (TypeSize (SingleAsset context))
             , KnownNat (TypeSize (Value tokens context))
             ) => Eq (Bool context) (Output tokens datum context)
-
-txoAddress :: Output tokens datum context -> Address context
-txoAddress (Output (addr, _)) = addr
-
-txoTokens :: Output tokens datum context -> Value tokens context
-txoTokens (Output (_, (v, _))) = v
-
-txoDatumHash :: Output tokens datum context -> DatumHash context
-txoDatumHash (Output (_, (_, dh))) = dh
