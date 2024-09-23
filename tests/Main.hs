@@ -41,10 +41,10 @@ main = do
     -- Arithmetic circuit
     specArithmeticCircuit
 
-     -- Arithmetization
+    -- Arithmetization
     specArithmetization
 
-     -- Protocols
+    -- Protocols
     specPlonkup
     specNonInteractiveProof
 
