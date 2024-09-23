@@ -33,7 +33,7 @@ import           ZkFold.Symbolic.Data.UInt
 instance
     ( Symbolic c
     , S.BaseField c ~ a
-    , r ~ NumberOfRegisters a 256 'Auto 
+    , r ~ NumberOfRegisters a 256 'Auto
     , KnownNat r
     ) => SymbolicData (Point (Ed25519 c)) where
 

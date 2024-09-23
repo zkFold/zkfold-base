@@ -13,7 +13,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 -- | The Ed25519 curve used in EdDSA signature scheme.
 -- @c@ represents the "computational context" used to store and perform operations on curve points.
 --
-data Ed25519 c 
+data Ed25519 c
 
 -- | 2^252 + 27742317777372353535851937790883648493 is the order of the multiplicative group in Ed25519
 -- with the generator point defined below in @instance EllipticCurve (Ed25519 Void r)@

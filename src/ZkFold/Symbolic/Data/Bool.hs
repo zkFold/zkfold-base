@@ -90,10 +90,10 @@ all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true
 
 and :: (BoolType b, Foldable t) => t b -> b
-and = all Haskell.id 
+and = all Haskell.id
 
 or :: (BoolType b, Foldable t) => t b -> b
-or = any Haskell.id 
+or = any Haskell.id
 
 all1 :: (BoolType b, Functor t, Foldable t) => (x -> b) -> t x -> b
 all1 f = foldr1 (&&) . fmap f
