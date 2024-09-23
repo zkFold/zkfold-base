@@ -40,7 +40,7 @@ deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
 deriving via (Lexicographical (FieldElement c))
   instance Symbolic c => Ord (Bool c) (FieldElement c)
 
-instance (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
+instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
   fromConstant = FieldElement . embed . Par1 . fromConstant
 
 instance Symbolic c => Exponent (FieldElement c) Natural where

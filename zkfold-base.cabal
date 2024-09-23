@@ -89,7 +89,6 @@ library
     import: options
     exposed-modules:
       ZkFold.Base.Algebra.Basic.Class
-      ZkFold.Base.Algebra.Basic.Sources
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.Basic.Number
       ZkFold.Base.Algebra.Basic.Permutations
@@ -187,6 +186,7 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Class
@@ -246,6 +246,7 @@ library
       QuickCheck                           < 2.15,
       random                                < 1.3,
       semialign                             < 1.4,
+      semigroups                                 ,
       split                               < 0.2.6,
       -- TODO: remove `swagger2` after moving the related code to `zkfold-prover`
       swagger2                                   ,
@@ -265,6 +266,7 @@ library zkfold-symbolic-examples
       Examples.BatchTransfer
       Examples.ByteString
       Examples.Conditional
+      Examples.Constant
       Examples.Eq
       Examples.FFA
       Examples.Fibonacci
