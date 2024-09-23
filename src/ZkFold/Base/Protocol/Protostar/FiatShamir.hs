@@ -6,20 +6,29 @@ module ZkFold.Base.Protocol.Protostar.FiatShamir where
 
 import           Data.ByteString                             (ByteString)
 import           GHC.Generics
-import           Prelude                                     hiding (length)
+import           Prelude                                     hiding (Bool (..), Eq (..), length)
+import qualified Prelude                                     as P
 
 import           ZkFold.Base.Data.ByteString                 (Binary (..))
 import           ZkFold.Base.Protocol.NonInteractiveProof    (NonInteractiveProof (..), ToTranscript (..), challenge)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound as SpS
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Eq
 
 data FiatShamir f a = FiatShamir a (SpS.Input f a)
     deriving Generic
 
-fsChallenge :: forall f a c m . (Binary (SpS.Input f a), Binary (VerifierMessage f a), Binary c, Binary (ProverMessage f a), m ~ ProverMessage f a)
-      => FiatShamir f (CommitOpen m c a)
-      -> SpecialSoundTranscript f (CommitOpen m c a) -> ProverMessage f (CommitOpen m c a) -> VerifierMessage f a
+fsChallenge
+    :: forall f a c m
+    .  Binary (SpS.Input f a)
+    => Binary (VerifierMessage f a)
+    => Binary c
+    => Binary (ProverMessage f a)
+    => m ~ ProverMessage f a
+    => FiatShamir f (CommitOpen m c a)
+    -> SpecialSoundTranscript f (CommitOpen m c a) -> ProverMessage f (CommitOpen m c a) -> VerifierMessage f a
 fsChallenge (FiatShamir _ ip) []           c =
       let r0 = challenge @ByteString $ toTranscript ip :: VerifierMessage f a
       in challenge @ByteString $ toTranscript r0 <> toTranscript c
@@ -27,13 +36,15 @@ fsChallenge _                 ((_, r) : _) c = challenge @ByteString $ toTranscr
 
 instance
     ( SpS.SpecialSoundProtocol f a
-    , Eq c
     , Binary (SpS.Input f a)
     , Binary (VerifierMessage f a)
     , VerifierMessage f a ~ f
     , ProverMessage f a ~ m
     , Binary c
     , Binary (ProverMessage f a)
+    , BoolType (VerifierOutput f a)
+    , Eq (VerifierOutput f a) [c]
+    , VerifierOutput f a ~ P.Bool
     ) => NonInteractiveProof (FiatShamir f (CommitOpen m c a)) core where
       type Transcript (FiatShamir f (CommitOpen m c a))  = ByteString
       type SetupProve (FiatShamir f (CommitOpen m c a))  = FiatShamir f (CommitOpen m c a)

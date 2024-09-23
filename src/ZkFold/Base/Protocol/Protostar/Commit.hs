@@ -6,7 +6,6 @@ module ZkFold.Base.Protocol.Protostar.Commit (Commit (..), HomomorphicCommit (..
 
 import           Data.Foldable                               (Foldable, toList)
 import           Prelude                                     (type (~), zipWith, ($), (<$>))
-import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -15,6 +14,9 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class     as EC
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Ed25519
+import           ZkFold.Symbolic.Data.FieldElement
 
 -- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
 --
@@ -68,18 +70,15 @@ instance
 -- | Pedersen commitment scheme
 -- Commitment key consists of field elements g and h, and randomness r
 --
-instance {-# OVERLAPPABLE #-}
-    ( P.Eq a
-    , P.Eq b
-    , BinaryExpansion a
-    , BinaryExpansion b
-    , Bits a ~ [a]
-    , Bits b ~ [b]
+instance
+    ( Symbolic ctx
     , EllipticCurve c
+    , SymbolicData (Point c)
+    , Context (Point c) ~ ctx
     , PedersonSetup (Point c)
-    ) => HomomorphicCommit a b (Point c) where
+    ) => HomomorphicCommit (FieldElement ctx) (FieldElement ctx) (Point c) where
     hcommit r b = let (g, h) = pedersonGH @(Point c)
-                   in pointMul b g + pointMul r h
+                   in pointMulAc b g + pointMulAc r h
 
 
 -- Pedersen commitment scheme for lists extending the homomorphism to elementwise sums:

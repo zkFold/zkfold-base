@@ -20,6 +20,7 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
     type ProverMessage f (ProtostarPermutation n)   = Vector n f
     -- ^ same as Witness
     type VerifierMessage f (ProtostarPermutation n) = ()
+    type VerifierOutput f (ProtostarPermutation n)  = Bool
 
     type Degree (ProtostarPermutation n)            = 1
 

@@ -29,6 +29,7 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
     type ProverMessage f (ProtostarLookup l sizeT)   = (Vector l f, SVector sizeT f)
     -- ^ (w, m) or (h, g) in the paper
     type VerifierMessage f (ProtostarLookup l sizeT) = f
+    type VerifierOutput f (ProtostarLookup l sizeT)  = Bool
 
     type Degree (ProtostarLookup l sizeT)            = 2
 

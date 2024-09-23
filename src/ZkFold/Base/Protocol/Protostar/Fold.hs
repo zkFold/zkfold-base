@@ -12,7 +12,7 @@ import           Control.Lens                                     ((^.))
 import           Data.Kind                                        (Type)
 import           Data.Map.Strict                                  (Map)
 import qualified Data.Map.Strict                                  as M
-import           GHC.Generics                                     (Generic, Par1, U1)
+import           GHC.Generics                                     (Generic, Par1)
 import           Prelude                                          (type (~), ($), (<$>), (<*>))
 import qualified Prelude                                          as P
 
@@ -76,7 +76,6 @@ deriving instance (P.Show (Bool ctx), P.Show comm, P.Show (ctx Par1)) => P.Show 
 toFS
     :: forall ctx n comm a
     .  HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
-    => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
     => FieldElement ctx
     -> C n a
     -> Vector n (FieldElement ctx)
@@ -88,6 +87,8 @@ iterate
     .  Symbolic ctx
     => KnownNat n
     => Arithmetic a
+    => Scale a (BaseField ctx)
+    => FromConstant a (BaseField ctx)
     => Eq (Bool ctx) comm
     => Eq (Bool ctx) [comm]
     => Eq (Bool ctx) [FieldElement ctx]
@@ -110,7 +111,7 @@ iterate f i0 n = iteration n ck f ac i0 initialAccumulator (Acc.KeyScale one one
         ac :: C n a
         ac = compile @a f
 
-        initE = hcommit ck $ replicate (SPS.outputLength @a ac) (zero :: FieldElement ctx)
+        initE = hcommit ck $ replicate (SPS.outputLength @(FieldElement ctx) ac) (zero :: FieldElement ctx)
 
         ck :: FieldElement ctx
         ck = oracle i0
@@ -120,28 +121,26 @@ iterate f i0 n = iteration n ck f ac i0 initialAccumulator (Acc.KeyScale one one
 
 instanceProof
     :: forall ctx n comm a
-    .  Arithmetic a
+    .  Symbolic ctx
+    => Arithmetic a
+    => Scale a (BaseField ctx)
+    => FromConstant a (BaseField ctx)
     => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
-    => FromConstant a (FieldElement ctx)
     => FieldElement ctx
     -> C n a
     -> SPS.MapInput (FieldElement ctx) (C n a)
     -> InstanceProofPair (Vector n (FieldElement ctx)) comm (SPS.MapMessage (FieldElement ctx) (C n a))
 instanceProof ck rc i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where
-        circuitI :: ArithmeticCircuit a U1 (Vector n)
-        circuitI = P.undefined
-
-        vecI = exec circuitI
-
-        m = fromConstant <$> SPS.prover @a rc M.empty vecI []
+        m = SPS.prover @(FieldElement ctx) rc M.empty i []
 
 iteration
     :: forall ctx n comm a
     .  Symbolic ctx
     => KnownNat n
     => Arithmetic a
-    => FromConstant a (FieldElement ctx)
+    => Scale a (BaseField ctx)
+    => FromConstant a (BaseField ctx)
     => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
     => Eq (Bool ctx) comm
     => Eq (Bool ctx) [comm]

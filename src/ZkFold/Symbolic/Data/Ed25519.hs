@@ -28,6 +28,7 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Data.FieldElement
 
 
 instance
@@ -93,6 +94,24 @@ instance
         where
             bits :: ByteString 256 c
             bits = from sc
+
+pointMulAc 
+    :: forall ctx curve bits
+    .  Symbolic ctx
+    => EllipticCurve curve
+    => SymbolicData (Point curve)
+    => Context (Point curve) ~ ctx
+    => bits ~ NumberOfBits (S.BaseField ctx)
+    => FieldElement ctx
+    -> Point curve
+    -> Point curve
+pointMulAc sc x = sum $ P.zipWith (\b p -> bool @(Bool ctx) zero p (isSet bits b)) [upper, upper -! 1 .. 0] (P.iterate (\e -> e + e) x)
+    where
+        bits :: ByteString bits ctx
+        bits = ByteString $ binaryExpansion sc
+
+        upper :: Natural
+        upper = value @bits -! 1
 
 acAdd25519
     :: forall c

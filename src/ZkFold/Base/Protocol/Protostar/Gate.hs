@@ -28,6 +28,7 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
     type ProverMessage f (ProtostarGate m n c d)  = Vector n (Vector c f)
     -- ^ same as Witness
     type VerifierMessage f (ProtostarGate m n c d) = ()
+    type VerifierOutput f (ProtostarGate m n c d)  = Bool
 
     type Degree (ProtostarGate m n c d)           = d
 

@@ -12,7 +12,7 @@ import           Data.ByteString                                     (ByteString
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
-import           Prelude                                             (fmap, ($), (.), (<$>), (==))
+import           Prelude                                             (fmap, ($), (.), (<$>))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -23,43 +23,50 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound         as SPS
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.FieldElement
 
--- Note:
--- This instance should work when f ~ a and f ~ PU.PolyVec a size
--- Separate instances are not possible because of conflicting associated type family definitions (a is strictly more general than PU.PolyVec a 3)
--- algebraicMap is general enough to deal with both cases
--- However, prover requires an input with @a@ inside to be able to calculate witness.
--- Witness, on the other hand, is a @Map ByteString a@, but prover is expected to return @Map ByteString f@
--- Therefore, we need to provide some kind of transformation between @a@ and @f@, hence the use of @Transform@
---
-instance
-  ( Arithmetic a
-  , Scale a a
-  , MultiplicativeMonoid a
-  , Exponent a Natural
-  , AdditiveMonoid a
-  ) => SPS.SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
 
-    type Witness a (ArithmeticCircuit a (Vector n) o) = Map ByteString a
-    type Input a (ArithmeticCircuit a (Vector n) o) = Vector n a
-    type ProverMessage a (ArithmeticCircuit a (Vector n) o) = Map ByteString a
-    type VerifierMessage a (ArithmeticCircuit a (Vector n) o) = a
+instance 
+    ( Arithmetic a
+    , Symbolic ctx
+    , FromConstant a (BaseField ctx)
+    , Scale a (BaseField ctx)
+    ) => SPS.SpecialSoundProtocol (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) where
+
+    type Witness (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = Map ByteString a
+    type Input (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = Vector n (FieldElement ctx)
+    type ProverMessage (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = Map ByteString (FieldElement ctx)
+    type VerifierMessage (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = FieldElement ctx
+    type VerifierOutput (FieldElement ctx) (ArithmeticCircuit a (Vector n) o)  = Bool ctx
     type Degree (ArithmeticCircuit a (Vector n) o) = 2
 
     -- One round for Plonk
     rounds = P.const 1
 
-    outputLength ac = (P.fromIntegral $ M.size (acSystem ac))
+    outputLength ac = P.fromIntegral $ M.size (acSystem ac)
 
-    -- The transcript will be empty at this point, it is a one-round protocol
+    -- The transcript will be empty at this point, it is a one-round protocol.
+    -- Input is arithmetised. We need to combine its witness with the circuit's witness.
     --
-    prover ac _ i _ = witnessGenerator ac i
+    prover ac _ i _ = fromConstant <$> M.union acWitness inputWitness 
+        where
+            inputAc = P.undefined
+
+            inputV :: Vector n a
+            inputV = P.undefined
+
+            inputWitness = witnessGenerator inputAc P.undefined
+            acWitness = witnessGenerator ac inputV
+
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --
-    verifier rc i pm ts = P.all (== zero) $ SPS.algebraicMap @a rc i pm ts one
+    verifier rc i pm ts = all (== zero) $ SPS.algebraicMap @(FieldElement ctx) rc i pm ts one
 
 instance
   ( Arithmetic a

@@ -23,6 +23,7 @@ class SpecialSoundProtocol f a where
       type Input f a
       type ProverMessage f a
       type VerifierMessage f a
+      type VerifierOutput f a
 
       type Degree a :: Natural
       -- ^ d in the paper, the verifier degree
@@ -35,7 +36,7 @@ class SpecialSoundProtocol f a where
 
       prover :: a -> Witness f a -> Input f a -> SpecialSoundTranscript f a -> ProverMessage f a
 
-      verifier :: a -> Input f a -> [ProverMessage f a] -> [f] -> Bool
+      verifier :: a -> Input f a -> [ProverMessage f a] -> [f] -> VerifierOutput f a
 
 -- | Algebraic map is a much more versatile and powerful tool when used separatey from SpecialSoundProtocol.
 -- It calculates a system of equations @[f]@ defining @a@ in some way.

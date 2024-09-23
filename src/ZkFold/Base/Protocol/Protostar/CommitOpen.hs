@@ -6,13 +6,15 @@
 module ZkFold.Base.Protocol.Protostar.CommitOpen where
 
 import           GHC.Generics
-import           Prelude                                     hiding (length)
+import           Prelude                                     hiding (Eq (..), length, (&&), (/=), (==))
 
 import           ZkFold.Base.Data.ByteString
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..),
                                                               SpecialSoundTranscript)
 import           ZkFold.Prelude                              (length)
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Eq
 
 data CommitOpen m c a = CommitOpen ([m] -> c) a
 
@@ -31,11 +33,17 @@ instance (Binary c, Binary m) => Binary (CommitOpenProverMessage m c) where
             else if flag == 1 then Open <$> get
             else fail ("Binary (CommitOpenProverMessage t c a): unexpected flag " <> show flag)
 
-instance (SpecialSoundProtocol f a, Eq c, m ~ ProverMessage f a) => SpecialSoundProtocol f (CommitOpen m c a) where
+instance
+    ( SpecialSoundProtocol f a
+    , BoolType (VerifierOutput f a)
+    , Eq (VerifierOutput f a) [c]
+    , m ~ ProverMessage f a
+    ) => SpecialSoundProtocol f (CommitOpen m c a) where
       type Witness f (CommitOpen m c a)         = (Witness f a, [m])
       type Input f (CommitOpen m c a)           = Input f a
       type ProverMessage f (CommitOpen m c a)   = CommitOpenProverMessage m c
       type VerifierMessage f (CommitOpen m c a) = VerifierMessage f a
+      type VerifierOutput f (CommitOpen m c a)  = VerifierOutput f a
 
       type Degree (CommitOpen m c a)            = Degree a
 
@@ -70,12 +78,17 @@ commits = map f
           f (Commit c, _) = c
           f _             = error "Invalid message"
 
-opening :: forall f a c m . (SpecialSoundProtocol f a, Eq c, m ~ ProverMessage f a)
-        => CommitOpen m c a
-        -> Witness f a
-        -> Input f a
-        -> (SpecialSoundTranscript f (CommitOpen m c a) -> ProverMessage f (CommitOpen m c a) -> VerifierMessage f a)
-        -> ([m], SpecialSoundTranscript f (CommitOpen m c a))
+opening
+    :: forall f a c m
+    .  SpecialSoundProtocol f a
+    => BoolType (VerifierOutput f a)
+    => Eq (VerifierOutput f a) [c]
+    => m ~ ProverMessage f a
+    => CommitOpen m c a
+    -> Witness f a
+    -> Input f a
+    -> (SpecialSoundTranscript f (CommitOpen m c a) -> ProverMessage f (CommitOpen m c a) -> VerifierMessage f a)
+    -> ([m], SpecialSoundTranscript f (CommitOpen m c a))
 opening a'@(CommitOpen _ a) w i challenge =
       let f (ms, ts) _ =
                   let rs  = snd <$> ts
