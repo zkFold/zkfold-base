@@ -10,7 +10,7 @@ import           Data.Functor                                          ((<&>))
 import           Data.List                                             (foldl', intercalate)
 import           Data.Map.Strict                                       (Map, empty, keysSet)
 import qualified Data.Map.Strict                                       as M
-import           Data.Set                                              (Set, singleton)
+import           Data.Set                                              (Set)
 import           GHC.Generics                                          (Generic)
 import           GHC.IsList                                            (IsList (..))
 import           Numeric.Natural                                       (Natural)

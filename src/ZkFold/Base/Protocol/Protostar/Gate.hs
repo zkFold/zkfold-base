@@ -13,7 +13,8 @@ import           ZkFold.Base.Data.Matrix                      (Matrix (..), oute
 import qualified ZkFold.Base.Data.Vector                      as V
 import           ZkFold.Base.Data.Vector                      (Vector)
 import           ZkFold.Base.Protocol.Protostar.Internal      (PolynomialProtostar (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound  (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound  (AlgebraicMap (..), SpecialSoundProtocol (..),
+                                                               SpecialSoundTranscript)
 import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
 
 data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
@@ -42,18 +43,6 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
           -> ProverMessage f (ProtostarGate m n c d)
     prover _ w _ _ = w
 
-    algebraicMap :: ProtostarGate m n c d
-                 -> Input f (ProtostarGate m n c d)
-                 -> [ProverMessage f (ProtostarGate m n c d)]
-                 -> [f]
-                 -> f
-                 -> [f]
-    algebraicMap _ (s, g) [w] _ _ =
-      let w' = fmap subs w :: Vector n (Zp c -> f)
-          z  = transpose $ outer (evalPolynomial evalMonomial) w' $ fmap (\(PolynomialProtostar p) -> p) g
-      in V.fromVector $ sum1 $ zipWith (*) s z
-    algebraicMap _ _ _ _ _ = error "Invalid transcript"
-
     verifier :: ProtostarGate m n c d
              -> Input f (ProtostarGate m n c d)
              -> [ProverMessage f (ProtostarGate m n c d)]
@@ -62,3 +51,18 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
     verifier gate (s, g) [w] ts = all (== zero) $ algebraicMap gate (s, g) [w] ts one
     verifier _ _ _ _            = error "Invalid transcript"
 
+instance (Arithmetic f, KnownNat m, KnownNat n) => AlgebraicMap f (ProtostarGate m n c d) where
+    type MapInput f (ProtostarGate m n c d)    = (Matrix m n f, Vector m (PolynomialProtostar f c d))
+    type MapMessage f (ProtostarGate m n c d)  = Vector n (Vector c f)
+
+    algebraicMap :: ProtostarGate m n c d
+                 -> MapInput f (ProtostarGate m n c d)
+                 -> [MapMessage f (ProtostarGate m n c d)]
+                 -> [f]
+                 -> f
+                 -> [f]
+    algebraicMap _ (s, g) [w] _ _ =
+      let w' = fmap subs w :: Vector n (Zp c -> f)
+          z  = transpose $ outer (evalPolynomial evalMonomial) w' $ fmap (\(PolynomialProtostar p) -> p) g
+      in V.fromVector $ sum1 $ zipWith (*) s z
+    algebraicMap _ _ _ _ _ = error "Invalid transcript"

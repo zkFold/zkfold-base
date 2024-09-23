@@ -51,15 +51,6 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
         in (h, g)
     prover _ _ _ _ = error "Invalid transcript"
 
-    -- TODO: implement this
-    algebraicMap :: ProtostarLookup l sizeT
-                 -> Input f (ProtostarLookup l sizeT)
-                 -> [ProverMessage f (ProtostarLookup l sizeT)]
-                 -> [f]
-                 -> f
-                 -> [f]
-    algebraicMap = undefined
-
     verifier :: ProtostarLookup l sizeT
              -> Input f (ProtostarLookup l sizeT)
              -> [ProverMessage f (ProtostarLookup l sizeT)]

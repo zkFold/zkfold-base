@@ -11,8 +11,8 @@ module Main where
 import           Control.DeepSeq                             (force)
 import           Control.Exception                           (evaluate)
 import           Control.Monad                               (replicateM)
-import           Prelude                                     hiding (divMod, not, sum, (&&), (*), (+), (-), (/), (^), Bool (..),
-                                                              (||))
+import           Prelude                                     hiding (Bool (..), divMod, iterate, not, sum, (&&), (*),
+                                                              (+), (-), (/), (^), (||))
 import           System.Random                               (randomIO)
 import           Test.Tasty.Bench
 
@@ -21,24 +21,13 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar
 import           ZkFold.Symbolic.Class                       (Symbolic (..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-
--- ...
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
-import ZkFold.Symbolic.Interpreter
-import ZkFold.Symbolic.Data.Ed25519
-import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.UInt
-import qualified ZkFold.Symbolic.Data.Eq as Eq 
-import           ZkFold.Symbolic.Data.Class
-import Data.Proxy
 
 fact
     :: forall a n c
@@ -53,43 +42,33 @@ fact v = V.generate (\i -> if i == 0 then (v V.!! 0 * v V.!! 1) + fromConstant @
 -- | Generate random addition circuit of given size
 --
 input
-    :: forall n k p
+    :: forall n k p c
     .  KnownNat k
+    => c ~ ArithmeticCircuit (Zp p) (Vector n)
     => PrimeField (Zp p)
-    => IO (Natural, (Vector n (Zp p)))
+    => IO (Natural, (Vector n (FieldElement c)))
 input = do
     v <- V.unsafeToVector <$> replicateM (fromIntegral $ value @k) (toZp <$> randomIO)
 
-    evaluate . force $ (value @k, v)
+    evaluate . force $ (value @k, fromConstant <$> v)
 
 benchOps
-    :: forall n k p
+    :: forall n k p c
     .  KnownNat n
     => KnownNat k
     => p ~ BLS12_381_Scalar
+    => c ~ ArithmeticCircuit (Zp p) (Vector n)
     => Benchmark
 benchOps = env (input @n @k) $ \ ~inp ->
     bench ("Folding a function of " <> show (value @n) <> " arguments with " <> show (value @k) <> " iterations") $
-        nf (\(iter, initialInp) -> fold @(Zp p) @n @(Point BLS12_381_G1) (fact @(Zp p) @n) iter initialInp) inp
+        nf (\(iter, initialInp) -> iterate @c @n @(Point (Ed25519 c)) @(Zp p) (fact @(Zp p) @n) initialInp iter) inp
 
-foldFact :: Natural -> Vector 3 Natural -> FoldResult 3 (Point BLS12_381_G1) (Zp BLS12_381_Scalar)
-foldFact iter inp = fold fact iter (toZp . fromIntegral <$> inp)
-
-type I = Interpreter (Zp BLS12_381_Scalar)
-type Pt = Point (Ed25519 I 'Auto)
-type UI = UInt 265 'Auto I
-
-pt :: Pt 
-pt = gen
+foldFact :: ctx ~ ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 3)
+         => Natural -> Vector 3 Natural -> ProtostarResult ctx 3 (Point (Ed25519 ctx)) (Zp BLS12_381_Scalar)
+foldFact iter inp = iterate fact (fromConstant <$> inp) iter
 
 main :: IO ()
 main = do
-    print $ acDouble25519 pt
-    print $ acDouble25519 (Inf :: Pt) 
-    print $ acAdd25519 pt pt
-    print $ pt + Inf 
-    print $ Inf + (Inf :: Pt) 
-    print $ Inf + pt 
     print $ foldFact 10 (V.unsafeToVector [1, 2, 3])
     defaultMain
       [ benchOps @3 @32  @BLS12_381_Scalar

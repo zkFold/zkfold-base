@@ -7,172 +7,175 @@
 module ZkFold.Base.Protocol.Protostar.Fold where
 
 
-import           Control.DeepSeq                                     (NFData)
-import           Control.Lens                                        ((^.))
-import           Data.Map.Strict                                     (Map)
-import qualified Data.Map.Strict                                     as M
-import           GHC.Generics                                        (Generic)
-import           Prelude                                             (and, otherwise, type (~), ($), (<$>), (<*>), (==))
-import qualified Prelude                                             as P
+import           Control.DeepSeq                                  (NFData)
+import           Control.Lens                                     ((^.))
+import           Data.Kind                                        (Type)
+import           Data.Map.Strict                                  (Map)
+import qualified Data.Map.Strict                                  as M
+import           GHC.Generics                                     (Generic, Par1, U1)
+import           Prelude                                          (type (~), ($), (<$>), (<*>))
+import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Algebra.Polynomials.Univariate          as PU
-import           ZkFold.Base.Data.Vector                             (Vector)
+import qualified ZkFold.Base.Algebra.Polynomials.Univariate       as PU
+import           ZkFold.Base.Data.Vector                          (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
-import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme    as Acc
-import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit
+import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
+import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
 import           ZkFold.Base.Protocol.Protostar.Commit
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import qualified ZkFold.Base.Protocol.Protostar.SpecialSound         as SPS
-import           ZkFold.Prelude                                      (replicate)
+import qualified ZkFold.Base.Protocol.Protostar.SpecialSound      as SPS
+import           ZkFold.Prelude                                   (replicate)
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement)
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.FieldElement                (FieldElement)
 
-data FoldResult n c a
-    = FoldResult
-    { output          :: Vector n a
-    , lastAccumulator :: Accumulator (Vector n a) a c (SPS.ProverMessage a (RecursiveCircuit n a))
-    , verifierOutput  :: P.Bool
-    , deciderOutput   :: P.Bool
-    } deriving (P.Show, Generic, NFData)
-
-type FS_CM n c a = FiatShamir a (CommitOpen a c (RecursiveCircuit n a))
-
-transform
-    :: forall n c a
-    .  HomomorphicCommit a [SPS.ProverMessage a (ArithmeticCircuit a (Vector n) o)] c
-    => a
-    -> ArithmeticCircuit a (Vector n) o
-    -> Vector n a
-    -> FS_CM n c a
-transform ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
 
 -- | These instances might seem off, but accumulator scheme requires this exact behaviour for ProverMessages which are Maps in this case.
 --
 instance Scale s a => Scale s (Map k a) where
     scale s = P.fmap (scale s)
 
-instance AdditiveSemigroup a => AdditiveSemigroup (Map Natural a) where
+instance (AdditiveSemigroup a, P.Ord key) => AdditiveSemigroup (Map key a) where
     (+) = M.unionWith (+)
 
-instance AdditiveMonoid a => AdditiveMonoid (Map Natural a) where
+instance (AdditiveMonoid a, P.Ord key) => AdditiveMonoid (Map key a) where
     zero = M.empty
 
-instance (Ring a, P.Eq a) => Acc.LinearCombination (Map Natural a) (Map Natural (PU.Poly a)) where
-    linearCombination mx ma = M.unionWith (+) (PU.monomial 1 <$> mx) (PU.constant <$> ma)
+instance (Ring a, P.Ord key, KnownNat k) => Acc.LinearCombination (Map key a) (Map key (PU.PolyVec a k)) where
+    linearCombination mx ma = M.unionWith (+) (P.flip PU.polyVecLinear zero <$> mx) (PU.polyVecConstant <$> ma)
 
-instance (Ring a, P.Eq a, KnownNat n) => Acc.LinearCombination (Vector n a) (Vector n (PU.Poly a)) where
-    linearCombination mx ma = (+) <$> (PU.monomial 1 <$> mx) <*> (PU.constant <$> ma)
+instance (Ring a, KnownNat n, KnownNat k) => Acc.LinearCombination (Vector n a) (Vector n (PU.PolyVec a k)) where
+    linearCombination mx ma = (+) <$> (P.flip PU.polyVecLinear zero <$> mx) <*> (PU.polyVecConstant <$> ma)
 
 instance (Ring a, KnownNat n) => Acc.LinearCombinationWith a (Vector n a) where
     linearCombinationWith coeff a b = (+) <$> (P.fmap (coeff *) a) <*> b
 
-fold
-    :: forall a n c o x
-    .  Arithmetic a
-    => x ~ ArithmeticCircuit a (Vector n)
-    => P.Eq c
-    => Scale a c
-    => AdditiveGroup c
-    => RandomOracle a a
-    => RandomOracle c a
-    => RandomOracle [c] a
-    => HomomorphicCommit a [a] c
-    => HomomorphicCommit a [SPS.ProverMessage a (x o)] c
+
+type C n a = ArithmeticCircuit a (Vector n) (Vector n)
+type FS_CM ctx n comm a = FiatShamir (FieldElement ctx) (CommitOpen (SPS.MapMessage (FieldElement ctx) (C n a)) comm (C n a))
+type Acc ctx n comm a = Accumulator (Vector n (FieldElement ctx)) (FieldElement ctx) comm (SPS.MapMessage (FieldElement ctx) (C n a))
+
+-- | The final result of recursion and the final accumulator.
+-- Accumulation decider is an arithmetizable function which can be called on the final accumulator.
+--
+data ProtostarResult (ctx :: (Type -> Type) -> Type) n comm a
+    = ProtostarResult
+    { result       :: Vector n (FieldElement ctx)
+    , proverOutput :: Acc ctx n comm a
+    } deriving (Generic)
+
+deriving instance (NFData (Bool ctx), NFData comm, NFData (FieldElement ctx)) => NFData (ProtostarResult ctx n comm a)
+deriving instance (P.Show (Bool ctx), P.Show comm, P.Show (ctx Par1)) => P.Show (ProtostarResult ctx n comm a)
+
+toFS
+    :: forall ctx n comm a
+    .  HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
+    => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
+    => FieldElement ctx
+    -> C n a
+    -> Vector n (FieldElement ctx)
+    -> FS_CM ctx n comm a
+toFS ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
+
+iterate
+    :: forall ctx n comm a
+    .  Symbolic ctx
     => KnownNat n
-    => (Vector n (FieldElement x) -> Vector n (FieldElement x))  -- ^ An arithmetisable function to be applied recursively
-    -> Natural                             -- ^ The number of iterations to perform
-    -> SPS.Input a (RecursiveCircuit n a)  -- ^ Input for the first iteration
-    -> FoldResult n c a
-fold f iter i = foldN iter ck rc i [] initialAccumulator (Acc.KeyScale one one)
+    => Arithmetic a
+    => Eq (Bool ctx) comm
+    => Eq (Bool ctx) [comm]
+    => Eq (Bool ctx) [FieldElement ctx]
+    => Eq (Bool ctx) (Vector n (FieldElement ctx))
+    => RandomOracle comm (FieldElement ctx)
+    => HomomorphicCommit (FieldElement ctx) [FieldElement ctx] comm
+    => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
+    => AdditiveGroup comm
+    => Scale a (PU.PolyVec (FieldElement ctx) 3)
+    => Scale a (FieldElement ctx)
+    => Scale (FieldElement ctx) comm
+    => ctx ~ ArithmeticCircuit a (Vector n)
+    => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
+    => (Vector n (FieldElement ctx) -> Vector n (FieldElement ctx))
+    -> Vector n (FieldElement ctx)
+    -> Natural
+    -> ProtostarResult ctx n comm a
+iterate f i0 n = iteration n ck f ac i0 initialAccumulator (Acc.KeyScale one one)
     where
-        ac :: ArithmeticCircuit a (Vector n) o
+        ac :: C n a
         ac = compile @a f
 
-        initE = hcommit ck $ replicate (SPS.outputLength @a ac) (zero :: a)
+        initE = hcommit ck $ replicate (SPS.outputLength @a ac) (zero :: FieldElement ctx)
 
-        ck = oracle i
+        ck :: FieldElement ctx
+        ck = oracle i0
 
-        initialAccumulator :: Accumulator (Vector n a) a c (SPS.ProverMessage a (x o))
-        initialAccumulator = Accumulator (AccumulatorInstance (P.pure zero) [hcommit ck [zero :: SPS.ProverMessage a (x o)]] [] initE zero) [zero]
-
+        initialAccumulator :: Acc ctx n comm a
+        initialAccumulator = Accumulator (AccumulatorInstance (P.pure zero) [hcommit ck [zero :: SPS.MapMessage (FieldElement ctx) (C n a)]] [] initE zero) [zero]
 
 instanceProof
-    :: forall n c a
+    :: forall ctx n comm a
     .  Arithmetic a
-    => KnownNat n
-    => HomomorphicCommit a [SPS.ProverMessage a (RecursiveCircuit n a)] c
-    => a
-    -> RecursiveCircuit n a
-    -> SPS.Input a (RecursiveCircuit n a)
-    -> InstanceProofPair (Vector n a) c (SPS.ProverMessage a (RecursiveCircuit n a))
+    => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
+    => FromConstant a (FieldElement ctx)
+    => FieldElement ctx
+    -> C n a
+    -> SPS.MapInput (FieldElement ctx) (C n a)
+    -> InstanceProofPair (Vector n (FieldElement ctx)) comm (SPS.MapMessage (FieldElement ctx) (C n a))
 instanceProof ck rc i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where
-        m = SPS.prover @a rc M.empty i []
+        circuitI :: ArithmeticCircuit a U1 (Vector n)
+        circuitI = P.undefined
 
-foldN
-    :: forall n c a
-    .  Arithmetic a
-    => P.Eq c
-    => AdditiveGroup c
-    => Scale a c
+        vecI = exec circuitI
+
+        m = fromConstant <$> SPS.prover @a rc M.empty vecI []
+
+iteration
+    :: forall ctx n comm a
+    .  Symbolic ctx
     => KnownNat n
-    => RandomOracle a a
-    => RandomOracle c a
-    => RandomOracle [c] a
-    => HomomorphicCommit a [a] c
-    => HomomorphicCommit a [SPS.ProverMessage a (RecursiveCircuit n a)] c
+    => Arithmetic a
+    => FromConstant a (FieldElement ctx)
+    => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
+    => Eq (Bool ctx) comm
+    => Eq (Bool ctx) [comm]
+    => Eq (Bool ctx) [FieldElement ctx]
+    => Eq (Bool ctx) (Vector n (FieldElement ctx))
+    => RandomOracle comm (FieldElement ctx)
+    => HomomorphicCommit (FieldElement ctx) [FieldElement ctx] comm
+    => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
+    => AdditiveGroup comm
+    => Scale a (PU.PolyVec (FieldElement ctx) 3)
+    => Scale a (FieldElement ctx)
+    => Scale (FieldElement ctx) comm
     => Natural
-    -> a
-    -> RecursiveCircuit n a
-    -> SPS.Input a (RecursiveCircuit n a)
-    -> [P.Bool]
-    -> Accumulator (Vector n a) a c (SPS.ProverMessage a (RecursiveCircuit n a))
-    -> Acc.KeyScale a
-    -> FoldResult n c a
-foldN iter ck rc i verifierResults acc ks
-  | iterations rc == 0 = FoldResult i acc (and verifierResults) (Acc.decider (transform ck rc i :: FS_CM n c a) (ck, ks) acc)
-  | otherwise = let (output, newAcc, newVerifierResult, newKs) = foldStep ck rc i acc ks
-                 in foldN iter ck (rc {iterations = iterations rc -! 1}) output (newVerifierResult : verifierResults) newAcc newKs
-
-executeAc :: forall n a . KnownNat n => RecursiveCircuit n a -> Vector n a -> Vector n a
-executeAc (RecursiveCircuit _ rc) i = eval rc i
-
-foldStep
-    :: forall n c a
-    .  Arithmetic a
-    => P.Eq c
-    => AdditiveGroup c
-    => KnownNat n
-    => Scale a c
-    => RandomOracle a a
-    => RandomOracle c a
-    => RandomOracle [c] a
-    => HomomorphicCommit a [SPS.ProverMessage a (RecursiveCircuit n a)] c
-    => HomomorphicCommit a [a] c
-    => a
-    -> RecursiveCircuit n a
-    -> SPS.Input a (RecursiveCircuit n a)
-    -> Accumulator (Vector n a) a c (SPS.ProverMessage a (RecursiveCircuit n a))
-    -> Acc.KeyScale a
-    -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a c (SPS.ProverMessage a (RecursiveCircuit n a)), P.Bool, Acc.KeyScale a)
-foldStep ck rc i acc (Acc.KeyScale alphaSum muSum) = (newInput, newAcc, verifierAccepts, Acc.KeyScale (alphaSum + alphaPows) (muSum + scale (6 :: Natural) alpha))
+    -> FieldElement ctx
+    -> (Vector n (FieldElement ctx) -> Vector n (FieldElement ctx))
+    -> C n a
+    -> SPS.MapInput (FieldElement ctx) (C n a)
+    -> Acc ctx n comm a
+    -> Acc.KeyScale (FieldElement ctx)
+    -> ProtostarResult ctx n comm a
+iteration 0 _  _ _  i acc _  = ProtostarResult i acc
+iteration n ck f rc i acc (Acc.KeyScale alphaSum muSum) = iteration (n -! 1) ck f rc newi newAcc newKS
     where
-        fs :: FS_CM n c a
-        fs = transform ck rc i
+        fs :: FS_CM ctx n comm a
+        fs = toFS ck rc i
 
-        nark@(InstanceProofPair _ narkProof) = instanceProof ck rc i
-        (newAcc, accProof) = Acc.prover fs ck acc nark
+        nark@(InstanceProofPair _ narkProof) = instanceProof @ctx @n @comm @a ck rc i
+        (newAcc, accProof) = Acc.prover @_ @(FieldElement ctx) @comm @_ @ctx fs ck acc nark
 
-        alpha :: a
+        alpha :: FieldElement ctx
         alpha = oracle (acc^.x, i, narkCommits narkProof, accProof)
 
         alphaPows = sum $ P.take (P.length accProof) $ (alpha ^) <$> [1 :: Natural ..]
 
-        verifierAccepts = Acc.verifier @_ @_ @_ @(SPS.ProverMessage a (RecursiveCircuit n a)) @(FS_CM n c a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
-        newInput = executeAc rc i
+        newi = f i
 
+        newKS = Acc.KeyScale (alphaSum + alphaPows) (muSum + scale (6 :: Natural) alpha)

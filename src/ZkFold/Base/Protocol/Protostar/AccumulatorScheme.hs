@@ -21,7 +21,7 @@ import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit 
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), CommitOpenProverMessage (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (Input, SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), MapInput, SpecialSoundProtocol (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Eq
@@ -54,7 +54,7 @@ data KeyScale f = KeyScale f f
 -- | Class describing types which can form a polynomial linear combination:
 -- linearCombination a1 a2 -> a1 * X + a2
 --
-class LinearCombination a b | a -> b where
+class LinearCombination a b where
     linearCombination :: a -> a -> b
 
 -- | Same as above, but with a coefficient known at runtime
@@ -78,25 +78,23 @@ instance
     , Ring f
     , Scale f c
     , Scale f m
-    , Input f a ~ i
-    , deg ~ Degree (CommitOpen f c a) + 1
+    , MapInput f a ~ i
+    , deg ~ Degree (CommitOpen m c a) + 1
     , KnownNat deg
-    , LinearCombination (ProverMessage f a) (ProverMessage (PU.PolyVec f deg) a)
-    , LinearCombination (Input f a) (Input (PU.PolyVec f deg) a)
-    , LinearCombinationWith f (Input f a)
-    , ProverMessage f a ~ m
-    , SpecialSoundProtocol f (CommitOpen f c a)
-    , SpecialSoundProtocol (PU.PolyVec f deg) a
+    , LinearCombination (MapMessage f a) (MapMessage (PU.PolyVec f deg) a)
+    , LinearCombination (MapInput f a) (MapInput (PU.PolyVec f deg) a)
+    , LinearCombinationWith f (MapInput f a)
+    , MapMessage f a ~ m
+    , AlgebraicMap f (CommitOpen m c a)
+    , AlgebraicMap (PU.PolyVec f deg) a
     , RandomOracle c f                                    -- Random oracle ρ_NARK
     , RandomOracle i f                                    -- Random oracle for compressing public input
     , HomomorphicCommit f [m] c
     , HomomorphicCommit f [f] c
-    ) => AccumulatorScheme i f c m ctx (FiatShamir f (CommitOpen f c a)) where
+    ) => AccumulatorScheme i f c m ctx (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen _ sps) _) ck acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') mi'', eCapital_j)
       where
-        --  d = value @(Degree (CommitOpen f c a))
-
           -- Fig. 3, step 1
           r_i :: [f]
           r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) (zero : pi_x)
@@ -106,7 +104,6 @@ instance
           -- X + mu as a univariate polynomial
           polyMu :: PU.PolyVec f deg
           polyMu = PU.polyVecLinear (acc^.x^.mu) one
---          polyMu = PU.monomial 1 one + PU.constant (acc^.x^.mu)
 
           -- X * pi + pi' as a list of univariate polynomials
           polyPi = linearCombination pubi (acc^.x^.pi)
@@ -117,7 +114,6 @@ instance
           -- X * ri + ri'
           polyR :: [PU.PolyVec f deg]
           polyR = P.zipWith (P.flip PU.polyVecLinear) (acc^.x^.r) r_i
-          --polyR = P.zipWith (\accR proofR -> PU.monomial 1 proofR + PU.constant accR) (acc^.x^.r) r_i
 
           -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
@@ -126,7 +122,6 @@ instance
 
           -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
           e_all = transpose $ (DV.toList . PU.fromPolyVec) <$> e_uni
-          --e_all = transpose $ (take (d + 1) . (P.<> (P.repeat zero)) . DV.toList . PU.fromPolyVec) <$> e_uni
 
           -- e_j are coefficients of degree-j homogenous polynomials where j is from the range [1, d - 1]
           e_j :: [[f]]

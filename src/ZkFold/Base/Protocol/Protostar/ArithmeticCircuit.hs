@@ -1,7 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE DeriveAnyClass          #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
@@ -19,50 +20,32 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import qualified ZkFold.Base.Algebra.Polynomials.Univariate          as PU
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound         as SPS
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.Combinators                    (Iso (..))
 
-{--
-
-1. Compress verification checks (Section 3.5; )
-2. Commit (Section 3.2; ZkFold.Base.Protocol.ARK.Protostar.CommitOpen)
-3. Fiat-Shamir transform (Section 3.3; ZkFold.Base.Protocol.ARK.Protostar.FiatShamir)
-   A technique for taking an interactive proof of knowledge and creating a digital signature based on it.
-   This way, some fact (for example, knowledge of a certain secret number) can be publicly proven without revealing underlying information.
-4. Accumulation scheme (Section 3.4; ZkFold.Base.Protocol.ARK.Protostar.AccumulatorScheme)
-5. Obtain the IVC scheme (Theorem 1 from “Proof-Carrying Data Without Succinct Arguments”; )
-
---}
-
-instance (Ring f, P.Eq f) => Iso (PU.Poly f) f where
-    from = P.flip PU.evalPoly zero
-
-instance (Ring f, P.Eq f) => Iso f (PU.Poly f) where
-    from = PU.constant
-
-instance Iso a a where
-    from = P.id
-
+-- Note:
+-- This instance should work when f ~ a and f ~ PU.PolyVec a size
+-- Separate instances are not possible because of conflicting associated type family definitions (a is strictly more general than PU.PolyVec a 3)
+-- algebraicMap is general enough to deal with both cases
+-- However, prover requires an input with @a@ inside to be able to calculate witness.
+-- Witness, on the other hand, is a @Map ByteString a@, but prover is expected to return @Map ByteString f@
+-- Therefore, we need to provide some kind of transformation between @a@ and @f@, hence the use of @Transform@
+--
 instance
-  ( KnownNat n
-  , Arithmetic a
-  , P.Eq f
-  , Scale a f
-  , MultiplicativeMonoid f
-  , Exponent f Natural
-  , AdditiveMonoid f
-  , Iso a f
-  ) => SPS.SpecialSoundProtocol f (ArithmeticCircuit a (Vector n) o) where
+  ( Arithmetic a
+  , Scale a a
+  , MultiplicativeMonoid a
+  , Exponent a Natural
+  , AdditiveMonoid a
+  ) => SPS.SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
 
-    type Witness f (ArithmeticCircuit a (Vector n) o) = Map ByteString a
-    type Input f (ArithmeticCircuit a (Vector n) o) = Vector n f
-    type ProverMessage f (ArithmeticCircuit a (Vector n) o) = Map ByteString f
-    type VerifierMessage f (ArithmeticCircuit a (Vector n) o) = f
+    type Witness a (ArithmeticCircuit a (Vector n) o) = Map ByteString a
+    type Input a (ArithmeticCircuit a (Vector n) o) = Vector n a
+    type ProverMessage a (ArithmeticCircuit a (Vector n) o) = Map ByteString a
+    type VerifierMessage a (ArithmeticCircuit a (Vector n) o) = a
     type Degree (ArithmeticCircuit a (Vector n) o) = 2
 
     -- One round for Plonk
@@ -72,7 +55,22 @@ instance
 
     -- The transcript will be empty at this point, it is a one-round protocol
     --
-    prover ac _ i _ = from @a <$> witnessGenerator ac (from @f <$> i)
+    prover ac _ i _ = witnessGenerator ac i
+
+    -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
+    --
+    verifier rc i pm ts = P.all (== zero) $ SPS.algebraicMap @a rc i pm ts one
+
+instance
+  ( Arithmetic a
+  , Scale a f
+  , MultiplicativeMonoid f
+  , Exponent f Natural
+  , AdditiveMonoid f
+  ) => SPS.AlgebraicMap f (ArithmeticCircuit a (Vector n) o) where
+
+    type MapInput f (ArithmeticCircuit a (Vector n) o) = Vector n f
+    type MapMessage f (ArithmeticCircuit a (Vector n) o) = Map ByteString f
 
     -- We can use the polynomial system from the xircuit as a base for V_sps.
     --
@@ -80,23 +78,19 @@ instance
         where
             witness = P.head pm
 
-            sys :: [PM.Poly a (Var (Vector n)) Natural]
+            sys :: [PM.Poly a (SysVar (Vector n)) Natural]
             sys = M.elems (acSystem ac)
 
-            varMap :: Var (Vector n) -> f
+            varMap :: SysVar (Vector n) -> f
             varMap (InVar iv)  = i V.!! (fromZp iv)
             varMap (NewVar nv) = M.findWithDefault zero nv witness
 
-            f_sps :: Vector 3 [PM.Poly a (Var (Vector n)) Natural]
+            f_sps :: Vector 3 [PM.Poly a (SysVar (Vector n)) Natural]
             f_sps = degreeDecomposition @(SPS.Degree (ArithmeticCircuit a (Vector n) o)) $ sys
 
             f_sps_uni :: Vector 3 [f]
             f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
 
-
-    -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
-    --
-    verifier rc i pm ts = P.all (== zero) $ SPS.algebraicMap @f rc i pm ts one
 
 padDecomposition
     :: forall f d

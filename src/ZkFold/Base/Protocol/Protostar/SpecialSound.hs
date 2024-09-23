@@ -35,13 +35,23 @@ class SpecialSoundProtocol f a where
 
       prover :: a -> Witness f a -> Input f a -> SpecialSoundTranscript f a -> ProverMessage f a
 
-      algebraicMap
-          :: a
-          -> Input f a  -- ^ public input
-          -> [ProverMessage f a]  -- ^ NARK proof witness (the list of prover messages)
-          -> [f]        -- ^ Verifier random challenges
-          -> f          -- ^ Slack variable for padding
-          -> [f]
-      -- ^ the algebraic map V_sps computed by the verifier.
-
       verifier :: a -> Input f a -> [ProverMessage f a] -> [f] -> Bool
+
+-- | Algebraic map is a much more versatile and powerful tool when used separatey from SpecialSoundProtocol.
+-- It calculates a system of equations @[f]@ defining @a@ in some way.
+-- If @f@ is a number or a field element, then the result is a vector of polynomial values.
+-- However, @f@ can be a polynomial, in which case the result will be a system of polynomials.
+-- This polymorphism is exploited in the AccumulatorScheme prover.
+--
+class AlgebraicMap f a where
+    type MapInput f a
+    type MapMessage f a
+
+    -- | the algebraic map V_sps computed by the verifier.
+    algebraicMap
+        :: a
+        -> MapInput f a  -- ^ public input
+        -> [MapMessage f a]  -- ^ NARK proof witness (the list of prover messages)
+        -> [f]        -- ^ Verifier random challenges
+        -> f          -- ^ Slack variable for padding
+        -> [f]

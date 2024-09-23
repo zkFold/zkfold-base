@@ -6,7 +6,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations      (Permutation, applyPermutation)
 import           ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..),
+                                                              SpecialSoundTranscript)
 import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
@@ -34,16 +35,6 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
            -> ProverMessage f (ProtostarPermutation n)
     prover _ w _ _ = w
 
-    algebraicMap :: ProtostarPermutation n
-                 -> Input f (ProtostarPermutation n)
-                 -> [ProverMessage f (ProtostarPermutation n)]
-                 -> [f]
-                 -> f
-                 -> [f]
-    algebraicMap _ sigma [w] _ _ = V.fromVector $ applyPermutation sigma w
-    algebraicMap _ _ _ _ _       = error "Invalid transcript"
-
-
     verifier :: ProtostarPermutation n
              -> Input f (ProtostarPermutation n)
              -> [ProverMessage f (ProtostarPermutation n)]
@@ -51,3 +42,18 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
              -> Bool
     verifier p sigma [w] ts = algebraicMap p sigma [w] ts one == V.fromVector w
     verifier _ _     _   _  = error "Invalid transcript"
+
+instance Arithmetic f => AlgebraicMap f (ProtostarPermutation n) where
+    type MapInput f (ProtostarPermutation n) = Permutation n
+    type MapMessage f (ProtostarPermutation n) = Vector n f
+
+    algebraicMap :: ProtostarPermutation n
+                 -> MapInput f (ProtostarPermutation n)
+                 -> [MapMessage f (ProtostarPermutation n)]
+                 -> [f]
+                 -> f
+                 -> [f]
+    algebraicMap _ sigma [w] _ _ = V.fromVector $ applyPermutation sigma w
+    algebraicMap _ _ _ _ _       = error "Invalid transcript"
+
+

@@ -32,10 +32,11 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , scalePV
     , polyVecZero
     , polyVecDiv
-    , polyVecLinear
     , polyVecLagrange
     , polyVecGrandProduct
     , polyVecInLagrangeBasis
+    , polyVecConstant
+    , polyVecLinear
     , polyVecQuadratic
     , mulVector
     , mulDft
@@ -354,6 +355,10 @@ a *. (PV cs) = PV $ fmap (a *) cs
 -- | Add a constant to every coefficient of the polynomial.
 (+.) :: forall c size . (Field c) => c -> PolyVec c size -> PolyVec c size
 a +. (PV cs) = PV $ fmap (+ a) cs
+
+-- p(x) = a0
+polyVecConstant :: forall c size . (Ring c, KnownNat size) => c -> PolyVec c size
+polyVecConstant a0 = PV $ V.singleton a0 V.++ V.replicate (fromIntegral $ value @size -! 1) zero
 
 -- p(x) = a0 + a1 * x
 polyVecLinear :: forall c size . (Ring c, KnownNat size) => c -> c -> PolyVec c size
