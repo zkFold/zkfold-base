@@ -30,8 +30,8 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Class                          (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), concat, ShiftBits (..),
-                                                                 toWords, Truncate (..))
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), Truncate (..), concat,
+                                                                 toWords)
 import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
 
@@ -175,7 +175,7 @@ type family PaddedLength (msg :: Natural) (block :: Natural) (lenBits :: Natural
 type SHA2 algorithm context k =
    ( AlgorithmSetup algorithm context
    , KnownNat k
-   , KnownNat (ChunkSize algorithm) 
+   , KnownNat (ChunkSize algorithm)
    , KnownNat (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))
    , Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
    , k <= PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)

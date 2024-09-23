@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Plonkup (specPlonkup) where
 
@@ -126,7 +126,7 @@ propLookupGrandProductEquality plonk witness secret pow =
         deltaX   = scalePV delta $ with4n6 @n $ one
         epsilonX = scalePV epsilon $ with4n6 @n $ one
         p = with4n6 @n $ z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas'))
-                - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) 
+                - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas'))
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
 propLinearizationPolyEvaluation :: forall i n l . (KnownNat i, KnownNat n, KnownNat l)

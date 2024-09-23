@@ -212,7 +212,7 @@ plonkProve PlonkupProverSetup {..}
         pi_xi = piX `evalPolyVec` xi
         zhX_xi = zhX `evalPolyVec` xi
 
-        rX = with4n6 @n $ 
+        rX = with4n6 @n $
                 qmX .* (a_xi * b_xi) + qlX .* a_xi + qrX .* b_xi + qoX .* c_xi + one .* pi_xi + qcX
               + alpha *. (((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * k2 * xi + gamma)) *. z1X
                         - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi') *. (one .* c_xi + beta *. s3X + one .* gamma)

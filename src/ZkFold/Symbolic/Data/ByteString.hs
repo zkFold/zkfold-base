@@ -154,7 +154,7 @@ reverseEndianness' v =
         chunks' = fmap (V.concat . V.reverse . V.chunks @m @8) chunks
      in V.concat chunks'
 
-reverseEndianness :: forall wordSize k c n m. 
+reverseEndianness :: forall wordSize k c n m.
     ( Symbolic c
     , KnownNat wordSize
     , k * wordSize ~ n

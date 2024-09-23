@@ -6,6 +6,8 @@ module Tests.ByteString (specByteString) where
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
+import           Data.Constraint                             (withDict)
+import           Data.Constraint.Nat                         (plusNat)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
@@ -21,6 +23,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import qualified ZkFold.Base.Data.Vector                     as V
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
@@ -28,10 +32,6 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-import qualified ZkFold.Base.Data.Vector as V
-import ZkFold.Base.Data.Vector (Vector)
-import Data.Constraint (withDict)
-import Data.Constraint.Nat (plusNat)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)

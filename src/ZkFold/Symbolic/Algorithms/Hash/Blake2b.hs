@@ -5,6 +5,8 @@
 module ZkFold.Symbolic.Algorithms.Hash.Blake2b where
 
 import           Data.Bool                                         (bool)
+import           Data.Constraint
+import           Data.Constraint.Nat                               (timesNat)
 import           Data.List                                         (foldl')
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
@@ -19,18 +21,15 @@ import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGrou
                                                                     MultiplicativeSemigroup (..), SemiEuclidean (..),
                                                                     divMod, one, zero, (-!))
 import           ZkFold.Base.Algebra.Basic.Number
+import qualified ZkFold.Base.Data.Vector                           as Vec
 import           ZkFold.Prelude                                    (length, replicate, splitAt, (!!))
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Class                             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), concat,
-                                                                    reverseEndianness, ShiftBits (..),
-                                                                    toWords, Truncate (..))
+import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..), Truncate (..),
+                                                                    concat, reverseEndianness, toWords)
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
-import Data.Constraint
-import Data.Constraint.Nat (timesNat)
-import qualified ZkFold.Base.Data.Vector as Vec
 
 -- TODO: This module is not finished yet. The hash computation is not correct.
 
@@ -135,7 +134,7 @@ blake2b' d =
             else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
         bs = reverseEndianness @64 $ concat @64 @8 $ Vec.unsafeToVector @8 $ map from $ toList h''' :: ByteString (64 * 8) c
-    in withDict (timesNat @8 @nn') (truncate bs) 
+    in withDict (timesNat @8 @nn') (truncate bs)
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
