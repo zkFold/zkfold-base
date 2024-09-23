@@ -30,6 +30,8 @@ import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 import qualified ZkFold.Base.Data.Vector as V
 import ZkFold.Base.Data.Vector (Vector)
+import Data.Constraint (withDict)
+import Data.Constraint.Nat (plusNat)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -136,10 +138,6 @@ specByteString'
     => (Div n n) * n ~ n
     => (Div n 4) * 4 ~ n
     => (Div n 2) * 2 ~ n
-    => KnownNat (n + 1)
-    => KnownNat (n + 10)
-    => KnownNat (n + 128)
-    => KnownNat (n + n)
     => IO ()
 specByteString' = hspec $ do
     let n = Haskell.fromIntegral $ value @n
@@ -210,10 +208,10 @@ specByteString' = hspec $ do
         testTruncate @n @16 @p
         testTruncate @n @32 @p
         testTruncate @n @n @p
-        testGrow @n @(n + 1) @p
-        testGrow @n @(n + 10) @p
-        testGrow @n @(n + 128) @p
-        testGrow @n @(n + n) @p
+        withDict (plusNat @n @1) (testGrow @n @(n + 1) @p)
+        withDict (plusNat @n @10) (testGrow @n @(n + 10) @p)
+        withDict (plusNat @n @128) (testGrow @n @(n + 128) @p)
+        withDict (plusNat @n @n) (testGrow @n @(n + n) @p)
 
 specByteString :: IO ()
 specByteString = do

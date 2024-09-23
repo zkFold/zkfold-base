@@ -45,8 +45,8 @@ main = do
     -- specArithmetization
 
     -- -- Protocols
-    -- specPlonkup
-    -- specNonInteractiveProof
+    specPlonkup
+    specNonInteractiveProof
 
     -- Cryptography
     specSHA2Natural

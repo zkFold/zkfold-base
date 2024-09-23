@@ -26,6 +26,8 @@ import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
 import           ZkFold.Prelude                                      (length, replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import Data.Constraint (withDict)
+import Data.Constraint.Nat (timesNat)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i n l a = PlonkupRelation
@@ -66,7 +68,6 @@ instance
 toPlonkupRelation :: forall i n l a .
        KnownNat i
     => KnownNat n
-    => KnownNat (3 * n)
     => KnownNat l
     => Arithmetic a
     => ArithmeticCircuit a (Vector i) (Vector l)
@@ -103,7 +104,7 @@ toPlonkupRelation ac =
         b  = map getB plonkupSystem
         c  = map getC plonkupSystem
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
-        sigma = fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c
+        sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c)
 
         indexW _ Nothing           = one
         indexW i (Just (InVar v))  = index i v

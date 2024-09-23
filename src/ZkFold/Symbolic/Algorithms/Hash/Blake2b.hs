@@ -24,7 +24,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, 
 import           ZkFold.Symbolic.Class                             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), concat,
-                                                                    ReverseEndianness (..), ShiftBits (..),
+                                                                    reverseEndianness, ShiftBits (..),
                                                                     toWords, Truncate (..))
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
@@ -141,13 +141,12 @@ type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
 
 
-blake2b :: forall keyLen inputLen outputLen c n k.
+blake2b :: forall keyLen inputLen outputLen c {n} k.
     ( Symbolic c
     , KnownNat keyLen
     , KnownNat inputLen
     , KnownNat outputLen
     , KnownNat (ExtensionBits inputLen)
-    , KnownNat (8 * inputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
     , KnownNat n
     , k * 64 ~ n
@@ -158,7 +157,7 @@ blake2b key input =
     let input' = Vec.parFmap from $ toWords @k @64 $
             reverseEndianness @64 $
             flip rotateBitsL (value @(ExtensionBits inputLen)) $
-            extend @_ @(ExtendedInputByteString inputLen c) input :: Vec.Vector k (UInt 64 Auto c)
+            withDict (timesNat @8 @inputLen) (extend @_ @(ExtendedInputByteString inputLen c) input) :: Vec.Vector k (UInt 64 Auto c)
         --  input' = map from (toWords $
         --     reverseEndianness @64 $
         --     flip rotateBitsL (value @(ExtensionBits inputLen)) $
@@ -188,7 +187,6 @@ blake2b_224 :: forall inputLen c n.
     ( Symbolic c
     , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
-    , KnownNat (8 * inputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
     , KnownNat n
     , (Div n 64) * 64 ~ n
@@ -201,7 +199,6 @@ blake2b_256 :: forall inputLen c n .
     ( Symbolic c
     , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
-    , KnownNat (8 * inputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
     , KnownNat n    
     , (Div n 64) * 64 ~ n
@@ -214,7 +211,6 @@ blake2b_512 :: forall inputLen c n .
     ( Symbolic c
     , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
-    , KnownNat (8 * inputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
     , KnownNat n
     , (Div n 64) * 64 ~ n

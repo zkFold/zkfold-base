@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Tests.Plonkup (specPlonkup) where
 
@@ -17,7 +18,6 @@ import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (fromZp)
-import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate
@@ -31,6 +31,9 @@ import           ZkFold.Base.Protocol.Plonkup.Testing
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import GHC.TypeNats
+import Data.Constraint.Nat (plusNat, timesNat)
+import Data.Constraint (withDict)
 
 -- TODO: uncomment after refactoring
 -- propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint 1 a -> Bool
@@ -46,7 +49,7 @@ propPlonkupRelationHolds PlonkupRelation {..} w =
 propSortByListIsCorrect :: Ord a => [a] -> Bool
 propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs
 
-propPlonkPolyEquality :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationSize n), KnownNat (PlonkupPolyExtendedLength n), KnownNat l)
+propPlonkPolyEquality :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
     => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -54,21 +57,21 @@ propPlonkPolyEquality :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationSi
     -> Bool
 propPlonkPolyEquality plonk witness secret pow =
     let setup = setupProve @_ @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
-        p = qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
+        (_, _, PlonkupProverTestInfo {..}) = withDict' @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
+        p = withDict' @n $ qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
-propPlonkGrandProductIsCorrect :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationSize n), KnownNat (PlonkupPolyExtendedLength n), KnownNat l)
+propPlonkGrandProductIsCorrect :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
     => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> Bool
 propPlonkGrandProductIsCorrect plonk witness secret =
     let setup = setupProve @_ @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
+        (_, _, PlonkupProverTestInfo {..}) = withDict' @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
     in head (toList $ fromPolyVec grandProduct1) == one
 
-propPlonkGrandProductEquality :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationSize n), KnownNat (PlonkupPolyExtendedLength n), KnownNat l)
+propPlonkGrandProductEquality :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
     => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -76,10 +79,10 @@ propPlonkGrandProductEquality :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermu
     -> Bool
 propPlonkGrandProductEquality plonk witness secret pow =
     let setup = setupProve @_ @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
+        (_, _, PlonkupProverTestInfo {..}) = withDict' @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
 
-        gammaX = scalePV gamma one
-        p =   (aX + polyVecLinear beta gamma)
+        gammaX = scalePV gamma $ withDict' @n $ one
+        p =  withDict' @n $ (aX + polyVecLinear beta gamma)
             * (bX + polyVecLinear (beta * k1) gamma)
             * (cX + polyVecLinear (beta * k2) gamma)
             * z1X .* alpha
@@ -89,7 +92,7 @@ propPlonkGrandProductEquality plonk witness secret pow =
             * (z1X .*. omegas') .* alpha
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
-propLookupPolyEquality :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationSize n), KnownNat (PlonkupPolyExtendedLength n), KnownNat l)
+propLookupPolyEquality :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
     => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -97,22 +100,22 @@ propLookupPolyEquality :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationS
     -> Bool
 propLookupPolyEquality plonk witness secret pow =
     let setup = setupProve @_ @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
+        (_, _, PlonkupProverTestInfo {..}) = withDict' @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
 
-        p = qkX * (aX - fX)
+        p = withDict' @n $ qkX * (aX - fX)
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
-propLookupGrandProductIsCorrect :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationSize n), KnownNat (PlonkupPolyExtendedLength n), KnownNat l)
+propLookupGrandProductIsCorrect :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
     => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> Bool
 propLookupGrandProductIsCorrect plonk witness secret =
     let setup = setupProve @_ @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
+        (_, _, PlonkupProverTestInfo {..}) = withDict' @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
     in z2X `evalPolyVec` omega == one
 
-propLookupGrandProductEquality :: (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationSize n), KnownNat (PlonkupPolyExtendedLength n), KnownNat l)
+propLookupGrandProductEquality :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
     => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -120,22 +123,22 @@ propLookupGrandProductEquality :: (KnownNat i, KnownNat n, KnownNat (PlonkupPerm
     -> Bool
 propLookupGrandProductEquality plonk witness secret pow =
     let setup = setupProve @_ @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
+        (_, _, PlonkupProverTestInfo {..}) = withDict' @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
 
-        deltaX   = scalePV delta one
-        epsilonX = scalePV epsilon one
-        p =   z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas'))
-            - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas'))
+        deltaX   = scalePV delta $ withDict' @n $ one
+        epsilonX = scalePV epsilon $ withDict' @n $ one
+        p = withDict' @n $ z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas'))
+                - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) 
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
-propLinearizationPolyEvaluation :: forall i n l . (KnownNat i, KnownNat n, KnownNat (PlonkupPermutationSize n), KnownNat (PlonkupPolyExtendedLength n), KnownNat l)
+propLinearizationPolyEvaluation :: forall i n l . (KnownNat i, KnownNat n, KnownNat l)
     => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> Bool
 propLinearizationPolyEvaluation plonk witness secret =
     let setup = setupProve @_ @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
+        (_, _, PlonkupProverTestInfo {..}) = withDict' @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
     in rX `evalPolyVec` xi == zero
 
 specPlonkup :: IO ()
@@ -162,3 +165,6 @@ specPlonkup = hspec $ do
             it "should hold" $ property $ withMaxSuccess 10 $ propLookupGrandProductEquality @1 @32 @2
         describe "Linearization polynomial in the challenge point" $ do
             it "evaluates to zero" $ property $ withMaxSuccess 10 $ propLinearizationPolyEvaluation @1 @32 @2
+
+withDict' :: forall n {r}. KnownNat n => (KnownNat (4 * n + 6) => r) -> r
+withDict' f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)

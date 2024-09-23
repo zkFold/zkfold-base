@@ -10,7 +10,7 @@
 module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
     , ShiftBits (..)
-    , ReverseEndianness (..)
+    , reverseEndianness
     , isSet
     , isUnset
     , toWords
@@ -52,8 +52,6 @@ import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
-import Data.Constraint.Nat (timesNat)
-import Data.Constraint (withDict)
 import qualified ZkFold.Base.Data.Vector as Haskell
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
@@ -122,8 +120,8 @@ class ShiftBits a where
     rotateBitsR :: a -> Natural -> a
     rotateBitsR a s = rotateBits a (negate . Haskell.fromIntegral $ s)
 
-class ReverseEndianness wordSize a where
-    reverseEndianness :: a -> a
+-- class ReverseEndianness wordSize a where
+--     reverseEndianness :: a -> a
 
 -- | Describes types which can be split into words of equal size.
 -- Parameters have to be of different types as ByteString store their lengths on type level and hence after splitting they chagne types.
@@ -165,13 +163,13 @@ reverseEndianness' v =
         chunks' = fmap (V.concat . V.reverse . V.chunks @m @8) chunks
      in V.concat chunks'
 
-instance
+reverseEndianness :: forall wordSize k c n m. 
     ( Symbolic c
     , KnownNat wordSize
     , k * wordSize ~ n
     , m * 8 ~ wordSize
-    ) => ReverseEndianness wordSize (ByteString n c) where
-    reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v
+    ) => ByteString n c -> ByteString n c
+reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v
 
 instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
     false = fromConstant (0 :: Natural)

@@ -29,6 +29,8 @@ import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import Data.Constraint.Nat (timesNat, plusNat)
+import Data.Constraint (withDict)
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
@@ -36,8 +38,6 @@ instance forall i n l c1 c2 ts core.
         ( KnownNat i
         , KnownNat n
         , KnownNat l
-        , KnownNat (PlonkupPermutationSize n)
-        , KnownNat (PlonkupPolyExtendedLength n)
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
@@ -67,11 +67,11 @@ instance forall i n l c1 c2 ts core.
 
     prove :: SetupProve (Plonkup i n l c1 c2 ts) -> Witness (Plonkup i n l c1 c2 ts) -> (Input (Plonkup i n l c1 c2 ts), Proof (Plonkup i n l c1 c2 ts))
     prove setup witness =
-        let (input, proof, _) = plonkupProve @i @n @l @c1 @c2 @ts @core setup witness
+        let (input, proof, _) = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (plonkupProve @i @n @l @c1 @c2 @ts @core setup witness))
         in (input, proof)
 
     verify :: SetupVerify (Plonkup i n l c1 c2 ts) -> Input (Plonkup i n l c1 c2 ts) -> Proof (Plonkup i n l c1 c2 ts) -> Bool
-    verify = plonkupVerify @i @n @l @c1 @c2 @ts
+    verify = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (plonkupVerify @i @n @l @c1 @c2 @ts))
 
 instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
             Witness (Plonkup i n l c1 c2 t) ~ (PlonkupWitnessInput i c1, PlonkupProverSecret c1), NonInteractiveProof (Plonkup i n l c1 c2 t) core)
