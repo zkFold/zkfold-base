@@ -66,7 +66,6 @@ instance forall i n l c1 c2 (ts :: Type) core .
         , Input (Plonkup i n l c1 c2 ts) ~ PlonkupInput l c1
         , Proof (Plonkup i n l c1 c2 ts) ~ PlonkupProof c1
         , KnownNat n
-        , KnownNat (PlonkupPolyExtendedLength n)
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2

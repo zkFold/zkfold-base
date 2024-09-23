@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.Plonk.Verifier
     ( plonkVerify
@@ -11,7 +12,7 @@ import           Prelude                                             hiding (Num
                                                                       (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
+import           ZkFold.Base.Algebra.Basic.Number                    (value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (fromVector)
@@ -22,10 +23,12 @@ import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import GHC.TypeNats
+import Data.Constraint.Nat (plusNat, timesNat)
+import Data.Constraint (withDict)
 
 plonkVerify :: forall i n l c1 c2 ts .
     ( KnownNat n
-    , KnownNat (PlonkupPolyExtendedLength n)
     , Pairing c1 c2
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
@@ -97,13 +100,13 @@ plonkVerify
         eta = challenge ts6
 
         -- Step 5: Compute zero polynomial evaluation
-        zhX_xi = polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi :: ScalarField c1
+        zhX_xi = withDict' @n $ polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi :: ScalarField c1
 
         -- Step 6: Compute Lagrange polynomial evaluation
-        lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
+        lagrange1_xi = withDict' @n $ polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
 
         -- Step 7: Compute public polynomial evaluation
-        pi_xi = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega
+        pi_xi = withDict' @n $ polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega
             (toPolyVec $ fromList $ fromVector (negate <$> wPub))
             `evalPolyVec` xi
 
@@ -150,3 +153,8 @@ plonkVerify
         -- Step 13: Compute the pairing
         p1 = pairing (proof1 + eta `mul` proof2) h1
         p2 = pairing (xi `mul` proof1 + (eta * xi * omega) `mul` proof2 + f - e) (gen @c2)
+
+
+
+withDict' :: forall n {r}. KnownNat n => (KnownNat (4 * n + 6) => r) -> r
+withDict' f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)
