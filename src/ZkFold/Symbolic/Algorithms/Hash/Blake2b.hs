@@ -158,10 +158,6 @@ blake2b key input =
             reverseEndianness @64 $
             flip rotateBitsL (value @(ExtensionBits inputLen)) $
             withDict (timesNat @8 @inputLen) (extend @_ @(ExtendedInputByteString inputLen c) input) :: Vec.Vector k (UInt 64 Auto c)
-        --  input' = map from (toWords $
-        --     reverseEndianness @64 $
-        --     flip rotateBitsL (value @(ExtensionBits inputLen)) $
-        --     extend @_ @(ExtendedInputByteString inputLen c) input) -- :: Vec.Vector 16 (ByteString 64 c))
 
         key'    = fromConstant @_ key :: UInt 64 Auto c
         input'' = if value @keyLen > 0
@@ -200,7 +196,7 @@ blake2b_256 :: forall inputLen c n .
     , KnownNat inputLen
     , KnownNat (ExtensionBits inputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , KnownNat n    
+    , KnownNat n
     , (Div n 64) * 64 ~ n
     , 8 * inputLen <= n
     ) => ByteString (8 * inputLen) c -> ByteString 256 c

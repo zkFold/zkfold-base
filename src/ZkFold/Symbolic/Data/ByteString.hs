@@ -42,7 +42,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
 import           ZkFold.Base.Data.Package           (packed, unpacked)
 import qualified ZkFold.Base.Data.Vector            as V
-import           ZkFold.Base.Data.Vector            (Vector (..))
+import           ZkFold.Base.Data.Vector            (Vector (..), parFmap)
 import           ZkFold.Prelude                     (replicateA, (!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool          (Bool (..), BoolType (..))
@@ -53,7 +53,6 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
-import qualified ZkFold.Base.Data.Vector as Haskell
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -120,15 +119,6 @@ class ShiftBits a where
 
     rotateBitsR :: a -> Natural -> a
     rotateBitsR a s = rotateBits a (negate . Haskell.fromIntegral $ s)
-
--- class ReverseEndianness wordSize a where
---     reverseEndianness :: a -> a
-
--- | Describes types which can be split into words of equal size.
--- Parameters have to be of different types as ByteString store their lengths on type level and hence after splitting they chagne types.
---
--- class ToWords a b where
---     toWords :: a -> [b]
 
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --
@@ -214,27 +204,21 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                             xj = x j
                         in xi + xj - (xi * xj + xi * xj)
 
-
--- | Unfortunately, Haskell does not support dependent types yet,
--- so we have no possibility to infer the exact type of the result
--- (the list can contain an arbitrary number of words).
--- We can only impose some restrictions on @n@ and @m@.
---
 -- | A ByteString of length @n@ can only be split into words of length @wordSize@ if all of the following conditions are met:
 -- 1. @wordSize@ is not greater than @n@;
 -- 2. @wordSize@ is not zero;
 -- 3. The bytestring is not empty;
 -- 4. @wordSize@ divides @n@.
 --
--- instance
---   ( Symbolic c
---   , KnownNat wordSize
---   , (Div n wordSize) * wordSize ~ n
---   ) => ToWords (ByteString n c) (ByteString wordSize c) where
-toWords :: forall k wordSize n c. (Symbolic c, KnownNat wordSize, k * wordSize ~ n) => ByteString n c -> Vector k (ByteString wordSize c)
-toWords (ByteString bits) = Haskell.parFmap (ByteString . packed) $ V.chunks @k @wordSize $ unpacked bits
 
--- | concatenating several words of equal length.
+toWords :: forall k wordSize n c. (Symbolic c, KnownNat wordSize, k * wordSize ~ n) => ByteString n c -> Vector k (ByteString wordSize c)
+toWords (ByteString bits) = parFmap (ByteString . packed) $ V.chunks @k @wordSize $ unpacked bits
+
+-- | Unfortunately, Haskell does not support dependent types yet,
+-- so we have no possibility to infer the exact type of the result
+-- (the list can contain an arbitrary number of words).
+-- We can only impose some restrictions on @n@ and @m@.
+--
 concat :: forall m k n c. (Symbolic c, k * m ~ n) => Vector k (ByteString m c) -> ByteString n c
 concat bs = (ByteString . packed) $ V.concat ( V.parFmap (\(ByteString bits) -> unpacked bits) bs)
 
@@ -283,8 +267,6 @@ instance
         diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @k
 
         zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
-
--- | Allows to check state of bits in a container @c@ of size @n@ with computational context @b@
 
 isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
 isSet (ByteString bits) ix = Bool $ fromCircuitF bits solve

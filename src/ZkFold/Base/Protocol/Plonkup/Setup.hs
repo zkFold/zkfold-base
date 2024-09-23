@@ -1,8 +1,5 @@
-
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
-{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.Plonkup.Setup where
 
@@ -23,9 +20,6 @@ import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkupRelation)
 import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import Data.Constraint (withDict)
-import Data.Constraint.Nat (plusNat, timesNat)
-
 
 data PlonkupSetup i n l c1 c2 = PlonkupSetup
     { omega       :: ScalarField c1
@@ -90,16 +84,16 @@ plonkupSetup Plonkup {..} =
         sigma2s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
         sigma3s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
 
-        qmX = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qM))
-        qlX = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qL))
-        qrX = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qR))
-        qoX = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qO))
-        qcX = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qC))
-        qkX = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qK))
-        s1X = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma1s))
-        s2X = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma2s))
-        s3X = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma3s))
-        tX  = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega t))
+        qmX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qM)
+        qlX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qL)
+        qrX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qR)
+        qoX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qO)
+        qcX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qC)
+        qkX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qK)
+        s1X = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma1s)
+        s2X = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma2s)
+        s3X = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma3s)
+        tX  = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega t)
         polynomials = PlonkupCircuitPolynomials {..}
 
         com = msm @c1 @core

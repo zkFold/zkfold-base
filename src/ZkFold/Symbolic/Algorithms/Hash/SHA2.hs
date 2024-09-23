@@ -43,9 +43,8 @@ class
     , NFData (context (Vector (WordSize algorithm)))
     , KnownNat (ChunkSize algorithm)
     , KnownNat (WordSize algorithm)
-    -- , (Div (ChunkSize algorithm) (WordSize algorithm)) * (WordSize algorithm) ~ ChunkSize algorithm
-    , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
     , 16 * WordSize algorithm ~ ChunkSize algorithm
+    , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
     ) => AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type) where
     type WordSize algorithm :: Natural
     -- ^ The length of words the algorithm operates internally, in bits.
@@ -229,7 +228,6 @@ sha2Pad bs = grown || fromConstant padValue
 -- This is only useful for testing when the length of the test string is unknown at compile time.
 -- This should not be exposed to users (and they probably won't find it useful anyway).
 --
--- instance (KnownNat n, FromConstant Natural (ByteString n c)) => ToWords Natural (ByteString n c) where
 toWordsNat :: forall n c. (KnownNat n, FromConstant Natural (ByteString n c)) => Natural -> [ByteString n c]
 toWordsNat = P.reverse . toWords'
     where

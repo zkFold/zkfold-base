@@ -73,8 +73,6 @@ testWords
     => Prime p
     => KnownNat (Log2 (p - 1) + 1)
     => n ~ k * wordSize
-    -- => ToWords (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString wordSize (ArithmeticCircuit (Zp p) U1))
-    -- => ToWords (ByteString n (Interpreter (Zp p))) (ByteString wordSize (Interpreter (Zp p)))
     => Spec
 testWords = it ("divides a bytestring of length " <> show (value @n) <> " into words of length " <> show (value @wordSize)) $ do
     x <- toss m
