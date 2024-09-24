@@ -117,7 +117,7 @@ newRanged upperBound witness = do
 -- creates new variable whose value is equal to @x j - one@ and which is
 -- expected to be a root of the polynomial @x i * (x i - one)@.
 --
--- NOTE: this adds a polynomial contraint to the system.
+-- NOTE: this adds a polynomial constraint to the system.
 --
 -- NOTE: it is not checked (yet) whether provided constraint is in
 -- appropriate form for zkSNARK in use.
