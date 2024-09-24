@@ -27,8 +27,8 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Data.FieldElement
+import           ZkFold.Symbolic.Data.UInt
 
 
 instance
@@ -107,7 +107,7 @@ instance
         where
             bits :: ByteString bits ctx
             bits = ByteString $ binaryExpansion sc
-    
+
             upper :: Natural
             upper = value @bits -! 1
 

@@ -85,8 +85,8 @@ toFS ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
 
 -- No SymbolicData instances for data
 -- all protocols are one-round in case of arithmetic circuits, therefore we can replace lists with elements.
-ivcVerifier 
-    :: forall i f c m ctx a 
+ivcVerifier
+    :: forall i f c m ctx a
     .  Symbolic ctx
     => SymbolicData i
     => SymbolicData f
@@ -94,10 +94,10 @@ ivcVerifier
     => SymbolicData m
     => SymbolicData a
     => Acc.AccumulatorScheme i f c m ctx a
-    => (i, c, (i, c, f, c, f), (i, c, f, c, f), c) 
-    -> (a, (f, (f, f)), ((i, c, f, c, f), m)) 
-    -> Bool ctx 
-ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple) 
+    => (i, c, (i, c, f, c, f), (i, c, f, c, f), c)
+    -> (a, (f, (f, f)), ((i, c, f, c, f), m))
+    -> Bool ctx
+ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple)
   = (Acc.verifier @i @f @c @m @ctx @a i [pi_x] acc acc' [pf]) && (Acc.decider @i @f @c @m @ctx @a a ck dk)
     where
         acc = let (x1, x2, x3, x4, x5) = accTuple
@@ -115,7 +115,7 @@ ivcVerifierAc
     :: forall i f c m ctx a y
     .  Symbolic ctx
     => Acc.AccumulatorScheme i f c m ctx a
-    => y 
+    => y
 ivcVerifierAc = compile (ivcVerifier @i @f @c @m @ctx @a)
 
 iterate
@@ -168,7 +168,7 @@ instanceProof
     => FieldElement ctx
     -> C n a
     -> SPS.MapInput (FieldElement ctx) (C n a)
-    -> Vector n a 
+    -> Vector n a
     -> InstanceProofPair (Vector n (FieldElement ctx)) comm (SPS.MapMessage (FieldElement ctx) (C n a))
 instanceProof ck rc i i_pure = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where

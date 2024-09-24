@@ -15,8 +15,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar
