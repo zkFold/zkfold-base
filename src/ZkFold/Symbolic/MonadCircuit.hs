@@ -20,7 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 type WitnessField n a = ( FiniteField a, ToConstant a, Const a ~ n
                         , FromConstant n a, SemiEuclidean n)
 
--- | A type of witness builders. @i@ is a type of variables, @a@ is a base field.
+-- | A type of witness builders. @var@ is a type of variables, @a@ is a base field.
 --
 -- A function is a witness builder if, given an arbitrary field of witnesses @x@
 -- over @a@ and a function mapping known variables to their witnesses,
@@ -31,7 +31,7 @@ type WitnessField n a = ( FiniteField a, ToConstant a, Const a ~ n
 type Witness var a = forall x n . (Algebra a x, WitnessField n x) => (var -> x) -> x
 
 -- | A type of polynomial expressions.
--- @i@ is a type of variables, @a@ is a base field.
+-- @var@ is a type of variables, @a@ is a base field.
 --
 -- A function is a polynomial expression if, given an arbitrary algebra @x@ over
 -- @a@ and a function mapping known variables to their witnesses, it computes a
@@ -54,7 +54,7 @@ type ClosedPoly var a = forall x . Algebra a x => (var -> x) -> x
 type NewConstraint var a = forall x . Algebra a x => (var -> x) -> var -> x
 
 -- | A monadic DSL for constructing arithmetic circuits.
--- @i@ is a type of variables, @a@ is a base field
+-- @var@ is a type of variables, @a@ is a base field
 -- and @m@ is a monad for constructing the circuit.
 --
 -- DSL provides the following guarantees:
@@ -77,14 +77,14 @@ class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a w
   unconstrained :: Witness var a -> m var
 
   -- | Adds new polynomial constraint to the system.
-  -- E.g., @'constraint' (\\x -> x i)@ forces variable @i@ to be zero.
+  -- E.g., @'constraint' (\\x -> x i)@ forces variable @var@ to be zero.
   --
   -- NOTE: it is not checked (yet) whether provided constraint is in
   -- appropriate form for zkSNARK in use.
   constraint :: ClosedPoly var a -> m ()
 
   -- | Adds new range constraint to the system.
-  -- E.g., @'rangeConstraint' i B@ forces variable @i@ to be in range \([0; B]\).
+  -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
   rangeConstraint :: var -> a -> m ()
 
   -- | Creates new variable given a polynomial witness
@@ -115,7 +115,7 @@ newRanged upperBound witness = do
 -- | Creates new variable from witness constrained by a polynomial.
 -- E.g., @'newConstrained' (\\x i -> x i * (x i - one)) (\\x -> x j - one)@
 -- creates new variable whose value is equal to @x j - one@ and which is
--- expected to be a root of the polynomial @x i (x i - one)@.
+-- expected to be a root of the polynomial @x i * (x i - one)@.
 --
 -- NOTE: this adds a polynomial contraint to the system.
 --
