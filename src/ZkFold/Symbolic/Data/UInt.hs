@@ -46,6 +46,7 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
+import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
@@ -158,6 +159,12 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (Byte
                 let regs = V.fromVector ui
                 V.unsafeToVector <$> toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
 
+instance (Symbolic c, KnownRegisterSize r, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (UInt n r c) where
+  from a = from (from a :: ByteString n c)
+
+instance (Symbolic c, KnownRegisterSize r, NumberOfBits (BaseField c) ~ n) => Iso (UInt n r c) (FieldElement c) where
+  from a = from (from a :: ByteString n c)
+
 -- --------------------------------------------------------------------------------
 
 instance
@@ -165,7 +172,6 @@ instance
     , KnownNat n
     , KnownNat k
     , KnownRegisterSize r
-    , n <= k
     ) => Extend (UInt n r c) (UInt k r c) where
     extend (UInt x) = UInt $ symbolicF x (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
         where

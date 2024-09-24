@@ -11,7 +11,7 @@ import           Prelude                                             hiding (Num
                                                                       (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
+import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value, with4n6)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (fromVector)
@@ -25,7 +25,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 plonkVerify :: forall i n l c1 c2 ts .
     ( KnownNat n
-    , KnownNat (PlonkupPolyExtendedLength n)
     , Pairing c1 c2
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
@@ -97,13 +96,13 @@ plonkVerify
         eta = challenge ts6
 
         -- Step 5: Compute zero polynomial evaluation
-        zhX_xi = polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi :: ScalarField c1
+        zhX_xi = with4n6 @n $ polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi :: ScalarField c1
 
         -- Step 6: Compute Lagrange polynomial evaluation
-        lagrange1_xi = polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
+        lagrange1_xi = with4n6 @n $ polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
 
         -- Step 7: Compute public polynomial evaluation
-        pi_xi = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega
+        pi_xi = with4n6 @n $ polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega
             (toPolyVec $ fromList $ fromVector (negate <$> wPub))
             `evalPolyVec` xi
 

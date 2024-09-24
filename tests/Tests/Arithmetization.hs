@@ -1,9 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Arithmetization (specArithmetization) where
 
+import           Data.Binary                                 (Binary)
 import           Data.Functor.Rep                            (Representable (..))
 import           GHC.Generics                                (Par1)
 import           Prelude
@@ -14,9 +14,7 @@ import           Tests.Arithmetization.Test2                 (specArithmetizatio
 import           Tests.Arithmetization.Test3                 (specArithmetization3)
 import           Tests.Arithmetization.Test4                 (specArithmetization4)
 
-import           ZkFold.Base.Algebra.Basic.Class             (ToConstant (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number            (Natural)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler
@@ -31,10 +29,10 @@ propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
 
 specArithmetization' ::
   forall a i .
-  (Arithmetic a, Arbitrary a, Arbitrary (i a)) =>
+  (Arithmetic a, Arbitrary a, Binary a, Arbitrary (i a)) =>
   (Show a, Show (ArithmeticCircuitTest a i Par1)) =>
-  (Arbitrary (Rep i), Ord (Rep i), Representable i, Traversable i) =>
-  (ToConstant (Rep i), Const (Rep i) ~ Natural) => IO ()
+  (Arbitrary (Rep i), Binary (Rep i), Ord (Rep i)) =>
+  (Representable i, Traversable i) => IO ()
 specArithmetization' = hspec $ do
     describe "Arithmetization specification" $ do
         describe "Variable mapping" $ do

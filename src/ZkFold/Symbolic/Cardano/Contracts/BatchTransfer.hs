@@ -1,41 +1,29 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
-import           Data.Maybe                                     (fromJust)
-import           Data.Proxy                                     (Proxy)
-import           Data.Zip                                       (zip)
-import           Numeric.Natural                                (Natural)
-import           Prelude                                        hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
-                                                                 (*), (+))
+import           Data.Maybe                           (fromJust)
+import           Data.Zip                             (zip)
+import           Numeric.Natural                      (Natural)
+import           Prelude                              hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number               (KnownNat)
-import           ZkFold.Base.Data.Vector                        (Vector, fromVector, toVector)
+import           ZkFold.Base.Algebra.Basic.Number     (KnownNat)
+import           ZkFold.Base.Data.Vector              (Vector, fromVector, toVector)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Class                          (Symbolic (BaseField))
-import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
-import           ZkFold.Symbolic.Data.Class                     (SymbolicData (..))
+import           ZkFold.Symbolic.Class                (Symbolic)
+import           ZkFold.Symbolic.Data.Bool            (BoolType (..), all)
+import           ZkFold.Symbolic.Data.Class           (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FieldElement              (fromFieldElement)
-import           ZkFold.Symbolic.Data.UInt                      (StrictConv (..))
+import           ZkFold.Symbolic.Data.FieldElement    (fromFieldElement)
+import           ZkFold.Symbolic.Data.UInt            (StrictConv (..))
 
 type Tokens = 10
 type TxOut context = Output Tokens () context
 type TxIn context  = Input Tokens () context
 type Tx context = Transaction 6 0 11 Tokens 0 () context
-
-hash :: forall context x .
-    ( Symbolic context
-    , SymbolicData x
-    , Context x ~ context
-    , Support x ~ Proxy context
-    ) => x -> FieldElement context
-hash = mimcHash @(BaseField context) mimcConstants zero
 
 verifySignature ::
     forall context .

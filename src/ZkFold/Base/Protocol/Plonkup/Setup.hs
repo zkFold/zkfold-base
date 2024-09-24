@@ -63,8 +63,6 @@ plonkupSetup :: forall i n l c1 c2 ts core.
     ( KnownNat i
     , KnownNat l
     , KnownNat n
-    , KnownNat (PlonkupPermutationSize n)
-    , KnownNat (PlonkupPolyExtendedLength n)
     , Arithmetic (ScalarField c1)
     , Pairing c1 c2
     , CoreFunction c1 core) => Plonkup i n l c1 c2 ts -> PlonkupSetup i n l c1 c2
@@ -86,16 +84,16 @@ plonkupSetup Plonkup {..} =
         sigma2s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
         sigma3s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
 
-        qmX = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qM
-        qlX = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qL
-        qrX = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qR
-        qoX = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qO
-        qcX = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qC
-        qkX = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qK
-        s1X = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma1s
-        s2X = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma2s
-        s3X = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma3s
-        tX  = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega t
+        qmX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qM)
+        qlX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qL)
+        qrX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qR)
+        qoX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qO)
+        qcX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qC)
+        qkX = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega qK)
+        s1X = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma1s)
+        s2X = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma2s)
+        s3X = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega sigma3s)
+        tX  = with4n6 @n (polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega t)
         polynomials = PlonkupCircuitPolynomials {..}
 
         com = msm @c1 @core

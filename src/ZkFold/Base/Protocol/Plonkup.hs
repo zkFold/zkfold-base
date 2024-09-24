@@ -8,6 +8,7 @@ module ZkFold.Base.Protocol.Plonkup (
     Plonkup (..)
 ) where
 
+import           Data.Binary                                         (Binary)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
@@ -36,8 +37,6 @@ instance forall i n l c1 c2 ts core.
         ( KnownNat i
         , KnownNat n
         , KnownNat l
-        , KnownNat (PlonkupPermutationSize n)
-        , KnownNat (PlonkupPolyExtendedLength n)
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
@@ -67,15 +66,18 @@ instance forall i n l c1 c2 ts core.
 
     prove :: SetupProve (Plonkup i n l c1 c2 ts) -> Witness (Plonkup i n l c1 c2 ts) -> (Input (Plonkup i n l c1 c2 ts), Proof (Plonkup i n l c1 c2 ts))
     prove setup witness =
-        let (input, proof, _) = plonkupProve @i @n @l @c1 @c2 @ts @core setup witness
+        let (input, proof, _) = with4n6 @n (plonkupProve @i @n @l @c1 @c2 @ts @core setup witness)
         in (input, proof)
 
     verify :: SetupVerify (Plonkup i n l c1 c2 ts) -> Input (Plonkup i n l c1 c2 ts) -> Proof (Plonkup i n l c1 c2 ts) -> Bool
-    verify = plonkupVerify @i @n @l @c1 @c2 @ts
+    verify = with4n6 @n $ plonkupVerify @i @n @l @c1 @c2 @ts
 
-instance forall i n l c1 c2 t core . (KnownNat i, KnownNat n, KnownNat l, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1),
-            Witness (Plonkup i n l c1 c2 t) ~ (PlonkupWitnessInput i c1, PlonkupProverSecret c1), NonInteractiveProof (Plonkup i n l c1 c2 t) core)
-        => Arbitrary (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core) where
+instance forall i n l c1 c2 t core.
+    ( KnownNat i, KnownNat n, KnownNat l
+    , Arithmetic (ScalarField c1), Arbitrary (ScalarField c1), Binary (ScalarField c1)
+    , Witness (Plonkup i n l c1 c2 t) ~ (PlonkupWitnessInput i c1, PlonkupProverSecret c1)
+    , NonInteractiveProof (Plonkup i n l c1 c2 t) core
+    ) => Arbitrary (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core) where
     arbitrary = do
         ArithmeticCircuitTest ac wi <- arbitrary :: Gen (ArithmeticCircuitTest (ScalarField c1) (Vector i) (Vector l))
         let (omega, k1, k2) = getParams $ value @n

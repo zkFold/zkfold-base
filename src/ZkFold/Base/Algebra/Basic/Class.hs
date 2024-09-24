@@ -9,7 +9,6 @@ module ZkFold.Base.Algebra.Basic.Class where
 import           Data.Bool                        (bool)
 import           Data.Foldable                    (foldl')
 import           Data.Kind                        (Type)
-import           Data.Void                        (Void, absurd)
 import           GHC.Natural                      (naturalFromInteger)
 import           Prelude                          hiding (Num (..), div, divMod, length, mod, negate, product,
                                                    replicate, sum, (/), (^))
@@ -53,11 +52,6 @@ class ToConstant a where
     -- According to the law of @'ToConstant'@,
     -- has to be right inverse to @'fromConstant'@.
     toConstant :: a -> Const a
-
--- FIXME to be removed in #223
-instance ToConstant Void where
-    type Const Void = Natural
-    toConstant = absurd
 
 --------------------------------------------------------------------------------
 

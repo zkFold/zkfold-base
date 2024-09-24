@@ -19,14 +19,17 @@ module ZkFold.Base.Algebra.Basic.Number
     , type (+)
     , type (-)
     , type (^)
+    , with4n6
     ) where
 
-import           Data.Kind      (Constraint)
-import           Data.Type.Bool (If, type (&&))
-import           GHC.Exts       (proxy#)
-import           GHC.TypeLits   (ErrorMessage (..), TypeError)
+import           Data.Constraint     (withDict)
+import           Data.Constraint.Nat (plusNat, timesNat)
+import           Data.Kind           (Constraint)
+import           Data.Type.Bool      (If, type (&&))
+import           GHC.Exts            (proxy#)
+import           GHC.TypeLits        (ErrorMessage (..), TypeError)
 import           GHC.TypeNats
-import           Prelude        (Bool (..))
+import           Prelude             (Bool (..))
 
 -- Use orphan instances for large publicly verified primes
 class KnownNat p => Prime p
@@ -62,3 +65,7 @@ type family NotDividesFromTo dividend divisor0 divisor1 where
 type family AtLeastSqrt n where
   AtLeastSqrt 0 = 0
   AtLeastSqrt n = 2 ^ (Log2 n `Div` 2 + 1)
+
+
+with4n6 :: forall n {r}. KnownNat n => (KnownNat (4 * n + 6) => r) -> r
+with4n6 f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)

@@ -23,15 +23,15 @@ import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                        (Vector)
+import           ZkFold.Base.Data.Vector                        (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHashes, sha256InitialHashes,
                                                                  sha384InitialHashes, sha512InitialHashes,
                                                                  sha512_224InitialHashes, sha512_256InitialHashes,
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Class                          (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), Concat (..), ShiftBits (..),
-                                                                 ToWords (..), Truncate (..))
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), Truncate (..), concat,
+                                                                 toWords)
 import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
 
@@ -43,7 +43,7 @@ class
     , NFData (context (Vector (WordSize algorithm)))
     , KnownNat (ChunkSize algorithm)
     , KnownNat (WordSize algorithm)
-    , (Div (ChunkSize algorithm) (WordSize algorithm)) * (WordSize algorithm) ~ ChunkSize algorithm
+    , 16 * WordSize algorithm ~ ChunkSize algorithm
     , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
     ) => AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type) where
     type WordSize algorithm :: Natural
@@ -175,8 +175,9 @@ type family PaddedLength (msg :: Natural) (block :: Natural) (lenBits :: Natural
 type SHA2 algorithm context k =
    ( AlgorithmSetup algorithm context
    , KnownNat k
+   , KnownNat (ChunkSize algorithm)
    , KnownNat (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))
-   , (Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm)) * (ChunkSize algorithm) ~ PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
+   , Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
    , k <= PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
    )
 
@@ -196,7 +197,7 @@ sha2 messageBits = sha2Blocks @algorithm @context chunks
         paddedMessage = sha2Pad @(ChunkSize algorithm) @(2 * WordSize algorithm) messageBits
 
         chunks :: [ByteString (ChunkSize algorithm) context]
-        chunks = toWords paddedMessage
+        chunks = fromVector $ toWords @(Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm)) @(ChunkSize algorithm) @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) paddedMessage
 
 -- | Pad the input bytestring according to the rules described in @PaddedLength@
 --
@@ -227,15 +228,15 @@ sha2Pad bs = grown || fromConstant padValue
 -- This is only useful for testing when the length of the test string is unknown at compile time.
 -- This should not be exposed to users (and they probably won't find it useful anyway).
 --
-instance (KnownNat n, FromConstant Natural (ByteString n c)) => ToWords Natural (ByteString n c) where
-    toWords = P.reverse . toWords'
-        where
-            toWords' :: Natural -> [ByteString n c]
-            toWords' 0 = []
-            toWords' n = fromConstant (n `mod` base) : toWords' (n `div` base)
+toWordsNat :: forall n c. (KnownNat n, FromConstant Natural (ByteString n c)) => Natural -> [ByteString n c]
+toWordsNat = P.reverse . toWords'
+    where
+        toWords' :: Natural -> [ByteString n c]
+        toWords' 0 = []
+        toWords' n = fromConstant (n `mod` base) : toWords' (n `div` base)
 
-            base :: Natural
-            base = 2 P.^ (value @n)
+        base :: Natural
+        base = 2 P.^ (value @n)
 
 
 -- | Constraints required for a SHA2 of a Natural number.
@@ -273,7 +274,7 @@ sha2Natural numBits messageBits = sha2Blocks @algorithm @context chunks
         diff = P.fromIntegral $ paddedLength -! numBits
 
         chunks :: [ByteString (ChunkSize algorithm) context]
-        chunks = toWords paddedMessage
+        chunks = toWordsNat paddedMessage
 
 -- | Internal loop of the SHA2 family algorithms.
 --
@@ -284,7 +285,7 @@ sha2Blocks
     :: forall algorithm (context :: (Type -> Type) -> Type)
     .  AlgorithmSetup algorithm context
     => [ByteString (ChunkSize algorithm) context] -> ByteString (ResultSize algorithm) context
-sha2Blocks chunks = truncateResult @algorithm @context $ concat $ V.toList hashParts
+sha2Blocks chunks = truncateResult @algorithm @context $ concat @(WordSize algorithm) @8 $ unsafeToVector @8 $ V.toList hashParts
     where
         rounds :: Int
         rounds = V.length $ roundConstants @algorithm @context
@@ -294,7 +295,7 @@ sha2Blocks chunks = truncateResult @algorithm @context $ concat $ V.toList hashP
             !hn <- V.thaw $ initialHashes @algorithm @context
 
             forM_ chunks $ \chunk -> do
-                let words = toWords @(ByteString (ChunkSize algorithm) context) @(ByteString (WordSize algorithm) context) chunk
+                let words = fromVector $ toWords @16 @(WordSize algorithm) @(ChunkSize algorithm) chunk
                 messageSchedule <- VM.unsafeNew @_ @(ByteString (WordSize algorithm) context) rounds
                 forM_ (zip [0..] words) $ P.uncurry (VM.write messageSchedule)
 

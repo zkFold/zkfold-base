@@ -5,6 +5,7 @@ module ZkFold.Base.Protocol.Plonk (
     Plonk (..)
 ) where
 
+import           Data.Binary                                         (Binary)
 import           Data.Kind                                           (Type)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
@@ -41,6 +42,7 @@ data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript
 fromPlonkup ::
     ( KnownNat i
     , Arithmetic (ScalarField c1)
+    , Binary (ScalarField c1)
     ) => Plonkup i n l c1 c2 ts -> Plonk i n l c1 c2 ts
 fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 
@@ -51,7 +53,8 @@ instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownN
     show Plonk {..} =
         "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac) ++ " " ++ show ac ++ " " ++ show x
 
-instance (KnownNat i, Arithmetic (ScalarField c1), Arbitrary (Plonkup i n l c1 c2 t))
+instance ( KnownNat i, Arithmetic (ScalarField c1), Binary (ScalarField c1)
+         , Arbitrary (Plonkup i n l c1 c2 t))
         => Arbitrary (Plonk i n l c1 c2 t) where
     arbitrary = fromPlonkup <$> arbitrary
 
@@ -63,7 +66,6 @@ instance forall i n l c1 c2 (ts :: Type) core .
         , Input (Plonkup i n l c1 c2 ts) ~ PlonkupInput l c1
         , Proof (Plonkup i n l c1 c2 ts) ~ PlonkupProof c1
         , KnownNat n
-        , KnownNat (PlonkupPolyExtendedLength n)
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
@@ -95,10 +97,12 @@ instance forall i n l c1 c2 (ts :: Type) core .
     verify :: SetupVerify (Plonk i n l c1 c2 ts) -> Input (Plonk i n l c1 c2 ts) -> Proof (Plonk i n l c1 c2 ts) -> Bool
     verify = plonkVerify @i @n @l @c1 @c2 @ts
 
-instance forall i n l c1 c2 t core . (KnownNat i, Arithmetic (ScalarField c1),
-            Witness (Plonk i n l c1 c2 t) ~ Witness (Plonkup i n l c1 c2 t), NonInteractiveProof (Plonk i n l c1 c2 t) core
-    , Arbitrary (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core))
-        => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
+instance forall i n l c1 c2 t core .
+    ( KnownNat i, Arithmetic (ScalarField c1), Binary (ScalarField c1)
+    , Witness (Plonk i n l c1 c2 t) ~ Witness (Plonkup i n l c1 c2 t)
+    , NonInteractiveProof (Plonk i n l c1 c2 t) core
+    , Arbitrary (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core)
+    ) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
     arbitrary = do
         TestData plonkup w <- arbitrary :: Gen (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core)
         return $ TestData (fromPlonkup plonkup) w
