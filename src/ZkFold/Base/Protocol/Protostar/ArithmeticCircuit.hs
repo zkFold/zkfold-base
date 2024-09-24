@@ -31,14 +31,17 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
 
 
-instance 
+instance
     ( Arithmetic a
     , Symbolic ctx
     , FromConstant a (BaseField ctx)
     , Scale a (BaseField ctx)
     ) => SPS.SpecialSoundProtocol (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) where
 
-    type Witness (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = Map ByteString a
+    type Witness (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = (Vector n a, Map ByteString a)
+    -- ^ Witness does not contain input variables which may be present in the output.
+    -- Input vector and a map form the complete witness
+
     type Input (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = Vector n (FieldElement ctx)
     type ProverMessage (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = Map ByteString (FieldElement ctx)
     type VerifierMessage (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = FieldElement ctx
@@ -53,15 +56,7 @@ instance
     -- The transcript will be empty at this point, it is a one-round protocol.
     -- Input is arithmetised. We need to combine its witness with the circuit's witness.
     --
-    prover ac _ i _ = fromConstant <$> M.union acWitness inputWitness 
-        where
-            inputAc = P.undefined
-
-            inputV :: Vector n a
-            inputV = P.undefined
-
-            inputWitness = witnessGenerator inputAc P.undefined
-            acWitness = witnessGenerator ac inputV
+    prover ac (inputVec, inputWitness) _ _ = fromConstant <$> M.union inputWitness (witnessGenerator ac inputVec)
 
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros

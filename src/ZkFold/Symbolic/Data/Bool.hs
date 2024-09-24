@@ -11,11 +11,12 @@ module ZkFold.Symbolic.Data.Bool (
     or
 ) where
 
+import           Control.DeepSeq                 (NFData)
 import           Data.Eq                         (Eq (..))
 import           Data.Foldable                   (Foldable (..))
 import           Data.Function                   (($), (.))
 import           Data.Functor                    (Functor, fmap, (<$>))
-import           GHC.Generics                    (Par1 (..))
+import           GHC.Generics                    (Generic, Par1 (..))
 import qualified Prelude                         as Haskell
 import           Text.Show                       (Show)
 
@@ -56,10 +57,13 @@ instance BoolType Haskell.Bool where
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)
+    deriving (Generic)
 
+deriving instance NFData (c Par1) => NFData (Bool c)
 deriving instance Eq (c Par1) => Eq (Bool c)
+deriving instance Show (c Par1) => Show (Bool c)
 
-instance (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
+instance {-# OVERLAPPING #-} (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
     show (fromBool -> x) = if x == one then "True" else "False"
 
 deriving newtype instance HFunctor c => SymbolicData (Bool c)

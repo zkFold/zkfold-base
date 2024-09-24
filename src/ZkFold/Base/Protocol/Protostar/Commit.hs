@@ -15,7 +15,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Ed25519
+import           ZkFold.Symbolic.Data.Ed25519                ()
 import           ZkFold.Symbolic.Data.FieldElement
 
 -- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
@@ -78,7 +78,7 @@ instance
     , PedersonSetup (Point c)
     ) => HomomorphicCommit (FieldElement ctx) (FieldElement ctx) (Point c) where
     hcommit r b = let (g, h) = pedersonGH @(Point c)
-                   in pointMulAc b g + pointMulAc r h
+                   in scale b g + scale r h
 
 
 -- Pedersen commitment scheme for lists extending the homomorphism to elementwise sums:

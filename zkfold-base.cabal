@@ -369,22 +369,3 @@ benchmark compiler-benchmark
       tasty-golden,
       zkfold-base,
       zkfold-symbolic-examples
-
-benchmark protostar 
-    import:           options
-    main-is:          BenchProtostar.hs
-    hs-source-dirs:   bench
-    type:             exitcode-stdio-1.0
-    ghc-options:      
-      -rtsopts
-      -O3
-    build-depends: 
-      base, 
-      array,
-      containers,
-      deepseq,
-      random,
-      tasty-bench,
-      time,
-      vector,
-      zkfold-base 
