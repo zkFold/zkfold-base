@@ -12,6 +12,7 @@ import           Control.Lens                                     ((^.))
 import           Data.Kind                                        (Type)
 import           Data.Map.Strict                                  (Map)
 import qualified Data.Map.Strict                                  as M
+import           Data.Proxy                                       (Proxy)
 import           GHC.Generics                                     (Generic, Par1)
 import           Prelude                                          (type (~), ($), (<$>), (<*>))
 import qualified Prelude                                          as P
@@ -88,11 +89,6 @@ toFS ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
 ivcVerifier
     :: forall i f c m ctx a
     .  Symbolic ctx
-    => SymbolicData i
-    => SymbolicData f
-    => SymbolicData c
-    => SymbolicData m
-    => SymbolicData a
     => Acc.AccumulatorScheme i f c m ctx a
     => (i, c, (i, c, f, c, f), (i, c, f, c, f), c)
     -> (a, (f, (f, f)), ((i, c, f, c, f), m))
@@ -111,9 +107,63 @@ ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple)
         dk = let ((x1, x2, x3, x4, x5), m) = dkTuple
               in Accumulator (AccumulatorInstance x1 [x2] [x3] x4 x5) [m]
 
+-- TODO: this is insane
 ivcVerifierAc
-    :: forall i f c m ctx a y
+    :: forall i f c m ctx a y typeSize ckSize dkSize accSize
     .  Symbolic ctx
+    => TypeSize y ~ 1
+    => SymbolicData i
+    => SymbolicData f
+    => SymbolicData c
+    => SymbolicData m
+    => SymbolicData a
+    => SymbolicData y
+    => typeSize ~ ((TypeSize i
+                    + (TypeSize c
+                       + ((TypeSize i
+                           + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
+                          + ((TypeSize i
+                              + (TypeSize c
+                                 + (TypeSize f + (TypeSize c + TypeSize f))))
+                             + TypeSize c))))
+                   + (TypeSize a
+                      + ((TypeSize f + (TypeSize f + TypeSize f))
+                         + ((TypeSize i
+                             + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
+                            + TypeSize m))))
+    => ckSize ~ (TypeSize f + (TypeSize f + TypeSize f))
+    => dkSize ~ TypeSize a + ((TypeSize f + (TypeSize f + TypeSize f))
+                   + ((TypeSize i
+                       + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
+                      + TypeSize m))
+    => accSize ~ (TypeSize i + (TypeSize c
+                   + ((TypeSize i
+                       + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
+                      + ((TypeSize i
+                          + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
+                         + TypeSize c))))
+    => KnownNat typeSize
+    => KnownNat dkSize
+    => KnownNat ckSize
+    => KnownNat accSize
+    => KnownNat (TypeSize i + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
+    => KnownNat (TypeSize i)
+    => KnownNat (TypeSize f)
+    => KnownNat (TypeSize c)
+    => KnownNat (TypeSize a)
+    => Context i ~ ctx
+    => Context f ~ ctx
+    => Context c ~ ctx
+    => Context m ~ ctx
+    => Context a ~ ctx
+    => Context y ~ ctx
+    => Support i ~ Proxy ctx
+    => Support f ~ Proxy ctx
+    => Support c ~ Proxy ctx
+    => Support m ~ Proxy ctx
+    => Support a ~ Proxy ctx
+    => Support y ~ Proxy ctx
+    => ctx ~ ArithmeticCircuit a (Vector typeSize)
     => Acc.AccumulatorScheme i f c m ctx a
     => y
 ivcVerifierAc = compile (ivcVerifier @i @f @c @m @ctx @a)
