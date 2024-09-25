@@ -1,8 +1,7 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DerivingStrategies, TypeApplications #-}
 
 module ZkFold.Base.Data.Matrix where
 
-import           Data.Bifunctor                   (first)
 import qualified Data.List                        as List
 import           Data.Maybe                       (fromJust)
 import           Data.These
@@ -40,7 +39,7 @@ outer f a b = Matrix $ fmap (\x -> fmap (f x) b) a
 (.*) = zipWith (*)
 
 sum1 :: (Semiring a) => Matrix m n a -> Vector n a
-sum1 (Matrix as) = Vector (sum <$> fromVector as)
+sum1 (Matrix as) = Vector (sum <$> toV as)
 
 sum2 :: (KnownNat m, KnownNat n, Semiring a) => Matrix m n a -> Vector m a
 sum2 (Matrix as) = sum1 $ transpose $ Matrix as
@@ -73,20 +72,6 @@ instance Zip (Matrix m n) where
 
     zipWith f (Matrix as) (Matrix bs) = Matrix $ zipWith (zipWith f) as bs
 
-instance (Arbitrary a, KnownNat m, KnownNat n) => Arbitrary (Matrix m n a) where
-    arbitrary = Matrix <$> arbitrary
+deriving newtype instance (Arbitrary a, KnownNat m, KnownNat n) => Arbitrary (Matrix m n a)
 
-instance (Random a, KnownNat m, KnownNat n) => Random (Matrix m n a) where
-    random g =
-        let as = foldl (\(as', g') _ ->
-                let (a, g'') = random g'
-                in (as' ++ [a], g''))
-                ([], g) [1..value @m]
-        in first (Matrix . Vector) as
-
-    randomR (Matrix xs, Matrix ys) g =
-        let as = fst $ foldl (\((as', g'), (xs', ys')) _ ->
-                let (a, g'') = randomR (head xs', head ys') g'
-                in ((as' ++ [a], g''), (tail xs', tail ys')))
-                (([], g), (fromVector xs, fromVector ys)) [1..value @m]
-        in first (Matrix . Vector) as
+deriving newtype instance (Random a, KnownNat m, KnownNat n) => Random (Matrix m n a)

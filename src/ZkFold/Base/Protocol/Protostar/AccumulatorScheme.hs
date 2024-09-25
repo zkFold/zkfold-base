@@ -5,6 +5,7 @@
 module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
 import           Control.Lens                                 ((^.))
+import           Data.Functor.Rep                             (Representable (tabulate))
 import qualified Data.Vector                                  as DV
 import           Prelude                                      (fmap, otherwise, type (~), ($), (&&), (.), (<$>), (<=),
                                                                (==))
@@ -179,7 +180,7 @@ mulDeg f d (PM.P monomials) = PM.P $ (\(coeff, m) -> (f ^ (d -! deg m) * coeff, 
 -- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @n@
 --
 degreeDecomposition :: forall n f . KnownNat n => LMap f -> V.Vector n (LMap f)
-degreeDecomposition lmap = V.generate degree_j
+degreeDecomposition lmap = tabulate (degree_j . toConstant)
     where
         degree_j :: Natural -> LMap f
         degree_j j = P.fmap (leaveDeg j) lmap

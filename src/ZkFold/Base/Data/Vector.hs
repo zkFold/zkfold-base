@@ -6,12 +6,12 @@ module ZkFold.Base.Data.Vector where
 
 import           Control.DeepSeq                  (NFData)
 import           Control.Monad.State.Strict       (runState, state)
--- import           Control.Parallel.Strategies      (parMap, rpar)
 import           Data.Aeson                       (ToJSON (..))
 import           Data.Distributive                (Distributive (..))
 import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import           Data.These                       (These (..))
 import qualified Data.Vector                      as V
+import qualified Data.Vector.Split                as V
 import           Data.Vector.Binary               ()
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
@@ -50,9 +50,6 @@ toVector as
 unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector . V.fromList
 
--- generate :: forall size a . KnownNat size => (Natural -> a) -> Vector size a
--- generate f = Vector $ f <$> [0 .. value @size -! 1]
-
 unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
 unfold f = Vector . V.take (knownNat @size) . V.unfoldr (Just . f)
 
@@ -80,14 +77,14 @@ singleton = Vector . pure
 item :: Vector 1 a -> a
 item = head
 
--- mapWithIx :: forall n a b . KnownNat n => (Natural -> a -> b) -> Vector n a -> Vector n b
--- mapWithIx f (Vector l) = Vector $ zipWith f [0 .. (value @n -! 1)] l
+mapWithIx :: forall n a b . KnownNat n => (Natural -> a -> b) -> Vector n a -> Vector n b
+mapWithIx f (Vector l) = Vector $ V.zipWith f (V.enumFromTo 0 (value @n -! 1)) l
 
--- mapMWithIx :: forall n m a b . (KnownNat n, Monad m) => (Natural -> a -> m b) -> Vector n a -> m (Vector n b)
--- mapMWithIx f (Vector l) = Vector <$> M.zipWithM f [0 .. (value @n -! 1)] l
+mapMWithIx :: forall n m a b . (KnownNat n, Monad m) => (Natural -> a -> m b) -> Vector n a -> m (Vector n b)
+mapMWithIx f (Vector l) = Vector <$> V.zipWithM f (V.enumFromTo 0 (value @n -! 1)) l
 
--- zipWithM :: forall n m a b c . Applicative m => (a -> b -> m c) -> Vector n a -> Vector n b -> m (Vector n c)
--- zipWithM f (Vector l) (Vector r) = Vector <$> M.zipWithM f l r
+zipWithM :: forall n m a b c . Applicative m => (a -> b -> m c) -> Vector n a -> Vector n b -> m (Vector n c)
+zipWithM f (Vector l) (Vector r) = sequenceA . Vector $ V.zipWith f l r
 
 -- TODO: Check that n <= size?
 take :: forall n size a. KnownNat n => Vector size a -> Vector n a
@@ -101,7 +98,7 @@ splitAt (Vector lst) = (Vector (V.take (knownNat @n) lst), Vector (V.drop (known
 
 -- | The sole purpose of this function is to get rid of annoying constraints in ZkFols.Symbolic.Compiler.Arithmetizable
 --
-splitAt3 :: forall n m k a. (KnownNat n, KnownNat m) => Vector (n + m + k) a -> (Vector n a, Vector m a, Vector k a)
+splitAt3 :: forall n m k a. KnownNat n => Vector (n + m + k) a -> (Vector n a, Vector m a, Vector k a)
 splitAt3 (Vector lst) = (Vector ln, Vector lm, Vector lk)
     where
         (ln, lmk) = (V.take (knownNat @n) lst, V.drop (knownNat @n) lst)
@@ -144,8 +141,8 @@ concat = Vector . V.concatMap toV . toV
 unsafeConcat :: forall m n a . [Vector n a] -> Vector (m * n) a
 unsafeConcat = concat . unsafeToVector @m
 
--- chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
--- chunks (Vector lists) = Vector (Vector <$> V.chunksOf (fromIntegral $ value @n) lists)
+chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
+chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (fromIntegral $ value @n) vectors)
 
 instance Binary a => Binary (Vector n a) where
     put = put . fromVector
