@@ -211,8 +211,8 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
 -- 4. @wordSize@ divides @n@.
 --
 
-toWords :: forall k wordSize n c. (Symbolic c, KnownNat wordSize, k * wordSize ~ n) => ByteString n c -> Vector k (ByteString wordSize c)
-toWords (ByteString bits) = parFmap (ByteString . packed) $ V.chunks @k @wordSize $ unpacked bits
+toWords :: forall n wordSize c. (Symbolic c, KnownNat wordSize, Div n wordSize * wordSize ~ n) => ByteString n c -> Vector (Div n wordSize) (ByteString wordSize c)
+toWords (ByteString bits) = parFmap (ByteString . packed) $ V.chunks @(Div n wordSize) @wordSize $ unpacked bits
 
 -- | Unfortunately, Haskell does not support dependent types yet,
 -- so we have no possibility to infer the exact type of the result

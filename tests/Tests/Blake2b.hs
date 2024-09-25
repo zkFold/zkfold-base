@@ -1,5 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
+-- {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 
 
@@ -28,6 +29,7 @@ import           GHC.TypeLits                                (someNatVal)
 import           Data.Proxy
 import           GHC.TypeNats                                hiding (someNatVal)
 import Text.Regex.TDFA ((=~))
+import ZkFold.Symbolic.Data.Helpers (with8n, withGcdn8)
 
 
 
@@ -71,57 +73,13 @@ readTestCase s = (numBits, msg, hash)
         hashS :: String
         hashS = case s =~ ("Hash = ([a-f0-9]+)" :: String) of
             (_ :: String, _ :: String, _ :: String, [x]) -> x
-            _                                            -> error "unreachable"
+            _                                            -> error "unreachable"s
 
-
-repl :: forall c (n :: Natural). ( 
-    Symbolic c
-    , KnownNat n
-    , KnownNat (ExtensionBits n)
-    , KnownNat (8 * n)
-    , KnownNat (8 * n + ExtensionBits n)
-    , (Div (8 * n + ExtensionBits n) 64) * 64 ~ (8 * n + ExtensionBits n)
-    , 8 * n <= (8 * n + ExtensionBits n)
-    )  => Proxy n -> Natural -> ByteString 512 c
-repl _ input = blake2b_512 @n @c $ fromConstant @Natural input  -- this is a bit tricky with Nat from GHC.TypeLits, but possible
-
-foo :: forall (n :: Natural) c. ( 
-    Symbolic c
-    , KnownNat n
-    , KnownNat (ExtensionBits n)
-    , KnownNat (8 * n)
-    , KnownNat (8 * n + ExtensionBits n)
-    , (Div (8 * n + ExtensionBits n) 64) * 64 ~ (8 * n + ExtensionBits n)
-    , 8 * n <= (8 * n + ExtensionBits n)
-    ) => Proxy n -> Natural -> ByteString 512 c
-foo _ input = repl @c (Proxy :: Proxy n) $ fromConstant @Natural input -- repl (Proxy :: Proxy (1 + n)) True
-
-reflectNat :: Natural -> Natural -> (forall (n :: Natural). ( 
-    KnownNat n
-    , KnownNat (ExtensionBits n)
-    , KnownNat (8 * n)
-    , KnownNat (8 * n + ExtensionBits n)
-    , (Div (8 * n + ExtensionBits n) 64) * 64 ~ (8 * n + ExtensionBits n)
-    , 8 * n <= (8 * n + ExtensionBits n)
-    ) => Proxy n -> Natural -> ByteString 512 c) -> ByteString 512 c
-reflectNat inputLen input f = case someNatVal (toInteger inputLen) of 
-    Just (SomeNat (p :: Proxy n)) -> f p input
-    Nothing -> error "error in someNatVal"
-
-
-test :: forall c. Symbolic c => ByteString 512 c
-test = reflectNat 5 123 $ \ p -> foo p
 
 testAlgorithm' :: forall c.
     ( Symbolic c
     , Eq (c (Vector 512))
     , Show (c (Vector 512))
-    -- , KnownNat n
-    -- , KnownNat (ExtensionBits n)
-    -- , KnownNat (8 * n)
-    -- , KnownNat (8 * n + ExtensionBits n)
-    -- , (Div (8 * n + ExtensionBits n) 64) * 64 ~ (8 * n + ExtensionBits n)
-    -- , 8 * n <= (8 * n + ExtensionBits n)
     ) => FilePath -> IO ()
 testAlgorithm' file = do
     testCases <- readRSP dataDir
@@ -129,9 +87,9 @@ testAlgorithm' file = do
         forM_ testCases $ \(bytes, input, hash) -> do
             let bitMsg = "calculates hash on a message of len =  " <> show bytes <> " bytes"
             it bitMsg $ case someNatVal (toInteger bytes) of
-                Just (SomeNat proxyN) -> do
-                    let -- a' = reflectNat 5 $ \p -> blake2b_512 (foo p)
-                        a = blake2b_512 @1 @c $ fromConstant @Natural input
+                Just (SomeNat (Proxy :: (Proxy n))) -> do
+                    let 
+                        a = withGcdn8 @n $ blake2b_512 @n @c (with8n @n $ fromConstant @Natural input) :: ByteString 512 c
                         answer = fromConstant @Natural hash :: ByteString 512 c
                     a === fromConstant answer
                 Nothing -> error "error with convert an integer into an unknown type-level natural."
@@ -150,17 +108,17 @@ specBlake2b_512 = hspec $ do
     describe "Blake2b - 512 bits specification" $ do
         it "hashed string is \"\" " $ do
             let s = ""
-                a = blake2b_512 @0 @c $ fromConstant @Natural (read $ "0x" ++ s)
+                a = withGcdn8 @0 $ blake2b_512 @0 @c $ fromConstant @Natural (read $ "0x" ++ s)
                 -- answer = B2b.hash 64 key64' $ hexDecode ""   -- key is second param, change \"\" to key64'
                 answer  = fromConstant @Natural $ read "0x10ebb67700b1868efb4417987acf4690ae9d972fb7a590c2f02871799aaa4786b5e996e8f0f4eb981fc214b005f42d2ff4233499391653df7aefcbc13fc51568"
             a === answer
 
-        it "hashed string is 2 \"00\" " $ do
-            let s = "00"
-                a = blake2b_512 @1 @c $ fromConstant @Natural (read $ "0x" ++ s)
-                -- answer = B2b.hash 64 key64' $ hexDecode s
-                answer  = fromConstant @Natural $ read "0x2fa3f686df876995167e7c2e5d74c4c7b6e48f8068fe0e44208344d480f7904c36963e44115fe3eb2a3ac8694c28bcb4f5a0f3276f2e79487d8219057a506e4b"
-            a === answer
+        -- it "hashed string is 2 \"00\" " $ do
+        --     let s = "00"
+        --         a = blake2b_512 @1 @c $ fromConstant @Natural (read $ "0x" ++ s)
+        --         -- answer = B2b.hash 64 key64' $ hexDecode s
+        --         answer  = fromConstant @Natural $ read "0x2fa3f686df876995167e7c2e5d74c4c7b6e48f8068fe0e44208344d480f7904c36963e44115fe3eb2a3ac8694c28bcb4f5a0f3276f2e79487d8219057a506e4b"
+        --     a === answer
 
 key64' :: BI.ByteString
 key64' = hexDecode "000102030405060708090a0b0c0d0e0f\
@@ -173,8 +131,6 @@ key64' = hexDecode "000102030405060708090a0b0c0d0e0f\
 specBlake2b' :: forall c .
     ( Symbolic c, Eq (c (Vector 512)), Show (c (Vector 512))) => IO ()
 specBlake2b' = do
-    -- specBlake2b_228
-    -- specBlake2b_256
     specBlake2b_512 @c
 
 

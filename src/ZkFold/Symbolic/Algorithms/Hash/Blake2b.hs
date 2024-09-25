@@ -5,8 +5,7 @@
 module ZkFold.Symbolic.Algorithms.Hash.Blake2b where
 
 import           Data.Bool                                         (bool)
-import           Data.Constraint
-import           Data.Constraint.Nat                               (timesNat)
+
 import           Data.List                                         (foldl')
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
@@ -33,6 +32,8 @@ import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 import qualified Data.ByteString.Internal as BI
 import qualified Data.ByteString.Base16 as Hex
 import           Data.Char (ord)
+import           ZkFold.Symbolic.Data.Helpers
+import Data.Constraint.Nat (Gcd, Min)
 
 -- TODO: This module is not finished yet. The hash computation is not correct.
 
@@ -137,29 +138,27 @@ blake2b' d =
             else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
         bs = reverseEndianness @64 $ concat @64 @8 $ Vec.unsafeToVector @8 $ map from $ toList h''' :: ByteString (64 * 8) c
-    in withDict (timesNat @8 @nn') (truncate bs)
+    in with8n @nn' (truncate bs)
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
 
 
-blake2b :: forall keyLen inputLen outputLen c {n} k.
+blake2b :: forall keyLen inputLen outputLen c {n}.
     ( Symbolic c
     , KnownNat keyLen
     , KnownNat inputLen
-    , KnownNat outputLen
-    , KnownNat (ExtensionBits inputLen)
+    , KnownNat outputLen    
+    , Gcd inputLen 8 ~ 8
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , KnownNat n
-    , k * 64 ~ n
-    , 8 * inputLen <= n
     , 8 * outputLen <= 512
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
-    let input' = Vec.parFmap from $ toWords @k @64 $
-            reverseEndianness @64 $
-            flip rotateBitsL (value @(ExtensionBits inputLen)) $
-            withDict (timesNat @8 @inputLen) (extend @_ @(ExtendedInputByteString inputLen c) input) :: Vec.Vector k (UInt 64 Auto c)
+    let input' = with8nLessExt @inputLen $ withExtendedInputByteString @inputLen $ with8n @inputLen $ withBlack2bDivConstraint @inputLen @64 $ 
+                    Vec.parFmap from $ toWords @n @64 $
+                    reverseEndianness @64 $
+                    flip (withExtendedInputByteString @inputLen $ rotateBitsL) (withExtensionBits @inputLen $ value @(ExtensionBits inputLen)) $ 
+                    extend @_ @(ExtendedInputByteString inputLen c) input :: Vec.Vector (Div n 64) (UInt 64 Auto c)
 
         key'    = fromConstant @_ key :: UInt 64 Auto c
         input'' = if value @keyLen > 0
@@ -181,14 +180,11 @@ blake2b key input =
         d
 
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
-blake2b_224 :: forall inputLen c n.
+blake2b_224 :: forall inputLen c {n}.
     ( Symbolic c
     , KnownNat inputLen
-    , KnownNat (ExtensionBits inputLen)
+    , Gcd inputLen 8 ~ 8
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , KnownNat n
-    , (Div n 64) * 64 ~ n
-    , 8 * inputLen <= n
     ) => ByteString (8 * inputLen) c -> ByteString 224 c
 blake2b_224 = blake2b @0 @inputLen @28 (fromConstant @Natural 0)
 
@@ -196,11 +192,8 @@ blake2b_224 = blake2b @0 @inputLen @28 (fromConstant @Natural 0)
 blake2b_256 :: forall inputLen c n .
     ( Symbolic c
     , KnownNat inputLen
-    , KnownNat (ExtensionBits inputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , KnownNat n
-    , (Div n 64) * 64 ~ n
-    , 8 * inputLen <= n
+    , Gcd inputLen 8 ~ 8
     ) => ByteString (8 * inputLen) c -> ByteString 256 c
 blake2b_256 = blake2b @0 @inputLen @32 (fromConstant @Natural 0)
 
@@ -208,11 +201,8 @@ blake2b_256 = blake2b @0 @inputLen @32 (fromConstant @Natural 0)
 blake2b_512 :: forall inputLen c n .
     ( Symbolic c
     , KnownNat inputLen
-    , KnownNat (ExtensionBits inputLen)
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , KnownNat n
-    , (Div n 64) * 64 ~ n
-    , 8 * inputLen <= n
+    , Gcd inputLen 8 ~ 8
     ) => ByteString (8 * inputLen) c -> ByteString 512 c
 blake2b_512 = blake2b @0 @inputLen @64 0
 -- blake2b_512 = blake2b @64 @inputLen @64 key64 -- I use this when test a 64 byte key

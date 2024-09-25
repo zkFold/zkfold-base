@@ -12,7 +12,7 @@ import           Prelude                                             hiding (Num
                                                                       (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value, with4n6)
+import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), PointCompressed, compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (fromVector, (!!))
@@ -28,6 +28,7 @@ import           ZkFold.Base.Protocol.Plonkup.Testing                (PlonkupPro
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Data.Helpers
 
 plonkProve :: forall i n l c1 c2 ts core .
     ( KnownNat n

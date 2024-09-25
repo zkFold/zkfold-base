@@ -18,7 +18,7 @@ import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (fromZp)
-import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, with4n6)
+import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate
@@ -32,6 +32,7 @@ import           ZkFold.Base.Protocol.Plonkup.Testing
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Data.Helpers
 
 -- TODO: uncomment after refactoring
 -- propPlonkConstraintConversion :: (Eq a, FiniteField a) => PlonkConstraint 1 a -> Bool

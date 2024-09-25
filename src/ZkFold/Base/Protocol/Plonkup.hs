@@ -30,6 +30,7 @@ import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (ArithmeticCircuitTest (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Data.Helpers
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 

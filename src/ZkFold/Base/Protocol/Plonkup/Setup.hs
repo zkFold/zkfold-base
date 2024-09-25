@@ -20,6 +20,7 @@ import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkupRelation)
 import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Data.Helpers
 
 data PlonkupSetup i n l c1 c2 = PlonkupSetup
     { omega       :: ScalarField c1

@@ -34,6 +34,7 @@ import           ZkFold.Symbolic.Data.ByteString                (ByteString (..)
                                                                  toWords)
 import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
+import ZkFold.Symbolic.Data.Helpers
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
@@ -43,7 +44,7 @@ class
     , NFData (context (Vector (WordSize algorithm)))
     , KnownNat (ChunkSize algorithm)
     , KnownNat (WordSize algorithm)
-    , 16 * WordSize algorithm ~ ChunkSize algorithm
+    , Div (ChunkSize algorithm) (WordSize algorithm) * WordSize algorithm ~ ChunkSize algorithm
     , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
     ) => AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type) where
     type WordSize algorithm :: Natural
@@ -197,7 +198,7 @@ sha2 messageBits = sha2Blocks @algorithm @context chunks
         paddedMessage = sha2Pad @(ChunkSize algorithm) @(2 * WordSize algorithm) messageBits
 
         chunks :: [ByteString (ChunkSize algorithm) context]
-        chunks = fromVector $ toWords @(Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm)) @(ChunkSize algorithm) @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) paddedMessage
+        chunks = fromVector $ toWords @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))  @(ChunkSize algorithm) paddedMessage
 
 -- | Pad the input bytestring according to the rules described in @PaddedLength@
 --
@@ -295,7 +296,7 @@ sha2Blocks chunks = truncateResult @algorithm @context $ concat @(WordSize algor
             !hn <- V.thaw $ initialHashes @algorithm @context
 
             forM_ chunks $ \chunk -> do
-                let words = fromVector $ toWords @16 @(WordSize algorithm) @(ChunkSize algorithm) chunk
+                let words = fromVector $ withUnsafeDiv @(ChunkSize algorithm) @(WordSize algorithm) $ toWords @(ChunkSize algorithm) @(WordSize algorithm) chunk
                 messageSchedule <- VM.unsafeNew @_ @(ByteString (WordSize algorithm) context) rounds
                 forM_ (zip [0..] words) $ P.uncurry (VM.write messageSchedule)
 

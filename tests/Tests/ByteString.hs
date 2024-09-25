@@ -67,18 +67,19 @@ isLeftNeutral
 isLeftNeutral f g n1 n2 x = eval (n2 `g` fromConstant x) === n1 `f` fromConstant x
 
 testWords
-    :: forall n wordSize k p
+    :: forall n wordSize p {k}
     .  KnownNat n
     => KnownNat wordSize
     => Prime p
     => KnownNat (Log2 (p - 1) + 1)
-    => n ~ k * wordSize
+    => k ~ Div n wordSize
+    => k * wordSize ~ n
     => Spec
 testWords = it ("divides a bytestring of length " <> show (value @n) <> " into words of length " <> show (value @wordSize)) $ do
     x <- toss m
     let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
         zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (Haskell.fmap eval (toWords @k @wordSize @n arithBS :: Vector k (ByteString wordSize (ArithmeticCircuit (Zp p) U1))) === toWords @k @wordSize @n zpBS)
+    return (Haskell.fmap eval (toWords @n @wordSize arithBS :: Vector k (ByteString wordSize (ArithmeticCircuit (Zp p) U1))) === toWords @n @wordSize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -187,10 +188,10 @@ specByteString' = hspec $ do
             shift <- chooseInteger ((-3) * n, 3 * n)
             x <- toss m
             return $ eval @(Zp p) @n (rotateBits (fromConstant x) shift) === rotateBits (fromConstant x) shift
-        testWords @n @1 @n          @p
-        testWords @n @2 @(Div n 2)  @p
-        testWords @n @4 @(Div n 4)  @p
-        testWords @n @n @1          @p
+        testWords @n @1 @p
+        testWords @n @2 @p
+        testWords @n @4 @p
+        testWords @n @n @p
         it "concatenates bytestrings correctly" $ do
             x <- toss m
             y <- toss m
