@@ -179,18 +179,18 @@ plonkProve PlonkupProverSetup {..}
             `transcript` compress cmQhigh
         xi = challenge ts4
 
-        a_xi   = aX `evalPolyVec` xi
-        b_xi   = bX `evalPolyVec` xi
-        c_xi   = cX `evalPolyVec` xi
-        s1_xi  = s1X `evalPolyVec` xi
-        s2_xi  = s2X `evalPolyVec` xi
-        f_xi   = fX `evalPolyVec` xi
-        t_xi   = tX `evalPolyVec` xi
-        t_xi'  = tX `evalPolyVec` (xi * omega)
-        z1_xi' = z1X `evalPolyVec` (xi * omega)
-        z2_xi' = z2X `evalPolyVec` (xi * omega)
-        h1_xi' = h1X `evalPolyVec` (xi * omega)
-        h2_xi  = h2X `evalPolyVec` xi
+        a_xi    = aX `evalPolyVec` xi
+        b_xi    = bX `evalPolyVec` xi
+        c_xi    = cX `evalPolyVec` xi
+        s1_xi   = s1X `evalPolyVec` xi
+        s2_xi   = s2X `evalPolyVec` xi
+        f_xi    = fX `evalPolyVec` xi
+        t_xi    = tX `evalPolyVec` xi
+        t_xi'   = tX `evalPolyVec` (xi * omega)
+        z1_xi'  = z1X `evalPolyVec` (xi * omega)
+        z2_xi'  = z2X `evalPolyVec` (xi * omega)
+        h1_xi'  = h1X `evalPolyVec` (xi * omega)
+        h2_xi   = h2X `evalPolyVec` xi
         lag1_xi = polyVecLagrange @_ @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
         l1_xi   = one // (scale n one * (xi - omega))
 
