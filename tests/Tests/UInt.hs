@@ -31,10 +31,10 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), KnownRegisterSize,
                                                               NumberOfRegisters, RegisterSize (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Helpers                (with2n)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-import ZkFold.Symbolic.Data.Helpers (with2n)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)

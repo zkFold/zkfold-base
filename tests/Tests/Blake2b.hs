@@ -5,32 +5,31 @@
 
 module Tests.Blake2b where
 
+import           Control.Monad                               (forM_)
+import           Data.Bits                                   (shiftR)
+import           Data.List.Split.Internals                   (splitOn)
+import           Data.Proxy
+import           GHC.Generics                                (U1)
+import           GHC.TypeLits                                (someNatVal)
+import           GHC.TypeNats                                hiding (someNatVal)
+import           Prelude
 import           Test.Hspec
+import           Test.QuickCheck.Gen                         (Gen)
+import           Test.QuickCheck.Property
+import           Text.Regex.TDFA                             ((=~))
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), (-!))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.Basic.Number            (value)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b
 import           ZkFold.Symbolic.Class                       (Symbolic)
-import           ZkFold.Symbolic.Interpreter                 (Interpreter, Interpreter(Interpreter) )
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.ByteString
-
-import           Prelude
-import           Data.List.Split.Internals                   (splitOn)
-import           Data.Bits                                   (shiftR)
-import           Control.Monad                               (forM_)
-import           GHC.TypeLits                                (someNatVal)
-import           Data.Proxy
-import           GHC.TypeNats                                hiding (someNatVal)
-import Text.Regex.TDFA ((=~))
-import ZkFold.Symbolic.Data.Helpers (with8n, withGcdn8)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
-import GHC.Generics (U1)
-import ZkFold.Base.Algebra.Basic.Number (value)
-import Test.QuickCheck.Property
-import Test.QuickCheck.Gen (Gen)
-import ZkFold.Prelude (chooseNatural)
+import           ZkFold.Symbolic.Data.Helpers                (with8n, withGcdn8)
+import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 
 
 

@@ -5,7 +5,7 @@
 module ZkFold.Symbolic.Algorithms.Hash.Blake2b where
 
 import           Data.Bool                                         (bool)
-
+import           Data.Constraint.Nat                               (Gcd)
 import           Data.List                                         (foldl')
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
@@ -14,6 +14,7 @@ import           GHC.IsList                                        (IsList (..))
 import qualified GHC.Num                                           as GHC
 import           Prelude                                           hiding (Num (..), concat, divMod, length, mod,
                                                                     replicate, splitAt, truncate, (!!), (&&), (^))
+
 import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGroup (..), AdditiveSemigroup (..),
                                                                     Exponent (..), FromConstant (..),
                                                                     MultiplicativeSemigroup (..), SemiEuclidean (..),
@@ -27,9 +28,8 @@ import           ZkFold.Symbolic.Data.Bool                         (BoolType (..
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..), Truncate (..),
                                                                     concat, reverseEndianness, toWords)
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
-import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 import           ZkFold.Symbolic.Data.Helpers
-import Data.Constraint.Nat (Gcd)
+import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 
 -- TODO: This module is not finished yet. The hash computation is not correct.
 
@@ -144,16 +144,16 @@ blake2b :: forall keyLen inputLen outputLen c n.
     ( Symbolic c
     , KnownNat keyLen
     , KnownNat inputLen
-    , KnownNat outputLen    
+    , KnownNat outputLen
     , Gcd inputLen 8 ~ 8
     , n ~ (8 * inputLen + ExtensionBits inputLen)
     , 8 * outputLen <= 512
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
-    let input' = with8nLessExt @inputLen $ withExtendedInputByteString @inputLen $ with8n @inputLen $ withBlack2bDivConstraint @inputLen @64 $ 
+    let input' = with8nLessExt @inputLen $ withExtendedInputByteString @inputLen $ with8n @inputLen $ withBlack2bDivConstraint @inputLen @64 $
                     Vec.parFmap from $ toWords @n @64 $
                     reverseEndianness @64 $
-                    flip (withExtendedInputByteString @inputLen $ rotateBitsL) (withExtensionBits @inputLen $ value @(ExtensionBits inputLen)) $ 
+                    flip (withExtendedInputByteString @inputLen $ rotateBitsL) (withExtensionBits @inputLen $ value @(ExtensionBits inputLen)) $
                     extend @_ @(ExtendedInputByteString inputLen c) input :: Vec.Vector (Div n 64) (UInt 64 Auto c)
 
         key'    = fromConstant @_ key :: UInt 64 Auto c

@@ -21,12 +21,12 @@ module ZkFold.Base.Algebra.Basic.Number
     , type (^)
     ) where
 
-import           Data.Kind           (Constraint)
-import           Data.Type.Bool      (If, type (&&))
-import           GHC.Exts            (proxy#)
-import           GHC.TypeLits        (ErrorMessage (..), TypeError)
+import           Data.Kind      (Constraint)
+import           Data.Type.Bool (If, type (&&))
+import           GHC.Exts       (proxy#)
+import           GHC.TypeLits   (ErrorMessage (..), TypeError)
 import           GHC.TypeNats
-import           Prelude             (Bool (..))
+import           Prelude        (Bool (..))
 
 -- Use orphan instances for large publicly verified primes
 class KnownNat p => Prime p

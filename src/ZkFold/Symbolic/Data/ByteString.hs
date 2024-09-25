@@ -157,7 +157,7 @@ reverseEndianness' v =
 reverseEndianness :: forall wordSize k c m {n}.
     ( Symbolic c
     , KnownNat wordSize
-    , n ~ k * wordSize 
+    , n ~ k * wordSize
     , m * 8 ~ wordSize
     ) => ByteString n c -> ByteString n c
 reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v

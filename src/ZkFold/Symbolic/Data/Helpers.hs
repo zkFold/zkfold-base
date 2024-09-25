@@ -1,12 +1,13 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 module ZkFold.Symbolic.Data.Helpers where
 
 import           Data.Constraint
 import           Data.Constraint.Nat
-import           ZkFold.Base.Algebra.Basic.Number
+import           Data.Constraint.Unsafe           (unsafeAxiom)
 import           Prelude
-import Data.Constraint.Unsafe (unsafeAxiom)
+
+import           ZkFold.Base.Algebra.Basic.Number
 
 
 -- type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
