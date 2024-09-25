@@ -98,11 +98,11 @@ splitAt (Vector lst) = (Vector (V.take (knownNat @n) lst), Vector (V.drop (known
 
 -- | The sole purpose of this function is to get rid of annoying constraints in ZkFols.Symbolic.Compiler.Arithmetizable
 --
-splitAt3 :: forall n m k a. KnownNat n => Vector (n + m + k) a -> (Vector n a, Vector m a, Vector k a)
+splitAt3 :: forall n m k a. (KnownNat n, KnownNat m) => Vector (n + m + k) a -> (Vector n a, Vector m a, Vector k a)
 splitAt3 (Vector lst) = (Vector ln, Vector lm, Vector lk)
     where
         (ln, lmk) = (V.take (knownNat @n) lst, V.drop (knownNat @n) lst)
-        (lm, lk) = (V.take (knownNat @n) lmk, V.drop (knownNat @n) lmk)
+        (lm, lk) = (V.take (knownNat @m) lmk, V.drop (knownNat @m) lmk)
 
 rotate :: forall size a. KnownNat size => Vector size a -> Integer -> Vector size a
 rotate (Vector lst) n = Vector (r <> l)
