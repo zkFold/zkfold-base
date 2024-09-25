@@ -33,6 +33,7 @@ data PlonkupProof c = PlonkupProof {
         h1_xi'  :: ScalarField c,
         h2_xi   :: ScalarField c,
         l1_xi   :: ScalarField c
+        -- ^ The denominator of the Lagrange polynomial evaluation
     }
 instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (PlonkupProof c) where
     show PlonkupProof {..} =
