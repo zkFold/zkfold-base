@@ -11,12 +11,12 @@ import           Data.Distributive                (Distributive (..))
 import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import           Data.These                       (These (..))
 import qualified Data.Vector                      as V
-import qualified Data.Vector.Split                as V
 import           Data.Vector.Binary               ()
+import qualified Data.Vector.Split                as V
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
-import           Prelude                          hiding (concat, drop, head, length, mod, replicate, sum, tail, take, zip,
-                                                   zipWith, (*))
+import           Prelude                          hiding (concat, drop, head, length, mod, replicate, sum, tail, take,
+                                                   zip, zipWith, (*))
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 

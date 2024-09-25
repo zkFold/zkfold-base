@@ -1,4 +1,5 @@
-{-# LANGUAGE DerivingStrategies, TypeApplications #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE TypeApplications   #-}
 
 module ZkFold.Base.Data.Matrix where
 
