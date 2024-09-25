@@ -144,9 +144,9 @@ instance (Symbolic c, KnownNat n) => Arbitrary (ByteString n c) where
     arbitrary = ByteString . embed @c . V.unsafeToVector <$> replicateA (value @n) (toss (1 :: Natural))
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
-reverseEndianness' :: forall wordSize k m n x.
+reverseEndianness' :: forall wordSize k m x {n}.
     ( KnownNat wordSize
-    , k * wordSize ~ n
+    , n ~ k * wordSize
     , m * 8 ~ wordSize
     ) => Vector n x -> Vector n x
 reverseEndianness' v =
@@ -154,10 +154,10 @@ reverseEndianness' v =
         chunks' = fmap (V.concat . V.reverse . V.chunks @m @8) chunks
      in V.concat chunks'
 
-reverseEndianness :: forall wordSize k c n m.
+reverseEndianness :: forall wordSize k c m {n}.
     ( Symbolic c
     , KnownNat wordSize
-    , k * wordSize ~ n
+    , n ~ k * wordSize 
     , m * 8 ~ wordSize
     ) => ByteString n c -> ByteString n c
 reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v

@@ -213,7 +213,7 @@ splitExpansion n1 n2 k = do
     where
         lower :: WitnessField n a => a -> a
         lower =
-            fromConstant . (`mod` fromConstant @Natural ( n1)) . toConstant
+            fromConstant . (`mod` fromConstant @Natural (2 ^ n1)) . toConstant
 
         upper :: WitnessField n a => a -> a
         upper =

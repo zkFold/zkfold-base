@@ -140,7 +140,7 @@ type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
 
 
-blake2b :: forall keyLen inputLen outputLen c {n}.
+blake2b :: forall keyLen inputLen outputLen c n.
     ( Symbolic c
     , KnownNat keyLen
     , KnownNat inputLen
@@ -176,7 +176,7 @@ blake2b key input =
         d
 
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
-blake2b_224 :: forall inputLen c {n}.
+blake2b_224 :: forall inputLen c n.
     ( Symbolic c
     , KnownNat inputLen
     , Gcd inputLen 8 ~ 8

@@ -8,8 +8,6 @@ module Tests.UInt (specUInt) where
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return, when)
-import           Data.Constraint                             (withDict)
-import           Data.Constraint.Nat                         (timesNat)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
@@ -36,6 +34,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import ZkFold.Symbolic.Data.Helpers (with2n)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -124,11 +123,11 @@ specUInt' = hspec $ do
                 y = y' `P.div` P.gcd x' y'
 
                 -- We will test Bezout coefficients by multiplying two UInts less than 2^n, hence we need 2^(2n) bits to store the result
-                zpX = withDict (timesNat @2 @n) (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
-                zpY = withDict (timesNat @2 @n) (fromConstant y)
-                (s, t, _) = withDict (timesNat @2 @n) (eea zpX zpY)
+                zpX = with2n @n (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
+                zpY = with2n @n (fromConstant y)
+                (s, t, _) = with2n @n (eea zpX zpY)
             -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
-            return $ withDict (timesNat @2 @n) ((zpX * s) `mod` zpY === one) .&. withDict (timesNat @2 @n) ((zpY * t) `mod` zpX === one)
+            return $ with2n @n ((zpX * s) `mod` zpY === one) .&. with2n @n ((zpY * t) `mod` zpX === one)
         it "has one" $ execAcUint @(Zp p) @n @rs one === execZpUint @_ @n @rs one
         it "strictly adds correctly" $ do
             x <- toss m
@@ -142,15 +141,15 @@ specUInt' = hspec $ do
 
         it "extends correctly" $ do
             x <- toss m
-            let acUint = withDict (timesNat @2 @n) (fromConstant x) :: UInt n rs (ArithmeticCircuit (Zp p) U1)
-                zpUint = withDict (timesNat @2 @n) (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
-            return $ execAcUint @(Zp p) (withDict (timesNat @2 @n) (extend acUint :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
+            let acUint =  with2n @n (fromConstant x) :: UInt n rs (ArithmeticCircuit (Zp p) U1)
+                zpUint =  with2n @n (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
+            return $ execAcUint @(Zp p) (with2n @n (extend acUint :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
 
         it "shrinks correctly" $ do
             x <- toss (m * m)
-            let acUint = withDict (timesNat @2 @n) (fromConstant x) :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1)
+            let acUint = with2n @n (fromConstant x) :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1)
                 zpUint = fromConstant x :: UInt n rs (Interpreter (Zp p))
-            return $ execAcUint @(Zp p) (withDict (timesNat @2 @n) (shrink acUint :: UInt n rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
+            return $ execAcUint @(Zp p) (with2n @n (shrink acUint :: UInt n rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
 
         it "checks equality" $ do
             x <- toss m

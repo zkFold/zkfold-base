@@ -67,19 +67,18 @@ isLeftNeutral
 isLeftNeutral f g n1 n2 x = eval (n2 `g` fromConstant x) === n1 `f` fromConstant x
 
 testWords
-    :: forall n wordSize p {k}
+    :: forall n wordSize p
     .  KnownNat n
     => KnownNat wordSize
     => Prime p
     => KnownNat (Log2 (p - 1) + 1)
-    => k ~ Div n wordSize
-    => k * wordSize ~ n
+    => (Div n wordSize) * wordSize ~ n
     => Spec
 testWords = it ("divides a bytestring of length " <> show (value @n) <> " into words of length " <> show (value @wordSize)) $ do
     x <- toss m
     let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
         zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (Haskell.fmap eval (toWords @n @wordSize arithBS :: Vector k (ByteString wordSize (ArithmeticCircuit (Zp p) U1))) === toWords @n @wordSize zpBS)
+    return (Haskell.fmap eval (toWords @n @wordSize arithBS :: Vector (Div n wordSize) (ByteString wordSize (ArithmeticCircuit (Zp p) U1))) === toWords @n @wordSize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
