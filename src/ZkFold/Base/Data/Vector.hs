@@ -31,7 +31,7 @@ newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
 
 -- helper
 knownNat :: forall size n . (KnownNat size, Integral n) => n
-knownNat = knownNat @size
+knownNat = fromIntegral (value @size)
 
 instance KnownNat size => Representable (Vector size) where
   type Rep (Vector size) = Zp size
