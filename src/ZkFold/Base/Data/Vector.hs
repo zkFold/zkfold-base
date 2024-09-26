@@ -8,6 +8,7 @@ import           Control.DeepSeq                  (NFData)
 import           Control.Monad.State.Strict       (runState, state)
 import           Data.Aeson                       (ToJSON (..))
 import           Data.Distributive                (Distributive (..))
+import           Data.Foldable                    (fold)
 import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import           Data.These                       (These (..))
 import qualified Data.Vector                      as V
@@ -41,6 +42,11 @@ instance KnownNat size => Representable (Vector size) where
 instance KnownNat size => Distributive (Vector size) where
   distribute = distributeRep
   collect = collectRep
+
+vtoVector :: forall size a . KnownNat size => V.Vector a -> Maybe (Vector size a)
+vtoVector as
+  | V.length as == knownNat @size = Just $ Vector as
+  | otherwise                     = Nothing
 
 toVector :: forall size a . KnownNat size => [a] -> Maybe (Vector size a)
 toVector as
@@ -136,9 +142,9 @@ unsafeConcat = concat . unsafeToVector @m
 chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
 chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (fromIntegral $ value @n) vectors)
 
-instance Binary a => Binary (Vector n a) where
-    put = put . fromVector
-    get = Vector <$> get
+instance (KnownNat n, Binary a) => Binary (Vector n a) where
+    put = fold . V.map put . toV
+    get = Vector <$> V.replicateM (knownNat @n) get
 
 instance KnownNat size => Applicative (Vector size) where
     pure a = Vector $ V.replicate (knownNat @size) a
