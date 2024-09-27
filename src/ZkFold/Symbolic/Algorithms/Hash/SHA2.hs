@@ -44,6 +44,7 @@ class
     , NFData (context (Vector (WordSize algorithm)))
     , KnownNat (ChunkSize algorithm)
     , KnownNat (WordSize algorithm)
+    , Mod (ChunkSize algorithm) (WordSize algorithm) ~ 0
     , Div (ChunkSize algorithm) (WordSize algorithm) * WordSize algorithm ~ ChunkSize algorithm
     , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
     ) => AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type) where
@@ -296,7 +297,7 @@ sha2Blocks chunks = truncateResult @algorithm @context $ concat @(WordSize algor
             !hn <- V.thaw $ initialHashes @algorithm @context
 
             forM_ chunks $ \chunk -> do
-                let words = fromVector $ withUnsafeDiv @(ChunkSize algorithm) @(WordSize algorithm) $ toWords @(ChunkSize algorithm) @(WordSize algorithm) chunk
+                let words = fromVector $ withDivisibleDiv @(ChunkSize algorithm) @(WordSize algorithm) $ toWords @(ChunkSize algorithm) @(WordSize algorithm) chunk
                 messageSchedule <- VM.unsafeNew @_ @(ByteString (WordSize algorithm) context) rounds
                 forM_ (zip [0..] words) $ P.uncurry (VM.write messageSchedule)
 

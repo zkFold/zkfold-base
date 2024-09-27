@@ -44,11 +44,11 @@ withBlack2bDivConstraint :: forall a b {r}. (Gcd a 8 ~ 8) => (Div (8 * a + 8 * (
 withBlack2bDivConstraint =  withDict (black2bDivConstraint @a @b)
 
 ---
-unsafeDiv :: forall a b. Dict (Div a b * b ~ a)
-unsafeDiv = unsafeAxiom
+divisibleDiv :: forall a b. (Mod a b ~ 0) :- (Div a b * b ~ a)
+divisibleDiv = Sub unsafeAxiom
 
-withUnsafeDiv :: forall a b {r}. ( (Div a b * b ~ a) => r) -> r
-withUnsafeDiv = withDict (unsafeDiv @a @b)
+withDivisibleDiv :: forall a b {r}. Mod a b ~ 0 => ((Div a b * b ~ a) => r) -> r
+withDivisibleDiv = withDict (divisibleDiv @a @b)
 
 ---
 gcdn8 :: forall a. Dict (Gcd a 8 ~ 8)
