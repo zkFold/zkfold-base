@@ -51,14 +51,6 @@ withUnsafeDiv :: forall a b {r}. ( (Div a b * b ~ a) => r) -> r
 withUnsafeDiv = withDict (unsafeDiv @a @b)
 
 ---
-divNN :: forall a. Dict (Div a a ~ a)
-divNN = unsafeAxiom
-
-withDivNN :: forall a {r}. ( (Div a a ~ a) => r) -> r
-withDivNN = withDict (divNN @a)
-
-
----
 gcdn8 :: forall a. Dict (Gcd a 8 ~ 8)
 gcdn8 = unsafeAxiom
 
