@@ -32,7 +32,8 @@ data PlonkupProof c = PlonkupProof {
         z2_xi'  :: ScalarField c,
         h1_xi'  :: ScalarField c,
         h2_xi   :: ScalarField c,
-        lag1_xi :: ScalarField c
+        l1_xi   :: ScalarField c
+        -- ^ The denominator in the L_1 polynomial evaluation
     }
 instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (PlonkupProof c) where
     show PlonkupProof {..} =
@@ -62,4 +63,4 @@ instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (Pl
         ++ show z2_xi' ++ " "
         ++ show h1_xi' ++ " "
         ++ show h2_xi ++ " "
-        ++ show lag1_xi
+        ++ show l1_xi
