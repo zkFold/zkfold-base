@@ -47,6 +47,7 @@ main = do
     -- Protocols
     specPlonkup
     specNonInteractiveProof
+--    specProtostar
 
     -- Cryptography
     specSHA2Natural

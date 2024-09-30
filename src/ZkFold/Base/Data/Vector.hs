@@ -16,6 +16,7 @@ import           Data.List.Split                  (chunksOf)
 import           Data.These                       (These (..))
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
+import           GHC.IsList                       (IsList (..))
 import           Prelude                          hiding (drop, head, length, mod, replicate, sum, tail, take, zip,
                                                    zipWith, (*))
 import qualified Prelude                          as P
@@ -41,6 +42,11 @@ instance KnownNat size => Distributive (Vector size) where
   distribute = distributeRep
   collect = collectRep
 
+instance IsList (Vector n a) where
+    type Item (Vector n a) = a
+    toList = fromVector
+    fromList = unsafeToVector
+
 parFmap :: (a -> b) -> Vector size a -> Vector size b
 parFmap f (Vector lst) = Vector $ parMap rpar f lst
 
@@ -53,7 +59,10 @@ unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector
 
 generate :: forall size a . KnownNat size => (Natural -> a) -> Vector size a
-generate f = Vector $ f <$> [0 .. value @size -! 1]
+generate f = Vector $
+    case value @size of
+      0 -> [] -- avoid arithmetic underflow
+      n -> f <$> [0 .. n -! 1]
 
 unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
 unfold f = Vector . ZP.take (value @size) . List.unfoldr (Just . f)

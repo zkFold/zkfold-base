@@ -2,15 +2,10 @@
 
 module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
-import           Numeric.Natural                              (Natural)
-import           Prelude                                      hiding (length)
-
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly)
-import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
+import           Numeric.Natural (Natural)
+import           Prelude         hiding (length)
 
 type SpecialSoundTranscript t a = [(ProverMessage t a, VerifierMessage t a)]
-
-type LMap f = [Poly f Natural Natural]
 
 {-- | Section 3.1
 
@@ -23,11 +18,12 @@ challenge ri ∈ F. After the final message mk, the verifier computes the algebr
 and checks that the output is a zero vector of length l.
 
 --}
-class Arithmetic f => SpecialSoundProtocol f a where
+class SpecialSoundProtocol f a where
       type Witness f a
       type Input f a
-      type ProverMessage t a
-      type VerifierMessage t a
+      type ProverMessage f a
+      type VerifierMessage f a
+      type VerifierOutput f a
 
       type Degree a :: Natural
       -- ^ d in the paper, the verifier degree
@@ -40,18 +36,23 @@ class Arithmetic f => SpecialSoundProtocol f a where
 
       prover :: a -> Witness f a -> Input f a -> SpecialSoundTranscript f a -> ProverMessage f a
 
-      algebraicMap
-          :: a
-          -> Input f a
-          -> [ProverMessage Natural a]
-          -> [VerifierMessage Natural a]
-          -> LMap f
-      -- ^ the algebraic map V_sps computed by the verifier.
-      -- The j-th element of the vector is a homogeneous degree-j algebraic map that outputs a vector of @Dimension a@ field elements.
-      -- Variables have natural indices from @0@ to @2k@:
-      -- Variable @0@ is public input
-      -- Variables @1@ to @k@ are prover messages from the transcript
-      -- Variables @k+1@ to @2k@ are random challenges from the verifier
+      verifier :: a -> Input f a -> [ProverMessage f a] -> [f] -> VerifierOutput f a
 
-      verifier :: a -> Input f a -> [ProverMessage f a] -> [VerifierMessage f a] -> Bool
+-- | Algebraic map is a much more versatile and powerful tool when used separatey from SpecialSoundProtocol.
+-- It calculates a system of equations @[f]@ defining @a@ in some way.
+-- If @f@ is a number or a field element, then the result is a vector of polynomial values.
+-- However, @f@ can be a polynomial, in which case the result will be a system of polynomials.
+-- This polymorphism is exploited in the AccumulatorScheme prover.
+--
+class AlgebraicMap f a where
+    type MapInput f a
+    type MapMessage f a
 
+    -- | the algebraic map V_sps computed by the verifier.
+    algebraicMap
+        :: a
+        -> MapInput f a  -- ^ public input
+        -> [MapMessage f a]  -- ^ NARK proof witness (the list of prover messages)
+        -> [f]        -- ^ Verifier random challenges
+        -> f          -- ^ Slack variable for padding
+        -> [f]

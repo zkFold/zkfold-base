@@ -6,14 +6,17 @@ module ZkFold.Symbolic.Data.Bool (
     Bool(..),
     all,
     all1,
-    any
+    any,
+    and,
+    or
 ) where
 
+import           Control.DeepSeq                 (NFData)
 import           Data.Eq                         (Eq (..))
 import           Data.Foldable                   (Foldable (..))
 import           Data.Function                   (($), (.))
 import           Data.Functor                    (Functor, fmap, (<$>))
-import           GHC.Generics                    (Par1 (..))
+import           GHC.Generics                    (Generic, Par1 (..))
 import qualified Prelude                         as Haskell
 import           Text.Show                       (Show)
 
@@ -54,10 +57,13 @@ instance BoolType Haskell.Bool where
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)
+    deriving (Generic)
 
+deriving instance NFData (c Par1) => NFData (Bool c)
 deriving instance Eq (c Par1) => Eq (Bool c)
+deriving instance Show (c Par1) => Show (Bool c)
 
-instance (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
+instance {-# OVERLAPPING #-} (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
     show (fromBool -> x) = if x == one then "True" else "False"
 
 deriving newtype instance HFunctor c => SymbolicData (Bool c)
@@ -86,6 +92,12 @@ fromBool (Bool (Interpreter (Par1 b))) = b
 
 all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true
+
+and :: (BoolType b, Foldable t) => t b -> b
+and = all Haskell.id
+
+or :: (BoolType b, Foldable t) => t b -> b
+or = any Haskell.id
 
 all1 :: (BoolType b, Functor t, Foldable t) => (x -> b) -> t x -> b
 all1 f = foldr1 (&&) . fmap f

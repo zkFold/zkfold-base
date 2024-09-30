@@ -12,9 +12,8 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 
 -- | The Ed25519 curve used in EdDSA signature scheme.
 -- @c@ represents the "computational context" used to store and perform operations on curve points.
--- @r@ represents the register size
 --
-data Ed25519 c r
+data Ed25519 c
 
 -- | 2^252 + 27742317777372353535851937790883648493 is the order of the multiplicative group in Ed25519
 -- with the generator point defined below in @instance EllipticCurve (Ed25519 Void r)@
@@ -30,9 +29,9 @@ instance Prime Ed25519_Base
 -- | The purely mathematical implementation of Ed25519.
 -- It is available for use as-is and serves as "backend" for the @UInt 256 (Zp p)@ implementation as well.
 --
-instance EllipticCurve (Ed25519 Void r) where
-    type BaseField (Ed25519 Void r) = Zp Ed25519_Base
-    type ScalarField (Ed25519 Void r) = Zp Ed25519_Scalar
+instance EllipticCurve (Ed25519 Void) where
+    type BaseField (Ed25519 Void) = Zp Ed25519_Base
+    type ScalarField (Ed25519 Void) = Zp Ed25519_Scalar
 
     inf = Inf
 
@@ -47,25 +46,25 @@ instance EllipticCurve (Ed25519 Void r) where
     mul = pointMul
 
 
-ed25519Add :: Point (Ed25519 Void r) -> Point (Ed25519 Void r) -> Point (Ed25519 Void r)
+ed25519Add :: Point (Ed25519 Void) -> Point (Ed25519 Void) -> Point (Ed25519 Void)
 ed25519Add p Inf = p
 ed25519Add Inf q = q
 ed25519Add (Point x1 y1) (Point x2 y2) = Point x3 y3
     where
-        d :: BaseField (Ed25519 Void r)
+        d :: BaseField (Ed25519 Void)
         d = negate $ toZp 121665 // toZp 121666
 
-        a :: BaseField (Ed25519 Void r)
+        a :: BaseField (Ed25519 Void)
         a = negate $ toZp 1
 
         x3 = (x1 * y2 + y1 * x2) // (toZp 1 + d * x1 * x2 * y1 * y2)
         y3 = (y1 * y2 - a * x1 * x2) // (toZp 1 - d * x1 * x2 * y1 * y2)
 
-ed25519Double :: Point (Ed25519 Void r) -> Point (Ed25519 Void r)
+ed25519Double :: Point (Ed25519 Void) -> Point (Ed25519 Void)
 ed25519Double Inf = Inf
 ed25519Double (Point x y) = Point x3 y3
     where
-        a :: BaseField (Ed25519 Void r)
+        a :: BaseField (Ed25519 Void)
         a = negate $ toZp 1
 
         x3 = 2 * x * y // (a * x * x + y * y)
