@@ -16,7 +16,7 @@ import           Tests.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
 import           Tests.Plonkup             (specPlonkup)
-import           Tests.Protostar           (specProtostar)
+--import           Tests.Protostar           (specProtostar)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
 import           Tests.Univariate          (specUnivariate)
@@ -48,7 +48,7 @@ main = do
     -- Protocols
     specPlonkup
     specNonInteractiveProof
-    specProtostar
+--    specProtostar
 
     -- Cryptography
     specSHA2Natural

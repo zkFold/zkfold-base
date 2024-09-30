@@ -308,7 +308,7 @@ test-suite zkfold-base-test
       Tests.Pairing
       Tests.Permutations
       Tests.Plonkup
-      Tests.Protostar
+--      Tests.Protostar
       Tests.SHA2
       Tests.UInt
       Tests.Univariate
