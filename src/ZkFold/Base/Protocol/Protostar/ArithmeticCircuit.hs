@@ -74,7 +74,7 @@ instance
     type MapInput f (ArithmeticCircuit a (Vector n) o) = Vector n f
     type MapMessage f (ArithmeticCircuit a (Vector n) o) = Map ByteString f
 
-    -- We can use the polynomial system from the xircuit as a base for V_sps.
+    -- We can use the polynomial system from the circuit as a base for V_sps.
     --
     algebraicMap ac i pm _ pad = padDecomposition pad f_sps_uni
         where
