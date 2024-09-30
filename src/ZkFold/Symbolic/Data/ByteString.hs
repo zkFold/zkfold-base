@@ -40,7 +40,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
-import           ZkFold.Base.Data.Package           (packed, unpacked)
+import           ZkFold.Base.Data.Package           (packed, unpacked, unpackWith, packWith, Package (unpack))
 import qualified ZkFold.Base.Data.Vector            as V
 import           ZkFold.Base.Data.Vector            (Vector (..), parFmap)
 import           ZkFold.Prelude                     (replicateA, (!!))
@@ -71,17 +71,15 @@ deriving via (Structural (ByteString n c))
 
 instance
     ( Symbolic c
-    , FromConstant Natural (ByteString 8 c)
     , m * 8 ~ n
     ) => IsString (ByteString n c) where
     fromString = fromConstant . fromString @Bytes.ByteString
 
 instance
     ( Symbolic c
-    , FromConstant Natural (ByteString 8 c)
     , m * 8 ~ n
     ) => FromConstant Bytes.ByteString (ByteString n c) where
-    fromConstant bytes = concat @8 @_ @n $ V.parFmap (fromConstant @Natural @(ByteString 8 c)
+    fromConstant bytes = concat @_ @8 $ V.parFmap (fromConstant @Natural @(ByteString 8 c)
         . Haskell.fromIntegral
         . Haskell.toInteger) (V.unsafeToVector @m $ Bytes.unpack bytes)
 
@@ -211,16 +209,16 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
 -- 4. @wordSize@ divides @n@.
 --
 
-toWords :: forall n wordSize c. (Symbolic c, KnownNat wordSize, Div n wordSize * wordSize ~ n) => ByteString n c -> Vector (Div n wordSize) (ByteString wordSize c)
-toWords (ByteString bits) = parFmap (ByteString . packed) $ V.chunks @(Div n wordSize) @wordSize $ unpacked bits
+toWords :: forall m wordSize c. (Symbolic c, KnownNat wordSize) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
+toWords (ByteString bits) = parFmap ByteString $ unpackWith (V.chunks @m @wordSize) bits
 
 -- | Unfortunately, Haskell does not support dependent types yet,
 -- so we have no possibility to infer the exact type of the result
 -- (the list can contain an arbitrary number of words).
 -- We can only impose some restrictions on @n@ and @m@.
 --
-concat :: forall m k n c. (Symbolic c, k * m ~ n) => Vector k (ByteString m c) -> ByteString n c
-concat bs = (ByteString . packed) $ V.concat ( V.parFmap (\(ByteString bits) -> unpacked bits) bs)
+concat :: forall k m c. (Symbolic c) => Vector k (ByteString m c) -> ByteString (k * m) c
+concat bs = ByteString $ packWith V.concat (V.parFmap (\(ByteString bits) -> bits) bs)
 
 instance
   ( Symbolic c

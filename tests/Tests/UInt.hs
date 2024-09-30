@@ -31,10 +31,12 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), KnownRegisterSize,
                                                               NumberOfRegisters, RegisterSize (..), Shrink (..))
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Helpers                (with2n)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import           Data.Constraint
+import           Data.Constraint.Nat
+
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -61,12 +63,14 @@ type UBinary n b r = Binary (UInt n b r)
 isHom :: (KnownNat n, PrimeField (Zp p), KnownRegisterSize r) => UBinary n r (Interpreter (Zp p)) -> UBinary n r (ArithmeticCircuit (Zp p) U1) -> Natural -> Natural -> Property
 isHom f g x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (fromConstant x `f` fromConstant y)
 
+with2n :: forall n {r}. KnownNat n => (KnownNat (2 * n) => r) -> r
+with2n = withDict (timesNat @2 @n)
+
 specUInt'
     :: forall p n r r2n rs
     .  PrimeField (Zp p)
     => KnownNat n
     => KnownRegisterSize rs
-    => n <= 2 * n
     => r ~ NumberOfRegisters (Zp p) n rs
     => r2n ~ NumberOfRegisters (Zp p) (2 * n) rs
     => KnownNat r

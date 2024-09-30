@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module ZkFold.Symbolic.Algorithms.Hash.SHA2 (AlgorithmSetup (..), SHA2, sha2, SHA2N, sha2Natural) where
+module ZkFold.Symbolic.Algorithms.Hash.SHA2 (AlgorithmSetup (..), SHA2, sha2, SHA2N, sha2Natural, PaddedLength) where
 
 import           Control.DeepSeq                                (NFData, force)
 import           Control.Monad                                  (forM_)
@@ -33,8 +33,9 @@ import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), Truncate (..), concat,
                                                                  toWords)
 import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
-import           ZkFold.Symbolic.Data.Helpers
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
+import Data.Constraint
+import Data.Constraint.Unsafe
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
@@ -177,10 +178,7 @@ type family PaddedLength (msg :: Natural) (block :: Natural) (lenBits :: Natural
 type SHA2 algorithm context k =
    ( AlgorithmSetup algorithm context
    , KnownNat k
-   , KnownNat (ChunkSize algorithm)
-   , KnownNat (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))
    , Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
-   , k <= PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
    )
 
 -- | A generalised version of SHA2. It is agnostic of the ByteString base field.
@@ -189,9 +187,18 @@ type SHA2 algorithm context k =
 -- >>> bs = fromConstant (42 :: Natural) :: ByteString 8 (Zp BLS12_381_Scalar)
 -- >>> hash = sha2 @"SHA256" bs
 --
+
+divisibleDiv :: forall a b. (Mod a b ~ 0) :- (Div a b * b ~ a)
+divisibleDiv = Sub unsafeAxiom
+
+withDivisibleDiv :: forall a b {r}. Mod a b ~ 0 => ((Div a b * b ~ a) => r) -> r
+withDivisibleDiv = withDict (divisibleDiv @a @b)
+
 sha2
     :: forall (algorithm :: Symbol) context k
     .  SHA2 algorithm context k
+    => KnownNat (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))
+    => k <= PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
     => ByteString k context -> ByteString (ResultSize algorithm) context
 sha2 messageBits = sha2Blocks @algorithm @context chunks
     where
@@ -199,7 +206,7 @@ sha2 messageBits = sha2Blocks @algorithm @context chunks
         paddedMessage = sha2Pad @(ChunkSize algorithm) @(2 * WordSize algorithm) messageBits
 
         chunks :: [ByteString (ChunkSize algorithm) context]
-        chunks = fromVector $ toWords @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm))  @(ChunkSize algorithm) paddedMessage
+        chunks = fromVector $ toWords @(Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm)) @(ChunkSize algorithm) paddedMessage
 
 -- | Pad the input bytestring according to the rules described in @PaddedLength@
 --
@@ -287,7 +294,7 @@ sha2Blocks
     :: forall algorithm (context :: (Type -> Type) -> Type)
     .  AlgorithmSetup algorithm context
     => [ByteString (ChunkSize algorithm) context] -> ByteString (ResultSize algorithm) context
-sha2Blocks chunks = truncateResult @algorithm @context $ concat @(WordSize algorithm) @8 $ unsafeToVector @8 $ V.toList hashParts
+sha2Blocks chunks = truncateResult @algorithm @context $ concat @8 @(WordSize algorithm) $ unsafeToVector @8 $ V.toList hashParts
     where
         rounds :: Int
         rounds = V.length $ roundConstants @algorithm @context
@@ -297,7 +304,7 @@ sha2Blocks chunks = truncateResult @algorithm @context $ concat @(WordSize algor
             !hn <- V.thaw $ initialHashes @algorithm @context
 
             forM_ chunks $ \chunk -> do
-                let words = fromVector $ withDivisibleDiv @(ChunkSize algorithm) @(WordSize algorithm) $ toWords @(ChunkSize algorithm) @(WordSize algorithm) chunk
+                let words = fromVector $ withDivisibleDiv @(ChunkSize algorithm) @(WordSize algorithm) $ toWords @(Div (ChunkSize algorithm) (WordSize algorithm)) @(WordSize algorithm) chunk
                 messageSchedule <- VM.unsafeNew @_ @(ByteString (WordSize algorithm) context) rounds
                 forM_ (zip [0..] words) $ P.uncurry (VM.write messageSchedule)
 

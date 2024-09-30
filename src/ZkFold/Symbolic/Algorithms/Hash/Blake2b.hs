@@ -5,7 +5,7 @@
 module ZkFold.Symbolic.Algorithms.Hash.Blake2b where
 
 import           Data.Bool                                         (bool)
-import           Data.Constraint.Nat                               (Gcd)
+import           Data.Constraint.Nat
 import           Data.List                                         (foldl')
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
@@ -28,8 +28,10 @@ import           ZkFold.Symbolic.Data.Bool                         (BoolType (..
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..), Truncate (..),
                                                                     concat, reverseEndianness, toWords)
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
-import           ZkFold.Symbolic.Data.Helpers
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
+import           Data.Constraint
+import           Data.Constraint.Unsafe
+
 
 -- TODO: This module is not finished yet. The hash computation is not correct.
 
@@ -133,11 +135,36 @@ blake2b' d =
             then blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll)) True
             else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
-        bs = reverseEndianness @64 $ concat @64 @8 $ Vec.unsafeToVector @8 $ map from $ toList h''' :: ByteString (64 * 8) c
+        bs = reverseEndianness @64 $ concat @8 @64 $ Vec.unsafeToVector @8 $ map from $ toList h''' :: ByteString (64 * 8) c
     in with8n @nn' (truncate bs)
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
+
+withExtensionBits :: forall n {r}. KnownNat n => (KnownNat (8 * (128 - Mod n 128)) => r) -> r
+withExtensionBits = withDict (modBound @n @128) $
+                        withDict (modNat @n @128) $
+                            withDict (minusNat @128 @(Mod n 128)) $
+                                withDict (timesNat @8 @(128 - Mod n 128))
+
+withExtendedInputByteString :: forall n {r}. KnownNat n => (KnownNat (8 * n + 8 * (128 - Mod n 128)) => r) -> r
+withExtendedInputByteString = withExtensionBits @n $
+                                    withDict (timesNat @8 @n) $
+                                        withDict (plusNat @(8 * n) @( 8 * (128 - Mod n 128)))
+
+with8nLessExt :: forall n {r}. KnownNat n => (8 * n <= 8 * n +  8 * (128 - Mod n 128) => r) -> r
+with8nLessExt = withExtendedInputByteString @n $
+                    withDict (zeroLe @( 8 * (128 - Mod n 128))) $
+                        withDict (plusMonotone2 @(8 * n) @0 @( 8 * (128 - Mod n 128)))
+
+with8n  :: forall n {r}. KnownNat n => (KnownNat (8 * n) => r) -> r
+with8n = withDict (timesNat @8 @n)
+
+black2bDivConstraint :: forall a b. (Gcd a 8 ~ 8) :- (Div (8 * a + 8 * (2 * 64 - Mod a (2 * b))) 64 * 64 ~ 8 * a + 8 * (2 * 64 - Mod a (2 * 64)) )
+black2bDivConstraint = Sub unsafeAxiom
+
+withBlack2bDivConstraint :: forall a b {r}. (Gcd a 8 ~ 8) => (Div (8 * a + 8 * (2 * 64 - Mod a (2 * b))) 64 * 64 ~ 8 * a + 8 * (2 * 64 - Mod a (2 * 64)) => r) -> r
+withBlack2bDivConstraint =  withDict (black2bDivConstraint @a @b)
 
 
 blake2b :: forall keyLen inputLen outputLen c n.
@@ -151,7 +178,7 @@ blake2b :: forall keyLen inputLen outputLen c n.
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
     let input' = with8nLessExt @inputLen $ withExtendedInputByteString @inputLen $ with8n @inputLen $ withBlack2bDivConstraint @inputLen @64 $
-                    Vec.parFmap from $ toWords @n @64 $
+                    Vec.parFmap from $ toWords @(Div n 64) @64 $
                     reverseEndianness @64 $
                     flip (withExtendedInputByteString @inputLen $ rotateBitsL) (withExtensionBits @inputLen $ value @(ExtensionBits inputLen)) $
                     extend @_ @(ExtendedInputByteString inputLen c) input :: Vec.Vector (Div n 64) (UInt 64 Auto c)

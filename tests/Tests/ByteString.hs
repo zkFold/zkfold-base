@@ -1,5 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module Tests.ByteString (specByteString) where
@@ -78,7 +77,7 @@ testWords = it ("divides a bytestring of length " <> show (value @n) <> " into w
     x <- toss m
     let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
         zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (Haskell.fmap eval (toWords @n @wordSize arithBS :: Vector (Div n wordSize) (ByteString wordSize (ArithmeticCircuit (Zp p) U1))) === toWords @n @wordSize zpBS)
+    return (Haskell.fmap eval (toWords @(Div n wordSize) @wordSize arithBS :: Vector (Div n wordSize) (ByteString wordSize (ArithmeticCircuit (Zp p) U1))) === toWords @(Div n wordSize) @wordSize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -132,7 +131,6 @@ specByteString'
     => n <= n + 10
     => n <= n + 128
     => n <= n + n
-    => (Div (3 * n) n) * n ~ 3 * n
     => (Div n n) * n ~ n
     => (Div n 4) * 4 ~ n
     => (Div n 2) * 2 ~ n
@@ -197,8 +195,8 @@ specByteString' = hspec $ do
             z <- toss m
             let acs = fromConstant @Natural @(ByteString n (ArithmeticCircuit (Zp p) U1)) <$> [x, y, z]
                 zps = fromConstant @Natural @(ByteString n (Interpreter (Zp p))) <$> [x, y, z]
-            let ac = concat @n @3 $ V.unsafeToVector @3 acs :: ByteString (3 * n) (ArithmeticCircuit (Zp p) U1)
-                zp = concat @n @3 $ V.unsafeToVector @3 zps
+            let ac = concat @3 @n $ V.unsafeToVector @3 acs :: ByteString (3 * n) (ArithmeticCircuit (Zp p) U1)
+                zp = concat @3 @n $ V.unsafeToVector @3 zps
             return $ eval @(Zp p) @(3 * n) ac === zp
         testTruncate @n @1 @p
         testTruncate @n @4 @p
