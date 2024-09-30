@@ -9,6 +9,7 @@ module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
 
 
 import           Data.ByteString                                     (ByteString)
+import           Data.Functor.Rep                                    (tabulate)
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
@@ -108,7 +109,7 @@ padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j 
 -- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @n@
 --
 degreeDecomposition :: forall n f v . KnownNat (n + 1) => [Poly f v Natural] -> V.Vector (n + 1) [Poly f v Natural]
-degreeDecomposition lmap = V.generate degree_j
+degreeDecomposition lmap = tabulate (degree_j . toConstant)
     where
         degree_j :: Natural -> [Poly f v Natural]
         degree_j j = P.fmap (leaveDeg j) lmap
