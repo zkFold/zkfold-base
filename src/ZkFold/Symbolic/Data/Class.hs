@@ -13,11 +13,13 @@ module ZkFold.Symbolic.Data.Class (
 import           Control.Applicative              ((<*>))
 import           Data.Function                    (const, flip, ($), (.))
 import           Data.Functor                     ((<$>))
+import           Data.Functor.Rep                 (Representable (tabulate))
 import           Data.Kind                        (Type)
 import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..), Typeable)
 import           GHC.Generics                     (Par1 (..))
 
+import           ZkFold.Base.Algebra.Basic.Field  (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number (KnownNat, Natural, type (*), type (+), value)
 import           ZkFold.Base.Control.HApplicative (HApplicative, hliftA2, hpure)
 import           ZkFold.Base.Data.HFunctor        (HFunctor, hmap)
@@ -170,7 +172,7 @@ instance
     type TypeSize (Vector n x) = n * TypeSize x
 
     pieces xs i = packWith V.concat (flip pieces i <$> xs)
-    restore f = V.generate (\i -> restore (hmap ((V.!! i) . V.chunks @n) . f))
+    restore f = tabulate (\i -> restore (hmap ((V.!! fromZp i) . V.chunks @n) . f))
 
 instance SymbolicData f => SymbolicData (x -> f) where
     type Context (x -> f) = Context f
