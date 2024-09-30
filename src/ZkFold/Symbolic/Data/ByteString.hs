@@ -21,6 +21,7 @@ module ZkFold.Symbolic.Data.ByteString
 
 import           Control.DeepSeq                    (NFData)
 import           Control.Monad                      (replicateM)
+import           Data.Aeson                         (FromJSON (..), ToJSON (..))
 import qualified Data.Bits                          as B
 import qualified Data.ByteString                    as Bytes
 import           Data.Kind                          (Type)
@@ -52,7 +53,6 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
-import Data.Aeson (FromJSON(..), ToJSON (..))
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -357,10 +357,10 @@ instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (B
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (FieldElement c) where
   from (ByteString a) = fromBinary a
 
-instance (FromConstant Natural (ByteString 8 c), Concat (ByteString 8 c) (ByteString n c)) 
+instance (FromConstant Natural (ByteString 8 c), Concat (ByteString 8 c) (ByteString n c))
     => FromJSON (ByteString n c) where
     parseJSON = Haskell.fmap fromString . parseJSON @String
 
-instance (ToConstant (ByteString n (Interpreter (Zp p)))) 
+instance (ToConstant (ByteString n (Interpreter (Zp p))))
     => ToJSON (ByteString n (Interpreter (Zp p))) where
     toJSON = toJSON . toConstant

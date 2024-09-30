@@ -17,6 +17,7 @@ module ZkFold.Symbolic.Data.UInt (
 
 import           Control.DeepSeq
 import           Control.Monad.State                (StateT (..))
+import           Data.Aeson
 import           Data.Foldable                      (foldr, foldrM, for_)
 import           Data.Functor                       ((<$>))
 import           Data.Kind                          (Type)
@@ -50,7 +51,6 @@ import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
-import Data.Aeson
 
 
 -- TODO (Issue #18): hide this constructor
