@@ -167,13 +167,13 @@ withBlack2bDivConstraint :: forall n {r}. (Div (8 * n + ExtensionBits n) 64 * 64
 withBlack2bDivConstraint =  withDict $ black2bDivConstraint @n
 
 withConstraints :: forall n {r}. KnownNat n => (
-    ( KnownNat (8 * n) 
+    ( KnownNat (8 * n)
     , KnownNat (ExtensionBits n)
     , KnownNat (8 * n + ExtensionBits n)
     , 8 * n <= 8 * n + ExtensionBits n
     , Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n) => r) -> r
-withConstraints = with8nLessExt @n $ withExtendedInputByteString @n $ withExtensionBits @n $ with8n @n $ withBlack2bDivConstraint @n 
-        
+withConstraints = with8nLessExt @n $ withExtendedInputByteString @n $ withExtensionBits @n $ with8n @n $ withBlack2bDivConstraint @n
+
 
 blake2b :: forall keyLen inputLen outputLen c n.
     ( Symbolic c
@@ -184,7 +184,7 @@ blake2b :: forall keyLen inputLen outputLen c n.
     , 8 * outputLen <= 512
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
-    let input' = withConstraints @inputLen $ 
+    let input' = withConstraints @inputLen $
                     Vec.parFmap from $ toWords @(Div n 64) @64 $
                     reverseEndianness @64 $
                     flip rotateBitsL (value @(ExtensionBits inputLen)) $
