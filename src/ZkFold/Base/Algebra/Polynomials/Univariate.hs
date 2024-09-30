@@ -14,6 +14,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , lt
     , deg
     , vec2poly
+    , poly2vec
     , PolyVec
     , fromPolyVec
     , toPolyVec
