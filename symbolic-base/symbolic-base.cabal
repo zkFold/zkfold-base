@@ -291,3 +291,38 @@ benchmark bench-poly-mul
       symbolic-base,
       tasty-bench,
       vector,
+      zkfold-base
+
+benchmark compiler-benchmark
+    import:           options-exe
+    main-is:          BenchCompiler.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:
+      -fprof-auto
+      -fprof-cafs
+      -O3
+    build-depends:
+      adjunctions,
+      base,
+      bytestring,
+      containers,
+      deepseq,
+      tasty-bench,
+      tasty-golden,
+      zkfold-base,
+      zkfold-symbolic-examples
+
+benchmark in-circuit-ec-benchmark 
+    import:           options-exe
+    main-is:          BenchEC.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:
+      -O3
+    build-depends:
+      base,
+      deepseq,
+      tasty-bench,
+      random,
+      zkfold-base,

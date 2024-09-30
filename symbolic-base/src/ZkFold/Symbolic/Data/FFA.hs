@@ -6,6 +6,7 @@ module ZkFold.Symbolic.Data.FFA (FFA (..)) where
 
 import           Control.Applicative              (pure)
 import           Control.Monad                    (Monad, return, (>>=))
+import Control.DeepSeq (NFData)
 import           Data.Foldable                    (any, foldlM)
 import           Data.Function                    (const, ($), (.))
 import           Data.Functor                     (fmap, (<$>))
@@ -36,6 +37,8 @@ type Size = 7
 newtype FFA (p :: Natural) c = FFA (c (Vector Size))
 
 deriving newtype instance SymbolicData (FFA p c)
+deriving newtype instance NFData (c (Vector Size)) => NFData (FFA p c)
+deriving newtype instance Haskell.Show (c (Vector Size)) => Haskell.Show (FFA p c)
 
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])
