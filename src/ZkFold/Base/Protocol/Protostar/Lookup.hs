@@ -3,6 +3,7 @@ module ZkFold.Base.Protocol.Protostar.Lookup where
 import           Data.Map                                    (fromList, mapWithKey)
 import           Data.These                                  (These (..))
 import           Data.Zip
+import           GHC.Generics
 import           Prelude                                     hiding (Num (..), repeat, sum, zip, zipWith, (!!), (/),
                                                               (^))
 
@@ -11,21 +12,24 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Sparse.Vector              (SVector (..))
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (LMap, SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
 import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 data ProtostarLookup (l :: Natural) (sizeT :: Natural)
+    deriving Generic
 
 data ProtostarLookupParams f sizeT = ProtostarLookupParams (Zp sizeT -> f) (f -> [Zp sizeT])
+    deriving Generic
 
 instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
     type Witness f (ProtostarLookup l sizeT)         = Vector l f
     -- ^ w in the paper
     type Input f (ProtostarLookup l sizeT)           = ProtostarLookupParams f sizeT
     -- ^ t and t^{-1} from the paper
-    type ProverMessage t (ProtostarLookup l sizeT)   = (Vector l t, SVector sizeT t)
+    type ProverMessage f (ProtostarLookup l sizeT)   = (Vector l f, SVector sizeT f)
     -- ^ (w, m) or (h, g) in the paper
-    type VerifierMessage t (ProtostarLookup l sizeT) = t
+    type VerifierMessage f (ProtostarLookup l sizeT) = f
+    type VerifierOutput f (ProtostarLookup l sizeT)  = Bool
 
     type Degree (ProtostarLookup l sizeT)            = 2
 
@@ -48,18 +52,10 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
         in (h, g)
     prover _ _ _ _ = error "Invalid transcript"
 
-    -- TODO: implement this
-    algebraicMap :: ProtostarLookup l sizeT
-                 -> Input f (ProtostarLookup l sizeT)
-                 -> [ProverMessage Natural (ProtostarLookup l sizeT)]
-                 -> [VerifierMessage Natural (ProtostarLookup l sizeT)]
-                 -> LMap f
-    algebraicMap = undefined
-
     verifier :: ProtostarLookup l sizeT
              -> Input f (ProtostarLookup l sizeT)
              -> [ProverMessage f (ProtostarLookup l sizeT)]
-             -> [VerifierMessage f (ProtostarLookup l sizeT)]
+             -> [f]
              -> Bool
     verifier _ (ProtostarLookupParams t _) [(w, m), (h, g)] [r, _] =
         let c1 = sum h == sum g

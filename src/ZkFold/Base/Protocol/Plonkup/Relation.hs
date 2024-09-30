@@ -6,8 +6,7 @@ module ZkFold.Base.Protocol.Plonkup.Relation where
 
 import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (bool)
-import           Data.Functor.Rep                                    (index)
-import           Data.Map                                            (elems, keys, (!))
+import           Data.Map                                            (elems, keys)
 import           Data.Maybe                                          (fromJust)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
@@ -17,7 +16,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations              (Permutation, fromCycles, mkIndexPartition)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial, var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec, toPolyVec)
 import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
 import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPermutationSize)
@@ -76,7 +75,7 @@ toPlonkupRelation :: forall i n l a .
 toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (fromVector xPub)
-        plonkConstraints    = elems (acSystem ac)
+        plonkConstraints    = map (evalPolynomial evalMonomial (var . SysVar)) (elems (acSystem ac))
         rs = map toConstant $ elems $ acRange ac
         -- TODO: We are expecting at most one range.
         t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
@@ -107,15 +106,11 @@ toPlonkupRelation ac =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c
 
-        indexW _ Nothing           = one
-        indexW i (Just (InVar v))  = index i v
-        indexW i (Just (NewVar v)) = witnessGenerator ac i ! v
-
-        w1 i   = toPolyVec $ fromList $ fmap (indexW i) a
-        w2 i   = toPolyVec $ fromList $ fmap (indexW i) b
-        w3 i   = toPolyVec $ fromList $ fmap (indexW i) c
+        w1 i   = toPolyVec $ fromList $ fmap (indexW ac i) a
+        w2 i   = toPolyVec $ fromList $ fmap (indexW ac i) b
+        w3 i   = toPolyVec $ fromList $ fmap (indexW ac i) c
         witness i  = (w1 i, w2 i, w3 i)
-        pubInput i = fmap (indexW i . Just) xPub
+        pubInput i = fmap (indexW ac i) xPub
 
     in if max n' nLookup <= value @n
         then Just $ PlonkupRelation {..}

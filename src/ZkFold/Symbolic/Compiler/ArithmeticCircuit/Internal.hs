@@ -8,6 +8,7 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
         Var (..),
+        SysVar (..),
         VarField,
         Arithmetic,
         Constraint,
@@ -21,6 +22,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec,
         exec1,
         apply,
+        indexW
     ) where
 
 import           Control.DeepSeq                                       (NFData)
@@ -32,6 +34,7 @@ import           Data.Foldable                                         (fold, to
 import           Data.Functor.Rep
 import           Data.Map.Strict                                       hiding (drop, foldl, foldr, map, null, splitAt,
                                                                         take, toList)
+import           Data.Maybe                                            (fromMaybe)
 import           Data.Semialign                                        (unzipDefault)
 import           Data.Semigroup.Generic                                (GenericSemigroupMonoid (..))
 import           GHC.Generics                                          (Generic, Par1 (..), U1 (..), (:*:) (..))
@@ -51,7 +54,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | The type that represents a constraint in the arithmetic circuit.
-type Constraint c i = Poly c (Var i) Natural
+type Constraint c i = Poly c (SysVar i) Natural
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a i o = ArithmeticCircuit
@@ -62,7 +65,7 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (i a -> Map ByteString a -> a),
         -- ^ The witness generation functions
-        acOutput  :: o (Var i)
+        acOutput  :: o (Var a i)
         -- ^ The output variables
     } deriving (Generic)
 
@@ -72,39 +75,64 @@ deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
   instance o ~ U1 => Monoid (ArithmeticCircuit a i o)
 
-instance (NFData a, NFData (o (Var i)), NFData (Rep i))
+instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
     => NFData (ArithmeticCircuit a i o)
 
 -- | Variables are SHA256 digests (32 bytes)
 type VarField = Zp (2 ^ (32 * 8))
 
-data Var i
+data SysVar i
   = InVar (Rep i)
   | NewVar ByteString
   deriving Generic
-deriving anyclass instance FromJSON (Rep i) => FromJSON (Var i)
-deriving anyclass instance FromJSON (Rep i) => FromJSONKey (Var i)
-deriving anyclass instance ToJSON (Rep i) => ToJSONKey (Var i)
-deriving anyclass instance ToJSON (Rep i) => ToJSON (Var i)
-deriving stock instance Show (Rep i) => Show (Var i)
-deriving stock instance Eq (Rep i) => Eq (Var i)
-deriving stock instance Ord (Rep i) => Ord (Var i)
-deriving instance NFData (Rep i) => NFData (Var i)
+deriving anyclass instance FromJSON (Rep i) => FromJSON (SysVar i)
+deriving anyclass instance FromJSON (Rep i) => FromJSONKey (SysVar i)
+deriving anyclass instance ToJSON (Rep i) => ToJSONKey (SysVar i)
+deriving anyclass instance ToJSON (Rep i) => ToJSON (SysVar i)
+deriving stock instance Show (Rep i) => Show (SysVar i)
+deriving stock instance Eq (Rep i) => Eq (SysVar i)
+deriving stock instance Ord (Rep i) => Ord (SysVar i)
+deriving instance NFData (Rep i) => NFData (SysVar i)
+
+data Var a i
+  = SysVar (SysVar i)
+  | ConstVar a
+  deriving Generic
+deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSON (Var a i)
+deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSONKey (Var a i)
+deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSONKey (Var a i)
+deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSON (Var a i)
+deriving stock instance (Show (Rep i), Show a) => Show (Var a i)
+deriving stock instance (Eq (Rep i), Eq a) => Eq (Var a i)
+deriving stock instance (Ord (Rep i), Ord a) => Ord (Var a i)
+deriving instance (NFData (Rep i), NFData a) => NFData (Var a i)
+instance FromConstant a (Var a i) where
+    fromConstant = ConstVar
 
 ---------------------------------- Variables -----------------------------------
 
-acInput :: Representable i => i (Var i)
-acInput = tabulate InVar
+acInput :: Representable i => i (Var a i)
+acInput = fmapRep (SysVar . InVar) (tabulate id)
 
-getAllVars :: (Representable i, Foldable i) => ArithmeticCircuit a i o -> [Var i]
-getAllVars ac = toList acInput ++ map NewVar (keys $ acWitness ac)
+getAllVars :: forall a i o. (Representable i, Foldable i) => ArithmeticCircuit a i o -> [SysVar i]
+getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where
+  acInput0 :: i (SysVar i)
+  acInput0 = fmapRep InVar (tabulate @i id)
+
+indexW :: Representable i => ArithmeticCircuit a i o -> i a -> Var a i -> a
+indexW circuit inputs = \case
+  SysVar (InVar inV) -> index inputs inV
+  SysVar (NewVar newV) -> fromMaybe
+    (error ("no such NewVar: " <> show newV))
+    (witnessGenerator circuit inputs !? newV)
+  ConstVar cV -> cV
 
 --------------------------- Symbolic compiler context --------------------------
 
-crown :: ArithmeticCircuit a i g -> f (Var i) -> ArithmeticCircuit a i f
+crown :: ArithmeticCircuit a i g -> f (Var a i) -> ArithmeticCircuit a i f
 crown = flip (set #acOutput)
 
-behead :: ArithmeticCircuit a i f -> (ArithmeticCircuit a i U1, f (Var i))
+behead :: ArithmeticCircuit a i f -> (ArithmeticCircuit a i U1, f (Var a i))
 behead = liftA2 (,) (set #acOutput U1) acOutput
 
 instance HFunctor (ArithmeticCircuit a i) where
@@ -128,19 +156,26 @@ instance
 
 instance
   ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
-  , o ~ U1) => MonadCircuit (Var i) a (State (ArithmeticCircuit a i o)) where
+  , o ~ U1) => MonadCircuit (Var a i) a (State (ArithmeticCircuit a i o)) where
 
     unconstrained witness = do
       let v = toVar @a witness
       -- TODO: forbid reassignment of variables
       zoom #acWitness . modify $ insert v $ \i w -> witness $ \case
-        InVar inV -> index i inV
-        NewVar newV -> w ! newV
-      return (NewVar v)
+        SysVar (InVar inV) -> index i inV
+        SysVar (NewVar newV) -> w ! newV
+        ConstVar cV -> fromConstant cV
+      return (SysVar (NewVar v))
 
-    constraint p = zoom #acSystem . modify $ insert (toVar @a p) (p var)
+    constraint p =
+      let
+        evalConstVar = \case
+          SysVar sysV -> var sysV
+          ConstVar cV -> fromConstant cV
+      in
+        zoom #acSystem . modify $ insert (toVar @a p) (p evalConstVar)
 
-    rangeConstraint (NewVar v) upperBound =
+    rangeConstraint (SysVar (NewVar v)) upperBound =
       zoom #acRange . modify $ insert v upperBound
     -- FIXME range-constrain other variable types
     rangeConstraint _ _ = error "Cannot range-constrain this variable"
@@ -168,10 +203,11 @@ instance
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
 toVar ::
   forall a i. (Finite a, Binary a, Binary (Rep i)) =>
-  Witness (Var i) a -> ByteString
+  Witness (Var a i) a -> ByteString
 toVar witness = runHash @(Just (Order a)) $ witness $ \case
-  InVar inV -> merkleHash inV
-  NewVar newV -> M newV
+  SysVar (InVar inV) -> merkleHash inV
+  SysVar (NewVar newV) -> M newV
+  ConstVar cV -> fromConstant cV
 
 ----------------------------- Evaluation functions -----------------------------
 
@@ -186,9 +222,7 @@ eval1 ctx i = unPar1 (eval ctx i)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
 eval :: (Representable i, Functor o) => ArithmeticCircuit a i o -> i a -> o a
-eval ctx i = acOutput ctx <&> \case
-    NewVar k -> witnessGenerator ctx i ! k
-    InVar j -> index i j
+eval ctx i = indexW ctx i <$> acOutput ctx
 
 -- | Evaluates the arithmetic circuit with no inputs and one output.
 exec1 :: ArithmeticCircuit a U1 Par1 -> a

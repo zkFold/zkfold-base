@@ -4,11 +4,12 @@
 
 module ZkFold.Symbolic.Data.FieldElement where
 
+import           Control.DeepSeq                  (NFData)
 import           Data.Foldable                    (foldr)
 import           Data.Function                    (($), (.))
 import           Data.Functor                     (fmap, (<$>))
 import           Data.Tuple                       (snd)
-import           GHC.Generics                     (Par1 (..))
+import           GHC.Generics                     (Generic, Par1 (..))
 import           Prelude                          (Integer)
 import qualified Prelude                          as Haskell
 
@@ -26,12 +27,15 @@ import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
+    deriving Generic
 
 deriving stock instance Haskell.Show (c Par1) => Haskell.Show (FieldElement c)
 
 deriving stock instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
 
 deriving stock instance Haskell.Ord (c Par1) => Haskell.Ord (FieldElement c)
+
+deriving newtype instance NFData (c Par1) => NFData (FieldElement c)
 
 deriving newtype instance HFunctor c => SymbolicData (FieldElement c)
 
@@ -40,7 +44,7 @@ deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
 deriving via (Lexicographical (FieldElement c))
   instance Symbolic c => Ord (Bool c) (FieldElement c)
 
-instance (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
+instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
   fromConstant = FieldElement . embed . Par1 . fromConstant
 
 instance Symbolic c => Exponent (FieldElement c) Natural where

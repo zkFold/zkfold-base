@@ -20,7 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 type WitnessField n a = ( FiniteField a, ToConstant a, Const a ~ n
                         , FromConstant n a, SemiEuclidean n)
 
--- | A type of witness builders. @i@ is a type of variables, @a@ is a base field.
+-- | A type of witness builders. @var@ is a type of variables, @a@ is a base field.
 --
 -- A function is a witness builder if, given an arbitrary field of witnesses @x@
 -- over @a@ and a function mapping known variables to their witnesses,
@@ -28,10 +28,10 @@ type WitnessField n a = ( FiniteField a, ToConstant a, Const a ~ n
 --
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
-type Witness i a = forall x n . (Algebra a x, WitnessField n x) => (i -> x) -> x
+type Witness var a = forall x n . (Algebra a x, WitnessField n x) => (var -> x) -> x
 
 -- | A type of polynomial expressions.
--- @i@ is a type of variables, @a@ is a base field.
+-- @var@ is a type of variables, @a@ is a base field.
 --
 -- A function is a polynomial expression if, given an arbitrary algebra @x@ over
 -- @a@ and a function mapping known variables to their witnesses, it computes a
@@ -39,10 +39,10 @@ type Witness i a = forall x n . (Algebra a x, WitnessField n x) => (i -> x) -> x
 --
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
-type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
+type ClosedPoly var a = forall x . Algebra a x => (var -> x) -> x
 
 -- | A type of constraints for new variables.
--- @i@ is a type of variables, @a@ is a base field.
+-- @var@ is a type of variables, @a@ is a base field.
 --
 -- A function is a constraint for a new variable if, given an arbitrary algebra
 -- @x@ over @a@, a function mapping known variables to their witnesses in that
@@ -51,10 +51,10 @@ type ClosedPoly i a = forall x . Algebra a x => (i -> x) -> x
 --
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
-type NewConstraint i a = forall x . Algebra a x => (i -> x) -> i -> x
+type NewConstraint var a = forall x . Algebra a x => (var -> x) -> var -> x
 
 -- | A monadic DSL for constructing arithmetic circuits.
--- @i@ is a type of variables, @a@ is a base field
+-- @var@ is a type of variables, @a@ is a base field
 -- and @m@ is a monad for constructing the circuit.
 --
 -- DSL provides the following guarantees:
@@ -69,23 +69,23 @@ type NewConstraint i a = forall x . Algebra a x => (i -> x) -> i -> x
 -- * That provided witnesses satisfy the provided constraints. To check this,
 --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
 -- * That introduced constraints are supported by the zk-SNARK utilized for later proving.
-class Monad m => MonadCircuit i a m | m -> i, m -> a where
+class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a where
   -- | Creates new variable from witness.
   --
   -- NOTE: this does not add any constraints to the system,
   -- use 'rangeConstraint' or 'constraint' to add them.
-  unconstrained :: Witness i a -> m i
+  unconstrained :: Witness var a -> m var
 
   -- | Adds new polynomial constraint to the system.
-  -- E.g., @'constraint' (\\x -> x i)@ forces variable @i@ to be zero.
+  -- E.g., @'constraint' (\\x -> x i)@ forces variable @var@ to be zero.
   --
   -- NOTE: it is not checked (yet) whether provided constraint is in
   -- appropriate form for zkSNARK in use.
-  constraint :: ClosedPoly i a -> m ()
+  constraint :: ClosedPoly var a -> m ()
 
   -- | Adds new range constraint to the system.
-  -- E.g., @'rangeConstraint' i B@ forces variable @i@ to be in range \([0; B]\).
-  rangeConstraint :: i -> a -> m ()
+  -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
+  rangeConstraint :: var -> a -> m ()
 
   -- | Creates new variable given a polynomial witness
   -- AND adds a corresponding polynomial constraint.
@@ -98,15 +98,15 @@ class Monad m => MonadCircuit i a m | m -> i, m -> a where
   --
   -- NOTE: is is not checked (yet) whether the corresponding constraint is in
   -- appropriate form for zkSNARK in use.
-  newAssigned :: ClosedPoly i a -> m i
-  newAssigned p = newConstrained (\x i -> p x - x i) p
+  newAssigned :: ClosedPoly var a -> m var
+  newAssigned p = newConstrained (\x var -> p x - x var) p
 
 -- | Creates new variable from witness constrained with an inclusive upper bound.
--- E.g., @'newRanged' b (\\x -> x i - one)@ creates new variable whose value
--- is equal to @x i - one@ and which is expected to be in range @[0..b]@.
+-- E.g., @'newRanged' b (\\x -> x var - one)@ creates new variable whose value
+-- is equal to @x var - one@ and which is expected to be in range @[0..b]@.
 --
 -- NOTE: this adds a range constraint to the system.
-newRanged :: MonadCircuit i a m => a -> Witness i a -> m i
+newRanged :: MonadCircuit var a m => a -> Witness var a -> m var
 newRanged upperBound witness = do
   v <- unconstrained witness
   rangeConstraint v upperBound
@@ -115,13 +115,13 @@ newRanged upperBound witness = do
 -- | Creates new variable from witness constrained by a polynomial.
 -- E.g., @'newConstrained' (\\x i -> x i * (x i - one)) (\\x -> x j - one)@
 -- creates new variable whose value is equal to @x j - one@ and which is
--- expected to be a root of the polynomial @x i (x i - one)@.
+-- expected to be a root of the polynomial @x i * (x i - one)@.
 --
--- NOTE: this adds a polynomial contraint to the system.
+-- NOTE: this adds a polynomial constraint to the system.
 --
 -- NOTE: it is not checked (yet) whether provided constraint is in
 -- appropriate form for zkSNARK in use.
-newConstrained :: MonadCircuit i a m => NewConstraint i a -> Witness i a -> m i
+newConstrained :: MonadCircuit var a m => NewConstraint var a -> Witness var a -> m var
 newConstrained poly witness = do
   v <- unconstrained witness
   constraint (`poly` v)

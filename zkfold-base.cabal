@@ -2,6 +2,7 @@ cabal-version:      3.0
 
 name:               zkfold-base
 version:            0.1.0.0
+tested-with:        GHC ==9.6.4
 synopsis:           ZkFold Symbolic compiler and zero-knowledge proof protocols
 homepage:           https://zkfold.io/
 category:           Cryptography, DSL, Math, Symbolic Computation
@@ -143,8 +144,11 @@ library
       ZkFold.Base.Protocol.Protostar
       ZkFold.Base.Protocol.Protostar.Accumulator
       ZkFold.Base.Protocol.Protostar.AccumulatorScheme
+      ZkFold.Base.Protocol.Protostar.ArithmeticCircuit
       ZkFold.Base.Protocol.Protostar.CommitOpen
+      ZkFold.Base.Protocol.Protostar.Commit
       ZkFold.Base.Protocol.Protostar.FiatShamir
+      ZkFold.Base.Protocol.Protostar.Fold
       ZkFold.Base.Protocol.Protostar.Internal
       ZkFold.Base.Protocol.Protostar.Gate
       ZkFold.Base.Protocol.Protostar.Lookup
@@ -265,6 +269,7 @@ library zkfold-symbolic-examples
       Examples.BatchTransfer
       Examples.ByteString
       Examples.Conditional
+      Examples.Constant
       Examples.Eq
       Examples.FFA
       Examples.Fibonacci
@@ -303,6 +308,7 @@ test-suite zkfold-base-test
       Tests.Pairing
       Tests.Permutations
       Tests.Plonkup
+--      Tests.Protostar
       Tests.SHA2
       Tests.UInt
       Tests.Univariate

@@ -15,13 +15,13 @@ import           ZkFold.Symbolic.Cardano.Types.Value     (SingleAsset, Value)
 import           ZkFold.Symbolic.Class                   (Symbolic)
 import           ZkFold.Symbolic.Data.Class
 
-newtype Transaction inputs rinputs outputs tokens mint datum context = Transaction
-    ( Vector rinputs (Input tokens datum context)
-    , (Vector inputs (Input tokens datum context)
-    , (Vector outputs (Output tokens datum context)
-    , (Value mint context
-    , (UTCTime context, UTCTime context)
-    ))))
+data Transaction inputs rinputs outputs tokens mint datum context = Transaction {
+        txRefInputs :: Vector rinputs (Input tokens datum context),
+        txInputs    :: Vector inputs (Input tokens datum context),
+        txOutputs   :: Vector outputs (Output tokens datum context),
+        txMint      :: Value mint context,
+        txTime      :: (UTCTime context, UTCTime context)
+    }
 
 deriving instance
     ( Haskell.Eq (Vector rinputs (Input tokens datum context))
@@ -32,7 +32,7 @@ deriving instance
     ) => Haskell.Eq (Transaction inputs rinputs outputs tokens mint datum context)
 
 -- TODO: Think how to prettify this abomination
-deriving instance
+instance
     ( Symbolic context
     , KnownNat tokens
     , KnownNat rinputs
@@ -49,16 +49,11 @@ deriving instance
     , KnownNat (TypeSize (Vector inputs (Input tokens datum context)))
     , KnownNat (TypeSize (Vector rinputs (Input tokens datum context)))
     , KnownNat (TypeSize (Value mint context))
-    ) => SymbolicData (Transaction inputs rinputs outputs tokens mint datum context)
+    ) => SymbolicData (Transaction inputs rinputs outputs tokens mint datum context) where
+  type Context (Transaction inputs rinputs outputs tokens mint datum context) = Context (Vector rinputs (Input tokens datum context), Vector inputs (Input tokens datum context), Vector outputs (Output tokens datum context), Value mint context, (UTCTime context, UTCTime context))
+  type Support (Transaction inputs rinputs outputs tokens mint datum context) = Support (Vector rinputs (Input tokens datum context), Vector inputs (Input tokens datum context), Vector outputs (Output tokens datum context), Value mint context, (UTCTime context, UTCTime context))
+  type TypeSize (Transaction inputs rinputs outputs tokens mint datum context) = TypeSize (Vector rinputs (Input tokens datum context), Vector inputs (Input tokens datum context), Vector outputs (Output tokens datum context), Value mint context, (UTCTime context, UTCTime context))
 
-txRefInputs :: Transaction inputs rinputs outputs tokens mint datum context -> Vector rinputs (Input tokens datum context)
-txRefInputs (Transaction (ris, _)) = ris
+  pieces (Transaction a b c d e) = pieces (a, b, c, d, e)
+  restore f = let (a, b, c, d, e) = restore f in Transaction a b c d e
 
-txInputs :: Transaction inputs rinputs outputs tokens mint datum context -> Vector inputs (Input tokens datum context)
-txInputs (Transaction (_, (is, _))) = is
-
-txOutputs :: Transaction inputs rinputs outputs tokens mint datum context -> Vector outputs (Output tokens datum context)
-txOutputs (Transaction (_, (_, (os, _)))) = os
-
-txMint :: Transaction inputs rinputs outputs tokens mint datum context -> Value mint context
-txMint (Transaction (_, (_, (_, (mint, _))))) = mint

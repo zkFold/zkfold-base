@@ -17,7 +17,7 @@ import           ZkFold.Base.Data.ByteString     (toByteString)
 
 newtype MerkleHash (n :: Maybe Natural) = M { runHash :: ByteString }
 
-data Prec = Add | Mul | Div | Mod | Exp deriving (Generic, Binary)
+data Prec = Add | Mul | Div | Mod | Exp | Const deriving (Generic, Binary)
 
 merkleHash :: Binary a => a -> MerkleHash n
 merkleHash = M . hash . toByteString
@@ -34,7 +34,7 @@ instance {-# OVERLAPPING #-} FromConstant (MerkleHash n) (MerkleHash n)
 instance {-# OVERLAPPING #-} Scale (MerkleHash n) (MerkleHash n)
 
 instance Binary a => FromConstant a (MerkleHash n) where
-  fromConstant = merkleHash
+  fromConstant x = merkleHash (Const, x)
 
 instance Binary a => Scale a (MerkleHash n)
 

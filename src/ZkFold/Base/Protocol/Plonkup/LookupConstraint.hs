@@ -10,7 +10,7 @@ import           ZkFold.Base.Data.ByteString                         (toByteStri
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
-newtype LookupConstraint i a = LookupConstraint { lkVar :: Var (Vector i) }
+newtype LookupConstraint i a = LookupConstraint { lkVar :: SysVar (Vector i) }
     deriving (Show, Eq)
 
 instance (Arbitrary a, Binary a) => Arbitrary (LookupConstraint i a) where
