@@ -26,7 +26,7 @@ import qualified Data.ByteString                    as Bytes
 import           Data.Kind                          (Type)
 import           Data.List                          (reverse, unfoldr)
 import           Data.Maybe                         (Maybe (..))
-import           Data.String                        (IsString (..))
+import           Data.String                        (IsString (..), String)
 import           Data.Traversable                   (for)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
@@ -51,6 +51,7 @@ import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
+import Data.Aeson (FromJSON(..), ToJSON (..))
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -348,3 +349,11 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ fromC
             let varsLeft = lv
                 varsRight = rv
             V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+
+instance (FromConstant Natural (ByteString 8 c), Concat (ByteString 8 c) (ByteString n c)) 
+    => FromJSON (ByteString n c) where
+    parseJSON = Haskell.fmap fromString . parseJSON @String
+
+instance (ToConstant (ByteString n (Interpreter (Zp p)))) 
+    => ToJSON (ByteString n (Interpreter (Zp p))) where
+    toJSON = toJSON . toConstant
