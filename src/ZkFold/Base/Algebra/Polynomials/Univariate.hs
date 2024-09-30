@@ -5,8 +5,11 @@
 
 module ZkFold.Base.Algebra.Polynomials.Univariate
     ( toPoly
+    , constant
+    , monomial
     , fromPoly
     , Poly
+    , evalPoly
     , removeZeros
     , scaleP
     , qr
@@ -29,10 +32,11 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , scalePV
     , polyVecZero
     , polyVecDiv
-    , polyVecLinear
     , polyVecLagrange
     , polyVecGrandProduct
     , polyVecInLagrangeBasis
+    , polyVecConstant
+    , polyVecLinear
     , polyVecQuadratic
     , mulVector
     , mulDft
@@ -55,7 +59,7 @@ import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                   (zipWithDefault)
+import           ZkFold.Prelude                   (replicate, zipWithDefault)
 
 infixl 7 .*, *., .*., ./.
 infixl 6 .+, +.
@@ -69,10 +73,21 @@ newtype Poly c = P (V.Vector c)
 toPoly :: (Ring c, Eq c) => V.Vector c -> Poly c
 toPoly = removeZeros . P
 
+constant :: c -> Poly c
+constant = P . V.singleton
+
+-- | A polynomial of form cx^d
+--
+monomial :: Ring c => Natural -> c -> Poly c
+monomial d c = P $ V.fromList (replicate d zero P.<> [c])
+
 fromPoly :: Poly c -> V.Vector c
 fromPoly (P cs) = cs
 
 instance {-# OVERLAPPING #-} FromConstant (Poly c) (Poly c)
+
+evalPoly :: Ring c => Poly c -> c -> c
+evalPoly (P cs) x = sum $ V.zipWith (*) cs $ fmap (x^) (V.generate (V.length cs) (fromIntegral @_ @Natural))
 
 instance FromConstant c c' => FromConstant c (Poly c') where
     fromConstant = P . V.singleton . fromConstant
@@ -302,16 +317,16 @@ instance (Ring c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
 instance (Ring c, KnownNat size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ fmap negate cs
 
-instance (Field c, KnownNat size, Eq c) => Exponent (PolyVec c size) Natural where
+instance (Field c, KnownNat size) => Exponent (PolyVec c size) Natural where
     (^) = natPow
 
-instance {-# OVERLAPPING #-} (Field c, KnownNat size, Eq c) => Scale (PolyVec c size) (PolyVec c size)
+instance {-# OVERLAPPING #-} (Field c, KnownNat size) => Scale (PolyVec c size) (PolyVec c size)
 
 -- TODO (Issue #18): check for overflow
-instance (Field c, KnownNat size, Eq c) => MultiplicativeSemigroup (PolyVec c size) where
-    l * r = poly2vec $ vec2poly l * vec2poly r
+instance (Field c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
+    (PV l) * (PV r) = toPolyVec $ mulAdaptive l r
 
-instance (Field c, KnownNat size, Eq c) => MultiplicativeMonoid (PolyVec c size) where
+instance (Field c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
     one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
 
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
@@ -340,6 +355,10 @@ a *. (PV cs) = PV $ fmap (a *) cs
 -- | Add a constant to every coefficient of the polynomial.
 (+.) :: forall c size . (Field c) => c -> PolyVec c size -> PolyVec c size
 a +. (PV cs) = PV $ fmap (+ a) cs
+
+-- p(x) = a0
+polyVecConstant :: forall c size . (Ring c, KnownNat size) => c -> PolyVec c size
+polyVecConstant a0 = PV $ V.singleton a0 V.++ V.replicate (fromIntegral $ value @size -! 1) zero
 
 -- p(x) = a0 + a1 * x
 polyVecLinear :: forall c size . (Ring c, KnownNat size) => c -> c -> PolyVec c size
