@@ -4,6 +4,8 @@
 module ZkFold.Base.Protocol.Plonkup.Internal where
 
 import           Data.Binary                                         (Binary)
+import           Data.Constraint                                     (withDict)
+import           Data.Constraint.Nat                                 (plusNat, timesNat)
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -15,8 +17,6 @@ import           ZkFold.Base.Data.Vector                             (Vector (..
 import           ZkFold.Base.Protocol.Plonkup.Utils
 import           ZkFold.Symbolic.Compiler                            ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import Data.Constraint (withDict)
-import Data.Constraint.Nat (timesNat, plusNat)
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.

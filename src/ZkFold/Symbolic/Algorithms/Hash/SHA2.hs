@@ -9,6 +9,9 @@ module ZkFold.Symbolic.Algorithms.Hash.SHA2 (AlgorithmSetup (..), SHA2, sha2, SH
 import           Control.DeepSeq                                (NFData, force)
 import           Control.Monad                                  (forM_)
 import           Data.Bits                                      (shiftL)
+import           Data.Constraint
+import           Data.Constraint.Nat
+import           Data.Constraint.Unsafe
 import           Data.Kind                                      (Type)
 import           Data.Proxy                                     (Proxy (..))
 import qualified Data.STRef                                     as ST
@@ -17,7 +20,7 @@ import           Data.Type.Equality                             (type (~))
 import qualified Data.Vector                                    as V
 import qualified Data.Vector.Mutable                            as VM
 import           GHC.TypeLits                                   (Symbol)
-import           GHC.TypeNats                                   (natVal, type (<=?))
+import           GHC.TypeNats                                   (natVal, type (<=?), withKnownNat)
 import           Prelude                                        (Int, id, pure, zip, ($!), ($), (.), (>>=))
 import qualified Prelude                                        as P
 
@@ -34,10 +37,6 @@ import           ZkFold.Symbolic.Data.ByteString                (ByteString (..)
                                                                  toWords)
 import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
-import Data.Constraint
-import Data.Constraint.Unsafe
-import Data.Constraint.Nat
-import GHC.TypeNats (withKnownNat)
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
@@ -177,9 +176,9 @@ type family PaddedLength (msg :: Natural) (block :: Natural) (lenBits :: Natural
 
 paddedLen :: Natural -> Natural -> Natural ->  Natural
 paddedLen m b l = if nextMultiple m b -! m P.<= l
-    then b + nextMultiple m b 
-    else nextMultiple m b 
-    where 
+    then b + nextMultiple m b
+    else nextMultiple m b
+    where
         nextMultiple :: Natural -> Natural -> Natural
         nextMultiple n d = d * div (n + d -! 1) d
 
@@ -191,7 +190,7 @@ withPaddedLength' = magicPaddedLength paddedLen
 
 withPaddedLength :: forall n d l {r}. ( KnownNat d, KnownNat n, KnownNat l) => (KnownNat (PaddedLength n d l) => r) -> r
 withPaddedLength = withDict (withPaddedLength' @n @d @l)
-                    
+
 -- | Constraints required for a type-safe SHA2
 --
 type SHA2 algorithm context k =

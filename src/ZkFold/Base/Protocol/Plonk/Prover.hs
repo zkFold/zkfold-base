@@ -17,6 +17,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCu
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             (fromVector, (!!))
 import           ZkFold.Base.Protocol.NonInteractiveProof
+import           ZkFold.Base.Protocol.Plonkup                        (with4n6)
 import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPolyExtended, PlonkupPolyExtendedLength)
 import           ZkFold.Base.Protocol.Plonkup.Proof
@@ -28,7 +29,6 @@ import           ZkFold.Base.Protocol.Plonkup.Testing                (PlonkupPro
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Base.Protocol.Plonkup                        (with4n6)
 
 plonkProve :: forall i n l c1 c2 ts core .
     ( KnownNat n
@@ -43,7 +43,7 @@ plonkProve :: forall i n l c1 c2 ts core .
     ) => PlonkupProverSetup i n l c1 c2 -> (PlonkupWitnessInput i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1, PlonkupProverTestInfo n c1)
 plonkProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wInput, PlonkupProverSecret ps)
-    = (with4n6 @n $ PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..}) 
+    = (with4n6 @n $ PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})
     where
         PlonkupCircuitPolynomials {..} = polynomials
         secret i = ps !! (i -! 1)

@@ -40,7 +40,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
-import           ZkFold.Base.Data.Package           (unpackWith, packWith)
+import           ZkFold.Base.Data.Package           (packWith, unpackWith)
 import qualified ZkFold.Base.Data.Vector            as V
 import           ZkFold.Base.Data.Vector            (Vector (..), parFmap)
 import           ZkFold.Prelude                     (replicateA, (!!))

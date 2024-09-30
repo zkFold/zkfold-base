@@ -5,7 +5,9 @@
 module ZkFold.Symbolic.Algorithms.Hash.Blake2b where
 
 import           Data.Bool                                         (bool)
+import           Data.Constraint
 import           Data.Constraint.Nat
+import           Data.Constraint.Unsafe
 import           Data.List                                         (foldl')
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
@@ -29,8 +31,6 @@ import           ZkFold.Symbolic.Data.ByteString                   (ByteString (
                                                                     concat, reverseEndianness, toWords)
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
-import           Data.Constraint
-import           Data.Constraint.Unsafe
 
 
 -- TODO: This module is not finished yet. The hash computation is not correct.

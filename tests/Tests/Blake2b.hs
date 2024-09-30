@@ -1,10 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Blake2b where
 
 import           Crypto.Hash.BLAKE2.BLAKE2b                  (hash)
 import qualified Data.ByteString.Internal                    as BI
+import           Data.Constraint                             (Dict, withDict)
+import           Data.Constraint.Nat                         (Gcd)
+import           Data.Constraint.Unsafe                      (unsafeAxiom)
 import           Data.Data                                   (Proxy (Proxy))
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (Eq (..), IO, ($))
@@ -20,9 +23,6 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (pieces)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
-import Data.Constraint.Nat (Gcd)
-import Data.Constraint (Dict, withDict)
-import Data.Constraint.Unsafe (unsafeAxiom)
 
 -- TODO: We need a proper test for both numeric and symbolic blake2b hashing
 

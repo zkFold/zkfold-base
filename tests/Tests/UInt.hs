@@ -8,6 +8,9 @@ module Tests.UInt (specUInt) where
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return, when)
+import           Data.Constraint
+import           Data.Constraint.Nat                         (timesNat)
+import           Data.Constraint.Unsafe
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
@@ -34,9 +37,6 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-import           Data.Constraint
-import           Data.Constraint.Unsafe
-import Data.Constraint.Nat (timesNat)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
