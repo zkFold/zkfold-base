@@ -141,46 +141,53 @@ blake2b' d =
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
 
-withExtensionBits :: forall n {r}. KnownNat n => (KnownNat (8 * (128 - Mod n 128)) => r) -> r
+withExtensionBits :: forall n {r}. KnownNat n => (KnownNat (ExtensionBits n) => r) -> r
 withExtensionBits = withDict (modBound @n @128) $
                         withDict (modNat @n @128) $
                             withDict (minusNat @128 @(Mod n 128)) $
                                 withDict (timesNat @8 @(128 - Mod n 128))
 
-withExtendedInputByteString :: forall n {r}. KnownNat n => (KnownNat (8 * n + 8 * (128 - Mod n 128)) => r) -> r
+withExtendedInputByteString :: forall n {r}. KnownNat n => (KnownNat (8 * n + ExtensionBits n) => r) -> r
 withExtendedInputByteString = withExtensionBits @n $
                                     withDict (timesNat @8 @n) $
-                                        withDict (plusNat @(8 * n) @( 8 * (128 - Mod n 128)))
+                                        withDict (plusNat @(8 * n) @(ExtensionBits n))
 
-with8nLessExt :: forall n {r}. KnownNat n => (8 * n <= 8 * n +  8 * (128 - Mod n 128) => r) -> r
+with8nLessExt :: forall n {r}. KnownNat n => (8 * n <= 8 * n + ExtensionBits n => r) -> r
 with8nLessExt = withExtendedInputByteString @n $
-                    withDict (zeroLe @( 8 * (128 - Mod n 128))) $
-                        withDict (plusMonotone2 @(8 * n) @0 @( 8 * (128 - Mod n 128)))
+                    withDict (zeroLe @(ExtensionBits n)) $
+                        withDict (plusMonotone2 @(8 * n) @0 @(ExtensionBits n))
 
 with8n  :: forall n {r}. KnownNat n => (KnownNat (8 * n) => r) -> r
 with8n = withDict (timesNat @8 @n)
 
-black2bDivConstraint :: forall a b. (Gcd a 8 ~ 8) :- (Div (8 * a + 8 * (2 * 64 - Mod a (2 * b))) 64 * 64 ~ 8 * a + 8 * (2 * 64 - Mod a (2 * 64)) )
-black2bDivConstraint = Sub unsafeAxiom
+black2bDivConstraint :: forall n. Dict (Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n)
+black2bDivConstraint = unsafeAxiom
 
-withBlack2bDivConstraint :: forall a b {r}. (Gcd a 8 ~ 8) => (Div (8 * a + 8 * (2 * 64 - Mod a (2 * b))) 64 * 64 ~ 8 * a + 8 * (2 * 64 - Mod a (2 * 64)) => r) -> r
-withBlack2bDivConstraint =  withDict (black2bDivConstraint @a @b)
+withBlack2bDivConstraint :: forall n {r}. (Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n => r) -> r
+withBlack2bDivConstraint =  withDict $ black2bDivConstraint @n
 
+withConstraints :: forall n {r}. KnownNat n => (
+    ( KnownNat (8 * n) 
+    , KnownNat (ExtensionBits n)
+    , KnownNat (8 * n + ExtensionBits n)
+    , 8 * n <= 8 * n + ExtensionBits n
+    , Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n) => r) -> r
+withConstraints = with8nLessExt @n $ withExtendedInputByteString @n $ withExtensionBits @n $ with8n @n $ withBlack2bDivConstraint @n 
+        
 
 blake2b :: forall keyLen inputLen outputLen c n.
     ( Symbolic c
     , KnownNat keyLen
     , KnownNat inputLen
     , KnownNat outputLen
-    , Gcd inputLen 8 ~ 8
     , n ~ (8 * inputLen + ExtensionBits inputLen)
     , 8 * outputLen <= 512
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
-    let input' = with8nLessExt @inputLen $ withExtendedInputByteString @inputLen $ with8n @inputLen $ withBlack2bDivConstraint @inputLen @64 $
+    let input' = withConstraints @inputLen $ 
                     Vec.parFmap from $ toWords @(Div n 64) @64 $
                     reverseEndianness @64 $
-                    flip (withExtendedInputByteString @inputLen $ rotateBitsL) (withExtensionBits @inputLen $ value @(ExtensionBits inputLen)) $
+                    flip rotateBitsL (value @(ExtensionBits inputLen)) $
                     extend @_ @(ExtendedInputByteString inputLen c) input :: Vec.Vector (Div n 64) (UInt 64 Auto c)
 
         key'    = fromConstant @_ key :: UInt 64 Auto c
@@ -206,7 +213,6 @@ blake2b key input =
 blake2b_224 :: forall inputLen c n.
     ( Symbolic c
     , KnownNat inputLen
-    , Gcd inputLen 8 ~ 8
     , n ~ (8 * inputLen + ExtensionBits inputLen)
     ) => ByteString (8 * inputLen) c -> ByteString 224 c
 blake2b_224 = blake2b @0 @inputLen @28 (fromConstant @Natural 0)
@@ -216,7 +222,6 @@ blake2b_256 :: forall inputLen c n .
     ( Symbolic c
     , KnownNat inputLen
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , Gcd inputLen 8 ~ 8
     ) => ByteString (8 * inputLen) c -> ByteString 256 c
 blake2b_256 = blake2b @0 @inputLen @32 (fromConstant @Natural 0)
 
@@ -225,6 +230,5 @@ blake2b_512 :: forall inputLen c n .
     ( Symbolic c
     , KnownNat inputLen
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , Gcd inputLen 8 ~ 8
     ) => ByteString (8 * inputLen) c -> ByteString 512 c
 blake2b_512 = blake2b @0 @inputLen @64 0
