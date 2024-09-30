@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Tests.Blake2b where
 
@@ -19,17 +20,27 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (pieces)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
+import Data.Constraint.Nat (Gcd)
+import Data.Constraint (Dict, withDict)
+import Data.Constraint.Unsafe (unsafeAxiom)
 
 -- TODO: We need a proper test for both numeric and symbolic blake2b hashing
 
 blake2bSimple :: forall c .
     ( Symbolic c, Eq (c (Vector 512))) => Spec
 blake2bSimple =
-    let a = blake2b_512 @0 @c $ fromConstant (0 :: Natural)
+    let a = withGcd08 $ blake2b_512 @0 @c $ fromConstant (0 :: Natural)
         c = hash 64 BI.empty BI.empty
     in  it "computes blake2b_512 correctly on empty bytestring" $ a == fromConstant c
 
-blake2bAC :: Spec
+gcd08 :: Dict (Gcd 0 8 ~ 8)
+gcd08 = unsafeAxiom
+
+withGcd08 :: (Gcd 0 8 ~ 8 => r) -> r
+withGcd08 = withDict gcd08
+
+
+blake2bAC :: (Gcd 1 8 ~ 8) => Spec
 blake2bAC =
     let cs = compile blake2b_512 :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 8))
         ac = pieces cs Proxy

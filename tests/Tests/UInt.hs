@@ -35,8 +35,8 @@ import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 import           Data.Constraint
-import           Data.Constraint.Nat
-
+import           Data.Constraint.Unsafe
+import Data.Constraint.Nat (timesNat)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -153,7 +153,7 @@ specUInt' = hspec $ do
             x <- toss (m * m)
             let acUint = with2n @n (fromConstant x) :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1)
                 zpUint = fromConstant x :: UInt n rs (Interpreter (Zp p))
-            return $ execAcUint @(Zp p) (with2n @n (shrink acUint :: UInt n rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
+            return $ execAcUint @(Zp p) (with2n @n (withLess2n @n $ shrink acUint :: UInt n rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
 
         it "checks equality" $ do
             x <- toss m
@@ -188,3 +188,10 @@ specUInt = do
 
     specUInt' @BLS12_381_Scalar @32 @_ @_ @(Fixed 10)
     specUInt' @BLS12_381_Scalar @500 @_ @_ @(Fixed 10)
+
+
+less2n :: forall n. Dict (n <= 2 * n)
+less2n = unsafeAxiom
+
+withLess2n :: forall n {r}. ((n <= 2 * n) => r) -> r
+withLess2n = withDict (less2n @n)

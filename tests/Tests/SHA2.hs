@@ -31,7 +31,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
-import           ZkFold.Symbolic.Algorithms.Hash.SHA2        (AlgorithmSetup (..), SHA2, SHA2N, sha2, sha2Natural, PaddedLength)
+import           ZkFold.Symbolic.Algorithms.Hash.SHA2        (AlgorithmSetup (..), SHA2, SHA2N, sha2, sha2Natural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -146,8 +146,6 @@ specSHA2bs
     .  KnownSymbol algorithm
     => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) n
     => SHA2N algorithm (Interpreter (Zp BLS12_381_Scalar))
-    => n <= PaddedLength n (ChunkSize algorithm) (2 * WordSize algorithm)
-    => KnownNat (PaddedLength n (ChunkSize algorithm) (2 * WordSize algorithm))
     => Spec
 specSHA2bs = do
     let n = value @n

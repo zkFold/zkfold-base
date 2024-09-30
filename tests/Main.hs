@@ -6,7 +6,7 @@ import           System.Environment        (lookupEnv)
 import           Tests.ArithmeticCircuit   (specArithmeticCircuit)
 import           Tests.Arithmetization     (specArithmetization)
 import           Tests.Binary              (specBinary)
-import           Tests.Blake2b             (specBlake2bNatural)
+import           Tests.Blake2b             (specBlake2b)
 import           Tests.ByteString          (specByteString)
 import           Tests.FFA                 (specFFA)
 import           Tests.Field               (specField)
@@ -55,7 +55,7 @@ main = do
     unless (null fullTests) specSHA2
 
     -- TODO: implement a proper blake2b test
-    specBlake2bNatural
+    specBlake2b
     -- specBlake2b
 
 
