@@ -16,9 +16,9 @@ import           Data.Vector.Binary               ()
 import qualified Data.Vector.Split                as V
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
+import           GHC.IsList                       (IsList (..))
 import           Prelude                          hiding (concat, drop, head, length, mod, replicate, sum, tail, take,
                                                    zip, zipWith, (*))
-import           GHC.IsList                       (IsList (..))
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 
