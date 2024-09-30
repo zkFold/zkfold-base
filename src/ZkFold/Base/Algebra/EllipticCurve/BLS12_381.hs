@@ -1,15 +1,20 @@
-{-# LANGUAGE DerivingVia     #-}
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE OverloadedLists      #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.BLS12_381 where
 
-import           Control.Monad                              (replicateM)
-import           Data.Binary                                (Word8, bitReverse8)
-import           Data.Bits                                  (bit, clearBit, testBit, (.|.))
-import           Data.Foldable                              (foldl')
+import           Control.DeepSeq                            (NFData)
+import           Control.Monad
+import           Data.Bits
+import           Data.Foldable
+import           Data.Word
+import           GHC.Generics                               (Generic)
 import           Prelude                                    hiding (Num (..), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -55,6 +60,7 @@ type Fq12 = Ext2 Fq6 IP3
 ------------------------------------ BLS12-381 G1 ------------------------------------
 
 data BLS12_381_G1
+    deriving (Generic, NFData)
 
 instance EllipticCurve BLS12_381_G1 where
     type ScalarField BLS12_381_G1 = Fr
@@ -79,6 +85,7 @@ instance StandardEllipticCurve BLS12_381_G1 where
 ------------------------------------ BLS12-381 G2 ------------------------------------
 
 data BLS12_381_G2
+    deriving (Generic, NFData)
 
 instance EllipticCurve BLS12_381_G2 where
 

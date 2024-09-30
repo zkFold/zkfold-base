@@ -9,6 +9,7 @@ import           Data.Bifunctor                                        (Bifuncto
 import           Data.Functor                                          ((<&>))
 import           Data.List                                             (foldl', intercalate)
 import           Data.Map.Strict                                       (Map, empty, keysSet)
+import qualified Data.Map.Strict                                       as M
 import           Data.Set                                              (Set)
 import           GHC.Generics                                          (Generic)
 import           GHC.IsList                                            (IsList (..))
@@ -48,6 +49,9 @@ evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 
 variables :: forall c v . Ord v => Poly c v Natural -> Set v
 variables (P p) = foldMap ((\(M m) -> keysSet m) . snd) p
+
+mapVars :: Variable i2 => (i1 -> i2) -> Poly c i1 j -> Poly c i2 j
+mapVars f (P ms) = P $ (\(c, M m) -> (c, M $ M.mapKeys f m)) <$> ms
 
 mapVarPolynomial :: Variable i => Map i i-> Poly c i j -> Poly c i j
 mapVarPolynomial m (P ms) = P $ second (mapVarMonomial m) <$> ms
@@ -125,6 +129,10 @@ instance Polynomial c i j => Ring (Poly c i j)
 -- | @'var' i@ is a polynomial \(p(x) = x_i\)
 var :: Polynomial c i j => i -> Poly c i j
 var x = polynomial [(one, monomial $ fromList [(x, one)])]
+
+-- | @'constant' i@ is a polynomial \(p(x) = const\)
+constant :: Polynomial c i j => c -> Poly c i j
+constant c = polynomial [(c, M M.empty)]
 
 lt :: Polynomial c i j => Poly c i j -> (c, Mono i j)
 lt (P [])    = (zero, M empty)

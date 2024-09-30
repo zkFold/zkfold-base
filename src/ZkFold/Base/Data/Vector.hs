@@ -18,6 +18,7 @@ import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
 import           Prelude                          hiding (concat, drop, head, length, mod, replicate, sum, tail, take,
                                                    zip, zipWith, (*))
+import           GHC.IsList                       (IsList (..))
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 
@@ -43,10 +44,16 @@ instance KnownNat size => Distributive (Vector size) where
   distribute = distributeRep
   collect = collectRep
 
+
 vtoVector :: forall size a . KnownNat size => V.Vector a -> Maybe (Vector size a)
 vtoVector as
   | V.length as == knownNat @size = Just $ Vector as
   | otherwise                     = Nothing
+
+instance IsList (Vector n a) where
+    type Item (Vector n a) = a
+    toList = fromVector
+    fromList = unsafeToVector
 
 toVector :: forall size a . KnownNat size => [a] -> Maybe (Vector size a)
 toVector as
