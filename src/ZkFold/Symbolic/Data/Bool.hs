@@ -103,4 +103,4 @@ all1 :: (BoolType b, Functor t, Foldable t) => (x -> b) -> t x -> b
 all1 f = foldr1 (&&) . fmap f
 
 any :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
-any f = foldr ((||) . f) false
+any f = foldl' ((||) . f) false
