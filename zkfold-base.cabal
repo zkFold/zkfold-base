@@ -258,7 +258,8 @@ library
       these                                 < 1.3,
       type-errors                         < 0.2.1,
       vector                               < 0.14,
-      vector-binary-instances               < 0.3
+      vector-binary-instances               < 0.3,
+      vector-split                          < 1.1,
     hs-source-dirs: src
 
 library zkfold-symbolic-examples

@@ -44,7 +44,7 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
     verifier p sigma [w] ts = algebraicMap p sigma [w] ts one == V.fromVector w
     verifier _ _     _   _  = error "Invalid transcript"
 
-instance Arithmetic f => AlgebraicMap f (ProtostarPermutation n) where
+instance (Arithmetic f, KnownNat n) => AlgebraicMap f (ProtostarPermutation n) where
     type MapInput f (ProtostarPermutation n) = Permutation n
     type MapMessage f (ProtostarPermutation n) = Vector n f
 

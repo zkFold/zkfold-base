@@ -9,6 +9,7 @@ import           Data.Char                                      (ord)
 import           Data.Map.Strict                                (Map)
 import qualified Data.Map.Strict                                as M
 import           Data.Proxy                                     (Proxy (..))
+import qualified Data.Vector                                    as V
 import           GHC.Generics
 import           GHC.TypeLits
 import           Prelude                                        (($), (.), (<$>))
@@ -33,6 +34,9 @@ instance Ring a => RandomOracle a a where
     oracle a = mimcHash2 mimcConstants a zero zero
 
 instance (AdditiveMonoid b, RandomOracle a b) => RandomOracle [a] b where
+    oracle as = sum $ oracle <$> as
+
+instance (AdditiveMonoid b, RandomOracle a b) => RandomOracle (V.Vector a) b where
     oracle as = sum $ oracle <$> as
 
 instance {-# OVERLAPPABLE #-} (Generic a, RandomOracle' (Rep a) b) => RandomOracle a b where
