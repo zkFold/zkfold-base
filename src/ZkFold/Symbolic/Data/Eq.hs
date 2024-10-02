@@ -6,11 +6,11 @@ module ZkFold.Symbolic.Data.Eq (
 ) where
 
 import           Data.Bool                        (bool)
-import qualified Data.Eq                          as Haskell
 import           Data.Foldable                    (Foldable)
 import           Data.Traversable                 (Traversable, for)
 import qualified Data.Zip                         as Z
 import           Prelude                          (return, ($))
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Package
@@ -28,6 +28,10 @@ class Eq b a where
 
 elem :: (BoolType b, Eq b a, Foldable t) => a -> t a -> b
 elem x = any (== x)
+
+instance Haskell.Eq a => Eq Haskell.Bool a where
+    (==) = (Haskell.==)
+    (/=) = (Haskell./=)
 
 instance (Symbolic c, Haskell.Eq (BaseField c), Z.Zip f, Traversable f)
   => Eq (Bool c) (c f) where
