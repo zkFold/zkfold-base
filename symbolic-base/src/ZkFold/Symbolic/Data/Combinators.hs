@@ -49,7 +49,7 @@ class Shrink a b where
 --
 toBits
     :: forall v a m
-    .  MonadCircuit v a m
+    .  (MonadCircuit v a m, Arithmetic a)
     => [v]
     -> Natural
     -> Natural
@@ -173,7 +173,7 @@ minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` max
 
 ---------------------------------------------------------------
 
-expansion :: MonadCircuit i a m => Natural -> i -> m [i]
+expansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
 expansion n k = do
     bits <- bitsOf n k
@@ -181,11 +181,12 @@ expansion n k = do
     constraint (\x -> x k - x k')
     return bits
 
-bitsOf :: MonadCircuit i a m => Natural -> i -> m [i]
+bitsOf :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
 bitsOf n k = for [0 .. n -! 1] $ \j ->
-    newConstrained (\x i -> let xi = x i in xi * (xi - one)) (repr j . ($ k))
+--    newConstrained (\x i -> let xi = x i in xi * (xi - one)) (repr j . ($ k))
+    newRanged one (repr j . ($ k))
     where
         repr :: WitnessField n x => Natural -> x -> x
         repr j =

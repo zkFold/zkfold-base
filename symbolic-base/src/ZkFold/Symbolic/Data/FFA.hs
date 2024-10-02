@@ -2,7 +2,7 @@
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.FFA (FFA (..)) where
+module ZkFold.Symbolic.Data.FFA (FFA (..), Size, coprimesDownFrom, coprimes) where
 
 import           Control.Applicative              (pure)
 import           Control.Monad                    (Monad, return, (>>=))
@@ -26,10 +26,10 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                   (iterateM, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (expansion, log2, maxBitsPerFieldElement, splitExpansion)
+import           ZkFold.Symbolic.Data.Combinators (expansion, log2, maxBitsPerFieldElement, splitExpansion, horner)
 import           ZkFold.Symbolic.Data.Ord         (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned, newRanged)
 
 type Size = 7
 
@@ -43,7 +43,11 @@ deriving newtype instance Haskell.Show (c (Vector Size)) => Haskell.Show (FFA p 
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])
   where
-    step ans xs =
+        {--
+    step ans [] = error "no options left"
+    step ans (x:xs) = (x, (ans ++ [x], Haskell.filter (\c -> Haskell.gcd c x Haskell.== 1) xs))
+--}
+    step ans xs = 
       case dropWhile (\x -> any ((Haskell./= 1) . Haskell.gcd x) ans) xs of
         []      -> error "no options left"
         (x:xs') -> (x, (ans ++ [x], xs'))
@@ -83,17 +87,47 @@ toZp = fromConstant . impl
 fromZp :: forall p a. Arithmetic a => Zp p -> Vector Size a
 fromZp = (\(FFA (Interpreter xs) :: FFA p (Interpreter a)) -> xs) . fromConstant
 
-condSubOF :: forall i a m . MonadCircuit i a m => Natural -> i -> m (i, i)
+-- | Subtracts @m@ from @i@ if @i@ is not less than @m@
+--
+condSubOF :: forall i a m . (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m (i, i)
 condSubOF m i = do
+--    {--
+  vm <- newAssigned (\_ -> fromConstant m)
+  -- f(a, b) 
+  --    | a >= b = (1, a - b)
+  --    | otherwise = (0, a)
+  --
+  -- Assume a and b are less than (p-1) / 2 where p is the order of the field
+  -- This is the case where @m@ is taken from coprimes up to sqrt(p) < (p-1)/2 and @i@ is 
+  -- 
+  -- f(a, b) is equivalent to
+  -- there exist d <- [0, 1]; v1 <- [0, a]; v2 <- [0, (p-1)/2] such that
+  -- v1 = d * (a - b)
+  -- v2 = (1 - d) * (a - b - (p - 1)/2)
+  --
+  -- and f(a, b) = a - d * b
+  --
+  --
+  -- TODO: make the witness work as expected
+  d <- newRanged one (\x -> let q = toConstant (x vm) `div` toConstant (x i) in fromConstant q)
+  let p2 = (value @(Order a) -! 1) `div` 2
+  v1 <- newRanged (fromConstant m) (\x -> x d * (x vm - x i))
+  v2 <- newRanged (fromConstant p2) (\x -> (one - x d) * (x vm - x i - fromConstant p2))
+  res <- newAssigned (($ i) - ($ d) * fromConstant m)
+  return (res, d)
+
+  --}
+      {--
   z <- newAssigned zero
   o <- newAssigned one
   let bm = (\x -> if x Haskell.== 0 then z else o) <$> (binaryExpansion m ++ [0])
   bi <- expansion (length bm) i
-  ovf <- blueprintGE (Haskell.reverse bi) (Haskell.reverse bm)
+  ovf <- Haskell.id $ {-# SCC "ovf" #-} blueprintGE (Haskell.reverse bi) (Haskell.reverse bm)
   res <- newAssigned (($ i) - ($ ovf) * fromConstant m)
   return (res, ovf)
+--}
 
-condSub :: MonadCircuit i a m => Natural -> i -> m i
+condSub :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m i
 condSub m x = fst <$> condSubOF m x
 
 smallCut :: forall i a m. (Arithmetic a, MonadCircuit i a m) => Vector Size i -> m (Vector Size i)
