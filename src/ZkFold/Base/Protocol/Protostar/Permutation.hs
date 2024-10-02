@@ -1,15 +1,14 @@
 module ZkFold.Base.Protocol.Protostar.Permutation where
 
-import           Data.Zip                                     (Zip (..))
-import           Prelude                                      hiding (Num (..), zipWith, (!!), (^))
+import           Prelude                                     hiding (Num (..), zipWith, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Permutations       (Permutation, applyPermutation)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (var)
-import           ZkFold.Base.Data.Vector                      as V
-import           ZkFold.Base.Protocol.Protostar.SpecialSound  (LMap, SpecialSoundProtocol (..), SpecialSoundTranscript)
-import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
+import           ZkFold.Base.Algebra.Basic.Permutations      (Permutation, applyPermutation)
+import           ZkFold.Base.Data.Vector                     as V
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..),
+                                                              SpecialSoundTranscript)
+import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
 
@@ -18,9 +17,10 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
     -- ^ w in the paper
     type Input f (ProtostarPermutation n)           = Permutation n
     -- ^ \sigma in the paper
-    type ProverMessage t (ProtostarPermutation n)   = Vector n t
+    type ProverMessage f (ProtostarPermutation n)   = Vector n f
     -- ^ same as Witness
-    type VerifierMessage t (ProtostarPermutation n) = ()
+    type VerifierMessage f (ProtostarPermutation n) = ()
+    type VerifierOutput f (ProtostarPermutation n)  = Bool
 
     type Degree (ProtostarPermutation n)            = 1
 
@@ -36,20 +36,25 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
            -> ProverMessage f (ProtostarPermutation n)
     prover _ w _ _ = w
 
-    algebraicMap :: ProtostarPermutation n
-                 -> Input f (ProtostarPermutation n)
-                 -> [ProverMessage Natural (ProtostarPermutation n)]
-                 -> [VerifierMessage Natural (ProtostarPermutation n)]
-                 -> LMap f
-    algebraicMap _ sigma [w] _ = V.fromVector $ zipWith (-) (applyPermutation sigma wX) wX
-      where wX = fmap var w
-    algebraicMap _ _ _ _ = error "Invalid transcript"
-
-
     verifier :: ProtostarPermutation n
              -> Input f (ProtostarPermutation n)
              -> [ProverMessage f (ProtostarPermutation n)]
-             -> [VerifierMessage f (ProtostarPermutation n)]
+             -> [f]
              -> Bool
-    verifier _ sigma [w] _ = applyPermutation sigma w == w
-    verifier _ _     _   _ = error "Invalid transcript"
+    verifier p sigma [w] ts = algebraicMap p sigma [w] ts one == V.fromVector w
+    verifier _ _     _   _  = error "Invalid transcript"
+
+instance (Arithmetic f, KnownNat n) => AlgebraicMap f (ProtostarPermutation n) where
+    type MapInput f (ProtostarPermutation n) = Permutation n
+    type MapMessage f (ProtostarPermutation n) = Vector n f
+
+    algebraicMap :: ProtostarPermutation n
+                 -> MapInput f (ProtostarPermutation n)
+                 -> [MapMessage f (ProtostarPermutation n)]
+                 -> [f]
+                 -> f
+                 -> [f]
+    algebraicMap _ sigma [w] _ _ = V.fromVector $ applyPermutation sigma w
+    algebraicMap _ _ _ _ _       = error "Invalid transcript"
+
+
