@@ -24,7 +24,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
 import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit     (newAssigned, newRanged)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
@@ -105,3 +105,7 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
   fromBinary bits =
     FieldElement $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
       $ fmap Par1 . horner . fromVector
+
+createRangeConstraint :: Symbolic c => FieldElement c -> BaseField c -> FieldElement c
+createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x $ \(Par1 i) ->
+  Par1 <$> newRanged a ($ i) 

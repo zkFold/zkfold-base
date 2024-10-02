@@ -15,14 +15,15 @@ import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (Show, mempty, pure, return, show, ($), (++), (.),
                                                                       (<$>))
 import qualified Prelude                                             as Haskell
-import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
+import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements, chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
 import           ZkFold.Prelude                                      (genSubset)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
+import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..), createRangeConstraint)
+import           GHC.Natural                                         (naturalFromInteger)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -70,13 +71,19 @@ arbitrary' ac iter = do
     ri <- elements vars
     let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (SysVar li) }
                  , FieldElement (fromFieldElement ac) { acOutput = pure (SysVar ri) })
+    
+    rangeConst <- toss (3 :: Natural)
+    let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural rangeConst)) { acOutput = pure (SysVar li)}
+    
     ac' <- elements [
         l + r
         , l * r
         , l - r
         , l // r
+        , c
         ]
     arbitrary' ac' (iter -! 1)
+        where toss b = naturalFromInteger <$> chooseInteger (0, 2 ^ b - 1)
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var a i)), Haskell.Ord (Rep i), Show (Var a i), Show (Rep i)) => Show (ArithmeticCircuit a i o) where
