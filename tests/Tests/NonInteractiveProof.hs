@@ -11,23 +11,19 @@ import           Test.QuickCheck                             (Arbitrary, Testabl
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.KZG                    (KZG)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..),
-                                                              NonInteractiveProofTestData (..))
+import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..))
 import           ZkFold.Base.Protocol.Plonk                  (Plonk)
 import           ZkFold.Base.Protocol.Plonkup                (Plonkup)
 
-propNonInteractiveProof :: forall a core .
-    NonInteractiveProof a core =>
-    NonInteractiveProofTestData a core -> Bool
-propNonInteractiveProof (TestData a w) =
+propNonInteractiveProof :: forall a core . (NonInteractiveProof a core) => (a, Witness a) -> Bool
+propNonInteractiveProof (a, w) =
     let sp = setupProve @a @core a
         sv = setupVerify @a @core a
         (i, p) = prove @a @core sp w
     in verify @a @core sv i p
 
 specNonInteractiveProof' :: forall a core . (Typeable a, NonInteractiveProof a core,
-    Show a, Show (Input a), Show (Witness a),
-    Arbitrary (NonInteractiveProofTestData a core)) => IO ()
+    Show a, Show (Witness a), Arbitrary a, Arbitrary (Witness a)) => IO ()
 specNonInteractiveProof' = hspec $ do
     describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do

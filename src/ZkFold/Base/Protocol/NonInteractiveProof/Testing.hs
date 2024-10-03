@@ -25,9 +25,3 @@ instance NonInteractiveProof a core => CompatibleNonInteractiveProofs a a core w
     nipSetupTransform    = id
     nipInputTransform    = id
     nipProofTransform    = id
-
-data NonInteractiveProofTestData a core = (NonInteractiveProof a core) => TestData a (Witness a)
-
-instance (Show a, Show (Input a), Show (Witness a)) =>
-    Show (NonInteractiveProofTestData a core) where
-    show (TestData a w) = "TestData: \n" ++ show a ++ "\n" ++ show w
