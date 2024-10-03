@@ -11,7 +11,7 @@ import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P hiding (length)
-import           Test.QuickCheck                                     (Arbitrary (..), Gen)
+import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGroup)
 import           ZkFold.Base.Algebra.Basic.Number
@@ -97,13 +97,3 @@ instance forall i n l c1 c2 (ts :: Type) core .
 
     verify :: SetupVerify (Plonk i n l c1 c2 ts) -> Input (Plonk i n l c1 c2 ts) -> Proof (Plonk i n l c1 c2 ts) -> Bool
     verify = plonkVerify @i @n @l @c1 @c2 @ts
-
-instance forall i n l c1 c2 t core .
-    ( KnownNat i, Arithmetic (ScalarField c1), Binary (ScalarField c1)
-    , Witness (Plonk i n l c1 c2 t) ~ Witness (Plonkup i n l c1 c2 t)
-    , NonInteractiveProof (Plonk i n l c1 c2 t) core
-    , Arbitrary (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core)
-    ) => Arbitrary (NonInteractiveProofTestData (Plonk i n l c1 c2 t) core) where
-    arbitrary = do
-        TestData plonkup w <- arbitrary :: Gen (NonInteractiveProofTestData (Plonkup i n l c1 c2 t) core)
-        return $ TestData (fromPlonkup plonkup) w
