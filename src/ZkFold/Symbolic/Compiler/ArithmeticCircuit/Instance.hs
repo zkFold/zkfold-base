@@ -15,7 +15,7 @@ import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (Show, mempty, pure, return, show, ($), (++), (.),
                                                                       (<$>))
 import qualified Prelude                                             as Haskell
-import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements, chooseInteger)
+import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -23,7 +23,8 @@ import           ZkFold.Base.Data.Vector                             (Vector, un
 import           ZkFold.Prelude                                      (genSubset)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..), createRangeConstraint)
-import           GHC.Natural                                         (naturalFromInteger)
+import GHC.Natural (naturalFromInteger)
+import Test.QuickCheck.Gen (chooseInteger)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -40,7 +41,7 @@ instance
     arbitrary = do
         outVar <- SysVar . InVar <$> arbitrary
         let ac = mempty {acOutput = Par1 outVar}
-        fromFieldElement <$> arbitrary' (FieldElement ac) 10
+        fromFieldElement <$> arbitrary' (FieldElement ac) 2
 
 instance
   ( Arithmetic a
@@ -64,23 +65,20 @@ arbitrary' ::
   (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a i))
-arbitrary' ac 0 = return ac
+arbitrary' ac 0 = return ac 
 arbitrary' ac iter = do
     let vars = getAllVars (fromFieldElement ac)
     li <- elements vars
     ri <- elements vars
+    rangeConstant <- toss (5 :: Natural)
     let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (SysVar li) }
                  , FieldElement (fromFieldElement ac) { acOutput = pure (SysVar ri) })
-    
-    rangeConst <- toss (3 :: Natural)
-    let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural rangeConst)) { acOutput = pure (SysVar li)}
-    
     ac' <- elements [
         l + r
         , l * r
         , l - r
         , l // r
-        , c
+        , createRangeConstraint ac (fromConstant @Natural rangeConstant)
         ]
     arbitrary' ac' (iter -! 1)
         where toss b = naturalFromInteger <$> chooseInteger (0, 2 ^ b - 1)
