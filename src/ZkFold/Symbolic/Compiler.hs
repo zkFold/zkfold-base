@@ -17,7 +17,7 @@ import           Data.Functor                               (($>))
 import           Data.Proxy                                 (Proxy)
 import           Data.Traversable                           (for)
 import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), Traversable,
-                                                             putStrLn, type (~), ($), (++))
+                                                             putStrLn, type (~), ($), (++), id)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -95,7 +95,34 @@ compile ::
     ) => f -> y
 compile = restore . const . optimize . solder @a
 
--- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
+-- | Compiles a function `f` into an arithmetic circuit.
+-- With addtitional `safeConstarints` like `forceOne`.
+-- Writes the result to a `scriptFile`.
+compileIOWith ::
+    forall a c f ni .
+    ( KnownNat ni
+    , ni ~ TypeSize (Support f)
+    , c ~ ArithmeticCircuit a (Vector ni)
+    , FromJSON a
+    , ToJSON a
+    , SymbolicData f
+    , Context f ~ c
+    , SymbolicData (Support f)
+    , Context (Support f) ~ c
+    , Support (Support f) ~ Proxy c
+    ) => FilePath -> (c (Vector (TypeSize f)) -> c (Vector (TypeSize f))) -> f -> IO ()
+compileIOWith scriptFile safeConstarints f = do
+    let ac = optimize $ safeConstarints $ solder @a f :: c (Vector (TypeSize f))
+
+    putStrLn "\nCompiling the script...\n"
+
+    putStrLn $ "Number of constraints: " ++ show (acSizeN ac)
+    putStrLn $ "Number of variables: " ++ show (acSizeM ac)
+    writeFileJSON scriptFile ac
+    putStrLn $ "Script saved: " ++ scriptFile
+
+-- | Compiles a function `f` into an arithmetic circuit.
+-- Writes the result to a `scriptFile`.
 compileIO ::
     forall a c f ni .
     ( KnownNat ni
@@ -109,12 +136,4 @@ compileIO ::
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
     ) => FilePath -> f -> IO ()
-compileIO scriptFile f = do
-    let ac = optimize (solder @a f) :: c (Vector (TypeSize f))
-
-    putStrLn "\nCompiling the script...\n"
-
-    putStrLn $ "Number of constraints: " ++ show (acSizeN ac)
-    putStrLn $ "Number of variables: " ++ show (acSizeM ac)
-    writeFileJSON scriptFile ac
-    putStrLn $ "Script saved: " ++ scriptFile
+compileIO scriptFile = compileIOWith scriptFile id
