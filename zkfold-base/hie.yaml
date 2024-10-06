@@ -6,11 +6,11 @@ cradle:
     - path: "./examples"
       component: "zkfold-base:lib:zkfold-symbolic-examples"
 
-    - path: "./tests"
+    - path: "./test"
       component: "zkfold-base:test:zkfold-base-test"
 
     - path: "./bench/BenchPolyMul.hs"
-      component: "zkfold-base:bench:polynomial-multiplication"
+      component: "zkfold-base:bench:bench-poly-mul"
 
     - path: "./bench/BenchCompiler.hs"
-      component: "zkfold-base:bench:compiler-benchmark"
+      component: "zkfold-base:bench:bench-compiler"

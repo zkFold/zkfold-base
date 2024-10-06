@@ -17,7 +17,7 @@ To run the tests, execute
 cabal run -- zkfold-base-test
 ```
 
-# Examples
+# Benchmarks
 The `examples` folder contains several code examples of arithmetizable pure functions. These examples can be compiled into the arithmetic circuits with the zkFold Symbolic compiler. In order to do it, execute
 ```bash
 cabal run -- zkfold-base-examples
