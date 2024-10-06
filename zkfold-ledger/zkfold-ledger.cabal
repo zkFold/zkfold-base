@@ -1,20 +1,19 @@
 cabal-version:      3.0
 
-name:               symbolic-examples
+name:               zkfold-ledger
 version:            0.1.0.0
 tested-with:        GHC == 9.6.3
-synopsis:           ZkFold Symbolic examples
+synopsis:           zkFold Ledger
 homepage:           https://zkfold.io/
-category:           Cryptography, DSL, Math, Symbolic Computation
-author:             Vladimir Sinyakov, Pavel Sokolov, Vladimir Morozov, Eitan Chatav, Ilya Baryshnikov, Anna Hovanskaya, Evgenii Samodelov
+category:           Blockchain, Cryptography, DSL, Math, Symbolic Computation
+author:             Vladimir Sinyakov, Pavel Sokolov, Vladimir Morozov, Eitan Chatav, Ilya Baryshnikov, Anna Hovanskaya, Evgenii Samodelov, Maxim Churilov
 maintainer:         vlasin@zkfold.io
 license:            MIT
 license-file:       LICENSE
 build-type:         Simple
 
 description:
-  This package contains the examples generated using the the zkFold Symbolic framework. It also contains a benchmark for compiling the examples into arithmetic circuits
-  and evaluating those circuits on a set of inputs.
+  This package contains the definitions related to the zkFold Ledger.
 
 Flag Pedantic
     Description: Enable pedantic build with -Werror
@@ -88,41 +87,27 @@ common options-exe
 library
     import: options
     exposed-modules:
-      ZkFold.Symbolic.Examples
-    other-modules:
-      Examples.BatchTransfer
-      Examples.ByteString
-      Examples.Conditional
-      Examples.Constant
-      Examples.Eq
-      Examples.FFA
-      Examples.Fibonacci
-      Examples.LEQ
-      Examples.MiMCHash
-      Examples.ReverseList
-      Examples.UInt
+      ZkFold.Symbolic.Ledger.Types
+      ZkFold.Symbolic.Ledger.Types.Address
+      ZkFold.Symbolic.Ledger.Types.Basic
+      ZkFold.Symbolic.Ledger.Types.Bridge
+      ZkFold.Symbolic.Ledger.Types.Contract
+      ZkFold.Symbolic.Ledger.Types.Hash
+      ZkFold.Symbolic.Ledger.Types.Input
+      ZkFold.Symbolic.Ledger.Types.Output
+      ZkFold.Symbolic.Ledger.Types.OutputRef
+      ZkFold.Symbolic.Ledger.Types.Transaction
+      ZkFold.Symbolic.Ledger.Types.Update
+      ZkFold.Symbolic.Ledger.Types.Value
+      ZkFold.Symbolic.Ledger.Validation.Bridge
+      ZkFold.Symbolic.Ledger.Validation.Contract
+      ZkFold.Symbolic.Ledger.Validation.Common
+      ZkFold.Symbolic.Ledger.Validation.PrivateInput
+      ZkFold.Symbolic.Ledger.Validation.PublicInput
+      ZkFold.Symbolic.Ledger.Validation.Transaction
+      ZkFold.Symbolic.Ledger.Validation.Update
     build-depends:
-      base,
-      deepseq,
-      symbolic-base,
-      symbolic-cardano,
+      base                          >= 4.9 && < 5,
+      semialign                             < 1.4,
+      symbolic-base                              ,
     hs-source-dirs: src
-
-benchmark bench-compiler
-    import:           options-exe
-    main-is:          BenchCompiler.hs
-    hs-source-dirs:   bench
-    type:             exitcode-stdio-1.0
-    ghc-options:
-      -fprof-auto
-      -fprof-cafs
-      -O3
-    build-depends:
-      adjunctions,
-      base,
-      bytestring,
-      deepseq,
-      symbolic-base,
-      symbolic-examples,
-      tasty-bench,
-      tasty-golden,

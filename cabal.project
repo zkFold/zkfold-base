@@ -4,6 +4,7 @@ packages:
     symbolic-base
     symbolic-cardano
     symbolic-examples
+    zkfold-ledger
 
 optimization: 2
 
