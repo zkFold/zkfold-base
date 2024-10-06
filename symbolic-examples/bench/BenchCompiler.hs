@@ -38,7 +38,7 @@ benchmark name circuit = bgroup name
   , env (return $ force $ circuit ()) $ \c ->
     let
         input = tabulate (const zero)
-        path = "symbolic-base/stats/" <> name
+        path = "stats/" <> name
      in bgroup "on compilation"
           [ bench "evaluation" $ nf (witnessGenerator c) input
           , goldenVsString "# of constraints" path $ return (metrics name c)
