@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+
 module Main where
 
 import           Control.DeepSeq                                     (NFData, force)
@@ -37,7 +38,7 @@ benchmark name circuit = bgroup name
   , env (return $ force $ circuit ()) $ \c ->
     let
         input = tabulate (const zero)
-        path = "zkfold-base/stats/" <> name
+        path = "symbolic-base/stats/" <> name
      in bgroup "on compilation"
           [ bench "evaluation" $ nf (witnessGenerator c) input
           , goldenVsString "# of constraints" path $ return (metrics name c)
