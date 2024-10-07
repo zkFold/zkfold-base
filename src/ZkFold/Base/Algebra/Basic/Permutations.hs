@@ -56,8 +56,12 @@ fromPermutation :: Permutation n -> [Natural]
 fromPermutation (Permutation perm) = fromVector perm
 
 applyPermutation :: KnownNat n => Permutation n -> Vector n a -> Vector n a
-applyPermutation (Permutation ps) as = fmap (index as . (\ix -> ix - 1) . fromConstant) ps
-  -- subtract 1 from 1-based Natural index to get 0-based Zp n index ^
+applyPermutation (Permutation ps) as =
+    let
+        -- 1-indexed Natural to 0-indexed Zp n
+        naturalToZp ix = fromConstant ix - 1
+    in
+        fmap (index as . naturalToZp) ps
 
 applyCycle :: V.Vector Natural -> Permutation n -> Permutation n
 applyCycle c (Permutation perm) = Permutation $ fmap f perm
