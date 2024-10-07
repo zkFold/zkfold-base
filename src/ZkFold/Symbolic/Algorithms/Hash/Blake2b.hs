@@ -27,7 +27,7 @@ import           ZkFold.Prelude                                    (length, repl
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Class                             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..), Truncate (..),
+import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..), truncate,
                                                                     concat, reverseEndianness, toWords)
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
@@ -210,25 +210,22 @@ blake2b key input =
         d
 
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
-blake2b_224 :: forall inputLen c n.
+blake2b_224 :: forall inputLen c.
     ( Symbolic c
     , KnownNat inputLen
-    , n ~ (8 * inputLen + ExtensionBits inputLen)
     ) => ByteString (8 * inputLen) c -> ByteString 224 c
 blake2b_224 = blake2b @0 @inputLen @28 (fromConstant @Natural 0)
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_256 :: forall inputLen c n .
+blake2b_256 :: forall inputLen c.
     ( Symbolic c
     , KnownNat inputLen
-    , n ~ (8 * inputLen + ExtensionBits inputLen)
     ) => ByteString (8 * inputLen) c -> ByteString 256 c
 blake2b_256 = blake2b @0 @inputLen @32 (fromConstant @Natural 0)
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
-blake2b_512 :: forall inputLen c n .
+blake2b_512 :: forall inputLen c.
     ( Symbolic c
     , KnownNat inputLen
-    , n ~ (8 * inputLen + ExtensionBits inputLen)
     ) => ByteString (8 * inputLen) c -> ByteString 512 c
 blake2b_512 = blake2b @0 @inputLen @64 0

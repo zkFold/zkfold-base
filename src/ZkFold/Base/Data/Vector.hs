@@ -27,6 +27,7 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.ByteString      (Binary (..))
 import           ZkFold.Prelude                   (length)
+import           Control.Parallel.Strategies      (parMap, rpar)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
     deriving (Show, Eq, Functor, Foldable, Traversable, Generic, NFData, Ord)
@@ -175,3 +176,7 @@ instance (Random a, KnownNat size) => Random (Vector size a) where
 
 instance ToJSON a => ToJSON (Vector n a) where
     toJSON (Vector xs) = toJSON xs
+
+
+parFmap :: (a -> b) -> Vector size a -> Vector size b
+parFmap f lst = unsafeToVector $ parMap rpar f (fromVector lst)

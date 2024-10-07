@@ -15,7 +15,7 @@ module ZkFold.Symbolic.Data.ByteString
     , isUnset
     , toWords
     , concat
-    , Truncate (..)
+    , truncate
     , emptyByteString
     , toBsBits
     ) where
@@ -118,10 +118,7 @@ class ShiftBits a where
     rotateBitsR :: a -> Natural -> a
     rotateBitsR a s = rotateBits a (negate . Haskell.fromIntegral $ s)
 
--- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
---
-class Truncate a b where
-    truncate :: a -> b
+
 
 instance ToConstant (ByteString n (Interpreter (Zp p))) where
     type Const (ByteString n (Interpreter (Zp p))) = Natural
@@ -220,12 +217,15 @@ toWords (ByteString bits) = parFmap ByteString $ unpackWith (V.chunks @m @wordSi
 concat :: forall k m c. (Symbolic c) => Vector k (ByteString m c) -> ByteString (k * m) c
 concat bs = ByteString $ packWith V.concat (V.parFmap (\(ByteString bits) -> bits) bs)
 
-instance
-  ( Symbolic c
+-- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
+--
+
+truncate :: forall n m c. ( 
+    Symbolic c
   , KnownNat n
   , n <= m
-  ) => Truncate (ByteString m c) (ByteString n c) where
-    truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
+  ) => ByteString m c -> ByteString n c 
+truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
 
 --------------------------------------------------------------------------------
 instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where

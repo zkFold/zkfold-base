@@ -87,8 +87,7 @@ testTruncate
     .  KnownNat n
     => PrimeField (Zp p)
     => KnownNat m
-    => Truncate (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString m (ArithmeticCircuit (Zp p) U1))
-    => Truncate (ByteString n (Interpreter (Zp p))) (ByteString m (Interpreter (Zp p)))
+    => m <= n
     => Spec
 testTruncate = it ("truncates a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do
     x <- toss m

@@ -75,6 +75,7 @@ specUInt'
     => r2n ~ NumberOfRegisters (Zp p) (2 * n) rs
     => KnownNat r
     => KnownNat r2n
+    => n <= 2 * n
     => IO ()
 specUInt' = hspec $ do
     let n = value @n

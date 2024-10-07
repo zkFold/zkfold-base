@@ -33,7 +33,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Class                          (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), Truncate (..), concat,
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), truncate, concat,
                                                                  toWords)
 import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
@@ -196,8 +196,6 @@ withPaddedLength = withDict (withPaddedLength' @n @d @l)
 type SHA2 algorithm context k =
    ( AlgorithmSetup algorithm context
    , KnownNat k
-   , Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
-   , k <= PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
    )
 
 -- | A generalised version of SHA2. It is agnostic of the ByteString base field.
@@ -216,6 +214,8 @@ withDivisibleDiv = withDict (divisibleDiv @a @b)
 sha2
     :: forall (algorithm :: Symbol) context k
     .  SHA2 algorithm context k
+    => Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
+    => k <= PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)
     => ByteString k context -> ByteString (ResultSize algorithm) context
 sha2 messageBits = sha2Blocks @algorithm @context chunks
     where
