@@ -6,6 +6,7 @@ module ZkFold.Base.Data.Vector where
 
 import           Control.DeepSeq                  (NFData)
 import           Control.Monad.State.Strict       (runState, state)
+import           Control.Parallel.Strategies      (parMap, rpar)
 import           Data.Aeson                       (ToJSON (..))
 import           Data.Distributive                (Distributive (..))
 import           Data.Foldable                    (fold)
@@ -27,7 +28,6 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.ByteString      (Binary (..))
 import           ZkFold.Prelude                   (length)
-import           Control.Parallel.Strategies      (parMap, rpar)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
     deriving (Show, Eq, Functor, Foldable, Traversable, Generic, NFData, Ord)

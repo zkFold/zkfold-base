@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Examples.ByteString (
     exampleByteStringAnd,
@@ -9,14 +9,15 @@ module Examples.ByteString (
     exampleSHA
   ) where
 
+import           GHC.TypeNats
+
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Algorithms.Hash.SHA2
 import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Combinators     (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt            (UInt)
-import ZkFold.Symbolic.Algorithms.Hash.SHA2
-import GHC.TypeNats
 
 exampleByteStringAnd ::
   (KnownNat n, Symbolic c) => ByteString n c -> ByteString n c -> ByteString n c

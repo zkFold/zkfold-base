@@ -220,11 +220,11 @@ concat bs = ByteString $ packWith V.concat (V.parFmap (\(ByteString bits) -> bit
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --
 
-truncate :: forall n m c. ( 
+truncate :: forall n m c. (
     Symbolic c
   , KnownNat n
   , n <= m
-  ) => ByteString m c -> ByteString n c 
+  ) => ByteString m c -> ByteString n c
 truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
 
 --------------------------------------------------------------------------------

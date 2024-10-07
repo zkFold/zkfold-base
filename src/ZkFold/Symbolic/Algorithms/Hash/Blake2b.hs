@@ -27,8 +27,8 @@ import           ZkFold.Prelude                                    (length, repl
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Class                             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..), truncate,
-                                                                    concat, reverseEndianness, toWords)
+import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..), concat,
+                                                                    reverseEndianness, toWords, truncate)
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 
