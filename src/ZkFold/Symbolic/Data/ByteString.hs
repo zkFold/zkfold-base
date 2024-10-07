@@ -21,6 +21,7 @@ module ZkFold.Symbolic.Data.ByteString
 
 import           Control.DeepSeq                    (NFData)
 import           Control.Monad                      (replicateM)
+import           Data.Aeson                         (FromJSON (..), ToJSON (..))
 import qualified Data.Bits                          as B
 import qualified Data.ByteString                    as Bytes
 import           Data.Kind                          (Type)
@@ -38,6 +39,7 @@ import           Test.QuickCheck                    (Arbitrary (..), chooseInteg
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.ByteString        (toByteString)
 import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
 import           ZkFold.Base.Data.Package           (packed, unpacked)
 import qualified ZkFold.Base.Data.Vector            as V
@@ -355,3 +357,11 @@ instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (B
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (FieldElement c) where
   from (ByteString a) = fromBinary a
+
+instance (FromConstant Natural (ByteString 8 c), Concat (ByteString 8 c) (ByteString n c))
+    => FromJSON (ByteString n c) where
+    parseJSON = Haskell.fmap fromConstant . parseJSON @Bytes.ByteString
+
+instance (ToConstant (ByteString n (Interpreter (Zp p))))
+    => ToJSON (ByteString n (Interpreter (Zp p))) where
+    toJSON = toJSON . toByteString . toConstant
