@@ -7,7 +7,7 @@ import           Data.Type.Equality              (type (~))
 import           GHC.Generics                    (Par1 (Par1))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector         (zipWithM)
+import           ZkFold.Base.Data.Vector         (zipWithM, Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool       (Bool (Bool), BoolType)
 import           ZkFold.Symbolic.Data.Class
@@ -27,7 +27,7 @@ gif b x y = bool y x b
 (?) :: Conditional b a => b -> a -> a -> a
 (?) = gif
 
-instance (SymbolicData x, Context x ~ c, Symbolic c) => Conditional (Bool c) x where
+instance (SymbolicData x, Context x ~ c, Symbolic c, Layout x ~ Vector n) => Conditional (Bool c) x where
     bool x y (Bool b) = restore $ \s ->
       fromCircuit3F b (pieces x s) (pieces y s) $ \(Par1 c) ->
         zipWithM $ \i j -> do

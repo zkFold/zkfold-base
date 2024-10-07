@@ -41,8 +41,8 @@ nothing
     .  Symbolic c
     => SymbolicData x
     => c ~ Context x
-    => k ~ TypeSize x
     => KnownNat k
+    => Layout x ~ Vector k
     => Maybe c x
 nothing = Maybe false (let c = embed @c $ Haskell.pure @(Vector k) zero in restore (Haskell.const c))
 
@@ -52,7 +52,7 @@ fromMaybe
     => Ring (c (Vector 1))
     => SymbolicData x
     => Context x ~ c
-    => 1 ~ TypeSize x
+    => Layout x ~ Vector 1
     => x
     -> Maybe c x
     -> x
@@ -74,6 +74,7 @@ instance
     , SymbolicData x
     , Context x ~ c
     , Support x ~ Proxy c
+    , Layout x ~ Vector (TypeSize x)
     ) => SymbolicData (Maybe c x) where
 
     type Context (Maybe c x) = c
@@ -82,13 +83,13 @@ instance
     pieces (Maybe (Bool h) t) i = hliftA2 (\(Par1 h') t' -> V.singleton h' `V.append` t') h (pieces t i)
     restore f = Maybe (restore (hmap V.take . f)) (restore (hmap V.drop . f))
 
-maybe :: forall a b c .
-    (Symbolic c, SymbolicData b, Context b ~ c) =>
+maybe :: forall a b c n .
+    (Symbolic c, SymbolicData b, Context b ~ c, Layout b ~ Vector n) =>
     b -> (a -> b) -> Maybe c a -> b
 maybe d h x@(Maybe _ v) = bool @(Bool c) d (h v) $ isNothing x
 
 find :: forall a c t .
-    (Symbolic c, SymbolicData a, Context a ~ c, Support a ~ Proxy c, KnownNat (TypeSize a)) =>
+    (Symbolic c, SymbolicData a, Context a ~ c, Support a ~ Proxy c, KnownNat (TypeSize a), Layout a ~ Vector (TypeSize a)) =>
     Haskell.Foldable t =>
     (a -> Bool c) -> t a -> Maybe c a
 find p = let n = nothing in
