@@ -42,7 +42,7 @@ import           ZkFold.Symbolic.Interpreter                 (Interpreter (Inter
 -- https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing#shavs
 --
 dataDir :: FilePath
-dataDir = "tests/data/shabittestvectors/"
+dataDir = "test/data/shabittestvectors/"
 
 getTestFiles :: forall (algorithm :: Symbol) . KnownSymbol algorithm => IO [FilePath]
 getTestFiles = Haskell.filter isAlgoFile <$> listDirectory dataDir
