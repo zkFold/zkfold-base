@@ -160,11 +160,11 @@ with8nLessExt = withExtendedInputByteString @n $
 with8n  :: forall n {r}. KnownNat n => (KnownNat (8 * n) => r) -> r
 with8n = withDict (timesNat @8 @n)
 
-black2bDivConstraint :: forall n. Dict (Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n)
-black2bDivConstraint = unsafeAxiom
+blake2bDivConstraint :: forall n. Dict (Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n)
+blake2bDivConstraint = unsafeAxiom
 
-withBlack2bDivConstraint :: forall n {r}. (Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n => r) -> r
-withBlack2bDivConstraint =  withDict $ black2bDivConstraint @n
+withBlake2bDivConstraint :: forall n {r}. (Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n => r) -> r
+withBlake2bDivConstraint =  withDict $ blake2bDivConstraint @n
 
 withConstraints :: forall n {r}. KnownNat n => (
     ( KnownNat (8 * n)
@@ -172,7 +172,7 @@ withConstraints :: forall n {r}. KnownNat n => (
     , KnownNat (8 * n + ExtensionBits n)
     , 8 * n <= 8 * n + ExtensionBits n
     , Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n) => r) -> r
-withConstraints = with8nLessExt @n $ withExtendedInputByteString @n $ withExtensionBits @n $ with8n @n $ withBlack2bDivConstraint @n
+withConstraints = with8nLessExt @n $ withExtendedInputByteString @n $ withExtensionBits @n $ with8n @n $ withBlake2bDivConstraint @n
 
 
 blake2b :: forall keyLen inputLen outputLen c n.
