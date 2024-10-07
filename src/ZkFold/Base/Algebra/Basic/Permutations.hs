@@ -20,7 +20,6 @@ import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector          (Vector (..), fromVector, toVector, unsafeToVector)
 import           ZkFold.Prelude                   (chooseNatural, drop, length, (!!))
@@ -39,7 +38,7 @@ mkIndexPartition vs =
 
 ------------------------------------- Permutations -------------------------------------------
 
-newtype Permutation n = Permutation (Vector n (Zp n))
+newtype Permutation n = Permutation (Vector n Natural)
     deriving (Show, Eq)
 
 instance KnownNat n => Arbitrary (Permutation n) where
@@ -53,14 +52,19 @@ instance KnownNat n => Arbitrary (Permutation n) where
         in Permutation . unsafeToVector <$>
               f [] [fromConstant x | x <- [1..value @n]]
 
-fromPermutation :: Permutation n -> [Zp n]
+fromPermutation :: Permutation n -> [Natural]
 fromPermutation (Permutation perm) = fromVector perm
 
 applyPermutation :: KnownNat n => Permutation n -> Vector n a -> Vector n a
-applyPermutation (Permutation ps) as = fmap (index as) ps
+applyPermutation (Permutation ps) as =
+    let
+        -- 1-indexed Natural to 0-indexed Zp n
+        naturalToZp ix = fromConstant ix - 1
+    in
+        fmap (index as . naturalToZp) ps
 
-applyCycle :: KnownNat n => V.Vector Natural -> Permutation n -> Permutation n
-applyCycle c (Permutation perm) = Permutation $ fmap (fromConstant . f . toConstant) perm
+applyCycle :: V.Vector Natural -> Permutation n -> Permutation n
+applyCycle c (Permutation perm) = Permutation $ fmap f perm
     where
         f :: Natural -> Natural
         f i = case i `V.elemIndex` c of
@@ -69,6 +73,6 @@ applyCycle c (Permutation perm) = Permutation $ fmap (fromConstant . f . toConst
 
 fromCycles :: KnownNat n => IndexPartition a -> Permutation n
 fromCycles p =
-    let n = toInteger $ V.length $ V.concat $ elems p
-    in foldr applyCycle (Permutation $ fromJust $ toVector [fromConstant x | x <- [1 .. n]]) $ elems p
+    let n = fromIntegral $ V.length $ V.concat $ elems p
+    in foldr applyCycle (Permutation $ fromJust $ toVector [1 .. n]) $ elems p
 
