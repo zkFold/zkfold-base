@@ -3,12 +3,11 @@ module ZkFold.Symbolic.Data.KYC where
 
 import           GHC.Generics                        (Generic)
 
-import           ZkFold.Base.Data.Vector             (Vector, parFmap)
+import           ZkFold.Base.Data.Vector             (Vector)
 import           ZkFold.Symbolic.Cardano.Types.Basic (Bool, ByteString, UInt)
 import           ZkFold.Symbolic.Class               (Symbolic)
-import           ZkFold.Symbolic.Data.Bool           (BoolType (..), any)
 import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..))
-import           ZkFold.Symbolic.Data.Eq             (Eq ((==)))
+import           ZkFold.Symbolic.Data.Eq             (elem)
 
 
 type KYCByteString context = ByteString 256 context
@@ -21,4 +20,4 @@ data KYCData context = KYCData
     } deriving Generic
 
 isCitizen :: (Symbolic c) => KYCByteString c -> Vector n (KYCByteString c) -> Bool c
-isCitizen citizenship allowedCountries = any (== citizenship)
+isCitizen = elem

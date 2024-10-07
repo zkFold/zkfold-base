@@ -27,7 +27,7 @@ import qualified Data.ByteString                    as Bytes
 import           Data.Kind                          (Type)
 import           Data.List                          (reverse, unfoldr)
 import           Data.Maybe                         (Maybe (..))
-import           Data.String                        (IsString (..), String)
+import           Data.String                        (IsString (..))
 import           Data.Traversable                   (for)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
@@ -359,7 +359,7 @@ instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (F
 
 instance (FromConstant Natural (ByteString 8 c), Concat (ByteString 8 c) (ByteString n c))
     => FromJSON (ByteString n c) where
-    parseJSON = Haskell.fmap fromString . parseJSON @String
+    parseJSON = Haskell.fmap fromConstant . parseJSON @Bytes.ByteString
 
 instance (ToConstant (ByteString n (Interpreter (Zp p))))
     => ToJSON (ByteString n (Interpreter (Zp p))) where
