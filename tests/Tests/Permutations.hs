@@ -23,4 +23,4 @@ specPermutations = hspec $ do
                 \v ->
                     let ts = mkIndexPartition @Integer $ V.fromList $ fromVector @100 v
                         p = fromPermutation @100 $ fromCycles ts
-                    in sort p == sort (V.toList $ V.concat $ elems (fmap (fmap fromIntegral) ts))
+                    in sort p == sort (V.toList $ V.concat $ elems ts)
