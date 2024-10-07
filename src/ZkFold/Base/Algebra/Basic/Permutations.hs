@@ -34,7 +34,7 @@ type IndexPartition a = Map a IndexSet
 
 mkIndexPartition :: Ord a => V.Vector a -> IndexPartition a
 mkIndexPartition vs =
-    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [1 .. length vs]
+    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [0 .. length vs P.- 1]
     in V.foldl union empty $ fmap f vs
 
 ------------------------------------- Permutations -------------------------------------------
@@ -70,5 +70,5 @@ applyCycle c (Permutation perm) = Permutation $ fmap (fromConstant . f . toConst
 fromCycles :: KnownNat n => IndexPartition a -> Permutation n
 fromCycles p =
     let n = toInteger $ V.length $ V.concat $ elems p
-    in foldr applyCycle (Permutation $ fromJust $ toVector [fromConstant x | x <- [1 .. n]]) $ elems p
+    in foldr applyCycle (Permutation $ fromJust $ toVector [fromConstant x | x <- [0 .. n P.- 1]]) $ elems p
 
