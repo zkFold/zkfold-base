@@ -38,11 +38,10 @@ instance Symbolic context => Scale Natural (Value n context) where
     n `scale` Value v = Value $ fmap (\((pid, aname), q) -> ((pid, aname), n `scale` q)) v
 
 instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => Semigroup (Value n context) where
-    (<>) (Value (Vector a)) (Value (Vector b)) = Value $ Vector $ Map.toList $ Map.unionWith (+) (Map.fromList a) (Map.fromList b)
-
+    (<>) (Value va) (Value vb) = Value $ unsafeToVector $ Map.toList $ Map.unionWith (+) (Map.fromList (fromVector va)) (Map.fromList (fromVector vb))
 
 instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => Monoid (Value n context) where
-    mempty = Value $ Vector []
+    mempty = Value $ unsafeToVector []
 
 instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => AdditiveSemigroup (Value n context) where
     (+) = (<>)

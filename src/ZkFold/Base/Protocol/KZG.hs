@@ -41,10 +41,6 @@ instance (EllipticCurve c1, f ~ ScalarField c1, KnownNat d, Ring f, Arbitrary f,
         m <- chooseInt (1, 5)
         WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> (V.fromList <$> replicateM m arbitrary))
 
-instance (KZG c1 c2 d ~ kzg, NonInteractiveProof kzg core, Arbitrary kzg, Arbitrary (Witness kzg)) =>
-    Arbitrary (NonInteractiveProofTestData (KZG c1 c2 d) core) where
-    arbitrary = TestData <$> arbitrary <*> arbitrary
-
 -- TODO (Issue #18): check list lengths
 instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
     ( KZG c1 c2 d ~ kzg
