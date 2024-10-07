@@ -7,7 +7,7 @@ import           Data.Type.Equality              (type (~))
 import           GHC.Generics                    (Par1 (Par1))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector         (zipWithM, Vector)
+import           ZkFold.Base.Data.Vector         (Vector, zipWithM)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool       (Bool (Bool), BoolType)
 import           ZkFold.Symbolic.Data.Class

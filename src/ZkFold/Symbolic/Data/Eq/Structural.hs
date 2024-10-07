@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeOperators, UndecidableInstances #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Eq.Structural where
 

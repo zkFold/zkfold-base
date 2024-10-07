@@ -20,7 +20,7 @@ import qualified Prelude                          as Haskell
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.HFunctor        (hmap)
 import qualified ZkFold.Base.Data.Vector          as V
-import           ZkFold.Base.Data.Vector          (unsafeToVector, Vector)
+import           ZkFold.Base.Data.Vector          (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField, symbolicF), symbolic2F)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class

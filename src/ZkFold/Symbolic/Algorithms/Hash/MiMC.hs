@@ -11,7 +11,7 @@ import           Prelude                                        hiding (Eq (..),
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Package                       (unpacked)
-import           ZkFold.Base.Data.Vector                        (fromVector, Vector)
+import           ZkFold.Base.Data.Vector                        (Vector, fromVector)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
