@@ -39,6 +39,7 @@ import           Test.QuickCheck                    (Arbitrary (..), chooseInteg
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.ByteString        (toByteString)
 import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
 import           ZkFold.Base.Data.Package           (packed, unpacked)
 import qualified ZkFold.Base.Data.Vector            as V
@@ -53,7 +54,6 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
-import ZkFold.Base.Data.ByteString (toByteString)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
