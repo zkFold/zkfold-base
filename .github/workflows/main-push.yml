@@ -44,8 +44,8 @@ jobs:
         HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
       shell: bash
       run: |
-        cabal sdist all
+        cabal sdist symbolic-base
         cabal upload --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/sdist/*.tar.gz
         
-        cabal v2-haddock --haddock-for-hackage --enable-doc
+        cabal v2-haddock symbolic-base --haddock-for-hackage --enable-doc
         cabal upload --documentation --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/*-docs.tar.gz
