@@ -9,6 +9,7 @@ module Examples.ByteString (
     exampleSHA
   ) where
 
+import           Data.Type.Equality               (type (~))
 import           GHC.TypeNats
 
 import           ZkFold.Base.Algebra.Basic.Class

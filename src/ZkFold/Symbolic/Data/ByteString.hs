@@ -6,6 +6,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
