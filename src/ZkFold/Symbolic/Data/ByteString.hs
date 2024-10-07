@@ -53,6 +53,7 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
+import ZkFold.Base.Data.ByteString (toByteString)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -363,4 +364,4 @@ instance (FromConstant Natural (ByteString 8 c), Concat (ByteString 8 c) (ByteSt
 
 instance (ToConstant (ByteString n (Interpreter (Zp p))))
     => ToJSON (ByteString n (Interpreter (Zp p))) where
-    toJSON = toJSON . toConstant
+    toJSON = toJSON . toByteString . toConstant
