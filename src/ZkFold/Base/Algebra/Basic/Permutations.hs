@@ -20,7 +20,6 @@ import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector          (Vector (..), fromVector, toVector, unsafeToVector)
 import           ZkFold.Prelude                   (chooseNatural, drop, length, (!!))
@@ -34,12 +33,12 @@ type IndexPartition a = Map a IndexSet
 
 mkIndexPartition :: Ord a => V.Vector a -> IndexPartition a
 mkIndexPartition vs =
-    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [0 .. length vs P.- 1]
+    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [1 .. length vs]
     in V.foldl union empty $ fmap f vs
 
 ------------------------------------- Permutations -------------------------------------------
 
-newtype Permutation n = Permutation (Vector n (Zp n))
+newtype Permutation n = Permutation (Vector n Natural)
     deriving (Show, Eq)
 
 instance KnownNat n => Arbitrary (Permutation n) where
@@ -53,14 +52,15 @@ instance KnownNat n => Arbitrary (Permutation n) where
         in Permutation . unsafeToVector <$>
               f [] [fromConstant x | x <- [1..value @n]]
 
-fromPermutation :: Permutation n -> [Zp n]
+fromPermutation :: Permutation n -> [Natural]
 fromPermutation (Permutation perm) = fromVector perm
 
 applyPermutation :: KnownNat n => Permutation n -> Vector n a -> Vector n a
-applyPermutation (Permutation ps) as = fmap (index as) ps
+applyPermutation (Permutation ps) as = fmap (index as . (\ix -> ix - 1) . fromConstant) ps
+  -- subtract 1 from 1-based Natural index to get 0-based Zp n index ^
 
-applyCycle :: KnownNat n => V.Vector Natural -> Permutation n -> Permutation n
-applyCycle c (Permutation perm) = Permutation $ fmap (fromConstant . f . toConstant) perm
+applyCycle :: V.Vector Natural -> Permutation n -> Permutation n
+applyCycle c (Permutation perm) = Permutation $ fmap f perm
     where
         f :: Natural -> Natural
         f i = case i `V.elemIndex` c of
@@ -69,6 +69,6 @@ applyCycle c (Permutation perm) = Permutation $ fmap (fromConstant . f . toConst
 
 fromCycles :: KnownNat n => IndexPartition a -> Permutation n
 fromCycles p =
-    let n = toInteger $ V.length $ V.concat $ elems p
-    in foldr applyCycle (Permutation $ fromJust $ toVector [fromConstant x | x <- [0 .. n P.- 1]]) $ elems p
+    let n = fromIntegral $ V.length $ V.concat $ elems p
+    in foldr applyCycle (Permutation $ fromJust $ toVector [1 .. n]) $ elems p
 
