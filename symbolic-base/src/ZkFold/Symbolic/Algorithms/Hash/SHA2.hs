@@ -183,7 +183,7 @@ paddedLen m b l = if nextMultiple m b -! m P.<= l
         nextMultiple n d = d * div (n + d -! 1) d
 
 withPaddedLength' :: forall m b l. (KnownNat m, KnownNat b, KnownNat l) :- KnownNat (PaddedLength m b l)
-withPaddedLength' = Sub $ withKnownNat @(PaddedLength m b l) (unsafeSNat (paddedLen (natVal $ Proxy @m) (natVal $ Proxy @b) (natVal $ Proxy @l))) Dict 
+withPaddedLength' = Sub $ withKnownNat @(PaddedLength m b l) (unsafeSNat (paddedLen (natVal $ Proxy @m) (natVal $ Proxy @b) (natVal $ Proxy @l))) Dict
 
 withPaddedLength :: forall n d l {r}. ( KnownNat d, KnownNat n, KnownNat l) => (KnownNat (PaddedLength n d l) => r) -> r
 withPaddedLength = withDict (withPaddedLength' @n @d @l)
@@ -223,19 +223,19 @@ type SHA2 algorithm context k =
 sha2
     :: forall (algorithm :: Symbol) context k {d}
     .  SHA2 algorithm context k
-    => d ~ Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) 
+    => d ~ Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm)
     => ByteString k context -> ByteString (ResultSize algorithm) context
 sha2 messageBits = sha2Blocks @algorithm @context (fromVector chunks)
     where
         paddedMessage :: ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) context
-        paddedMessage = withDict (timesNat @2 @(WordSize algorithm)) $ withPaddedLength @k @(ChunkSize algorithm) @(2 * WordSize algorithm) $ 
+        paddedMessage = withDict (timesNat @2 @(WordSize algorithm)) $ withPaddedLength @k @(ChunkSize algorithm) @(2 * WordSize algorithm) $
                             withKLessPaddedLength @k @algorithm $
                                 sha2Pad @(ChunkSize algorithm) @(2 * WordSize algorithm) messageBits
 
         chunks :: Vector d (ByteString (ChunkSize algorithm) context)
         chunks = withModPaddedLength @k @algorithm $
                     withDivisibleDiv @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) @(ChunkSize algorithm) $
-                        toWords @d @(ChunkSize algorithm) paddedMessage 
+                        toWords @d @(ChunkSize algorithm) paddedMessage
 
 
 -- | Pad the input bytestring according to the rules described in @PaddedLength@
