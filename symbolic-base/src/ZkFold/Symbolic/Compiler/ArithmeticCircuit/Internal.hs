@@ -237,7 +237,7 @@ apply ::
   i a -> ArithmeticCircuit a (i :*: j) U1 -> ArithmeticCircuit a j U1
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
-  , acRange = mapKeys varK (filterWithKey remain $ acRange ac)
+  , acRange = mapKeys' (acRange ac)
   , acWitness = fmap witF (acWitness ac)
   , acOutput = U1
   }
@@ -247,12 +247,12 @@ apply xs ac = ac
     varF (NewVar v)        = var (NewVar v)
     witF f j = f (xs :*: j)
 
-    varK (NewVar v)        = NewVar v
-    varK (InVar (Right v)) = InVar v
-    varK (InVar (Left _))  = undefined
-
-    remain (InVar (Left _)) _ = False
-    remain _ _                = True
+    mapKeys' :: Ord (SysVar j) =>  Map (SysVar (i :*: j)) a ->  Map (SysVar j) a
+    mapKeys' m = fromList $
+                  foldrWithKey (\k x ms -> case k of
+                    NewVar v        -> (NewVar v, x) : ms
+                    InVar (Right v) -> (InVar v, x) : ms
+                    _               -> ms) [] m
 
 -- TODO: Add proper symbolic application functions
 
