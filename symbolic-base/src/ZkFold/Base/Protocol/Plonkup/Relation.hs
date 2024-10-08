@@ -6,6 +6,8 @@ module ZkFold.Base.Protocol.Plonkup.Relation where
 
 import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (bool)
+import           Data.Constraint                                     (withDict)
+import           Data.Constraint.Nat                                 (timesNat)
 import           Data.Map                                            (elems, keys)
 import           Data.Maybe                                          (fromJust)
 import           GHC.IsList                                          (IsList (..))
@@ -67,7 +69,6 @@ instance
 toPlonkupRelation :: forall i n l a .
        KnownNat i
     => KnownNat n
-    => KnownNat (3 * n)
     => KnownNat l
     => Arithmetic a
     => ArithmeticCircuit a (Vector i) (Vector l)
@@ -104,7 +105,7 @@ toPlonkupRelation ac =
         b  = map getB plonkupSystem
         c  = map getC plonkupSystem
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
-        sigma = fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c
+        sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c)
 
         w1 i   = toPolyVec $ fromList $ fmap (indexW ac i) a
         w2 i   = toPolyVec $ fromList $ fmap (indexW ac i) b

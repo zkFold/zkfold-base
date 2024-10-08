@@ -8,6 +8,9 @@ module Tests.UInt (specUInt) where
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return, when)
+import           Data.Constraint
+import           Data.Constraint.Nat                         (timesNat)
+import           Data.Constraint.Unsafe
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
@@ -60,17 +63,19 @@ type UBinary n b r = Binary (UInt n b r)
 isHom :: (KnownNat n, PrimeField (Zp p), KnownRegisterSize r) => UBinary n r (Interpreter (Zp p)) -> UBinary n r (ArithmeticCircuit (Zp p) U1) -> Natural -> Natural -> Property
 isHom f g x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (fromConstant x `f` fromConstant y)
 
+with2n :: forall n {r}. KnownNat n => (KnownNat (2 * n) => r) -> r
+with2n = withDict (timesNat @2 @n)
+
 specUInt'
     :: forall p n r r2n rs
     .  PrimeField (Zp p)
     => KnownNat n
-    => KnownNat (2 * n)
     => KnownRegisterSize rs
-    => n <= 2 * n
     => r ~ NumberOfRegisters (Zp p) n rs
     => r2n ~ NumberOfRegisters (Zp p) (2 * n) rs
     => KnownNat r
     => KnownNat r2n
+    => n <= 2 * n
     => IO ()
 specUInt' = hspec $ do
     let n = value @n
@@ -123,11 +128,11 @@ specUInt' = hspec $ do
                 y = y' `P.div` P.gcd x' y'
 
                 -- We will test Bezout coefficients by multiplying two UInts less than 2^n, hence we need 2^(2n) bits to store the result
-                zpX = fromConstant x :: UInt (2 * n) rs (Interpreter (Zp p))
-                zpY = fromConstant y
-                (s, t, _) = eea zpX zpY
+                zpX = with2n @n (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
+                zpY = with2n @n (fromConstant y)
+                (s, t, _) = with2n @n (eea zpX zpY)
             -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
-            return $ ((zpX * s) `mod` zpY === one) .&. ((zpY * t) `mod` zpX === one)
+            return $ with2n @n ((zpX * s) `mod` zpY === one) .&. with2n @n ((zpY * t) `mod` zpX === one)
         it "has one" $ execAcUint @(Zp p) @n @rs one === execZpUint @_ @n @rs one
         it "strictly adds correctly" $ do
             x <- toss m
@@ -141,15 +146,15 @@ specUInt' = hspec $ do
 
         it "extends correctly" $ do
             x <- toss m
-            let acUint = fromConstant x :: UInt n rs (ArithmeticCircuit (Zp p) U1)
-                zpUint = fromConstant x :: UInt (2 * n) rs (Interpreter (Zp p))
-            return $ execAcUint @(Zp p) (extend acUint :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1)) === execZpUint zpUint
+            let acUint =  with2n @n (fromConstant x) :: UInt n rs (ArithmeticCircuit (Zp p) U1)
+                zpUint =  with2n @n (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
+            return $ execAcUint @(Zp p) (with2n @n (extend acUint :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
 
         it "shrinks correctly" $ do
             x <- toss (m * m)
-            let acUint = fromConstant x :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1)
+            let acUint = with2n @n (fromConstant x) :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1)
                 zpUint = fromConstant x :: UInt n rs (Interpreter (Zp p))
-            return $ execAcUint @(Zp p) (shrink acUint :: UInt n rs (ArithmeticCircuit (Zp p) U1)) === execZpUint zpUint
+            return $ execAcUint @(Zp p) (with2n @n (withLess2n @n $ shrink acUint :: UInt n rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
 
         it "checks equality" $ do
             x <- toss m
@@ -184,3 +189,10 @@ specUInt = do
 
     specUInt' @BLS12_381_Scalar @32 @_ @_ @(Fixed 10)
     specUInt' @BLS12_381_Scalar @500 @_ @_ @(Fixed 10)
+
+
+less2n :: forall n. Dict (n <= 2 * n)
+less2n = unsafeAxiom
+
+withLess2n :: forall n {r}. ((n <= 2 * n) => r) -> r
+withLess2n = withDict (less2n @n)

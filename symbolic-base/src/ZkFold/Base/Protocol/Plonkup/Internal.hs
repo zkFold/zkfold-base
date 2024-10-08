@@ -4,6 +4,8 @@
 module ZkFold.Base.Protocol.Plonkup.Internal where
 
 import           Data.Binary                                         (Binary)
+import           Data.Constraint                                     (withDict)
+import           Data.Constraint.Nat                                 (plusNat, timesNat)
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -33,6 +35,10 @@ type PlonkupPermutationSize n = 3 * n
 
 -- The maximum degree of the polynomials we need in the protocol is `4 * n + 5`.
 type PlonkupPolyExtendedLength n = 4 * n + 6
+
+
+with4n6 :: forall n {r}. KnownNat n => (KnownNat (4 * n + 6) => r) -> r
+with4n6 f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)
 
 type PlonkupPolyExtended n c = PolyVec (ScalarField c) (PlonkupPolyExtendedLength n)
 

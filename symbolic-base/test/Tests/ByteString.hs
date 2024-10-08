@@ -1,11 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module Tests.ByteString (specByteString) where
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
+import           Data.Constraint                             (withDict)
+import           Data.Constraint.Nat                         (plusNat)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
@@ -21,6 +22,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import qualified ZkFold.Base.Data.Vector                     as V
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
@@ -68,14 +71,13 @@ testWords
     => KnownNat wordSize
     => Prime p
     => KnownNat (Log2 (p - 1) + 1)
-    => ToWords (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString wordSize (ArithmeticCircuit (Zp p) U1))
-    => ToWords (ByteString n (Interpreter (Zp p))) (ByteString wordSize (Interpreter (Zp p)))
+    => (Div n wordSize) * wordSize ~ n
     => Spec
 testWords = it ("divides a bytestring of length " <> show (value @n) <> " into words of length " <> show (value @wordSize)) $ do
     x <- toss m
     let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
         zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (Haskell.fmap eval (toWords arithBS :: [ByteString wordSize (ArithmeticCircuit (Zp p) U1)]) === toWords zpBS)
+    return (Haskell.fmap eval (toWords @(Div n wordSize) @wordSize arithBS :: Vector (Div n wordSize) (ByteString wordSize (ArithmeticCircuit (Zp p) U1))) === toWords @(Div n wordSize) @wordSize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -85,8 +87,7 @@ testTruncate
     .  KnownNat n
     => PrimeField (Zp p)
     => KnownNat m
-    => Truncate (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString m (ArithmeticCircuit (Zp p) U1))
-    => Truncate (ByteString n (Interpreter (Zp p))) (ByteString m (Interpreter (Zp p)))
+    => m <= n
     => Spec
 testTruncate = it ("truncates a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do
     x <- toss m
@@ -129,14 +130,9 @@ specByteString'
     => n <= n + 10
     => n <= n + 128
     => n <= n + n
-    => (Div (3 * n) n) * n ~ 3 * n
     => (Div n n) * n ~ n
     => (Div n 4) * 4 ~ n
     => (Div n 2) * 2 ~ n
-    => KnownNat (n + 1)
-    => KnownNat (n + 10)
-    => KnownNat (n + 128)
-    => KnownNat (n + n)
     => IO ()
 specByteString' = hspec $ do
     let n = Haskell.fromIntegral $ value @n
@@ -198,8 +194,8 @@ specByteString' = hspec $ do
             z <- toss m
             let acs = fromConstant @Natural @(ByteString n (ArithmeticCircuit (Zp p) U1)) <$> [x, y, z]
                 zps = fromConstant @Natural @(ByteString n (Interpreter (Zp p))) <$> [x, y, z]
-            let ac = concat acs :: ByteString (3 * n) (ArithmeticCircuit (Zp p) U1)
-                zp = concat zps
+            let ac = concat @3 @n $ V.unsafeToVector @3 acs :: ByteString (3 * n) (ArithmeticCircuit (Zp p) U1)
+                zp = concat @3 @n $ V.unsafeToVector @3 zps
             return $ eval @(Zp p) @(3 * n) ac === zp
         testTruncate @n @1 @p
         testTruncate @n @4 @p
@@ -207,10 +203,10 @@ specByteString' = hspec $ do
         testTruncate @n @16 @p
         testTruncate @n @32 @p
         testTruncate @n @n @p
-        testGrow @n @(n + 1) @p
-        testGrow @n @(n + 10) @p
-        testGrow @n @(n + 128) @p
-        testGrow @n @(n + n) @p
+        withDict (plusNat @n @1) (testGrow @n @(n + 1) @p)
+        withDict (plusNat @n @10) (testGrow @n @(n + 10) @p)
+        withDict (plusNat @n @128) (testGrow @n @(n + 128) @p)
+        withDict (plusNat @n @n) (testGrow @n @(n + n) @p)
 
 specByteString :: IO ()
 specByteString = do

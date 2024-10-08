@@ -31,7 +31,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
-import           ZkFold.Symbolic.Algorithms.Hash.SHA2        (AlgorithmSetup (..), SHA2, SHA2N, sha2, sha2Natural)
+import           ZkFold.Symbolic.Algorithms.Hash.SHA2
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
