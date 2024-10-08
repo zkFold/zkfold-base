@@ -185,10 +185,10 @@ blake2b :: forall keyLen inputLen outputLen c n.
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
     let input' = withConstraints @inputLen $
-                    Vec.parFmap from $ toWords @(Div n 64) @64 $
+                    from <$> (toWords @(Div n 64) @64 $
                     reverseEndianness @64 $
                     flip rotateBitsL (value @(ExtensionBits inputLen)) $
-                    extend @_ @(ExtendedInputByteString inputLen c) input :: Vec.Vector (Div n 64) (UInt 64 Auto c)
+                    extend @_ @(ExtendedInputByteString inputLen c) input ) :: Vec.Vector (Div n 64) (UInt 64 Auto c)
 
         key'    = fromConstant @_ key :: UInt 64 Auto c
         input'' = if value @keyLen > 0

@@ -43,7 +43,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
 import           ZkFold.Base.Data.Package           (packWith, unpackWith)
 import qualified ZkFold.Base.Data.Vector            as V
-import           ZkFold.Base.Data.Vector            (Vector (..), parFmap)
+import           ZkFold.Base.Data.Vector            (Vector (..))
 import           ZkFold.Prelude                     (replicateA, (!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool          (Bool (..), BoolType (..))
@@ -80,9 +80,9 @@ instance
     ( Symbolic c
     , m * 8 ~ n
     ) => FromConstant Bytes.ByteString (ByteString n c) where
-    fromConstant bytes = concat @_ @8 $ V.parFmap (fromConstant @Natural @(ByteString 8 c)
+    fromConstant bytes = concat @_ @8 $ fromConstant @Natural @(ByteString 8 c)
         . Haskell.fromIntegral
-        . Haskell.toInteger) (V.unsafeToVector @m $ Bytes.unpack bytes)
+        . Haskell.toInteger <$> (V.unsafeToVector @m $ Bytes.unpack bytes)
 
 emptyByteString :: FromConstant Natural (ByteString 0 c) => ByteString 0 c
 emptyByteString = fromConstant @Natural 0
@@ -208,15 +208,10 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
 --
 
 toWords :: forall m wordSize c. (Symbolic c, KnownNat wordSize) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
-toWords (ByteString bits) = parFmap ByteString $ unpackWith (V.chunks @m @wordSize) bits
+toWords (ByteString bits) = ByteString <$> unpackWith (V.chunks @m @wordSize) bits
 
--- | Unfortunately, Haskell does not support dependent types yet,
--- so we have no possibility to infer the exact type of the result
--- (the list can contain an arbitrary number of words).
--- We can only impose some restrictions on @n@ and @m@.
---
 concat :: forall k m c. (Symbolic c) => Vector k (ByteString m c) -> ByteString (k * m) c
-concat bs = ByteString $ packWith V.concat (V.parFmap (\(ByteString bits) -> bits) bs)
+concat bs = ByteString $ packWith V.concat ((\(ByteString bits) -> bits) <$> bs)
 
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --

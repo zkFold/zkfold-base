@@ -176,7 +176,3 @@ instance (Random a, KnownNat size) => Random (Vector size a) where
 
 instance ToJSON a => ToJSON (Vector n a) where
     toJSON (Vector xs) = toJSON xs
-
-
-parFmap :: (a -> b) -> Vector size a -> Vector size b
-parFmap f lst = unsafeToVector $ parMap rpar f (fromVector lst)

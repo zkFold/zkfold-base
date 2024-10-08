@@ -9,7 +9,6 @@ module Examples.ByteString (
     exampleSHA
   ) where
 
-import           Data.Type.Equality                   (type (~))
 import           GHC.TypeNats
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -39,7 +38,5 @@ exampleByteStringAdd x y = from (from x + from y :: UInt n Auto c)
 
 exampleSHA :: forall n c.
   SHA2 "SHA256" c n
-  => Div (PaddedLength n 512 64) 512 * 512 ~ PaddedLength n 512 64
-  => n <= PaddedLength n 512 64
   => ByteString n c -> ByteString 256 c
 exampleSHA = sha2 @"SHA256"
