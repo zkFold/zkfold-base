@@ -6,7 +6,6 @@ module ZkFold.Base.Data.Vector where
 
 import           Control.DeepSeq                  (NFData)
 import           Control.Monad.State.Strict       (runState, state)
-import           Control.Parallel.Strategies      (parMap, rpar)
 import           Data.Aeson                       (ToJSON (..))
 import           Data.Distributive                (Distributive (..))
 import           Data.Foldable                    (fold)
