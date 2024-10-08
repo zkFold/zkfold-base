@@ -101,6 +101,7 @@ instance
     , SymbolicData (Point curve)
     , Context (Point curve) ~ ctx
     , bits ~ NumberOfBits (S.BaseField ctx)
+    , Layout (Point curve) ~ V.Vector n
     ) => Scale (FieldElement ctx) (Point curve) where
 
     scale sc x = sum $ P.zipWith (\b p -> bool @(Bool ctx) zero p (isSet bits b)) [upper, upper -! 1 .. 0] (P.iterate (\e -> e + e) x)

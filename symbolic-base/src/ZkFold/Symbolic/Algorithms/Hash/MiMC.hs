@@ -11,7 +11,7 @@ import           Prelude                                        hiding (Eq (..),
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Package                       (unpacked)
-import           ZkFold.Base.Data.Vector                        (fromVector)
+import           ZkFold.Base.Data.Vector                        (Vector, fromVector)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
@@ -39,11 +39,12 @@ mimcHashN xs k = go
       [zL, zR]    -> mimcHash2 xs k zL zR
       (zL:zR:zs') -> go (mimcHash2 xs k zL zR : zs')
 
-hash :: forall context x a .
+hash :: forall context x a size .
     ( Symbolic context
     , SymbolicData x
     , BaseField context ~ a
     , Context x ~ context
     , Support x ~ Proxy context
+    , Layout x ~ Vector size
     ) => x -> FieldElement context
 hash = mimcHashN mimcConstants (zero :: a) . fromVector . fmap FieldElement . unpacked . flip pieces Proxy

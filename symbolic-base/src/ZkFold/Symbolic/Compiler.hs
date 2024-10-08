@@ -45,13 +45,14 @@ forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) 
 solder ::
     forall a c f ni .
     ( KnownNat ni
-    , ni ~ TypeSize (Support f)
     , c ~ ArithmeticCircuit a (Vector ni)
     , SymbolicData f
     , Context f ~ c
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
+    , Layout f ~ Vector (TypeSize f)
+    , Layout (Support f) ~ Vector ni
     ) => f -> c (Vector (TypeSize f))
 solder f = pieces f (restore @(Support f) $ const inputC)
     where
@@ -61,7 +62,6 @@ solder f = pieces f (restore @(Support f) $ const inputC)
 compileForceOne ::
     forall a c f y ni .
     ( KnownNat ni
-    , ni ~ TypeSize (Support f)
     , c ~ ArithmeticCircuit a (Vector ni)
     , Arithmetic a
     , Binary a
@@ -74,6 +74,9 @@ compileForceOne ::
     , Context y ~ c
     , Support y ~ Proxy c
     , TypeSize f ~ TypeSize y
+    , Layout f ~ Vector (TypeSize y)
+    , Layout y ~ Vector (TypeSize y)
+    , Layout (Support f) ~ Vector ni
     ) => f -> y
 compileForceOne = restore . const . optimize . forceOne . solder @a
 
@@ -81,7 +84,6 @@ compileForceOne = restore . const . optimize . forceOne . solder @a
 compile ::
     forall a c f y ni .
     ( KnownNat ni
-    , ni ~ TypeSize (Support f)
     , c ~ ArithmeticCircuit a (Vector ni)
     , SymbolicData f
     , Context f ~ c
@@ -92,6 +94,9 @@ compile ::
     , Context y ~ c
     , Support y ~ Proxy c
     , TypeSize f ~ TypeSize y
+    , Layout f ~ Vector (TypeSize y)
+    , Layout y ~ Vector (TypeSize y)
+    , Layout (Support f) ~ Vector ni
     ) => f -> y
 compile = restore . const . optimize . solder @a
 
@@ -99,7 +104,6 @@ compile = restore . const . optimize . solder @a
 compileIO ::
     forall a c f ni .
     ( KnownNat ni
-    , ni ~ TypeSize (Support f)
     , c ~ ArithmeticCircuit a (Vector ni)
     , FromJSON a
     , ToJSON a
@@ -108,6 +112,8 @@ compileIO ::
     , SymbolicData (Support f)
     , Context (Support f) ~ c
     , Support (Support f) ~ Proxy c
+    , Layout f ~ Vector (TypeSize f)
+    , Layout (Support f) ~ Vector ni
     ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = optimize (solder @a f) :: c (Vector (TypeSize f))

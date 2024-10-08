@@ -38,7 +38,6 @@ data ExampleOutput where
 exampleOutput ::
   forall i_n o_n c f.
   ( KnownNat i_n
-  , i_n ~ TypeSize (Support f)
   , SymbolicData f
   , c ~ C (Vector i_n)
   , Context f ~ c
@@ -46,6 +45,8 @@ exampleOutput ::
   , SymbolicData (Support f)
   , Context (Support f) ~ c
   , Support (Support f) ~ Proxy c
+  , Layout f ~ Vector o_n
+  , Layout (Support f) ~ Vector i_n
   ) => f -> ExampleOutput
 exampleOutput = ExampleOutput @i_n @o_n . const . compile
 
