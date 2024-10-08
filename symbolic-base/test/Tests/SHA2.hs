@@ -146,8 +146,6 @@ specSHA2bs
     .  KnownSymbol algorithm
     => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) n
     => SHA2N algorithm (Interpreter (Zp BLS12_381_Scalar))
-    => Div (PaddedLength n (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength n (ChunkSize algorithm) (2 * WordSize algorithm)
-    => n <= PaddedLength n (ChunkSize algorithm) (2 * WordSize algorithm)
     => Spec
 specSHA2bs = do
     let n = value @n
@@ -169,14 +167,6 @@ specSHA2'
     => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 63
     => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 64
     => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 1900
-    => Div (PaddedLength 1 (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength 1 (ChunkSize algorithm) (2 * WordSize algorithm)
-    => 1 <= PaddedLength 1 (ChunkSize algorithm) (2 * WordSize algorithm)
-    => Div (PaddedLength 63 (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength 63 (ChunkSize algorithm) (2 * WordSize algorithm)
-    => 63 <= PaddedLength 63 (ChunkSize algorithm) (2 * WordSize algorithm)
-    => Div (PaddedLength 64 (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength 64 (ChunkSize algorithm) (2 * WordSize algorithm)
-    => 64 <= PaddedLength 64 (ChunkSize algorithm) (2 * WordSize algorithm)
-    => Div (PaddedLength 1900 (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm) * (ChunkSize algorithm) ~ PaddedLength 1900 (ChunkSize algorithm) (2 * WordSize algorithm)
-    => 1900 <= PaddedLength 1900 (ChunkSize algorithm) (2 * WordSize algorithm)
     => IO ()
 specSHA2' = hspec $ do
     specSHA2bs @1    @algorithm
