@@ -1,6 +1,10 @@
 index-state: 2023-10-29T16:11:26Z
 
-packages: .
+packages:
+    symbolic-base
+    symbolic-cardano
+    symbolic-examples
+    zkfold-ledger
 
 optimization: 2
 
