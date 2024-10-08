@@ -1,0 +1,7 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:symbolic-examples"
+
+    - path: "./bench/BenchCompiler.hs"
+      component: "symbolic-examples:bench:bench-compiler"
