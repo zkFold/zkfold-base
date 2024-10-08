@@ -8,7 +8,6 @@ import           ZkFold.Symbolic.Cardano.Types.Value             (SingleAsset)
 import           ZkFold.Symbolic.Class                           (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class                      (SymbolicData (..))
 
-
 exampleBatchTransfer ::
     ( Symbolic c
     , SymbolicData (TxOut c)

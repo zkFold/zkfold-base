@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+
 module Main where
 
 import           Control.DeepSeq                                     (NFData, force)
