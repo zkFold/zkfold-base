@@ -163,6 +163,12 @@ ivcVerifierAc
     => Support m ~ Proxy ctx
     => Support a ~ Proxy ctx
     => Support y ~ Proxy ctx
+    => Layout i ~ Vector (TypeSize i)
+    => Layout f ~ Vector (TypeSize f)
+    => Layout c ~ Vector (TypeSize c)
+    => Layout m ~ Vector (TypeSize m)
+    => Layout a ~ Vector (TypeSize a)
+    => Layout y ~ Vector (TypeSize y)
     => ctx ~ ArithmeticCircuit a (Vector typeSize)
     => Acc.AccumulatorScheme i f c m ctx a
     => y

@@ -32,12 +32,14 @@ class SymbolicData x where
     type Context x :: (Type -> Type) -> Type
     type Support x :: Type
     type TypeSize x :: Natural
+    type Layout x :: Type -> Type
+    type Layout x = Vector (TypeSize x)
 
     -- | Returns the circuit that makes up `x`.
-    pieces :: x -> Support x -> Context x (Vector (TypeSize x))
+    pieces :: x -> Support x -> Context x (Layout x)
 
     -- | Restores `x` from the circuit's outputs.
-    restore :: (Support x -> Context x (Vector (TypeSize x))) -> x
+    restore :: (Support x -> Context x (Layout x)) -> x
 
 -- | Returns the number of finite field elements needed to describe `x`.
 typeSize :: forall x . KnownNat (TypeSize x) => Natural
@@ -78,6 +80,8 @@ instance
     , Context x ~ Context y
     , Support x ~ Support y
     , KnownNat (TypeSize x)
+    , Layout x ~ Vector (TypeSize x)
+    , Layout y ~ Vector (TypeSize y)
     ) => SymbolicData (x, y) where
 
     type Context (x, y) = Context x
@@ -98,6 +102,9 @@ instance
     , Support y ~ Support z
     , KnownNat (TypeSize x)
     , KnownNat (TypeSize y)
+    , Layout x ~ Vector (TypeSize x)
+    , Layout y ~ Vector (TypeSize y)
+    , Layout z ~ Vector (TypeSize z)
     ) => SymbolicData (x, y, z) where
 
     type Context (x, y, z) = Context (x, (y, z))
@@ -122,6 +129,10 @@ instance
     , KnownNat (TypeSize w)
     , KnownNat (TypeSize x)
     , KnownNat (TypeSize y)
+    , Layout w ~ Vector (TypeSize w)
+    , Layout x ~ Vector (TypeSize x)
+    , Layout y ~ Vector (TypeSize y)
+    , Layout z ~ Vector (TypeSize z)
     ) => SymbolicData (w, x, y, z) where
 
     type Context (w, x, y, z) = Context (w, (x, y, z))
@@ -150,6 +161,11 @@ instance
     , KnownNat (TypeSize w)
     , KnownNat (TypeSize x)
     , KnownNat (TypeSize y)
+    , Layout v ~ Vector (TypeSize v)
+    , Layout w ~ Vector (TypeSize w)
+    , Layout x ~ Vector (TypeSize x)
+    , Layout y ~ Vector (TypeSize y)
+    , Layout z ~ Vector (TypeSize z)
     ) => SymbolicData (v, w, x, y, z) where
 
     type Context (v, w, x, y, z) = Context (v, (w, x, y, z))
@@ -165,6 +181,7 @@ instance
     , Package (Context x)
     , KnownNat (TypeSize x)
     , KnownNat n
+    , Layout x ~ Vector (TypeSize x)
     ) => SymbolicData (Vector n x) where
 
     type Context (Vector n x) = Context x
@@ -178,6 +195,7 @@ instance SymbolicData f => SymbolicData (x -> f) where
     type Context (x -> f) = Context f
     type Support (x -> f) = (x, Support f)
     type TypeSize (x -> f) = TypeSize f
+    type Layout (x -> f) = Layout f
 
     pieces f (x, i) = pieces (f x) i
     restore f x = restore (f . (x,))

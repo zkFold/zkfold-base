@@ -20,7 +20,7 @@ import qualified Prelude                          as Haskell
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.HFunctor        (hmap)
 import qualified ZkFold.Base.Data.Vector          as V
-import           ZkFold.Base.Data.Vector          (unsafeToVector)
+import           ZkFold.Base.Data.Vector          (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField, symbolicF), symbolic2F)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
@@ -70,6 +70,7 @@ instance
     , Context x ~ c
     , Support x ~ Proxy c
     , TypeSize x ~ 1
+    , Layout x ~ Vector 1
     ) => Ord (Bool c) (Lexicographical x) where
 
     x <= y = y >= x
@@ -86,7 +87,7 @@ instance
 
 getBitsBE ::
   forall c x .
-  (Symbolic c, SymbolicData x, Context x ~ c, Support x ~ Proxy c, TypeSize x ~ 1) =>
+  (Symbolic c, SymbolicData x, Context x ~ c, Support x ~ Proxy c, Layout x ~ Vector 1) =>
   x -> c (V.Vector (NumberOfBits (BaseField c)))
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
