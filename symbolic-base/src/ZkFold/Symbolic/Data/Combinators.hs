@@ -175,7 +175,7 @@ minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` max
 
 expansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
-expansion = expansionW @1 
+expansion = expansionW @1
 
 expansionW :: forall r i a m . (KnownNat r, MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 expansionW n k = do
@@ -187,7 +187,7 @@ expansionW n k = do
 bitsOf :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
-bitsOf = wordsOf @1 
+bitsOf = wordsOf @1
 
 wordsOf :: forall r i a m . (KnownNat r, MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @wordsOf n k@ creates @n@ r-bit words and sets their witnesses equal to @n@ smaller
@@ -218,7 +218,7 @@ hornerW xs = case reverse xs of
 horner :: MonadCircuit i a m => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
 -- Horner's scheme.
-horner = hornerW @1 
+horner = hornerW @1
 
 splitExpansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
 -- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that

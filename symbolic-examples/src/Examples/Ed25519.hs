@@ -15,10 +15,10 @@ import           ZkFold.Symbolic.Data.Ed25519              ()
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
 
-exampleEd25519Scale 
+exampleEd25519Scale
     :: Symbolic c
     => NFData (c (Vector Size))
-    => FieldElement c 
-    -> Point (Ed25519 c) 
+    => FieldElement c
+    -> Point (Ed25519 c)
     -> Point (Ed25519 c)
 exampleEd25519Scale = scale
