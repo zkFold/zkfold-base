@@ -13,8 +13,10 @@ import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
 import           Examples.BatchTransfer                      (exampleBatchTransfer)
 import           Examples.ByteString
+import           Examples.Commitment
 import           Examples.Conditional                        (exampleConditional)
 import           Examples.Constant                           (exampleConst5, exampleEq5)
+import           Examples.Ed25519
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
@@ -85,5 +87,7 @@ examples =
   , ("FFA.Add.097", exampleOutput exampleFFAadd097)
   , ("FFA.Mul.337", exampleOutput exampleFFAmul337)
   , ("FFA.Mul.097", exampleOutput exampleFFAmul097)
+  , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
+  , ("PedersonCommitment", exampleOutput exampleCommitment)
   , ("BatchTransfer", exampleOutput exampleBatchTransfer)
   ]

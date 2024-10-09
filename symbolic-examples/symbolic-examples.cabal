@@ -101,6 +101,8 @@ library
       Examples.MiMCHash
       Examples.ReverseList
       Examples.UInt
+      Examples.Ed25519
+      Examples.Commitment
     build-depends:
       adjunctions,
       base,
