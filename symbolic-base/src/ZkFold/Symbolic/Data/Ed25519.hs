@@ -1,10 +1,9 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Symbolic.Data.Ed25519  where
+module ZkFold.Symbolic.Data.Ed25519 () where
 
 import           Control.DeepSeq                           (NFData, force)
 import           Data.Functor.Rep                          (Representable)
@@ -13,7 +12,6 @@ import           Prelude                                   (type (~), ($))
 import qualified Prelude                                   as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
@@ -23,18 +21,20 @@ import           ZkFold.Symbolic.Class                     (Symbolic)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
-import           ZkFold.Symbolic.Data.UInt
 
 
-instance Symbolic c => SymbolicData (Point (Ed25519 c)) where
+instance
+    ( Symbolic c
+    , S.BaseField c ~ a
+    ) => SymbolicData (Point (Ed25519 c)) where
 
     type Context (Point (Ed25519 c)) = c
-    type Support (Point (Ed25519 c)) = Support (UInt 256 'Auto c)
-    type Layout (Point (Ed25519 c)) = Layout (UInt 256 'Auto c, UInt 256 'Auto c)
+    type Support (Point (Ed25519 c)) = Support (FFA Ed25519_Base c)
+    type TypeSize (Point (Ed25519 c)) = TypeSize (FFA Ed25519_Base c) + TypeSize (FFA Ed25519_Base c)
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
     -- We can encode the point at infinity as (0, 0), therefore.
@@ -43,14 +43,14 @@ instance Symbolic c => SymbolicData (Point (Ed25519 c)) where
     -- It will need additional checks in pointDouble because of the denominator becoming zero, though.
     -- TODO: Think of a better solution
     --
-    pieces Inf         = pieces (zero :: UInt 256 'Auto c, zero :: UInt 256 'Auto c)
-    pieces (Point x y) = pieces (x, y)
+    pieces Inf         = hliftA2 V.append <$> pieces (zero :: FFA Ed25519_Base c) <*> pieces (zero :: FFA Ed25519_Base c)
+    pieces (Point x y) = hliftA2 V.append <$> pieces x <*> pieces y
 
     restore f = Point x y
         where
             (x, y) = restore f
 
-instance (Symbolic c, Eq (Bool c) (BaseField (Ed25519 c))) => Eq (Bool c) (Point (Ed25519 c)) where
+instance (Symbolic c) => Eq (Bool c) (Point (Ed25519 c)) where
     Inf == Inf                     = true
     Inf == _                       = false
     _ == Inf                       = false
@@ -65,13 +65,11 @@ instance (Symbolic c, Eq (Bool c) (BaseField (Ed25519 c))) => Eq (Bool c) (Point
 --
 instance
     ( Symbolic c
-    , KnownNat (NumberOfRegisters (S.BaseField c) 256 'Auto)
-    , KnownNat (NumberOfRegisters (S.BaseField c) 512 'Auto)
-    , NFData (c (V.Vector (NumberOfRegisters (S.BaseField c) 512 'Auto)))
+    , NFData (c (V.Vector Size))
     ) => EllipticCurve (Ed25519 c)  where
 
-    type BaseField (Ed25519 c) = UInt 256 'Auto c
-    type ScalarField (Ed25519 c) = UInt 256 'Auto c
+    type BaseField (Ed25519 c) = FFA Ed25519_Base c
+    type ScalarField (Ed25519 c) = FieldElement c
 
     inf = Inf
 
@@ -84,10 +82,7 @@ instance
     -- pointMul uses natScale which converts the scale to Natural.
     -- We can't convert arithmetic circuits to Natural, so we can't use pointMul either.
     --
-    mul sc x = sum $ P.zipWith (\b p -> bool @(Bool c) zero p (isSet bits b)) [255, 254 .. 0] (P.iterate (\e -> e + e) x)
-        where
-            bits :: ByteString 256 c
-            bits = from sc
+    mul = scale
 
 instance
     ( EllipticCurve c
@@ -109,112 +104,42 @@ instance
             upper :: Natural
             upper = value @bits -! 1
 
+a :: Symbolic ctx => FFA Ed25519_Base ctx
+a = fromConstant @P.Integer (-1)
+
+d :: Symbolic ctx => FFA Ed25519_Base ctx
+d = fromConstant @P.Integer (-121665) // fromConstant @Natural 121666
+
 acAdd25519
     :: forall c
     .  Symbolic c
-    => KnownNat (NumberOfRegisters (S.BaseField c) 512 'Auto)
-    => NFData (c (V.Vector (NumberOfRegisters (S.BaseField c) 512 'Auto)))
+    => NFData (c (V.Vector Size))
     => Point (Ed25519 c)
     -> Point (Ed25519 c)
     -> Point (Ed25519 c)
 acAdd25519 Inf q = q
 acAdd25519 p Inf = p
-acAdd25519 (Point x1 y1) (Point x2 y2) = Point (shrink x3) (shrink y3)
+acAdd25519 (Point x1 y1) (Point x2 y2) = Point x3 y3
     where
-        -- We will perform multiplications of UInts of up to n bits, therefore we need 2n bits to store the result.
-        --
-        x1e, y1e, x2e, y2e :: UInt 512 'Auto c
-        x1e = extend x1
-        y1e = extend y1
-        x2e = extend x2
-        y2e = extend y2
-
-        m :: UInt 512 'Auto c
-        m = fromConstant $ value @Ed25519_Base
-
-        plusM :: UInt 512 'Auto c -> UInt 512 'Auto c -> UInt 512 'Auto c
-        plusM x y = (x + y) `mod` m
-
-        mulM :: UInt 512 'Auto c -> UInt 512 'Auto c -> UInt 512 'Auto c
-        mulM x y = (x * y) `mod` m
-
-        d :: UInt 512 'Auto c
-        d = fromConstant $ fromZp @Ed25519_Base $ (toZp (-121665) // toZp 121666)
-
-        x3n :: UInt 512 'Auto c
-        x3n = force $ (x1e `mulM` y2e) `plusM` (y1e `mulM` x2e)
-
-        x3d :: UInt 512 'Auto c
-        x3d = force $ one `plusM` (d `mulM` x1e `mulM` x2e `mulM` y1e `mulM` y2e)
-
-        -- Calculate the modular inverse using Extended Euclidean algorithm
-        x3di :: UInt 512 'Auto c
-        (x3di, _, _) = force $ eea x3d m
-
-        x3 :: UInt 512 'Auto c
-        x3 = x3n `mulM` x3di
-
-        y3n :: UInt 512 'Auto c
-        y3n = force $ (y1e `mulM` y2e) `plusM` (x1e `mulM` x2e)
-
-        y3d :: UInt 512 'Auto c
-        y3d = force $ one `plusM` ((m - d) `mulM` x1e `mulM` x2e `mulM` y1e `mulM` y2e)
-
-        -- Calculate the modular inverse using Extended Euclidean algorithm
-        y3di :: UInt 512 'Auto c
-        (y3di, _, _) = eea y3d m
-
-        y3 :: UInt 512 'Auto c
-        y3 = y3n `mulM` y3di
+        prodx = x1 * x2
+        prody = y1 * y2
+        prod4 = d * prodx * prody
+        x3 = force $ (x1 * y2 + y1 * x2) // (one + prod4)
+        y3 = force $ (prody - a * prodx) // (one - prod4)
 
 acDouble25519
     :: forall c
     .  Symbolic c
-    => KnownNat (NumberOfRegisters (S.BaseField c) 512 'Auto)
-    => KnownNat (NumberOfRegisters (S.BaseField c) 256 'Auto)
-    => NFData (c (V.Vector (NumberOfRegisters (S.BaseField c) 512 'Auto)))
+    => NFData (c (V.Vector Size))
+    => Eq (Bool c) (BaseField (Ed25519 c))
     => Point (Ed25519 c)
     -> Point (Ed25519 c)
 acDouble25519 Inf = Inf
-acDouble25519 (Point x1 y1) = bool @(Bool c) (Point (shrink x3) (shrink y3)) (Point x1 y1) (x1 == zero && y1 == zero)
+acDouble25519 (Point x1 y1) = bool @(Bool c) (Point x3 y3) (Point x1 y1) (x1 == zero && y1 == zero)
     where
-        -- We will perform multiplications of UInts of up to n bits, therefore we need 2n bits to store the result.
-        --
-        xe, ye :: UInt 512 'Auto c
-        xe = extend x1
-        ye = extend y1
+        xsq = x1 * x1
+        ysq = y1 * y1
+        xy =  x1 * y1
+        x3 = force $ (xy + xy) // (a * xsq + ysq)
+        y3 = force $ (ysq - a * xsq) // (one + one - a * xsq  - ysq)
 
-        m :: UInt 512 'Auto c
-        m = fromConstant $ value @Ed25519_Base
-
-        plusM :: UInt 512 'Auto c -> UInt 512 'Auto c -> UInt 512 'Auto c
-        plusM x y = (x + y) `mod` m
-
-        mulM :: UInt 512 'Auto c -> UInt 512 'Auto c -> UInt 512 'Auto c
-        mulM x y = (x * y) `mod` m
-
-        x3n :: UInt 512 'Auto c
-        x3n = force $ (xe `mulM` ye) `plusM` (xe `mulM` ye)
-
-        x3d :: UInt 512 'Auto c
-        x3d = force $ ((m - one) `mulM` xe `mulM` xe) `plusM` (ye `mulM` ye)
-
-        -- Calculate the modular inverse using Extended Euclidean algorithm
-        x3di :: UInt 512 'Auto c
-        (x3di, _, _) = force $ eea x3d m
-
-        x3 :: UInt 512 'Auto c
-        x3 = x3n `mulM` x3di
-
-        y3n :: UInt 512 'Auto c
-        y3n = force $ (ye `mulM` ye) `plusM` (xe `mulM` xe)
-
-        y3d :: UInt 512 'Auto c
-        y3d = force $ (one + one) `plusM` (xe `mulM` xe) `plusM` ((m - one) `mulM` ye `mulM` ye)
-
-        -- Calculate the modular inverse using Extended Euclidean algorithm
-        y3di :: UInt 512 'Auto c
-        (y3di, _, _) = eea y3d m
-
-        y3 :: UInt 512 'Auto c
-        y3 = y3n `mulM` y3di

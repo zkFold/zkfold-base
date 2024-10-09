@@ -5,8 +5,8 @@
 module ZkFold.Symbolic.Data.FFA (FFA (..), Size, coprimesDownFrom, coprimes) where
 
 import           Control.Applicative              (pure)
-import           Control.Monad                    (Monad, return, (>>=), forM)
-import Control.DeepSeq (NFData)
+import           Control.DeepSeq                  (NFData)
+import           Control.Monad                    (Monad, forM, return, (>>=))
 import           Data.Foldable                    (any, foldlM)
 import           Data.Function                    (const, ($), (.))
 import           Data.Functor                     (fmap, (<$>))
@@ -25,11 +25,13 @@ import           ZkFold.Base.Data.Utils           (zipWithM)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                   (iterateM, length)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Bool        (Bool)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (expansion, expansionW, log2, maxBitsPerFieldElement, splitExpansion, horner)
+import           ZkFold.Symbolic.Data.Combinators (expansionW, log2, maxBitsPerFieldElement, splitExpansion)
+import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord         (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned, newRanged)
+import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned)
 
 type Size = 7
 
@@ -43,7 +45,7 @@ deriving newtype instance Haskell.Show (c (Vector Size)) => Haskell.Show (FFA p 
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])
   where
-    step ans xs = 
+    step ans xs =
       case dropWhile (\x -> any ((Haskell./= 1) . Haskell.gcd x) ans) xs of
         []      -> error "no options left"
         (x:xs') -> (x, (ans ++ [x], xs'))
@@ -94,7 +96,6 @@ fromZp = (\(FFA (Interpreter xs) :: FFA p (Interpreter a)) -> xs) . fromConstant
 condSubOF :: forall i a m . (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m (i, i)
 condSubOF m i = do
   z <- newAssigned zero
-  o <- newAssigned one
   bm <- forM (wordExpansion @8 m ++ [0]) $ \x -> if x Haskell.== 0 then pure z else newAssigned (fromConstant x)
   bi <- expansionW @8 (length bm) i
   ovf <- blueprintGE @8 (Haskell.reverse bi) (Haskell.reverse bm)
@@ -208,3 +209,5 @@ instance (Prime p, Symbolic c) => Field (FFA p c) where
 
 instance Finite (Zp p) => Finite (FFA p b) where
   type Order (FFA p b) = p
+
+deriving newtype instance Symbolic c => Eq (Bool c) (FFA p c)

@@ -121,6 +121,8 @@ bitwiseGT xs ys = Bool $
       (hasOne, hasNegOne) <- circuitDelta @r is js
       Par1 <$> newAssigned (\p -> p hasOne * (one - p hasNegOne))
 
+-- | Compare two sets of r-bit words lexicographically
+--
 circuitDelta :: forall r i a m f . (Arithmetic a, MonadCircuit i a m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m (i, i)
 circuitDelta l r = do
     z1 <- newAssigned (Haskell.const zero)
