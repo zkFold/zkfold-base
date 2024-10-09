@@ -42,8 +42,8 @@ d :: Symbolic ctx => FFA Ed25519_Base ctx
 d = fromConstant (-121665) // fromConstant 121666
 
 ffaDouble :: (Symbolic ctx, NFData (ctx (Vector Size))) => PtFFA ctx -> PtFFA ctx
-ffaDouble (x, y) = (x + y, x * y)
---ffaDouble (x, y) = (x3, y3)
+--ffaDouble (x, y) = (x + y, x * y)
+ffaDouble (x, y) = (x3, y3)
     where
         xsq = x * x
         ysq = y * y
@@ -52,8 +52,8 @@ ffaDouble (x, y) = (x + y, x * y)
         y3 = force $ (ysq - a * xsq) // (one + one - a * xsq  - ysq)
 
 ffaAdd :: (Symbolic ctx, NFData (ctx (Vector Size))) => PtFFA ctx -> PtFFA ctx -> PtFFA ctx
-ffaAdd (x1, y1) (x2, y2) = (x1 + x2, y1 * y2)
---ffaAdd (x1, y1) (x2, y2) = (x3, y3)
+--ffaAdd (x1, y1) (x2, y2) = (x1 + x2, y1 * y2)
+ffaAdd (x1, y1) (x2, y2) = (x3, y3)
     where
         prodx = x1 * x2
         prody = y1 * y2

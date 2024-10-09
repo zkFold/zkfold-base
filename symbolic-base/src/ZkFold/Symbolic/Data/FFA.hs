@@ -91,41 +91,13 @@ fromZp = (\(FFA (Interpreter xs) :: FFA p (Interpreter a)) -> xs) . fromConstant
 --
 condSubOF :: forall i a m . (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m (i, i)
 condSubOF m i = do
---    {--
-  vm <- newAssigned (\_ -> fromConstant m)
-  -- f(a, b) 
-  --    | a >= b = (1, a - b)
-  --    | otherwise = (0, a)
-  --
-  -- Assume a and b are less than (p-1) / 2 where p is the order of the field
-  -- This is the case where @m@ is taken from coprimes up to sqrt(p) < (p-1)/2 and @i@ is 
-  -- 
-  -- f(a, b) is equivalent to
-  -- there exist d <- [0, 1]; v1 <- [0, a]; v2 <- [0, (p-1)/2] such that
-  -- v1 = d * (a - b)
-  -- v2 = (1 - d) * (a - b - (p - 1)/2)
-  --
-  -- and f(a, b) = a - d * b
-  --
-  --
-  -- TODO: make the witness work as expected
-  d <- newRanged one (\x -> let q = toConstant (x vm) `div` toConstant (x i) in fromConstant q)
-  let p2 = (value @(Order a) -! 1) `div` 2
-  v1 <- newRanged (fromConstant m) (\x -> x d * (x vm - x i))
-  v2 <- newRanged (fromConstant p2) (\x -> (one - x d) * (x vm - x i - fromConstant p2))
-  res <- newAssigned (($ i) - ($ d) * fromConstant m)
-  return (res, d)
-
-  --}
-      {--
   z <- newAssigned zero
   o <- newAssigned one
   let bm = (\x -> if x Haskell.== 0 then z else o) <$> (binaryExpansion m ++ [0])
   bi <- expansion (length bm) i
-  ovf <- Haskell.id $ {-# SCC "ovf" #-} blueprintGE (Haskell.reverse bi) (Haskell.reverse bm)
+  ovf <- Haskell.id $ {-# SCC "ovf" #-} blueprintGE @1 (Haskell.reverse bi) (Haskell.reverse bm)
   res <- newAssigned (($ i) - ($ ovf) * fromConstant m)
   return (res, ovf)
---}
 
 condSub :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m i
 condSub m x = fst <$> condSubOF m x
