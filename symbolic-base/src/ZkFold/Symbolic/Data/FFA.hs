@@ -5,7 +5,7 @@
 module ZkFold.Symbolic.Data.FFA (FFA (..), Size, coprimesDownFrom, coprimes) where
 
 import           Control.Applicative              (pure)
-import           Control.Monad                    (Monad, return, (>>=))
+import           Control.Monad                    (Monad, return, (>>=), forM)
 import Control.DeepSeq (NFData)
 import           Data.Foldable                    (any, foldlM)
 import           Data.Function                    (const, ($), (.))
@@ -26,7 +26,7 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                   (iterateM, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (expansion, log2, maxBitsPerFieldElement, splitExpansion, horner)
+import           ZkFold.Symbolic.Data.Combinators (expansion, expansionW, log2, maxBitsPerFieldElement, splitExpansion, horner)
 import           ZkFold.Symbolic.Data.Ord         (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned, newRanged)
@@ -43,10 +43,6 @@ deriving newtype instance Haskell.Show (c (Vector Size)) => Haskell.Show (FFA p 
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])
   where
-        {--
-    step ans [] = error "no options left"
-    step ans (x:xs) = (x, (ans ++ [x], Haskell.filter (\c -> Haskell.gcd c x Haskell.== 1) xs))
---}
     step ans xs = 
       case dropWhile (\x -> any ((Haskell./= 1) . Haskell.gcd x) ans) xs of
         []      -> error "no options left"
@@ -73,6 +69,12 @@ mis = (`mod` value @p) <$> mis0 @a
 minv :: forall a. Finite a => Vector Size Natural
 minv = zipWith (\x p -> fromConstant x `inv` p) (mis0 @a) (coprimes @a)
 
+wordExpansion :: forall r. KnownNat r => Natural -> [Natural]
+wordExpansion 0 = []
+wordExpansion x = (x `mod` wordSize) : wordExpansion @r (x `div` wordSize)
+    where
+        wordSize = 2 ^ value @r
+
 toZp :: forall p a. (Arithmetic a, KnownNat p) => Vector Size a -> Zp p
 toZp = fromConstant . impl
   where
@@ -93,9 +95,9 @@ condSubOF :: forall i a m . (MonadCircuit i a m, Arithmetic a) => Natural -> i -
 condSubOF m i = do
   z <- newAssigned zero
   o <- newAssigned one
-  let bm = (\x -> if x Haskell.== 0 then z else o) <$> (binaryExpansion m ++ [0])
-  bi <- expansion (length bm) i
-  ovf <- Haskell.id $ {-# SCC "ovf" #-} blueprintGE @1 (Haskell.reverse bi) (Haskell.reverse bm)
+  bm <- forM (wordExpansion @8 m ++ [0]) $ \x -> if x Haskell.== 0 then pure z else newAssigned (fromConstant x)
+  bi <- expansionW @8 (length bm) i
+  ovf <- blueprintGE @8 (Haskell.reverse bi) (Haskell.reverse bm)
   res <- newAssigned (($ i) - ($ ovf) * fromConstant m)
   return (res, ovf)
 

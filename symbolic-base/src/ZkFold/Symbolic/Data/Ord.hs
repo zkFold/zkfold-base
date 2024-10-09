@@ -30,7 +30,7 @@ import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion)
 import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
-import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned, newRanged)
+import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned, newRanged, rangeConstraint)
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
@@ -140,7 +140,7 @@ circuitDelta l r = do
                 -- @(y + 1) `div` (x + 1)@ is zero if and only if @y < x@ regardless of whether @x@ is zero.
                 -- @x@ and @y@ are expected to be of at most @r@ bits where @r << NumberOfBits a@, so @x + 1@ will not be zero either.
                 -- Because of our laws for @finv@, @q // q@ is 1 if @q@ is not zero, and zero otherwise.
-                -- This is exactly what @f1@ should be.
+                -- This is exactly the opposite of what @f1@ should be.
                 f1 <- newRanged one $
                     \p -> let q = fromConstant $ (toConstant (p y + one) `div` toConstant (p x + one))
                            in one - q // q
@@ -150,13 +150,15 @@ circuitDelta l r = do
                     \p -> let q = fromConstant $ (toConstant (p x + one) `div` toConstant (p y + one))
                            in one - q // q
 
-                d <- newAssigned (\p -> p x - p y)
+                d1  <- newAssigned (\p -> p f1 * (p x - p y - one))
+                d1' <- newAssigned (\p -> (one - p f1) * (p y - p x))
+                rangeConstraint d1  bound
+                rangeConstraint d1' bound
 
-                newRanged bound (\p -> p f1 * (p d - one))
-                newRanged bound (\p -> (one - p f1) * (zero - p d))
-
-                newRanged bound (\p -> p f2 * (zero - p d - one))
-                newRanged bound (\p -> (one - p f2) * p d)
+                d2  <- newRanged bound (\p -> p f2 * (p y - p x - one))
+                d2' <- newRanged bound (\p -> (one - p f2) * (p x - p y))
+                rangeConstraint d2  bound
+                rangeConstraint d2' bound
 
                 bothZero <- newAssigned $ \p -> (one - p z1) * (one - p z2)
 
