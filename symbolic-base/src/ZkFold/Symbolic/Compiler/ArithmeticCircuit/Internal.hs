@@ -77,6 +77,7 @@ deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
   instance (Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a i o)
+
 instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
     => NFData (ArithmeticCircuit a i o)
 
@@ -148,7 +149,7 @@ hlmap ::
   (forall x . j x -> i x) -> ArithmeticCircuit a i o -> ArithmeticCircuit a j o
 hlmap f (ArithmeticCircuit s r w o) = ArithmeticCircuit
   { acSystem = mapVars (imapSysVar f) <$> s
-  , acRange = r
+  , acRange = mapKeys (imapSysVar f) r
   , acWitness = (\g j p -> g (f j) p) <$> w
   , acOutput = imapVar f <$> o
   }

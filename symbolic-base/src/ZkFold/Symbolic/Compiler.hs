@@ -53,6 +53,7 @@ solder ::
     , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
+    , Ord (Rep l)
     ) => f -> c (Layout f)
 solder f = pieces f (restore @(Support f) $ const inputC)
     where
@@ -94,6 +95,7 @@ compile ::
     , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
+    , Ord (Rep l)
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
@@ -116,6 +118,7 @@ compileIO ::
     , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
+    , Ord (Rep l)
     , FromJSON (Rep l)
     , ToJSON (Rep l)
     ) => FilePath -> f -> IO ()

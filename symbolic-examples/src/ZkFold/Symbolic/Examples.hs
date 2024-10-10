@@ -30,6 +30,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (Var)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
+import Data.Ord (Ord)
 
 type A = Zp BLS12_381_Scalar
 type C = ArithmeticCircuit A
@@ -50,11 +51,13 @@ exampleOutput ::
   , Support (Support f) ~ Proxy c
   , Layout (Support f) ~ i
   , Representable i
+  , Ord (Rep i)
   , NFData (Rep i)
   , NFData (o (Var A i))
   ) => f -> ExampleOutput
 exampleOutput = ExampleOutput @i @o . const . compile
 
+-- | TODO: Maybe there is a better place for these orphans?
 instance NFData a => NFData (Par1 a)
 instance (NFData (f a), NFData (g a)) => NFData ((f :*: g) a)
 instance NFData (f (g a)) => NFData ((f :.: g) a)
