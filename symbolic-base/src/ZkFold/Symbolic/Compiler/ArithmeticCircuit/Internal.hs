@@ -64,7 +64,7 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acRange   :: Map ByteString a,
+        acRange   :: Map (SysVar i) a,
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (i a -> Map ByteString a -> a),
         -- ^ The witness generation functions
@@ -73,11 +73,10 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     } deriving (Generic)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance o ~ U1 => Semigroup (ArithmeticCircuit a i o)
+  instance (Ord (Rep i), o ~ U1) => Semigroup (ArithmeticCircuit a i o)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance o ~ U1 => Monoid (ArithmeticCircuit a i o)
-
+  instance (Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a i o)
 instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
     => NFData (ArithmeticCircuit a i o)
 
@@ -165,11 +164,11 @@ behead = liftA2 (,) (set #acOutput U1) acOutput
 instance HFunctor (ArithmeticCircuit a i) where
     hmap = over #acOutput
 
-instance HApplicative (ArithmeticCircuit a i) where
+instance Ord (Rep i) => HApplicative (ArithmeticCircuit a i) where
     hpure = crown mempty
     hliftA2 f (behead -> (c, o)) (behead -> (d, p)) = crown (c <> d) (f o p)
 
-instance Package (ArithmeticCircuit a i) where
+instance Ord (Rep i) => Package (ArithmeticCircuit a i) where
     unpackWith f (behead -> (c, o)) = crown c <$> f o
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
@@ -202,7 +201,7 @@ instance
       in
         zoom #acSystem . modify $ insert (toVar @a p) (p evalConstVar)
 
-    rangeConstraint (SysVar (NewVar v)) upperBound =
+    rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insert v upperBound
     -- FIXME range-constrain other variable types
     rangeConstraint _ _ = error "Cannot range-constrain this variable"
@@ -265,6 +264,7 @@ apply ::
   i a -> ArithmeticCircuit a (i :*: j) U1 -> ArithmeticCircuit a j U1
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
+  , acRange = mapKeys' (acRange ac)
   , acWitness = fmap witF (acWitness ac)
   , acOutput = U1
   }
@@ -273,6 +273,13 @@ apply xs ac = ac
     varF (InVar (Right v)) = var (InVar v)
     varF (NewVar v)        = var (NewVar v)
     witF f j = f (xs :*: j)
+
+    mapKeys' :: Ord (SysVar j) =>  Map (SysVar (i :*: j)) a ->  Map (SysVar j) a
+    mapKeys' m = fromList $
+                  foldrWithKey (\k x ms -> case k of
+                    NewVar v        -> (NewVar v, x) : ms
+                    InVar (Right v) -> (InVar v, x) : ms
+                    _               -> ms) [] m
 
 -- TODO: Add proper symbolic application functions
 
