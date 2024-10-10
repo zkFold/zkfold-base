@@ -6,7 +6,6 @@ module ZkFold.Symbolic.Cardano.UPLC.Builtins where
 
 import           Data.Typeable                     (Proxy (..), Typeable)
 import           GHC.Generics                      (Par1)
-import           GHC.TypeLits                      (KnownNat)
 import           Prelude                           (($))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -28,7 +27,6 @@ data BuiltinFunctions =
 instance
     ( Typeable c
     , S.SymbolicData (c Par1)
-    , KnownNat (S.TypeSize (c Par1))
     , Semiring (c Par1)
     ) => PlutusBuiltinFunction c BuiltinFunctions where
 

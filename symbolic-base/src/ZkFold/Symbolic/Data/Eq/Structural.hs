@@ -3,9 +3,9 @@
 
 module ZkFold.Symbolic.Data.Eq.Structural where
 
+import           Data.Functor.Rep           (Representable)
 import           Data.Proxy                 (Proxy (..))
 import           Data.Traversable           (Traversable)
-import           Data.Zip                   (Zip)
 import           Prelude                    (type (~))
 
 import           ZkFold.Symbolic.Class
@@ -21,7 +21,7 @@ instance
     , Context x ~ c
     , Support x ~ Proxy c
     , Symbolic c
-    , Zip (Layout x)
+    , Representable (Layout x)
     , Traversable (Layout x)
     ) => Eq (Bool c) (Structural x) where
 

@@ -6,9 +6,9 @@
 
 module ZkFold.Symbolic.Data.Ed25519  where
 
-import           Control.Applicative                       ((<*>))
 import           Control.DeepSeq                           (NFData, force)
-import           Data.Functor                              ((<$>))
+import           Data.Functor.Rep                          (Representable)
+import           Data.Traversable                          (Traversable)
 import           Prelude                                   (type (~), ($))
 import qualified Prelude                                   as P
 
@@ -17,7 +17,6 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
-import           ZkFold.Base.Control.HApplicative          (hliftA2)
 import qualified ZkFold.Base.Data.Vector                   as V
 import qualified ZkFold.Symbolic.Class                     as S
 import           ZkFold.Symbolic.Class                     (Symbolic)
@@ -31,16 +30,11 @@ import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.UInt
 
 
-instance
-    ( Symbolic c
-    , S.BaseField c ~ a
-    , r ~ NumberOfRegisters a 256 'Auto
-    , KnownNat r
-    ) => SymbolicData (Point (Ed25519 c)) where
+instance Symbolic c => SymbolicData (Point (Ed25519 c)) where
 
     type Context (Point (Ed25519 c)) = c
     type Support (Point (Ed25519 c)) = Support (UInt 256 'Auto c)
-    type TypeSize (Point (Ed25519 c)) = TypeSize (UInt 256 'Auto c) + TypeSize (UInt 256 'Auto c)
+    type Layout (Point (Ed25519 c)) = Layout (UInt 256 'Auto c, UInt 256 'Auto c)
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
     -- We can encode the point at infinity as (0, 0), therefore.
@@ -49,8 +43,8 @@ instance
     -- It will need additional checks in pointDouble because of the denominator becoming zero, though.
     -- TODO: Think of a better solution
     --
-    pieces Inf         = hliftA2 V.append <$> pieces (zero :: UInt 256 'Auto c) <*> pieces (zero :: UInt 256 'Auto c)
-    pieces (Point x y) = hliftA2 V.append <$> pieces x <*> pieces y
+    pieces Inf         = pieces (zero :: UInt 256 'Auto c, zero :: UInt 256 'Auto c)
+    pieces (Point x y) = pieces (x, y)
 
     restore f = Point x y
         where
@@ -96,13 +90,16 @@ instance
             bits = from sc
 
 instance
-    ( Symbolic ctx
-    , EllipticCurve curve
-    , SymbolicData (Point curve)
-    , Context (Point curve) ~ ctx
-    , bits ~ NumberOfBits (S.BaseField ctx)
-    , Layout (Point curve) ~ V.Vector n
-    ) => Scale (FieldElement ctx) (Point curve) where
+    ( EllipticCurve c
+    , SymbolicData (Point c)
+    , l ~ Layout (Point c)
+    , Representable l
+    , Traversable l
+    , ctx ~ Context (Point c)
+    , Symbolic ctx
+    , a ~ S.BaseField ctx
+    , bits ~ NumberOfBits a
+    ) => Scale (FieldElement ctx) (Point c) where
 
     scale sc x = sum $ P.zipWith (\b p -> bool @(Bool ctx) zero p (isSet bits b)) [upper, upper -! 1 .. 0] (P.iterate (\e -> e + e) x)
         where

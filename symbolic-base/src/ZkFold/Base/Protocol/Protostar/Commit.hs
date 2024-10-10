@@ -1,18 +1,17 @@
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Protostar.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
 import           Data.Foldable                               (Foldable, toList)
-import           Prelude                                     (type (~), zipWith, ($), (<$>))
+import           Data.Functor.Rep                            (Representable)
+import           Prelude                                     (Traversable, type (~), zipWith, ($), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class     as EC
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
-import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
@@ -77,7 +76,9 @@ instance
     , SymbolicData (Point c)
     , Context (Point c) ~ ctx
     , PedersonSetup (Point c)
-    , Layout (Point c) ~ Vector n
+    , Layout (Point c) ~ l
+    , Representable l
+    , Traversable l
     ) => HomomorphicCommit (FieldElement ctx) (FieldElement ctx) (Point c) where
     hcommit r b = let (g, h) = pedersonGH @(Point c)
                    in scale b g + scale r h

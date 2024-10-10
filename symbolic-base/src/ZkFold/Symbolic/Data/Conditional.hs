@@ -1,17 +1,20 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Conditional where
 
-import           Data.Function                   (($))
-import           Data.Type.Equality              (type (~))
-import           GHC.Generics                    (Par1 (Par1))
+import           Control.Applicative                (Applicative)
+import           Control.Monad.Representable.Reader (Representable, mzipWithRep)
+import           Data.Function                      (($))
+import           Data.Traversable                   (Traversable, sequenceA)
+import           Data.Type.Equality                 (type (~))
+import           GHC.Generics                       (Par1 (Par1))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector         (Vector, zipWithM)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool       (Bool (Bool), BoolType)
+import           ZkFold.Symbolic.Data.Bool          (Bool (Bool), BoolType)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.MonadCircuit    (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
 
 class BoolType b => Conditional b a where
     -- | Properties:
@@ -27,10 +30,17 @@ gif b x y = bool y x b
 (?) :: Conditional b a => b -> a -> a -> a
 (?) = gif
 
-instance (SymbolicData x, Context x ~ c, Symbolic c, Layout x ~ Vector n) => Conditional (Bool c) x where
+mzipWithMRep ::
+  (Representable f, Traversable f, Applicative m) =>
+  (a -> b -> m c) -> f a -> f b -> m (f c)
+mzipWithMRep f x y = sequenceA (mzipWithRep f x y)
+
+instance ( SymbolicData x, Context x ~ c, Symbolic c
+         , Representable (Layout x), Traversable (Layout x)
+         ) => Conditional (Bool c) x where
     bool x y (Bool b) = restore $ \s ->
       fromCircuit3F b (pieces x s) (pieces y s) $ \(Par1 c) ->
-        zipWithM $ \i j -> do
+        mzipWithMRep $ \i j -> do
           i' <- newAssigned (\w -> (one - w c) * w i)
           j' <- newAssigned (\w -> w c * w j)
           newAssigned (\w -> w i' + w j')

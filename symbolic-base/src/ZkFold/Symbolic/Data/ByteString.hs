@@ -68,7 +68,7 @@ deriving newtype instance SymbolicData (ByteString n c)
 
 
 deriving via (Structural (ByteString n c))
-         instance (Symbolic c) => Eq (Bool c) (ByteString n c)
+         instance (Symbolic c, KnownNat n) => Eq (Bool c) (ByteString n c)
 
 instance
     ( Symbolic c

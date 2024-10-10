@@ -1,10 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Arithmetization.Test1 (specArithmetization1) where
 
 import           Data.Binary                       (Binary)
-import           GHC.Generics                      (Par1 (unPar1))
+import           GHC.Generics                      (Par1 (..), U1 (..), (:*:) (..))
 import           Numeric.Natural                   (Natural)
 import           Prelude                           hiding (Bool, Eq (..), Num (..), not, replicate, (/), (>), (^), (||))
 import qualified Prelude                           as Haskell
@@ -12,7 +13,6 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector           (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Class             (Symbolic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
@@ -31,13 +31,13 @@ testFunc x y =
         g3 = c 2 // x
     in (g3 == y :: Bool c) ? g1 $ g2
 
-testResult :: forall a . Arithmetic a => ArithmeticCircuit a (Vector 2) Par1 -> a -> a -> Haskell.Bool
-testResult r x y = fromConstant (unPar1 $ eval r (unsafeToVector [x, y])) Haskell.==
+testResult :: forall a . Arithmetic a => ArithmeticCircuit a (Par1 :*: Par1 :*: U1) Par1 -> a -> a -> Haskell.Bool
+testResult r x y = fromConstant (unPar1 $ eval r (Par1 x :*: Par1 y :*: U1)) Haskell.==
     testFunc @(Interpreter a) (fromConstant x) (fromConstant y)
 
 specArithmetization1 :: forall a . (Arithmetic a, Arbitrary a, Binary a, Show a) => Spec
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do
-            let ac = compile @a (testFunc @(ArithmeticCircuit a (Vector 2))) :: ArithmeticCircuit a (Vector 2) Par1
+            let ac = compile @a testFunc
             property $ \x y -> testResult ac x y

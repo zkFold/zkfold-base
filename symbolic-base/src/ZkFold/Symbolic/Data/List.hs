@@ -5,11 +5,10 @@ import           Data.Kind                  (Type)
 import           GHC.Generics               (Par1)
 import           Prelude                    (flip, undefined, (.))
 
-import           ZkFold.Base.Data.Vector    (Vector)
 import           ZkFold.Symbolic.Data.Bool  (Bool)
 import           ZkFold.Symbolic.Data.Class
 
-data List (context :: (Type -> Type) -> Type) x = List (context (Vector (TypeSize x))) (context Par1)
+data List (context :: (Type -> Type) -> Type) x = List (context (Layout x)) (context Par1)
 
 emptyList :: List context x
 emptyList = undefined

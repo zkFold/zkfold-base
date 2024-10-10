@@ -228,7 +228,9 @@ instance
                 let rs = force $ addBit (r' + r') (value @n -! i -! 1)
                  in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Ord (Bool c) (UInt n r c) where
+instance ( Symbolic c, KnownNat n, KnownRegisterSize r
+         , KnownNat (NumberOfRegisters (BaseField c) n r)
+         ) => Ord (Bool c) (UInt n r c) where
     x <= y = y >= x
 
     x <  y = y > x
@@ -382,7 +384,7 @@ instance
     ) => Ring (UInt n r c)
 
 deriving via (Structural (UInt n rs c))
-         instance (Symbolic c) =>
+         instance (Symbolic c, KnownNat (NumberOfRegisters (BaseField c) n rs)) =>
          Eq (Bool c) (UInt n rs c)
 
 --------------------------------------------------------------------------------

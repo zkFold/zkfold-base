@@ -4,7 +4,7 @@
 module Tests.Arithmetization.Test2 (specArithmetization2) where
 
 import           Data.Binary                                 (Binary)
-import           GHC.Generics                                (Par1 (unPar1))
+import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), not, replicate, (/), (^),
                                                               (||))
 import qualified Prelude                                     as Haskell
@@ -13,7 +13,6 @@ import           Test.QuickCheck                             (property)
 
 import           ZkFold.Base.Algebra.Basic.Class             (one)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
@@ -27,8 +26,8 @@ tautology x y = (x /= y) || (x == y)
 
 testTautology :: forall a . (Arithmetic a, Binary a) => a -> a -> Haskell.Bool
 testTautology x y =
-    let Bool (ac :: ArithmeticCircuit a (Vector 2) Par1) = compile @a (tautology @(ArithmeticCircuit a (Vector 2)))
-        b       = unPar1 (eval ac (unsafeToVector [x, y]))
+    let Bool ac = compile @a tautology
+        b       = unPar1 (eval ac (Par1 x :*: Par1 y :*: U1))
     in b Haskell.== one
 
 specArithmetization2 :: Spec
