@@ -83,7 +83,7 @@ toPlonkupRelation ac =
         -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.
-        xLookup = NewVar <$> keys (acRange ac)
+        xLookup = keys (acRange ac)
 
         -- The total number of constraints in the relation.
         n'      = acSizeN ac + value @l + length xLookup
