@@ -1,8 +1,12 @@
 {-# LANGUAGE TypeOperators #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
+import           Control.DeepSeq                             (NFData)
 import           Data.Function                               (const, ($), (.))
+import           Data.Functor.Rep                            (Rep, Representable)
 import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
@@ -17,38 +21,43 @@ import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
+import           GHC.Generics                                (Par1, (:*:), (:.:))
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (Var)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
 
-type C = ArithmeticCircuit (Zp BLS12_381_Scalar)
+type A = Zp BLS12_381_Scalar
+type C = ArithmeticCircuit A
 
 data ExampleOutput where
-  ExampleOutput
-    :: forall i_n o_n. KnownNat i_n
-    => (() -> C (Vector i_n) (Vector o_n))
-    -> ExampleOutput
+  ExampleOutput ::
+    forall i o. (Representable i, NFData (Rep i), NFData (o (Var A i))) =>
+    (() -> C i o) -> ExampleOutput
 
 exampleOutput ::
-  forall i_n o_n c f.
-  ( KnownNat i_n
-  , SymbolicData f
-  , c ~ C (Vector i_n)
+  forall i o c f.
+  ( SymbolicData f
+  , c ~ C i
   , Context f ~ c
-  , TypeSize f ~ o_n
+  , Layout f ~ o
   , SymbolicData (Support f)
   , Context (Support f) ~ c
   , Support (Support f) ~ Proxy c
-  , Layout f ~ Vector o_n
-  , Layout (Support f) ~ Vector i_n
+  , Layout (Support f) ~ i
+  , Representable i
+  , NFData (Rep i)
+  , NFData (o (Var A i))
   ) => f -> ExampleOutput
-exampleOutput = ExampleOutput @i_n @o_n . const . compile
+exampleOutput = ExampleOutput @i @o . const . compile
+
+instance NFData a => NFData (Par1 a)
+instance (NFData (f a), NFData (g a)) => NFData ((f :*: g) a)
+instance NFData (f (g a)) => NFData ((f :.: g) a)
 
 examples :: [(String, ExampleOutput)]
 examples =
@@ -65,7 +74,7 @@ examples =
   , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
   , ("UInt.StrictMul.512.Auto", exampleOutput $ exampleUIntStrictMul @512 @Auto)
   , ("UInt.DivMod.32.Auto", exampleOutput $ exampleUIntDivMod @32 @Auto)
-  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C (Vector _))))
+  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C _)))
   , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
   , ("MiMCHash", exampleOutput exampleMiMC)
   , ("SHA256.32", exampleOutput $ exampleSHA @32)

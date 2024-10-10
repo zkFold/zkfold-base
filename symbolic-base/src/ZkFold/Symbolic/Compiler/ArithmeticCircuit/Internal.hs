@@ -15,6 +15,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         -- variable getters
         acInput,
         getAllVars,
+        -- input mapping
+        hlmap,
         -- evaluation functions
         witnessGenerator,
         eval,
@@ -45,7 +47,7 @@ import           Prelude                                               hiding (N
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, var, mapVars)
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
@@ -94,6 +96,12 @@ deriving stock instance Eq (Rep i) => Eq (SysVar i)
 deriving stock instance Ord (Rep i) => Ord (SysVar i)
 deriving instance NFData (Rep i) => NFData (SysVar i)
 
+imapSysVar ::
+  (Representable i, Representable j) =>
+  (forall x. j x -> i x) -> SysVar i -> SysVar j
+imapSysVar f (InVar r) = index (f (tabulate InVar)) r
+imapSysVar _ (NewVar b) = NewVar b
+
 data Var a i
   = SysVar (SysVar i)
   | ConstVar a
@@ -108,6 +116,12 @@ deriving stock instance (Ord (Rep i), Ord a) => Ord (Var a i)
 deriving instance (NFData (Rep i), NFData a) => NFData (Var a i)
 instance FromConstant a (Var a i) where
     fromConstant = ConstVar
+
+imapVar ::
+  (Representable i, Representable j) =>
+  (forall x. j x -> i x) -> Var a i -> Var a j
+imapVar f (SysVar s) = SysVar (imapSysVar f s)
+imapVar _ (ConstVar c) = ConstVar c
 
 ---------------------------------- Variables -----------------------------------
 
@@ -126,6 +140,18 @@ indexW circuit inputs = \case
     (error ("no such NewVar: " <> show newV))
     (witnessGenerator circuit inputs !? newV)
   ConstVar cV -> cV
+
+-------------------------------- "HProfunctor" ---------------------------------
+
+hlmap ::
+  (Representable i, Representable j, Ord (Rep j), Functor o) =>
+  (forall x . j x -> i x) -> ArithmeticCircuit a i o -> ArithmeticCircuit a j o
+hlmap f (ArithmeticCircuit s r w o) = ArithmeticCircuit
+  { acSystem = mapVars (imapSysVar f) <$> s
+  , acRange = r
+  , acWitness = (\g j p -> g (f j) p) <$> w
+  , acOutput = imapVar f <$> o
+  }
 
 --------------------------- Symbolic compiler context --------------------------
 

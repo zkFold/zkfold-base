@@ -11,7 +11,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
 import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
-import           ZkFold.Symbolic.Cardano.Types.Value     (SingleAsset, Value)
+import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
 
@@ -25,16 +25,10 @@ deriving instance
     , Haskell.Eq (Output tokens datum context)
     ) => Haskell.Eq (Input tokens datum context)
 
-instance
-    ( Symbolic context
-    , KnownNat tokens
-    , KnownNat (TypeSize (OutputRef context))
-    , KnownNat (TypeSize (SingleAsset context))
-    , KnownNat (TypeSize (Value tokens context))
-    ) => SymbolicData (Input tokens datum context) where
+instance (Symbolic context, KnownNat tokens) => SymbolicData (Input tokens datum context) where
   type Context (Input tokens datum context) = Context (OutputRef context, Output tokens datum context)
   type Support (Input tokens datum context) = Support (OutputRef context, Output tokens datum context)
-  type TypeSize (Input tokens datum context) = TypeSize (OutputRef context, Output tokens datum context)
+  type Layout (Input tokens datum context) = Layout (OutputRef context, Output tokens datum context)
 
   pieces (Input a b) = pieces (a, b)
   restore f = let (a, b) = restore f in Input a b
