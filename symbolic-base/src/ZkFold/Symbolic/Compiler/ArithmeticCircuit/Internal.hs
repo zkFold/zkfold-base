@@ -47,7 +47,8 @@ import           Prelude                                               hiding (N
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, var, mapVars)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, mapVars,
+                                                                        var)
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
@@ -99,7 +100,7 @@ deriving instance NFData (Rep i) => NFData (SysVar i)
 imapSysVar ::
   (Representable i, Representable j) =>
   (forall x. j x -> i x) -> SysVar i -> SysVar j
-imapSysVar f (InVar r) = index (f (tabulate InVar)) r
+imapSysVar f (InVar r)  = index (f (tabulate InVar)) r
 imapSysVar _ (NewVar b) = NewVar b
 
 data Var a i
@@ -120,7 +121,7 @@ instance FromConstant a (Var a i) where
 imapVar ::
   (Representable i, Representable j) =>
   (forall x. j x -> i x) -> Var a i -> Var a j
-imapVar f (SysVar s) = SysVar (imapSysVar f s)
+imapVar f (SysVar s)   = SysVar (imapSysVar f s)
 imapVar _ (ConstVar c) = ConstVar c
 
 ---------------------------------- Variables -----------------------------------

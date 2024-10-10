@@ -2,19 +2,19 @@
 
 module Main where
 
-import           Control.DeepSeq                                     (NFData, force)
-import           Control.Monad                                       (return)
-import           Data.ByteString.Lazy                                (ByteString)
-import           Data.Function                                       (const, ($))
-import           Data.Functor.Rep                                    (Representable (..))
-import           Data.Semigroup                                      ((<>))
-import           Data.String                                         (String, fromString)
-import           System.IO                                           (IO)
+import           Control.DeepSeq                 (NFData, force)
+import           Control.Monad                   (return)
+import           Data.ByteString.Lazy            (ByteString)
+import           Data.Function                   (const, ($))
+import           Data.Functor.Rep                (Representable (..))
+import           Data.Semigroup                  ((<>))
+import           Data.String                     (String, fromString)
+import           System.IO                       (IO)
 import           Test.Tasty.Bench
-import           Test.Tasty.Golden                                   (goldenVsString)
-import           Text.Show                                           (show)
+import           Test.Tasty.Golden               (goldenVsString)
+import           Text.Show                       (show)
 
-import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveMonoid, zero)
+import           ZkFold.Base.Algebra.Basic.Class (AdditiveMonoid, zero)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Examples
 

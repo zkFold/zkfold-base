@@ -7,6 +7,8 @@
 module ZkFold.Symbolic.Data.Ed25519  where
 
 import           Control.DeepSeq                           (NFData, force)
+import           Data.Functor.Rep                          (Representable)
+import           Data.Traversable                          (Traversable)
 import           Prelude                                   (type (~), ($))
 import qualified Prelude                                   as P
 
@@ -26,8 +28,6 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.UInt
-import Data.Functor.Rep (Representable)
-import Data.Traversable (Traversable)
 
 
 instance Symbolic c => SymbolicData (Point (Ed25519 c)) where
