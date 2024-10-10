@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 import           Control.DeepSeq                             (NFData)
 import           Data.Function                               (const, ($), (.))
 import           Data.Functor.Rep                            (Rep, Representable)
+import           Data.Ord                                    (Ord)
 import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
@@ -30,7 +31,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (Var)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
-import Data.Ord (Ord)
 
 type A = Zp BLS12_381_Scalar
 type C = ArithmeticCircuit A
