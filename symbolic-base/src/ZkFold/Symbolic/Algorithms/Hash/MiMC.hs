@@ -3,6 +3,7 @@
 
 module ZkFold.Symbolic.Algorithms.Hash.MiMC where
 
+import           Data.Foldable                                  (toList)
 import           Data.List.NonEmpty                             (NonEmpty ((:|)), nonEmpty)
 import           Data.Proxy                                     (Proxy (..))
 import           Numeric.Natural                                (Natural)
@@ -10,8 +11,8 @@ import           Prelude                                        hiding (Eq (..),
                                                                  (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.HFunctor                      (hmap)
 import           ZkFold.Base.Data.Package                       (unpacked)
-import           ZkFold.Base.Data.Vector                        (Vector, fromVector)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
@@ -39,12 +40,12 @@ mimcHashN xs k = go
       [zL, zR]    -> mimcHash2 xs k zL zR
       (zL:zR:zs') -> go (mimcHash2 xs k zL zR : zs')
 
-hash :: forall context x a size .
+hash :: forall context x a .
     ( Symbolic context
     , SymbolicData x
     , BaseField context ~ a
     , Context x ~ context
     , Support x ~ Proxy context
-    , Layout x ~ Vector size
+    , Foldable (Layout x)
     ) => x -> FieldElement context
-hash = mimcHashN mimcConstants (zero :: a) . fromVector . fmap FieldElement . unpacked . flip pieces Proxy
+hash = mimcHashN mimcConstants (zero :: a) . fmap FieldElement . unpacked . hmap toList . flip pieces Proxy

@@ -1,27 +1,27 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DerivingVia         #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), blueprintGE, bitwiseGE, bitwiseGT, getBitsBE) where
 
 import           Control.Monad                    (foldM)
 import qualified Data.Bool                        as Haskell
 import           Data.Data                        (Proxy (..))
-import           Data.Foldable                    (Foldable, toList)
+import           Data.Foldable                    (Foldable, concatMap, toList)
 import           Data.Function                    ((.))
-import           Data.Functor                     ((<$>))
-import           Data.List                        (map)
+import           Data.Functor                     (fmap, (<$>))
+import           Data.Functor.Rep                 (Representable)
+import           Data.List                        (map, reverse)
+import           Data.Traversable                 (Traversable, traverse)
 import qualified Data.Zip                         as Z
 import           GHC.Generics                     (Par1 (..))
 import           Prelude                          (type (~), ($))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.HFunctor        (hmap)
-import qualified ZkFold.Base.Data.Vector          as V
-import           ZkFold.Base.Data.Vector          (Vector, unsafeToVector)
-import           ZkFold.Symbolic.Class            (Symbolic (BaseField, symbolicF), symbolic2F)
+import           ZkFold.Symbolic.Class            (Symbolic (..), symbolic2F)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion)
@@ -69,8 +69,8 @@ instance
     , SymbolicData x
     , Context x ~ c
     , Support x ~ Proxy c
-    , TypeSize x ~ 1
-    , Layout x ~ Vector 1
+    , Representable (Layout x)
+    , Traversable (Layout x)
     ) => Ord (Bool c) (Lexicographical x) where
 
     x <= y = y >= x
@@ -87,15 +87,13 @@ instance
 
 getBitsBE ::
   forall c x .
-  (Symbolic c, SymbolicData x, Context x ~ c, Support x ~ Proxy c, Layout x ~ Vector 1) =>
-  x -> c (V.Vector (NumberOfBits (BaseField c)))
+  (Symbolic c, SymbolicData x, Context x ~ c, Support x ~ Proxy c, Foldable (Layout x)) =>
+  x -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x =
-  hmap (V.reverse . unsafeToVector)
-    $ symbolicF (pieces x Proxy)
-        (padBits n . map fromConstant . binaryExpansion . toConstant . V.item)
-        (expansion n . V.item)
+getBitsBE x = symbolicF (pieces x Proxy)
+    (concatMap (reverse . padBits n . map fromConstant . binaryExpansion . toConstant))
+    (fmap (concatMap reverse) . traverse (expansion n) . toList)
   where n = numberOfBits @(BaseField c)
 
 bitwiseGE :: forall c f . (Symbolic c, Z.Zip f, Foldable f) => c f -> c f -> Bool c
