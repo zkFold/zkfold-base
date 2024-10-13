@@ -7,8 +7,8 @@ module ZkFold.Symbolic.Data.Eq (
 
 import           Data.Bool                        (bool)
 import           Data.Foldable                    (Foldable)
+import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
 import           Data.Traversable                 (Traversable, for)
-import qualified Data.Zip                         as Z
 import           Prelude                          (return, ($))
 import qualified Prelude                          as Haskell
 
@@ -33,14 +33,14 @@ instance Haskell.Eq a => Eq Haskell.Bool a where
     (==) = (Haskell.==)
     (/=) = (Haskell./=)
 
-instance (Symbolic c, Haskell.Eq (BaseField c), Z.Zip f, Traversable f)
+instance (Symbolic c, Haskell.Eq (BaseField c), Representable f, Traversable f)
   => Eq (Bool c) (c f) where
     x == y =
         let
             result = symbolic2F x y
-                (Z.zipWith (\i j -> bool zero one (i Haskell.== j)))
+                (mzipWithRep (\i j -> bool zero one (i Haskell.== j)))
                 (\x' y' -> do
-                    difference <- for (Z.zip x' y') $ \(i, j) ->
+                    difference <- for (mzipRep x' y') $ \(i, j) ->
                         newAssigned (\w -> w i - w j)
                     (isZeros, _) <- runInvert difference
                     return isZeros
@@ -51,9 +51,9 @@ instance (Symbolic c, Haskell.Eq (BaseField c), Z.Zip f, Traversable f)
     x /= y =
         let
             result = symbolic2F x y
-                (Z.zipWith (\i j -> bool zero one (i Haskell./= j)))
+                (mzipWithRep (\i j -> bool zero one (i Haskell./= j)))
                 (\x' y' -> do
-                    difference <- for (Z.zip x' y') $ \(i, j) ->
+                    difference <- for (mzipRep x' y') $ \(i, j) ->
                         newAssigned (\w -> w i - w j)
                     (isZeros, _) <- runInvert difference
                     for isZeros $ \isZ ->

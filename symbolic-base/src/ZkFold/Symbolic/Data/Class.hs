@@ -1,39 +1,32 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE NoStarIsType         #-}
-{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Class (
         SomeData (..),
         SymbolicData (..),
-        typeSize
     ) where
 
 import           Control.Applicative              ((<*>))
-import           Data.Function                    (const, flip, ($), (.))
+import           Data.Function                    (flip, (.))
 import           Data.Functor                     ((<$>))
-import           Data.Functor.Rep                 (Representable (tabulate))
+import           Data.Functor.Rep                 (Representable (..))
 import           Data.Kind                        (Type)
 import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..), Typeable)
-import           GHC.Generics                     (Par1 (..))
+import           GHC.Generics                     (U1 (..), (:*:) (..), (:.:) (..))
 
-import           ZkFold.Base.Algebra.Basic.Field  (fromZp)
-import           ZkFold.Base.Algebra.Basic.Number (KnownNat, Natural, type (*), type (+), value)
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
 import           ZkFold.Base.Control.HApplicative (HApplicative, hliftA2, hpure)
-import           ZkFold.Base.Data.HFunctor        (HFunctor, hmap)
-import           ZkFold.Base.Data.Package         (Package, packWith)
-import qualified ZkFold.Base.Data.Vector          as V
+import           ZkFold.Base.Data.HFunctor        (hmap)
+import           ZkFold.Base.Data.Package         (Package, pack)
+import           ZkFold.Base.Data.Product         (fstP, sndP)
 import           ZkFold.Base.Data.Vector          (Vector)
 
 -- | A class for Symbolic data types.
 class SymbolicData x where
     type Context x :: (Type -> Type) -> Type
     type Support x :: Type
-    type TypeSize x :: Natural
     type Layout x :: Type -> Type
-    type Layout x = Vector (TypeSize x)
 
     -- | Returns the circuit that makes up `x`.
     pieces :: x -> Support x -> Context x (Layout x)
@@ -41,36 +34,24 @@ class SymbolicData x where
     -- | Restores `x` from the circuit's outputs.
     restore :: (Support x -> Context x (Layout x)) -> x
 
--- | Returns the number of finite field elements needed to describe `x`.
-typeSize :: forall x . KnownNat (TypeSize x) => Natural
-typeSize = value @(TypeSize x)
-
 -- A wrapper for `SymbolicData` types.
 data SomeData c where
     SomeData :: (Typeable t, SymbolicData t, Context t ~ c) => t -> SomeData c
 
-instance SymbolicData (c (Vector n)) where
-    type Context (c (Vector n)) = c
-    type Support (c (Vector n)) = Proxy c
-    type TypeSize (c (Vector n)) = n
+instance SymbolicData (c (f :: Type -> Type)) where
+    type Context (c f) = c
+    type Support (c f) = Proxy c
+    type Layout (c f) = f
 
     pieces x _ = x
     restore f = f Proxy
 
-instance HFunctor c => SymbolicData (c Par1) where
-    type Context (c Par1) = c
-    type Support (c Par1) = Proxy c
-    type TypeSize (c Par1) = 1
-
-    pieces = const . hmap (V.singleton . unPar1)
-    restore = hmap (Par1 . V.item) . ($ Proxy)
-
 instance HApplicative c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
     type Context (Proxy c) = c
     type Support (Proxy c) = Proxy c
-    type TypeSize (Proxy c) = 0
+    type Layout (Proxy c) = U1
 
-    pieces _ _ = hpure V.empty
+    pieces _ _ = hpure U1
     restore _ = Proxy
 
 instance
@@ -79,17 +60,14 @@ instance
     , HApplicative (Context x)
     , Context x ~ Context y
     , Support x ~ Support y
-    , KnownNat (TypeSize x)
-    , Layout x ~ Vector (TypeSize x)
-    , Layout y ~ Vector (TypeSize y)
     ) => SymbolicData (x, y) where
 
     type Context (x, y) = Context x
     type Support (x, y) = Support x
-    type TypeSize (x, y) = TypeSize x + TypeSize y
+    type Layout (x, y) = Layout x :*: Layout y
 
-    pieces (a, b) = hliftA2 V.append <$> pieces a <*> pieces b
-    restore f = (restore (hmap V.take . f), restore (hmap V.drop . f))
+    pieces (a, b) = hliftA2 (:*:) <$> pieces a <*> pieces b
+    restore f = (restore (hmap fstP . f), restore (hmap sndP . f))
 
 instance
     ( SymbolicData x
@@ -100,16 +78,11 @@ instance
     , Context y ~ Context z
     , Support x ~ Support y
     , Support y ~ Support z
-    , KnownNat (TypeSize x)
-    , KnownNat (TypeSize y)
-    , Layout x ~ Vector (TypeSize x)
-    , Layout y ~ Vector (TypeSize y)
-    , Layout z ~ Vector (TypeSize z)
     ) => SymbolicData (x, y, z) where
 
     type Context (x, y, z) = Context (x, (y, z))
     type Support (x, y, z) = Support (x, (y, z))
-    type TypeSize (x, y, z) = TypeSize (x, (y, z))
+    type Layout (x, y, z) = Layout (x, (y, z))
 
     pieces (a, b, c) = pieces (a, (b, c))
     restore f = let (a, (b, c)) = restore f in (a, b, c)
@@ -126,18 +99,11 @@ instance
     , Support w ~ Support x
     , Support x ~ Support y
     , Support y ~ Support z
-    , KnownNat (TypeSize w)
-    , KnownNat (TypeSize x)
-    , KnownNat (TypeSize y)
-    , Layout w ~ Vector (TypeSize w)
-    , Layout x ~ Vector (TypeSize x)
-    , Layout y ~ Vector (TypeSize y)
-    , Layout z ~ Vector (TypeSize z)
     ) => SymbolicData (w, x, y, z) where
 
     type Context (w, x, y, z) = Context (w, (x, y, z))
     type Support (w, x, y, z) = Support (w, (x, y, z))
-    type TypeSize (w, x, y, z) = TypeSize (w, (x, y, z))
+    type Layout (w, x, y, z) = Layout (w, (x, y, z))
 
     pieces (a, b, c, d) = pieces (a, (b, c, d))
     restore f = let (a, (b, c, d)) = restore f in (a, b, c, d)
@@ -157,44 +123,31 @@ instance
     , Support w ~ Support x
     , Support x ~ Support y
     , Support y ~ Support z
-    , KnownNat (TypeSize v)
-    , KnownNat (TypeSize w)
-    , KnownNat (TypeSize x)
-    , KnownNat (TypeSize y)
-    , Layout v ~ Vector (TypeSize v)
-    , Layout w ~ Vector (TypeSize w)
-    , Layout x ~ Vector (TypeSize x)
-    , Layout y ~ Vector (TypeSize y)
-    , Layout z ~ Vector (TypeSize z)
     ) => SymbolicData (v, w, x, y, z) where
 
     type Context (v, w, x, y, z) = Context (v, (w, x, y, z))
     type Support (v, w, x, y, z) = Support (v, (w, x, y, z))
-    type TypeSize (v, w, x, y, z) = TypeSize (v, (w, x, y, z))
+    type Layout (v, w, x, y, z) = Layout (v, (w, x, y, z))
 
     pieces (a, b, c, d, e) = pieces (a, (b, c, d, e))
-
     restore f = let (a, (b, c, d, e)) = restore f in (a, b, c, d, e)
 
 instance
     ( SymbolicData x
     , Package (Context x)
-    , KnownNat (TypeSize x)
     , KnownNat n
-    , Layout x ~ Vector (TypeSize x)
     ) => SymbolicData (Vector n x) where
 
     type Context (Vector n x) = Context x
     type Support (Vector n x) = Support x
-    type TypeSize (Vector n x) = n * TypeSize x
+    type Layout (Vector n x) = Vector n :.: Layout x
 
-    pieces xs i = packWith V.concat (flip pieces i <$> xs)
-    restore f = tabulate (\i -> restore (hmap ((V.!! fromZp i) . V.chunks @n) . f))
+    pieces xs i = pack (flip pieces i <$> xs)
+    restore f = tabulate (\i -> restore (hmap (flip index i . unComp1) . f))
 
 instance SymbolicData f => SymbolicData (x -> f) where
     type Context (x -> f) = Context f
     type Support (x -> f) = (x, Support f)
-    type TypeSize (x -> f) = TypeSize f
     type Layout (x -> f) = Layout f
 
     pieces f (x, i) = pieces (f x) i

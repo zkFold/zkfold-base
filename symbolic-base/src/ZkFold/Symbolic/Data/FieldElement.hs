@@ -15,7 +15,7 @@ import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor        (HFunctor, hmap)
+import           ZkFold.Base.Data.HFunctor        (hmap)
 import           ZkFold.Base.Data.Par1            ()
 import           ZkFold.Base.Data.Vector          (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Class
@@ -37,7 +37,7 @@ deriving stock instance Haskell.Ord (c Par1) => Haskell.Ord (FieldElement c)
 
 deriving newtype instance NFData (c Par1) => NFData (FieldElement c)
 
-deriving newtype instance HFunctor c => SymbolicData (FieldElement c)
+deriving newtype instance SymbolicData (FieldElement c)
 
 deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
 

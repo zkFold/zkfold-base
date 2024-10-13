@@ -7,6 +7,7 @@ import           Prelude                              hiding (Bool, Eq (..), all
                                                        (&&), (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number     (Log2)
 import           ZkFold.Base.Data.Vector              (Vector, (!!))
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC (hash)
 import           ZkFold.Symbolic.Cardano.Types
@@ -23,7 +24,8 @@ type Tx context = Transaction 1 0 2 Tokens 1 () context
 
 randomOracle :: forall context .
     ( Symbolic context
-    , Bits (FieldElement context) ~  context (Vector 256)
+    , Bits (FieldElement context) ~ context (Vector 256)
+    , Log2 (Order (BaseField context)) ~ 255
     ) => BaseField context -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =
     let -- The secret key is correct

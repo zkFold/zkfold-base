@@ -14,9 +14,10 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address      (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Output.Datum
-import           ZkFold.Symbolic.Cardano.Types.Value        (SingleAsset, Value)
+import           ZkFold.Symbolic.Cardano.Types.Value        (Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Combinators           (NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq                    (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 
@@ -34,14 +35,12 @@ deriving instance
 
 instance
     ( Symbolic context
-    , KnownNat (TypeSize (Value tokens context))
-    , KnownNat (TypeSize (SingleAsset context))
     , KnownNat tokens
     ) => SymbolicData (Output tokens datum context) where
 
   type Context (Output tokens datum context) = Context (Address context, Value tokens context, DatumHash context)
   type Support (Output tokens datum context) = Support (Address context, Value tokens context, DatumHash context)
-  type TypeSize (Output tokens datum context) = TypeSize (Address context, Value tokens context, DatumHash context)
+  type Layout (Output tokens datum context) = Layout (Address context, Value tokens context, DatumHash context)
 
   pieces (Output a b c) = pieces (a, b, c)
   restore f = let (a, b, c) = restore f in Output a b c
@@ -50,6 +49,5 @@ deriving via (Structural (Output tokens datum context))
          instance
             ( Symbolic context
             , KnownNat tokens
-            , KnownNat (TypeSize (SingleAsset context))
-            , KnownNat (TypeSize (Value tokens context))
+            , KnownNat (NumberOfRegisters (BaseField context) 64 'Auto)
             ) => Eq (Bool context) (Output tokens datum context)

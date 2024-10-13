@@ -4,11 +4,10 @@
 
 module ZkFold.Symbolic.Cardano.UPLC.Type where
 
-import           Data.Typeable                    (Proxy (..), TypeRep, Typeable, typeOf)
+import           Data.Typeable              (Proxy (..), TypeRep, Typeable, typeOf)
 import           Prelude
 
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class (SymbolicData (..))
 
 data SomeType c where
     NoType         :: SomeType c
@@ -37,7 +36,7 @@ instance Semigroup (SomeType c) where
     _ <> _                                   = error "Semigroup (SomeType a): constructor mismatch"
 
 data SomeSymbolic c where
-    SomeData :: (Typeable t, SymbolicData t, Context t ~ c, KnownNat (TypeSize t)) => Proxy t -> SomeSymbolic c
+    SomeData :: (Typeable t, SymbolicData t, Context t ~ c) => Proxy t -> SomeSymbolic c
 
 getType :: SomeSymbolic c -> TypeRep
 getType (SomeData t)  = typeOf t
