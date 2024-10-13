@@ -10,7 +10,7 @@ import           Data.Function                    (($), (.))
 import           Data.Functor                     (fmap, (<$>))
 import           Data.Tuple                       (snd)
 import           GHC.Generics                     (Generic, Par1 (..))
-import           Prelude                          (Integer)
+import           Prelude                          (Integer, return)
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -24,7 +24,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
 import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit     (newAssigned, MonadCircuit, rangeConstraint)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
@@ -105,3 +105,11 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
   fromBinary bits =
     FieldElement $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
       $ fmap Par1 . horner . fromVector
+
+createRangeConstraint :: Symbolic c => FieldElement c -> BaseField c -> FieldElement c
+createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par1 v) -> Par1 <$> solve v a)
+  where
+    solve :: MonadCircuit var a m => var -> a -> m var
+    solve v b = do
+      rangeConstraint v b
+      return v
