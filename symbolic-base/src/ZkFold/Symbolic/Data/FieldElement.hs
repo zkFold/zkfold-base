@@ -25,6 +25,7 @@ import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
 import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned, MonadCircuit, rangeConstraint)
+import Prelude (const)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
@@ -107,9 +108,10 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
       $ fmap Par1 . horner . fromVector
 
 createRangeConstraint :: Symbolic c => FieldElement c -> BaseField c -> FieldElement c
-createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par1 v) -> Par1 <$> solve v a)
+createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par1 v) ->  Par1 <$> solve v a)
   where
     solve :: MonadCircuit var a m => var -> a -> m var
     solve v b = do
-      rangeConstraint v b
+      v' <- newAssigned (const zero)
+      rangeConstraint v' b
       return v

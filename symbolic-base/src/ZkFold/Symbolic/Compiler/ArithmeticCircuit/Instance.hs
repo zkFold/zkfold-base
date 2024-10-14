@@ -15,7 +15,7 @@ import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (Show, mempty, pure, return, show, ($), (++), (.),
                                                                       (<$>))
 import qualified Prelude                                             as Haskell
-import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements, chooseInteger)
+import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -23,7 +23,6 @@ import           ZkFold.Base.Data.Vector                             (Vector, un
 import           ZkFold.Prelude                                      (genSubset)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..), createRangeConstraint)
-import GHC.Natural (naturalFromInteger)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -40,6 +39,7 @@ instance
     arbitrary = do
         outVar <- SysVar . InVar <$> arbitrary
         let ac = mempty {acOutput = Par1 outVar}
+        -- let ac = createRangeConstraint (FieldElement $ mempty {acOutput = Par1 outVar}) (fromConstant @Natural 1)
         fromFieldElement <$> arbitrary' (FieldElement ac) 10
 
 instance
@@ -64,14 +64,14 @@ arbitrary' ::
   (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a i))
-arbitrary' ac 0 = return ac -- $ FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural 10))
+arbitrary' ac 0 = return ac
 arbitrary' ac iter = do
     let vars = getAllVars (fromFieldElement ac)
     li <- elements vars
     ri <- elements vars
     let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (SysVar li)}
                  , FieldElement (fromFieldElement ac) { acOutput = pure (SysVar ri)})
-    let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural 5)) { acOutput = pure (SysVar li)}
+    let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural 10)) { acOutput = pure (SysVar li)}
     
     ac' <- elements [
         l + r
@@ -81,6 +81,7 @@ arbitrary' ac iter = do
         , c
         ]
     arbitrary' ac' (iter -! 1)
+
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var a i)), Haskell.Ord (Rep i), Show (Var a i), Show (Rep i)) => Show (ArithmeticCircuit a i o) where
