@@ -8,6 +8,7 @@ module Tests.UInt (specUInt) where
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return, when)
+import           Data.Aeson                                  (decode, encode)
 import           Data.Constraint
 import           Data.Constraint.Nat                         (timesNat)
 import           Data.Constraint.Unsafe
@@ -181,6 +182,11 @@ specUInt' = hspec $ do
                 gt' = evalBoolVec $ x' > y'
                 gt'' = evalBool @(Zp p) (x'' > y'')
             return $ gt' === gt''
+        it "preserves the JSON invariant property" $ do
+            x <- toss m
+            let x' = fromConstant x :: UInt n rs (Interpreter (Zp p))
+            return $ P.Just x' === decode (encode x)
+
 
 specUInt :: IO ()
 specUInt = do
