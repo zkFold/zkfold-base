@@ -4,10 +4,15 @@ module ZkFold.Symbolic.Data.KYC where
 import           GHC.Generics                        (Generic)
 
 import           ZkFold.Base.Data.Vector             (Vector)
-import           ZkFold.Symbolic.Cardano.Types.Basic (Bool, ByteString, UInt)
+import           ZkFold.Symbolic.Data.ByteString (ByteString)
 import           ZkFold.Symbolic.Class               (Symbolic)
 import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq             (elem)
+import ZkFold.Symbolic.Data.UInt (UInt)
+import ZkFold.Symbolic.Data.Bool (Bool)
+import Data.Aeson
+import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Base.Algebra.Basic.Field (Zp)
 
 
 type KYCByteString context = ByteString 256 context
@@ -18,6 +23,10 @@ data KYCData context = KYCData
     , kycHash  :: KYCByteString context
     , kycID    :: UInt 64 Auto context
     } deriving Generic
+
+instance (Symbolic context) => FromJSON (KYCData context)
+instance (Symbolic (Interpreter (Zp p))) => ToJSON (KYCData (Interpreter (Zp p)))
+
 
 isCitizen :: (Symbolic c) => KYCByteString c -> Vector n (KYCByteString c) -> Bool c
 isCitizen = elem
