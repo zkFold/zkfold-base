@@ -15,6 +15,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         -- variable getters
         acInput,
         getAllVars,
+        -- input mapping
+        hlmap,
         -- evaluation functions
         witnessGenerator,
         eval,
@@ -45,7 +47,8 @@ import           Prelude                                               hiding (N
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, mapVars,
+                                                                        var)
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
@@ -61,7 +64,7 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acRange   :: Map ByteString a,
+        acRange   :: Map (SysVar i) a,
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (i a -> Map ByteString a -> a),
         -- ^ The witness generation functions
@@ -70,10 +73,10 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     } deriving (Generic)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance o ~ U1 => Semigroup (ArithmeticCircuit a i o)
+  instance (Ord (Rep i), o ~ U1) => Semigroup (ArithmeticCircuit a i o)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance o ~ U1 => Monoid (ArithmeticCircuit a i o)
+  instance (Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a i o)
 
 instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
     => NFData (ArithmeticCircuit a i o)
@@ -94,6 +97,12 @@ deriving stock instance Eq (Rep i) => Eq (SysVar i)
 deriving stock instance Ord (Rep i) => Ord (SysVar i)
 deriving instance NFData (Rep i) => NFData (SysVar i)
 
+imapSysVar ::
+  (Representable i, Representable j) =>
+  (forall x. j x -> i x) -> SysVar i -> SysVar j
+imapSysVar f (InVar r)  = index (f (tabulate InVar)) r
+imapSysVar _ (NewVar b) = NewVar b
+
 data Var a i
   = SysVar (SysVar i)
   | ConstVar a
@@ -108,6 +117,12 @@ deriving stock instance (Ord (Rep i), Ord a) => Ord (Var a i)
 deriving instance (NFData (Rep i), NFData a) => NFData (Var a i)
 instance FromConstant a (Var a i) where
     fromConstant = ConstVar
+
+imapVar ::
+  (Representable i, Representable j) =>
+  (forall x. j x -> i x) -> Var a i -> Var a j
+imapVar f (SysVar s)   = SysVar (imapSysVar f s)
+imapVar _ (ConstVar c) = ConstVar c
 
 ---------------------------------- Variables -----------------------------------
 
@@ -127,6 +142,18 @@ indexW circuit inputs = \case
     (witnessGenerator circuit inputs !? newV)
   ConstVar cV -> cV
 
+-------------------------------- "HProfunctor" ---------------------------------
+
+hlmap ::
+  (Representable i, Representable j, Ord (Rep j), Functor o) =>
+  (forall x . j x -> i x) -> ArithmeticCircuit a i o -> ArithmeticCircuit a j o
+hlmap f (ArithmeticCircuit s r w o) = ArithmeticCircuit
+  { acSystem = mapVars (imapSysVar f) <$> s
+  , acRange = mapKeys (imapSysVar f) r
+  , acWitness = (\g j p -> g (f j) p) <$> w
+  , acOutput = imapVar f <$> o
+  }
+
 --------------------------- Symbolic compiler context --------------------------
 
 crown :: ArithmeticCircuit a i g -> f (Var a i) -> ArithmeticCircuit a i f
@@ -138,11 +165,11 @@ behead = liftA2 (,) (set #acOutput U1) acOutput
 instance HFunctor (ArithmeticCircuit a i) where
     hmap = over #acOutput
 
-instance HApplicative (ArithmeticCircuit a i) where
+instance Ord (Rep i) => HApplicative (ArithmeticCircuit a i) where
     hpure = crown mempty
     hliftA2 f (behead -> (c, o)) (behead -> (d, p)) = crown (c <> d) (f o p)
 
-instance Package (ArithmeticCircuit a i) where
+instance Ord (Rep i) => Package (ArithmeticCircuit a i) where
     unpackWith f (behead -> (c, o)) = crown c <$> f o
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
@@ -175,7 +202,7 @@ instance
       in
         zoom #acSystem . modify $ insert (toVar @a p) (p evalConstVar)
 
-    rangeConstraint (SysVar (NewVar v)) upperBound =
+    rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insert v upperBound
     -- FIXME range-constrain other variable types
     rangeConstraint _ _ = error "Cannot range-constrain this variable"
@@ -238,6 +265,7 @@ apply ::
   i a -> ArithmeticCircuit a (i :*: j) U1 -> ArithmeticCircuit a j U1
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
+  , acRange = mapKeys' (acRange ac)
   , acWitness = fmap witF (acWitness ac)
   , acOutput = U1
   }
@@ -246,6 +274,13 @@ apply xs ac = ac
     varF (InVar (Right v)) = var (InVar v)
     varF (NewVar v)        = var (NewVar v)
     witF f j = f (xs :*: j)
+
+    mapKeys' :: Ord (SysVar j) =>  Map (SysVar (i :*: j)) a ->  Map (SysVar j) a
+    mapKeys' m = fromList $
+                  foldrWithKey (\k x ms -> case k of
+                    NewVar v        -> (NewVar v, x) : ms
+                    InVar (Right v) -> (InVar v, x) : ms
+                    _               -> ms) [] m
 
 -- TODO: Add proper symbolic application functions
 

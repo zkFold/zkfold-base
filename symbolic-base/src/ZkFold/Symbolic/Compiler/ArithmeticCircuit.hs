@@ -1,10 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
-
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
         ArithmeticCircuitTest(..),
         Constraint,
+        Var,
         witnessGenerator,
         -- high-level functions
         optimize,
@@ -22,6 +20,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         acValue,
         acPrint,
         -- Variable mapping functions
+        hlmap,
         mapVarArithmeticCircuit,
         -- Arithmetization type fields
         acWitness,
@@ -53,7 +52,7 @@ import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
                                                                       SysVar (..), Var (..), acInput, eval, eval1, exec,
-                                                                      exec1, witnessGenerator)
+                                                                      exec1, hlmap, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
@@ -87,7 +86,7 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar (NewVar k), v) | (k,v) <- toList (acRange c)]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar k, v) | (k,v) <- toList (acRange c)]
    in r' { acRange = mempty, acOutput = acOutput c }
 
 ----------------------------------- Information -----------------------------------

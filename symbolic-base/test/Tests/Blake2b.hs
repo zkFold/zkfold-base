@@ -1,10 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Blake2b where
 
 import           Crypto.Hash.BLAKE2.BLAKE2b                  (hash)
 import qualified Data.ByteString.Internal                    as BI
 import           Data.Data                                   (Proxy (Proxy))
+import           GHC.Generics                                (U1, (:*:))
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (Eq (..), IO, ($))
 import           Test.Hspec
@@ -31,7 +33,7 @@ blake2bSimple =
 
 blake2bAC :: Spec
 blake2bAC =
-    let cs = compile blake2b_512 :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 8))
+    let cs = compile blake2b_512 :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 8 :*: U1))
         ac = pieces cs Proxy
     in it "simple test with cardano-crypto " $ acSizeN ac == 564239
 

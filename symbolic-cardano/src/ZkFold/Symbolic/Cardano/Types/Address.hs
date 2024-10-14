@@ -33,6 +33,6 @@ deriving via (Structural (Address context))
 instance HApplicative context => SymbolicData (Address context) where
   type Context (Address context) = Context (AddressType context, PaymentCredential context, StakingCredential context)
   type Support (Address context) = Support (AddressType context, PaymentCredential context, StakingCredential context)
-  type TypeSize (Address context) = TypeSize (AddressType context, PaymentCredential context, StakingCredential context)
+  type Layout (Address context) = Layout (AddressType context, PaymentCredential context, StakingCredential context)
   pieces (Address a b c) = pieces (a, b, c)
   restore f = let (a, b, c) = restore f in Address a b c

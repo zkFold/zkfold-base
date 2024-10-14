@@ -8,14 +8,15 @@ module ZkFold.Symbolic.Data.Maybe (
 ) where
 
 import           Data.Function                    ((.))
+import           Data.Functor.Rep                 (Representable, pureRep)
 import           Data.Proxy                       (Proxy)
+import           Data.Traversable                 (Traversable)
 import           GHC.Generics                     (Par1 (..))
 import           Prelude                          (foldr, type (~), ($))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Control.HApplicative (HApplicative, hliftA2)
+import           ZkFold.Base.Control.HApplicative (HApplicative)
 import           ZkFold.Base.Data.HFunctor        (HFunctor, hmap)
 import qualified ZkFold.Base.Data.Vector          as V
 import           ZkFold.Base.Data.Vector          (Vector)
@@ -36,15 +37,11 @@ deriving stock instance (Haskell.Eq (context Par1), Haskell.Eq x) => Haskell.Eq 
 just :: Symbolic c => x -> Maybe c x
 just = Maybe true
 
-nothing
-    :: forall c x k
-    .  Symbolic c
-    => SymbolicData x
-    => c ~ Context x
-    => KnownNat k
-    => Layout x ~ Vector k
-    => Maybe c x
-nothing = Maybe false (let c = embed @c $ Haskell.pure @(Vector k) zero in restore (Haskell.const c))
+nothing ::
+  forall x c .
+  (SymbolicData x, Representable (Layout x), Context x ~ c, Symbolic c) =>
+  Maybe c x
+nothing = Maybe false (let c = embed @c $ pureRep zero in restore (Haskell.const c))
 
 fromMaybe
     :: forall c x
@@ -74,22 +71,24 @@ instance
     , SymbolicData x
     , Context x ~ c
     , Support x ~ Proxy c
-    , Layout x ~ Vector (TypeSize x)
     ) => SymbolicData (Maybe c x) where
 
-    type Context (Maybe c x) = c
-    type Support (Maybe c x) = Proxy c
-    type TypeSize (Maybe c x) = 1 + TypeSize x
-    pieces (Maybe (Bool h) t) i = hliftA2 (\(Par1 h') t' -> V.singleton h' `V.append` t') h (pieces t i)
-    restore f = Maybe (restore (hmap V.take . f)) (restore (hmap V.drop . f))
+    type Context (Maybe c x) = Context (Bool c, x)
+    type Support (Maybe c x) = Support (Bool c, x)
+    type Layout (Maybe c x) = Layout (Bool c, x)
 
-maybe :: forall a b c n .
-    (Symbolic c, SymbolicData b, Context b ~ c, Layout b ~ Vector n) =>
+    pieces (Maybe b t) = pieces (b, t)
+    restore f = let (b, t) = restore f in Maybe b t
+
+maybe :: forall a b c .
+    (Symbolic c, SymbolicData b, Context b ~ c) =>
+    (Representable (Layout b), Traversable (Layout b)) =>
     b -> (a -> b) -> Maybe c a -> b
 maybe d h x@(Maybe _ v) = bool @(Bool c) d (h v) $ isNothing x
 
 find :: forall a c t .
-    (Symbolic c, SymbolicData a, Context a ~ c, Support a ~ Proxy c, KnownNat (TypeSize a), Layout a ~ Vector (TypeSize a)) =>
+    (Symbolic c, SymbolicData a, Context a ~ c, Support a ~ Proxy c) =>
+    (Representable (Layout a), Traversable (Layout a)) =>
     Haskell.Foldable t =>
     (a -> Bool c) -> t a -> Maybe c a
 find p = let n = nothing in

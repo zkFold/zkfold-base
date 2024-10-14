@@ -27,7 +27,7 @@ deriving instance
 instance HApplicative context => SymbolicData (OutputRef context) where
   type Context (OutputRef context) = Context (TxRefId context, TxRefIndex context)
   type Support (OutputRef context) = Support (TxRefId context, TxRefIndex context)
-  type TypeSize (OutputRef context) = TypeSize (TxRefId context, TxRefIndex context)
+  type Layout (OutputRef context) = Layout (TxRefId context, TxRefIndex context)
 
   pieces (OutputRef a b) = pieces (a, b)
   restore f = let (a, b) = restore f in OutputRef a b

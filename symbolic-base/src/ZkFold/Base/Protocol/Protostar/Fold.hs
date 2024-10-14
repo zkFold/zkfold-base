@@ -9,17 +9,24 @@ module ZkFold.Base.Protocol.Protostar.Fold where
 
 import           Control.DeepSeq                                  (NFData)
 import           Control.Lens                                     ((^.))
+import           Data.Binary                                      (Binary)
+import           Data.Function                                    ((.))
+import           Data.Functor                                     (fmap)
+import           Data.Functor.Rep                                 (Rep, Representable)
 import           Data.Kind                                        (Type)
 import           Data.Map.Strict                                  (Map)
 import qualified Data.Map.Strict                                  as M
+import           Data.Ord                                         (Ord)
 import           Data.Proxy                                       (Proxy)
-import           GHC.Generics                                     (Generic, Par1)
+import           GHC.Generics                                     (Generic, Par1 (..), U1 (..), type (:*:) (..),
+                                                                   type (:.:) (..))
 import           Prelude                                          (type (~), ($), (<$>), (<*>))
 import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate       as PU
+import           ZkFold.Base.Data.HFunctor                        (hmap)
 import           ZkFold.Base.Data.Vector                          (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
@@ -53,10 +60,10 @@ instance (Ring a, P.Ord key, KnownNat k) => Acc.LinearCombination (Map key a) (M
     linearCombination mx ma = M.unionWith (+) (P.flip PU.polyVecLinear zero <$> mx) (PU.polyVecConstant <$> ma)
 
 instance (Ring a, KnownNat n, KnownNat k) => Acc.LinearCombination (Vector n a) (Vector n (PU.PolyVec a k)) where
-    linearCombination mx ma = (+) <$> (P.flip PU.polyVecLinear zero <$> mx) <*> (PU.polyVecConstant <$> ma)
+    linearCombination mx ma = (+) . P.flip PU.polyVecLinear zero <$> mx <*> (PU.polyVecConstant <$> ma)
 
 instance (Ring a, KnownNat n) => Acc.LinearCombinationWith a (Vector n a) where
-    linearCombinationWith coeff a b = (+) <$> (P.fmap (coeff *) a) <*> b
+    linearCombinationWith coeff a b = (+) <$> P.fmap (coeff *) a <*> b
 
 
 type C n a = ArithmeticCircuit a (Vector n) (Vector n)
@@ -82,7 +89,7 @@ toFS
     -> C n a
     -> Vector n (FieldElement ctx)
     -> FS_CM ctx n comm a
-toFS ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
+toFS ck rc = FiatShamir (CommitOpen (hcommit ck) rc)
 
 -- No SymbolicData instances for data
 -- all protocols are one-round in case of arithmetic circuits, therefore we can replace lists with elements.
@@ -94,7 +101,7 @@ ivcVerifier
     -> (a, (f, (f, f)), ((i, c, f, c, f), m))
     -> Bool ctx
 ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple)
-  = (Acc.verifier @i @f @c @m @ctx @a i [pi_x] acc acc' [pf]) && (Acc.decider @i @f @c @m @ctx @a a ck dk)
+  = Acc.verifier @i @f @c @m @ctx @a i [pi_x] acc acc' [pf] && Acc.decider @i @f @c @m @ctx @a a ck dk
     where
         acc = let (x1, x2, x3, x4, x5) = accTuple
                in AccumulatorInstance x1 [x2] [x3] x4 x5
@@ -109,48 +116,14 @@ ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple)
 
 -- TODO: this is insane
 ivcVerifierAc
-    :: forall i f c m ctx a y typeSize ckSize dkSize accSize
+    :: forall i f c m ctx a y t
     .  Symbolic ctx
-    => TypeSize y ~ 1
     => SymbolicData i
     => SymbolicData f
     => SymbolicData c
     => SymbolicData m
     => SymbolicData a
     => SymbolicData y
-    => typeSize ~ ((TypeSize i
-                    + (TypeSize c
-                       + ((TypeSize i
-                           + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
-                          + ((TypeSize i
-                              + (TypeSize c
-                                 + (TypeSize f + (TypeSize c + TypeSize f))))
-                             + TypeSize c))))
-                   + (TypeSize a
-                      + ((TypeSize f + (TypeSize f + TypeSize f))
-                         + ((TypeSize i
-                             + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
-                            + TypeSize m))))
-    => ckSize ~ (TypeSize f + (TypeSize f + TypeSize f))
-    => dkSize ~ TypeSize a + ((TypeSize f + (TypeSize f + TypeSize f))
-                   + ((TypeSize i
-                       + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
-                      + TypeSize m))
-    => accSize ~ (TypeSize i + (TypeSize c
-                   + ((TypeSize i
-                       + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
-                      + ((TypeSize i
-                          + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
-                         + TypeSize c))))
-    => KnownNat typeSize
-    => KnownNat dkSize
-    => KnownNat ckSize
-    => KnownNat accSize
-    => KnownNat (TypeSize i + (TypeSize c + (TypeSize f + (TypeSize c + TypeSize f))))
-    => KnownNat (TypeSize i)
-    => KnownNat (TypeSize f)
-    => KnownNat (TypeSize c)
-    => KnownNat (TypeSize a)
     => Context i ~ ctx
     => Context f ~ ctx
     => Context c ~ ctx
@@ -163,22 +136,28 @@ ivcVerifierAc
     => Support m ~ Proxy ctx
     => Support a ~ Proxy ctx
     => Support y ~ Proxy ctx
-    => Layout i ~ Vector (TypeSize i)
-    => Layout f ~ Vector (TypeSize f)
-    => Layout c ~ Vector (TypeSize c)
-    => Layout m ~ Vector (TypeSize m)
-    => Layout a ~ Vector (TypeSize a)
-    => Layout y ~ Vector (TypeSize y)
-    => ctx ~ ArithmeticCircuit a (Vector typeSize)
+    => Representable (Layout i)
+    => Representable (Layout c)
+    => Representable (Layout f)
+    => Representable (Layout a)
+    => Representable (Layout m)
+    => Ord (Rep (Layout i))
+    => Ord (Rep (Layout c))
+    => Ord (Rep (Layout f))
+    => Ord (Rep (Layout a))
+    => Ord (Rep (Layout m))
+    => Layout y ~ Par1
+    => t ~ ((i,c,(i,c,f,c,f),(i,c,f,c,f),c),(a,(f,f,f),(i,c,f,c,f),m),Proxy ctx)
+    => ctx ~ ArithmeticCircuit a (Layout t)
     => Acc.AccumulatorScheme i f c m ctx a
     => y
 ivcVerifierAc = compile (ivcVerifier @i @f @c @m @ctx @a)
 
 iterate
     :: forall ctx n comm a
-    .  Symbolic ctx
-    => KnownNat n
+    .  KnownNat n
     => Arithmetic a
+    => Binary a
     => Scale a (BaseField ctx)
     => FromConstant a (BaseField ctx)
     => Eq (Bool ctx) comm
@@ -194,7 +173,7 @@ iterate
     => Scale (FieldElement ctx) comm
     => ctx ~ ArithmeticCircuit a (Vector n)
     => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
-    => (Vector n (FieldElement ctx) -> Vector n (FieldElement ctx))
+    => (forall c. (Symbolic c, BaseField c ~ a) => Vector n (FieldElement c) -> Vector n (FieldElement c))
     -> Vector n a
     -> Natural
     -> ProtostarResult ctx n comm a
@@ -204,7 +183,7 @@ iterate f i0 n = iteration n ck f ac i0_arith i0 initialAccumulator (Acc.KeyScal
         i0_arith = fromConstant <$> i0
 
         ac :: C n a
-        ac = compile @a f
+        ac = hmap (fmap unPar1 . unComp1) $ hlmap ((:*: U1) . Comp1 . fmap Par1) (compile @a f)
 
         initE = hcommit ck $ replicate (SPS.outputLength @(FieldElement ctx) ac) (zero :: FieldElement ctx)
 
