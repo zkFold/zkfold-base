@@ -72,7 +72,7 @@ arbitrary' ac iter = do
     let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (SysVar li)}
                  , FieldElement (fromFieldElement ac) { acOutput = pure (SysVar ri)})
     let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural 10)) { acOutput = pure (SysVar li)}
-    
+
     ac' <- elements [
         l + r
         , l * r
