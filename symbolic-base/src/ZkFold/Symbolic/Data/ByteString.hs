@@ -330,7 +330,7 @@ instance (Symbolic c, KnownNat n)
         str <- parseJSON val
         case hexToByteString @c @n str of
             Nothing -> Haskell.fail "bad bytestring!"
-            Just a -> return a
+            Just a  -> return a
 
 instance ToJSON (ByteString n (Interpreter (Zp p))) where
     toJSON = toJSON . byteStringToHex
@@ -341,4 +341,4 @@ byteStringToHex bytes = showHex (toConstant bytes :: Natural) ""
 hexToByteString :: (Symbolic c, KnownNat n) => Haskell.String -> Maybe (ByteString n c)
 hexToByteString str = case readHex str of
     [(n, "")] -> Just (fromConstant @Natural n)
-    _ -> Nothing
+    _         -> Nothing
