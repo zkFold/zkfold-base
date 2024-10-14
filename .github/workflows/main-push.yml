@@ -37,15 +37,15 @@ jobs:
       shell: bash
       run: |
         cabal update
-        cabal new-build all -f Pedantic
+        cabal build all -f Pedantic
 
     - name: Upload package
       env:
         HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
       shell: bash
       run: |
-        cabal sdist
+        cabal sdist symbolic-base
         cabal upload --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/sdist/*.tar.gz
         
-        cabal v2-haddock --haddock-for-hackage --enable-doc
+        cabal v2-haddock symbolic-base --haddock-for-hackage --enable-doc
         cabal upload --documentation --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/*-docs.tar.gz

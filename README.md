@@ -1,25 +1,27 @@
-# zkFold Base library
-This repository contains the base library for the ZkFold project. It includes the zkFold Symbolic compiler and a number of zero knowledge proof protocols. The compiler translates a subset of Haskell into arithmetic circuits, which can be used to generate zero knowledge proofs.
+# zkFold Symbolic framework
+This repository contains the zkFold Symbolic framework base library as well as additional packages written using the framework.
 
 # Documentation
-The zkFold Symbolic language can be utilized to create zero-knowledge smart contracts and privacy-preserving applications.
+The zkFold Symbolic framework can be utilized to create zero-knowledge smart contracts and privacy-preserving applications.
 
-User documentation can be found at [docs.zkfold.io](https://docs.zkfold.io "zkFold Symbolic User Documentation").
+User documentation can be found at [docs.zkfold.io](https://docs.zkfold.io/symbolic/introduction/ "zkFold Symbolic User Documentation").
 
-If you want to contribute to the project or find out how it works "under the hood", check out [package documentation](https://hackage.haskell.org/package/zkfold-base-0.1.0.0/candidate "zkFold Base package") on Hackage.
+If you want to contribute to the project or find out how it works "under the hood", check out [package documentation](https://hackage.haskell.org/package/symbolic-base-0.1.0.0/candidate "zkFold Symbolic Base package") on Hackage.
 
 # Build
-The package compiles with GHC 9.6.3 and Cabal 3.10.2.1.
+The package compiles with GHC 9.6.3 and Cabal 3.10.2.1. To build all packages, execute
+```bash
+cabal build all
+```
 
 # Tests
 To run the tests, execute
 ```bash
-cabal run -- zkfold-base-test
+cabal test all
 ```
 
-# Examples
-The `examples` folder contains several code examples of arithmetizable pure functions. These examples can be compiled into the arithmetic circuits with the zkFold Symbolic compiler. In order to do it, execute
+# Benchmarks
+To run the benchmarks, execute
 ```bash
-cabal run -- zkfold-base-examples
+cabal bench all
 ```
-The output is placed into the `compiled_scripts` folder.

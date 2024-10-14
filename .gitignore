@@ -21,6 +21,5 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
-compiled_scripts/*
 stack.yaml*
 .DS_Store

@@ -1,0 +1,10 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:symbolic-base"
+
+    - path: "./test"
+      component: "symbolic-base:test:symbolic-base-test"
+
+    - path: "./bench/BenchPolyMul.hs"
+      component: "symbolic-base:bench:bench-poly-mul"
