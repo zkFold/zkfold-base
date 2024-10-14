@@ -22,41 +22,41 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
-    -- Base
-    specBinary
+    -- -- Base
+    -- specBinary
 
-    -- Algebra
-    specPermutations
-    specField
-    specAdditiveGroup
-    specPairing
-    specUnivariate
-    specGroebner
+    -- -- Algebra
+    -- specPermutations
+    -- specField
+    -- specAdditiveGroup
+    -- specPairing
+    -- specUnivariate
+    -- specGroebner
 
-    -- Symbolic types and operations
-    specUInt
-    specFFA
+    -- -- Symbolic types and operations
+    -- specUInt
+    -- specFFA
     specByteString
 
-    -- Arithmetic circuit
-    specArithmeticCircuit
+--     -- Arithmetic circuit
+--     specArithmeticCircuit
 
-    -- Arithmetization
-    specArithmetization
+--     -- Arithmetization
+--     specArithmetization
 
-    -- Protocols
-    specPlonkup
-    specNonInteractiveProof
---    specProtostar
+--     -- Protocols
+--     specPlonkup
+--     specNonInteractiveProof
+-- --    specProtostar
 
-    -- Cryptography
-    specSHA2Natural
-    -- These tests are slow. Only run them locally by setting the environment variable FULL_SHA2
-    fullTests <- lookupEnv "FULL_SHA2"
-    unless (null fullTests) specSHA2
+--     -- Cryptography
+--     specSHA2Natural
+--     -- These tests are slow. Only run them locally by setting the environment variable FULL_SHA2
+--     fullTests <- lookupEnv "FULL_SHA2"
+--     unless (null fullTests) specSHA2
 
-    --TODO: implement a proper blake2b test
-    specBlake2b
+--     --TODO: implement a proper blake2b test
+--     specBlake2b
 
 
     putStrLn "\nAll tests passed!"

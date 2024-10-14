@@ -333,6 +333,7 @@ test-suite zkfold-base-test
       vector                                     ,
       vector-algorithms                          ,
       zkfold-base                                ,
+      aeson
     hs-source-dirs: tests
 
 benchmark polynomial-multiplication
