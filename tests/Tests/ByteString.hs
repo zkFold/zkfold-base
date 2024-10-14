@@ -7,14 +7,12 @@ module Tests.ByteString (specByteString) where
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
 import           Data.Aeson                                  (decode, encode)
-import qualified Data.ByteString as Bytes
-import qualified Data.ByteString.Lazy   as Lazy
 
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (U1)
-import           Prelude                                     (show, type (~), (<>), (.))
+import           Prelude                                     (show, type (~), (<>))
 import qualified Prelude                                     as Haskell
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (Spec, describe, hspec)
@@ -32,9 +30,6 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-import Data.Maybe (fromJust)
-import GHC.Natural (naturalToInteger)
-import GHC.Num (integerToInt)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -121,14 +116,13 @@ testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to leng
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
 
-testJSON :: forall n p. KnownNat n => PrimeField (Zp p) => Div n 8 * 8 ~ n => Spec
+testJSON :: forall n p. KnownNat n => PrimeField (Zp p) => Spec
 testJSON = it "preserves the JSON invariant property" $ do
     x <- toss n
     let zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
     return $ Haskell.Just zpBS === decode (encode zpBS)
     where
         n = 2 Haskell.^ value @n -! 1
-        l = Haskell.fromEnum $ (value @n)
 
 -- | For some reason, Haskell can't infer obvious type relations such as n <= n + 1...
 --
@@ -149,7 +143,6 @@ specByteString'
     => (Div n n) * n ~ n
     => (Div n 4) * 4 ~ n
     => (Div n 2) * 2 ~ n
-    => Div n 8 * 8 ~ n
     => KnownNat (n + 1)
     => KnownNat (n + 10)
     => KnownNat (n + 128)
@@ -234,4 +227,4 @@ specByteString :: IO ()
 specByteString = do
     specByteString' @BLS12_381_Scalar @32
     specByteString' @BLS12_381_Scalar @512
-    -- specByteString' @BLS12_381_Scalar @504 -- Twice the number of bits encoded by BLS12_381_Scalar.
+    specByteString' @BLS12_381_Scalar @508 -- Twice the number of bits encoded by BLS12_381_Scalar.

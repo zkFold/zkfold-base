@@ -40,7 +40,6 @@ import           Test.QuickCheck                    (Arbitrary (..), chooseInteg
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.ByteString        (toByteString)
 import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
 import           ZkFold.Base.Data.Package           (packed, unpacked)
 import qualified ZkFold.Base.Data.Vector            as V
