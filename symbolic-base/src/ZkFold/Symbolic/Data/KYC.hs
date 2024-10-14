@@ -1,18 +1,18 @@
 {-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Data.KYC where
 
-import           GHC.Generics                        (Generic)
+import           Data.Aeson
+import           GHC.Generics                     (Generic)
 
-import           ZkFold.Base.Data.Vector             (Vector)
-import           ZkFold.Symbolic.Data.ByteString (ByteString)
-import           ZkFold.Symbolic.Class               (Symbolic)
-import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..))
-import           ZkFold.Symbolic.Data.Eq             (elem)
-import ZkFold.Symbolic.Data.UInt (UInt)
-import ZkFold.Symbolic.Data.Bool (Bool)
-import Data.Aeson
-import ZkFold.Symbolic.Interpreter (Interpreter)
-import ZkFold.Base.Algebra.Basic.Field (Zp)
+import           ZkFold.Base.Algebra.Basic.Field  (Zp)
+import           ZkFold.Base.Data.Vector          (Vector)
+import           ZkFold.Symbolic.Class            (Symbolic)
+import           ZkFold.Symbolic.Data.Bool        (Bool)
+import           ZkFold.Symbolic.Data.ByteString  (ByteString)
+import           ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
+import           ZkFold.Symbolic.Data.Eq          (elem)
+import           ZkFold.Symbolic.Data.UInt        (UInt)
+import           ZkFold.Symbolic.Interpreter      (Interpreter)
 
 type KYCByteString context = ByteString 256 context
 
