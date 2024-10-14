@@ -16,7 +16,6 @@ import qualified Prelude                          as Haskell
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor        (hmap)
-import           ZkFold.Base.Data.Par1            ()
 import           ZkFold.Base.Data.Vector          (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool)
