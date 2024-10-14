@@ -1,31 +1,32 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Input (
     SymbolicInput (..)
 ) where
 
-import           Data.Type.Equality               (type (~))
-import           Data.Typeable                    (Proxy (..))
+import           Control.Monad.Representable.Reader (Rep)
+import           Data.Foldable                      (foldlM)
 import           Data.Functor
-import           Data.Functor.Rep                 (Representable )
-import           GHC.Generics                     (Par1 (..))
-import           Prelude (($), const)
+import           Data.Functor.Rep                   (Representable)
+import           Data.Ord                           (Ord)
+import           Data.Traversable                   (for)
+import           Data.Type.Equality                 (type (~))
+import           Data.Typeable                      (Proxy (..))
+import           GHC.Generics                       (Par1 (..))
+import           Prelude                            (const, ($))
+
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
+import           ZkFold.Base.Algebra.Basic.Number   (KnownNat)
+import           ZkFold.Base.Data.ByteString        (Binary)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Data.ByteString
-import Data.Traversable (for)
-import Data.Foldable (foldlM)
-import ZkFold.Base.Data.ByteString (Binary)
-import Control.Monad.Representable.Reader (Rep)
-import Data.Ord (Ord)
-import ZkFold.Symbolic.Data.UInt
-import ZkFold.Symbolic.Data.Combinators
 
 
 -- | A class for Symbolic input.
@@ -62,7 +63,7 @@ instance (
 
 instance (
   Symbolic c
-  , KnownNat n 
+  , KnownNat n
   ) => SymbolicInput (ByteString n c) where
   isValid (ByteString bits) = Bool $ fromCircuitF bits solve
     where
@@ -72,7 +73,7 @@ instance (
             ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
             i' <- helper ys
             Par1 <$> newAssigned (\w -> one - w i')
-        
+
         helper :: MonadCircuit i a m => [i] -> m i
         helper xs = case xs of
             []       -> newAssigned (const zero)
@@ -90,7 +91,7 @@ instance (
 --             ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
 --             i' <- helper ys
 --             Par1 <$> newAssigned (\w -> one - w i')
-        
+
 --         helper :: MonadCircuit i a m => [i] -> m i
 --         helper xs = case xs of
 --             []       -> newAssigned (const zero)
