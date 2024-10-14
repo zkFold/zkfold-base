@@ -34,7 +34,7 @@ main = do
     -- specGroebner
 
     -- -- Symbolic types and operations
-    -- specUInt
+    specUInt
     -- specFFA
     specByteString
 

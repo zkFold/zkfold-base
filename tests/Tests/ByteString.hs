@@ -6,7 +6,7 @@ module Tests.ByteString (specByteString) where
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
-import           Data.Aeson                         (encode, decodeStrict)
+import           Data.Aeson                                  (decode, encode)
 import qualified Data.ByteString as Bytes
 import qualified Data.ByteString.Lazy   as Lazy
 
@@ -125,7 +125,7 @@ testJSON :: forall n p. KnownNat n => PrimeField (Zp p) => Div n 8 * 8 ~ n => Sp
 testJSON = it "preserves the JSON invariant property" $ do
     x <- toss n
     let zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return $ zpBS === (fromJust . decodeStrict . Bytes.takeEnd 8 . Lazy.toStrict . encode) zpBS
+    return $ Haskell.Just zpBS === decode (encode zpBS)
     where
         n = 2 Haskell.^ value @n -! 1
         l = Haskell.fromEnum $ (value @n)
