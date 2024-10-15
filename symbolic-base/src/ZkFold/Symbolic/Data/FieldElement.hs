@@ -105,12 +105,3 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
   fromBinary bits =
     FieldElement $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
       $ fmap Par1 . horner . fromVector
-
-createRangeConstraint :: Symbolic c => FieldElement c -> BaseField c -> FieldElement c
-createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par1 v) ->  Par1 <$> solve v a)
-  where
-    solve :: MonadCircuit var a m => var -> a -> m var
-    solve v b = do
-      v' <- newAssigned (const zero)
-      rangeConstraint v' b
-      return v

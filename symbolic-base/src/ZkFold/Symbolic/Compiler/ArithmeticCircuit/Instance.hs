@@ -22,7 +22,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
 import           ZkFold.Prelude                                      (genSubset)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..), createRangeConstraint)
+import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 
 ------------------------------------- Instances -------------------------------------
 
@@ -82,6 +82,15 @@ arbitrary' ac iter = do
         ]
     arbitrary' ac' (iter -! 1)
 
+
+createRangeConstraint :: Symbolic c => FieldElement c -> BaseField c -> FieldElement c
+createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par1 v) ->  Par1 <$> solve v a)
+  where
+    solve :: MonadCircuit var a m => var -> a -> m var
+    solve v b = do
+      v' <- newAssigned (const zero)
+      rangeConstraint v' b
+      return v
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var a i)), Haskell.Ord (Rep i), Show (Var a i), Show (Rep i)) => Show (ArithmeticCircuit a i o) where
