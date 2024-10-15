@@ -6,7 +6,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments       #-}
 
 module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
@@ -18,7 +18,7 @@ module ZkFold.Symbolic.Data.UInt (
 
 import           Control.DeepSeq
 import           Control.Monad.State                (StateT (..))
-import           Data.Foldable                      (foldr, foldrM, for_, foldlM)
+import           Data.Foldable                      (foldlM, foldr, foldrM, for_)
 import           Data.Functor                       ((<$>))
 import           Data.Kind                          (Type)
 import           Data.List                          (unfoldr, zip)
@@ -28,8 +28,8 @@ import           Data.Tuple                         (swap)
 import qualified Data.Zip                           as Z
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
-import           Prelude                            (Integer, error, flip, otherwise, return, type (~), ($), (++), (.),
-                                                     (<>), (>>=), const)
+import           Prelude                            (Integer, const, error, flip, fst, otherwise, return, type (~), ($),
+                                                     (++), (.), (<>), (>>=))
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
 
@@ -48,11 +48,10 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
+import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
-import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
-import Prelude (fst)
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
@@ -521,7 +520,7 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c)
                 return (p : ps <> [p'])
 
 
-instance 
+instance
   ( Symbolic c
   , KnownNat n
   , KnownNat (NumberOfRegisters (BaseField c) n r)

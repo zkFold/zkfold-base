@@ -14,7 +14,7 @@ import           Data.Traversable                   (for)
 import           Data.Type.Equality                 (type (~))
 import           Data.Typeable                      (Proxy (..))
 import           GHC.Generics                       (Par1 (..))
-import           Prelude                            (const, ($), fst)
+import           Prelude                            (const, fst, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number   (KnownNat)
@@ -40,12 +40,12 @@ class
 
 instance Symbolic c => SymbolicInput (Bool c) where
   isValid (Bool b) = Bool $ fromCircuitF b $
-      \(Par1 v) -> do  
-        u <- newAssigned (\x -> x v * (one - x v))  
-        fst <$> runInvert (Par1 u) 
+      \(Par1 v) -> do
+        u <- newAssigned (\x -> x v * (one - x v))
+        fst <$> runInvert (Par1 u)
 
 
-instance 
+instance
   ( Symbolic c
   , Binary (Rep f)
   , Ord (Rep f)

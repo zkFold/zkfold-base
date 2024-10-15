@@ -25,6 +25,7 @@ import           Control.DeepSeq                    (NFData)
 import           Control.Monad                      (replicateM)
 import qualified Data.Bits                          as B
 import qualified Data.ByteString                    as Bytes
+import           Data.Foldable                      (foldlM)
 import           Data.Kind                          (Type)
 import           Data.List                          (reverse, unfoldr)
 import           Data.Maybe                         (Maybe (..))
@@ -32,8 +33,8 @@ import           Data.String                        (IsString (..))
 import           Data.Traversable                   (for)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
-import           Prelude                            (Integer, drop, fmap, otherwise, pure, return, take, type (~), ($),
-                                                     (.), (<$>), (<), (<>), (==), (>=), fst, const)
+import           Prelude                            (Integer, const, drop, fmap, fst, otherwise, pure, return, take,
+                                                     type (~), ($), (.), (<$>), (<), (<>), (==), (>=))
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
 
@@ -52,10 +53,9 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
+import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
-import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
-import Data.Foldable (foldlM)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -264,7 +264,7 @@ instance
 
         zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
 
-instance 
+instance
   ( Symbolic c
   , KnownNat n
   ) => SymbolicInput (ByteString n c) where
@@ -274,7 +274,7 @@ instance
         solve v = do
             let vs = V.fromVector v
             ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
-            us <-for ys $ \i -> fst <$> runInvert (Par1 i) 
+            us <-for ys $ \i -> fst <$> runInvert (Par1 i)
             helper us
 
         helper :: MonadCircuit i a m => [Par1 i] -> m (Par1 i)
