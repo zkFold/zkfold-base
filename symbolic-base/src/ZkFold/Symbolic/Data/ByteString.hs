@@ -33,7 +33,7 @@ import           Data.Traversable                   (for)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
 import           Prelude                            (Integer, drop, fmap, otherwise, pure, return, take, type (~), ($),
-                                                     (.), (<$>), (<), (<>), (==), (>=))
+                                                     (.), (<$>), (<), (<>), (==), (>=), fst, const)
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
 
@@ -54,6 +54,8 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
+import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
+import Data.Foldable (foldlM)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -261,6 +263,25 @@ instance
         diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @k
 
         zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
+
+instance 
+  ( Symbolic c
+  , KnownNat n
+  ) => SymbolicInput (ByteString n c) where
+  isValid (ByteString bits) = Bool $ fromCircuitF bits solve
+    where
+        solve :: MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
+        solve v = do
+            let vs = V.fromVector v
+            ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
+            us <-for ys $ \i -> fst <$> runInvert (Par1 i) 
+            helper us
+
+        helper :: MonadCircuit i a m => [Par1 i] -> m (Par1 i)
+        helper xs = case xs of
+            []       -> Par1 <$> newAssigned (const one)
+            (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
+
 
 isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
 isSet (ByteString bits) ix = Bool $ fromCircuitF bits solve
