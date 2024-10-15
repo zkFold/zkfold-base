@@ -6,20 +6,16 @@ module ZkFold.Symbolic.Data.Input (
 ) where
 
 import           Control.Monad.Representable.Reader (Rep)
-import           Data.Foldable                      (foldlM)
 import           Data.Functor
 import           Data.Functor.Rep                   (Representable)
 import           Data.Ord                           (Ord)
-import           Data.Traversable                   (for)
 import           Data.Type.Equality                 (type (~))
 import           Data.Typeable                      (Proxy (..))
 import           GHC.Generics                       (Par1 (..))
-import           Prelude                            (const, fst, ($))
+import           Prelude                            (fst, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number   (KnownNat)
 import           ZkFold.Base.Data.ByteString        (Binary)
-import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
