@@ -1,5 +1,5 @@
 {-# LANGUAGE UndecidableInstances #-}
-module ZkFold.Symbolic.Data.KYC where
+module ZkFold.Apps.KYC where
 
 import           Data.Aeson
 import           GHC.Generics                     (Generic)
@@ -41,3 +41,4 @@ instance (Symbolic (Interpreter (Zp p))) => ToJSON (KYCData (Interpreter (Zp p))
 
 isCitizen :: (Symbolic c) => KYCByteString c -> Vector n (KYCByteString c) -> Bool c
 isCitizen = elem
+
