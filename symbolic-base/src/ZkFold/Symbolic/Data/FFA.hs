@@ -23,13 +23,13 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                   (iterateM, length)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Bool        (BoolType (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, log2, maxBitsPerFieldElement, splitExpansion)
+import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord         (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned)
-import ZkFold.Symbolic.Data.Input
-import ZkFold.Symbolic.Data.Bool (BoolType (..))
 
 type Size = 7
 

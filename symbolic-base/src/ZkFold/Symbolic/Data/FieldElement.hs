@@ -23,9 +23,9 @@ import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (true))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
 import           ZkFold.Symbolic.Data.Eq          (Eq)
+import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
-import ZkFold.Symbolic.Data.Input
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
