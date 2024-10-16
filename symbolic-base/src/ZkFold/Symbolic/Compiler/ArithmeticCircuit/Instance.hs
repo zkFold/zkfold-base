@@ -23,6 +23,8 @@ import           ZkFold.Base.Data.Vector                             (Vector, un
 import           ZkFold.Prelude                                      (genSubset)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
+import ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Class
 
 ------------------------------------- Instances -------------------------------------
 
@@ -88,7 +90,7 @@ createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par
   where
     solve :: MonadCircuit var a m => var -> a -> m var
     solve v b = do
-      v' <- newAssigned (const zero)
+      v' <- newAssigned (Haskell.const zero)
       rangeConstraint v' b
       return v
 

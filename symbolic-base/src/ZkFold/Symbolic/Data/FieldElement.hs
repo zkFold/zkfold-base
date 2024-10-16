@@ -10,7 +10,7 @@ import           Data.Function                    (($), (.))
 import           Data.Functor                     (fmap, (<$>))
 import           Data.Tuple                       (snd)
 import           GHC.Generics                     (Generic, Par1 (..))
-import           Prelude                          (Integer, const, return)
+import           Prelude                          (Integer)
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -24,7 +24,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
 import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned, rangeConstraint)
+import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
