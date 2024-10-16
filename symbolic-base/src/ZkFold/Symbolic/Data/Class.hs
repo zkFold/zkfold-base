@@ -2,7 +2,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Class (
-        SomeData (..),
         SymbolicData (..),
     ) where
 
@@ -12,7 +11,7 @@ import           Data.Functor                     ((<$>))
 import           Data.Functor.Rep                 (Representable (..))
 import           Data.Kind                        (Type)
 import           Data.Type.Equality               (type (~))
-import           Data.Typeable                    (Proxy (..), Typeable)
+import           Data.Typeable                    (Proxy (..))
 import           GHC.Generics                     (U1 (..), (:*:) (..), (:.:) (..))
 
 import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
@@ -33,10 +32,6 @@ class SymbolicData x where
 
     -- | Restores `x` from the circuit's outputs.
     restore :: (Support x -> Context x (Layout x)) -> x
-
--- A wrapper for `SymbolicData` types.
-data SomeData c where
-    SomeData :: (Typeable t, SymbolicData t, Context t ~ c) => t -> SomeData c
 
 instance SymbolicData (c (f :: Type -> Type)) where
     type Context (c f) = c
