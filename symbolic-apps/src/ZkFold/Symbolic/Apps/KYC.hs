@@ -1,5 +1,5 @@
 {-# LANGUAGE UndecidableInstances #-}
-module ZkFold.Apps.KYC where
+module ZkFold.Symbolic.Apps.KYC where
 
 import           Data.Aeson
 import           GHC.Generics                     (Generic)

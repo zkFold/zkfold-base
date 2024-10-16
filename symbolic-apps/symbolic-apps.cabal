@@ -88,7 +88,7 @@ common options-exe
 library
     import:           options
     exposed-modules:
-      ZkFold.Apps.KYC
+      ZkFold.Symbolic.Apps.KYC
     -- other-modules:
     -- other-extensions:
     build-depends:
@@ -107,7 +107,4 @@ test-suite symbolic-apps-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        base >= 4.9 && < 5,
-        symbolic-apps,
-        symbolic-base,
-        aeson
+        base >= 4.9 && < 5
