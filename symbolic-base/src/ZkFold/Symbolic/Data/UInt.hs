@@ -6,7 +6,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-{-# LANGUAGE BlockArguments       #-}
 
 module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
