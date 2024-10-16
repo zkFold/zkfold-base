@@ -23,6 +23,7 @@ module ZkFold.Symbolic.Data.ByteString
 
 import           Control.DeepSeq                    (NFData)
 import           Control.Monad                      (replicateM)
+import           Data.Aeson                         (FromJSON (..), ToJSON (..))
 import qualified Data.Bits                          as B
 import qualified Data.ByteString                    as Bytes
 import           Data.Foldable                      (foldlM)
@@ -33,6 +34,7 @@ import           Data.String                        (IsString (..))
 import           Data.Traversable                   (for)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
+import           Numeric                            (readHex, showHex)
 import           Prelude                            (Integer, const, drop, fmap, otherwise, pure, return, take,
                                                      type (~), ($), (.), (<$>), (<), (<>), (==), (>=))
 import qualified Prelude                            as Haskell
@@ -342,3 +344,22 @@ instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (B
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (FieldElement c) where
   from (ByteString a) = fromBinary a
+
+instance (Symbolic c, KnownNat n)
+    => FromJSON (ByteString n c) where
+    parseJSON val = do
+        str <- parseJSON val
+        case hexToByteString @c @n str of
+            Nothing -> Haskell.fail "bad bytestring!"
+            Just a  -> return a
+
+instance ToJSON (ByteString n (Interpreter (Zp p))) where
+    toJSON = toJSON . byteStringToHex
+
+byteStringToHex :: ByteString n (Interpreter (Zp p)) -> Haskell.String
+byteStringToHex bytes = showHex (toConstant bytes :: Natural) ""
+
+hexToByteString :: (Symbolic c, KnownNat n) => Haskell.String -> Maybe (ByteString n c)
+hexToByteString str = case readHex str of
+    [(n, "")] -> Just (fromConstant @Natural n)
+    _         -> Nothing

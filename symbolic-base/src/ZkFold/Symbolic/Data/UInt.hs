@@ -18,6 +18,7 @@ module ZkFold.Symbolic.Data.UInt (
 
 import           Control.DeepSeq
 import           Control.Monad.State                (StateT (..))
+import           Data.Aeson                         hiding (Bool)
 import           Data.Foldable                      (foldlM, foldr, foldrM, for_)
 import           Data.Functor                       ((<$>))
 import           Data.Kind                          (Type)
@@ -52,6 +53,7 @@ import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
+
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
@@ -562,3 +564,9 @@ vectorToNatural :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural ->
 vectorToNatural v n = foldr (\l r -> fromConstant l  + b * r) 0 vs where
     vs = Haskell.map toConstant $ V.fromVector v :: [Natural]
     b = 2 ^ n
+
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromJSON (UInt n r c) where
+    parseJSON = Haskell.fmap strictConv . parseJSON @Natural
+
+instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToJSON (UInt n r (Interpreter (Zp p))) where
+    toJSON = toJSON . toConstant

@@ -274,6 +274,7 @@ test-suite symbolic-base-test
       symbolic-base                              ,
       vector                                     ,
       vector-algorithms                          ,
+      aeson
     hs-source-dirs: test
 
 benchmark bench-poly-mul
