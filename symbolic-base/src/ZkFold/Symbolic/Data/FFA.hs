@@ -28,6 +28,8 @@ import           ZkFold.Symbolic.Data.Combinators (expansion, log2, maxBitsPerFi
 import           ZkFold.Symbolic.Data.Ord         (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned)
+import ZkFold.Symbolic.Data.Input
+import ZkFold.Symbolic.Data.Bool (BoolType (..))
 
 type Size = 7
 
@@ -39,6 +41,7 @@ deriving newtype instance SymbolicData (FFA p c)
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])
   where
+    step :: [Natural] -> [Natural] -> (Natural, ([Natural], [Natural]))
     step ans xs =
       case dropWhile (\x -> any ((Haskell./= 1) . Haskell.gcd x) ans) xs of
         []      -> error "no options left"
@@ -69,11 +72,11 @@ toZp :: forall p a. (Arithmetic a, KnownNat p) => Vector Size a -> Zp p
 toZp = fromConstant . impl
   where
     mods = coprimes @a
-    binary g m = (fromConstant g * 2 ^ sigma) `div` fromConstant m
+    binary g m = fromConstant g * 2 ^ sigma `div` fromConstant m
     impl xs =
       let gs0 = zipWith (\x y -> toConstant x * y) xs $ minv @a
           gs = zipWith mod gs0 mods
-          residue = floorN ((3 % 4) + sum (zipWith binary gs mods) % (2 ^ sigma))
+          residue = floorN (3 % 4 + sum (zipWith binary gs mods) % 2 ^ sigma)
        in vectorDotProduct gs (mis @a @p) -! mprod @a @p * residue
 
 fromZp :: forall p a. Arithmetic a => Zp p -> Vector Size a
@@ -83,7 +86,7 @@ condSubOF :: forall i a m . MonadCircuit i a m => Natural -> i -> m (i, i)
 condSubOF m i = do
   z <- newAssigned zero
   o <- newAssigned one
-  let bm = (\x -> if x Haskell.== 0 then z else o) <$> (binaryExpansion m ++ [0])
+  let bm = (\x -> if x Haskell.== 0 then z else o) <$> binaryExpansion m ++ [0]
   bi <- expansion (length bm) i
   ovf <- blueprintGE (Haskell.reverse bi) (Haskell.reverse bm)
   res <- newAssigned (($ i) - ($ ovf) * fromConstant m)
@@ -115,11 +118,11 @@ cast xs = do
         (i', j) <- newAssigned (($ i) + ($ i)) >>= condSubOF @i @a @m m
         ci' <- newAssigned (($ ci) + ($ ci) + ($ j))
         return (i', ci')
-  base <- newAssigned (fromConstant (3 * (2 ^ (sigma -! 2)) :: Natural))
+  base <- newAssigned (fromConstant (3 * 2 ^ (sigma -! 2) :: Natural))
   let ms = coprimes @a
   residue <- zipWithM binary gs ms
         >>= foldlM (\i j -> newAssigned (($ i) + ($ j))) base
-        >>= (fmap snd . splitExpansion sigma (numberOfBits @a -! sigma))
+        >>= fmap snd . splitExpansion sigma (numberOfBits @a -! sigma)
   for ms $ \m -> do
     dot <- zipWithM (\i x -> newAssigned (($ i) * fromConstant (x `mod` m))) gs (mis @a @p)
             >>= traverse (bigSub m)
@@ -196,3 +199,7 @@ instance (Prime p, Symbolic c) => Field (FFA p c) where
 
 instance Finite (Zp p) => Finite (FFA p b) where
   type Order (FFA p b) = p
+
+-- | TODO: fix when rewrite is done
+instance (Symbolic c) => SymbolicInput (FFA p c) where
+  isValid _ = true

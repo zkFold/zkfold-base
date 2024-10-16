@@ -6,13 +6,12 @@ module ZkFold.Symbolic.Data.Input (
 ) where
 
 import           Control.Monad.Representable.Reader (Rep)
-import           Data.Functor
 import           Data.Functor.Rep                   (Representable)
 import           Data.Ord                           (Ord)
 import           Data.Type.Equality                 (type (~))
 import           Data.Typeable                      (Proxy (..))
 import           GHC.Generics                       (Par1 (..))
-import           Prelude                            (fst, ($))
+import           Prelude                            (($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString        (Binary)
@@ -38,7 +37,7 @@ instance Symbolic c => SymbolicInput (Bool c) where
   isValid (Bool b) = Bool $ fromCircuitF b $
       \(Par1 v) -> do
         u <- newAssigned (\x -> x v * (one - x v))
-        fst <$> runInvert (Par1 u)
+        isZero $ Par1 u
 
 
 instance

@@ -28,7 +28,7 @@ import           Data.Tuple                         (swap)
 import qualified Data.Zip                           as Z
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
-import           Prelude                            (Integer, const, error, flip, fst, otherwise, return, type (~), ($),
+import           Prelude                            (Integer, const, error, flip, otherwise, return, type (~), ($),
                                                      (++), (.), (<>), (>>=))
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
@@ -523,19 +523,18 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c)
 instance
   ( Symbolic c
   , KnownNat n
+  , KnownRegisterSize r
   , KnownNat (NumberOfRegisters (BaseField c) n r)
   ) => SymbolicInput (UInt n r c) where
   isValid (UInt bits) = Bool $ fromCircuitF bits solve
     where
         solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Par1 i)
         solve v = do
-            let len = Haskell.min (getNatural @n) (numberOfBits @(BaseField c))
-                vs = V.fromVector v
-            ys <- for vs $ \i -> do
-                                    bs <- bitsOf len i
-                                    horner bs
+            let vs = V.fromVector v
+            bs <- toBits (Haskell.reverse vs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
+            ys <- Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bs
             difference <- for (zip vs ys) $ \(i, j) -> newAssigned (\w -> w i - w j)
-            isZeros <- for difference \x -> fst <$> runInvert (Par1 x)
+            isZeros <- for difference $ isZero . Par1
             helper isZeros
 
         helper :: MonadCircuit i a m => [Par1 i] -> m (Par1 i)

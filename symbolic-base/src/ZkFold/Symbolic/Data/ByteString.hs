@@ -33,7 +33,7 @@ import           Data.String                        (IsString (..))
 import           Data.Traversable                   (for)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
-import           Prelude                            (Integer, const, drop, fmap, fst, otherwise, pure, return, take,
+import           Prelude                            (Integer, const, drop, fmap, otherwise, pure, return, take,
                                                      type (~), ($), (.), (<$>), (<), (<>), (==), (>=))
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
@@ -274,7 +274,7 @@ instance
         solve v = do
             let vs = V.fromVector v
             ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
-            us <-for ys $ \i -> fst <$> runInvert (Par1 i)
+            us <-for ys $ \i -> isZero $ Par1 i
             helper us
 
         helper :: MonadCircuit i a m => [Par1 i] -> m (Par1 i)

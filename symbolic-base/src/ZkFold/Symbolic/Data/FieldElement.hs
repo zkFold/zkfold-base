@@ -19,12 +19,13 @@ import           ZkFold.Base.Data.HFunctor        (hmap)
 import           ZkFold.Base.Data.Par1            ()
 import           ZkFold.Base.Data.Vector          (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool        (Bool)
+import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (true))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
 import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
+import ZkFold.Symbolic.Data.Input
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
@@ -105,3 +106,6 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
   fromBinary bits =
     FieldElement $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
       $ fmap Par1 . horner . fromVector
+
+instance (Symbolic c) => SymbolicInput (FieldElement c) where
+  isValid _ = true
