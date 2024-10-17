@@ -4,4 +4,4 @@ cradle:
       component: "lib:symbolic-apps"
 
     - path: "./test"
-      component: "symbolic-apps:test:symbolic-base-apps"
+      component: "symbolic-apps:test:symbolic-apps-test"
