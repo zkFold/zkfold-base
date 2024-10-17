@@ -2,15 +2,15 @@
 
 module ZkFold.Symbolic.Data.List where
 
+import           Data.Functor.Rep                 (Representable)
 import           Data.Kind                        (Type)
 import           Data.Proxy                       (Proxy (..))
+import           Data.Traversable                 (Traversable)
 import           GHC.Generics                     (Par1 (..))
-import           Prelude                          (flip, fmap, fst, pure, undefined, ($), (.), (<$>))
+import           Prelude                          (fmap, fst, pure, type (~), undefined, ($), (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Par1
 import qualified ZkFold.Base.Data.Vector          as V
 import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class
@@ -22,7 +22,7 @@ import           ZkFold.Symbolic.MonadCircuit
 
 data List (context :: (Type -> Type) -> Type) x
     = List
-        { lHash    :: (context (Vector (TypeSize x)))
+        { lHash    :: (context (Layout x))
         , lSize    :: (context Par1)
         , lWitness :: [x]
         -- ^ TODO: As the name suggests, this is only needed in witness cinstruction in uncons.
@@ -34,7 +34,12 @@ data List (context :: (Type -> Type) -> Type) x
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.
 --
-emptyList :: forall context x . (Symbolic context, SymbolicData x, KnownNat (TypeSize x)) => List context x
+emptyList
+    :: forall context x k
+    .  Symbolic context
+    => Layout x ~ Vector k
+    => KnownNat k
+    => List context x
 emptyList = List (embed $ pure zero) (embed $ Par1 zero) []
 
 -- | A list is empty if it's size is 0, in which case the first element of @runInvert@ is @one@.
@@ -42,17 +47,16 @@ emptyList = List (embed $ pure zero) (embed $ Par1 zero) []
 null
     :: forall context x
     .  Symbolic context
-    => SymbolicData x
     => List context x
     -> Bool context
 null List{..} = Bool (fromCircuitF lSize (fmap fst . runInvert))
 
 infixr 5 .:
 (.:)
-    :: forall context x
+    :: forall context x k
     .  Symbolic context
     => SymbolicData x
-    => Layout x ~ Vector (TypeSize x)
+    => Layout x ~ Vector k
     => Context x ~ context
     => Support x ~ Proxy context
     => x
@@ -60,10 +64,10 @@ infixr 5 .:
     -> List context x
 x .: List{..} = List incSum incSize (x:lWitness)
     where
-        xRepr :: context (Vector (TypeSize x))
+        xRepr :: context (Layout x)
         xRepr = pieces x (Proxy @context)
 
-        incSum :: context (Vector (TypeSize x))
+        incSum :: context (Layout x)
         incSum = fromCircuit3F lHash xRepr lSize $
             \vHash vRepr (Par1 s) -> V.zipWithM (\h r -> newAssigned (\p -> p h + p r * (p s + one))) vHash vRepr
 
@@ -71,14 +75,17 @@ x .: List{..} = List incSum incSize (x:lWitness)
         incSize = fromCircuitF lSize (\(Par1 s) -> Par1 <$> newAssigned (\p -> p s + one))
 
 uncons
-    :: forall context x
+    :: forall context x k
     .  Symbolic context
     => SymbolicData x
-    => Layout x ~ Vector (TypeSize x)
+    => SymbolicData (List context x) -- TODO: Implement this
+    => Representable (Layout (List context x))
+    => Traversable (Layout (List context x))
+    => Layout x ~ Vector k
+    => KnownNat k
     => Context x ~ context
     => Context (List context x) ~ context
     => Support x ~ Proxy context
-    => KnownNat (TypeSize x)
     => List context x
     -> (x, List context x)
 uncons l = (head l, tail l)
@@ -86,17 +93,17 @@ uncons l = (head l, tail l)
 -- | TODO: Is there really a nicer way to handle empty lists?
 --
 head
-    :: forall context x
+    :: forall context x k
     .  Symbolic context
     => SymbolicData x
-    => Layout x ~ Vector (TypeSize x)
+    => Layout x ~ Vector k
+    => KnownNat k
     => Context x ~ context
     => Support x ~ Proxy context
-    => KnownNat (TypeSize x)
     => List context x -> x
 head xs@List{..} = bool (restore $ \_ -> unsafeHead) (restore $ \_ -> embed $ pure zero) (null xs)
     where
-        xRepr :: context (Vector (TypeSize x))
+        xRepr :: context (Layout x)
         xRepr = case lWitness of
                   (x:_) -> pieces x Proxy
                   _     -> embed $ pure zero
@@ -104,37 +111,39 @@ head xs@List{..} = bool (restore $ \_ -> unsafeHead) (restore $ \_ -> embed $ pu
         -- | Head is a circuit comprised of variables satisfying the equation for prepending (i.e. (.:))
         -- We have to pass witnesses to it as well.
         --
-        unsafeHead :: context (Vector (TypeSize x))
+        unsafeHead :: context (Layout x)
         unsafeHead = fromCircuit3F lHash xRepr lSize $
             \vHash vRepr (Par1 s) -> V.zipWithM (\h r -> newConstrained (\p v -> p h + p v * (p s + one)) ($ r)) vHash vRepr
 
 tail
-    :: forall context x
+    :: forall context x k
     .  Symbolic context
     => SymbolicData x
-    => Layout x ~ Vector (TypeSize x)
-    => Layout (List context x) ~ Vector (TypeSize x + 1)
+    => SymbolicData (List context x) -- TODO: Implement this
+    => Representable (Layout (List context x))
+    => Traversable (Layout (List context x))
+    => Layout x ~ Vector k
+    => KnownNat k
     => Context x ~ context
     => Context (List context x) ~ context
     => Support x ~ Proxy context
-    => KnownNat (TypeSize x)
     => List context x
     -> List context x
 tail xs@List{..} = bool unsafeTail xs (null xs)
     where
         tailId :: [a] -> [a]
-        tailId []     = []
-        tailId (_:xs) = xs
+        tailId []      = []
+        tailId (_:xs') = xs'
 
         unsafeTail :: List context x
         unsafeTail = List decSum decSize (tailId lWitness)
 
-        xRepr :: context (Vector (TypeSize x))
+        xRepr :: context (Layout x)
         xRepr = case lWitness of
                   (x:_) -> pieces x Proxy
                   _     -> embed $ pure zero
 
-        decSum :: context (Vector (TypeSize x))
+        decSum :: context (Layout x)
         decSum = fromCircuit3F lHash xRepr lSize $
             \vHash vRepr (Par1 s) -> V.zipWithM (\h r -> newAssigned (\p -> p h - p r * p s)) vHash vRepr
 
