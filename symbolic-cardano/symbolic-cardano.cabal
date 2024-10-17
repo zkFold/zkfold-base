@@ -100,9 +100,6 @@ library
       ZkFold.Symbolic.Cardano.Types.OutputRef
       ZkFold.Symbolic.Cardano.Types.Transaction
       ZkFold.Symbolic.Cardano.Types.Value
-      ZkFold.Symbolic.Cardano.UPLC
-      ZkFold.Symbolic.Cardano.UPLC.Builtins
-      ZkFold.Symbolic.Cardano.UPLC.Term
     build-depends:
       base                          >= 4.9 && < 5,
       containers                            < 0.7,
