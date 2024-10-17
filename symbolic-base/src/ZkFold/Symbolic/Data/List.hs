@@ -162,6 +162,8 @@ init = reverse . tail . reverse
 last :: forall context x . Foldable (List context) => List context x -> x
 last = head . reverse
 --}
+last :: List context x -> x
+last = undefined
 
 (++) :: List context x -> List context x -> List context x
 _ ++ _ = undefined
