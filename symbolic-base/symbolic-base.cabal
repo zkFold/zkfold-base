@@ -225,12 +225,21 @@ library
       vector-split                          < 1.1,
     hs-source-dirs: src
 
+flag test-fast
+    description: Disables slow test groups
+    default: False
+    manual: True
+
 test-suite symbolic-base-test
     import: options-exe
-    type: exitcode-stdio-1.0
     ghc-options: 
         "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N"
-    main-is: Main.hs
+    if (flag(test-fast))
+      type: exitcode-stdio-1.0
+      main-is: TestFast.hs
+    else
+      type: exitcode-stdio-1.0
+      main-is: TestAll.hs
     other-modules:
       Tests.ArithmeticCircuit
       Tests.Arithmetization
