@@ -1,6 +1,6 @@
-{-# LANGUAGE DataKinds      #-}
-{-# LANGUAGE GADTs          #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs     #-}
+{-# LANGUAGE PolyKinds #-}
 
 module ZkFold.UPLC.Term where
 
@@ -26,7 +26,7 @@ data Data
   | DI Integer
   | DB ByteString
 
-data Constant (t :: BuiltinType) where
+data Constant (t :: BuiltinType 0) where
   CInteger :: Integer -> Constant BTInteger
   CByteString :: ByteString -> Constant BTByteString
   CString :: Text -> Constant BTString
