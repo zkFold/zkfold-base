@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 module ZkFold.Symbolic.Ledger.Types (
     module ZkFold.Symbolic.Ledger.Types.Address,
     module ZkFold.Symbolic.Ledger.Types.Basic,
@@ -14,12 +15,18 @@ module ZkFold.Symbolic.Ledger.Types (
 ) where
 
 -- Re-exports
+import           Control.Applicative                      (Applicative)
 import           Data.Foldable                            (Foldable)
 import           Data.Functor                             (Functor)
+import           Data.Functor.Rep                         (Representable)
+import           Data.Proxy                               (Proxy)
+import           Data.Traversable                         (Traversable)
 import           Data.Zip                                 (Zip)
+import           Prelude                                  (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class          (AdditiveMonoid, MultiplicativeMonoid)
 import           ZkFold.Symbolic.Class                    (Symbolic)
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional         (Conditional)
 import           ZkFold.Symbolic.Data.Eq                  (Eq)
 import           ZkFold.Symbolic.Ledger.Types.Address
@@ -66,4 +73,37 @@ type Signature context =
     , Functor (List context)
     , MultiplicativeMonoid (UInt32 context)
     , Zip (List context)
+
+    -- TODO: The instances below are most likely NOT NEEDED.
+    -- They can be removed after properly declaring List, TransactionId, Input, Update and Hash
+    -- instances of SymbolicData
+
+    , Context (List context (TransactionId context)) ~ context
+    , Support (List context (TransactionId context)) ~ Proxy context
+    , Applicative (Layout (List context (TransactionId context)))
+    , Traversable (Layout (List context (TransactionId context)))
+    , SymbolicData (List context (TransactionId context))
+    , Zip (Layout (List context (TransactionId context)))
+
+    , Context (Input context) ~ context
+    , Support (Input context) ~ Proxy context
+    , SymbolicData (Input context)
+    , Applicative (Layout (Input context))
+    , Traversable (Layout (Input context))
+    , Zip (Layout (Input context))
+
+    , Context (Hash context) ~ context
+    , Support (Hash context) ~ Proxy context
+    , SymbolicData (Hash context)
+    , Applicative (Layout (Hash context))
+    , Traversable (Layout (Hash context))
+    , Zip (Layout (Hash context))
+
+    , Context (Update context) ~ context
+    , Support (Update context) ~ Proxy context
+    , Applicative (Layout (Update context))
+    , Zip (Layout (Update context))
+    , Traversable (Layout (Update context))
+    , Representable (Layout (Update context)) -- TODO: Remove after implementing @instance SymbolicData List@
+    , SymbolicData (Update context)           -- TODO: Remove after implementing @instance SymbolicData List@
     )

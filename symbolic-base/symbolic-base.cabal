@@ -118,6 +118,7 @@ library
       ZkFold.Base.Data.Sparse.Matrix
       ZkFold.Base.Data.Sparse.Vector
       ZkFold.Base.Data.Type
+      ZkFold.Base.Data.Utils
       ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.KZG
       ZkFold.Base.Protocol.Plonk
