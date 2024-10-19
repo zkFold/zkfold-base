@@ -96,9 +96,6 @@ mapWithIx f (Vector l) = Vector $ V.zipWith f (V.enumFromTo 0 (value @n -! 1)) l
 mapMWithIx :: forall n m a b . (KnownNat n, Monad m) => (Natural -> a -> m b) -> Vector n a -> m (Vector n b)
 mapMWithIx f (Vector l) = Vector <$> V.zipWithM f (V.enumFromTo 0 (value @n -! 1)) l
 
-zipWithM :: forall n m a b c . Applicative m => (a -> b -> m c) -> Vector n a -> Vector n b -> m (Vector n c)
-zipWithM f (Vector l) (Vector r) = sequenceA . Vector $ V.zipWith f l r
-
 -- TODO: Check that n <= size?
 take :: forall n size a. KnownNat n => Vector size a -> Vector n a
 take (Vector lst) = Vector (V.take (knownNat @n) lst)

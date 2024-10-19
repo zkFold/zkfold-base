@@ -20,6 +20,7 @@ import qualified Prelude                          as Haskell
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field  (Zp, inv)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Utils           (zipWithM)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                   (iterateM, length)
 import           ZkFold.Symbolic.Class
