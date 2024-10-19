@@ -138,14 +138,15 @@ ivcVerifierAc
     => Support y ~ Proxy ctx
     => Representable (Layout i)
     => Representable (Layout c)
-    => Representable (Layout f)
+    -- => Representable (Layout f)
     => Representable (Layout a)
     => Representable (Layout m)
     => Ord (Rep (Layout i))
     => Ord (Rep (Layout c))
-    => Ord (Rep (Layout f))
+    -- => Ord (Rep (Layout f))
     => Ord (Rep (Layout a))
     => Ord (Rep (Layout m))
+    => Layout f ~ Layout i
     => Layout y ~ Par1
     => t ~ ((i,c,(i,c,f,c,f),(i,c,f,c,f),c),(a,(f,f,f),(i,c,f,c,f),m),Proxy ctx)
     => ctx ~ ArithmeticCircuit a (Layout t)
