@@ -210,4 +210,5 @@ instance (Prime p, Symbolic c) => Field (FFA p c) where
 instance Finite (Zp p) => Finite (FFA p b) where
   type Order (FFA p b) = p
 
+-- FIXME: This Eq instance is wrong
 deriving newtype instance Symbolic c => Eq (Bool c) (FFA p c)

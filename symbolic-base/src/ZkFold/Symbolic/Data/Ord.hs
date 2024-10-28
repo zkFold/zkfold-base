@@ -22,9 +22,6 @@ import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor        (hmap)
-import qualified ZkFold.Base.Data.Vector          as V
-import           ZkFold.Base.Data.Vector          (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Class            (Arithmetic, Symbolic (BaseField, symbolicF), symbolic2F)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
@@ -152,19 +149,24 @@ circuitDelta l r = do
                     \p -> let q = fromConstant $ (toConstant (p x + one) `div` toConstant (p y + one))
                            in one - q // q
 
-                d1  <- newAssigned (\p -> p f1 * (p x - p y - one))
-                d1' <- newAssigned (\p -> (one - p f1) * (p y - p x))
+                dxy <- newAssigned (\p -> p x - p y)
+
+                d1  <- newAssigned (\p -> p f1 * p dxy - p f1)
+                d1' <- newAssigned (\p -> (one - p f1) * (negate $ p dxy))
                 rangeConstraint d1  bound
                 rangeConstraint d1' bound
 
-                d2  <- newRanged bound (\p -> p f2 * (p y - p x - one))
-                d2' <- newRanged bound (\p -> (one - p f2) * (p x - p y))
+                d2  <- newAssigned (\p -> p f2 * (negate one - p dxy))
+                d2' <- newAssigned (\p -> p dxy - p f2 * p dxy)
                 rangeConstraint d2  bound
                 rangeConstraint d2' bound
 
                 bothZero <- newAssigned $ \p -> (one - p z1) * (one - p z2)
 
-                z1' <- newAssigned $ \p -> p z1 + p bothZero * p f1
-                z2' <- newAssigned $ \p -> p z2 + p bothZero * p f2
+                f1z <- newAssigned $ \p -> p bothZero * p f1
+                f2z <- newAssigned $ \p -> p bothZero * p f2
+
+                z1' <- newAssigned $ \p -> p z1 + p f1z
+                z2' <- newAssigned $ \p -> p z2 + p f2z
 
                 Haskell.return (z1', z2')

@@ -34,7 +34,7 @@ instance
 
     type Context (Point (Ed25519 c)) = c
     type Support (Point (Ed25519 c)) = Support (FFA Ed25519_Base c)
-    type TypeSize (Point (Ed25519 c)) = TypeSize (FFA Ed25519_Base c) + TypeSize (FFA Ed25519_Base c)
+    type Layout (Point (Ed25519 c)) = Layout (FFA Ed25519_Base c, FFA Ed25519_Base c)
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
     -- We can encode the point at infinity as (0, 0), therefore.
@@ -43,8 +43,8 @@ instance
     -- It will need additional checks in pointDouble because of the denominator becoming zero, though.
     -- TODO: Think of a better solution
     --
-    pieces Inf         = hliftA2 V.append <$> pieces (zero :: FFA Ed25519_Base c) <*> pieces (zero :: FFA Ed25519_Base c)
-    pieces (Point x y) = hliftA2 V.append <$> pieces x <*> pieces y
+    pieces Inf         = pieces (zero :: FFA Ed25519_Base c, zero :: FFA Ed25519_Base c)
+    pieces (Point x y) = pieces (x, y)
 
     restore f = Point x y
         where
@@ -131,15 +131,17 @@ acDouble25519
     :: forall c
     .  Symbolic c
     => NFData (c (V.Vector Size))
-    => Eq (Bool c) (BaseField (Ed25519 c))
     => Point (Ed25519 c)
     -> Point (Ed25519 c)
 acDouble25519 Inf = Inf
-acDouble25519 (Point x1 y1) = bool @(Bool c) (Point x3 y3) (Point x1 y1) (x1 == zero && y1 == zero)
+acDouble25519 (Point x1 y1) = Point x3 y3
     where
         xsq = x1 * x1
         ysq = y1 * y1
         xy =  x1 * y1
+        
+        -- Note: due to our laws for finv, division below is going to work exactly as it should 
+        -- if the point is (0, 0)
         x3 = force $ (xy + xy) // (a * xsq + ysq)
         y3 = force $ (ysq - a * xsq) // (one + one - a * xsq  - ysq)
 

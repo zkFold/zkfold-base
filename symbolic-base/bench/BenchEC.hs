@@ -19,6 +19,9 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Ed25519                ()
 import           ZkFold.Symbolic.Interpreter
 
+
+import           ZkFold.Symbolic.Data.FFA
+
 type I = Interpreter (Zp BLS12_381_Scalar)
 type A = ArithmeticCircuit (Zp BLS12_381_Scalar) U1
 type PtFFA c = Point (Ed25519 c)
@@ -30,9 +33,14 @@ benchOps desc p0 op = env (fromIntegral <$> randomRIO (1 :: Integer, 3)) $ \ ~n 
 
 main :: IO ()
 main = do
-  defaultMain
-      [ bgroup "EC operations"
-        [ benchOps "FFA Interpreter" (gen :: PtFFA I) scale
-        , benchOps "FFA Circuit" (gen :: PtFFA A) scale
-        ]
-      ]
+  let a = fromConstant @Natural 0 :: FFA Ed25519_Scalar I
+  let b = fromConstant @Natural 1 :: FFA Ed25519_Scalar I
+  print a
+  print $ a // a
+  print $ b // a
+--  defaultMain
+--      [ bgroup "EC operations"
+--        [ benchOps "FFA Interpreter" (gen :: PtFFA I) scale
+--        , benchOps "FFA Circuit" (gen :: PtFFA A) scale
+--        ]
+--      ]
