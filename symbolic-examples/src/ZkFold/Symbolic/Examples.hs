@@ -13,10 +13,8 @@ import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
 import           Examples.BatchTransfer                      (exampleBatchTransfer)
 import           Examples.ByteString
---import           Examples.Commitment
 import           Examples.Conditional                        (exampleConditional)
 import           Examples.Constant                           (exampleConst5, exampleEq5)
---import           Examples.Ed25519
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)

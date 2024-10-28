@@ -139,8 +139,8 @@ acDouble25519 (Point x1 y1) = Point x3 y3
         xsq = x1 * x1
         ysq = y1 * y1
         xy =  x1 * y1
-        
-        -- Note: due to our laws for finv, division below is going to work exactly as it should 
+
+        -- Note: due to our laws for finv, division below is going to work exactly as it should
         -- if the point is (0, 0)
         x3 = force $ (xy + xy) // (a * xsq + ysq)
         y3 = force $ (ysq - a * xsq) // (one + one - a * xsq  - ysq)

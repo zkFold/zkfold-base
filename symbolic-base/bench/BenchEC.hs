@@ -17,10 +17,8 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Ed25519                ()
-import           ZkFold.Symbolic.Interpreter
-
-
 import           ZkFold.Symbolic.Data.FFA
+import           ZkFold.Symbolic.Interpreter
 
 type I = Interpreter (Zp BLS12_381_Scalar)
 type A = ArithmeticCircuit (Zp BLS12_381_Scalar) U1
