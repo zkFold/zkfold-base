@@ -9,5 +9,5 @@ cabal test
 
 To disable slow test groups, execute
 ```bash
-cabal test --flag="test-fast"
+cabal test --test-option="--skip=SLOW"
 ```

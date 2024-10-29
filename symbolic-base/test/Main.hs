@@ -55,5 +55,4 @@ main = do
     specBlake2b
     -- specBlake2b
 
-
     putStrLn "\nAll tests passed!"

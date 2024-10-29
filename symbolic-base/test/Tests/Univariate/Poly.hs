@@ -34,7 +34,7 @@ specUnivariatePoly = hspec $ do
                 it "should correctly multiply polynomials" $ do
                     property $ propMultiplication @(Zp BLS12_381_Scalar)
         describe ("Type: " ++ show (typeOf @(Poly Fq12) zero)) $
-            describe "No roots of unity" $ do
+            describe "No roots of unity (SLOW)" $ do
                 it "should correctly multiply polynomials" $ do
                     property $ propMultiplication @Fq12
 
