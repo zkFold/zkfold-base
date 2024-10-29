@@ -26,7 +26,7 @@ data Data
   | DI Integer
   | DB ByteString
 
-data Constant (t :: BuiltinType 0) where
+data Constant (t :: BuiltinType) where
   CInteger :: Integer -> Constant BTInteger
   CByteString :: ByteString -> Constant BTByteString
   CString :: Text -> Constant BTString
