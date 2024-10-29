@@ -18,18 +18,18 @@ import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Traversable                           (for)
-import           Prelude                                    (FilePath, IO, Show (..), Traversable,
-                                                             putStrLn, type (~), ($), (++), return)
+import           GHC.Generics                               (Par1 (Par1))
+import           Prelude                                    (FilePath, IO, Show (..), Traversable, putStrLn, return,
+                                                             type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
-import ZkFold.Symbolic.Data.Input
-import ZkFold.Symbolic.Data.Bool (Bool(Bool))
-import GHC.Generics (Par1 (Par1))
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -64,9 +64,9 @@ solder f = pieces f constrainedInput
     where
         constrainedInput :: Support f
         constrainedInput = restore @(Support f) (const $ fromCircuit2F p1 p2 solve)
- 
+
         p1 = pieces f $ acInput @f
-        Bool p2 = isValid @s $ acInput @f  
+        Bool p2 = isValid @s $ acInput @f
 
         solve :: MonadCircuit i (BaseField c) m => Layout f i -> Par1 i -> m (Layout f i)
         solve l (Par1 r) = do
