@@ -25,7 +25,7 @@ import           ZkFold.Base.Data.Utils           (zipWithM)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                   (iterateM, length)
 import           ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool ( BoolType(..), Bool )
+import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansionW, log2, maxBitsPerFieldElement, splitExpansion)
 import           ZkFold.Symbolic.Data.Eq
