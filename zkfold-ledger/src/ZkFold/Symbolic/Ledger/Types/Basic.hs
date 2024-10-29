@@ -6,7 +6,7 @@ import           ZkFold.Symbolic.Data.Bool (Bool)
 import           ZkFold.Symbolic.Data.List (List)
 
 {-
-  Base types for used in the zkFold's ledger.
+  Base types for used in the zkFold ledger.
 -}
 
 -- | Unsigned 32-bit integer.
