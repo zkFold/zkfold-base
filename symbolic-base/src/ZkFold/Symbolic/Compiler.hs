@@ -18,18 +18,18 @@ import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Traversable                           (for)
-import           Prelude                                    (FilePath, IO, Show (..), Traversable,
-                                                             putStrLn, type (~), ($), (++), return, Monoid (mempty))
+import           GHC.Generics                               (Par1 (Par1))
+import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), Traversable,
+                                                             putStrLn, return, type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
-import ZkFold.Symbolic.Data.Input
-import ZkFold.Symbolic.Data.Bool (Bool(Bool))
-import GHC.Generics (Par1 (Par1))
 
 {-
     ZkFold Symbolic compiler module dependency order:

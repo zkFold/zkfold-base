@@ -41,7 +41,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement                (FieldElement)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import           ZkFold.Symbolic.Data.Input                       (SymbolicInput)
 
 
 -- | These instances might seem off, but accumulator scheme requires this exact behaviour for ProverMessages which are Maps in this case.
