@@ -45,6 +45,7 @@ import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
 import           ZkFold.Base.Data.Package           (packWith, unpackWith)
+import           ZkFold.Base.Data.Utils             (zipWithM)
 import qualified ZkFold.Base.Data.Vector            as V
 import           ZkFold.Base.Data.Vector            (Vector (..))
 import           ZkFold.Prelude                     (replicateA, (!!))
@@ -197,7 +198,7 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
             solve lv rv = do
                 let varsLeft = lv
                     varsRight = rv
-                V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+                zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
 
             cons i j x =
                         let xi = x i
@@ -337,7 +338,7 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ fromC
         solve lv rv = do
             let varsLeft = lv
                 varsRight = rv
-            V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+            zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
   from = ByteString . binaryExpansion

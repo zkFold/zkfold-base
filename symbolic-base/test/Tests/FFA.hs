@@ -9,7 +9,7 @@ import           Data.List                                   ((++))
 import           GHC.Generics                                (U1)
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (describe, hspec)
-import           Test.QuickCheck                             (Property, withMaxSuccess, (===))
+import           Test.QuickCheck                             (Property, (===))
 import           Tests.ArithmeticCircuit                     (it)
 import           Text.Show                                   (show)
 
@@ -42,11 +42,10 @@ specFFA' = hspec $ do
       execAcFFA @p @q (fromConstant x) === x
     it "has zero" $ execAcFFA @p @q zero === execZpFFA @p @q zero
     it "has one" $ execAcFFA @p @q one === execZpFFA @p @q one
-    -- TODO: increase limits once we have range constraints
-    it "adds correctly" $ withMaxSuccess 1 $ isHom @p @q (+) (+)
-    it "negates correctly" $ withMaxSuccess 1 $ \(x :: Zp q) ->
+    it "adds correctly" $ isHom @p @q (+) (+)
+    it "negates correctly" $ \(x :: Zp q) ->
       execAcFFA @p @q (negate $ fromConstant x) === execZpFFA @p @q (negate $ fromConstant x)
-    it "multiplies correctly" $ withMaxSuccess 1 $ isHom @p @q (*) (*)
+    it "multiplies correctly" $ isHom @p @q (*) (*)
 
 execAcFFA :: (PrimeField (Zp p), PrimeField (Zp q)) => FFA q (ArithmeticCircuit (Zp p) U1) -> Zp q
 execAcFFA (FFA v) = execZpFFA $ FFA $ Interpreter (exec v)

@@ -2,10 +2,11 @@
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.FFA (FFA (..)) where
+module ZkFold.Symbolic.Data.FFA (FFA (..), Size, coprimesDownFrom, coprimes) where
 
 import           Control.Applicative              (pure)
-import           Control.Monad                    (Monad, return, (>>=))
+import           Control.DeepSeq                  (NFData)
+import           Control.Monad                    (Monad, forM, return, (>>=))
 import           Data.Foldable                    (any, foldlM)
 import           Data.Function                    (const, ($), (.))
 import           Data.Functor                     (fmap, (<$>))
@@ -20,12 +21,14 @@ import qualified Prelude                          as Haskell
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field  (Zp, inv)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Utils           (zipWithM)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                   (iterateM, length)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool        (BoolType (..))
+import ZkFold.Symbolic.Data.Bool ( BoolType(..), Bool )
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (expansion, log2, maxBitsPerFieldElement, splitExpansion)
+import           ZkFold.Symbolic.Data.Combinators (expansionW, log2, maxBitsPerFieldElement, splitExpansion)
+import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord         (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
@@ -37,6 +40,8 @@ type Size = 7
 newtype FFA (p :: Natural) c = FFA (c (Vector Size))
 
 deriving newtype instance SymbolicData (FFA p c)
+deriving newtype instance NFData (c (Vector Size)) => NFData (FFA p c)
+deriving newtype instance Haskell.Show (c (Vector Size)) => Haskell.Show (FFA p c)
 
 coprimesDownFrom :: KnownNat n => Natural -> Vector n Natural
 coprimesDownFrom n = unfold (uncurry step) ([], [n,n-!1..0])
@@ -67,6 +72,12 @@ mis = (`mod` value @p) <$> mis0 @a
 minv :: forall a. Finite a => Vector Size Natural
 minv = zipWith (\x p -> fromConstant x `inv` p) (mis0 @a) (coprimes @a)
 
+wordExpansion :: forall r. KnownNat r => Natural -> [Natural]
+wordExpansion 0 = []
+wordExpansion x = (x `mod` wordSize) : wordExpansion @r (x `div` wordSize)
+    where
+        wordSize = 2 ^ value @r
+
 toZp :: forall p a. (Arithmetic a, KnownNat p) => Vector Size a -> Zp p
 toZp = fromConstant . impl
   where
@@ -81,17 +92,18 @@ toZp = fromConstant . impl
 fromZp :: forall p a. Arithmetic a => Zp p -> Vector Size a
 fromZp = (\(FFA (Interpreter xs) :: FFA p (Interpreter a)) -> xs) . fromConstant
 
-condSubOF :: forall i a m . MonadCircuit i a m => Natural -> i -> m (i, i)
+-- | Subtracts @m@ from @i@ if @i@ is not less than @m@
+--
+condSubOF :: forall i a m . (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m (i, i)
 condSubOF m i = do
   z <- newAssigned zero
-  o <- newAssigned one
-  let bm = (\x -> if x Haskell.== 0 then z else o) <$> (binaryExpansion m ++ [0])
-  bi <- expansion (length bm) i
-  ovf <- blueprintGE (Haskell.reverse bi) (Haskell.reverse bm)
+  bm <- forM (wordExpansion @8 m ++ [0]) $ \x -> if x Haskell.== 0 then pure z else newAssigned (fromConstant x)
+  bi <- expansionW @8 (length bm) i
+  ovf <- blueprintGE @8 (Haskell.reverse bi) (Haskell.reverse bm)
   res <- newAssigned (($ i) - ($ ovf) * fromConstant m)
   return (res, ovf)
 
-condSub :: MonadCircuit i a m => Natural -> i -> m i
+condSub :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m i
 condSub m x = fst <$> condSubOF m x
 
 smallCut :: forall i a m. (Arithmetic a, MonadCircuit i a m) => Vector Size i -> m (Vector Size i)
@@ -198,6 +210,9 @@ instance (Prime p, Symbolic c) => Field (FFA p c) where
 
 instance Finite (Zp p) => Finite (FFA p b) where
   type Order (FFA p b) = p
+
+-- FIXME: This Eq instance is wrong
+deriving newtype instance Symbolic c => Eq (Bool c) (FFA p c)
 
 -- | TODO: fix when rewrite is done
 instance (Symbolic c) => SymbolicInput (FFA p c) where
