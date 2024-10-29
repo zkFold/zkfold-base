@@ -11,7 +11,7 @@ import           Data.Ord                           (Ord)
 import           Data.Type.Equality                 (type (~))
 import           Data.Typeable                      (Proxy (..))
 import           GHC.Generics                       (Par1 (..))
-import           Prelude                            (($))
+import           Prelude                            (($), foldl)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString        (Binary)
@@ -20,6 +20,8 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Base.Data.Vector (Vector, fromVector)
+import GHC.TypeLits (KnownNat)
 
 
 -- | A class for Symbolic input.
@@ -58,3 +60,20 @@ instance (
     , SymbolicInput y
     ) => SymbolicInput (x, y) where
   isValid (l, r) = isValid l && isValid r
+
+instance (
+    Symbolic (Context x)
+    , Context x ~ Context y
+    , Context y ~ Context z
+    , SymbolicInput x
+    , SymbolicInput y
+    , SymbolicInput z
+    ) => SymbolicInput (x, y, z) where
+  isValid (l, m, r) = isValid l && isValid m && isValid r
+
+instance ( 
+  Symbolic (Context x)
+  , KnownNat n
+  , SymbolicInput x
+  ) => SymbolicInput (Vector n x) where
+  isValid v = foldl (\l r -> l && isValid r) true $ fromVector v

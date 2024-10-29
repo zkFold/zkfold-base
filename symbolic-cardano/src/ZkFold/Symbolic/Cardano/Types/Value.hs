@@ -1,5 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Cardano.Types.Value where
 
@@ -12,9 +13,10 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number    (KnownNat)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
-import           ZkFold.Symbolic.Class               (Symbolic)
+import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..), NumberOfRegisters)
+import ZkFold.Symbolic.Data.Input
 
 type PolicyId context    = ByteString 224 context
 type AssetName context   = ByteString 256 context
@@ -30,7 +32,15 @@ deriving instance (Haskell.Ord (ByteString 224 context), Haskell.Ord (ByteString
 
 deriving instance (Symbolic context, KnownNat n) => SymbolicData (Value n context)
 
+instance 
+    ( Symbolic context
+    , KnownNat n
+    , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+    ) => SymbolicInput (Value n context) where
+    isValid (Value v) = isValid v
+
 instance Symbolic context => Scale Natural (Value n context) where
+    scale :: Natural -> Value n context -> Value n context
     n `scale` Value v = Value $ fmap (\((pid, aname), q) -> ((pid, aname), n `scale` q)) v
 
 instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => Semigroup (Value n context) where

@@ -12,12 +12,13 @@ import           ZkFold.Symbolic.Class               (Symbolic)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq             (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
+import ZkFold.Symbolic.Data.Input
 
 type AddressType context = ByteString 4 context
 type PaymentCredential context = ByteString 224 context
 type StakingCredential context = ByteString 224 context
 
-data  Address context = Address {
+data Address context = Address {
         addressType       :: AddressType context,
         paymentCredential :: PaymentCredential context,
         stakingCredential :: StakingCredential context
@@ -36,3 +37,6 @@ instance HApplicative context => SymbolicData (Address context) where
   type Layout (Address context) = Layout (AddressType context, PaymentCredential context, StakingCredential context)
   pieces (Address a b c) = pieces (a, b, c)
   restore f = let (a, b, c) = restore f in Address a b c
+
+instance (Symbolic context) => SymbolicInput (Address context)  where
+    isValid (Address a p s) = isValid (a, p, s)

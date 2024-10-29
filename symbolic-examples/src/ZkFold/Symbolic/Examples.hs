@@ -31,6 +31,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (Var)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 type A = Zp BLS12_381_Scalar
 type C = ArithmeticCircuit A
@@ -46,7 +47,7 @@ exampleOutput ::
   , c ~ C i
   , Context f ~ c
   , Layout f ~ o
-  , SymbolicData (Support f)
+  , SymbolicInput (Support f)
   , Context (Support f) ~ c
   , Support (Support f) ~ Proxy c
   , Layout (Support f) ~ i
