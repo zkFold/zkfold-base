@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -19,18 +18,18 @@ import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Traversable                           (for)
-import           GHC.Generics                               (Par1 (Par1))
-import           Prelude                                    (FilePath, IO, Show (..), Traversable, putStrLn, return,
-                                                             type (~), ($), (++))
+import           Prelude                                    (FilePath, IO, Show (..), Traversable,
+                                                             putStrLn, type (~), ($), (++), return)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Input
-import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..), newConstrained)
+import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
+import ZkFold.Symbolic.Data.Input
+import ZkFold.Symbolic.Data.Bool (Bool(Bool))
+import GHC.Generics (Par1 (Par1))
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -49,25 +48,31 @@ forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) 
 solder ::
     forall a c f s l .
     ( c ~ ArithmeticCircuit a l
-    , SymbolicInput f
+    , SymbolicData f
     , Context f ~ c
     , Support f ~ s
-    , SymbolicData s
+    , Layout f ~ Layout s
+    , SymbolicInput s
     , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
     , Ord (Rep l)
     , Symbolic c
+    , Context s ~ c
     ) => f -> c (Layout f)
-solder f = fromCircuit2F p1 p2 solve
+solder f = pieces f constrainedInput
     where
+        constrainedInput :: Support f
+        constrainedInput = restore @(Support f) (const $ fromCircuit2F p1 p2 solve)
+ 
         p1 = pieces f $ acInput @f
-        Bool p2 = isValid @s $ acInput @f
+        Bool p2 = isValid @s $ acInput @f  
 
         solve :: MonadCircuit i (BaseField c) m => Layout f i -> Par1 i -> m (Layout f i)
         solve l (Par1 r) = do
             constraint (\x -> one - x r)
             return l
+
 
 -- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
@@ -75,9 +80,10 @@ compileForceOne ::
     ( c ~ ArithmeticCircuit a l
     , Arithmetic a
     , Binary a
-    , SymbolicInput f
+    , SymbolicData f
+    , Context f ~ c
     , Support f ~ s
-    , SymbolicData s
+    , SymbolicInput s
     , Context s ~ c
     , Support s ~ Proxy c
     , Layout s ~ l
@@ -87,7 +93,8 @@ compileForceOne ::
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
-    , Layout f ~ Layout y
+    , Layout f ~ Layout s
+    , Layout y ~ Layout s
     , Traversable (Layout y)
     ) => f -> y
 compileForceOne = restore . const . optimize . forceOne . solder @a
@@ -96,10 +103,10 @@ compileForceOne = restore . const . optimize . forceOne . solder @a
 compile ::
     forall a c f s l y .
     ( c ~ ArithmeticCircuit a l
-    , SymbolicInput f
+    , SymbolicData f
     , Context f ~ c
     , Support f ~ s
-    , SymbolicData s
+    , SymbolicInput s
     , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
@@ -107,7 +114,8 @@ compile ::
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
-    , Layout f ~ Layout y
+    , Layout f ~ Layout s
+    , Layout y ~ Layout s
     , Symbolic c
     ) => f -> y
 compile = restore . const . optimize . solder @a
@@ -118,13 +126,14 @@ compileIO ::
     ( c ~ ArithmeticCircuit a l
     , FromJSON a
     , ToJSON a
-    , SymbolicInput f
+    , SymbolicData f
     , Context f ~ c
     , Support f ~ s
     , ToJSON (Layout f (Var a l))
-    , SymbolicData s
+    , SymbolicInput s
     , Support s ~ Proxy c
     , Layout s ~ l
+    , Layout f ~ Layout s
     , Representable l
     , Ord (Rep l)
     , FromJSON (Rep l)
