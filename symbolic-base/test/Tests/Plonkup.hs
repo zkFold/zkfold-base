@@ -141,7 +141,7 @@ propLinearizationPolyEvaluation plonk witness secret =
 
 specPlonkup :: IO ()
 specPlonkup = hspec $ do
-    describe "Plonkup specification" $ do
+    describe "Plonkup specification (SLOW)" $ do
         -- TODO: uncomment after refactoring
         -- describe "Conversion to Plonk constraints and back" $ do
         --     it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @(ScalarField BLS12_381_G1)
