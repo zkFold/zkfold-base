@@ -20,7 +20,7 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
-  -- Base
+    -- Base
     specBinary
 
     -- Algebra
