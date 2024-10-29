@@ -86,7 +86,7 @@ jobs:
         cabal build all -f Pedantic
 
     - name: Test
-      run: cabal test --test-option="--skip=SLOW"
+      run: cabal test all --test-option="--skip=SLOW"
 
     # - name: Check cabal file
     #   run: cabal check
