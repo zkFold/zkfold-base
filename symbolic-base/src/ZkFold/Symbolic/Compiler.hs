@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE IncoherentInstances #-}
 
 module ZkFold.Symbolic.Compiler (
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
@@ -16,17 +17,20 @@ import           Data.Function                              (const, (.))
 import           Data.Functor                               (($>))
 import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
-import           Data.Proxy                                 (Proxy)
+import           Data.Proxy                                 (Proxy (..))
 import           Data.Traversable                           (for)
-import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), Traversable,
-                                                             putStrLn, type (~), ($), (++))
+import           Prelude                                    (FilePath, IO, Show (..), Traversable,
+                                                             putStrLn, type (~), ($), (++), return)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
-import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
+import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
+import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..), newConstrained)
+import ZkFold.Symbolic.Data.Input
+import ZkFold.Symbolic.Data.Bool (Bool(Bool))
+import GHC.Generics (Par1 (Par1))
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -45,19 +49,25 @@ forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) 
 solder ::
     forall a c f s l .
     ( c ~ ArithmeticCircuit a l
-    , SymbolicData f
+    , SymbolicInput f
     , Context f ~ c
     , Support f ~ s
     , SymbolicData s
-    , Context s ~ c
     , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
     , Ord (Rep l)
+    , Symbolic c
     ) => f -> c (Layout f)
-solder f = pieces f (restore @(Support f) $ const inputC)
+solder f = fromCircuit2F p1 p2 solve
     where
-        inputC = mempty { acOutput = acInput }
+        p1 = pieces f $ acInput @f
+        Bool p2 = isValid @s $ acInput @f
+
+        solve :: MonadCircuit i (BaseField c) m => Layout f i -> Par1 i -> m (Layout f i)
+        solve l (Par1 r) = do
+            constraint (\x -> one - x r)
+            return l
 
 -- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
@@ -65,8 +75,7 @@ compileForceOne ::
     ( c ~ ArithmeticCircuit a l
     , Arithmetic a
     , Binary a
-    , SymbolicData f
-    , Context f ~ c
+    , SymbolicInput f
     , Support f ~ s
     , SymbolicData s
     , Context s ~ c
@@ -87,11 +96,10 @@ compileForceOne = restore . const . optimize . forceOne . solder @a
 compile ::
     forall a c f s l y .
     ( c ~ ArithmeticCircuit a l
-    , SymbolicData f
+    , SymbolicInput f
     , Context f ~ c
     , Support f ~ s
     , SymbolicData s
-    , Context s ~ c
     , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
@@ -100,6 +108,7 @@ compile ::
     , Context y ~ c
     , Support y ~ Proxy c
     , Layout f ~ Layout y
+    , Symbolic c
     ) => f -> y
 compile = restore . const . optimize . solder @a
 
@@ -109,18 +118,18 @@ compileIO ::
     ( c ~ ArithmeticCircuit a l
     , FromJSON a
     , ToJSON a
-    , SymbolicData f
+    , SymbolicInput f
     , Context f ~ c
     , Support f ~ s
     , ToJSON (Layout f (Var a l))
     , SymbolicData s
-    , Context s ~ c
     , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
     , Ord (Rep l)
     , FromJSON (Rep l)
     , ToJSON (Rep l)
+    , Symbolic c
     ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = optimize (solder @a f) :: c (Layout f)

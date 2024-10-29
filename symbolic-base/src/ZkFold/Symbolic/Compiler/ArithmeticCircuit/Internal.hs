@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
@@ -55,6 +56,8 @@ import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Data.Class (SymbolicData(..))
+import Data.Proxy (Proxy)
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
@@ -126,8 +129,20 @@ imapVar _ (ConstVar c) = ConstVar c
 
 ---------------------------------- Variables -----------------------------------
 
-acInput :: Representable i => i (Var a i)
-acInput = fmapRep (SysVar . InVar) (tabulate id)
+acInput :: forall f s a l c. 
+  ( s ~ Support f
+    , c ~ ArithmeticCircuit a l
+    , SymbolicData s
+    , Layout s ~ l
+    , Context s ~ c
+    , Support s ~ Proxy c
+    , Representable l
+    , Ord (Rep l)
+  ) => Support f
+acInput = restore @(Support f) $ const inputC
+    where
+        inputC = mempty { acOutput = acInput' } 
+        acInput' = fmapRep (SysVar . InVar) (tabulate id ) 
 
 getAllVars :: forall a i o. (Representable i, Foldable i) => ArithmeticCircuit a i o -> [SysVar i]
 getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where
