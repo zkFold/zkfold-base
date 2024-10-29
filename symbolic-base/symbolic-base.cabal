@@ -291,3 +291,17 @@ benchmark bench-poly-mul
       symbolic-base,
       tasty-bench,
       vector,
+
+benchmark in-circuit-ec-benchmark 
+    import:           options-exe
+    main-is:          BenchEC.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:
+      -O3
+    build-depends:
+      base,
+      deepseq,
+      tasty-bench,
+      random,
+      symbolic-base,
