@@ -69,7 +69,7 @@ specPairing'
     => Show (BaseField c1)
     => IO ()
 specPairing' = hspec $ do
-    describe "Elliptic curve pairing specification" $ do
+    describe "Elliptic curve pairing specification (SLOW)" $ do
         describe ("Type: " ++ show (typeOf (pairing @c1 @c2))) $ do
             describe "Pairing axioms" $ do
                 it "should satisfy bilinearity" $ withMaxSuccess 10 $ do
