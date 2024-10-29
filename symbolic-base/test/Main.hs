@@ -1,8 +1,6 @@
 module Main where
 
-import           Control.Monad             (unless)
 import           Prelude                   hiding (Bool, Fractional (..), Num (..), drop, length, replicate, take, (==))
-import           System.Environment        (lookupEnv)
 import           Tests.ArithmeticCircuit   (specArithmeticCircuit)
 import           Tests.Arithmetization     (specArithmetization)
 import           Tests.Binary              (specBinary)
@@ -51,13 +49,10 @@ main = do
 
     -- Cryptography
     specSHA2Natural
-    -- These tests are slow. Only run them locally by setting the environment variable FULL_SHA2
-    fullTests <- lookupEnv "FULL_SHA2"
-    unless (null fullTests) specSHA2
+    specSHA2
 
     -- TODO: implement a proper blake2b test
     specBlake2b
     -- specBlake2b
-
 
     putStrLn "\nAll tests passed!"

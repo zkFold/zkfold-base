@@ -15,5 +15,5 @@ type ContractId context = Hash context
 contractId :: Contract tx pub prv context -> ContractId context
 contractId _ = undefined
 
--- | Public data to be posted in the L2 Ledger update.
+-- | Public data to be posted in the zkFold ledger update.
 data ContractData context
