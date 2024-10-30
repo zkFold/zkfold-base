@@ -118,6 +118,7 @@ library
       ZkFold.Base.Data.Sparse.Matrix
       ZkFold.Base.Data.Sparse.Vector
       ZkFold.Base.Data.Type
+      ZkFold.Base.Data.Utils
       ZkFold.Base.Data.Vector
       ZkFold.Base.Protocol.KZG
       ZkFold.Base.Protocol.Plonk
@@ -290,3 +291,17 @@ benchmark bench-poly-mul
       symbolic-base,
       tasty-bench,
       vector,
+
+benchmark in-circuit-ec-benchmark 
+    import:           options-exe
+    main-is:          BenchEC.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:
+      -O3
+    build-depends:
+      base,
+      deepseq,
+      tasty-bench,
+      random,
+      symbolic-base,

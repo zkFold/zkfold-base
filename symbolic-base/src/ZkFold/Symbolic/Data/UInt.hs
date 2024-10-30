@@ -272,12 +272,12 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     u1 >= u2 =
         let ByteString rs1 = from u1 :: ByteString n c
             ByteString rs2 = from u2 :: ByteString n c
-         in bitwiseGE rs1 rs2
+         in bitwiseGE @1 rs1 rs2
 
     u1 > u2 =
         let ByteString rs1 = from u1 :: ByteString n c
             ByteString rs2 = from u2 :: ByteString n c
-        in bitwiseGT rs1 rs2
+        in bitwiseGT @1 rs1 rs2
 
     max x y = bool @(Bool c) x y $ x < y
 

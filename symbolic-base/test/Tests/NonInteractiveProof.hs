@@ -25,7 +25,7 @@ propNonInteractiveProof (a, w) =
 specNonInteractiveProof' :: forall a core . (Typeable a, NonInteractiveProof a core,
     Show a, Show (Witness a), Arbitrary a, Arbitrary (Witness a)) => IO ()
 specNonInteractiveProof' = hspec $ do
-    describe "Non-interactive proof protocol specification" $ do
+    describe "Non-interactive proof protocol specification (SLOW)" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
             describe "All correct proofs" $ do
                 it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @a @core
