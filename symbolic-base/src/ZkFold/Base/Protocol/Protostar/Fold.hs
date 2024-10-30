@@ -68,19 +68,19 @@ instance (Ring a, KnownNat n) => Acc.LinearCombinationWith a (Vector n a) where
 
 type C n a = ArithmeticCircuit a (Vector n) (Vector n)
 type FS_CM ctx n comm a = FiatShamir (FieldElement ctx) (CommitOpen (SPS.MapMessage (FieldElement ctx) (C n a)) comm (C n a))
-type Acc ctx n comm a = Accumulator (Vector n (FieldElement ctx)) (FieldElement ctx) comm (SPS.MapMessage (FieldElement ctx) (C n a))
+-- type Acc ctx n comm a = Accumulator (Vector n (FieldElement ctx)) (FieldElement ctx) comm (SPS.MapMessage (FieldElement ctx) (C n a))
 
 -- | The final result of recursion and the final accumulator.
 -- Accumulation decider is an arithmetizable function which can be called on the final accumulator.
 --
-data ProtostarResult (ctx :: (Type -> Type) -> Type) n comm a
+data ProtostarResult pi f c m
     = ProtostarResult
-    { result       :: Vector n (FieldElement ctx)
-    , proverOutput :: Acc ctx n comm a
+    { result       :: pi
+    , proverOutput :: Accumulator pi f c m
     } deriving (Generic)
 
-deriving instance (NFData (Bool ctx), NFData comm, NFData (FieldElement ctx)) => NFData (ProtostarResult ctx n comm a)
-deriving instance (P.Show (Bool ctx), P.Show comm, P.Show (ctx Par1)) => P.Show (ProtostarResult ctx n comm a)
+deriving instance (NFData pi, NFData f, NFData c, NFData m) => NFData (ProtostarResult pi f c m)
+deriving instance (P.Show pi, P.Show f, P.Show c, P.Show m) => P.Show (ProtostarResult pi f c m)
 
 toFS
     :: forall ctx n comm a
