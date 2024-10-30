@@ -12,11 +12,9 @@ import           Control.Lens                                     ((^.))
 import           Data.Binary                                      (Binary)
 import           Data.Function                                    ((.))
 import           Data.Functor                                     (fmap)
-import           Data.Functor.Rep                                 (Rep, Representable)
 import           Data.Kind                                        (Type)
 import           Data.Map.Strict                                  (Map)
 import qualified Data.Map.Strict                                  as M
-import           Data.Ord                                         (Ord)
 import           Data.Proxy                                       (Proxy)
 import           GHC.Generics                                     (Generic, Par1 (..), U1 (..), type (:*:) (..),
                                                                    type (:.:) (..))
@@ -43,6 +41,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement                (FieldElement)
+import           ZkFold.Symbolic.Data.Input                       (SymbolicInput)
 
 
 -- | These instances might seem off, but accumulator scheme requires this exact behaviour for ProverMessages which are Maps in this case.
@@ -118,34 +117,13 @@ ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple)
 ivcVerifierAc
     :: forall i f c m ctx a y t
     .  Symbolic ctx
-    => SymbolicData i
-    => SymbolicData f
-    => SymbolicData c
-    => SymbolicData m
-    => SymbolicData a
+    => SymbolicInput (i, c, (i, c, f, c, f), (i, c, f, c, f), c)
+    => SymbolicInput (a, (f, (f, f)), ((i, c, f, c, f), m))
     => SymbolicData y
-    => Context i ~ ctx
-    => Context f ~ ctx
-    => Context c ~ ctx
-    => Context m ~ ctx
     => Context a ~ ctx
+    => Context i ~ ctx
     => Context y ~ ctx
-    => Support i ~ Proxy ctx
-    => Support f ~ Proxy ctx
-    => Support c ~ Proxy ctx
-    => Support m ~ Proxy ctx
-    => Support a ~ Proxy ctx
     => Support y ~ Proxy ctx
-    => Representable (Layout i)
-    => Representable (Layout c)
-    => Representable (Layout f)
-    => Representable (Layout a)
-    => Representable (Layout m)
-    => Ord (Rep (Layout i))
-    => Ord (Rep (Layout c))
-    => Ord (Rep (Layout f))
-    => Ord (Rep (Layout a))
-    => Ord (Rep (Layout m))
     => Layout y ~ Par1
     => t ~ ((i,c,(i,c,f,c,f),(i,c,f,c,f),c),(a,(f,f,f),(i,c,f,c,f),m),Proxy ctx)
     => ctx ~ ArithmeticCircuit a (Layout t)

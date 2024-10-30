@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoStarIsType         #-}
@@ -128,6 +129,7 @@ imapVar _ (ConstVar c) = ConstVar c
 
 acInput :: Representable i => i (Var a i)
 acInput = fmapRep (SysVar . InVar) (tabulate id)
+
 
 getAllVars :: forall a i o. (Representable i, Foldable i) => ArithmeticCircuit a i o -> [SysVar i]
 getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where

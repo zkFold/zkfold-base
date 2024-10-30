@@ -16,16 +16,19 @@ import           Data.Function                              (const, (.))
 import           Data.Functor                               (($>))
 import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
-import           Data.Proxy                                 (Proxy)
+import           Data.Proxy                                 (Proxy (..))
 import           Data.Traversable                           (for)
+import           GHC.Generics                               (Par1 (Par1))
 import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), Traversable,
-                                                             putStrLn, type (~), ($), (++))
+                                                             putStrLn, return, type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
-import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
+import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
 
 {-
@@ -43,21 +46,21 @@ forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) 
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder ::
-    forall a c f s l .
-    ( c ~ ArithmeticCircuit a l
+    forall a c f s .
+    ( c ~ ArithmeticCircuit a (Layout s)
     , SymbolicData f
     , Context f ~ c
     , Support f ~ s
-    , SymbolicData s
+    , SymbolicInput s
     , Context s ~ c
-    , Support s ~ Proxy c
-    , Layout s ~ l
-    , Representable l
-    , Ord (Rep l)
+    , Symbolic c
     ) => f -> c (Layout f)
-solder f = pieces f (restore @(Support f) $ const inputC)
-    where
-        inputC = mempty { acOutput = acInput }
+solder f = fromCircuit2F (pieces f input) b $ \r (Par1 i) -> do
+    constraint (\x -> one - x i)
+    return r
+  where
+    Bool b = isValid input
+    input = restore @(Support f) $ const mempty { acOutput = acInput }
 
 -- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
@@ -68,9 +71,8 @@ compileForceOne ::
     , SymbolicData f
     , Context f ~ c
     , Support f ~ s
-    , SymbolicData s
+    , SymbolicInput s
     , Context s ~ c
-    , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
     , Binary (Rep l)
@@ -90,16 +92,14 @@ compile ::
     , SymbolicData f
     , Context f ~ c
     , Support f ~ s
-    , SymbolicData s
+    , SymbolicInput s
     , Context s ~ c
-    , Support s ~ Proxy c
     , Layout s ~ l
-    , Representable l
-    , Ord (Rep l)
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
     , Layout f ~ Layout y
+    , Symbolic c
     ) => f -> y
 compile = restore . const . optimize . solder @a
 
@@ -113,14 +113,12 @@ compileIO ::
     , Context f ~ c
     , Support f ~ s
     , ToJSON (Layout f (Var a l))
-    , SymbolicData s
+    , SymbolicInput s
     , Context s ~ c
-    , Support s ~ Proxy c
     , Layout s ~ l
-    , Representable l
-    , Ord (Rep l)
     , FromJSON (Rep l)
     , ToJSON (Rep l)
+    , Symbolic c
     ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = optimize (solder @a f) :: c (Layout f)
