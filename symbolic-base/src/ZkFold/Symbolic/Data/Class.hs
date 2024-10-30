@@ -116,8 +116,6 @@ instance
 
 -- When this code is commented out,
 -- `ivcVerifierAc` no longer compiles.
--- When this code is active, `ivcVerifierAc` compiles,
--- but warns about redundant constraints
 
     type Context (w, x, y, z) = Context (w, (x, y, z))
     type Support (w, x, y, z) = Support (w, (x, y, z))
