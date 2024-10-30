@@ -42,6 +42,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement                (FieldElement)
 import           ZkFold.Symbolic.Data.Input                       (SymbolicInput)
+import ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol(..))
 
 
 -- | These instances might seem off, but accumulator scheme requires this exact behaviour for ProverMessages which are Maps in this case.
@@ -92,15 +93,15 @@ toFS ck rc = FiatShamir (CommitOpen (hcommit ck) rc)
 
 -- No SymbolicData instances for data
 -- all protocols are one-round in case of arithmetic circuits, therefore we can replace lists with elements.
+-- TODO: upgrade to the multi-round version
 ivcVerifier
-    :: forall i f c m ctx a
-    .  Symbolic ctx
-    => Acc.AccumulatorScheme i f c m ctx a
-    => (i, c, (i, c, f, c, f), (i, c, f, c, f), c)
-    -> (a, (f, (f, f)), ((i, c, f, c, f), m))
-    -> Bool ctx
+    :: forall pi f c m a
+    .  Acc.AccumulatorScheme pi f c m a
+    => (pi, c, (pi, c, f, c, f), (pi, c, f, c, f), c)
+    -> (a, (f, (f, f)), ((pi, c, f, c, f), m))
+    -> ((f, pi, [f], [c], c), ([c], c))
 ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple)
-  = Acc.verifier @i @f @c @m @ctx @a i [pi_x] acc acc' [pf] && Acc.decider @i @f @c @m @ctx @a a ck dk
+  = (Acc.verifier @pi @f @c @m @a i [pi_x] acc acc' [pf], Acc.decider @pi @f @c @m @a a ck dk)
     where
         acc = let (x1, x2, x3, x4, x5) = accTuple
                in AccumulatorInstance x1 [x2] [x3] x4 x5
@@ -113,124 +114,123 @@ ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple)
         dk = let ((x1, x2, x3, x4, x5), m) = dkTuple
               in Accumulator (AccumulatorInstance x1 [x2] [x3] x4 x5) [m]
 
--- TODO: this is insane
-ivcVerifierAc
-    :: forall i f c m ctx a y t
-    .  Symbolic ctx
-    => SymbolicInput (i, c, (i, c, f, c, f), (i, c, f, c, f), c)
-    => SymbolicInput (a, (f, (f, f)), ((i, c, f, c, f), m))
-    => SymbolicData y
-    => Context a ~ ctx
-    => Context i ~ ctx
-    => Context y ~ ctx
-    => Support y ~ Proxy ctx
-    => Layout y ~ Par1
-    => t ~ ((i,c,(i,c,f,c,f),(i,c,f,c,f),c),(a,(f,f,f),(i,c,f,c,f),m),Proxy ctx)
-    => ctx ~ ArithmeticCircuit a (Layout t)
-    => Acc.AccumulatorScheme i f c m ctx a
-    => y
-ivcVerifierAc = compile (ivcVerifier @i @f @c @m @ctx @a)
+-- -- TODO: this is insane
+-- ivcVerifierAc
+--     :: forall i f c m ctx a y t
+--     .  Symbolic ctx
+--     => SymbolicInput (i, c, (i, c, f, c, f), (i, c, f, c, f), c)
+--     => SymbolicInput (a, (f, (f, f)), ((i, c, f, c, f), m))
+--     => SymbolicData y
+--     => Context a ~ ctx
+--     => Context i ~ ctx
+--     => Context y ~ ctx
+--     => Support y ~ Proxy ctx
+--     => Layout y ~ Par1
+--     => t ~ ((i,c,(i,c,f,c,f),(i,c,f,c,f),c),(a,(f,f,f),(i,c,f,c,f),m),Proxy ctx)
+--     => ctx ~ ArithmeticCircuit a (Layout t)
+--     => Acc.AccumulatorScheme i f c m a
+--     => y
+-- ivcVerifierAc = compile (ivcVerifier @i @f @c @m @a)
 
-iterate
-    :: forall ctx n comm a
-    .  KnownNat n
-    => Arithmetic a
-    => Binary a
-    => Scale a (BaseField ctx)
-    => FromConstant a (BaseField ctx)
-    => Eq (Bool ctx) comm
-    => Eq (Bool ctx) [comm]
-    => Eq (Bool ctx) [FieldElement ctx]
-    => Eq (Bool ctx) (Vector n (FieldElement ctx))
-    => RandomOracle comm (FieldElement ctx)
-    => HomomorphicCommit (FieldElement ctx) [FieldElement ctx] comm
-    => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
-    => AdditiveGroup comm
-    => Scale a (PU.PolyVec (FieldElement ctx) 3)
-    => Scale a (FieldElement ctx)
-    => Scale (FieldElement ctx) comm
-    => ctx ~ ArithmeticCircuit a (Vector n)
-    => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
-    => (forall c. (Symbolic c, BaseField c ~ a) => Vector n (FieldElement c) -> Vector n (FieldElement c))
-    -> Vector n a
-    -> Natural
-    -> ProtostarResult ctx n comm a
-iterate f i0 n = iteration n ck f ac i0_arith i0 initialAccumulator (Acc.KeyScale one one)
-    where
-        i0_arith :: Vector n (FieldElement ctx)
-        i0_arith = fromConstant <$> i0
+-- iterate
+--     :: forall ctx n comm a
+--     .  KnownNat n
+--     => Arithmetic a
+--     => Binary a
+--     => Scale a (BaseField ctx)
+--     => FromConstant a (BaseField ctx)
+--     => Eq (Bool ctx) comm
+--     => Eq (Bool ctx) [comm]
+--     => Eq (Bool ctx) [FieldElement ctx]
+--     => Eq (Bool ctx) (Vector n (FieldElement ctx))
+--     => RandomOracle comm (FieldElement ctx)
+--     => HomomorphicCommit (FieldElement ctx) [FieldElement ctx] comm
+--     => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
+--     => AdditiveGroup comm
+--     => Scale a (PU.PolyVec (FieldElement ctx) 3)
+--     => Scale a (FieldElement ctx)
+--     => Scale (FieldElement ctx) comm
+--     => ctx ~ ArithmeticCircuit a (Vector n)
+--     => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
+--     => (forall c. (Symbolic c, BaseField c ~ a) => Vector n (FieldElement c) -> Vector n (FieldElement c))
+--     -> Vector n a
+--     -> Natural
+--     -> ProtostarResult ctx n comm a
+-- iterate f i0 n = iteration n ck f ac i0_arith i0 initialAccumulator (Acc.KeyScale one one)
+--     where
+--         i0_arith :: Vector n (FieldElement ctx)
+--         i0_arith = fromConstant <$> i0
 
-        ac :: C n a
-        ac = hmap (fmap unPar1 . unComp1) $ hlmap ((:*: U1) . Comp1 . fmap Par1) (compile @a f)
+--         ac :: C n a
+--         ac = hmap (fmap unPar1 . unComp1) $ hlmap ((:*: U1) . Comp1 . fmap Par1) (compile @a f)
 
-        initE = hcommit ck $ replicate (SPS.outputLength @(FieldElement ctx) ac) (zero :: FieldElement ctx)
+--         initE = hcommit ck $ replicate (SPS.outputLength @(FieldElement ctx) ac) (zero :: FieldElement ctx)
 
-        ck :: FieldElement ctx
-        ck = oracle i0_arith
+--         ck :: FieldElement ctx
+--         ck = oracle i0_arith
 
-        initialAccumulator :: Acc ctx n comm a
-        initialAccumulator = Accumulator (AccumulatorInstance (P.pure zero) [hcommit ck [zero :: SPS.MapMessage (FieldElement ctx) (C n a)]] [] initE zero) [zero]
+--         initialAccumulator :: Acc ctx n comm a
+--         initialAccumulator = Accumulator (AccumulatorInstance (P.pure zero) [hcommit ck [zero :: SPS.MapMessage (FieldElement ctx) (C n a)]] [] initE zero) [zero]
 
 instanceProof
-    :: forall ctx n comm a
-    .  Symbolic ctx
-    => Arithmetic a
-    => Scale a (BaseField ctx)
-    => FromConstant a (BaseField ctx)
-    => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
-    => FieldElement ctx
-    -> C n a
-    -> SPS.MapInput (FieldElement ctx) (C n a)
-    -> Vector n a
-    -> InstanceProofPair (Vector n (FieldElement ctx)) comm (SPS.MapMessage (FieldElement ctx) (C n a))
-instanceProof ck rc i i_pure = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
+    :: forall pi f c m
+    .  HomomorphicCommit f [m] c
+    => SpecialSoundProtocol f (pi -> pi)
+    => Witness f (pi -> pi) ~ ()
+    => Input f (pi -> pi) ~ pi
+    => ProverMessage f (pi -> pi) ~ m
+    => f
+    -> (pi -> pi)
+    -> pi
+    -> InstanceProofPair pi c m
+instanceProof ck func i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where
-        m = SPS.prover @(FieldElement ctx) rc (i_pure, M.empty) i []
+        m = SPS.prover @f func () i []
 
-iteration
-    :: forall ctx n comm a
-    .  Symbolic ctx
-    => KnownNat n
-    => Arithmetic a
-    => Scale a (BaseField ctx)
-    => FromConstant a (BaseField ctx)
-    => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
-    => Eq (Bool ctx) comm
-    => Eq (Bool ctx) [comm]
-    => Eq (Bool ctx) [FieldElement ctx]
-    => Eq (Bool ctx) (Vector n (FieldElement ctx))
-    => RandomOracle comm (FieldElement ctx)
-    => HomomorphicCommit (FieldElement ctx) [FieldElement ctx] comm
-    => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
-    => AdditiveGroup comm
-    => Scale a (PU.PolyVec (FieldElement ctx) 3)
-    => Scale a (FieldElement ctx)
-    => Scale (FieldElement ctx) comm
-    => Natural
-    -> FieldElement ctx
-    -> (Vector n (FieldElement ctx) -> Vector n (FieldElement ctx))
-    -> C n a
-    -> SPS.MapInput (FieldElement ctx) (C n a)
-    -> Vector n a
-    -> Acc ctx n comm a
-    -> Acc.KeyScale (FieldElement ctx)
-    -> ProtostarResult ctx n comm a
-iteration 0 _  _ _  i _ acc _  = ProtostarResult i acc
-iteration n ck f rc i i_pure acc (Acc.KeyScale alphaSum muSum) = iteration (n -! 1) ck f rc newi newi_pure newAcc newKS
-    where
-        fs :: FS_CM ctx n comm a
-        fs = toFS ck rc i
+-- iteration
+--     :: forall ctx n comm a
+--     .  Symbolic ctx
+--     => KnownNat n
+--     => Arithmetic a
+--     => Scale a (BaseField ctx)
+--     => FromConstant a (BaseField ctx)
+--     => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
+--     => Eq (Bool ctx) comm
+--     => Eq (Bool ctx) [comm]
+--     => Eq (Bool ctx) [FieldElement ctx]
+--     => Eq (Bool ctx) (Vector n (FieldElement ctx))
+--     => RandomOracle comm (FieldElement ctx)
+--     => HomomorphicCommit (FieldElement ctx) [FieldElement ctx] comm
+--     => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
+--     => AdditiveGroup comm
+--     => Scale a (PU.PolyVec (FieldElement ctx) 3)
+--     => Scale a (FieldElement ctx)
+--     => Scale (FieldElement ctx) comm
+--     => Natural
+--     -> FieldElement ctx
+--     -> (Vector n (FieldElement ctx) -> Vector n (FieldElement ctx))
+--     -> C n a
+--     -> SPS.MapInput (FieldElement ctx) (C n a)
+--     -> Vector n a
+--     -> Acc ctx n comm a
+--     -> Acc.KeyScale (FieldElement ctx)
+--     -> ProtostarResult ctx n comm a
+-- iteration 0 _  _ _  i _ acc _  = ProtostarResult i acc
+-- iteration n ck f rc i i_pure acc (Acc.KeyScale alphaSum muSum) = iteration (n -! 1) ck f rc newi newi_pure newAcc newKS
+--     where
+--         fs :: FS_CM ctx n comm a
+--         fs = toFS ck rc i
 
-        nark@(InstanceProofPair _ narkProof) = instanceProof @ctx @n @comm @a ck rc i i_pure
-        (newAcc, accProof) = Acc.prover @_ @(FieldElement ctx) @comm @_ @ctx fs ck acc nark
+--         nark@(InstanceProofPair _ narkProof) = instanceProof @ctx @n @comm @a ck rc i i_pure
+--         (newAcc, accProof) = Acc.prover @_ @(FieldElement ctx) @comm @_ fs ck acc nark
 
-        alpha :: FieldElement ctx
-        alpha = oracle (acc^.x, i, narkCommits narkProof, accProof)
+--         alpha :: FieldElement ctx
+--         alpha = oracle (acc^.x, i, narkCommits narkProof, accProof)
 
-        alphaPows = sum $ P.take (P.length accProof) $ (alpha ^) <$> [1 :: Natural ..]
+--         alphaPows = sum $ P.take (P.length accProof) $ (alpha ^) <$> [1 :: Natural ..]
 
-        newi = f i
+--         newi = f i
 
-        newi_pure = eval rc i_pure
+--         newi_pure = eval rc i_pure
 
-        newKS = Acc.KeyScale (alphaSum + alphaPows) (muSum + scale (6 :: Natural) alpha)
+--         newKS = Acc.KeyScale (alphaSum + alphaPows) (muSum + scale (6 :: Natural) alpha)
