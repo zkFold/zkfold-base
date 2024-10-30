@@ -12,7 +12,7 @@ import           Data.Functor                                        ((<$>))
 import           Data.List                                           (find, head, map, permutations, sort, (!!), (++))
 import           Data.Map                                            (Map)
 import qualified Data.Map                                            as Map
-import           Data.Maybe                                          (Maybe (..), mapMaybe)
+import           Data.Maybe                                          (Maybe (..), fromMaybe, mapMaybe)
 import           Data.Ord                                            (Ord)
 import           GHC.IsList                                          (IsList (..))
 import           GHC.TypeNats                                        (KnownNat)
@@ -21,7 +21,8 @@ import           Test.QuickCheck                                     (Arbitrary 
 import           Text.Show                                           (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, polynomial, var, variables)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, evalMonomial, evalPolynomial, polynomial,
+                                                                      var, variables)
 import           ZkFold.Base.Data.ByteString                         (toByteString)
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length, take)
@@ -53,19 +54,19 @@ instance (Ord a, Arbitrary a, Binary a, KnownNat i) => Arbitrary (PlonkConstrain
 
 toPlonkConstraint :: forall a i . (Ord a, FiniteField a, KnownNat i) => Poly a (Var a (Vector i)) Natural -> PlonkConstraint i a
 toPlonkConstraint p =
-    let xs    = toList (variables p)
+    let xs    = Just <$> toList (variables p)
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
-            0 -> [ConstVar one, ConstVar one, ConstVar one]
-            1 -> [ConstVar one, ConstVar one, head xs, head xs]
-            2 -> [ConstVar one] ++ xs ++ xs
+            0 -> [Nothing, Nothing, Nothing]
+            1 -> [Nothing, Nothing, head xs, head xs]
+            2 -> [Nothing] ++ xs ++ xs
             _ -> xs ++ xs
 
-        getCoef :: Map (Var a (Vector i)) Natural -> a
-        getCoef m = case find (\(_, as) -> m == as) (toList p) of
+        getCoef :: Map (Maybe (Var a (Vector i))) Natural -> a
+        getCoef m = case find (\(_, as) -> m == Map.mapKeys Just as) (toList p) of
             Just (c, _) -> c
             _           -> zero
 
-        getCoefs :: [Var a (Vector i)] -> Maybe (PlonkConstraint i a)
+        getCoefs :: [Maybe (Var a (Vector i))] -> Maybe (PlonkConstraint i a)
         getCoefs [a, b, c] = do
             let xa = [(a, 1)]
                 xb = [(b, 1)]
@@ -77,8 +78,11 @@ toPlonkConstraint p =
                 qr = getCoef $ fromList xb
                 qo = getCoef $ fromList xc
                 qc = getCoef Map.empty
-            guard $ p - polynomial [(qm, fromList xaxb), (ql, fromList xa), (qr, fromList xb), (qo, fromList xc), (qc, one)] == zero
-            return $ PlonkConstraint qm ql qr qo qc a b c
+            guard $ evalPolynomial evalMonomial (var . Just) p - polynomial [(qm, fromList xaxb), (ql, fromList xa), (qr, fromList xb), (qo, fromList xc), (qc, one)] == zero
+            let va = fromMaybe (ConstVar one) a
+                vb = fromMaybe (ConstVar one) b
+                vc = fromMaybe (ConstVar one) c
+            return $ PlonkConstraint qm ql qr qo qc va vb vc
         getCoefs _ = Nothing
 
     in head $ mapMaybe getCoefs perms
