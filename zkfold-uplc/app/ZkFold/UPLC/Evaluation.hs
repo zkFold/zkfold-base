@@ -7,6 +7,7 @@
 
 module ZkFold.UPLC.Evaluation where
 
+import           Data.Function               (const, (.))
 import           Data.Kind                   (Type)
 import           Data.Proxy                  (Proxy (..))
 import           Data.Tuple                  (fst, snd)
@@ -14,23 +15,24 @@ import           Prelude                     (error)
 
 import           ZkFold.Symbolic.Class       (Symbolic)
 import           ZkFold.Symbolic.Data.Bool   (Bool, BoolType (..))
+import           ZkFold.Symbolic.Data.Maybe  (Maybe, just)
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
 
 type Context = (Type -> Type) -> Type
 
-type family Eval (t :: BuiltinType) (c :: Context) :: Type where
-  -- TODO: add support for more types
-  Eval BTBool c = Bool c
-  Eval BTUnit c = Proxy c
-  Eval (BTPair t u) c = (Eval t c, Eval u c)
+type family ValueOf (t :: BuiltinType) (c :: Context) where
+  -- TODO: Add support for more types
+  ValueOf BTBool c = Bool c
+  ValueOf BTUnit c = Proxy c
+  ValueOf (BTPair t u) c = (ValueOf t c, ValueOf u c)
 
-type family EvalFun (s :: [BuiltinType]) (t :: BuiltinType) (c :: Context) where
-  EvalFun '[] t c = Eval t c
-  EvalFun (s ': ss) t c = Eval s c -> EvalFun ss t c
+type family FunOf (s :: [BuiltinType]) (t :: BuiltinType) (c :: Context) where
+  FunOf '[] t c = Maybe c (ValueOf t c)
+  FunOf (s ': ss) t c = ValueOf s c -> FunOf ss t c
 
-evalConstant :: forall c t. Symbolic c => Constant t -> Eval t c
+evalConstant :: forall c t. Symbolic c => Constant t -> ValueOf t c
 evalConstant (CBool b)       = if b then true else false
 evalConstant (CInteger _)    = error "FIXME: UPLC Integer support"
 evalConstant (CByteString _) = error "FIXME: UPLC ByteString support"
@@ -42,20 +44,20 @@ evalConstant (CPair p q)     = (evalConstant @c p, evalConstant @c q)
 evalConstant (CG1 _)         = error "FIXME: UPLC BLS support"
 evalConstant (CG2 _)         = error "FIXME: UPLC BLS support"
 
-evalBuiltin :: forall c s t. Symbolic c => BuiltinFunction s t -> EvalFun s t c
+evalBuiltin :: forall c s t. Symbolic c => BuiltinFunction s t -> FunOf s t c
 evalBuiltin (BFMono f) = evalMono @c f
 evalBuiltin (BFPoly f) = evalPoly @c f
 
-evalPoly :: forall c s t. Symbolic c => BuiltinPolyFunction s t -> EvalFun s t c
+evalPoly :: forall c s t. Symbolic c => BuiltinPolyFunction s t -> FunOf s t c
 evalPoly IfThenElse  = error "FIXME: UPLC IfThenElse"
-evalPoly ChooseUnit  = \_ x -> x
-evalPoly Trace       = \_ x -> x
-evalPoly FstPair     = fst
-evalPoly SndPair     = snd
+evalPoly ChooseUnit  = const just
+evalPoly Trace       = const just
+evalPoly FstPair     = just . fst
+evalPoly SndPair     = just . snd
 evalPoly (BPFList _) = error "FIXME: UPLC List support"
 evalPoly ChooseData  = error "FIXME: UPLC Data support"
 
-evalMono :: forall c s t. Symbolic c => BuiltinMonoFunction s t -> EvalFun s t c
+evalMono :: forall c s t. Symbolic c => BuiltinMonoFunction s t -> FunOf s t c
 evalMono (BMFInteger _)    = error "FIXME: UPLC Integer support"
 evalMono (BMFByteString _) = error "FIXME: UPLC ByteString support"
 evalMono (BMFString _)     = error "FIXME: UPLC String support"
