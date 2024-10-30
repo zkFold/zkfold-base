@@ -25,9 +25,9 @@ makeLenses ''AccumulatorInstance
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
-data Accumulator i f c m
+data Accumulator pi f c m
     = Accumulator
-        { _x :: AccumulatorInstance i f c
+        { _x :: AccumulatorInstance pi f c
         , _w :: [m]
         }
     deriving (Show, Generic, NFData)

@@ -5,7 +5,7 @@ module ZkFold.Base.Protocol.Protostar.SpecialSound where
 import           Numeric.Natural (Natural)
 import           Prelude         hiding (length)
 
-type SpecialSoundTranscript t a = [(ProverMessage t a, VerifierMessage t a)]
+type SpecialSoundTranscript f a = [(ProverMessage f a, VerifierMessage f a)]
 
 {-- | Section 3.1
 

@@ -7,15 +7,15 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 
-newtype PolynomialProtostar c n d = PolynomialProtostar (Poly c (Zp n) Natural)
+newtype PolynomialProtostar f c d = PolynomialProtostar (Poly f (Zp c) Natural)
   deriving (Show, Eq, Ord)
 
-deriving instance Polynomial c (Zp n) Natural => AdditiveSemigroup (PolynomialProtostar c n d)
+deriving instance Polynomial f (Zp c) Natural => AdditiveSemigroup (PolynomialProtostar f c d)
 
-deriving instance Polynomial c (Zp n) Natural => Scale Natural (PolynomialProtostar c n d)
+deriving instance Polynomial f (Zp c) Natural => Scale Natural (PolynomialProtostar f c d)
 
-deriving instance Polynomial c (Zp n) Natural => AdditiveMonoid (PolynomialProtostar c n d)
+deriving instance Polynomial f (Zp c) Natural => AdditiveMonoid (PolynomialProtostar f c d)
 
-deriving instance Polynomial c (Zp n) Natural => Scale Integer (PolynomialProtostar c n d)
+deriving instance Polynomial f (Zp c) Natural => Scale Integer (PolynomialProtostar f c d)
 
-deriving instance Polynomial c (Zp n) Natural => AdditiveGroup (PolynomialProtostar c n d)
+deriving instance Polynomial f (Zp c) Natural => AdditiveGroup (PolynomialProtostar f c d)

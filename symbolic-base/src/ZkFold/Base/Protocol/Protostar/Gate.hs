@@ -21,16 +21,16 @@ data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
     deriving Generic
 
 instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (ProtostarGate m n c d) where
-    type Witness f (ProtostarGate m n c d)       = Vector n (Vector c f)
+    type Witness f (ProtostarGate m n c d)         = Vector n (Vector c f)
     -- ^ [(a_j, w_j)]_{j=1}^n where [w_j]_{j=1}^n is from the paper together and [a_j]_{j=1}^n are their absolute indices
-    type Input f (ProtostarGate m n c d)         = (Matrix m n f, Vector m (PolynomialProtostar f c d))
+    type Input f (ProtostarGate m n c d)           = (Matrix m n f, Vector m (PolynomialProtostar f c d))
     -- ^ [s_{i, j}] and [G_i]_{i=1}^m in the paper
-    type ProverMessage f (ProtostarGate m n c d)  = Vector n (Vector c f)
+    type ProverMessage f (ProtostarGate m n c d)   = Vector n (Vector c f)
     -- ^ same as Witness
     type VerifierMessage f (ProtostarGate m n c d) = ()
     type VerifierOutput f (ProtostarGate m n c d)  = Bool
 
-    type Degree (ProtostarGate m n c d)           = d
+    type Degree (ProtostarGate m n c d)            = d
 
     outputLength _ = value @n
 

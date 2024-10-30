@@ -52,7 +52,7 @@ instance PedersonSetup (Point BLS12_381_G1) where
 instance
   ( Symbolic c
   , FromConstant Natural (EC.BaseField (Ed25519 c))
-  )=> PedersonSetup (Point (Ed25519 c)) where
+  ) => PedersonSetup (Point (Ed25519 c)) where
     pedersonGH = (g, h)
         where
             -- Random points on Ed25519
