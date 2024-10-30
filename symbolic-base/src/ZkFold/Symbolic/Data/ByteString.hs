@@ -23,8 +23,10 @@ module ZkFold.Symbolic.Data.ByteString
 
 import           Control.DeepSeq                    (NFData)
 import           Control.Monad                      (replicateM)
+import           Data.Aeson                         (FromJSON (..), ToJSON (..))
 import qualified Data.Bits                          as B
 import qualified Data.ByteString                    as Bytes
+import           Data.Foldable                      (foldlM)
 import           Data.Kind                          (Type)
 import           Data.List                          (reverse, unfoldr)
 import           Data.Maybe                         (Maybe (..))
@@ -32,8 +34,9 @@ import           Data.String                        (IsString (..))
 import           Data.Traversable                   (for)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
-import           Prelude                            (Integer, drop, fmap, otherwise, pure, return, take, type (~), ($),
-                                                     (.), (<$>), (<), (<>), (==), (>=))
+import           Numeric                            (readHex, showHex)
+import           Prelude                            (Integer, const, drop, fmap, otherwise, pure, return, take,
+                                                     type (~), ($), (.), (<$>), (<), (<>), (==), (>=))
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
 
@@ -42,6 +45,7 @@ import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
 import           ZkFold.Base.Data.Package           (packWith, unpackWith)
+import           ZkFold.Base.Data.Utils             (zipWithM)
 import qualified ZkFold.Base.Data.Vector            as V
 import           ZkFold.Base.Data.Vector            (Vector (..))
 import           ZkFold.Prelude                     (replicateA, (!!))
@@ -52,6 +56,7 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
+import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
 
@@ -193,7 +198,7 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
             solve lv rv = do
                 let varsLeft = lv
                     varsRight = rv
-                V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+                zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
 
             cons i j x =
                         let xi = x i
@@ -262,6 +267,25 @@ instance
 
         zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
 
+instance
+  ( Symbolic c
+  , KnownNat n
+  ) => SymbolicInput (ByteString n c) where
+  isValid (ByteString bits) = Bool $ fromCircuitF bits solve
+    where
+        solve :: MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
+        solve v = do
+            let vs = V.fromVector v
+            ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
+            us <-for ys $ \i -> isZero $ Par1 i
+            helper us
+
+        helper :: MonadCircuit i a m => [Par1 i] -> m (Par1 i)
+        helper xs = case xs of
+            []       -> Par1 <$> newAssigned (const one)
+            (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
+
+
 isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
 isSet (ByteString bits) ix = Bool $ fromCircuitF bits solve
     where
@@ -314,10 +338,29 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ fromC
         solve lv rv = do
             let varsLeft = lv
                 varsRight = rv
-            V.zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+            zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
   from = ByteString . binaryExpansion
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (FieldElement c) where
   from (ByteString a) = fromBinary a
+
+instance (Symbolic c, KnownNat n)
+    => FromJSON (ByteString n c) where
+    parseJSON val = do
+        str <- parseJSON val
+        case hexToByteString @c @n str of
+            Nothing -> Haskell.fail "bad bytestring!"
+            Just a  -> return a
+
+instance ToJSON (ByteString n (Interpreter (Zp p))) where
+    toJSON = toJSON . byteStringToHex
+
+byteStringToHex :: ByteString n (Interpreter (Zp p)) -> Haskell.String
+byteStringToHex bytes = showHex (toConstant bytes :: Natural) ""
+
+hexToByteString :: (Symbolic c, KnownNat n) => Haskell.String -> Maybe (ByteString n c)
+hexToByteString str = case readHex str of
+    [(n, "")] -> Just (fromConstant @Natural n)
+    _         -> Nothing

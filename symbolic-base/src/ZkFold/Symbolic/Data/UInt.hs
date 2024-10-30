@@ -17,7 +17,8 @@ module ZkFold.Symbolic.Data.UInt (
 
 import           Control.DeepSeq
 import           Control.Monad.State                (StateT (..))
-import           Data.Foldable                      (foldr, foldrM, for_)
+import           Data.Aeson                         hiding (Bool)
+import           Data.Foldable                      (foldlM, foldr, foldrM, for_)
 import           Data.Functor                       ((<$>))
 import           Data.Kind                          (Type)
 import           Data.List                          (unfoldr, zip)
@@ -27,8 +28,8 @@ import           Data.Tuple                         (swap)
 import qualified Data.Zip                           as Z
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
-import           Prelude                            (Integer, error, flip, otherwise, return, type (~), ($), (++), (.),
-                                                     (<>), (>>=))
+import           Prelude                            (Integer, const, error, flip, otherwise, return, type (~), ($),
+                                                     (++), (.), (<>), (>>=))
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
 
@@ -47,9 +48,11 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
+import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
+
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
@@ -238,12 +241,12 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     u1 >= u2 =
         let ByteString rs1 = from u1 :: ByteString n c
             ByteString rs2 = from u2 :: ByteString n c
-         in bitwiseGE rs1 rs2
+         in bitwiseGE @1 rs1 rs2
 
     u1 > u2 =
         let ByteString rs1 = from u1 :: ByteString n c
             ByteString rs2 = from u2 :: ByteString n c
-        in bitwiseGT rs1 rs2
+        in bitwiseGT @1 rs1 rs2
 
     max x y = bool @(Bool c) x y $ x < y
 
@@ -518,6 +521,29 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c)
                 return (p : ps <> [p'])
 
 
+instance
+  ( Symbolic c
+  , KnownNat n
+  , KnownRegisterSize r
+  , KnownNat (NumberOfRegisters (BaseField c) n r)
+  ) => SymbolicInput (UInt n r c) where
+  isValid (UInt bits) = Bool $ fromCircuitF bits solve
+    where
+        solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Par1 i)
+        solve v = do
+            let vs = V.fromVector v
+            bs <- toBits (Haskell.reverse vs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
+            ys <- Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bs
+            difference <- for (zip vs ys) $ \(i, j) -> newAssigned (\w -> w i - w j)
+            isZeros <- for difference $ isZero . Par1
+            helper isZeros
+
+        helper :: MonadCircuit i a m => [Par1 i] -> m (Par1 i)
+        helper xs = case xs of
+            []       -> Par1 <$> newAssigned (const one)
+            (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
+
+
 --------------------------------------------------------------------------------
 
 fullAdder :: (Arithmetic a, MonadCircuit i a m) => Natural -> i -> i -> i -> m (i, i)
@@ -537,3 +563,9 @@ vectorToNatural :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural ->
 vectorToNatural v n = foldr (\l r -> fromConstant l  + b * r) 0 vs where
     vs = Haskell.map toConstant $ V.fromVector v :: [Natural]
     b = 2 ^ n
+
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromJSON (UInt n r c) where
+    parseJSON = Haskell.fmap strictConv . parseJSON @Natural
+
+instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToJSON (UInt n r (Interpreter (Zp p))) where
+    toJSON = toJSON . toConstant

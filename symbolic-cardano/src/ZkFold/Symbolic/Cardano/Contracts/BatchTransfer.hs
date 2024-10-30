@@ -18,6 +18,7 @@ import           ZkFold.Symbolic.Data.Class           (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement    (fromFieldElement)
+import           ZkFold.Symbolic.Data.Input           (SymbolicInput)
 import           ZkFold.Symbolic.Data.UInt            (StrictConv (..))
 
 type Tokens = 10
@@ -42,7 +43,7 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFi
 batchTransfer ::
     forall context.
     ( Symbolic context
-    , SymbolicData (TxOut context)
+    , SymbolicInput (TxOut context)
     , KnownNat (NumberOfRegisters (BaseField context) 256 'Auto)
     , KnownNat (NumberOfRegisters (BaseField context) 64 'Auto)
     ) => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)-> Bool context

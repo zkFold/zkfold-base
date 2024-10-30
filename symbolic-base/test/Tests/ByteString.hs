@@ -5,6 +5,7 @@ module Tests.ByteString (specByteString) where
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
+import           Data.Aeson                                  (decode, encode)
 import           Data.Constraint                             (withDict)
 import           Data.Constraint.Nat                         (plusNat)
 import           Data.Function                               (($))
@@ -115,6 +116,14 @@ testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to leng
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
 
+testJSON :: forall n p. KnownNat n => PrimeField (Zp p) => Spec
+testJSON = it "preserves the JSON invariant property" $ do
+    x <- toss n
+    let zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
+    return $ Haskell.Just zpBS === decode (encode zpBS)
+    where
+        n = 2 Haskell.^ value @n -! 1
+
 -- | For some reason, Haskell can't infer obvious type relations such as n <= n + 1...
 --
 specByteString'
@@ -207,6 +216,7 @@ specByteString' = hspec $ do
         withDict (plusNat @n @10) (testGrow @n @(n + 10) @p)
         withDict (plusNat @n @128) (testGrow @n @(n + 128) @p)
         withDict (plusNat @n @n) (testGrow @n @(n + n) @p)
+        testJSON @n @p
 
 specByteString :: IO ()
 specByteString = do

@@ -1,6 +1,8 @@
+{-# LANGUAGE DerivingStrategies #-}
 module ZkFold.Symbolic.Interpreter (Interpreter (..)) where
 
 import           Control.DeepSeq                  (NFData)
+import           Data.Aeson                       (FromJSON, ToJSON)
 import           Data.Eq                          (Eq)
 import           Data.Function                    (($))
 import           Data.Functor                     ((<$>))
@@ -14,6 +16,8 @@ import           ZkFold.Symbolic.Class
 
 newtype Interpreter a f = Interpreter { runInterpreter :: f a }
     deriving (Eq, Show, Generic, NFData)
+    deriving newtype (FromJSON, ToJSON)
+
 
 instance HFunctor (Interpreter a) where
   hmap f (Interpreter x) = Interpreter (f x)

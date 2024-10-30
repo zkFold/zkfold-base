@@ -11,8 +11,10 @@ import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
 import           ZkFold.Symbolic.Cardano.Types.Output (Output)
 import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
-import           ZkFold.Symbolic.Class                (Symbolic)
+import           ZkFold.Symbolic.Class                (BaseField, Symbolic)
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
 
 data Transaction inputs rinputs outputs tokens mint datum context = Transaction {
         txRefInputs :: Vector rinputs (Input tokens datum context),
@@ -46,3 +48,16 @@ instance
   pieces (Transaction a b c d e) = pieces (a, b, c, d, e)
   restore f = let (a, b, c, d, e) = restore f in Transaction a b c d e
 
+
+instance
+    ( Symbolic context
+    , KnownNat (NumberOfRegisters (BaseField context) 32 Auto)
+    , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+    , KnownNat (NumberOfRegisters (BaseField context) 11 Auto)
+    , KnownNat tokens
+    , KnownNat rinputs
+    , KnownNat outputs
+    , KnownNat mint
+    , KnownNat inputs
+    ) => SymbolicInput (Transaction inputs rinputs outputs tokens mint datum context) where
+  isValid (Transaction _ txI _ _ _) = isValid txI
