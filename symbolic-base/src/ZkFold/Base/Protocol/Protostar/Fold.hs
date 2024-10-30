@@ -138,12 +138,12 @@ ivcVerifierAc
     => Support y ~ Proxy ctx
     => Representable (Layout i)
     => Representable (Layout c)
-    -- => Representable (Layout f)
+    => Representable (Layout f)
     => Representable (Layout a)
     => Representable (Layout m)
     => Ord (Rep (Layout i))
     => Ord (Rep (Layout c))
-    -- => Ord (Rep (Layout f))
+    => Ord (Rep (Layout f))
     => Ord (Rep (Layout a))
     => Ord (Rep (Layout m))
     => Layout f ~ Layout i

@@ -112,12 +112,20 @@ instance
     , Support y ~ Support z
     ) => SymbolicData (w, x, y, z) where
 
+{-
+
+-- When this code is commented out, 
+-- `ivcVerifierAc` no longer compiles.
+-- When this code is active, `ivcVerifierAc` compiles,
+-- but warns about redundant constraints
+
     type Context (w, x, y, z) = Context (w, (x, y, z))
     type Support (w, x, y, z) = Support (w, (x, y, z))
     type Layout (w, x, y, z) = Layout (w, (x, y, z))
 
     pieces (a, b, c, d) = pieces (a, (b, c, d))
     restore f = let (a, (b, c, d)) = restore f in (a, b, c, d)
+-}
 
 instance
     ( SymbolicData v
@@ -135,13 +143,6 @@ instance
     , Support x ~ Support y
     , Support y ~ Support z
     ) => SymbolicData (v, w, x, y, z) where
-
-    -- type Context (v, w, x, y, z) = Context (v, (w, x, y, z))
-    -- type Support (v, w, x, y, z) = Support (v, (w, x, y, z))
-    -- type Layout (v, w, x, y, z) = Layout (v, (w, x, y, z))
-
-    -- pieces (a, b, c, d, e) = pieces (a, (b, c, d, e))
-    -- restore f = let (a, (b, c, d, e)) = restore f in (a, b, c, d, e)
 
 instance
     ( SymbolicData x
