@@ -25,10 +25,11 @@ import           ZkFold.Base.Data.Utils           (zipWithM)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Prelude                   (iterateM, length)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool        (Bool)
+import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansionW, log2, maxBitsPerFieldElement, splitExpansion)
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord         (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned)
@@ -212,3 +213,7 @@ instance Finite (Zp p) => Finite (FFA p b) where
 
 -- FIXME: This Eq instance is wrong
 deriving newtype instance Symbolic c => Eq (Bool c) (FFA p c)
+
+-- | TODO: fix when rewrite is done
+instance (Symbolic c) => SymbolicInput (FFA p c) where
+  isValid _ = true
