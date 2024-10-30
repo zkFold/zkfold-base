@@ -114,7 +114,7 @@ instance
 
 {-
 
--- When this code is commented out, 
+-- When this code is commented out,
 -- `ivcVerifierAc` no longer compiles.
 -- When this code is active, `ivcVerifierAc` compiles,
 -- but warns about redundant constraints
