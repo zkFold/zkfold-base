@@ -92,6 +92,8 @@ instance Polynomial c i j => AdditiveSemigroup (Poly c i j) where
             go ls [] = ls
             go [] rs = rs
             go ((cl, ml):ls) ((cr, mr):rs)
+                | cl == zero = go ls ((cr, mr):rs)
+                | cr == zero = go ((cl, ml):ls) rs
                 | ml == mr =
                     if cl + cr == zero
                         then go ls rs
