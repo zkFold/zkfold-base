@@ -41,7 +41,6 @@ instance
     arbitrary = do
         outVar <- SysVar . InVar <$> arbitrary
         let ac = mempty {acOutput = Par1 outVar}
-        -- let ac = createRangeConstraint (FieldElement $ mempty {acOutput = Par1 outVar}) (fromConstant @Natural 1)
         fromFieldElement <$> arbitrary' (FieldElement ac) 10
 
 instance
