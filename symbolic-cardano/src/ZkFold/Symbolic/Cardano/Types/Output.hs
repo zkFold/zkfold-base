@@ -20,7 +20,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators           (NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq                    (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
-import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import           ZkFold.Symbolic.Data.Input                 (SymbolicInput (..))
 
 data Output tokens datum context = Output {
         txoAddress   :: Address context,

@@ -7,7 +7,7 @@ import           ZkFold.Symbolic.Cardano.Contracts.BatchTransfer (Tx, TxOut, bat
 import           ZkFold.Symbolic.Cardano.Types                   (Bool, ByteString)
 import           ZkFold.Symbolic.Class                           (Symbolic (..))
 import           ZkFold.Symbolic.Data.Combinators                (NumberOfRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import           ZkFold.Symbolic.Data.Input                      (SymbolicInput)
 
 exampleBatchTransfer ::
     ( Symbolic c

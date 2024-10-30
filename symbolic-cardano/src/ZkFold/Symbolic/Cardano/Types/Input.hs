@@ -14,8 +14,8 @@ import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
 import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
-import ZkFold.Symbolic.Data.Combinators (NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators        (NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Input              (SymbolicInput, isValid)
 
 data Input tokens datum context = Input  {
         txiOutputRef :: OutputRef context,
@@ -35,7 +35,7 @@ instance (Symbolic context, KnownNat tokens) => SymbolicData (Input tokens datum
   pieces (Input a b) = pieces (a, b)
   restore f = let (a, b) = restore f in Input a b
 
-instance 
+instance
   ( Symbolic context
   , KnownNat tokens
   , KnownNat (NumberOfRegisters (BaseField context) 32 Auto)

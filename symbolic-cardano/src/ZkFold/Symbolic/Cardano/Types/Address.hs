@@ -12,7 +12,7 @@ import           ZkFold.Symbolic.Class               (Symbolic)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq             (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
-import ZkFold.Symbolic.Data.Input
+import           ZkFold.Symbolic.Data.Input
 
 type AddressType context = ByteString 4 context
 type PaymentCredential context = ByteString 224 context

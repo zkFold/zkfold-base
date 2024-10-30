@@ -18,8 +18,8 @@ import           ZkFold.Symbolic.Data.Class           (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement    (fromFieldElement)
+import           ZkFold.Symbolic.Data.Input           (SymbolicInput)
 import           ZkFold.Symbolic.Data.UInt            (StrictConv (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 type Tokens = 10
 type TxOut context = Output Tokens () context

@@ -15,8 +15,8 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..), NumberOfRegisters)
-import ZkFold.Symbolic.Data.Input
+import           ZkFold.Symbolic.Data.Combinators    (NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Input
 
 type PolicyId context    = ByteString 224 context
 type AssetName context   = ByteString 256 context
@@ -32,7 +32,7 @@ deriving instance (Haskell.Ord (ByteString 224 context), Haskell.Ord (ByteString
 
 deriving instance (Symbolic context, KnownNat n) => SymbolicData (Value n context)
 
-instance 
+instance
     ( Symbolic context
     , KnownNat n
     , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
