@@ -22,31 +22,27 @@ import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), C
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), MapInput, SpecialSoundProtocol (..))
-import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Eq
-
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
-class AccumulatorScheme i f c m ctx a where
+class AccumulatorScheme pi f c m a where
   prover   :: a
-           -> f                          -- Commitment key ck
-           -> Accumulator i f c m        -- accumulator
-           -> InstanceProofPair i c m    -- instance-proof pair (pi, π)
-           -> (Accumulator i f c m, [c]) -- updated accumulator and accumulation proof
+           -> f                           -- Commitment key ck
+           -> Accumulator pi f c m        -- accumulator
+           -> InstanceProofPair pi c m    -- instance-proof pair (pi, π)
+           -> (Accumulator pi f c m, [c]) -- updated accumulator and accumulation proof
 
-  verifier :: i                          -- Public input
-           -> [c]                        -- NARK proof π.x
-           -> AccumulatorInstance i f c  -- accumulator instance acc.x
-           -> AccumulatorInstance i f c  -- updated accumulator instance acc'.x
-           -> [c]                        -- accumulation proof E_j
-           -> Bool ctx
+  verifier :: pi                          -- Public input
+           -> [c]                         -- NARK proof π.x
+           -> AccumulatorInstance pi f c  -- accumulator instance acc.x
+           -> AccumulatorInstance pi f c  -- updated accumulator instance acc'.x
+           -> [c]                         -- accumulation proof E_j
+           -> (f, pi, [f], [c], c)        -- returns zeros if the accumulation proof is correct
 
   decider  :: a
-           -> (f, KeyScale f)       -- Commitment key ck and scaling factor
-           -> Accumulator i f c m   -- final accumulator
-           -> Bool ctx
+           -> (f, KeyScale f)             -- Commitment key ck and scaling factor
+           -> Accumulator pi f c m        -- final accumulator
+           -> ([c], c)                    -- returns zeros if the final accumulator is valid
 
 data KeyScale f = KeyScale f f
     deriving (P.Show, Generic, NFData)
@@ -67,12 +63,7 @@ instance (Scale f a, AdditiveSemigroup a) => LinearCombinationWith f [a] where
     linearCombinationWith f = P.zipWith (\a b -> scale f a + b)
 
 instance
-    ( Symbolic ctx
-    , Eq (Bool ctx) c
-    , Eq (Bool ctx) i
-    , Eq (Bool ctx) f
-    , Eq (Bool ctx) [f]
-    , Eq (Bool ctx) [c]
+    ( AdditiveGroup i
     , AdditiveGroup c
     , AdditiveSemigroup m
     , Ring f
@@ -91,7 +82,7 @@ instance
     , RandomOracle i f                                    -- Random oracle for compressing public input
     , HomomorphicCommit f [m] c
     , HomomorphicCommit f [f] c
-    ) => AccumulatorScheme i f c m ctx (FiatShamir f (CommitOpen m c a)) where
+    ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen _ sps) _) ck acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') mi'', eCapital_j)
       where
@@ -145,7 +136,7 @@ instance
           eCapital' = acc^.x^.e + sum (P.zipWith (\e' p -> scale (alpha ^ p) e') eCapital_j [1::Natural ..])
 
 
-  verifier pubi c_i acc acc' pf = and [muEq, piEq, riEq, ciEq, eEq]
+  verifier pubi c_i acc acc' pf = (muDiff, piDiff, riDiff, ciDiff, eDiff)
       where
           -- Fig. 4, step 1
           r_i :: [f]
@@ -162,18 +153,18 @@ instance
           ci'' = linearCombinationWith alpha c_i  $ acc^.c
 
           -- Fig 4, step 4
-          muEq = acc'^.mu == mu'
-          piEq = acc'^.pi == pi''
-          riEq = acc'^.r  == ri''
-          ciEq = acc'^.c  == ci''
+          muDiff = acc'^.mu - mu'
+          piDiff = acc'^.pi - pi''
+          riDiff = acc'^.r  - ri''
+          ciDiff = acc'^.c  - ci''
 
           -- Fig 4, step 5
-          eEq = acc'^.e == acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf)
+          eDiff = acc'^.e - (acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf))
 
-  decider (FiatShamir sps _) (ck, KeyScale ef _) acc = commitsEq && eEq
+  decider (FiatShamir sps _) (ck, KeyScale ef _) acc = (commitsDiff, eDiff)
       where
           -- Fig. 5, step 1
-          commitsEq = and $ P.zipWith (\cm m_acc -> cm == hcommit (scale (acc^.x^.mu) ck) [m_acc]) (acc^.x^.c) (acc^.w)
+          commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit (scale (acc^.x^.mu) ck) [m_acc]) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           err :: [f]
@@ -181,4 +172,4 @@ instance
 
 
           -- Fig. 5, step 3
-          eEq = (acc^.x^.e) == hcommit (scale ef ck) err
+          eDiff = (acc^.x^.e) - hcommit (scale ef ck) err
