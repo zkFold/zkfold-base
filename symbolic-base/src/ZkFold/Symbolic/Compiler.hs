@@ -46,17 +46,13 @@ forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) 
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder ::
-    forall a c f s l .
-    ( c ~ ArithmeticCircuit a l
+    forall a c f s .
+    ( c ~ ArithmeticCircuit a (Layout s)
     , SymbolicData f
     , Context f ~ c
     , Support f ~ s
     , SymbolicInput s
     , Context s ~ c
-    , Support s ~ Proxy c
-    , Layout s ~ l
-    , Representable l
-    , Ord (Rep l)
     , Symbolic c
     ) => f -> c (Layout f)
 solder f = fromCircuit2F (pieces f input) b $ \r (Par1 i) -> do
@@ -77,7 +73,6 @@ compileForceOne ::
     , Support f ~ s
     , SymbolicInput s
     , Context s ~ c
-    , Support s ~ Proxy c
     , Layout s ~ l
     , Representable l
     , Binary (Rep l)
@@ -99,10 +94,7 @@ compile ::
     , Support f ~ s
     , SymbolicInput s
     , Context s ~ c
-    , Support s ~ Proxy c
     , Layout s ~ l
-    , Representable l
-    , Ord (Rep l)
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
@@ -123,10 +115,7 @@ compileIO ::
     , ToJSON (Layout f (Var a l))
     , SymbolicInput s
     , Context s ~ c
-    , Support s ~ Proxy c
     , Layout s ~ l
-    , Representable l
-    , Ord (Rep l)
     , FromJSON (Rep l)
     , ToJSON (Rep l)
     , Symbolic c

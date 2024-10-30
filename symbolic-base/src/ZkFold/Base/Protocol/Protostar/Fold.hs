@@ -120,10 +120,9 @@ ivcVerifierAc
     => SymbolicInput (i, c, (i, c, f, c, f), (i, c, f, c, f), c)
     => SymbolicInput (a, (f, (f, f)), ((i, c, f, c, f), m))
     => SymbolicData y
-    => Context i ~ ctx
     => Context a ~ ctx
+    => Context i ~ ctx
     => Context y ~ ctx
-    => Support i ~ Proxy ctx
     => Support y ~ Proxy ctx
     => Layout y ~ Par1
     => t ~ ((i,c,(i,c,f,c,f),(i,c,f,c,f),c),(a,(f,f,f),(i,c,f,c,f),m),Proxy ctx)
@@ -152,7 +151,6 @@ iterate
     => Scale (FieldElement ctx) comm
     => ctx ~ ArithmeticCircuit a (Vector n)
     => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
-    => SymbolicInput (Vector n (FieldElement (ArithmeticCircuit a ((Vector n :.: Par1) :*: U1))))
     => (forall c. (Symbolic c, BaseField c ~ a) => Vector n (FieldElement c) -> Vector n (FieldElement c))
     -> Vector n a
     -> Natural

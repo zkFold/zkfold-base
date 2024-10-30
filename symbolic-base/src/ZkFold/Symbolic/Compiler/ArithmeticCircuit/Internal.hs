@@ -127,21 +127,6 @@ imapVar _ (ConstVar c) = ConstVar c
 
 ---------------------------------- Variables -----------------------------------
 
--- acInput :: forall f s a l c.
---   ( s ~ Support f
---     , c ~ ArithmeticCircuit a l
---     , SymbolicData s
---     , Layout s ~ l
---     , Context s ~ c
---     , Support s ~ Proxy c
---     , Representable l
---     , Ord (Rep l)
---   ) => Support f
--- acInput = restore @(Support f) $ const inputC
---     where
---         inputC = mempty { acOutput = acInput' }
---         acInput' = fmapRep (SysVar . InVar) (tabulate id )
-
 acInput :: Representable i => i (Var a i)
 acInput = fmapRep (SysVar . InVar) (tabulate id)
 
