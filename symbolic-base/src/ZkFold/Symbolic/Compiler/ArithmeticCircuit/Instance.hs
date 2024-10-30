@@ -21,8 +21,10 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
 import           ZkFold.Prelude                                      (genSubset)
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
+import           ZkFold.Symbolic.MonadCircuit
 
 ------------------------------------- Instances -------------------------------------
 
@@ -68,15 +70,28 @@ arbitrary' ac iter = do
     let vars = getAllVars (fromFieldElement ac)
     li <- elements vars
     ri <- elements vars
-    let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (SysVar li) }
-                 , FieldElement (fromFieldElement ac) { acOutput = pure (SysVar ri) })
+    let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (SysVar li)}
+                 , FieldElement (fromFieldElement ac) { acOutput = pure (SysVar ri)})
+    let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural 10)) { acOutput = pure (SysVar li)}
+
     ac' <- elements [
         l + r
         , l * r
         , l - r
         , l // r
+        , c
         ]
     arbitrary' ac' (iter -! 1)
+
+
+createRangeConstraint :: Symbolic c => FieldElement c -> BaseField c -> FieldElement c
+createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par1 v) ->  Par1 <$> solve v a)
+  where
+    solve :: MonadCircuit var a m => var -> a -> m var
+    solve v b = do
+      v' <- newAssigned (Haskell.const zero)
+      rangeConstraint v' b
+      return v
 
 -- TODO: make it more readable
 instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var a i)), Haskell.Ord (Rep i), Show (Var a i), Show (Rep i)) => Show (ArithmeticCircuit a i o) where

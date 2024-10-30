@@ -20,6 +20,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators           (NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq                    (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
+import           ZkFold.Symbolic.Data.Input                 (SymbolicInput (..))
 
 data Output tokens datum context = Output {
         txoAddress   :: Address context,
@@ -44,6 +45,13 @@ instance
 
   pieces (Output a b c) = pieces (a, b, c)
   restore f = let (a, b, c) = restore f in Output a b c
+
+instance
+    ( Symbolic context
+    , KnownNat tokens
+    , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+    ) => SymbolicInput (Output tokens datum context) where
+    isValid (Output a t d) = isValid (a, t, d)
 
 deriving via (Structural (Output tokens datum context))
          instance
