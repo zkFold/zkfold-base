@@ -75,21 +75,23 @@ type FS_CM ctx n comm a = FiatShamir (FieldElement ctx) (CommitOpen (SPS.MapMess
 --
 data ProtostarResult pi f c m
     = ProtostarResult
-    { result       :: pi
-    , proverOutput :: Accumulator pi f c m
+    { result           :: pi
+    , finalAccumulator :: Accumulator pi f c m
+    , finalAccProof    :: [c]
     } deriving (Generic)
 
 deriving instance (NFData pi, NFData f, NFData c, NFData m) => NFData (ProtostarResult pi f c m)
 deriving instance (P.Show pi, P.Show f, P.Show c, P.Show m) => P.Show (ProtostarResult pi f c m)
 
 toFS
-    :: forall ctx n comm a
-    .  HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
-    => FieldElement ctx
-    -> C n a
-    -> Vector n (FieldElement ctx)
-    -> FS_CM ctx n comm a
-toFS ck rc = FiatShamir (CommitOpen (hcommit ck) rc)
+    :: forall pi f c m
+    .  HomomorphicCommit f [m] c
+    => Input f (pi -> pi) ~ pi
+    => f
+    -> (pi -> pi)
+    -> pi
+    -> FiatShamir f (CommitOpen m c (pi -> pi))
+toFS ck func = FiatShamir (CommitOpen (hcommit ck) func)
 
 -- No SymbolicData instances for data
 -- all protocols are one-round in case of arithmetic circuits, therefore we can replace lists with elements.
@@ -187,50 +189,43 @@ instanceProof ck func i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where
         m = SPS.prover @f func () i []
 
--- iteration
---     :: forall ctx n comm a
---     .  Symbolic ctx
---     => KnownNat n
---     => Arithmetic a
---     => Scale a (BaseField ctx)
---     => FromConstant a (BaseField ctx)
---     => SPS.Input (FieldElement ctx) (C n a) ~ Vector n (FieldElement ctx)
---     => Eq (Bool ctx) comm
---     => Eq (Bool ctx) [comm]
---     => Eq (Bool ctx) [FieldElement ctx]
---     => Eq (Bool ctx) (Vector n (FieldElement ctx))
---     => RandomOracle comm (FieldElement ctx)
---     => HomomorphicCommit (FieldElement ctx) [FieldElement ctx] comm
---     => HomomorphicCommit (FieldElement ctx) [SPS.MapMessage (FieldElement ctx) (C n a)] comm
---     => AdditiveGroup comm
---     => Scale a (PU.PolyVec (FieldElement ctx) 3)
---     => Scale a (FieldElement ctx)
---     => Scale (FieldElement ctx) comm
---     => Natural
---     -> FieldElement ctx
---     -> (Vector n (FieldElement ctx) -> Vector n (FieldElement ctx))
---     -> C n a
---     -> SPS.MapInput (FieldElement ctx) (C n a)
---     -> Vector n a
---     -> Acc ctx n comm a
---     -> Acc.KeyScale (FieldElement ctx)
---     -> ProtostarResult ctx n comm a
--- iteration 0 _  _ _  i _ acc _  = ProtostarResult i acc
--- iteration n ck f rc i i_pure acc (Acc.KeyScale alphaSum muSum) = iteration (n -! 1) ck f rc newi newi_pure newAcc newKS
---     where
---         fs :: FS_CM ctx n comm a
---         fs = toFS ck rc i
+iteration
+    :: forall pi f c m
+    .  RandomOracle pi f
+    => RandomOracle c f
+    => Acc.LinearCombination m (SPS.MapMessage (PU.PolyVec f (Degree (pi -> pi) + 1)) (pi -> pi))
+    => Acc.LinearCombination pi (SPS.MapInput (PU.PolyVec f (Degree (pi -> pi) + 1)) (pi -> pi))
+    => Acc.LinearCombinationWith f pi
+    => SPS.AlgebraicMap f (pi -> pi)
+    => SPS.AlgebraicMap (PU.PolyVec f (Degree (pi -> pi) + 1)) (pi -> pi)
+    => HomomorphicCommit f [f] c
+    => HomomorphicCommit f [m] c
+    => AdditiveGroup pi
+    => AdditiveGroup c
+    => AdditiveSemigroup m
+    => SpecialSoundProtocol f (pi -> pi)
+    => KnownNat (Degree (pi -> pi) + 1)
+    => Witness f (pi -> pi) ~ ()
+    => Input f (pi -> pi) ~ pi
+    => ProverMessage f (pi -> pi) ~ m
+    => SPS.MapInput f (pi -> pi) ~ pi
+    => SPS.MapMessage f (pi -> pi) ~ m
+    => Scale f (PU.PolyVec f 3)
+    => Scale f c
+    => Scale f m
+    => Ring f
+    => Natural
+    -> f
+    -> (pi -> pi)
+    -> ProtostarResult pi f c m
+    -> ProtostarResult pi f c m
+iteration 0 _  _     res = res
+iteration n ck func (ProtostarResult i acc _) = iteration (n -! 1) ck func (ProtostarResult newi newAcc accProof)
+    where
+        fs :: FiatShamir f (CommitOpen m c (pi -> pi))
+        fs = toFS ck func i
 
---         nark@(InstanceProofPair _ narkProof) = instanceProof @ctx @n @comm @a ck rc i i_pure
---         (newAcc, accProof) = Acc.prover @_ @(FieldElement ctx) @comm @_ fs ck acc nark
+        newi = func i
 
---         alpha :: FieldElement ctx
---         alpha = oracle (acc^.x, i, narkCommits narkProof, accProof)
-
---         alphaPows = sum $ P.take (P.length accProof) $ (alpha ^) <$> [1 :: Natural ..]
-
---         newi = f i
-
---         newi_pure = eval rc i_pure
-
---         newKS = Acc.KeyScale (alphaSum + alphaPows) (muSum + scale (6 :: Natural) alpha)
+        nark = instanceProof ck func i
+        (newAcc, accProof) = Acc.prover @pi @f @c @m fs ck acc nark
