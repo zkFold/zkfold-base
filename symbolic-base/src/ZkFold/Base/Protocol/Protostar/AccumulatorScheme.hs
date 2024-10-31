@@ -1,7 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant ^." #-}
 
 module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
@@ -40,12 +42,9 @@ class AccumulatorScheme pi f c m a where
            -> (f, pi, [f], [c], c)        -- returns zeros if the accumulation proof is correct
 
   decider  :: a
-           -> (f, KeyScale f)             -- Commitment key ck and scaling factor
+           -> f                           -- Commitment key ck
            -> Accumulator pi f c m        -- final accumulator
            -> ([c], c)                    -- returns zeros if the final accumulator is valid
-
-data KeyScale f = KeyScale f f
-    deriving (P.Show, Generic, NFData)
 
 -- | Class describing types which can form a polynomial linear combination:
 -- linearCombination a1 a2 -> a1 * X + a2
@@ -161,10 +160,10 @@ instance
           -- Fig 4, step 5
           eDiff = acc'^.e - (acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf))
 
-  decider (FiatShamir sps) (ck, KeyScale ef _) acc = (commitsDiff, eDiff)
+  decider (FiatShamir sps) ck acc = (commitsDiff, eDiff)
       where
           -- Fig. 5, step 1
-          commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit (scale (acc^.x^.mu) ck) m_acc) (acc^.x^.c) (acc^.w)
+          commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit ck m_acc) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           err :: [f]
@@ -172,4 +171,4 @@ instance
 
 
           -- Fig. 5, step 3
-          eDiff = (acc^.x^.e) - hcommit (scale ef ck) err
+          eDiff = (acc^.x^.e) - hcommit ck err
