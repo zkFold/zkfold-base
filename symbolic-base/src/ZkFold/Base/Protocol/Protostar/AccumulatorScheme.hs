@@ -7,12 +7,10 @@
 
 module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
-import           Control.DeepSeq                             (NFData)
 import           Control.Lens                                ((^.))
 import           Data.List                                   (transpose)
 import qualified Data.Vector                                 as DV
-import           GHC.Generics                                (Generic)
-import           Prelude                                     (type (~), ($), (.), (<$>))
+import           Prelude                                     (type (~), ($), (.), (<$>), concatMap)
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -24,6 +22,7 @@ import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), C
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), MapInput, SpecialSoundProtocol (..))
+import           ZkFold.Symbolic.Data.Class                  (SymbolicData(..))
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
@@ -46,60 +45,51 @@ class AccumulatorScheme pi f c m a where
            -> Accumulator pi f c m        -- final accumulator
            -> ([c], c)                    -- returns zeros if the final accumulator is valid
 
--- | Class describing types which can form a polynomial linear combination:
--- linearCombination a1 a2 -> a1 * X + a2
---
-class LinearCombination a b where
-    linearCombination :: a -> a -> b
-
--- | Same as above, but with a coefficient known at runtime
--- linearCombination coeff b1 b2 -> b1 * coeff + b2
---
-class LinearCombinationWith a b where
-    linearCombinationWith :: a -> b -> b -> b
-
-instance (Scale f a, AdditiveSemigroup a) => LinearCombinationWith f [a] where
-    linearCombinationWith f = P.zipWith (\a b -> scale f a + b)
+type SymbolicDataRepresentableAsVector f x = (SymbolicData x, Support x ~ (), Context x (Layout x) ~ [f])
 
 instance
-    ( AdditiveGroup i
+    ( AdditiveGroup pi
     , AdditiveGroup c
     , AdditiveSemigroup m
     , Ring f
+    , Scale f pi
     , Scale f c
     , Scale f m
-    , MapInput f a ~ i
-    , deg ~ Degree (CommitOpen m c a) + 1
-    , KnownNat deg
-    , LinearCombination (MapMessage f a) (MapMessage (PU.PolyVec f deg) a)
-    , LinearCombination (MapInput f a) (MapInput (PU.PolyVec f deg) a)
-    , LinearCombinationWith f (MapInput f a)
-    , MapMessage f a ~ m
-    , AlgebraicMap f (CommitOpen m c a)
-    , AlgebraicMap (PU.PolyVec f deg) a
-    , RandomOracle c f                                    -- Random oracle ρ_NARK
-    , RandomOracle i f                                    -- Random oracle for compressing public input
-    , HomomorphicCommit f m c
+    , RandomOracle pi f         -- Random oracle for compressing public input
+    , RandomOracle c f          -- Random oracle ρ_NARK
     , HomomorphicCommit f [f] c
-    ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen m c a)) where
+    , HomomorphicCommit f m c
+    , SymbolicDataRepresentableAsVector f pi
+    , SymbolicDataRepresentableAsVector f m
+    , AlgebraicMap f (CommitOpen m c a)
+    , MapInput f a ~ pi
+    , MapMessage f a ~ m
+    , Degree (FiatShamir f (CommitOpen m c a)) + 1 ~ deg
+    , KnownNat deg
+    , AlgebraicMap (PU.PolyVec f deg) a
+    , MapInput (PU.PolyVec f deg) a ~ [PU.PolyVec f deg]
+    , MapMessage (PU.PolyVec f deg) a ~ PU.PolyVec f deg
+    ) => AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen _ sps)) ck acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
-        (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') mi'', eCapital_j)
+        (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
       where
           -- Fig. 3, step 1
           r_i :: [f]
-          r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) (zero : pi_x)
+          r_i = P.scanl (P.curry oracle) (oracle pubi) pi_x
 
           -- Fig. 3, step 2
 
           -- X + mu as a univariate polynomial
           polyMu :: PU.PolyVec f deg
-          polyMu = PU.polyVecLinear (acc^.x^.mu) one
+          polyMu = PU.polyVecLinear one (acc^.x^.mu)
 
           -- X * pi + pi' as a list of univariate polynomials
-          polyPi = linearCombination pubi (acc^.x^.pi)
+          polyPi :: [PU.PolyVec f deg]
+          polyPi = P.zipWith (PU.polyVecLinear @f) (pieces pubi ()) (pieces (acc^.x^.pi) ())
 
           -- X * mi + mi'
-          polyW = P.zipWith linearCombination pi_w (acc^.w)
+          polyW :: [PU.PolyVec f deg]
+          polyW = P.zipWith (PU.polyVecLinear @f) (concatMap (`pieces` ()) pi_w) (concatMap (`pieces` ()) (acc^.w))
 
           -- X * ri + ri'
           polyR :: [PU.PolyVec f deg]
@@ -111,35 +101,35 @@ instance
           e_uni = algebraicMap @(PU.PolyVec f deg) sps polyPi polyW polyR polyMu
 
           -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
-          e_all = transpose $ (DV.toList . PU.fromPolyVec) <$> e_uni
+          e_all = transpose $ DV.toList . PU.fromPolyVec <$> e_uni
 
           -- e_j are coefficients of degree-j homogenous polynomials where j is from the range [1, d - 1]
           e_j :: [[f]]
-          e_j = P.tail $ P.init $ e_all
+          e_j = P.tail . P.init $ e_all
 
           -- Fig. 3, step 3
-          eCapital_j = hcommit ck <$> e_j
+          pf = hcommit ck <$> e_j
 
           -- Fig. 3, step 4
           alpha :: f
-          alpha = oracle (acc^.x, pubi, pi_x, eCapital_j)
+          alpha = oracle (acc^.x, pubi, pi_x, pf)
 
           -- Fig. 3, steps 5, 6
-          mu'  = alpha + acc^.x^.mu
-          pi'' = linearCombinationWith alpha pubi $ acc^.x^.pi
-          ri'' = linearCombinationWith alpha r_i  $ acc^.x^.r
-          ci'' = linearCombinationWith alpha pi_x $ acc^.x^.c
-          mi'' = linearCombinationWith alpha pi_w $ acc^.w
+          mu'   = alpha + acc^.x^.mu
+          pi''  = scale alpha pubi + acc^.x^.pi
+          ri''  = scale alpha r_i  + acc^.x^.r
+          ci''  = scale alpha pi_x + acc^.x^.c
+          m_i'' = scale alpha pi_w + acc^.w
 
           -- Fig. 3, step 7
-          eCapital' = acc^.x^.e + sum (P.zipWith (\e' p -> scale (alpha ^ p) e') eCapital_j [1::Natural ..])
+          eCapital' = acc^.x^.e + sum (P.zipWith (\e' p -> scale (alpha ^ p) e') pf [1::Natural ..])
 
 
   verifier pubi c_i acc acc' pf = (muDiff, piDiff, riDiff, ciDiff, eDiff)
       where
           -- Fig. 4, step 1
           r_i :: [f]
-          r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) (zero : c_i)
+          r_i = P.scanl (P.curry oracle) (oracle pubi) c_i
 
           -- Fig. 4, step 2
           alpha :: f
@@ -147,9 +137,9 @@ instance
 
           -- Fig. 4, step 3
           mu'  = alpha + acc^.mu
-          pi'' = linearCombinationWith alpha pubi $ acc^.pi
-          ri'' = linearCombinationWith alpha r_i  $ acc^.r
-          ci'' = linearCombinationWith alpha c_i  $ acc^.c
+          pi'' = scale alpha pubi + acc^.pi
+          ri'' = scale alpha r_i  + acc^.r
+          ci'' = scale alpha c_i  + acc^.c
 
           -- Fig 4, step 4
           muDiff = acc'^.mu - mu'
@@ -158,7 +148,7 @@ instance
           ciDiff = acc'^.c  - ci''
 
           -- Fig 4, step 5
-          eDiff = acc'^.e - (acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf))
+          eDiff = acc'^.e - (acc^.e + sum (P.zipWith scale ((alpha ^) <$> [1 :: Natural ..]) pf))
 
   decider (FiatShamir sps) ck acc = (commitsDiff, eDiff)
       where
