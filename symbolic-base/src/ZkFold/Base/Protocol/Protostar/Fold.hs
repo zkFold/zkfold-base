@@ -75,23 +75,39 @@ ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ck, dkTuple)
         dk = let ((x1, x2, x3, x4, x5), m) = dkTuple
               in Accumulator (AccumulatorInstance x1 [x2] [x3] x4 x5) [m]
 
--- TODO: replace it with proper zero checks
 ivcVerifier0
     :: forall pi f c m a ctx
-    .  AdditiveMonoid ((f, pi, [f], [c], c), ([c], c))
-    => Eq (Bool ctx) ((f, pi, [f], [c], c), ([c], c))
+    .  Symbolic ctx
+    => AdditiveMonoid pi
+    => AdditiveMonoid f
+    => AdditiveMonoid c
+    => Eq (Bool ctx) pi
+    => Eq (Bool ctx) f
+    -- TODO: replace list with vector
+    => Eq (Bool ctx) [f]
+    => Eq (Bool ctx) c
+    -- TODO: replace list with vector
+    => Eq (Bool ctx) [c]
     => Acc.AccumulatorScheme pi f c m a
     => (pi, c, (pi, c, f, c, f), (pi, c, f, c, f), c)
     -> (a, f, ((pi, c, f, c, f), m))
     -> Bool ctx
-ivcVerifier0 arg1 arg2 = ivcVerifier arg1 arg2 == zero
+ivcVerifier0 arg1 arg2 =
+    let ((x1, x2, x3, x4, x5), (x6, x7)) = ivcVerifier @pi @f @c @m @a arg1 arg2
+    in x1 == zero && x2 == zero && x3 == zero && x4 == zero && x5 == zero && x6 == zero && x7 == zero
 
 -- TODO: this is insane
 ivcVerifierAc
     :: forall pi f c m ctx a y t
-    .  AdditiveMonoid ((f, pi, [f], [c], c), ([c], c))
-    => Eq (Bool ctx) ((f, pi, [f], [c], c), ([c], c))
-    => Symbolic ctx
+    .  Symbolic ctx
+    => AdditiveMonoid pi
+    => AdditiveMonoid f
+    => AdditiveMonoid c
+    => Eq (Bool ctx) pi
+    => Eq (Bool ctx) f
+    => Eq (Bool ctx) [f]
+    => Eq (Bool ctx) c
+    => Eq (Bool ctx) [c]
     => SymbolicInput (pi, c, (pi, c, f, c, f), (pi, c, f, c, f), c)
     => SymbolicInput (a, f, ((pi, c, f, c, f), m))
     => SymbolicData y
@@ -136,7 +152,7 @@ iterate
     -> pi
     -> Natural
     -> ProtostarResult pi f c m
-iterate func pi n = iteration n ck func res
+iterate func pi n = iteration n ck func initialResult
     where
         initE = hcommit ck $ replicate (outputLength @f func) (zero :: f)
 
@@ -146,12 +162,12 @@ iterate func pi n = iteration n ck func res
         initialAccumulator :: Accumulator pi f c m
         initialAccumulator = Accumulator (AccumulatorInstance zero (P.map (P.const zero) [1.. rounds @f func]) (P.map (P.const zero) [1 .. rounds @f func]) initE zero) [zero]
 
-        res :: ProtostarResult pi f c m
-        res = ProtostarResult pi initialAccumulator []
+        initialResult :: ProtostarResult pi f c m
+        initialResult = ProtostarResult pi initialAccumulator []
 
 instanceProof
     :: forall pi f c m
-    .  AdditiveMonoid f
+    .  RandomOracle pi f
     => HomomorphicCommit f m c
     => SpecialSoundProtocol f (pi -> pi)
     => Witness f (pi -> pi) ~ ()
@@ -161,10 +177,9 @@ instanceProof
     -> (pi -> pi)
     -> pi
     -> InstanceProofPair pi c m
-instanceProof ck func i = InstanceProofPair i (NARKProof [hcommit ck m] [m])
+instanceProof ck func pi = InstanceProofPair pi (NARKProof [hcommit ck m] [m])
     where
-        -- TODO: here we are using `zero` as the transcript
-        m = SPS.prover @f func () i zero 0
+        m = SPS.prover @f func () pi (oracle pi) 0
 
 iteration
     :: forall pi f c m n
