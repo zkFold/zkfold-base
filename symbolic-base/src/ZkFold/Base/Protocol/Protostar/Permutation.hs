@@ -7,11 +7,10 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations      (Permutation, applyPermutation)
 import           ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..))
-import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
 
-instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutation n) where
+instance (Ring f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutation n) where
     type Witness f (ProtostarPermutation n)         = Vector n f
     -- ^ w in the paper
     type Input f (ProtostarPermutation n)           = Permutation n
@@ -19,7 +18,7 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
     type ProverMessage f (ProtostarPermutation n)   = Vector n f
     -- ^ same as Witness
     type VerifierMessage f (ProtostarPermutation n) = ()
-    type VerifierOutput f (ProtostarPermutation n)  = Bool
+    type VerifierOutput f (ProtostarPermutation n)  = [f]
 
     type Degree (ProtostarPermutation n)            = 1
 
@@ -40,11 +39,11 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
              -> Input f (ProtostarPermutation n)
              -> [ProverMessage f (ProtostarPermutation n)]
              -> [f]
-             -> Bool
-    verifier p sigma [w] ts = algebraicMap p sigma [w] ts one == V.fromVector w
+             -> [f]
+    verifier p sigma [w] ts = algebraicMap p sigma [w] ts one - V.fromVector w
     verifier _ _     _   _  = error "Invalid transcript"
 
-instance (Arithmetic f, KnownNat n) => AlgebraicMap f (ProtostarPermutation n) where
+instance KnownNat n => AlgebraicMap f (ProtostarPermutation n) where
     type MapInput f (ProtostarPermutation n) = Permutation n
     type MapMessage f (ProtostarPermutation n) = Vector n f
 
