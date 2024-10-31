@@ -18,15 +18,6 @@ instance RandomOracle a b => RandomOracle (CommitOpen m c a) b where
 data CommitOpenProverMessage m c = Commit c | Open [m]
     deriving Generic
 
--- instance (Binary c, Binary m) => Binary (CommitOpenProverMessage m c) where
---       put (Commit c)  = putWord8 0 <> put c
---       put (Open msgs) = putWord8 1 <> put msgs
---       get = do
---             flag <- getWord8
---             if flag == 0 then Commit <$> get
---             else if flag == 1 then Open <$> get
---             else fail ("Binary (CommitOpenProverMessage t c a): unexpected flag " <> show flag)
-
 instance
     ( SpecialSoundProtocol f a
     , ProverMessage f a ~ m
@@ -59,32 +50,3 @@ instance (AlgebraicMap f a, m ~ MapMessage f a) => AlgebraicMap f (CommitOpen m 
 
       algebraicMap (CommitOpen _ a) i ((Open ms):_) ts = algebraicMap @f a i ms ts
       algebraicMap _ _ _ _                             = error "CommitOpen algebraic map: invalid transcript"
-
-
--- commits
---     :: forall f m c a
---     .  Transcript f (CommitOpen m c a) -> [c]
--- commits = map f
---       where
---           f :: (ProverMessage f (CommitOpen m c a), VerifierMessage f (CommitOpen m c a)) -> c
---           f (Commit c, _) = c
---           f _             = error "Invalid message"
-
--- opening
---     :: forall f m c a
---     .  SpecialSoundProtocol f a
---     => ProverMessage f a ~ m
---     => AdditiveGroup c
---     => CommitOpen m c a
---     -> Witness f a
---     -> Input f a
---     -> (Transcript f (CommitOpen m c a) -> ProverMessage f (CommitOpen m c a) -> VerifierMessage f a)
---     -> ([m], Transcript f (CommitOpen m c a))
--- opening a'@(CommitOpen _ a) w i challenge =
---       let f (ms, ts) _ =
---                   let rs  = snd <$> ts
---                       tsA = zip ms rs
---                       m   = prover @f a w i tsA
---                       c   = prover @f a' (w, ms) i ts
---                   in (ms ++ [m], ts ++ [(c, challenge ts c)])
---       in foldl f ([], []) [1 .. rounds @f a]

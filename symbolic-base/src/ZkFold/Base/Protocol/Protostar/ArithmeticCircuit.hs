@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes     #-}
-{-# LANGUAGE DeriveAnyClass          #-}
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -30,7 +29,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
-
 
 instance
     ( Arithmetic a
@@ -85,7 +83,7 @@ instance
             sys = M.elems (acSystem ac)
 
             varMap :: SysVar (Vector n) -> f
-            varMap (InVar iv)  = i V.!! (fromZp iv)
+            varMap (InVar iv)  = i V.!! fromZp iv
             varMap (NewVar nv) = M.findWithDefault zero nv witness
 
             f_sps :: Vector 3 [PM.Poly a (SysVar (Vector n)) Natural]

@@ -17,22 +17,6 @@ import           ZkFold.Prelude                              (length)
 newtype FiatShamir f a = FiatShamir a
     deriving Generic
 
--- fsChallenge
---     :: forall f m c a
---     .  Binary (SpS.Input f a)
---     => Binary (VerifierMessage f a)
---     => Binary c
---     => Binary (ProverMessage f a)
---     => m ~ ProverMessage f a
---     => FiatShamir f (CommitOpen m c a)
---     -> SpecialSoundTranscript f (CommitOpen m c a)
---     -> ProverMessage f (CommitOpen m c a)
---     -> VerifierMessage f a
--- fsChallenge (FiatShamir _ ip) []           c =
---       let r0 = challenge @ByteString $ toTranscript ip :: VerifierMessage f a
---       in challenge @ByteString $ toTranscript r0 <> toTranscript c
--- fsChallenge _                 ((_, r) : _) c = challenge @ByteString $ toTranscript r <> toTranscript c
-
 instance
     ( ProverMessage f a ~ m
     , AdditiveGroup c
@@ -71,37 +55,3 @@ instance
                 rs = foldl (\acc c -> acc ++ [oracle @(f, c) (last acc, c)]) [r0] cs
             in verifier @f a i (Open ms : map Commit cs) rs
         verifier _ _ _ _ = error "Invalid message"
-
--- instance
---     ( SpS.SpecialSoundProtocol f a
---     , Binary (SpS.Input f a)
---     , Binary (VerifierMessage f a)
---     , VerifierMessage f a ~ f
---     , ProverMessage f a ~ m
---     , Binary c
---     , Binary (ProverMessage f a)
---     , BoolType (VerifierOutput f a)
---     , Eq (VerifierOutput f a) [c]
---     , VerifierOutput f a ~ P.Bool
---     ) => NonInteractiveProof (FiatShamir f (CommitOpen m c a)) core where
---       type Transcript (FiatShamir f (CommitOpen m c a))  = ByteString
---       type SetupProve (FiatShamir f (CommitOpen m c a))  = FiatShamir f (CommitOpen m c a)
---       type SetupVerify (FiatShamir f (CommitOpen m c a)) = FiatShamir f (CommitOpen m c a)
---       type Witness (FiatShamir f (CommitOpen m c a))     = SpS.Witness f a
---       type Input (FiatShamir f (CommitOpen m c a))       = (SpS.Input f a, [c])
---       type Proof (FiatShamir f (CommitOpen m c a))       = [ProverMessage f a]
-
---       setupProve x = x
-
---       setupVerify x = x
-
---       prove fs@(FiatShamir a ip) w =
---             let (ms, ts) = opening @f @m @c @a a w ip (fsChallenge fs)
---             in ((ip, commits @f @m @c @a ts), ms)
-
---       verify fs@(FiatShamir a _) (ip, cs) ms =
---             let ts' = foldl (\acc c -> acc ++ [(c, fsChallenge fs acc c)]) [] $ map Commit cs
---                 ts  = ts' ++ [(Open ms, fsChallenge fs ts' $ Open ms)]
---                 (ri, ci) = unzip ts
---             in verifier a ip ri ci
-
