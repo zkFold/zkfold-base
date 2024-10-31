@@ -57,7 +57,7 @@ instance
     -- The transcript will be empty at this point, it is a one-round protocol.
     -- Input is arithmetised. We need to combine its witness with the circuit's witness.
     --
-    prover ac (inputVec, inputWitness) _ _ = fromConstant <$> M.union inputWitness (witnessGenerator ac inputVec)
+    prover ac (inputVec, inputWitness) _ _ _ = fromConstant <$> M.union inputWitness (witnessGenerator ac inputVec)
 
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros

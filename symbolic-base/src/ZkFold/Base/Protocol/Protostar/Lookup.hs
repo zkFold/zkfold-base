@@ -38,19 +38,21 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
     rounds :: ProtostarLookup l sizeT -> Natural
     rounds _ = 2
 
-    -- TODO: It works only if the initial transcript is zero!!! Need to fix this
     prover :: ProtostarLookup l sizeT
            -> Witness f (ProtostarLookup l sizeT)
            -> Input f (ProtostarLookup l sizeT)
            -> f
+           -> Natural
            -> ProverMessage f (ProtostarLookup l sizeT)
-    prover _ w (ProtostarLookupParams t invT) r =
+    prover _ w (ProtostarLookupParams _ invT) _ 0 =
         let m      = sum (SVector . fromList . (`zip` repeat one) . invT <$> w)
+        in (w, m)
+    prover a w par@(ProtostarLookupParams t _) r 1 =
+        let m      = snd $ prover @f a w par r 0
             h      = fmap (\w_i -> one // (w_i + r)) w
             g      = SVector $ mapWithKey (\i m_i -> m_i // (t i + r)) $ fromSVector m
-        in if r == zero
-            then (w, m)
-            else (h, g)
+        in (h, g)
+    prover _ _ _ _ _ = error "Invalid round"
 
     verifier :: ProtostarLookup l sizeT
              -> Input f (ProtostarLookup l sizeT)

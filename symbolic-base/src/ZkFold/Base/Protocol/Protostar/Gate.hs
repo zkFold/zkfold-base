@@ -40,8 +40,9 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
           -> Witness f (ProtostarGate m n c d)
           -> Input f (ProtostarGate m n c d)
           -> f
+          -> Natural
           -> ProverMessage f (ProtostarGate m n c d)
-    prover _ w _ _ = w
+    prover _ w _ _ _ = w
 
     verifier :: ProtostarGate m n c d
              -> Input f (ProtostarGate m n c d)

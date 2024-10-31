@@ -4,15 +4,13 @@
 module ZkFold.Base.Protocol.Protostar.CommitOpen where
 
 import           GHC.Generics
-import           Prelude                                     hiding (Num(..), length, (&&))
+import           Prelude                                     hiding (Num(..), length, (&&), pi)
 
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup(..), (+))
-import           ZkFold.Base.Data.ByteString
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..))
-import           ZkFold.Prelude                              (length)
 
-data CommitOpen m c a = CommitOpen ([m] -> c) a
+data CommitOpen m c a = CommitOpen (m -> c) a
 
 instance RandomOracle a b => RandomOracle (CommitOpen m c a) b where
     oracle (CommitOpen _ a) = oracle a
@@ -20,14 +18,14 @@ instance RandomOracle a b => RandomOracle (CommitOpen m c a) b where
 data CommitOpenProverMessage m c = Commit c | Open [m]
     deriving Generic
 
-instance (Binary c, Binary m) => Binary (CommitOpenProverMessage m c) where
-      put (Commit c)  = putWord8 0 <> put c
-      put (Open msgs) = putWord8 1 <> put msgs
-      get = do
-            flag <- getWord8
-            if flag == 0 then Commit <$> get
-            else if flag == 1 then Open <$> get
-            else fail ("Binary (CommitOpenProverMessage t c a): unexpected flag " <> show flag)
+-- instance (Binary c, Binary m) => Binary (CommitOpenProverMessage m c) where
+--       put (Commit c)  = putWord8 0 <> put c
+--       put (Open msgs) = putWord8 1 <> put msgs
+--       get = do
+--             flag <- getWord8
+--             if flag == 0 then Commit <$> get
+--             else if flag == 1 then Open <$> get
+--             else fail ("Binary (CommitOpenProverMessage t c a): unexpected flag " <> show flag)
 
 instance
     ( SpecialSoundProtocol f a
@@ -46,11 +44,11 @@ instance
 
       rounds (CommitOpen _ a) = rounds @f a + 1
 
-      prover (CommitOpen cm a) (w, ms) i ts
-            | length ms < rounds @f a = Commit $ cm [prover @f a w i ts]
-            | otherwise               = Open ms
+      prover (CommitOpen cm a) (w, ms) pi ts i
+            | i <= rounds @f a = Commit $ cm $ prover @f a w pi ts i
+            | otherwise        = Open ms
 
-      verifier (CommitOpen cm a) i ((Open ms):mss) (_:ts) = (zipWith (-) (map (cm . pure) ms) (map f mss), verifier @f a i ms ts)
+      verifier (CommitOpen cm a) i ((Open ms):mss) (_:ts) = (zipWith (-) (map cm ms) (map f mss), verifier @f a i ms ts)
             where f (Commit c) = c
                   f _          = error "Invalid message"
       verifier _ _ _ _ = error "Invalid transcript"

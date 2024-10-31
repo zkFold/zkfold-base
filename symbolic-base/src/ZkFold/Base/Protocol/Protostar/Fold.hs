@@ -85,7 +85,7 @@ deriving instance (P.Show pi, P.Show f, P.Show c, P.Show m) => P.Show (Protostar
 
 toFS
     :: forall pi f c m
-    .  HomomorphicCommit f [m] c
+    .  HomomorphicCommit f m c
     => Input f (pi -> pi) ~ pi
     => f
     -> (pi -> pi)
@@ -176,7 +176,7 @@ ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple)
 instanceProof
     :: forall pi f c m
     .  AdditiveMonoid f
-    => HomomorphicCommit f [m] c
+    => HomomorphicCommit f m c
     => SpecialSoundProtocol f (pi -> pi)
     => Witness f (pi -> pi) ~ ()
     => Input f (pi -> pi) ~ pi
@@ -185,10 +185,10 @@ instanceProof
     -> (pi -> pi)
     -> pi
     -> InstanceProofPair pi c m
-instanceProof ck func i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
+instanceProof ck func i = InstanceProofPair i (NARKProof [hcommit ck m] [m])
     where
         -- TODO: here we are using `zero` as the transcript
-        m = SPS.prover @f func () i zero
+        m = SPS.prover @f func () i zero 0
 
 iteration
     :: forall pi f c m
@@ -200,7 +200,7 @@ iteration
     => SPS.AlgebraicMap f (pi -> pi)
     => SPS.AlgebraicMap (PU.PolyVec f (Degree (pi -> pi) + 1)) (pi -> pi)
     => HomomorphicCommit f [f] c
-    => HomomorphicCommit f [m] c
+    => HomomorphicCommit f m c
     => AdditiveGroup pi
     => AdditiveGroup c
     => AdditiveSemigroup m

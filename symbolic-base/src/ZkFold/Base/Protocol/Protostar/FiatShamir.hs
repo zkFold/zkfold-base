@@ -5,13 +5,14 @@
 module ZkFold.Base.Protocol.Protostar.FiatShamir where
 
 import           GHC.Generics
-import           Prelude                                     hiding (Bool (..), Eq (..), length)
+import           Prelude                                     hiding (Bool (..), Eq (..), length, pi)
 
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle(..))
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound as SpS
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
+import           ZkFold.Prelude                              (length)
 
 newtype FiatShamir f a = FiatShamir a
     deriving Generic
@@ -51,12 +52,12 @@ instance
 
         rounds _ = 1
 
-        prover (FiatShamir a'@(CommitOpen _ a)) w i _ =
-            let r0 = oracle i
+        prover (FiatShamir a'@(CommitOpen _ a)) w pi _ _ =
+            let r0 = oracle pi
                 f (ms, cs, rs) _ =
                   let r   = last rs
-                      m   = prover @f a w i r
-                      c   = case prover @f a' (w, ms) i r of
+                      m   = prover @f a w pi r (length ms)
+                      c   = case prover @f a' (w, ms) pi r (length ms) of
                                 Commit c' -> c'
                                 _         -> error "Invalid message"
                   in (ms ++ [m], cs ++ [c], rs ++ [oracle @(f, c) (r, c)])

@@ -80,7 +80,7 @@ instance
     , AlgebraicMap (PU.PolyVec f deg) a
     , RandomOracle c f                                    -- Random oracle ρ_NARK
     , RandomOracle i f                                    -- Random oracle for compressing public input
-    , HomomorphicCommit f [m] c
+    , HomomorphicCommit f m c
     , HomomorphicCommit f [f] c
     ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen _ sps)) ck acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
@@ -164,7 +164,7 @@ instance
   decider (FiatShamir sps) (ck, KeyScale ef _) acc = (commitsDiff, eDiff)
       where
           -- Fig. 5, step 1
-          commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit (scale (acc^.x^.mu) ck) [m_acc]) (acc^.x^.c) (acc^.w)
+          commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit (scale (acc^.x^.mu) ck) m_acc) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           err :: [f]

@@ -32,8 +32,9 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
            -> Witness f (ProtostarPermutation n)
            -> Input f (ProtostarPermutation n)
            -> f
+           -> Natural
            -> ProverMessage f (ProtostarPermutation n)
-    prover _ w _ _ = w
+    prover _ w _ _ _ = w
 
     verifier :: ProtostarPermutation n
              -> Input f (ProtostarPermutation n)
