@@ -9,7 +9,7 @@ import           Prelude                                     hiding (Bool (..), 
 
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
-import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle(..))
+import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 import           ZkFold.Prelude                              (length)
 

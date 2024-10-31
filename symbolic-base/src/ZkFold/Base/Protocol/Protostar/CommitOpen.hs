@@ -1,12 +1,12 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.Protostar.CommitOpen where
 
 import           GHC.Generics
-import           Prelude                                     hiding (Num(..), length, (&&), pi)
+import           Prelude                                     hiding (Num (..), length, pi, (&&))
 
-import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup(..), (+))
+import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), (+))
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..))
 

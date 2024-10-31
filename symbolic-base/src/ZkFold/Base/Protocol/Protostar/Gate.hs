@@ -8,7 +8,7 @@ import           Prelude                                      hiding (Num (..), 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat, value)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial, Poly, evalMonomial, evalPolynomial, subs)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, Polynomial, evalMonomial, evalPolynomial, subs)
 import           ZkFold.Base.Data.Matrix                      (Matrix (..), outer, sum1, transpose)
 import qualified ZkFold.Base.Data.Vector                      as V
 import           ZkFold.Base.Data.Vector                      (Vector)

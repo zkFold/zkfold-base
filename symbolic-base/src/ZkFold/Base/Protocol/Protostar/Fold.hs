@@ -17,15 +17,15 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate       as PU
 import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
-import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (SymbolicDataRepresentableAsVector)
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
+import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (SymbolicDataRepresentableAsVector)
 import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
 import           ZkFold.Base.Protocol.Protostar.Commit
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Base.Protocol.Protostar.SpecialSound      (SpecialSoundProtocol(..), AlgebraicMap (..))
 import qualified ZkFold.Base.Protocol.Protostar.SpecialSound      as SPS
+import           ZkFold.Base.Protocol.Protostar.SpecialSound      (AlgebraicMap (..), SpecialSoundProtocol (..))
 import           ZkFold.Prelude                                   (replicate)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
