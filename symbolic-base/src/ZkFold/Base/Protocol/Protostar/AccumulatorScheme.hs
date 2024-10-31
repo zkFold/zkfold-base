@@ -9,6 +9,7 @@ module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
 import           Control.Lens                                ((^.))
 import           Data.List                                   (transpose)
+import           Data.Typeable                               (Proxy (..))
 import qualified Data.Vector                                 as DV
 import           Prelude                                     (concatMap, type (~), ($), (.), (<$>))
 import qualified Prelude                                     as P
@@ -46,10 +47,10 @@ class AccumulatorScheme pi f c m a where
            -> Accumulator pi f c m        -- final accumulator
            -> ([c], c)                    -- returns zeros if the final accumulator is valid
 
-type SymbolicDataRepresentableAsVector n f x = (SymbolicData x, Support x ~ (), Context x (Layout x) ~ Vector n f)
+type SymbolicDataRepresentableAsVector n f x = (SymbolicData x, Support x ~ Proxy (Context x), Context x (Layout x) ~ Vector n f)
 
 pieces' :: SymbolicDataRepresentableAsVector n f x => x -> [f]
-pieces' = fromVector . (`pieces` ())
+pieces' = fromVector . (`pieces` Proxy)
 
 instance
     ( AdditiveGroup pi
