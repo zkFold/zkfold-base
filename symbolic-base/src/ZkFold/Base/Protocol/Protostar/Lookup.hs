@@ -12,7 +12,7 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Sparse.Vector              (SVector (..))
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 data ProtostarLookup (l :: Natural) (sizeT :: Natural)
@@ -38,19 +38,19 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
     rounds :: ProtostarLookup l sizeT -> Natural
     rounds _ = 2
 
+    -- TODO: It works only if the initial transcript is zero!!! Need to fix this
     prover :: ProtostarLookup l sizeT
            -> Witness f (ProtostarLookup l sizeT)
            -> Input f (ProtostarLookup l sizeT)
-           -> SpecialSoundTranscript f (ProtostarLookup l sizeT)
+           -> f
            -> ProverMessage f (ProtostarLookup l sizeT)
-    prover _ w (ProtostarLookupParams _ invT) [] =
+    prover _ w (ProtostarLookupParams t invT) r =
         let m      = sum (SVector . fromList . (`zip` repeat one) . invT <$> w)
-        in (w, m)
-    prover _ _ (ProtostarLookupParams t _) [((w, m), r)] =
-        let h      = fmap (\w_i -> one // (w_i + r)) w
+            h      = fmap (\w_i -> one // (w_i + r)) w
             g      = SVector $ mapWithKey (\i m_i -> m_i // (t i + r)) $ fromSVector m
-        in (h, g)
-    prover _ _ _ _ = error "Invalid transcript"
+        in if r == zero
+            then (w, m)
+            else (h, g)
 
     verifier :: ProtostarLookup l sizeT
              -> Input f (ProtostarLookup l sizeT)

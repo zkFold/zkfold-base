@@ -83,7 +83,7 @@ instance
     , HomomorphicCommit f [m] c
     , HomomorphicCommit f [f] c
     ) => AccumulatorScheme i f c m (FiatShamir f (CommitOpen m c a)) where
-  prover (FiatShamir (CommitOpen _ sps) _) ck acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
+  prover (FiatShamir (CommitOpen _ sps)) ck acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') mi'', eCapital_j)
       where
           -- Fig. 3, step 1
@@ -161,7 +161,7 @@ instance
           -- Fig 4, step 5
           eDiff = acc'^.e - (acc^.e + sum (P.zipWith scale ((\p -> alpha^p) <$> [1 :: Natural ..]) pf))
 
-  decider (FiatShamir sps _) (ck, KeyScale ef _) acc = (commitsDiff, eDiff)
+  decider (FiatShamir sps) (ck, KeyScale ef _) acc = (commitsDiff, eDiff)
       where
           -- Fig. 5, step 1
           commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit (scale (acc^.x^.mu) ck) [m_acc]) (acc^.x^.c) (acc^.w)

@@ -6,8 +6,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations      (Permutation, applyPermutation)
 import           ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..),
-                                                              SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..))
 import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
@@ -32,7 +31,7 @@ instance (Arithmetic f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutat
     prover :: ProtostarPermutation n
            -> Witness f (ProtostarPermutation n)
            -> Input f (ProtostarPermutation n)
-           -> SpecialSoundTranscript f (ProtostarPermutation n)
+           -> f
            -> ProverMessage f (ProtostarPermutation n)
     prover _ w _ _ = w
 

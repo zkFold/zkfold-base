@@ -13,8 +13,7 @@ import           ZkFold.Base.Data.Matrix                      (Matrix (..), oute
 import qualified ZkFold.Base.Data.Vector                      as V
 import           ZkFold.Base.Data.Vector                      (Vector)
 import           ZkFold.Base.Protocol.Protostar.Internal      (PolynomialProtostar (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound  (AlgebraicMap (..), SpecialSoundProtocol (..),
-                                                               SpecialSoundTranscript)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound  (AlgebraicMap (..), SpecialSoundProtocol (..))
 import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
 
 data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
@@ -40,7 +39,7 @@ instance (Arithmetic f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (Proto
     prover :: ProtostarGate m n c d
           -> Witness f (ProtostarGate m n c d)
           -> Input f (ProtostarGate m n c d)
-          -> SpecialSoundTranscript f (ProtostarGate m n c d)
+          -> f
           -> ProverMessage f (ProtostarGate m n c d)
     prover _ w _ _ = w
 

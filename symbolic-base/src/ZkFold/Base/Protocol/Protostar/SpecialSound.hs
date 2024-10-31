@@ -5,8 +5,6 @@ module ZkFold.Base.Protocol.Protostar.SpecialSound where
 import           Numeric.Natural (Natural)
 import           Prelude         hiding (length)
 
-type SpecialSoundTranscript f a = [(ProverMessage f a, VerifierMessage f a)]
-
 {-- | Section 3.1
 
 The protocol Πsps has 3 essential parameters k, d, l ∈ N, meaning that Πsps is a (2k − 1)-
@@ -34,7 +32,11 @@ class SpecialSoundProtocol f a where
       rounds :: a -> Natural
       -- ^ k in the paper
 
-      prover :: a -> Witness f a -> Input f a -> SpecialSoundTranscript f a -> ProverMessage f a
+      prover :: a
+        -> Witness f a        -- ^ witness
+        -> Input f a          -- ^ public input
+        -> f                  -- ^ current random challenge
+        -> ProverMessage f a
 
       verifier :: a -> Input f a -> [ProverMessage f a] -> [f] -> VerifierOutput f a
 
@@ -49,10 +51,9 @@ class AlgebraicMap f a where
     type MapMessage f a
 
     -- | the algebraic map V_sps computed by the verifier.
-    algebraicMap
-        :: a
-        -> MapInput f a  -- ^ public input
-        -> [MapMessage f a]  -- ^ NARK proof witness (the list of prover messages)
-        -> [f]        -- ^ Verifier random challenges
-        -> f          -- ^ Slack variable for padding
+    algebraicMap :: a
+        -> MapInput f a     -- ^ public input
+        -> [MapMessage f a] -- ^ NARK proof witness (the list of prover messages)
+        -> [f]              -- ^ Verifier random challenges
+        -> f                -- ^ Slack variable for padding
         -> [f]

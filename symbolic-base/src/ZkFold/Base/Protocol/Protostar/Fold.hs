@@ -66,8 +66,8 @@ instance (Ring a, KnownNat n) => Acc.LinearCombinationWith a (Vector n a) where
     linearCombinationWith coeff a b = (+) <$> P.fmap (coeff *) a <*> b
 
 
-type C n a = ArithmeticCircuit a (Vector n) (Vector n)
-type FS_CM ctx n comm a = FiatShamir (FieldElement ctx) (CommitOpen (SPS.MapMessage (FieldElement ctx) (C n a)) comm (C n a))
+-- type C n a = ArithmeticCircuit a (Vector n) (Vector n)
+-- type FS_CM ctx n comm a = FiatShamir (FieldElement ctx) (CommitOpen (SPS.MapMessage (FieldElement ctx) (C n a)) comm (C n a))
 -- type Acc ctx n comm a = Accumulator (Vector n (FieldElement ctx)) (FieldElement ctx) comm (SPS.MapMessage (FieldElement ctx) (C n a))
 
 -- | The final result of recursion and the final accumulator.
@@ -89,7 +89,6 @@ toFS
     => Input f (pi -> pi) ~ pi
     => f
     -> (pi -> pi)
-    -> pi
     -> FiatShamir f (CommitOpen m c (pi -> pi))
 toFS ck func = FiatShamir (CommitOpen (hcommit ck) func)
 
@@ -176,7 +175,8 @@ ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ckTuple, dkTuple)
 
 instanceProof
     :: forall pi f c m
-    .  HomomorphicCommit f [m] c
+    .  AdditiveMonoid f
+    => HomomorphicCommit f [m] c
     => SpecialSoundProtocol f (pi -> pi)
     => Witness f (pi -> pi) ~ ()
     => Input f (pi -> pi) ~ pi
@@ -187,7 +187,8 @@ instanceProof
     -> InstanceProofPair pi c m
 instanceProof ck func i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where
-        m = SPS.prover @f func () i []
+        -- TODO: here we are using `zero` as the transcript
+        m = SPS.prover @f func () i zero
 
 iteration
     :: forall pi f c m
@@ -223,7 +224,7 @@ iteration 0 _  _     res = res
 iteration n ck func (ProtostarResult i acc _) = iteration (n -! 1) ck func (ProtostarResult newi newAcc accProof)
     where
         fs :: FiatShamir f (CommitOpen m c (pi -> pi))
-        fs = toFS ck func i
+        fs = toFS ck func
 
         newi = func i
 
