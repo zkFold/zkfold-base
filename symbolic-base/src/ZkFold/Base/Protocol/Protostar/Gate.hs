@@ -8,13 +8,22 @@ import           Prelude                                      hiding (Num (..), 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field              (Zp)
 import           ZkFold.Base.Algebra.Basic.Number             (KnownNat, value)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate (evalMonomial, evalPolynomial, subs)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate (Polynomial, Poly, evalMonomial, evalPolynomial, subs)
 import           ZkFold.Base.Data.Matrix                      (Matrix (..), outer, sum1, transpose)
 import qualified ZkFold.Base.Data.Vector                      as V
 import           ZkFold.Base.Data.Vector                      (Vector)
-import           ZkFold.Base.Protocol.Protostar.Internal      (PolynomialProtostar (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound  (AlgebraicMap (..), SpecialSoundProtocol (..))
 import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
+
+newtype PolynomialProtostar f c d = PolynomialProtostar (Poly f (Zp c) Natural)
+  deriving (Show, Eq, Ord)
+
+deriving instance Polynomial f (Zp c) Natural => AdditiveSemigroup (PolynomialProtostar f c d)
+deriving instance Polynomial f (Zp c) Natural => Scale Natural (PolynomialProtostar f c d)
+deriving instance Polynomial f (Zp c) Natural => AdditiveMonoid (PolynomialProtostar f c d)
+deriving instance Polynomial f (Zp c) Natural => Scale Integer (PolynomialProtostar f c d)
+deriving instance Polynomial f (Zp c) Natural => AdditiveGroup (PolynomialProtostar f c d)
+
 
 data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
     deriving Generic

@@ -151,7 +151,6 @@ library
       ZkFold.Base.Protocol.Protostar.Commit
       ZkFold.Base.Protocol.Protostar.FiatShamir
       ZkFold.Base.Protocol.Protostar.Fold
-      ZkFold.Base.Protocol.Protostar.Internal
       ZkFold.Base.Protocol.Protostar.Gate
       ZkFold.Base.Protocol.Protostar.Lookup
       ZkFold.Base.Protocol.Protostar.Oracle
