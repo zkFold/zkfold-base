@@ -35,11 +35,11 @@ instance
 
       rounds (CommitOpen _ a) = rounds @f a + 1
 
-      prover (CommitOpen cm a) (w, ms) pi ts i
-            | i <= rounds @f a = Commit $ cm $ prover @f a w pi ts i
+      prover (CommitOpen cm a) (w, ms) pi r i
+            | i <= rounds @f a = Commit $ cm $ prover @f a w pi r i
             | otherwise        = Open ms
 
-      verifier (CommitOpen cm a) i ((Open ms):mss) (_:ts) = (zipWith (-) (map cm ms) (map f mss), verifier @f a i ms ts)
+      verifier (CommitOpen cm a) pi ((Open ms):mss) (_:rs) = (zipWith (-) (map cm ms) (map f mss), verifier @f a pi ms rs)
             where f (Commit c) = c
                   f _          = error "Invalid message"
       verifier _ _ _ _ = error "Invalid transcript"
@@ -48,5 +48,5 @@ instance (AlgebraicMap f a, m ~ MapMessage f a) => AlgebraicMap f (CommitOpen m 
       type MapInput f (CommitOpen m c a)     = MapInput f a
       type MapMessage f (CommitOpen m c a)   = CommitOpenProverMessage m c
 
-      algebraicMap (CommitOpen _ a) i ((Open ms):_) ts = algebraicMap @f a i ms ts
+      algebraicMap (CommitOpen _ a) i ((Open ms):_) rs = algebraicMap @f a i ms rs
       algebraicMap _ _ _ _                             = error "CommitOpen algebraic map: invalid transcript"
