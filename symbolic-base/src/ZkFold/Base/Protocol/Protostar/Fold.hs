@@ -107,7 +107,7 @@ ivcVerifierAc
 ivcVerifierAc = compile (ivcVerifier0 @pi @f @c @m @a)
 
 iterate
-    :: forall pi f c m
+    :: forall pi f c m n
     .  AdditiveGroup pi
     => AdditiveGroup c
     => AdditiveMonoid m
@@ -119,8 +119,8 @@ iterate
     => RandomOracle c f
     => HomomorphicCommit f [f] c
     => HomomorphicCommit f m c
-    => SymbolicDataRepresentableAsVector f pi
-    => SymbolicDataRepresentableAsVector f m
+    => SymbolicDataRepresentableAsVector n f pi
+    => SymbolicDataRepresentableAsVector n f m
     => AlgebraicMap f (pi -> pi)
     => MapInput f (pi -> pi) ~ pi
     => MapMessage f (pi -> pi) ~ m
@@ -167,7 +167,7 @@ instanceProof ck func i = InstanceProofPair i (NARKProof [hcommit ck m] [m])
         m = SPS.prover @f func () i zero 0
 
 iteration
-    :: forall pi f c m
+    :: forall pi f c m n
     .  AdditiveGroup pi
     => AdditiveGroup c
     => AdditiveSemigroup m
@@ -179,8 +179,8 @@ iteration
     => RandomOracle c f
     => HomomorphicCommit f [f] c
     => HomomorphicCommit f m c
-    => SymbolicDataRepresentableAsVector f pi
-    => SymbolicDataRepresentableAsVector f m
+    => SymbolicDataRepresentableAsVector n f pi
+    => SymbolicDataRepresentableAsVector n f m
     => AlgebraicMap f (pi -> pi)
     => MapInput f (pi -> pi) ~ pi
     => MapMessage f (pi -> pi) ~ m

@@ -23,6 +23,7 @@ import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), MapInput, SpecialSoundProtocol (..))
 import           ZkFold.Symbolic.Data.Class                  (SymbolicData(..))
+import ZkFold.Base.Data.Vector (Vector, fromVector)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
@@ -45,7 +46,10 @@ class AccumulatorScheme pi f c m a where
            -> Accumulator pi f c m        -- final accumulator
            -> ([c], c)                    -- returns zeros if the final accumulator is valid
 
-type SymbolicDataRepresentableAsVector f x = (SymbolicData x, Support x ~ (), Context x (Layout x) ~ [f])
+type SymbolicDataRepresentableAsVector n f x = (SymbolicData x, Support x ~ (), Context x (Layout x) ~ Vector n f)
+
+pieces' :: SymbolicDataRepresentableAsVector n f x => x -> [f]
+pieces' = fromVector . (`pieces` ())
 
 instance
     ( AdditiveGroup pi
@@ -59,8 +63,8 @@ instance
     , RandomOracle c f          -- Random oracle ρ_NARK
     , HomomorphicCommit f [f] c
     , HomomorphicCommit f m c
-    , SymbolicDataRepresentableAsVector f pi
-    , SymbolicDataRepresentableAsVector f m
+    , SymbolicDataRepresentableAsVector n f pi
+    , SymbolicDataRepresentableAsVector n f m
     , AlgebraicMap f (CommitOpen m c a)
     , MapInput f a ~ pi
     , MapMessage f a ~ m
@@ -85,11 +89,11 @@ instance
 
           -- X * pi + pi' as a list of univariate polynomials
           polyPi :: [PU.PolyVec f deg]
-          polyPi = P.zipWith (PU.polyVecLinear @f) (pieces pubi ()) (pieces (acc^.x^.pi) ())
+          polyPi = P.zipWith (PU.polyVecLinear @f) (pieces' pubi) (pieces' (acc^.x^.pi))
 
           -- X * mi + mi'
           polyW :: [PU.PolyVec f deg]
-          polyW = P.zipWith (PU.polyVecLinear @f) (concatMap (`pieces` ()) pi_w) (concatMap (`pieces` ()) (acc^.w))
+          polyW = P.zipWith (PU.polyVecLinear @f) (concatMap pieces' pi_w) (concatMap pieces' (acc^.w))
 
           -- X * ri + ri'
           polyR :: [PU.PolyVec f deg]
