@@ -10,7 +10,8 @@ module ZkFold.Base.Protocol.Protostar.Fold where
 import           Control.DeepSeq                                  (NFData)
 import           Data.Proxy                                       (Proxy)
 import           GHC.Generics                                     (Generic, Par1)
-import           Prelude                                          (type (~), ($))
+import           GHC.IsList                                       (IsList(..))
+import           Prelude                                          (type (~), ($), head)
 import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -18,7 +19,6 @@ import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate       as PU
 import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
-import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (SymbolicDataRepresentableAsVector)
 import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
 import           ZkFold.Base.Protocol.Protostar.Commit
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
@@ -63,9 +63,9 @@ ivcVerifier
     .  Acc.AccumulatorScheme pi f c m a
     => (pi, c, (pi, c, f, c, f), (pi, c, f, c, f), c)
     -> (a, f, ((pi, c, f, c, f), m))
-    -> ((f, pi, [f], [c], c), ([c], c))
+    -> ((f, pi, f, c, c), (c, c))
 ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ck, dkTuple)
-  = (Acc.verifier @pi @f @c @m @a i [pi_x] acc acc' [pf], Acc.decider @pi @f @c @m @a a ck dk)
+  = (verifierResult, deciderResult)
     where
         acc = let (x1, x2, x3, x4, x5) = accTuple
                in AccumulatorInstance x1 [x2] [x3] x4 x5
@@ -75,6 +75,14 @@ ivcVerifier (i, pi_x, accTuple, acc'Tuple, pf) (a, ck, dkTuple)
         dk = let ((x1, x2, x3, x4, x5), m) = dkTuple
               in Accumulator (AccumulatorInstance x1 [x2] [x3] x4 x5) [m]
 
+        verifierResult =
+            let (x1, x2, x3, x4, x5) = Acc.verifier @pi @f @c @m @a i [pi_x] acc acc' [pf]
+            in (x1, x2, head x3, head x4, x5)
+
+        deciderResult =
+            let (x1, x2) = Acc.decider @pi @f @c @m @a a ck dk
+            in (head x1, x2)
+
 ivcVerifier0
     :: forall pi f c m a ctx
     .  Symbolic ctx
@@ -83,11 +91,7 @@ ivcVerifier0
     => AdditiveMonoid c
     => Eq (Bool ctx) pi
     => Eq (Bool ctx) f
-    -- TODO: replace list with vector
-    => Eq (Bool ctx) [f]
     => Eq (Bool ctx) c
-    -- TODO: replace list with vector
-    => Eq (Bool ctx) [c]
     => Acc.AccumulatorScheme pi f c m a
     => (pi, c, (pi, c, f, c, f), (pi, c, f, c, f), c)
     -> (a, f, ((pi, c, f, c, f), m))
@@ -105,9 +109,7 @@ ivcVerifierAc
     => AdditiveMonoid c
     => Eq (Bool ctx) pi
     => Eq (Bool ctx) f
-    => Eq (Bool ctx) [f]
     => Eq (Bool ctx) c
-    => Eq (Bool ctx) [c]
     => SymbolicInput (pi, c, (pi, c, f, c, f), (pi, c, f, c, f), c)
     => SymbolicInput (a, f, ((pi, c, f, c, f), m))
     => SymbolicData y
@@ -123,7 +125,7 @@ ivcVerifierAc
 ivcVerifierAc = compile (ivcVerifier0 @pi @f @c @m @a)
 
 iterate
-    :: forall pi f c m n
+    :: forall pi f c m
     .  AdditiveGroup pi
     => AdditiveGroup c
     => AdditiveMonoid m
@@ -135,8 +137,10 @@ iterate
     => RandomOracle c f
     => HomomorphicCommit f [f] c
     => HomomorphicCommit f m c
-    => SymbolicDataRepresentableAsVector n f pi
-    => SymbolicDataRepresentableAsVector n f m
+    => IsList pi
+    => Item pi ~ f
+    => IsList m
+    => Item m ~ f
     => AlgebraicMap f (pi -> pi)
     => MapInput f (pi -> pi) ~ pi
     => MapMessage f (pi -> pi) ~ m
@@ -182,7 +186,7 @@ instanceProof ck func pi = InstanceProofPair pi (NARKProof [hcommit ck m] [m])
         m = SPS.prover @f func () pi (oracle pi) 0
 
 iteration
-    :: forall pi f c m n
+    :: forall pi f c m
     .  AdditiveGroup pi
     => AdditiveGroup c
     => AdditiveSemigroup m
@@ -194,8 +198,10 @@ iteration
     => RandomOracle c f
     => HomomorphicCommit f [f] c
     => HomomorphicCommit f m c
-    => SymbolicDataRepresentableAsVector n f pi
-    => SymbolicDataRepresentableAsVector n f m
+    => IsList pi
+    => Item pi ~ f
+    => IsList m
+    => Item m ~ f
     => AlgebraicMap f (pi -> pi)
     => MapInput f (pi -> pi) ~ pi
     => MapMessage f (pi -> pi) ~ m

@@ -9,22 +9,20 @@ module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
 import           Control.Lens                                ((^.))
 import           Data.List                                   (transpose)
-import           Data.Typeable                               (Proxy (..))
 import qualified Data.Vector                                 as DV
+import           GHC.IsList                                  (IsList(..))
 import           Prelude                                     (concatMap, type (~), ($), (.), (<$>))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
-import           ZkFold.Base.Data.Vector                     (Vector, fromVector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), CommitOpenProverMessage (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), MapInput, SpecialSoundProtocol (..))
-import           ZkFold.Symbolic.Data.Class                  (SymbolicData (..))
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
@@ -47,10 +45,7 @@ class AccumulatorScheme pi f c m a where
            -> Accumulator pi f c m        -- final accumulator
            -> ([c], c)                    -- returns zeros if the final accumulator is valid
 
-type SymbolicDataRepresentableAsVector n f x = (SymbolicData x, Support x ~ Proxy (Context x), Context x (Layout x) ~ Vector n f)
-
-pieces' :: SymbolicDataRepresentableAsVector n f x => x -> [f]
-pieces' = fromVector . (`pieces` Proxy)
+type DataRepresentableAsList f x = (IsList x, Item x ~ f)
 
 instance
     ( AdditiveGroup pi
@@ -64,8 +59,10 @@ instance
     , RandomOracle c f          -- Random oracle ρ_NARK
     , HomomorphicCommit f [f] c
     , HomomorphicCommit f m c
-    , SymbolicDataRepresentableAsVector n f pi
-    , SymbolicDataRepresentableAsVector n f m
+    , IsList pi
+    , Item pi ~ f
+    , IsList m
+    , Item m ~ f
     , AlgebraicMap f (CommitOpen m c a)
     , MapInput f a ~ pi
     , MapMessage f a ~ m
@@ -90,11 +87,11 @@ instance
 
           -- X * pi + pi' as a list of univariate polynomials
           polyPi :: [PU.PolyVec f deg]
-          polyPi = P.zipWith (PU.polyVecLinear @f) (pieces' pubi) (pieces' (acc^.x^.pi))
+          polyPi = P.zipWith (PU.polyVecLinear @f) (toList pubi) (toList (acc^.x^.pi))
 
           -- X * mi + mi'
           polyW :: [PU.PolyVec f deg]
-          polyW = P.zipWith (PU.polyVecLinear @f) (concatMap pieces' pi_w) (concatMap pieces' (acc^.w))
+          polyW = P.zipWith (PU.polyVecLinear @f) (concatMap toList pi_w) (concatMap toList (acc^.w))
 
           -- X * ri + ri'
           polyR :: [PU.PolyVec f deg]
