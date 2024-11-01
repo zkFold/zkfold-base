@@ -6,6 +6,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
@@ -29,7 +30,7 @@ import qualified Data.Zip                           as Z
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
 import           Prelude                            (Integer, const, error, flip, otherwise, return, type (~), ($),
-                                                     (++), (.), (<>), (>>=))
+                                                     (++), (.), (<>), (>>=), Applicative)
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
 
@@ -53,6 +54,7 @@ import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned, ClosedPoly)
 import qualified Data.Bits                          as B
+import qualified Data.Vector                      as DV
 
 
 -- TODO (Issue #18): hide this constructor
@@ -176,48 +178,35 @@ instance
     , KnownNat n
     , KnownNat k
     , KnownRegisterSize r
-    , n <= k
     ) => Extend (UInt n r c) (UInt k r c) where
     extend (UInt bits) = UInt $ symbolicF bits (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
         where
-            solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) k r) i)
-            solve xv = do
-                let regsOld = V.fromVector xv
-                    regsNew = []
-                    var = (regsOld, regsNew)
-                    (_ , res) = iter var
-                return $ V.unsafeToVector res
+            solve :: (MonadCircuit i (BaseField c) m) => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) k r) i)
+            solve v = do
+                let regs = V.fromVector v
+                    ns = replicate (numberOfRegisters @(BaseField c) @n @r -! 1) n ++ [highRegisterSize @(BaseField c) @n @r]
+                    zs = zip ns regs
+                resZ <- helper zs
+                let (_, res) = Haskell.unzip resZ
+                zeros <- replicateA (numberOfRegisters @(BaseField c) @k @r -! length res) (newAssigned (Haskell.const zero))
+                return $ V.unsafeToVector (res ++ zeros)
 
-            oldR = (2 :: Natural) ^ registerSize @(BaseField c) @n @r
-            newR = (2 :: Natural) ^ registerSize @(BaseField c) @k @r
+            n = registerSize @(BaseField c) @n @r
+            k = registerSize @(BaseField c) @k @r
 
-            iter :: ([i], [i]) -> ([i], [i])
-            iter (xs, ys) = case xs of
-                [] -> ([], ys)
-                [zero] -> ([], ys)
-                [x] -> iter ([x `div` fromConstant newR], (x `mod` fromConstant newR) : ys)
-                (0:y:xs') -> iter (y:xs', ys)
-                (x:0:xs') -> iter (x:xs', ys)
-                (x:y:xs') -> if x >= fromConstant newR
-                                then iter (x `div` fromConstant newR : xs', (x `mod` fromConstant newR) : ys)
-                                else iter ((x + fromConstant oldR) : (y - 1) : xs', ys)
-
--- extend :: ([Integer], [Integer]) -> ([Integer], [Integer])
--- extend (xs, ys) = case xs of
---   [] -> ([], ys)
---   [0] -> ([], ys)
---   [x] -> extend ([x `div` newR], [x `mod` newR] ++ ys)
---   (0:y:xs') -> extend (y:xs', ys)
---   (x:0:xs') -> extend (x:xs', ys)
---   (x:y:xs') -> if x >= newR 
---                 then extend (x `div` newR : xs', [x `mod` newR] ++ ys)
---                 else extend ((x + oldR) : (y - 1) : xs', ys)
-
--- Я б так подошёл
--- Итеративный алгоритм со следующим состоянием: список (старый регистр, его ширина) × (новый регистр, его ширина)
--- Начинаем с полным списком старых регистров и нулевым новым регистром ширины 0
--- На каждой итерации отщепляем от "верхушки стека" сколько сможем вплоть до ширины новых регистров, добавляем к новому регистру
--- Если новый регистр заполнился, дописываем его в ответ и начинаем собирать новый
+            helper :: (MonadCircuit i (BaseField c) m) => [(Natural, i)] -> m [(Natural, i)]
+            helper [] = return []
+            helper ((xN, xI) : xs)
+                | xN > k = do
+                        (l, h) <- splitExpansion k (xN -! k) xI
+                        ([(k, l)] <> ) Haskell.<$> helper ((xN -! k, h) : xs)
+                | xN == k = ([(k, xI)] <> ) Haskell.<$> helper xs
+                | true = case xs of
+                    [] -> return [(xN, xI)]
+                    ((yN, yI) : ys) -> do
+                        let newN = xN + yN
+                        newI <- newAssigned (\j -> j xI + scale ((2 :: Natural) ^ xN) (j yI))
+                        helper ((newN, newI) : ys)
 
 instance
     ( Symbolic c
@@ -438,10 +427,12 @@ bitwiseOperation (UInt bits1) (UInt bits2) cons = UInt $ fromCircuit2F bits1 bit
                 rv = V.fromVector rv'
             varsLeft <- V.unsafeToVector <$> toBits (Haskell.reverse lv) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
             varsRight <- V.unsafeToVector <$> toBits (Haskell.reverse rv) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
-            rs <- V.fromVector <$> V.zipWithM (\i j -> newAssigned $ cons i j) varsLeft varsRight
+            rs <- V.fromVector <$> zipWithM (\i j -> newAssigned $ cons i j) varsLeft varsRight
             res <- fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) rs
             return $ V.unsafeToVector (Haskell.reverse res)
 
+zipWithM :: forall n m a b c . Applicative m => (a -> b -> m c) -> Vector n a -> Vector n b -> m (Vector n c)
+zipWithM f (Vector l) (Vector r) = Haskell.sequenceA . Vector $ DV.zipWith f l r
 
 instance  (Symbolic c, KnownNat n, KnownRegisterSize r) => BoolType (UInt n r c) where
     false = fromConstant (0 :: Natural)
@@ -481,7 +472,7 @@ instance  (Symbolic c, KnownNat n, KnownRegisterSize r) => BoolType (UInt n r c)
                     rv = V.fromVector rv'
                 varsLeft <- V.unsafeToVector <$> toBits (Haskell.reverse lv) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
                 varsRight <- V.unsafeToVector <$> toBits (Haskell.reverse rv) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
-                rs <- V.fromVector <$> V.zipWithM (\i j -> newAssigned $ cons i j) varsLeft varsRight
+                rs <- V.fromVector <$> zipWithM (\i j -> newAssigned $ cons i j) varsLeft varsRight
                 res <- fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) rs
                 return $ V.unsafeToVector (Haskell.reverse res)
 
