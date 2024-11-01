@@ -361,11 +361,11 @@ a +. (PV cs) = PV $ fmap (+ a) cs
 polyVecConstant :: forall c size . (Ring c, KnownNat size) => c -> PolyVec c size
 polyVecConstant a0 = PV $ V.singleton a0 V.++ V.replicate (fromIntegral $ value @size -! 1) zero
 
--- p(x) = a0 + a1 * x
+-- p(x) = a1 * x + a0
 polyVecLinear :: forall c size . (Ring c, KnownNat size) => c -> c -> PolyVec c size
 polyVecLinear a1 a0 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ value @size -! 2) zero
 
--- p(x) = a0 + a1 * x + a2 * x^2
+-- p(x) = a2 * x^2 + a1 * x + a0
 polyVecQuadratic :: forall c size . (Ring c, KnownNat size) => c -> c -> c -> PolyVec c size
 polyVecQuadratic a2 a1 a0  = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ value @size -! 3) zero
 
