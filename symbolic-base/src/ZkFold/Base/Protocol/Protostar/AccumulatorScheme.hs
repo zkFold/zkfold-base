@@ -10,7 +10,7 @@ module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 import           Control.Lens                                ((^.))
 import           Data.List                                   (transpose)
 import qualified Data.Vector                                 as DV
-import           GHC.IsList                                  (IsList(..))
+import           GHC.IsList                                  (IsList (..))
 import           Prelude                                     (concatMap, type (~), ($), (.), (<$>))
 import qualified Prelude                                     as P
 

@@ -10,8 +10,8 @@ module ZkFold.Base.Protocol.Protostar.Fold where
 import           Control.DeepSeq                                  (NFData)
 import           Data.Proxy                                       (Proxy)
 import           GHC.Generics                                     (Generic, Par1)
-import           GHC.IsList                                       (IsList(..))
-import           Prelude                                          (type (~), ($), head)
+import           GHC.IsList                                       (IsList (..))
+import           Prelude                                          (head, type (~), ($))
 import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
