@@ -45,8 +45,6 @@ class AccumulatorScheme pi f c m a where
            -> Accumulator pi f c m        -- final accumulator
            -> ([c], c)                    -- returns zeros if the final accumulator is valid
 
-type DataRepresentableAsList f x = (IsList x, Item x ~ f)
-
 instance
     ( AdditiveGroup pi
     , AdditiveGroup c
@@ -77,7 +75,7 @@ instance
       where
           -- Fig. 3, step 1
           r_i :: [f]
-          r_i = P.scanl (P.curry oracle) (oracle pubi) pi_x
+          r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) pi_x
 
           -- Fig. 3, step 2
 
@@ -131,7 +129,7 @@ instance
       where
           -- Fig. 4, step 1
           r_i :: [f]
-          r_i = P.scanl (P.curry oracle) (oracle pubi) c_i
+          r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) c_i
 
           -- Fig. 4, step 2
           alpha :: f
