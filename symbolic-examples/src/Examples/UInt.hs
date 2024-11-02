@@ -8,14 +8,14 @@ module Examples.UInt (
     exampleUIntExtend
   ) where
 
-import           GHC.TypeNats
 import           Control.DeepSeq                  (NFData)
 import           Data.Type.Equality               (type (~))
+import           GHC.TypeNats
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
-import           ZkFold.Symbolic.Data.Combinators (KnownRegisterSize, NumberOfRegisters, Extend (..))
+import           ZkFold.Symbolic.Data.Combinators (Extend (..), KnownRegisterSize, NumberOfRegisters)
 import           ZkFold.Symbolic.Data.UInt        (StrictNum (..), UInt)
 
 exampleUIntMul ::
