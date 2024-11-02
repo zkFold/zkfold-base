@@ -74,6 +74,7 @@ examples =
   , ("UInt.Mul.64.Auto", exampleOutput $ exampleUIntMul @64 @Auto)
   , ("LEQ", exampleOutput exampleLEQ)
   , ("ByteString.Extend.1.512", exampleOutput $ exampleByteStringExtend @1 @512)
+  , ("UInt.Extend.1.512", exampleOutput $ exampleUIntExtend @1 @512 @Auto)
   , ("ByteString.Add.512", exampleOutput $ exampleByteStringAdd @512)
   , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
   , ("UInt.StrictMul.512.Auto", exampleOutput $ exampleUIntStrictMul @512 @Auto)
