@@ -33,7 +33,7 @@ import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit,
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), KnownRegisterSize,
-                                                              NumberOfRegisters, RegisterSize (..), Shrink (..))
+                                                              NumberOfRegisters, RegisterSize (..), Shrink (..), Resize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -150,6 +150,18 @@ specUInt' = hspec $ do
             let acUint =  with2n @n (fromConstant x) :: UInt n rs (ArithmeticCircuit (Zp p) U1)
                 zpUint =  with2n @n (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
             return $ execAcUint @(Zp p) (with2n @n (extend acUint :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
+
+        it "resize-extend correctly" $ do
+            x <- toss m
+            let acUint =  with2n @n (fromConstant x) :: UInt n rs (ArithmeticCircuit (Zp p) U1)
+                zpUint =  with2n @n (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
+            return $ execAcUint @(Zp p) (with2n @n (resize acUint :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
+
+        it "resize-truncate correctly" $ do
+            x <- toss m
+            let acUint =  with2n @n (fromConstant x) :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1)
+                zpUint =  with2n @n (fromConstant x) :: UInt n rs (Interpreter (Zp p))
+            return $ execAcUint @(Zp p) (with2n @n (resize acUint :: UInt n rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
 
         it "shrinks correctly" $ do
             x <- toss (m * m)

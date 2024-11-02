@@ -178,6 +178,7 @@ instance
     , KnownNat n
     , KnownNat k
     , KnownRegisterSize r
+    , n <= k
     ) => Extend (UInt n r c) (UInt k r c) where
     extend (UInt bits) = UInt $ symbolicF bits (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
         where
@@ -207,6 +208,49 @@ instance
                         let newN = xN + yN
                         newI <- newAssigned (\j -> j xI + scale ((2 :: Natural) ^ xN) (j yI))
                         helper ((newN, newI) : ys)
+
+instance 
+    ( Symbolic c
+    , KnownNat n
+    , KnownNat k
+    , KnownRegisterSize r
+    ) => Resize (UInt n r c) (UInt k r c) where
+    resize (UInt bits) = UInt $ symbolicF bits (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
+        where
+            solve :: (MonadCircuit i (BaseField c) m) => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) k r) i)
+            solve v = do
+                let regs = V.fromVector v
+                    ns = replicate (numberOfRegisters @(BaseField c) @n @r -! 1) n ++ [highRegisterSize @(BaseField c) @n @r]
+                    ks = replicate (numberOfRegisters @(BaseField c) @k @r -! 1) k ++ [highRegisterSize @(BaseField c) @k @r]
+                    zs = zip ns regs
+
+                resZ <- helper zs ks
+                let (_, res) = Haskell.unzip resZ
+                -- zeros <- replicateA (numberOfRegisters @(BaseField c) @k @r -! length res) (newAssigned (Haskell.const zero))
+                return $ V.unsafeToVector res
+
+            n = registerSize @(BaseField c) @n @r
+            k = registerSize @(BaseField c) @k @r
+
+            zm :: (MonadCircuit i (BaseField c) m) => m i
+            zm = newAssigned (const zero)
+
+            helper :: (MonadCircuit i (BaseField c) m) => [(Natural, i)] -> [Natural] -> m [(Natural, i)]
+            helper _ [] = return []
+            helper [] (a:as) = do
+                z <- zm
+                ([(a, z)] <> ) Haskell.<$> helper [] as
+            helper ((xN, xI) : xs) acc@(a:as)
+                | xN > a = do
+                        (l, h) <- splitExpansion a (xN -! a) xI
+                        ([(a, l)] <> ) Haskell.<$> helper ((xN -! a, h) : xs) as
+                | xN == a = ([(a, xI)] <> ) Haskell.<$> helper xs as
+                | true = case xs of
+                    [] -> ([(xN, xI)] <> ) Haskell.<$> helper [] as
+                    ((yN, yI) : ys) -> do
+                        let newN = xN + yN
+                        newI <- newAssigned (\j -> j xI + scale ((2 :: Natural) ^ xN) (j yI))
+                        helper ((newN, newI) : ys) acc
 
 instance
     ( Symbolic c

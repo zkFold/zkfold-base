@@ -40,6 +40,9 @@ class Iso b a => Iso a b where
 class Extend a b where
     extend :: a -> b
 
+class Resize a b where
+    resize :: a -> b
+
 -- | Describes types that can shrink their capacity by removing higher bits.
 --
 class Shrink a b where
