@@ -5,8 +5,7 @@ module Examples.UInt (
     exampleUIntDivMod,
     exampleUIntStrictAdd,
     exampleUIntStrictMul,
-    exampleUIntResize,
-    exampleUIntShrink
+    exampleUIntResize
   ) where
 
 import           Control.DeepSeq                  (NFData)
@@ -16,7 +15,7 @@ import           GHC.TypeNats
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
-import           ZkFold.Symbolic.Data.Combinators (Resize (..), KnownRegisterSize, NumberOfRegisters, Shrink (..))
+import           ZkFold.Symbolic.Data.Combinators (Resize (..), KnownRegisterSize, NumberOfRegisters)
 import           ZkFold.Symbolic.Data.UInt        (StrictNum (..), UInt)
 
 exampleUIntMul ::
@@ -45,8 +44,3 @@ exampleUIntResize ::
   (KnownNat n, KnownNat k, KnownRegisterSize r, Symbolic c) =>
   UInt n r c -> UInt k r c
 exampleUIntResize = resize
-
-exampleUIntShrink ::
-  (KnownNat n, KnownNat k, KnownRegisterSize r, Symbolic c, k <= n) =>
-  UInt n r c -> UInt k r c
-exampleUIntShrink = shrink

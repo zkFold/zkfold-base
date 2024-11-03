@@ -38,7 +38,7 @@ import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector            as V
 import           ZkFold.Base.Data.Vector            (Vector (..))
-import           ZkFold.Prelude                     (drop, length, replicate, replicateA)
+import           ZkFold.Prelude                     (length, replicate, replicateA)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -207,24 +207,6 @@ instance
                         let newN = xN + yN
                         newI <- newAssigned (\j -> j xI + scale ((2 :: Natural) ^ xN) (j yI))
                         helper ((newN, newI) : ys) acc
-
-instance
-    ( Symbolic c
-    , KnownNat n
-    , KnownNat k
-    , KnownRegisterSize r
-    , k <= n
-    , from ~ NumberOfRegisters (BaseField c) n r
-    , to ~ NumberOfRegisters (BaseField c) k r
-    ) => Shrink (UInt n r c) (UInt k r c) where
-    shrink (UInt ac) =  UInt $ symbolicF ac (V.unsafeToVector . V.fromVector ) solve
-        where
-            solve :: MonadCircuit i (BaseField c) m => Vector from i -> m (Vector to i)
-            solve xv = do
-                let regs = V.fromVector xv
-                bsBits <- toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
-                shrinked <- fromBits (highRegisterSize @(BaseField c) @k @r) (registerSize @(BaseField c) @k @r) (drop (value @n -! (value @k)) bsBits)
-                return $ V.unsafeToVector $ Haskell.reverse shrinked
 
 instance
     ( Symbolic c

@@ -180,7 +180,6 @@ blake2b :: forall keyLen inputLen outputLen c n.
     , KnownNat inputLen
     , KnownNat outputLen
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , 8 * outputLen <= 512
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
     let input' = withConstraints @inputLen $

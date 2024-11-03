@@ -1,13 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Examples.ByteString (
     exampleByteStringAnd,
     exampleByteStringOr,
     exampleByteStringResize,
     exampleByteStringAdd,
-    exampleSHA,
-    exampleByteStringTruncate
+    exampleSHA
   ) where
 
 import           GHC.TypeNats
@@ -16,7 +14,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2
 import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString      (ByteString, truncate)
+import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Combinators     (Resize (..), Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt            (UInt)
 
@@ -41,8 +39,3 @@ exampleSHA :: forall n c.
   SHA2 "SHA256" c n
   => ByteString n c -> ByteString 256 c
 exampleSHA = sha2 @"SHA256"
-
-exampleByteStringTruncate :: forall n k c.
-  (KnownNat k, Symbolic c, k <= n) =>
-  ByteString n c -> ByteString k c
-exampleByteStringTruncate = truncate
