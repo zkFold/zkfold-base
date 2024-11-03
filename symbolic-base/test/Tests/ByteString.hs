@@ -29,7 +29,7 @@ import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 
@@ -88,13 +88,12 @@ testTruncate
     .  KnownNat n
     => PrimeField (Zp p)
     => KnownNat m
-    => m <= n
     => Spec
 testTruncate = it ("truncates a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do
     x <- toss m
     let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
         zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (eval (truncate arithBS :: ByteString m (ArithmeticCircuit (Zp p) U1)) === truncate zpBS)
+    return (eval (resize arithBS :: ByteString m (ArithmeticCircuit (Zp p) U1)) === resize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -104,14 +103,14 @@ testGrow
     .  KnownNat n
     => PrimeField (Zp p)
     => KnownNat m
-    => Extend (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString m (ArithmeticCircuit (Zp p) U1))
-    => Extend (ByteString n (Interpreter (Zp p))) (ByteString m (Interpreter (Zp p)))
+    => Resize (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString m (ArithmeticCircuit (Zp p) U1))
+    => Resize (ByteString n (Interpreter (Zp p))) (ByteString m (Interpreter (Zp p)))
     => Spec
 testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do
     x <- toss m
     let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
         zpBS    = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (eval (extend arithBS :: ByteString m (ArithmeticCircuit (Zp p) U1)) === extend zpBS)
+    return (eval (resize arithBS :: ByteString m (ArithmeticCircuit (Zp p) U1)) === resize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -130,15 +129,6 @@ specByteString'
     :: forall p n
     .  PrimeField (Zp p)
     => KnownNat n
-    => 1 <= n
-    => 4 <= n
-    => 8 <= n
-    => 16 <= n
-    => 32 <= n
-    => n <= n + 1
-    => n <= n + 10
-    => n <= n + 128
-    => n <= n + n
     => (Div n n) * n ~ n
     => (Div n 4) * 4 ~ n
     => (Div n 2) * 2 ~ n

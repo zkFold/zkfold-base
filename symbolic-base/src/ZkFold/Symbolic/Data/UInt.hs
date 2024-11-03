@@ -175,9 +175,8 @@ instance
     , KnownNat n
     , KnownNat k
     , KnownRegisterSize r
-    , n <= k
-    ) => Extend (UInt n r c) (UInt k r c) where
-    extend (UInt bits) = UInt $ symbolicF bits (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
+    ) => Resize (UInt n r c) (UInt k r c) where
+    resize (UInt bits) = UInt $ symbolicF bits (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
         where
             solve :: (MonadCircuit i (BaseField c) m) => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) k r) i)
             solve v = do

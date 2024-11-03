@@ -11,6 +11,7 @@
 module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
     , ShiftBits (..)
+    , Resize (..)
     , reverseEndianness
     , isSet
     , isUnset
@@ -221,7 +222,7 @@ concat bs = ByteString $ packWith V.concat ((\(ByteString bits) -> bits) <$> bs)
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --
 
-truncate :: forall n m c. (
+truncate :: forall m n c. (
     Symbolic c
   , KnownNat n
   , n <= m
@@ -252,19 +253,20 @@ instance
   ( Symbolic c
   , KnownNat k
   , KnownNat n
-  , k <= n
-  ) => Extend (ByteString k c) (ByteString n c) where
-    extend (ByteString oldBits) = ByteString $ symbolicF oldBits (\v ->  V.unsafeToVector $ zeroA <> V.fromVector v) solve
+  ) => Resize (ByteString k c) (ByteString n c) where
+    resize (ByteString oldBits) = ByteString $ symbolicF oldBits (\v ->  V.unsafeToVector $ zeroA <> takeMin (V.fromVector v)) solve
       where
         solve :: forall i m. MonadCircuit i (BaseField c) m => Vector k i -> m (Vector n i)
         solve bitsV = do
             let bits = V.fromVector bitsV
             zeros <- replicateM diff $ newAssigned (Haskell.const zero)
-            return $ V.unsafeToVector $ zeros <> bits
-
+            return $ V.unsafeToVector $ zeros <> takeMin bits
         diff :: Haskell.Int
-        diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @k
+        diff = Haskell.max 0 $ Haskell.fromIntegral (getNatural @n) Haskell.- Haskell.fromIntegral (getNatural @k)
 
+        takeMin :: [a] -> [a]
+        takeMin = Haskell.take (Haskell.min (Haskell.fromIntegral $ getNatural @n) (Haskell.fromIntegral $ getNatural @k))
+        
         zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
 
 instance
