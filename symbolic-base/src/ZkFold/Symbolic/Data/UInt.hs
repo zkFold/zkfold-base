@@ -193,14 +193,10 @@ instance
             n = registerSize @(BaseField c) @n @r
             k = registerSize @(BaseField c) @k @r
 
-            zm :: (MonadCircuit i (BaseField c) m) => m i
-            zm = newAssigned (const zero)
-
             helper :: (MonadCircuit i (BaseField c) m) => [(Natural, i)] -> [Natural] -> m [(Natural, i)]
             helper _ [] = return []
             helper [] (a:as) = do
-                z <- zm
-                ([(a, z)] <> ) Haskell.<$> helper [] as
+                ([(a, fromConstant @(BaseField c) zero)] <> ) Haskell.<$> helper [] as
             helper ((xN, xI) : xs) acc@(a:as)
                 | xN > a = do
                         (l, h) <- splitExpansion a (xN -! a) xI
