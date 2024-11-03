@@ -15,7 +15,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2
 import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
-import           ZkFold.Symbolic.Data.Combinators     (Resize (..), Iso (..), RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators     (Iso (..), RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.UInt            (UInt)
 
 exampleByteStringAnd ::

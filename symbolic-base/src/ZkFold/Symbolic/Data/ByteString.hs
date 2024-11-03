@@ -267,7 +267,7 @@ instance
 
         takeMin :: [a] -> [a]
         takeMin = Haskell.take (Haskell.min (Haskell.fromIntegral $ getNatural @n) (Haskell.fromIntegral $ getNatural @k))
-        
+
         zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
 
 instance
