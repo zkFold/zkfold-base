@@ -67,32 +67,36 @@ type Ctx c = [Thunk c]
 data Arg c = ACase [Term] | AThunk (Thunk c)
 
 impl :: Sym c => Ctx c -> Term -> [Arg c] -> SomeValue c
-impl ctx (TVariable i) args = case ctx !! i of
+impl ctx (TVariable i) args            = applyVar ctx i args
+impl _   (TConstant c) []              = someValue (evalConstant c)
+impl _   (TConstant _) (_:_)           = Nothing
+impl ctx (TBuiltin f)  args            = applyBuiltin ctx f args
+impl _   (TLam _)      []              = Nothing
+impl _   (TLam _)      (ACase _:_)     = Nothing
+impl ctx (TLam f)      (AThunk t:args) = impl (t:ctx) f args
+impl ctx (TApp f x)    args            = impl ctx f (aTerm x : args)
+impl ctx (TDelay t)    args            = impl ctx t args
+impl ctx (TForce t)    args            = impl ctx t args
+impl ctx (TConstr t f) (ACase bs:args) = impl ctx (bs !! fromIntegral t) (map aTerm f ++ args)
+impl _   (TConstr _ _) []              = error "FIXME: UPLC Data support"
+impl _   (TConstr _ _) (_:_)           = Nothing
+impl ctx (TCase s bs)  args            = impl ctx s (ACase bs : args)
+impl _   TError        _               = Nothing
+
+applyBuiltin :: Sym c => Ctx c -> BuiltinFunction s t -> [Arg c] -> SomeValue c
+applyBuiltin ctx (BFMono f) args = applyMono (evalMono f) [evalArg ctx a [] | a <- args]
+applyBuiltin ctx (BFPoly f) args = applyPoly ctx f args
+
+applyVar :: Sym c => Ctx c -> DeBruijnIndex -> [Arg c] -> SomeValue c
+applyVar ctx i args = case ctx !! i of
   Left t  -> impl ctx t args
   Right v -> if null args then v else Nothing
-impl _ (TConstant c) [] = someValue (evalConstant c)
-impl _ (TConstant _) (_:_) = Nothing
-impl ctx (TBuiltin (BFMono f)) args =
-  applyMono true (evalMono f) [evalArg ctx a [] | a <- args]
-impl ctx (TBuiltin (BFPoly f)) args = applyPoly ctx f args
-impl _ (TLam _) [] = Nothing
-impl _ (TLam _) (ACase _:_) = Nothing
-impl ctx (TLam f) (AThunk t:args) = impl (t:ctx) f args
-impl ctx (TApp f x) args = impl ctx f (aTerm x : args)
-impl ctx (TDelay t) args = impl ctx t args
-impl ctx (TForce t) args = impl ctx t args
-impl ctx (TConstr t f) (ACase bs:args) =
-  impl ctx (bs !! fromIntegral t) (map aTerm f ++ args)
-impl _ (TConstr _ _) [] = error "FIXME: UPLC Data support"
-impl _ (TConstr _ _) (_:_) = Nothing
-impl ctx (TCase s bs) args = impl ctx s (ACase bs : args)
-impl _ TError _ = Nothing
 
 evalArg :: Sym c => Ctx c -> Arg c -> [Arg c] -> SomeValue c
-evalArg _ (ACase _) _              = Nothing
-evalArg ctx (AThunk (Left t)) args = impl ctx t args
-evalArg _ (AThunk (Right v)) []    = v
-evalArg _ (AThunk (Right _)) (_:_) = Nothing
+evalArg _   (ACase _)          _     = Nothing
+evalArg ctx (AThunk (Left t))  args  = impl ctx t args
+evalArg _   (AThunk (Right v)) []    = v
+evalArg _   (AThunk (Right _)) (_:_) = Nothing
 
 someValue :: Sym c => SymValue t c -> SomeValue c
 someValue (SymValue v) = Just $ MaybeValue (Symbolic.just v)
@@ -103,11 +107,11 @@ aTerm = AThunk . Left
 aValue :: Sym c => ExValue c -> Arg c
 aValue (ExValue v) = AThunk . Right . Just $ MaybeValue (Symbolic.just v)
 
-applyMono :: Sym c => Bool c -> Fun s t c -> [SomeValue c] -> SomeValue c
-applyMono b (FSat x) []       = Just $ MaybeValue (bool Symbolic.nothing x b)
-applyMono _ (FSat _) (_:_)    = Nothing
-applyMono _ (FLam _) []       = Nothing
-applyMono b (FLam f) (v:args) = cast v >>= \x -> applyMono b (f x) args
+applyMono :: Sym c => Fun s t c -> [SomeValue c] -> SomeValue c
+applyMono (FSat x) []       = Just $ MaybeValue x
+applyMono (FSat _) (_:_)    = Nothing
+applyMono (FLam _) []       = Nothing
+applyMono (FLam f) (v:args) = cast v >>= \x -> applyMono (f x) args
 
 applyPoly :: Sym c => Ctx c -> BuiltinPolyFunction s t -> [Arg c] -> SomeValue c
 applyPoly ctx IfThenElse (ct:tt:et:args) = do
