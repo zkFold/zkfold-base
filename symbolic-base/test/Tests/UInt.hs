@@ -32,8 +32,8 @@ import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Iso (..), KnownRegisterSize, NumberOfRegisters,
-                                                              RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..),
+                                                              KnownRegisterSize, NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -76,6 +76,9 @@ specUInt'
     => r2n ~ NumberOfRegisters (Zp p) (2 * n) rs
     => KnownNat r
     => KnownNat r2n
+    => KnownNat (r * Ceil (GetRegisterSize (Zp p) n rs) OrdWord)
+    => KnownNat (r2n * Ceil (GetRegisterSize (Zp p) (2 * n) rs) OrdWord)
+    => n <= 2 * n
     => IO ()
 specUInt' = hspec $ do
     let n = value @n
@@ -108,7 +111,7 @@ specUInt' = hspec $ do
             return $ evalBS (from ux :: ByteString n (ArithmeticCircuit (Zp p) U1)) === evalBS bx
 
         -- TODO: reduce the number of constraints in divMod or wait for lookup arguments
-        when (n <= 128) $ it "performs divMod correctly" $ withMaxSuccess 10 $ do
+        it "performs divMod correctly" $ withMaxSuccess 10 $ do
             num <- toss m
             d <- toss m
             let (acQ, acR) = (fromConstant num :: UInt n rs (ArithmeticCircuit (Zp p) U1)) `divMod` fromConstant d
@@ -181,6 +184,18 @@ specUInt' = hspec $ do
                 gt' = evalBoolVec $ x' > y'
                 gt'' = evalBool @(Zp p) (x'' > y'')
             return $ gt' === gt''
+        it "checks greater than or equal" $ do
+            x <- toss m
+            y <- toss m
+            let x' = fromConstant x  :: UInt n rs (Interpreter (Zp p))
+                y' = fromConstant y  :: UInt n rs (Interpreter (Zp p))
+                x'' = fromConstant x :: UInt n rs (ArithmeticCircuit (Zp p) U1)
+                y'' = fromConstant y :: UInt n rs (ArithmeticCircuit (Zp p) U1)
+                ge' = evalBoolVec $ x' >= y'
+                ge1' = evalBoolVec $ x' >= x'
+                ge2' = evalBoolVec $ y' >= y'
+                ge'' = evalBool @(Zp p) (x'' >= y'')
+            return $ ge' === ge'' .&. ge1' === (one :: Zp p) .&. ge2' === (one :: Zp p)
         it "preserves the JSON invariant property" $ do
             x <- toss m
             let x' = fromConstant x :: UInt n rs (Interpreter (Zp p))

@@ -15,7 +15,7 @@ import           GHC.TypeNats
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
-import           ZkFold.Symbolic.Data.Combinators (KnownRegisterSize, NumberOfRegisters, Resize (..))
+import           ZkFold.Symbolic.Data.Combinators (KnownRegisterSize, NumberOfRegisters, Ceil, GetRegisterSize)
 import           ZkFold.Symbolic.Data.UInt        (StrictNum (..), UInt)
 
 exampleUIntMul ::
@@ -26,6 +26,7 @@ exampleUIntMul = (*)
 exampleUIntDivMod ::
   (KnownNat n, KnownRegisterSize r, Symbolic c,
    NumberOfRegisters (BaseField c) n r ~ k,
+   KnownNat (k * Ceil (GetRegisterSize (BaseField c) n r) 8),
    KnownNat k, NFData (c (Vector k))) =>
   UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
 exampleUIntDivMod = divMod

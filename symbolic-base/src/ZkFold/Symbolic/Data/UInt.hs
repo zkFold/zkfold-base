@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
     StrictNum(..),
     UInt(..),
+    OrdWord,
     toConstant,
     eea
 ) where
@@ -214,6 +215,7 @@ instance
     , KnownNat r
     , KnownRegisterSize rs
     , r ~ NumberOfRegisters (BaseField c) n rs
+    , KnownNat (r * Ceil (GetRegisterSize (BaseField c) n rs) OrdWord)
     , NFData (c (Vector r))
     ) => SemiEuclidean (UInt n rs c) where
 
@@ -235,22 +237,36 @@ instance
                 let rs = force $ addBit (r' + r') (value @n -! i -! 1)
                  in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
+asWords
+    :: forall wordSize regSize ctx k numWords
+    .  Symbolic ctx
+    => numWords ~ k * Ceil regSize wordSize
+    => KnownNat numWords
+    => KnownNat wordSize
+    => ctx (Vector k)        -- @k@ registers of size up to @regSize@
+    -> ctx (Vector numWords) -- @numWords@ registers of size @wordSize@
+asWords v = fromCircuitF v $ \regs -> do
+    words <- Haskell.mapM (expansionW @wordSize numWords) regs
+    Haskell.pure $ V.unsafeToVector . Haskell.concat . V.fromVector $ words
+  where
+      numWords :: Natural
+      numWords = value @numWords
+
+-- | Word size in bits used in comparisons. Subject to change
+type OrdWord = 8
+
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownNat (NumberOfRegisters (BaseField c) n r)
+         , regSize ~ GetRegisterSize (BaseField c) n r
+         , KnownNat (NumberOfRegisters (BaseField c) n r * Ceil regSize OrdWord)
          ) => Ord (Bool c) (UInt n r c) where
     x <= y = y >= x
 
     x <  y = y > x
 
-    u1 >= u2 =
-        let ByteString rs1 = from u1 :: ByteString n c
-            ByteString rs2 = from u2 :: ByteString n c
-         in bitwiseGE @1 rs1 rs2
+    (UInt u1) >= (UInt u2) = bitwiseGE @OrdWord (asWords @OrdWord @regSize u1) (asWords @OrdWord @regSize u2)
 
-    u1 > u2 =
-        let ByteString rs1 = from u1 :: ByteString n c
-            ByteString rs2 = from u2 :: ByteString n c
-        in bitwiseGT @1 rs1 rs2
+    (UInt u1) > (UInt u2) = bitwiseGT @OrdWord (asWords @OrdWord @regSize u1) (asWords @OrdWord @regSize u2)
 
     max x y = bool @(Bool c) x y $ x < y
 
