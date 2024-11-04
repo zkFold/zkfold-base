@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
 
-module ZkFold.UPLC.Evaluation (ExValue (..), MaybeValue (..), eval) where
+module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
 import           Control.Monad                    (return, (>>=))
 import           Data.Either                      (Either (..))
@@ -29,6 +29,7 @@ import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional (bool)
 import qualified ZkFold.Symbolic.Data.Maybe       as Symbolic
+import qualified ZkFold.Symbolic.UPLC.Data        as Symbolic
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
@@ -51,6 +52,7 @@ instance Sym c => IsData BTUnit (Proxy c) c where asPair _ = Nothing
 instance
   (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c where
   asPair (p, q) = Just (ExValue p, ExValue q)
+instance Sym c => IsData BTData (Symbolic.Data c) c where asPair _ = Nothing
 
 data MaybeValue c = forall t v. IsData t v c => MaybeValue (Symbolic.Maybe c v)
 

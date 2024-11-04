@@ -22,10 +22,12 @@ Flag Pedantic
     Default: False
 
 library
-    other-modules:
+    exposed-modules:
+      ZkFold.Symbolic.UPLC.Converter
+      ZkFold.Symbolic.UPLC.Data
+      ZkFold.Symbolic.UPLC.Evaluation
       ZkFold.UPLC.BuiltinFunction
       ZkFold.UPLC.BuiltinType
-      ZkFold.UPLC.Evaluation
       ZkFold.UPLC.Term
     build-depends:
       adjunctions              ,
