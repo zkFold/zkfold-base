@@ -29,6 +29,7 @@ library
       ZkFold.UPLC.Normalization
       ZkFold.UPLC.Term
     build-depends:
+      adjunctions              ,
       base          ^>=4.18.2.0,
       bytestring               ,
       symbolic-base            ,
