@@ -263,7 +263,7 @@ instance
             return $ V.unsafeToVector $ zeros <> takeMin bits
 
         diff :: Haskell.Int
-        diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @k
+        diff = Haskell.fromIntegral (getNatural @n) Haskell.- Haskell.fromIntegral (getNatural @k)
 
         takeMin :: [a] -> [a]
         takeMin = Haskell.take (Haskell.min (Haskell.fromIntegral $ getNatural @n) (Haskell.fromIntegral $ getNatural @k))
