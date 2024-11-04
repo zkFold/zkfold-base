@@ -9,6 +9,7 @@ module ZkFold.Base.Protocol.Protostar.Fold where
 
 import           Control.DeepSeq                                     (NFData)
 import           Control.Lens                                        ((^.))
+import Data.ByteString (ByteString)
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
 import           GHC.Generics                                        (Generic)
@@ -35,7 +36,7 @@ import           ZkFold.Symbolic.Data.FieldElement                   (FieldEleme
 data FoldResult n c a
     = FoldResult
     { output          :: Vector n a
-    , lastAccumulator :: Accumulator (Vector n a) a c (Map Natural a)
+    , lastAccumulator :: Accumulator (Vector n a) a c (Map ByteString a)
     , verifierOutput  :: P.Bool
     , deciderOutput   :: P.Bool
     } deriving (P.Show, Generic, NFData)
@@ -44,7 +45,7 @@ type FS_CM n c a = FiatShamir a (CommitOpen a c (RecursiveCircuit n a))
 
 transform
     :: forall n c a
-    .  HomomorphicCommit a [Map Natural a] c
+    .  HomomorphicCommit a [Map ByteString a] c
     => a
     -> RecursiveCircuit n a
     -> Vector n a
@@ -53,13 +54,13 @@ transform ck rc v = FiatShamir (CommitOpen (hcommit ck) rc) v
 
 -- | These instances might seem off, but accumulator scheme requires this exact behaviour
 --
-instance AdditiveSemigroup a => AdditiveSemigroup (Map Natural a) where
+instance (AdditiveSemigroup a, P.Ord k) => AdditiveSemigroup (Map k a) where
     (+) = M.unionWith (+)
 
-instance AdditiveMonoid a => AdditiveMonoid (Map Natural a) where
+instance (AdditiveMonoid a, P.Ord k) => AdditiveMonoid (Map k a) where
     zero = M.empty
 
-instance (Ring a, P.Eq a) => Acc.LinearCombination (Map Natural a) (Map Natural (PU.Poly a)) where
+instance (Ring a, P.Eq a, P.Ord k) => Acc.LinearCombination (Map k a) (Map k (PU.Poly a)) where
     linearCombination mx ma = M.unionWith (+) (PU.monomial 1 <$> mx) (PU.constant <$> ma)
 
 instance (Ring a, P.Eq a, KnownNat n) => Acc.LinearCombination (Vector n a) (Vector n (PU.Poly a)) where
@@ -67,6 +68,9 @@ instance (Ring a, P.Eq a, KnownNat n) => Acc.LinearCombination (Vector n a) (Vec
 
 instance (Ring a, KnownNat n) => Acc.LinearCombinationWith a (Vector n a) where
     linearCombinationWith coeff a b = (+) <$> (P.fmap (coeff *) a) <*> b
+
+instance Scale a b => Scale a (Map k b) where
+    scale a = P.fmap (scale a)
 
 fold
     :: forall a n c x
@@ -80,7 +84,7 @@ fold
     => RandomOracle c a
     => RandomOracle [c] a
     => HomomorphicCommit a [a] c
-    => HomomorphicCommit a [Map Natural a] c
+    => HomomorphicCommit a [Map ByteString a] c
     => KnownNat n
     => (Vector n (FieldElement x) -> Vector n (FieldElement x))  -- ^ An arithmetisable function to be applied recursively
     -> Natural                             -- ^ The number of iterations to perform
@@ -95,8 +99,8 @@ fold f iter i = foldN iter ck rc i [] initialAccumulator (Acc.KeyScale one one)
 
         ck = oracle i
 
-        initialAccumulator :: Accumulator (Vector n a) a c (Map Natural a)
-        initialAccumulator = Accumulator (AccumulatorInstance (P.pure zero) [hcommit ck [zero :: Map Natural a]] [] initE zero) [zero]
+        initialAccumulator :: Accumulator (Vector n a) a c (Map ByteString a)
+        initialAccumulator = Accumulator (AccumulatorInstance (P.pure zero) [hcommit ck [zero :: Map ByteString a]] [] initE zero) [zero]
 
 
 instanceProof
@@ -104,11 +108,11 @@ instanceProof
     .  Arithmetic a
     => KnownNat n
     => Scale a a
-    => HomomorphicCommit a [Map Natural a] c
+    => HomomorphicCommit a [Map ByteString a] c
     => a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
-    -> InstanceProofPair (Vector n a) c (Map Natural a)
+    -> InstanceProofPair (Vector n a) c (Map ByteString a)
 instanceProof ck rc i = InstanceProofPair i (NARKProof [hcommit ck [m]] [m])
     where
         m = SPS.prover @a rc M.empty i []
@@ -125,13 +129,13 @@ foldN
     => RandomOracle c a
     => RandomOracle [c] a
     => HomomorphicCommit a [a] c
-    => HomomorphicCommit a [Map Natural a] c
+    => HomomorphicCommit a [Map ByteString a] c
     => Natural
     -> a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
     -> [P.Bool]
-    -> Accumulator (Vector n a) a c (Map Natural a)
+    -> Accumulator (Vector n a) a c (Map ByteString a)
     -> Acc.KeyScale a
     -> FoldResult n c a
 foldN iter ck rc i verifierResults acc ks
@@ -153,14 +157,14 @@ foldStep
     => RandomOracle a a
     => RandomOracle c a
     => RandomOracle [c] a
-    => HomomorphicCommit a [Map Natural a] c
+    => HomomorphicCommit a [Map ByteString a] c
     => HomomorphicCommit a [a] c
     => a
     -> RecursiveCircuit n a
     -> SPS.Input a (RecursiveCircuit n a)
-    -> Accumulator (Vector n a) a c (Map Natural a)
+    -> Accumulator (Vector n a) a c (Map ByteString a)
     -> Acc.KeyScale a
-    -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a c (Map Natural a), P.Bool, Acc.KeyScale a)
+    -> (SPS.Input a (RecursiveCircuit n a), Accumulator (Vector n a) a c (Map ByteString a), P.Bool, Acc.KeyScale a)
 foldStep ck rc i acc (Acc.KeyScale alphaSum muSum) = (newInput, newAcc, verifierAccepts, Acc.KeyScale (alphaSum + alphaPows) (muSum + scale (6 :: Natural) alpha))
     where
         fs :: FS_CM n c a
@@ -174,6 +178,6 @@ foldStep ck rc i acc (Acc.KeyScale alphaSum muSum) = (newInput, newAcc, verifier
 
         alphaPows = sum $ P.take (P.length accProof) $ (alpha ^) <$> [1 :: Natural ..]
 
-        verifierAccepts = Acc.verifier @_ @_ @_ @(Map Natural a) @(FS_CM n c a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
+        verifierAccepts = Acc.verifier @_ @_ @_ @(Map ByteString a) @(FS_CM n c a) i (narkCommits narkProof) (acc^.x) (newAcc^.x) accProof
         newInput = executeAc rc i
 

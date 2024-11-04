@@ -10,6 +10,7 @@ module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
 import           Control.DeepSeq                                     (NFData)
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map)
+import Data.ByteString (ByteString)
 import qualified Data.Map.Strict                                     as M
 import           GHC.Generics                                        (Generic)
 import           Prelude                                             (fmap, ($), (.), (<$>), (==))
@@ -70,9 +71,9 @@ instance
   , Iso a f
   ) => SPS.SpecialSoundProtocol f (RecursiveCircuit n a) where
 
-    type Witness f (RecursiveCircuit n a) = Map Natural a
+    type Witness f (RecursiveCircuit n a) = Map ByteString a
     type Input f (RecursiveCircuit n a) = Vector n f
-    type ProverMessage f (RecursiveCircuit n a) = Map Natural f
+    type ProverMessage f (RecursiveCircuit n a) = Map ByteString f
     type VerifierMessage f (RecursiveCircuit n a) = a
     type Degree (RecursiveCircuit n a) = 2
 
@@ -91,14 +92,14 @@ instance
         where
             witness = P.head pm
 
-            sys :: [PM.Poly a (Var (Vector n)) Natural]
+            sys :: [PM.Poly a (SysVar (Vector n)) Natural]
             sys = M.elems (acSystem ac)
 
-            varMap :: Var (Vector n) -> f
+            varMap :: SysVar (Vector n) -> f
             varMap (InVar iv)  = i V.!! (fromZp iv)
             varMap (NewVar nv) = M.findWithDefault zero nv witness
 
-            f_sps :: Vector 3 [PM.Poly a (Var (Vector n)) Natural]
+            f_sps :: Vector 3 [PM.Poly a (SysVar (Vector n)) Natural]
             f_sps = degreeDecomposition @(SPS.Degree (RecursiveCircuit n a)) $ sys
 
             f_sps_uni :: Vector 3 [f]
