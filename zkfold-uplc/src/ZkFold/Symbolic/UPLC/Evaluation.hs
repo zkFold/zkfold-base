@@ -11,7 +11,7 @@
 
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
-import           Control.Monad                    (return, (>>=))
+import           Control.Monad                    (return)
 import           Data.Either                      (Either (..))
 import           Data.Function                    (($), (.))
 import           Data.Functor.Rep                 (Representable)
@@ -84,7 +84,7 @@ impl ctx (TCase s bs)  args            = impl ctx s (ACase bs : args)
 impl _   TError        _               = Nothing
 
 applyBuiltin :: Sym c => Ctx c -> BuiltinFunction s t -> [Arg c] -> SomeValue c
-applyBuiltin ctx (BFMono f) args = applyMono (evalMono f) [evalArg ctx a [] | a <- args]
+applyBuiltin ctx (BFMono f) args = applyMono true (evalMono f) [evalArg ctx a [] | a <- args]
 applyBuiltin ctx (BFPoly f) args = applyPoly ctx f args
 
 applyVar :: Sym c => Ctx c -> DeBruijnIndex -> [Arg c] -> SomeValue c
@@ -107,20 +107,23 @@ aTerm = AThunk . Left
 aValue :: Sym c => ExValue c -> Arg c
 aValue (ExValue v) = AThunk . Right . Just $ MaybeValue (Symbolic.just v)
 
-applyMono :: Sym c => Fun s t c -> [SomeValue c] -> SomeValue c
-applyMono (FSat x) []       = Just $ MaybeValue x
-applyMono (FSat _) (_:_)    = Nothing
-applyMono (FLam _) []       = Nothing
-applyMono (FLam f) (v:args) = cast v >>= \x -> applyMono (f x) args
+applyMono :: Sym c => Bool c -> Fun s t c -> [SomeValue c] -> SomeValue c
+applyMono b (FSat x) []       = Just $ MaybeValue (bool Symbolic.nothing x b)
+applyMono _ (FSat _) (_:_)    = Nothing
+applyMono _ (FLam _) []       = Nothing
+applyMono b (FLam f) (v:args) = do
+  MaybeValue v' <- v
+  mx <- cast v'
+  applyMono (b && Symbolic.isJust mx) (f $ Symbolic.fromJust mx) args
 
 applyPoly :: Sym c => Ctx c -> BuiltinPolyFunction s t -> [Arg c] -> SomeValue c
 applyPoly ctx IfThenElse (ct:tt:et:args) = do
   MaybeValue c0 <- evalArg ctx ct []
   MaybeValue t <- evalArg ctx tt args
   MaybeValue e0 <- evalArg ctx et args
-  c :: Bool c <- cast c0
+  c :: Symbolic.Maybe c (Bool c) <- cast c0
   e <- cast e0
-  return $ MaybeValue (bool e t c)
+  return $ MaybeValue (Symbolic.maybe Symbolic.nothing (bool e t) c)
 applyPoly ctx ChooseUnit (_:t:args) = evalArg ctx t args
 applyPoly ctx Trace (_:t:args) = evalArg ctx t args
 applyPoly ctx FstPair [arg] = do
