@@ -49,10 +49,10 @@ type Sym c = (Symbolic c, Typeable c)
 -- TODO: Add more instances
 instance Sym c => IsData BTBool (Bool c) c where asPair _ = Nothing
 instance Sym c => IsData BTUnit (Proxy c) c where asPair _ = Nothing
+instance Sym c => IsData BTData (Symbolic.Data c) c where asPair _ = Nothing
 instance
   (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c where
   asPair (p, q) = Just (ExValue p, ExValue q)
-instance Sym c => IsData BTData (Symbolic.Data c) c where asPair _ = Nothing
 
 data MaybeValue c = forall t v. IsData t v c => MaybeValue (Symbolic.Maybe c v)
 
