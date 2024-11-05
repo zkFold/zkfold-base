@@ -13,6 +13,8 @@ module ZkFold.Symbolic.Data.UInt (
     UInt(..),
     OrdWord,
     toConstant,
+    asWords,
+    expMod,
     eea
 ) where
 
@@ -76,6 +78,29 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Integer (UInt n 
 
 instance MultiplicativeMonoid (UInt n r c) => Exponent (UInt n r c) Natural where
     (^) = natPow
+
+expMod :: forall c n p m r . (Symbolic c, KnownNat p) => UInt n r c -> UInt p r c -> UInt m r c -> UInt m r c
+expMod n pow modulus = resize result
+    where
+        bits :: ByteString p c
+        bits = from pow
+
+        n' :: UInt (2 * m) r c
+        n' = resize n
+
+        m' :: UInt (2 * m) r c
+        m' = resize modulus
+
+        result :: UInt (2 * m) r c
+        result = bitsPow (value @p) bits n' m'
+
+bitsPow :: forall c n p r . Symbolic c => Natural -> ByteString p c -> UInt n r c -> UInt n r c -> UInt n r c
+bitsPow 0 _ n _ = n
+bitsPow b bits n m = bool even odd (isSet bits $ b -! 1)
+    where
+        even = bitsPow (b -! 1) bits (n * n `mod` m) m
+        odd  = n * (bitsPow (b -! 1) bits n m) `mod` m
+
 
 cast :: forall a n r . (Arithmetic a, KnownNat n, KnownRegisterSize r) => Natural -> ([Natural], Natural, [Natural])
 cast n =
@@ -215,7 +240,7 @@ instance
     , KnownNat r
     , KnownRegisterSize rs
     , r ~ NumberOfRegisters (BaseField c) n rs
-    , KnownNat (r * Ceil (GetRegisterSize (BaseField c) n rs) OrdWord)
+    , KnownNat (Ceil (GetRegisterSize (BaseField c) n rs) OrdWord)
     , NFData (c (Vector r))
     ) => SemiEuclidean (UInt n rs c) where
 
@@ -238,35 +263,40 @@ instance
                  in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
 asWords
-    :: forall wordSize regSize ctx k numWords
+    :: forall wordSize regSize ctx k 
     .  Symbolic ctx
-    => numWords ~ k * Ceil regSize wordSize
-    => KnownNat numWords
+    => KnownNat (Ceil regSize wordSize)
     => KnownNat wordSize
-    => ctx (Vector k)        -- @k@ registers of size up to @regSize@
-    -> ctx (Vector numWords) -- @numWords@ registers of size @wordSize@
+    => ctx (Vector k)                           -- @k@ registers of size up to @regSize@
+    -> ctx (Vector (k * Ceil regSize wordSize)) -- @k * wordsPerReg@ registers of size @wordSize@
 asWords v = fromCircuitF v $ \regs -> do
-    words <- Haskell.mapM (expansionW @wordSize numWords) regs
-    Haskell.pure $ V.unsafeToVector . Haskell.concat . V.fromVector $ words
+    words <- Haskell.mapM (expansionW @wordSize wordsPerReg) regs
+    Haskell.pure $ V.reverse . V.unsafeToVector . Haskell.concat . V.fromVector $ words
   where
-      numWords :: Natural
-      numWords = value @numWords
+      wordsPerReg :: Natural
+      wordsPerReg = value @(Ceil regSize wordSize)
 
 -- | Word size in bits used in comparisons. Subject to change
-type OrdWord = 8
+type OrdWord = 16 
 
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownNat (NumberOfRegisters (BaseField c) n r)
          , regSize ~ GetRegisterSize (BaseField c) n r
-         , KnownNat (NumberOfRegisters (BaseField c) n r * Ceil regSize OrdWord)
+         , KnownNat (Ceil regSize OrdWord)
          ) => Ord (Bool c) (UInt n r c) where
     x <= y = y >= x
 
     x <  y = y > x
 
-    (UInt u1) >= (UInt u2) = bitwiseGE @OrdWord (asWords @OrdWord @regSize u1) (asWords @OrdWord @regSize u2)
+    (UInt u1) >= (UInt u2) = 
+        let w1 = asWords @OrdWord @regSize u1
+            w2 = asWords @OrdWord @regSize u2
+         in bitwiseGE @OrdWord w1 w2 
 
-    (UInt u1) > (UInt u2) = bitwiseGT @OrdWord (asWords @OrdWord @regSize u1) (asWords @OrdWord @regSize u2)
+    (UInt u1) > (UInt u2) = 
+        let w1 = asWords @OrdWord @regSize u1
+            w2 = asWords @OrdWord @regSize u2
+         in bitwiseGT @OrdWord w1 w2 
 
     max x y = bool @(Bool c) x y $ x < y
 
