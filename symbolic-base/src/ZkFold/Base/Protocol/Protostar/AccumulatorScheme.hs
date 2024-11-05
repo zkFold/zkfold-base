@@ -21,6 +21,7 @@ import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), CommitOpenProverMessage (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
+import           ZkFold.Base.Protocol.Protostar.NARK         (NARKProof (..), InstanceProofPair (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), MapInput, SpecialSoundProtocol (..))
 

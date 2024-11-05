@@ -7,16 +7,15 @@
 module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
 
 
-import           Data.ByteString                                     (ByteString)
 import           Data.Functor.Rep                                    (tabulate)
 import           Data.List                                           (foldl')
-import           Data.Map.Strict                                     (Map)
+import           Data.Map.Strict                                     (Map, fromList, elems)
 import qualified Data.Map.Strict                                     as M
-import           Prelude                                             (type (~), fmap, ($), (.), (<$>), undefined)
+import           GHC.IsList                                          (toList)
+import           Prelude                                             (type (~), fmap, ($), (.), (<$>), undefined, zip, (++))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
@@ -29,11 +28,11 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
 
-instance Arithmetic a => SPS.SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
+instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
 
     type Witness a (ArithmeticCircuit a (Vector n) o) = ()
     type Input a (ArithmeticCircuit a (Vector n) o) = Vector n a
-    type ProverMessage a (ArithmeticCircuit a (Vector n) o) = Map ByteString a
+    type ProverMessage a (ArithmeticCircuit a (Vector n) o) = [a]
     type VerifierMessage a (ArithmeticCircuit a (Vector n) o) = a
     type VerifierOutput a (ArithmeticCircuit a (Vector n) o)  = [a]
     type Degree (ArithmeticCircuit a (Vector n) o) = 2
@@ -46,21 +45,22 @@ instance Arithmetic a => SPS.SpecialSoundProtocol a (ArithmeticCircuit a (Vector
     -- The transcript will be empty at this point, it is a one-round protocol.
     -- Input is arithmetised. We need to combine its witness with the circuit's witness.
     --
-    prover ac _ pi _ _ = witnessGenerator ac pi
+    prover ac _ pi _ _ = elems $ witnessGenerator ac pi
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --
     verifier rc i pm ts = SPS.algebraicMap rc i pm ts one
 
 instance
-    ( Arithmetic a
+    ( KnownNat n
+    , Arithmetic a
     , Symbolic ctx
     , BaseField ctx ~ a
     ) => SPS.SpecialSoundProtocol (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) where
 
     type Witness (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = ()
     type Input (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = Vector n (FieldElement ctx)
-    type ProverMessage (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = Map ByteString (FieldElement ctx)
+    type ProverMessage (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = [FieldElement ctx]
     type VerifierMessage (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = FieldElement ctx
     type VerifierOutput (FieldElement ctx) (ArithmeticCircuit a (Vector n) o)  = [FieldElement ctx]
     type Degree (ArithmeticCircuit a (Vector n) o) = 2
@@ -75,33 +75,33 @@ instance
     --
     prover = undefined
 
-
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --
-    verifier rc i pm ts = SPS.algebraicMap @(FieldElement ctx) rc i pm ts one
+    verifier rc pi pm ts = SPS.algebraicMap @(FieldElement ctx) rc pi pm ts one
 
 instance
-  ( Arithmetic a
+  ( KnownNat n
+  , Arithmetic a
   , Scale a f
   , MultiplicativeMonoid f
   , AdditiveMonoid f
   ) => SPS.AlgebraicMap f (ArithmeticCircuit a (Vector n) o) where
 
     type MapInput f (ArithmeticCircuit a (Vector n) o) = Vector n f
-    type MapMessage f (ArithmeticCircuit a (Vector n) o) = Map ByteString f
+    type MapMessage f (ArithmeticCircuit a (Vector n) o) = [f]
 
     -- We can use the polynomial system from the circuit as a base for V_sps.
     --
-    algebraicMap ac i pm _ pad = padDecomposition pad f_sps_uni
+    algebraicMap ac pi pm _ pad = padDecomposition pad f_sps_uni
         where
-            witness = P.head pm
-
             sys :: [PM.Poly a (SysVar (Vector n)) Natural]
             sys = M.elems (acSystem ac)
 
+            witness :: Map (SysVar (Vector n)) f
+            witness = fromList $ zip (getAllVars ac) (toList pi ++ P.head pm)
+
             varMap :: SysVar (Vector n) -> f
-            varMap (InVar iv)  = i V.!! fromZp iv
-            varMap (NewVar nv) = M.findWithDefault zero nv witness
+            varMap x = M.findWithDefault zero x witness
 
             f_sps :: Vector 3 [PM.Poly a (SysVar (Vector n)) Natural]
             f_sps = degreeDecomposition @(SPS.Degree (ArithmeticCircuit a (Vector n) o)) $ sys

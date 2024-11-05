@@ -23,8 +23,8 @@ import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
 import           ZkFold.Base.Protocol.Protostar.Commit
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
+import           ZkFold.Base.Protocol.Protostar.NARK              (instanceProof)
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import qualified ZkFold.Base.Protocol.Protostar.SpecialSound      as SPS
 import           ZkFold.Base.Protocol.Protostar.SpecialSound      (AlgebraicMap (..), SpecialSoundProtocol (..))
 import           ZkFold.Prelude                                   (replicate)
 import           ZkFold.Symbolic.Class
@@ -152,7 +152,7 @@ iterate
     => Witness f (pi -> pi) ~ ()
     => Input f (pi -> pi) ~ pi
     => ProverMessage f (pi -> pi) ~ m
-    =>  (pi -> pi)
+    => (pi -> pi)
     -> pi
     -> Natural
     -> ProtostarResult pi f c m
@@ -168,22 +168,6 @@ iterate func pi n = iteration n ck func initialResult
 
         initialResult :: ProtostarResult pi f c m
         initialResult = ProtostarResult pi initialAccumulator []
-
-instanceProof
-    :: forall pi f c m
-    .  RandomOracle pi f
-    => HomomorphicCommit f m c
-    => SpecialSoundProtocol f (pi -> pi)
-    => Witness f (pi -> pi) ~ ()
-    => Input f (pi -> pi) ~ pi
-    => ProverMessage f (pi -> pi) ~ m
-    => f
-    -> (pi -> pi)
-    -> pi
-    -> InstanceProofPair pi c m
-instanceProof ck func pi = InstanceProofPair pi (NARKProof [hcommit ck m] [m])
-    where
-        m = SPS.prover @f func () pi (oracle pi) 0
 
 iteration
     :: forall pi f c m
@@ -226,5 +210,5 @@ iteration n ck func (ProtostarResult i acc _) = iteration (n -! 1) ck func (Prot
 
         newi = func i
 
-        nark = instanceProof ck func i
+        nark = instanceProof func ck i
         (newAcc, accProof) = Acc.prover @pi @f @c @m fs ck acc nark

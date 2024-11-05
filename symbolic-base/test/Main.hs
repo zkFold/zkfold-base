@@ -17,9 +17,11 @@ import           Tests.Plonkup             (specPlonkup)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
 import           Tests.Univariate          (specUnivariate)
+import Tests.Protostar (specProtostar)
 
 main :: IO ()
 main = do
+    specProtostar
     -- Base
     specBinary
 
