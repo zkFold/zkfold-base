@@ -27,9 +27,9 @@ import           ZkFold.Prelude                                    (length, repl
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Class                             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..), concat,
-                                                                    reverseEndianness, toWords, truncate)
-import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..), extend)
+import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Resize (..), ShiftBits (..),
+                                                                    concat, reverseEndianness, toWords)
+import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 
 
@@ -108,7 +108,6 @@ blake2b' :: forall bb' kk' ll' nn' c .
     , KnownNat kk'
     , KnownNat ll'
     , KnownNat nn'
-    , 8 * nn' <= 512
     ) => [V.Vector (UInt 64 Auto c)] -> ByteString (8 * nn') c
 blake2b' d =
     let bb = value @bb'
@@ -136,7 +135,7 @@ blake2b' d =
             else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
         bs = reverseEndianness @64 $ concat @8 @64 $ Vec.unsafeToVector @8 $ map from $ toList h''' :: ByteString (64 * 8) c
-    in with8n @nn' (truncate bs)
+    in with8n @nn' (resize bs)
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
@@ -181,14 +180,13 @@ blake2b :: forall keyLen inputLen outputLen c n.
     , KnownNat inputLen
     , KnownNat outputLen
     , n ~ (8 * inputLen + ExtensionBits inputLen)
-    , 8 * outputLen <= 512
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
     let input' = withConstraints @inputLen $
                     from <$> (toWords @(Div n 64) @64 $
                     reverseEndianness @64 $
                     flip rotateBitsL (value @(ExtensionBits inputLen)) $
-                    extend @_ @(ExtendedInputByteString inputLen c) input ) :: Vec.Vector (Div n 64) (UInt 64 Auto c)
+                    resize @_ @(ExtendedInputByteString inputLen c) input ) :: Vec.Vector (Div n 64) (UInt 64 Auto c)
 
         key'    = fromConstant @_ key :: UInt 64 Auto c
         input'' = if value @keyLen > 0
