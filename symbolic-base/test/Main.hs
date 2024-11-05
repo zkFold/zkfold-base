@@ -15,21 +15,23 @@ import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
 import           Tests.Plonkup             (specPlonkup)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
+import           Tests.RSA                (specRSA)
 import           Tests.UInt                (specUInt)
 import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
---    -- Base
---    specBinary
---
---    -- Algebra
---    specPermutations
---    specField
---    specAdditiveGroup
---    specPairing
---    specUnivariate
---    specGroebner
+{--
+    -- Base
+    specBinary
+
+    -- Algebra
+    specPermutations
+    specField
+    specAdditiveGroup
+    specPairing
+    specUnivariate
+    specGroebner
 
     -- Symbolic types and operations
     specUInt
@@ -50,6 +52,8 @@ main = do
     -- Cryptography
     specSHA2Natural
     specSHA2
+--}
+    specRSA
 
     -- TODO: implement a proper blake2b test
     specBlake2b

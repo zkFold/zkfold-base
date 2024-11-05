@@ -32,8 +32,8 @@ import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..),
-                                                              KnownRegisterSize, NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
+                                                              NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -94,7 +94,6 @@ specUInt'
     => KnownNat r2n
     => KnownNat (Ceil (GetRegisterSize (Zp p) n rs) OrdWord)
     => KnownNat (Ceil (GetRegisterSize (Zp p) (2 * n) rs) OrdWord)
-    => n <= 2 * n
     => IO ()
 specUInt' = hspec $ do
     let n = value @n
@@ -216,6 +215,17 @@ specUInt' = hspec $ do
                 ge'' = evalBool @(Zp p) (x'' >= y'')
                 trueGe = if x >= y then one else zero
             return $ ge' === ge'' .&. ge1' === (one :: Zp p) .&. ge2' === (one :: Zp p) .&. ge' === trueGe
+        it "Raises to power correctly" $ withMaxSuccess 10 $ do
+            num <- toss m
+            modulus <- toss m
+            p <- toss 255
+            let nI = fromConstant num :: UInt n rs (Interpreter (Zp p))
+                mI = fromConstant modulus :: UInt n rs (Interpreter (Zp p))
+                pI = fromConstant p :: UInt 8 rs (Interpreter (Zp p))
+
+                rI = execZpUint $ with2n @n $ expMod nI pI mI
+                rTrue = execZpUint (fromConstant ((num^p) `mod` modulus) :: UInt n rs (Interpreter (Zp p)))
+            return $ rI === rTrue
         it "preserves the JSON invariant property" $ do
             x <- toss m
             let x' = fromConstant x :: UInt n rs (Interpreter (Zp p))

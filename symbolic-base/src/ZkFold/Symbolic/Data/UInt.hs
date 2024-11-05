@@ -57,6 +57,10 @@ import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
 
 
+
+import Debug.Trace 
+import qualified Prelude as P
+
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
 
@@ -79,27 +83,57 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Integer (UInt n 
 instance MultiplicativeMonoid (UInt n r c) => Exponent (UInt n r c) Natural where
     (^) = natPow
 
-expMod :: forall c n p m r . (Symbolic c, KnownNat p) => UInt n r c -> UInt p r c -> UInt m r c -> UInt m r c
+-- | @expMod n pow modulus@ calculates @n^pow % modulus@ where all values are arithmetised
+--
+expMod 
+    :: forall c n p m r 
+    .  Symbolic c
+    => KnownRegisterSize r
+    => KnownNat p 
+    => KnownNat n 
+    => KnownNat m 
+    => KnownNat (2 * m) 
+    => KnownNat (NumberOfRegisters (BaseField c) (2 * m) r)
+    => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
+    => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
+    => UInt n r c 
+    -> UInt p r c 
+    -> UInt m r c 
+    -> UInt m r c
 expMod n pow modulus = resize result
     where
         bits :: ByteString p c
         bits = from pow
 
-        n' :: UInt (2 * m) r c
-        n' = resize n
-
         m' :: UInt (2 * m) r c
         m' = resize modulus
 
-        result :: UInt (2 * m) r c
-        result = bitsPow (value @p) bits n' m'
+        n' :: UInt (2 * m) r c
+        n' = resize n `mod` m'
 
-bitsPow :: forall c n p r . Symbolic c => Natural -> ByteString p c -> UInt n r c -> UInt n r c -> UInt n r c
-bitsPow 0 _ n _ = n
-bitsPow b bits n m = bool even odd (isSet bits $ b -! 1)
+        result :: UInt (2 * m) r c
+        result = bitsPow (value @p) bits one n' m'
+
+bitsPow 
+    :: forall c n p r 
+    .  Symbolic c
+    => KnownRegisterSize r
+    => KnownNat n 
+    => KnownNat p 
+    => KnownNat (NumberOfRegisters (BaseField c) n r)
+    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
+    => NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))
+    => Natural 
+    -> ByteString p c 
+    -> UInt n r c 
+    -> UInt n r c 
+    -> UInt n r c 
+    -> UInt n r c
+bitsPow 0 _ res _ _ = res
+bitsPow b bits res n m = bitsPow (b -! 1) bits newRes sq m
     where
-        even = bitsPow (b -! 1) bits (n * n `mod` m) m
-        odd  = n * (bitsPow (b -! 1) bits n m) `mod` m
+        sq = (n * n) `mod` m
+        newRes = force $ gif (isSet bits (b -! 1)) ((res * n) `mod` m) res
 
 
 cast :: forall a n r . (Arithmetic a, KnownNat n, KnownRegisterSize r) => Natural -> ([Natural], Natural, [Natural])
