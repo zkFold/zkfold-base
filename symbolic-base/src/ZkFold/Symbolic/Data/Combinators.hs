@@ -35,15 +35,11 @@ import           ZkFold.Symbolic.MonadCircuit
 class Iso b a => Iso a b where
     from :: a -> b
 
--- | Describes types that can increase their capacity by adding zero bits to the beginning (i.e. before the higher register).
+-- | Describes types that can increase or shrink their capacity by adding zero bits to the beginning (i.e. before the higher register)
+-- or removing higher bits.
 --
-class Extend a b where
-    extend :: a -> b
-
--- | Describes types that can shrink their capacity by removing higher bits.
---
-class Shrink a b where
-    shrink :: a -> b
+class Resize a b where
+    resize :: a -> b
 
 -- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 --
