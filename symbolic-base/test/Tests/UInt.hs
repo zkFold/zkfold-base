@@ -32,8 +32,8 @@ import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Extend (..), Iso (..), KnownRegisterSize,
-                                                              NumberOfRegisters, RegisterSize (..), Shrink (..))
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..), KnownRegisterSize, NumberOfRegisters,
+                                                              RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -76,7 +76,6 @@ specUInt'
     => r2n ~ NumberOfRegisters (Zp p) (2 * n) rs
     => KnownNat r
     => KnownNat r2n
-    => n <= 2 * n
     => IO ()
 specUInt' = hspec $ do
     let n = value @n
@@ -149,13 +148,13 @@ specUInt' = hspec $ do
             x <- toss m
             let acUint =  with2n @n (fromConstant x) :: UInt n rs (ArithmeticCircuit (Zp p) U1)
                 zpUint =  with2n @n (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
-            return $ execAcUint @(Zp p) (with2n @n (extend acUint :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
+            return $ execAcUint @(Zp p) (with2n @n (resize acUint :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
 
         it "shrinks correctly" $ do
             x <- toss (m * m)
             let acUint = with2n @n (fromConstant x) :: UInt (2 * n) rs (ArithmeticCircuit (Zp p) U1)
                 zpUint = fromConstant x :: UInt n rs (Interpreter (Zp p))
-            return $ execAcUint @(Zp p) (with2n @n (withLess2n @n $ shrink acUint :: UInt n rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
+            return $ execAcUint @(Zp p) (with2n @n (withLess2n @n $ resize acUint :: UInt n rs (ArithmeticCircuit (Zp p) U1))) === execZpUint zpUint
 
         it "checks equality" $ do
             x <- toss m

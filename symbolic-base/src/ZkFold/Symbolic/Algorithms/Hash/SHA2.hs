@@ -33,9 +33,8 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Class                          (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, toWords,
-                                                                 truncate)
-import           ZkFold.Symbolic.Data.Combinators               (Extend (..), Iso (..), RegisterSize (..))
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, toWords)
+import           ZkFold.Symbolic.Data.Combinators               (Iso (..), RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
@@ -98,7 +97,7 @@ instance
     type ResultSize "SHA224" = 224
     initialHashes = sha224InitialHashes
     roundConstants = word32RoundConstants
-    truncateResult = truncate
+    truncateResult = resize
     sigmaShifts = (7, 18, 3, 17, 19, 10)
     sumShifts = (2, 13, 22, 6, 11, 25)
 
@@ -124,7 +123,7 @@ instance
     type ResultSize "SHA384" = 384
     initialHashes = sha384InitialHashes
     roundConstants = word64RoundConstants
-    truncateResult = truncate
+    truncateResult = resize
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
@@ -137,7 +136,7 @@ instance
     type ResultSize "SHA512/224" = 224
     initialHashes = sha512_224InitialHashes
     roundConstants = word64RoundConstants
-    truncateResult = truncate
+    truncateResult = resize
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
@@ -150,7 +149,7 @@ instance
     type ResultSize "SHA512/256" = 256
     initialHashes = sha512_256InitialHashes
     roundConstants = word64RoundConstants
-    truncateResult = truncate
+    truncateResult = resize
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
@@ -246,7 +245,6 @@ sha2Pad
     => KnownNat k
     => KnownNat padTo
     => KnownNat lenBits
-    => k <= PaddedLength k padTo lenBits
     => ByteString k context
     -> ByteString (PaddedLength k padTo lenBits) context
 sha2Pad bs = withPaddedLength @k @padTo @lenBits $ grown || fromConstant padValue
@@ -261,7 +259,7 @@ sha2Pad bs = withPaddedLength @k @padTo @lenBits $ grown || fromConstant padValu
         padValue = 2 P.^ (diff -! 1) P.+ l
 
         grown :: ByteString (PaddedLength k padTo lenBits) context
-        grown = withPaddedLength @k @padTo @lenBits $ extend bs `shiftBitsL` diff
+        grown = withPaddedLength @k @padTo @lenBits $ resize bs `shiftBitsL` diff
 
 
 -- | This allows us to calculate hash of a bytestring represented by a Natural number.
