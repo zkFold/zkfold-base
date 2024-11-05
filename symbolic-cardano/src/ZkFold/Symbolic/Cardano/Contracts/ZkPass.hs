@@ -2,29 +2,28 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
-import           Data.Kind                                   (Type)
+
 import           Data.Type.Equality
-import           GHC.TypeLits                                (KnownNat, Log2)
+import           GHC.TypeLits                              (KnownNat, Log2)
 import qualified GHC.TypeNats
-import           Prelude                                     hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
-                                                              (&&), (*), (+))
+import           Prelude                                   hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
+                                                            (&&), (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_G1, BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (BaseField), Point)
-import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Data.Vector                     hiding (concat)
-import           ZkFold.Symbolic.Algorithms.Hash.SHA2        (SHA2N, sha2)
-import qualified ZkFold.Symbolic.Class                       as S
-import           ZkFold.Symbolic.Class                       (Symbolic)
+import           ZkFold.Base.Algebra.EllipticCurve.Class   (EllipticCurve (BaseField), Point (Point))
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
+import qualified ZkFold.Base.Data.Vector                   as V
+import           ZkFold.Base.Data.Vector                   hiding (concat)
+import           ZkFold.Symbolic.Algorithms.Hash.SHA2      (SHA2N, sha2)
+import qualified ZkFold.Symbolic.Class                     as S
+import           ZkFold.Symbolic.Class                     (Symbolic)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString             (ByteString, concat, toWords)
-import           ZkFold.Symbolic.Data.Combinators            (Iso (..), NumberOfRegisters, RegisterSize (..), extend)
+import           ZkFold.Symbolic.Data.ByteString           (ByteString, concat, toWords)
+import           ZkFold.Symbolic.Data.Combinators          (Iso (..), NumberOfRegisters, RegisterSize (..), extend)
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-import           ZkFold.Symbolic.Data.UInt                   (UInt)
-data ZKPassResult curve c = ZKPassResult
+import           ZkFold.Symbolic.Data.FieldElement         (FieldElement)
+import           ZkFold.Symbolic.Data.UInt                 (UInt)
+data ZKPassResult c = ZKPassResult
   { allocatorAddress   :: ByteString 256 c
   , allocatorSignature :: ByteString 520 c
   , publicFields       :: ByteString 1024 c
@@ -33,7 +32,7 @@ data ZKPassResult curve c = ZKPassResult
   , uHash              :: ByteString 256 c
   , validatorAddress   :: ByteString 256 c
   , validatorSignature :: ByteString 520 c
-  , publicKey          :: Point curve
+  , publicKey          :: ByteString 512 c
   }
 
 type Hash c = UInt 256 Auto c
@@ -46,10 +45,10 @@ hashFunction :: forall c . (
     -> ByteString 256 c
 hashFunction = sha2 @"SHA512/256"
 
-verifyAllocatorSignature :: forall curve context p1 p2 . (
+verifyAllocatorSignature :: forall curve context n . (
     EllipticCurve curve
-    , BaseField curve ~ Zp p1
-    , KnownNat p2
+    , BaseField curve ~ UInt 256 Auto context
+    , KnownNat n
     , Scale (FieldElement context) (Point curve)
     , SemiEuclidean (Hash context)
     , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
@@ -60,7 +59,7 @@ verifyAllocatorSignature :: forall curve context p1 p2 . (
     -> ByteString 256 context
     -> ByteString 256 context
     -> ByteString 520 context
-    -> Point curve
+    -> ByteString 512 context
     -> Bool context
 verifyAllocatorSignature taskId validatorAddress allocatorAddress allocatorSignature publicKey = verifyVerdict
     where
@@ -72,13 +71,15 @@ verifyAllocatorSignature taskId validatorAddress allocatorAddress allocatorSigna
 
         (r, s, v) = extractSignature allocatorSignature
 
-        verifyVerdict :: Bool context
-        verifyVerdict = ecdsaVerify @curve @p1 @p2 @context publicKey encodedParams (r, s)
+        (x, y) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 context), Vector 1 (ByteString 256 context))
 
-verifyValidatorSignature :: forall curve context p1 p2 . (
+        verifyVerdict :: Bool context
+        verifyVerdict = ecdsaVerify @curve @n @context (Point (from $ item x) (from $ item y)) encodedParams (r, s)
+
+verifyValidatorSignature :: forall curve context n . (
     EllipticCurve curve
-    , BaseField curve ~ Zp p1
-    , KnownNat p2
+    , BaseField curve ~ UInt 256 Auto context
+    , KnownNat n
     , Scale (FieldElement context) (Point curve)
     , SemiEuclidean (Hash context)
     , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
@@ -90,7 +91,7 @@ verifyValidatorSignature :: forall curve context p1 p2 . (
     -> ByteString 256 context
     -> ByteString 256 context
     -> ByteString 520 context
-    -> Point curve
+    -> ByteString 512 context
     -> Bool context
 verifyValidatorSignature taskId uHash publicFieldsHash validatorAddress validatorSignature publicKey = verifyVerdict
     where
@@ -102,8 +103,10 @@ verifyValidatorSignature taskId uHash publicFieldsHash validatorAddress validato
 
         (r, s, v) = extractSignature validatorSignature
 
+        (x, y) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 context), Vector 1 (ByteString 256 context))
+
         verifyVerdict :: Bool context
-        verifyVerdict = ecdsaVerify @curve @p1 @p2 @context publicKey encodedParams (r, s)
+        verifyVerdict = ecdsaVerify @curve @n @context (Point (from $ item x) (from $ item y)) encodedParams (r, s)
 
 extractSignature :: forall context . (Symbolic context)
     => ByteString 520 context
@@ -119,14 +122,16 @@ extractSignature sign = (from $ concat r', from $ concat s', item v')
         (s', v') = splitAt l'
 
 zkPassSymbolicVerifier ::
-    forall (context :: (Type -> Type) -> Type)
-    . ( SHA2N "SHA512/256" context
+    forall context curve . (
+    curve ~ Ed25519 context -- probably another ec is needed here, for example, secp256k1
+    , EllipticCurve curve
     , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
     , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
     , SemiEuclidean (Hash context)
-    , Scale (FieldElement context) (Point BLS12_381_G1)
+    , Scale (FieldElement context) (Point curve)
+    , SHA2N "SHA512/256" context
     )
-    =>ZKPassResult BLS12_381_G1 context
+    =>ZKPassResult context
     -> Bool context
 zkPassSymbolicVerifier (ZKPassResult
     allocatorAddress
@@ -140,12 +145,12 @@ zkPassSymbolicVerifier (ZKPassResult
     publicKey
    ) =
     let
-        conditionAllocatorSignatureCorrect = verifyAllocatorSignature @BLS12_381_G1 @context @BLS12_381_Base @BLS12_381_Scalar
+        conditionAllocatorSignatureCorrect = verifyAllocatorSignature @(Ed25519 context) @context @Ed25519_Base
             taskId validatorAddress allocatorAddress allocatorSignature publicKey
 
         conditionHashEquality = hashFunction publicFields == publicFieldsHash
 
-        conditionValidatorSignatureCorrect = verifyValidatorSignature @BLS12_381_G1 @context @BLS12_381_Base @BLS12_381_Scalar
+        conditionValidatorSignatureCorrect = verifyValidatorSignature @(Ed25519 context) @context @Ed25519_Base
             taskId uHash publicFieldsHash validatorAddress validatorSignature publicKey
 
     in conditionAllocatorSignatureCorrect && conditionHashEquality && conditionValidatorSignatureCorrect
