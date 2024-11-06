@@ -6,6 +6,7 @@ packages:
     symbolic-cardano
     symbolic-examples
     zkfold-ledger
+    zkfold-uplc
 
 optimization: 2
 
