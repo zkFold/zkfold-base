@@ -1,24 +1,19 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DerivingVia         #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DerivingVia   #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.MonadCircuit where
 
-import           Control.Applicative              (Applicative)
-import           Control.Monad                    (Monad (return))
-import           Data.Eq                          (Eq)
-import           Data.Function                    (id)
-import           Data.Functor                     (Functor)
-import           Data.Functor.Identity            (Identity (..))
-import           Data.Maybe                       (fromMaybe)
-import           Data.Ord                         (Ord)
-import           Data.Type.Equality               (type (~))
-import           Numeric.Natural                  (Natural)
-import           Prelude                          (undefined, ($))
+import           Control.Applicative             (Applicative)
+import           Control.Monad                   (Monad (return))
+import           Data.Eq                         (Eq)
+import           Data.Function                   (id)
+import           Data.Functor                    (Functor)
+import           Data.Functor.Identity           (Identity (..))
+import           Data.Ord                        (Ord)
+import           Data.Type.Equality              (type (~))
+import           Numeric.Natural                 (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number (KnownNat, value)
-import           ZkFold.Symbolic.Lookup
 
 -- | A @'WitnessField'@ should support all algebraic operations
 -- used inside an arithmetic circuit.
@@ -90,7 +85,7 @@ class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a w
 
   -- | Adds new range constraint to the system.
   -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
-  rangeConstraint :: var -> Lookup -> m ()
+  rangeConstraint :: var -> a -> m ()
 
   -- | Creates new variable given a polynomial witness
   -- AND adds a corresponding polynomial constraint.
@@ -110,17 +105,11 @@ class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a w
 -- E.g., @'newRanged' b (\\x -> x var - one)@ creates new variable whose value
 -- is equal to @x var - one@ and which is expected to be in range @[0..b]@.
 --
--- newRanged :: MonadCircuit var a m => a -> Witness var a -> m var
 -- NOTE: this adds a range constraint to the system.
-
--- Added undefined as default Lookup - not good
-newRanged :: forall r var a m.
-  ( MonadCircuit var a m
-  , HasLookup (Range r) m
-  , KnownNat r) => Witness var a -> m var
-newRanged witness = do
+newRanged :: MonadCircuit var a m => a -> Witness var a -> m var
+newRanged upperBound witness = do
   v <- unconstrained witness
-  rangeConstraint v $ fromMaybe undefined $ rangeLookup @(Range r) @m (Range $ value @r)
+  rangeConstraint v upperBound
   return v
 
 -- | Creates new variable from witness constrained by a polynomial.

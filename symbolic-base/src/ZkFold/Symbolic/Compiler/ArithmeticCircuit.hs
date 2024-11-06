@@ -26,7 +26,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         acWitness,
         acInput,
         acOutput,
-        acRange,
         -- Testing functions
         checkCircuit,
         checkClosedCircuit
@@ -38,7 +37,6 @@ import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
                                                                       take)
-import qualified Data.Set                                            as S
 import           Data.Void                                           (absurd)
 import           GHC.Generics                                        (U1 (..))
 import           Numeric.Natural                                     (Natural)
@@ -57,15 +55,15 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
                                                                       exec1, hlmap, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
-import           ZkFold.Symbolic.Lookup
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
+import qualified Data.Set as S
 
 --------------------------------- High-level functions --------------------------------
 
 -- | Optimizes the constraint system.
 --
 -- TODO: Implement nontrivial optimizations.
-optimize :: ArithmeticCircuit a l i o -> ArithmeticCircuit a l i o
+optimize :: ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 optimize = id
 
 desugarRange :: (Arithmetic a, MonadCircuit i a m) => i -> a -> m ()
@@ -87,44 +85,33 @@ desugarRange i b
 -- | Desugars range constraints into polynomial constraints
 desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
-  ArithmeticCircuit a l i o -> ArithmeticCircuit a l i o
+  ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, fromConstant k) | (Range k,s) <- toList (acRange c), v <- S.toList s]
-   in r' { acLookup = mempty, acOutput = acOutput c }
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, fromConstant k) | (k, s) <- toList (acRange c), v <- S.toList s]
+   in r' { acRange = mempty, acOutput = acOutput c }
 
 ----------------------------------- Information -----------------------------------
 
 -- | Calculates the number of constraints in the system.
-acSizeN :: ArithmeticCircuit a l i o -> Natural
+acSizeN :: ArithmeticCircuit a i o -> Natural
 acSizeN = length . acSystem
 
 -- | Calculates the number of variables in the system.
-acSizeM :: ArithmeticCircuit a l i o -> Natural
+acSizeM :: ArithmeticCircuit a i o -> Natural
 acSizeM = length . acWitness
 
--- | Calculates the number of lookups in the system.
-acSizeL :: ArithmeticCircuit a l i o -> Natural
-acSizeL = length . acLookup
-
--- | Calculates the number of lookups in the system.
-acSizeR :: ArithmeticCircuit a l i o -> Natural
+-- | Calculates the number of range lookups in the system.
+acSizeR :: ArithmeticCircuit a i o -> Natural
 acSizeR = length . acRange
 
--- | Calculates the number of lookups in the system.
-acRange :: ArithmeticCircuit a l i o -> Map Lookup (S.Set (SysVar i))
-acRange = filterWithKey
-    (\x _ -> case x of
-        Range _ -> True
-        _       -> False) . acLookup
-
-acValue :: Functor o => ArithmeticCircuit a l U1 o -> o a
+acValue :: Functor o => ArithmeticCircuit a U1 o -> o a
 acValue r = eval r U1
 
 -- | Prints the constraint system, the witness, and the output.
 --
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
-acPrint :: (Show a, Show (o (Var a U1)), Show (o a), Functor o) => ArithmeticCircuit a l U1 o -> IO ()
+acPrint :: (Show a, Show (o (Var a U1)), Show (o a), Functor o) => ArithmeticCircuit a U1 o -> IO ()
 acPrint ac = do
     let m = elems (acSystem ac)
         w = witnessGenerator ac U1
@@ -146,10 +133,10 @@ acPrint ac = do
 ---------------------------------- Testing -------------------------------------
 
 checkClosedCircuit
-    :: forall a n l
+    :: forall a n
      . Arithmetic a
     => Show a
-    => ArithmeticCircuit a l U1 n
+    => ArithmeticCircuit a U1 n
     -> Property
 checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem c) ]
     where
@@ -163,7 +150,7 @@ checkCircuit
     => Arithmetic a
     => Show a
     => Representable i
-    => ArithmeticCircuit a l i n
+    => ArithmeticCircuit a i n
     -> Property
 checkCircuit c = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
     where

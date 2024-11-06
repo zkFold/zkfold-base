@@ -27,7 +27,6 @@ import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
-import           ZkFold.Symbolic.Lookup
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | A class for isomorphic types.
@@ -174,13 +173,7 @@ expansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
 expansion = expansionW @1
 
-expansionW :: forall r i a m .
-    ( KnownNat r
-    , MonadCircuit i a m
-    , Arithmetic a
-    , KnownNat (2 ^ r - 1)
-    , HasLookup (Range (2 ^ r - 1)) m
-    ) => Natural -> i -> m [i]
+expansionW :: forall r i a m . (KnownNat r, MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 expansionW n k = do
     words <- wordsOf @r n k
     k' <- hornerW @r words
@@ -192,17 +185,11 @@ bitsOf :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- bits of @k@.
 bitsOf = wordsOf @1
 
-wordsOf :: forall r i a m .
-    ( KnownNat r
-    , MonadCircuit i a m
-    , Arithmetic a
-    , KnownNat (2 ^ r - 1)
-    , HasLookup (Range (2 ^ r - 1)) m) => Natural -> i -> m [i]
+wordsOf :: forall r i a m . (KnownNat r, MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @wordsOf n k@ creates @n@ r-bit words and sets their witnesses equal to @n@ smaller
 -- words of @k@.
 wordsOf n k = for [0 .. n -! 1] $ \j ->
-    -- newRanged (fromConstant $ wordSize -! 1) (repr j . ($ k))
-    newRanged @(2 ^ r - 1) (repr j . ($ k))
+    newRanged (fromConstant $ wordSize -! 1) (repr j . ($ k))
     where
         wordSize :: Natural
         wordSize = 2 ^ value @r
@@ -229,31 +216,21 @@ horner :: MonadCircuit i a m => [i] -> m i
 -- Horner's scheme.
 horner = hornerW @1
 
--- unsafeHasLookup :: forall n m. Dict (KnownNat n, HasLookup (Range n) m)
--- unsafeHasLookup = unsafeAxiom
-
--- withHasLookup  :: forall n m {r}. (HasLookup (Range n) m => r) -> r
--- withHasLookup = withDict (unsafeHasLookup @n @m)
-
-splitExpansion :: forall i a m.
-    ( MonadCircuit i a m
-    , Arithmetic a
-    ) => Natural -> Natural -> i -> m (i, i)
--- ^ @splitExpansion withHasLookupn1 n2 k@ computes two values @(l, h)@ such that
+splitExpansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
+-- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).
 splitExpansion n1 n2 k = do
-    let (someNat1, someNat2) = (someNatVal (2 ^ n1 -! 1), someNatVal (2 ^ n2 -! 1))
-    l <- case someNat1 of SomeNat (_ :: Proxy n1) -> newRanged @n1 $ lower . ($ k)
-    h <- case someNat2 of SomeNat (_ :: Proxy n2) -> newRanged @n2 $ upper . ($ k)
+    l <- newRanged (fromConstant @Natural $ 2 ^ n1 -! 1) $ lower . ($ k)
+    h <- newRanged (fromConstant @Natural $ 2 ^ n2 -! 1) $ upper . ($ k)
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where
-        lower :: WitnessField n p => p -> p
+        lower :: WitnessField n a => a -> a
         lower =
             fromConstant . (`mod` fromConstant @Natural (2 ^ n1)) . toConstant
 
-        upper :: WitnessField n p => p -> p
+        upper :: WitnessField n a => a -> a
         upper =
             fromConstant
             . (`mod` fromConstant @Natural (2 ^ n2))
