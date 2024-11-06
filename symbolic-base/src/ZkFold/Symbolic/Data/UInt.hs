@@ -17,8 +17,8 @@ module ZkFold.Symbolic.Data.UInt (
 
 import           Control.DeepSeq
 import           Control.Monad.State                (StateT (..))
-import           Data.Aeson
-import           Data.Foldable                      (foldr, foldrM, for_)
+import           Data.Aeson                         hiding (Bool)
+import           Data.Foldable                      (foldlM, foldr, foldrM, for_)
 import           Data.Functor                       ((<$>))
 import           Data.Kind                          (Type)
 import           Data.List                          (unfoldr, zip)
@@ -28,8 +28,8 @@ import           Data.Tuple                         (swap)
 import qualified Data.Zip                           as Z
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
-import           Prelude                            (Integer, error, flip, otherwise, return, type (~), ($), (++), (.),
-                                                     (<>), (>>=))
+import           Prelude                            (Integer, const, error, flip, otherwise, return, type (~), ($),
+                                                     (++), (.), (<>), (>>=))
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
 
@@ -38,7 +38,7 @@ import           ZkFold.Base.Algebra.Basic.Field    (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector            as V
 import           ZkFold.Base.Data.Vector            (Vector (..))
-import           ZkFold.Prelude                     (drop, length, replicate, replicateA)
+import           ZkFold.Prelude                     (length, replicate, replicateA)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -48,6 +48,7 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
+import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
@@ -174,35 +175,38 @@ instance
     , KnownNat n
     , KnownNat k
     , KnownRegisterSize r
-    , n <= k
-    ) => Extend (UInt n r c) (UInt k r c) where
-    extend (UInt x) = UInt $ symbolicF x (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
+    ) => Resize (UInt n r c) (UInt k r c) where
+    resize (UInt bits) = UInt $ symbolicF bits (\l ->  naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r))) solve
         where
-            solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) k r) i)
-            solve xv = do
-                let regs = V.fromVector xv
-                zeros <- replicateA (value @k -! (value @n)) (newAssigned (Haskell.const zero))
-                bsBits <- toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
-                extended <- fromBits (highRegisterSize @(BaseField c) @k @r) (registerSize @(BaseField c) @k @r) (zeros <> bsBits)
-                return $ V.unsafeToVector $ Haskell.reverse extended
+            solve :: (MonadCircuit i (BaseField c) m) => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Vector (NumberOfRegisters (BaseField c) k r) i)
+            solve v = do
+                let regs = V.fromVector v
+                    ns = replicate (numberOfRegisters @(BaseField c) @n @r -! 1) n ++ [highRegisterSize @(BaseField c) @n @r]
+                    ks = replicate (numberOfRegisters @(BaseField c) @k @r -! 1) k ++ [highRegisterSize @(BaseField c) @k @r]
+                    zs = zip ns regs
 
-instance
-    ( Symbolic c
-    , KnownNat n
-    , KnownNat k
-    , KnownRegisterSize r
-    , k <= n
-    , from ~ NumberOfRegisters (BaseField c) n r
-    , to ~ NumberOfRegisters (BaseField c) k r
-    ) => Shrink (UInt n r c) (UInt k r c) where
-    shrink (UInt ac) =  UInt $ symbolicF ac (V.unsafeToVector . V.fromVector ) solve
-        where
-            solve :: MonadCircuit i (BaseField c) m => Vector from i -> m (Vector to i)
-            solve xv = do
-                let regs = V.fromVector xv
-                bsBits <- toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
-                shrinked <- fromBits (highRegisterSize @(BaseField c) @k @r) (registerSize @(BaseField c) @k @r) (drop (value @n -! (value @k)) bsBits)
-                return $ V.unsafeToVector $ Haskell.reverse shrinked
+                resZ <- helper zs ks
+                let (_, res) = Haskell.unzip resZ
+                return $ V.unsafeToVector res
+
+            n = registerSize @(BaseField c) @n @r
+            k = registerSize @(BaseField c) @k @r
+
+            helper :: (MonadCircuit i (BaseField c) m) => [(Natural, i)] -> [Natural] -> m [(Natural, i)]
+            helper _ [] = return []
+            helper [] (a:as) = do
+                ([(a, fromConstant @(BaseField c) zero)] <> ) Haskell.<$> helper [] as
+            helper ((xN, xI) : xs) acc@(a:as)
+                | xN > a = do
+                        (l, h) <- splitExpansion a (xN -! a) xI
+                        ([(a, l)] <> ) Haskell.<$> helper ((xN -! a, h) : xs) as
+                | xN == a = ([(a, xI)] <> ) Haskell.<$> helper xs as
+                | otherwise = case xs of
+                    [] -> ([(xN, xI)] <> ) Haskell.<$> helper [] as
+                    ((yN, yI) : ys) -> do
+                        let newN = xN + yN
+                        newI <- newAssigned (\j -> j xI + scale ((2 :: Natural) ^ xN) (j yI))
+                        helper ((newN, newI) : ys) acc
 
 instance
     ( Symbolic c
@@ -240,12 +244,12 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     u1 >= u2 =
         let ByteString rs1 = from u1 :: ByteString n c
             ByteString rs2 = from u2 :: ByteString n c
-         in bitwiseGE rs1 rs2
+         in bitwiseGE @1 rs1 rs2
 
     u1 > u2 =
         let ByteString rs1 = from u1 :: ByteString n c
             ByteString rs2 = from u2 :: ByteString n c
-        in bitwiseGT rs1 rs2
+        in bitwiseGT @1 rs1 rs2
 
     max x y = bool @(Bool c) x y $ x < y
 
@@ -518,6 +522,29 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c)
                     for_ [k -! r + 1 .. r -! 1] $ \l ->
                         constraint (\v -> v (cs ! l) * v (ds ! (k -! l)))
                 return (p : ps <> [p'])
+
+
+instance
+  ( Symbolic c
+  , KnownNat n
+  , KnownRegisterSize r
+  , KnownNat (NumberOfRegisters (BaseField c) n r)
+  ) => SymbolicInput (UInt n r c) where
+  isValid (UInt bits) = Bool $ fromCircuitF bits solve
+    where
+        solve :: MonadCircuit i (BaseField c) m => Vector (NumberOfRegisters (BaseField c) n r) i -> m (Par1 i)
+        solve v = do
+            let vs = V.fromVector v
+            bs <- toBits (Haskell.reverse vs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
+            ys <- Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bs
+            difference <- for (zip vs ys) $ \(i, j) -> newAssigned (\w -> w i - w j)
+            isZeros <- for difference $ isZero . Par1
+            helper isZeros
+
+        helper :: MonadCircuit i a m => [Par1 i] -> m (Par1 i)
+        helper xs = case xs of
+            []       -> Par1 <$> newAssigned (const one)
+            (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
 
 
 --------------------------------------------------------------------------------

@@ -31,6 +31,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (Var)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
 
 type A = Zp BLS12_381_Scalar
 type C = ArithmeticCircuit A
@@ -46,7 +47,7 @@ exampleOutput ::
   , c ~ C i
   , Context f ~ c
   , Layout f ~ o
-  , SymbolicData (Support f)
+  , SymbolicInput (Support f)
   , Context (Support f) ~ c
   , Support (Support f) ~ Proxy c
   , Layout (Support f) ~ i
@@ -72,7 +73,12 @@ examples =
   , ("ByteString.Or.64", exampleOutput $ exampleByteStringOr @64)
   , ("UInt.Mul.64.Auto", exampleOutput $ exampleUIntMul @64 @Auto)
   , ("LEQ", exampleOutput exampleLEQ)
-  , ("ByteString.Extend.1.512", exampleOutput $ exampleByteStringExtend @1 @512)
+  , ("ByteString.Extend.1.512", exampleOutput $ exampleByteStringResize @1 @512)
+  , ("UInt.Extend.1.512", exampleOutput $ exampleUIntResize @1 @512 @Auto)
+  , ("ByteString.Truncate.512.1", exampleOutput $ exampleByteStringResize @512 @1)
+  , ("UInt.Truncate.512.1", exampleOutput $ exampleUIntResize @512 @1 @Auto)
+  , ("ByteString.Truncate.74.54", exampleOutput $ exampleByteStringResize @74 @54)
+  , ("UInt.Truncate.74.54", exampleOutput $ exampleUIntResize @74 @54 @Auto)
   , ("ByteString.Add.512", exampleOutput $ exampleByteStringAdd @512)
   , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
   , ("UInt.StrictMul.512.Auto", exampleOutput $ exampleUIntStrictMul @512 @Auto)
@@ -85,5 +91,7 @@ examples =
   , ("FFA.Add.097", exampleOutput exampleFFAadd097)
   , ("FFA.Mul.337", exampleOutput exampleFFAmul337)
   , ("FFA.Mul.097", exampleOutput exampleFFAmul097)
+--  , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
+--  , ("PedersonCommitment", exampleOutput exampleCommitment)
   , ("BatchTransfer", exampleOutput exampleBatchTransfer)
   ]

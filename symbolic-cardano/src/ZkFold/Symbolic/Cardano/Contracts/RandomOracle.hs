@@ -44,7 +44,7 @@ randomOracle c tx w =
         conditionPolicyId  = p == policyId
 
         -- The token's name is correct
-        conditionTokenName = name == extend (Symbolic.ByteString $ binaryExpansion r)
+        conditionTokenName = name == resize (Symbolic.ByteString $ binaryExpansion r)
 
         -- The token's quantity is correct
         conditionQuantity  = n == one

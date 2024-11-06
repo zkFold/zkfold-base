@@ -35,21 +35,17 @@ import           ZkFold.Symbolic.MonadCircuit
 class Iso b a => Iso a b where
     from :: a -> b
 
--- | Describes types that can increase their capacity by adding zero bits to the beginning (i.e. before the higher register).
+-- | Describes types that can increase or shrink their capacity by adding zero bits to the beginning (i.e. before the higher register)
+-- or removing higher bits.
 --
-class Extend a b where
-    extend :: a -> b
-
--- | Describes types that can shrink their capacity by removing higher bits.
---
-class Shrink a b where
-    shrink :: a -> b
+class Resize a b where
+    resize :: a -> b
 
 -- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 --
 toBits
     :: forall v a m
-    .  MonadCircuit v a m
+    .  (MonadCircuit v a m, Arithmetic a)
     => [v]
     -> Natural
     -> Natural
@@ -173,33 +169,52 @@ minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` max
 
 ---------------------------------------------------------------
 
-expansion :: MonadCircuit i a m => Natural -> i -> m [i]
+expansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
-expansion n k = do
-    bits <- bitsOf n k
-    k' <- horner bits
-    constraint (\x -> x k - x k')
-    return bits
+expansion = expansionW @1
 
-bitsOf :: MonadCircuit i a m => Natural -> i -> m [i]
+expansionW :: forall r i a m . (KnownNat r, MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
+expansionW n k = do
+    words <- wordsOf @r n k
+    k' <- hornerW @r words
+    constraint (\x -> x k - x k')
+    return words
+
+bitsOf :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
-bitsOf n k = for [0 .. n -! 1] $ \j ->
-    newConstrained (\x i -> let xi = x i in xi * (xi - one)) (repr j . ($ k))
+bitsOf = wordsOf @1
+
+wordsOf :: forall r i a m . (KnownNat r, MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
+-- ^ @wordsOf n k@ creates @n@ r-bit words and sets their witnesses equal to @n@ smaller
+-- words of @k@.
+wordsOf n k = for [0 .. n -! 1] $ \j ->
+    newRanged (fromConstant $ wordSize -! 1) (repr j . ($ k))
     where
+        wordSize :: Natural
+        wordSize = 2 ^ value @r
+
         repr :: WitnessField n x => Natural -> x -> x
         repr j =
               fromConstant
-              . (`mod` fromConstant @Natural 2)
-              . (`div` fromConstant @Natural (2 ^ j))
+              . (`mod` fromConstant wordSize)
+              . (`div` fromConstant (wordSize ^ j))
               . toConstant
+
+hornerW :: forall r i a m . (KnownNat r, MonadCircuit i a m) => [i] -> m i
+-- ^ @horner [b0,...,bn]@ computes the sum @b0 + (2^r) b1 + ... + 2^rn bn@ using
+-- Horner's scheme.
+hornerW xs = case reverse xs of
+    []       -> newAssigned (const zero)
+    (b : bs) -> foldlM (\a i -> newAssigned (\x -> x i + scale wordSize (x a))) b bs
+    where
+        wordSize :: Natural
+        wordSize = 2 ^ (value @r)
 
 horner :: MonadCircuit i a m => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
 -- Horner's scheme.
-horner xs = case reverse xs of
-    []       -> newAssigned (const zero)
-    (b : bs) -> foldlM (\a i -> newAssigned (\x -> let xa = x a in x i + xa + xa)) b bs
+horner = hornerW @1
 
 splitExpansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
 -- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
@@ -227,3 +242,6 @@ runInvert is = do
     js <- for is $ \i -> newConstrained (\x j -> x i * x j) (\x -> let xi = x i in one - xi // xi)
     ks <- for (mzipRep is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv . ($ i))
     return (js, ks)
+
+isZero :: (MonadCircuit i a m, Representable f, Traversable f) => f i -> m (f i)
+isZero is = Haskell.fst <$> runInvert is

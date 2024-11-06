@@ -1,10 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module Examples.ByteString (
     exampleByteStringAnd,
     exampleByteStringOr,
-    exampleByteStringExtend,
+    exampleByteStringResize,
     exampleByteStringAdd,
     exampleSHA
   ) where
@@ -16,7 +15,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2
 import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
-import           ZkFold.Symbolic.Data.Combinators     (Extend (..), Iso (..), RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators     (Iso (..), RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.UInt            (UInt)
 
 exampleByteStringAnd ::
@@ -27,10 +26,10 @@ exampleByteStringOr ::
   (KnownNat n, Symbolic c) => ByteString n c -> ByteString n c -> ByteString n c
 exampleByteStringOr = (||)
 
-exampleByteStringExtend ::
-  (KnownNat n, KnownNat k, n <= k, Symbolic c) =>
+exampleByteStringResize ::
+  (KnownNat n, KnownNat k, Symbolic c) =>
   ByteString n c -> ByteString k c
-exampleByteStringExtend = extend
+exampleByteStringResize = resize
 
 exampleByteStringAdd ::
   forall n c. (KnownNat n, Symbolic c) => ByteString n c -> ByteString n c -> ByteString n c

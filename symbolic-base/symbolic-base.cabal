@@ -185,6 +185,7 @@ library
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.Eq.Structural
       ZkFold.Symbolic.Data.FFA
+      ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Ord
@@ -291,3 +292,17 @@ benchmark bench-poly-mul
       symbolic-base,
       tasty-bench,
       vector,
+
+benchmark in-circuit-ec-benchmark 
+    import:           options-exe
+    main-is:          BenchEC.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:
+      -O3
+    build-depends:
+      base,
+      deepseq,
+      tasty-bench,
+      random,
+      symbolic-base,

@@ -11,6 +11,7 @@
 module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
     , ShiftBits (..)
+    , Resize (..)
     , reverseEndianness
     , isSet
     , isUnset
@@ -26,6 +27,7 @@ import           Control.Monad                      (replicateM)
 import           Data.Aeson                         (FromJSON (..), ToJSON (..))
 import qualified Data.Bits                          as B
 import qualified Data.ByteString                    as Bytes
+import           Data.Foldable                      (foldlM)
 import           Data.Kind                          (Type)
 import           Data.List                          (reverse, unfoldr)
 import           Data.Maybe                         (Maybe (..))
@@ -34,8 +36,8 @@ import           Data.Traversable                   (for)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
 import           Numeric                            (readHex, showHex)
-import           Prelude                            (Integer, drop, fmap, otherwise, pure, return, take, type (~), ($),
-                                                     (.), (<$>), (<), (<>), (==), (>=))
+import           Prelude                            (Integer, const, drop, fmap, otherwise, pure, return, take,
+                                                     type (~), ($), (.), (<$>), (<), (<>), (==), (>=))
 import qualified Prelude                            as Haskell
 import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
 
@@ -55,6 +57,7 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq            (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
+import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
 
@@ -219,7 +222,7 @@ concat bs = ByteString $ packWith V.concat ((\(ByteString bits) -> bits) <$> bs)
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --
 
-truncate :: forall n m c. (
+truncate :: forall m n c. (
     Symbolic c
   , KnownNat n
   , n <= m
@@ -250,20 +253,41 @@ instance
   ( Symbolic c
   , KnownNat k
   , KnownNat n
-  , k <= n
-  ) => Extend (ByteString k c) (ByteString n c) where
-    extend (ByteString oldBits) = ByteString $ symbolicF oldBits (\v ->  V.unsafeToVector $ zeroA <> V.fromVector v) solve
+  ) => Resize (ByteString k c) (ByteString n c) where
+    resize (ByteString oldBits) = ByteString $ symbolicF oldBits (\v ->  V.unsafeToVector $ zeroA <> takeMin (V.fromVector v)) solve
       where
         solve :: forall i m. MonadCircuit i (BaseField c) m => Vector k i -> m (Vector n i)
         solve bitsV = do
             let bits = V.fromVector bitsV
             zeros <- replicateM diff $ newAssigned (Haskell.const zero)
-            return $ V.unsafeToVector $ zeros <> bits
+            return $ V.unsafeToVector $ zeros <> takeMin bits
 
         diff :: Haskell.Int
-        diff = Haskell.fromIntegral $ getNatural @n Haskell.- getNatural @k
+        diff = Haskell.fromIntegral (getNatural @n) Haskell.- Haskell.fromIntegral (getNatural @k)
+
+        takeMin :: [a] -> [a]
+        takeMin = Haskell.take (Haskell.min (Haskell.fromIntegral $ getNatural @n) (Haskell.fromIntegral $ getNatural @k))
 
         zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
+
+instance
+  ( Symbolic c
+  , KnownNat n
+  ) => SymbolicInput (ByteString n c) where
+  isValid (ByteString bits) = Bool $ fromCircuitF bits solve
+    where
+        solve :: MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
+        solve v = do
+            let vs = V.fromVector v
+            ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
+            us <-for ys $ \i -> isZero $ Par1 i
+            helper us
+
+        helper :: MonadCircuit i a m => [Par1 i] -> m (Par1 i)
+        helper xs = case xs of
+            []       -> Par1 <$> newAssigned (const one)
+            (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
+
 
 isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
 isSet (ByteString bits) ix = Bool $ fromCircuitF bits solve

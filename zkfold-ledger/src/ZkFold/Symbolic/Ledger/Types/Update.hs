@@ -14,6 +14,8 @@ import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 type UpdateId context = Hash context
 
 -- | Update is a public data contained in a block.
+-- TODO: This has been significantly redesigned. See the internal PDF docs.
+-- Instead of "public inputs and outputs", we now have "online and offline transactions".
 data Update context = Update
     { updateTransactionData      :: List context (ContractId context, TransactionId context)
     -- ^ List of contract-transaction pairs in the update
