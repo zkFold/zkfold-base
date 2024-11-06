@@ -205,8 +205,8 @@ instance
       in
         zoom #acSystem . modify $ insert (toVar @a p) (p evalConstVar)
 
-    rangeConstraint (SysVar v) l =
-      zoom #acRange . modify $ insert l $ S.singleton v
+    rangeConstraint (SysVar v) upperBound =
+      zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
     -- FIXME range-constrain other variable types
     rangeConstraint _ _ = error "Cannot range-constrain this variable"
 
