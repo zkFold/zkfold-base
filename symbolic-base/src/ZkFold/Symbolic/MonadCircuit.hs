@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingVia   #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.MonadCircuit where
 
@@ -12,8 +13,11 @@ import           Data.Functor.Identity           (Identity (..))
 import           Data.Ord                        (Ord)
 import           Data.Type.Equality              (type (~))
 import           Numeric.Natural                 (Natural)
-
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Lookup
+import ZkFold.Base.Algebra.Basic.Number (value, KnownNat)
+import Prelude (($), undefined)
+import Data.Maybe (fromMaybe)
 
 -- | A @'WitnessField'@ should support all algebraic operations
 -- used inside an arithmetic circuit.
@@ -85,7 +89,7 @@ class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a w
 
   -- | Adds new range constraint to the system.
   -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
-  rangeConstraint :: var -> a -> m ()
+  rangeConstraint :: var -> Lookup -> m ()
 
   -- | Creates new variable given a polynomial witness
   -- AND adds a corresponding polynomial constraint.
@@ -105,11 +109,17 @@ class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a w
 -- E.g., @'newRanged' b (\\x -> x var - one)@ creates new variable whose value
 -- is equal to @x var - one@ and which is expected to be in range @[0..b]@.
 --
+-- newRanged :: MonadCircuit var a m => a -> Witness var a -> m var
 -- NOTE: this adds a range constraint to the system.
-newRanged :: MonadCircuit var a m => a -> Witness var a -> m var
-newRanged upperBound witness = do
+
+-- Added undefined as default Lookup - not good
+newRanged :: forall r var a m. 
+  ( MonadCircuit var a m
+  , HasLookup (Range r) m
+  , KnownNat r) => Witness var a -> m var
+newRanged witness = do
   v <- unconstrained witness
-  rangeConstraint v upperBound
+  rangeConstraint v $ fromMaybe undefined $ rangeLookup @(Range r) @m (Range $ value @r)
   return v
 
 -- | Creates new variable from witness constrained by a polynomial.
