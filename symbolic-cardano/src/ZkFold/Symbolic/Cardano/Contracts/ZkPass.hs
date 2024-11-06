@@ -14,12 +14,13 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class   (EllipticCurve (BaseF
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import qualified ZkFold.Base.Data.Vector                   as V
 import           ZkFold.Base.Data.Vector                   hiding (concat)
+import           ZkFold.Symbolic.Algorithms.ECDSA.ECDSA    (ecdsaVerify)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2      (SHA2N, sha2)
 import qualified ZkFold.Symbolic.Class                     as S
 import           ZkFold.Symbolic.Class                     (Symbolic)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString           (ByteString, concat, toWords)
-import           ZkFold.Symbolic.Data.Combinators          (Iso (..), NumberOfRegisters, RegisterSize (..), extend)
+import           ZkFold.Symbolic.Data.Combinators          (Iso (..), NumberOfRegisters, RegisterSize (..), resize)
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement         (FieldElement)
 import           ZkFold.Symbolic.Data.UInt                 (UInt)
@@ -64,12 +65,12 @@ verifyAllocatorSignature :: forall curve context n . (
 verifyAllocatorSignature taskId validatorAddress allocatorAddress allocatorSignature publicKey = verifyVerdict
     where
         params :: ByteString 1024 context
-        params = extend (concat $ V.unsafeToVector [taskId, validatorAddress, allocatorAddress] :: ByteString 768 context)
+        params = resize (concat $ V.unsafeToVector [taskId, validatorAddress, allocatorAddress] :: ByteString 768 context)
 
         encodedParams :: ByteString 256 context
         encodedParams = hashFunction params
 
-        (r, s, v) = extractSignature allocatorSignature
+        (r, s, _) = extractSignature allocatorSignature
 
         (x, y) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 context), Vector 1 (ByteString 256 context))
 
@@ -101,7 +102,7 @@ verifyValidatorSignature taskId uHash publicFieldsHash validatorAddress validato
         encodedParams :: ByteString 256 context
         encodedParams = hashFunction params
 
-        (r, s, v) = extractSignature validatorSignature
+        (r, s, _) = extractSignature validatorSignature
 
         (x, y) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 context), Vector 1 (ByteString 256 context))
 
@@ -122,9 +123,11 @@ extractSignature sign = (from $ concat r', from $ concat s', item v')
         (s', v') = splitAt l'
 
 zkPassSymbolicVerifier ::
-    forall context curve . (
+    forall context curve n . (
     curve ~ Ed25519 context -- probably another ec is needed here, for example, secp256k1
+    , n ~ Ed25519_Base
     , EllipticCurve curve
+    , BaseField curve ~ UInt 256 Auto context
     , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
     , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
     , SemiEuclidean (Hash context)
@@ -145,12 +148,12 @@ zkPassSymbolicVerifier (ZKPassResult
     publicKey
    ) =
     let
-        conditionAllocatorSignatureCorrect = verifyAllocatorSignature @(Ed25519 context) @context @Ed25519_Base
+        conditionAllocatorSignatureCorrect = verifyAllocatorSignature @curve @context @n
             taskId validatorAddress allocatorAddress allocatorSignature publicKey
 
         conditionHashEquality = hashFunction publicFields == publicFieldsHash
 
-        conditionValidatorSignatureCorrect = verifyValidatorSignature @(Ed25519 context) @context @Ed25519_Base
+        conditionValidatorSignatureCorrect = verifyValidatorSignature @curve @context @n
             taskId uHash publicFieldsHash validatorAddress validatorSignature publicKey
 
     in conditionAllocatorSignatureCorrect && conditionHashEquality && conditionValidatorSignatureCorrect

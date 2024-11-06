@@ -162,6 +162,7 @@ library
       ZkFold.Base.Protocol.NonInteractiveProof.Prover
       ZkFold.Base.Protocol.NonInteractiveProof.Testing
       ZkFold.Prelude
+      ZkFold.Symbolic.Algorithms.ECDSA.ECDSA
       ZkFold.Symbolic.Algorithms.Hash.Blake2b
       ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants
       ZkFold.Symbolic.Algorithms.Hash.MiMC
