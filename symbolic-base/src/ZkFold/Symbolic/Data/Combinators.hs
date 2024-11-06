@@ -27,8 +27,8 @@ import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
+import           ZkFold.Symbolic.Lookup
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Lookup
 
 -- | A class for isomorphic types.
 -- The @Iso b a@ context ensures that transformations in both directions are defined
@@ -174,7 +174,7 @@ expansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
 expansion = expansionW @1
 
-expansionW :: forall r i a m . 
+expansionW :: forall r i a m .
     ( KnownNat r
     , MonadCircuit i a m
     , Arithmetic a
@@ -192,7 +192,7 @@ bitsOf :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
 -- bits of @k@.
 bitsOf = wordsOf @1
 
-wordsOf :: forall r i a m . 
+wordsOf :: forall r i a m .
     ( KnownNat r
     , MonadCircuit i a m
     , Arithmetic a
@@ -201,8 +201,8 @@ wordsOf :: forall r i a m .
 -- ^ @wordsOf n k@ creates @n@ r-bit words and sets their witnesses equal to @n@ smaller
 -- words of @k@.
 wordsOf n k = for [0 .. n -! 1] $ \j ->
-    -- newRanged (fromConstant $ wordSize -! 1) (repr j . ($ k)) 
-    newRanged @(2 ^ r - 1) (repr j . ($ k)) 
+    -- newRanged (fromConstant $ wordSize -! 1) (repr j . ($ k))
+    newRanged @(2 ^ r - 1) (repr j . ($ k))
     where
         wordSize :: Natural
         wordSize = 2 ^ value @r
@@ -245,7 +245,7 @@ splitExpansion :: forall i a m.
 splitExpansion n1 n2 k = do
     let (someNat1, someNat2) = (someNatVal (2 ^ n1 -! 1), someNatVal (2 ^ n2 -! 1))
     l <- case someNat1 of SomeNat (_ :: Proxy n1) -> newRanged @n1 $ lower . ($ k)
-    h <- case someNat2 of SomeNat (_ :: Proxy n2) -> newRanged @n2 $ upper . ($ k)   
+    h <- case someNat2 of SomeNat (_ :: Proxy n2) -> newRanged @n2 $ upper . ($ k)
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where

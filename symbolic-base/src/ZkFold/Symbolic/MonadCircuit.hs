@@ -1,23 +1,24 @@
-{-# LANGUAGE DerivingVia   #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DerivingVia         #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.MonadCircuit where
 
-import           Control.Applicative             (Applicative)
-import           Control.Monad                   (Monad (return))
-import           Data.Eq                         (Eq)
-import           Data.Function                   (id)
-import           Data.Functor                    (Functor)
-import           Data.Functor.Identity           (Identity (..))
-import           Data.Ord                        (Ord)
-import           Data.Type.Equality              (type (~))
-import           Numeric.Natural                 (Natural)
+import           Control.Applicative              (Applicative)
+import           Control.Monad                    (Monad (return))
+import           Data.Eq                          (Eq)
+import           Data.Function                    (id)
+import           Data.Functor                     (Functor)
+import           Data.Functor.Identity            (Identity (..))
+import           Data.Maybe                       (fromMaybe)
+import           Data.Ord                         (Ord)
+import           Data.Type.Equality               (type (~))
+import           Numeric.Natural                  (Natural)
+import           Prelude                          (undefined, ($))
+
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat, value)
 import           ZkFold.Symbolic.Lookup
-import ZkFold.Base.Algebra.Basic.Number (value, KnownNat)
-import Prelude (($), undefined)
-import Data.Maybe (fromMaybe)
 
 -- | A @'WitnessField'@ should support all algebraic operations
 -- used inside an arithmetic circuit.
@@ -113,7 +114,7 @@ class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a w
 -- NOTE: this adds a range constraint to the system.
 
 -- Added undefined as default Lookup - not good
-newRanged :: forall r var a m. 
+newRanged :: forall r var a m.
   ( MonadCircuit var a m
   , HasLookup (Range r) m
   , KnownNat r) => Witness var a -> m var

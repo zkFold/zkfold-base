@@ -38,6 +38,7 @@ import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
                                                                       take)
+import qualified Data.Set                                            as S
 import           Data.Void                                           (absurd)
 import           GHC.Generics                                        (U1 (..))
 import           Numeric.Natural                                     (Natural)
@@ -56,9 +57,8 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
                                                                       exec1, hlmap, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
+import           ZkFold.Symbolic.Lookup
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
-import ZkFold.Symbolic.Lookup
-import qualified Data.Set as S
 
 --------------------------------- High-level functions --------------------------------
 
@@ -101,7 +101,7 @@ acSizeN = length . acSystem
 -- | Calculates the number of variables in the system.
 acSizeM :: ArithmeticCircuit a l i o -> Natural
 acSizeM = length . acWitness
-        
+
 -- | Calculates the number of lookups in the system.
 acSizeL :: ArithmeticCircuit a l i o -> Natural
 acSizeL = length . acLookup
@@ -112,7 +112,7 @@ acSizeR = length . acRange
 
 -- | Calculates the number of lookups in the system.
 acRange :: ArithmeticCircuit a l i o -> Map Lookup (S.Set (SysVar i))
-acRange = filterWithKey 
+acRange = filterWithKey
     (\x _ -> case x of
         Range _ -> True
         _       -> False) . acLookup

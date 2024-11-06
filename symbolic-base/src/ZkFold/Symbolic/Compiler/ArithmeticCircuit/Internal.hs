@@ -37,9 +37,10 @@ import           Data.Foldable                                         (fold, to
 import           Data.Functor.Rep
 import           Data.Map.Strict                                       hiding (drop, foldl, foldr, map, null, splitAt,
                                                                         take, toList)
-import           Data.Maybe                                            (fromMaybe, catMaybes)
+import           Data.Maybe                                            (catMaybes, fromMaybe)
 import           Data.Semialign                                        (unzipDefault)
 import           Data.Semigroup.Generic                                (GenericSemigroupMonoid (..))
+import qualified Data.Set                                              as S
 import           GHC.Generics                                          (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics
 import           Prelude                                               hiding (Num (..), drop, length, product, splitAt,
@@ -55,9 +56,8 @@ import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
+import           ZkFold.Symbolic.Lookup
 import           ZkFold.Symbolic.MonadCircuit
-import qualified Data.Set as S
-import ZkFold.Symbolic.Lookup
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
@@ -67,7 +67,7 @@ data ArithmeticCircuit a (l :: [Lookup]) i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acLookup   :: Map Lookup (S.Set (SysVar i)),
+        acLookup  :: Map Lookup (S.Set (SysVar i)),
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (i a -> Map ByteString a -> a),
         -- ^ The witness generation functions

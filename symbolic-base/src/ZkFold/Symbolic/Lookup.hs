@@ -1,16 +1,16 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DerivingStrategies  #-}
 
 module ZkFold.Symbolic.Lookup where
 
-import GHC.Generics (Generic)
-import GHC.Natural (Natural)
-import Control.DeepSeq (NFData)
-import GHC.Base (Eq, Ord)
-import GHC.Show (Show)
-import Data.Aeson.Types (FromJSON, FromJSONKey, ToJSONKey, ToJSON)
-import Prelude (Maybe(..))
+import           Control.DeepSeq  (NFData)
+import           Data.Aeson.Types (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
+import           GHC.Base         (Eq, Ord)
+import           GHC.Generics     (Generic)
+import           GHC.Natural      (Natural)
+import           GHC.Show         (Show)
+import           Prelude          (Maybe (..))
 
 
 data Lookup = Range Natural
