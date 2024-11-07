@@ -8,9 +8,10 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 
 -- | Takes a function `f` and returns a circuit `C` with inputs `y` and `w`.
--- The circuit is such that `C(y, w) = 0` implies that `y` belongs to the image of `f^n` for some positive `n`.
-protostar :: forall a n .
-       (forall ctx . Symbolic ctx => Vector n (FieldElement ctx) -> Vector n (FieldElement ctx))
+-- The circuit is such that `C(y, w) = 0` implies that `y = x(n)` for some positive `n` where
+-- `x(k+1) = f(x(k), u(k))` for all `k` and some `u`.
+protostar :: forall a n m .
+       (forall ctx . Symbolic ctx => Vector n (FieldElement ctx) -> Vector m (FieldElement ctx) -> Vector n (FieldElement ctx))
     -> ArithmeticCircuit a (Vector n) (Vector n)
 protostar _ =
     let circuit = undefined

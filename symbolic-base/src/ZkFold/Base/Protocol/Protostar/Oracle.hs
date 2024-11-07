@@ -48,6 +48,7 @@ instance (RandomOracle' f b, RandomOracle' g b) => RandomOracle' (f :+: g) b whe
     oracle' (L1 x) = oracle' x
     oracle' (R1 x) = oracle' x
 
+-- TODO: this instance is not correct!
 instance (RandomOracle' f b, RandomOracle' g b, AdditiveSemigroup b) => RandomOracle' (f :*: g) b where
     oracle' (x :*: y) = oracle' x + oracle' y
 
