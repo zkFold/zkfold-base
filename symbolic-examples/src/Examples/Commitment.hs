@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-
 module Examples.Commitment (
     exampleCommitment
   ) where
@@ -18,7 +16,6 @@ import           ZkFold.Symbolic.Data.FieldElement
 exampleCommitment
     :: Symbolic c
     => NFData (c (Vector Size))
-    => FieldElement c
-    -> FieldElement c
+    => (FieldElement c, FieldElement c)
     -> Point (Ed25519 c)
 exampleCommitment = hcommit

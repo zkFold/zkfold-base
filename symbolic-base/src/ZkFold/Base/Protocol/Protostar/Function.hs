@@ -17,7 +17,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.ByteString                      (Binary)
 import           ZkFold.Base.Data.Vector                          (Vector, append, drop, take)
 import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
-import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit, hcommit)
+import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen        (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir        (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.IVC               (IVCInstanceProof (..), ivcInitialize, ivcIterate)
@@ -50,16 +50,14 @@ proveFunctionImage :: forall pi f c m n k .
     , Arithmetic f
     , Binary f
     , pi ~ (Vector (n + n)) f
-    , AdditiveGroup c
     , AdditiveGroup (Vector k f)
     , Scale f c
     , Scale f (Vector k f)
     , RandomOracle f f
     , RandomOracle pi f
     , RandomOracle c f
-    , HomomorphicCommit f m c
+    , HomomorphicCommit m c
     , m ~ [f]
-    -- , HomomorphicCommit f [f] c
     )
     => (forall ctx . Symbolic ctx => Vector n (FieldElement ctx) -> Vector n (FieldElement ctx))
     -> Vector n f
@@ -67,8 +65,7 @@ proveFunctionImage :: forall pi f c m n k .
     -> IVCInstanceProof pi f c m
 proveFunctionImage func x0 n =
     let ac = functionfToCircuit @f func :: ArithmeticCircuit f (Vector k) (Vector n :.: Par1)
-        ck = zero
-        fs = FiatShamir (CommitOpen (hcommit @f ck) ac)
+        fs = FiatShamir (CommitOpen ac)
 
         step :: (IVCInstanceProof pi f c m, Vector n f) -> Natural -> (IVCInstanceProof pi f c m, Vector n f)
         step (ip, x) _ =

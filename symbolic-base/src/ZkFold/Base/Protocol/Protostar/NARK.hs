@@ -8,7 +8,7 @@ import           Control.DeepSeq                             (NFData (..))
 import           GHC.Generics
 import           Prelude                                     hiding (length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup)
+import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir)
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
@@ -27,9 +27,9 @@ data InstanceProofPair pi c m = InstanceProofPair pi (NARKProof c m)
     deriving (Show, Generic, NFData)
 
 instanceProof :: forall a f pi c m .
-    ( AdditiveGroup c
-    , RandomOracle pi f
+    ( RandomOracle pi f
     , RandomOracle (f, c) f
+    , HomomorphicCommit m c
     , SpecialSoundProtocol f a
     , Witness f a ~ ()
     , Input f a ~ pi

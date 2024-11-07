@@ -3,9 +3,8 @@
 
 module ZkFold.Base.Protocol.Protostar.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
-import           Data.Foldable                               (Foldable, toList)
 import           Data.Functor.Rep                            (Representable)
-import           Prelude                                     (Traversable, type (~), zipWith, ($), (<$>))
+import           Prelude                                     (Traversable, type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -13,23 +12,23 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class     as EC
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Class                       hiding (BaseField)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Ed25519                ()
 import           ZkFold.Symbolic.Data.FieldElement
 
 -- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
 --
-class Commit ck a f where
-    commit :: ck -> a -> f
+class Commit a f where
+    commit :: a -> f
 
-instance (RandomOracle ck x, RandomOracle a x, Ring x) => Commit ck a x where
-    commit ck a = oracle [oracle @ck @x ck, oracle @a @x a]
+instance RandomOracle a x => Commit a x where
+    commit = oracle
 
 -- | Homomorphic commitment scheme, i.e. (hcommit ck1 a1) * (hcommit ck2 a2) == hcommit (ck1 + ck2) (a1 + a2)
 --
-class HomomorphicCommit ck a c where
-    hcommit :: ck -> a -> c
+class AdditiveGroup c => HomomorphicCommit a c where
+    hcommit :: a -> c
 
 class PedersonSetup a where
     pedersonGH :: (a, a)
@@ -73,22 +72,23 @@ instance
 instance
     ( Symbolic ctx
     , EllipticCurve c
+    , AdditiveGroup (BaseField c)
     , SymbolicData (Point c)
     , Context (Point c) ~ ctx
     , PedersonSetup (Point c)
     , Layout (Point c) ~ l
     , Representable l
     , Traversable l
-    ) => HomomorphicCommit (FieldElement ctx) (FieldElement ctx) (Point c) where
-    hcommit r b = let (g, h) = pedersonGH @(Point c)
-                   in scale b g + scale r h
+    ) => HomomorphicCommit (FieldElement ctx, FieldElement ctx) (Point c) where
+    hcommit (x, y) = let (g, h) = pedersonGH @(Point c)
+                   in scale x g + scale y h
 
 
--- Pedersen commitment scheme for lists extending the homomorphism to elementwise sums:
--- (hcommit ck l1) + (hcommit ck l2) = hcommit ck (zipWith (+) l1 l2), provided l1 and l2 have the same length.
--- This is required for AccumulatorScheme
---
-instance (EllipticCurve c, HomomorphicCommit a b (Point c), Foldable t) => HomomorphicCommit a (t b) (Point c) where
-    hcommit ck t = sum $ zipWith pointMul [1 :: Natural ..] (hcommit ck <$> toList t)
+-- -- Pedersen commitment scheme for lists extending the homomorphism to elementwise sums:
+-- -- (hcommit ck l1) + (hcommit ck l2) = hcommit ck (zipWith (+) l1 l2), provided l1 and l2 have the same length.
+-- -- This is required for AccumulatorScheme
+-- --
+-- instance (EllipticCurve c, HomomorphicCommit a (Point c), Foldable t) => HomomorphicCommit (t a) (Point c) where
+--     hcommit t = sum $ zipWith pointMul [1 :: Natural ..] (hcommit <$> toList t)
 
 

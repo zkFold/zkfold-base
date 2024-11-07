@@ -17,6 +17,7 @@ import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
 import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (AccumulatorScheme (..))
 import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
+import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
 import           ZkFold.Base.Protocol.Protostar.NARK              (InstanceProofPair (..), NARKProof (..),
@@ -49,11 +50,10 @@ ivcInitialize =
     -- TODO: we need the proper number of commits and accumulation proof elements
     in IVCInstanceProof zero [zero] acc acc []
 
-ivcIterate ::
-    ( AdditiveMonoid f
-    , AdditiveGroup c
-    , RandomOracle pi f
+ivcIterate :: forall f pi c m a .
+    ( RandomOracle pi f
     , RandomOracle (f, c) f
+    , HomomorphicCommit m c
     , SpecialSoundProtocol f a
     , Witness f a ~ ()
     , Input f a ~ pi
@@ -63,21 +63,18 @@ ivcIterate ::
     ) => FiatShamir f (CommitOpen m c a) -> IVCInstanceProof pi f c m -> pi -> IVCInstanceProof pi f c m
 ivcIterate fs (IVCInstanceProof _ _ _ acc' _) pi' =
     let narkIP@(InstanceProofPair _ (NARKProof cs _)) = instanceProof fs pi'
-        ck = zero
-        (acc'', accProof') = Acc.prover fs ck acc' narkIP
+        (acc'', accProof') = Acc.prover fs acc' narkIP
     in IVCInstanceProof pi' cs acc' acc'' accProof'
 
 ivcVerify :: forall pi f c m a .
-    ( AdditiveMonoid f
-    , AccumulatorScheme pi f c m a
+    ( AccumulatorScheme pi f c m a
     ) => a -> IVCInstanceProof pi f c m -> ((f, pi, [f], [c], c), ([c], c))
 ivcVerify a (IVCInstanceProof {..}) =
     let accX  = ivcAcc^.x
         accX' = ivcAcc'^.x
-        ck = zero
     in
         ( Acc.verifier @pi @f @c @m @a ivcInstance ivcCommits accX accX' ivcAccProof
-        , decider @pi @f @c @m @a a ck ivcAcc')
+        , decider @pi @f @c @m @a a ivcAcc')
 
 -- toFS
 --     :: forall pi f c m

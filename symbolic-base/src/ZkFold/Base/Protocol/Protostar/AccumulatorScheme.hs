@@ -30,7 +30,6 @@ import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..),
 --
 class AccumulatorScheme pi f c m a where
   prover   :: a
-           -> f                           -- Commitment key ck
            -> Accumulator pi f c m        -- accumulator
            -> InstanceProofPair pi c m    -- instance-proof pair (pi, π)
            -> (Accumulator pi f c m, [c]) -- updated accumulator and accumulation proof
@@ -43,7 +42,6 @@ class AccumulatorScheme pi f c m a where
            -> (f, pi, [f], [c], c)        -- returns zeros if the accumulation proof is correct
 
   decider  :: a
-           -> f                           -- Commitment key ck
            -> Accumulator pi f c m        -- final accumulator
            -> ([c], c)                    -- returns zeros if the final accumulator is valid
 
@@ -57,8 +55,8 @@ instance
     , Scale f m
     , RandomOracle pi f         -- Random oracle for compressing public input
     , RandomOracle c f          -- Random oracle ρ_NARK
-    , HomomorphicCommit f [f] c
-    , HomomorphicCommit f m c
+    , HomomorphicCommit [f] c
+    , HomomorphicCommit m c
     , IsList pi
     , Item pi ~ f
     , IsList m
@@ -72,7 +70,7 @@ instance
     , MapInput (PU.PolyVec f deg) a ~ Vector n (PU.PolyVec f deg)
     , MapMessage (PU.PolyVec f deg) a ~ [PU.PolyVec f deg]
     ) => AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a)) where
-  prover (FiatShamir (CommitOpen _ sps)) ck acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
+  prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
       where
           -- Fig. 3, step 1
@@ -110,7 +108,7 @@ instance
           e_j = P.tail . P.init $ e_all
 
           -- Fig. 3, step 3
-          pf = hcommit ck <$> e_j
+          pf = hcommit <$> e_j
 
           -- Fig. 3, step 4
           alpha :: f
@@ -152,10 +150,10 @@ instance
           -- Fig 4, step 5
           eDiff = acc'^.e - (acc^.e + sum (P.zipWith scale ((alpha ^) <$> [1 :: Natural ..]) pf))
 
-  decider (FiatShamir sps) ck acc = (commitsDiff, eDiff)
+  decider (FiatShamir sps) acc = (commitsDiff, eDiff)
       where
           -- Fig. 5, step 1
-          commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit ck m_acc) (acc^.x^.c) (acc^.w)
+          commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit m_acc) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           err :: [f]
@@ -163,4 +161,4 @@ instance
 
 
           -- Fig. 5, step 3
-          eDiff = (acc^.x^.e) - hcommit ck err
+          eDiff = (acc^.x^.e) - hcommit err

@@ -7,11 +7,11 @@ module ZkFold.Base.Protocol.Protostar.FiatShamir where
 import           GHC.Generics
 import           Prelude                                     hiding (Bool (..), Eq (..), length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 import           ZkFold.Prelude                              (length)
+import ZkFold.Base.Protocol.Protostar.Commit (HomomorphicCommit)
 
 newtype FiatShamir f a = FiatShamir a
     deriving Generic
@@ -20,9 +20,9 @@ instance
     ( SpecialSoundProtocol f a
     , ProverMessage f a ~ m
     , VerifierMessage f a ~ f
-    , AdditiveGroup c
     , RandomOracle (Input f a) f
     , RandomOracle (f, c) f
+    , HomomorphicCommit m c
     ) => SpecialSoundProtocol f (FiatShamir f (CommitOpen m c a)) where
         type Witness f (FiatShamir f (CommitOpen m c a))         = Witness f a
         type Input f (FiatShamir f (CommitOpen m c a))           = Input f a
@@ -36,7 +36,7 @@ instance
 
         rounds _ = 1
 
-        prover (FiatShamir a'@(CommitOpen _ a)) w pi _ _ =
+        prover (FiatShamir a'@(CommitOpen a)) w pi _ _ =
             let r0 = oracle pi
                 f (ms, cs, rs) _ =
                   let r   = last rs
