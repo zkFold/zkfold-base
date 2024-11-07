@@ -16,7 +16,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.ByteString                      (Binary)
 import           ZkFold.Base.Data.Vector                          (Vector, append, drop, take)
-import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
 import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen        (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir        (FiatShamir (..))

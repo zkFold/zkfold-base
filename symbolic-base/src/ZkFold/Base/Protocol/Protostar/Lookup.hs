@@ -31,8 +31,6 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
     type VerifierMessage f (ProtostarLookup l sizeT) = f
     type VerifierOutput f (ProtostarLookup l sizeT)  = Bool
 
-    type Degree (ProtostarLookup l sizeT)            = 2
-
     outputLength _ = value @l + (value @sizeT) + 1
 
     rounds :: ProtostarLookup l sizeT -> Natural

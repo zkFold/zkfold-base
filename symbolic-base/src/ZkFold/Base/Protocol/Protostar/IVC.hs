@@ -16,7 +16,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
 import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (AccumulatorScheme (..))
-import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
 import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir

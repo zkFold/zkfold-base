@@ -6,7 +6,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations      (Permutation, applyPermutation)
 import           ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 
 data ProtostarPermutation (n :: Natural)
 
@@ -19,8 +20,6 @@ instance (Ring f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutation n)
     -- ^ same as Witness
     type VerifierMessage f (ProtostarPermutation n) = ()
     type VerifierOutput f (ProtostarPermutation n)  = [f]
-
-    type Degree (ProtostarPermutation n)            = 1
 
     outputLength _ = value @n
 
@@ -46,6 +45,7 @@ instance (Ring f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutation n)
 instance KnownNat n => AlgebraicMap f (ProtostarPermutation n) where
     type MapInput f (ProtostarPermutation n) = Permutation n
     type MapMessage f (ProtostarPermutation n) = Vector n f
+    type Degree (ProtostarPermutation n) = 1
 
     algebraicMap :: ProtostarPermutation n
                  -> MapInput f (ProtostarPermutation n)

@@ -19,12 +19,12 @@ import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
+import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
-import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), CommitOpenProverMessage (..))
+import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.NARK         (InstanceProofPair (..), NARKProof (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), MapInput, SpecialSoundProtocol (..))
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
@@ -61,11 +61,11 @@ instance
     , Item pi ~ f
     , IsList m
     , Item m ~ f
-    , AlgebraicMap f (CommitOpen m c a)
+    , AlgebraicMap f a
     , MapInput f a ~ pi
     , MapMessage f a ~ m
-    , Degree (FiatShamir f (CommitOpen m c a)) + 1 ~ deg
     , KnownNat deg
+    , Degree a + 1 ~ deg
     , AlgebraicMap (PU.PolyVec f deg) a
     , MapInput (PU.PolyVec f deg) a ~ Vector n (PU.PolyVec f deg)
     , MapMessage (PU.PolyVec f deg) a ~ [PU.PolyVec f deg]
@@ -150,14 +150,14 @@ instance
           -- Fig 4, step 5
           eDiff = acc'^.e - (acc^.e + sum (P.zipWith scale ((alpha ^) <$> [1 :: Natural ..]) pf))
 
-  decider (FiatShamir sps) acc = (commitsDiff, eDiff)
+  decider (FiatShamir (CommitOpen sps)) acc = (commitsDiff, eDiff)
       where
           -- Fig. 5, step 1
           commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit m_acc) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           err :: [f]
-          err = algebraicMap @f sps (acc^.x^.pi) [Open $ acc^.w] (acc^.x^.r) (acc^.x^.mu)
+          err = algebraicMap sps (acc^.x^.pi) (acc^.w) (acc^.x^.r) (acc^.x^.mu)
 
 
           -- Fig. 5, step 3

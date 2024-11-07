@@ -10,7 +10,7 @@ import           Prelude                                     hiding (Num (..), l
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), (+))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (hcommit))
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 
 newtype CommitOpen (m :: Type) (c :: Type) a = CommitOpen a
 
@@ -31,8 +31,6 @@ instance
       type VerifierMessage f (CommitOpen m c a) = VerifierMessage f a
       type VerifierOutput f (CommitOpen m c a)  = ([c], VerifierOutput f a)
 
-      type Degree (CommitOpen m c a)            = Degree a
-
       outputLength (CommitOpen a) = outputLength @f a
 
       rounds (CommitOpen a) = rounds @f a + 1
@@ -45,10 +43,3 @@ instance
             where f (Commit c) = c
                   f _          = error "Invalid message"
       verifier _ _ _ _ = error "Invalid transcript"
-
-instance (AlgebraicMap f a, m ~ MapMessage f a) => AlgebraicMap f (CommitOpen m c a) where
-      type MapInput f (CommitOpen m c a)     = MapInput f a
-      type MapMessage f (CommitOpen m c a)   = CommitOpenProverMessage m c
-
-      algebraicMap (CommitOpen a) i ((Open ms):_) rs = algebraicMap @f a i ms rs
-      algebraicMap _ _ _ _                           = error "CommitOpen algebraic map: invalid transcript"

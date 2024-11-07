@@ -1,9 +1,19 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
-import           Numeric.Natural (Natural)
-import           Prelude         hiding (length)
+import           Data.Map.Strict                             (elems)
+import qualified Data.Map.Strict                             as M
+import           Prelude                                     (($))
+import qualified Prelude                                     as P
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number
+import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap as AM
+import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler
 
 {-- | Section 3.1
 
@@ -22,9 +32,6 @@ class SpecialSoundProtocol f a where
       type ProverMessage f a
       type VerifierMessage f a
       type VerifierOutput f a
-
-      type Degree a :: Natural
-      -- ^ d in the paper, the verifier degree
 
       outputLength :: a -> Natural
       -- ^ l in the paper, the number of algebraic equations checked by the verifier
@@ -45,20 +52,25 @@ class SpecialSoundProtocol f a where
         -> [VerifierMessage f a] -- ^ random challenges
         -> VerifierOutput f a    -- ^ verifier output
 
--- | Algebraic map is a much more versatile and powerful tool when used separatey from SpecialSoundProtocol.
--- It calculates a system of equations @[f]@ defining @a@ in some way.
--- If @f@ is a number or a field element, then the result is a vector of polynomial values.
--- However, @f@ can be a polynomial, in which case the result will be a system of polynomials.
--- This polymorphism is exploited in the AccumulatorScheme prover.
---
-class AlgebraicMap f a where
-    type MapInput f a
-    type MapMessage f a
+instance (KnownNat n, Arithmetic a) => SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
 
-    -- | the algebraic map V_sps computed by the verifier.
-    algebraicMap :: a
-        -> MapInput f a     -- ^ public input
-        -> [MapMessage f a] -- ^ NARK proof witness (the list of prover messages)
-        -> [f]              -- ^ Verifier random challenges
-        -> f                -- ^ Slack variable for padding
-        -> [f]
+    type Witness a (ArithmeticCircuit a (Vector n) o) = ()
+    type Input a (ArithmeticCircuit a (Vector n) o) = Vector n a
+    type ProverMessage a (ArithmeticCircuit a (Vector n) o) = [a]
+    type VerifierMessage a (ArithmeticCircuit a (Vector n) o) = a
+    type VerifierOutput a (ArithmeticCircuit a (Vector n) o)  = [a]
+    -- type Degree (ArithmeticCircuit a (Vector n) o) = AM.Degree (ArithmeticCircuit a (Vector n) o)
+
+    -- One round for Plonk
+    rounds = P.const 1
+
+    outputLength ac = P.fromIntegral $ M.size (acSystem ac)
+
+    -- The transcript will be empty at this point, it is a one-round protocol.
+    -- Input is arithmetised. We need to combine its witness with the circuit's witness.
+    --
+    prover ac _ pi _ _ = elems $ witnessGenerator ac pi
+
+    -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
+    --
+    verifier rc i pm ts = AM.algebraicMap rc i pm ts one

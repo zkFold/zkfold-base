@@ -12,7 +12,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate (Poly, Polynomial,
 import           ZkFold.Base.Data.Matrix                      (Matrix (..), outer, sum1, transpose)
 import qualified ZkFold.Base.Data.Vector                      as V
 import           ZkFold.Base.Data.Vector                      (Vector)
-import           ZkFold.Base.Protocol.Protostar.SpecialSound  (AlgebraicMap (..), SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.AlgebraicMap  (AlgebraicMap (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound  (SpecialSoundProtocol (..))
 
 newtype PolynomialProtostar f c d = PolynomialProtostar (Poly f (Zp c) Natural)
   deriving (Show, Eq, Ord)
@@ -36,8 +37,6 @@ instance (Ring f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (ProtostarGa
     -- ^ same as Witness
     type VerifierMessage f (ProtostarGate m n c d) = ()
     type VerifierOutput f (ProtostarGate m n c d)  = [f]
-
-    type Degree (ProtostarGate m n c d)            = d
 
     outputLength _ = value @n
 
@@ -63,6 +62,7 @@ instance (Ring f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (ProtostarGa
 instance (Ring f, KnownNat m, KnownNat n) => AlgebraicMap f (ProtostarGate m n c d) where
     type MapInput f (ProtostarGate m n c d)    = (Matrix m n f, Vector m (PolynomialProtostar f c d))
     type MapMessage f (ProtostarGate m n c d)  = Vector n (Vector c f)
+    type Degree (ProtostarGate m n c d)        = d
 
     algebraicMap :: ProtostarGate m n c d
                  -> MapInput f (ProtostarGate m n c d)

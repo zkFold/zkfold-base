@@ -30,8 +30,6 @@ instance
         type VerifierMessage f (FiatShamir f (CommitOpen m c a)) = ()
         type VerifierOutput f (FiatShamir f (CommitOpen m c a))  = VerifierOutput f (CommitOpen m c a)
 
-        type Degree (FiatShamir f (CommitOpen m c a))            = Degree (CommitOpen m c a)
-
         outputLength (FiatShamir a) = outputLength @f a
 
         rounds _ = 1

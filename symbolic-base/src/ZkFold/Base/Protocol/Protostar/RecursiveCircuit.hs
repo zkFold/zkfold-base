@@ -3,7 +3,6 @@ module ZkFold.Base.Protocol.Protostar.RecursiveCircuit where
 import           Prelude                                          (undefined)
 
 import           ZkFold.Base.Data.Vector                          (Vector)
-import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.FieldElement                (FieldElement (..))
