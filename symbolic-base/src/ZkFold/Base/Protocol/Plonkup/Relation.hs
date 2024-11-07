@@ -10,6 +10,7 @@ import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
 import           Data.Map                                            (elems, keys)
 import           Data.Maybe                                          (fromJust)
+import qualified Data.Set                                            as S
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
@@ -77,13 +78,13 @@ toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (fromVector xPub)
         plonkConstraints    = map (evalPolynomial evalMonomial (var . SysVar)) (elems (acSystem ac))
-        rs = map toConstant $ elems $ acRange ac
+        rs = map toConstant $ keys $ acRange ac
         -- TODO: We are expecting at most one range.
         t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
         -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.
-        xLookup = keys (acRange ac)
+        xLookup = concatMap S.toList $ elems (acRange ac)
 
         -- The total number of constraints in the relation.
         n'      = acSizeN ac + value @l + length xLookup

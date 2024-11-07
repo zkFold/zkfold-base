@@ -101,7 +101,7 @@ instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var a i)), Haskell.Ord (
                           ++ " }"
 
 -- TODO: add witness generation info to the JSON object
-instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey (Var a i), ToJSON (Rep i)) => ToJSON (ArithmeticCircuit a i o) where
+instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), ToJSON (Rep i)) => ToJSON (ArithmeticCircuit a i o) where
     toJSON r = object
         [
             "system" .= acSystem r,
@@ -110,7 +110,7 @@ instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey (Var 
         ]
 
 -- TODO: properly restore the witness generation function
-instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey (Var a i), Haskell.Ord (Rep i), FromJSON (Rep i)) => FromJSON (ArithmeticCircuit a i o) where
+instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a, Haskell.Ord a, Haskell.Ord (Rep i), FromJSON (Rep i)) => FromJSON (ArithmeticCircuit a i o) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"
