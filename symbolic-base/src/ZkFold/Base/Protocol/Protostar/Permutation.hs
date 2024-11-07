@@ -41,7 +41,7 @@ instance (Ring f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutation n)
              -> [VerifierMessage f (ProtostarPermutation n)]
              -> [f]
     verifier p sigma [w] _ = algebraicMap p sigma [w] [] one - V.fromVector w
-    verifier _ _     _   _  = error "Invalid transcript"
+    verifier _ _     _   _ = error "Invalid transcript"
 
 instance KnownNat n => AlgebraicMap f (ProtostarPermutation n) where
     type MapInput f (ProtostarPermutation n) = Permutation n

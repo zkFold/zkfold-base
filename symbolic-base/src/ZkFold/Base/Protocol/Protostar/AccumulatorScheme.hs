@@ -17,14 +17,14 @@ import qualified Prelude                                     as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..), CommitOpenProverMessage (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
-import           ZkFold.Base.Protocol.Protostar.NARK         (NARKProof (..), InstanceProofPair (..))
+import           ZkFold.Base.Protocol.Protostar.NARK         (InstanceProofPair (..), NARKProof (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), MapInput, SpecialSoundProtocol (..))
-import ZkFold.Base.Data.Vector (Vector)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --

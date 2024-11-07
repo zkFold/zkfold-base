@@ -11,8 +11,8 @@ import           Prelude                                     hiding (length, pi)
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir)
-import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle(..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol(..))
+import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 
 -- Page 18, section 3.4, The accumulation predicate
 --

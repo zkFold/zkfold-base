@@ -9,10 +9,10 @@ module ZkFold.Base.Protocol.Protostar.ArithmeticCircuit where
 
 import           Data.Functor.Rep                                    (tabulate)
 import           Data.List                                           (foldl')
-import           Data.Map.Strict                                     (Map, fromList, elems)
+import           Data.Map.Strict                                     (Map, elems, fromList)
 import qualified Data.Map.Strict                                     as M
 import           GHC.IsList                                          (toList)
-import           Prelude                                             (fmap, ($), (.), (<$>), zip, (++))
+import           Prelude                                             (fmap, zip, ($), (++), (.), (<$>))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class

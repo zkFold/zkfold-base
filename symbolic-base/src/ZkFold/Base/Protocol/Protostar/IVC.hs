@@ -14,12 +14,13 @@ import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
-import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (AccumulatorScheme(..))
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
+import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (AccumulatorScheme (..))
 import           ZkFold.Base.Protocol.Protostar.ArithmeticCircuit ()
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
-import           ZkFold.Base.Protocol.Protostar.NARK              (NARKProof (..), InstanceProofPair (..), instanceProof)
+import           ZkFold.Base.Protocol.Protostar.NARK              (InstanceProofPair (..), NARKProof (..),
+                                                                   instanceProof)
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Base.Protocol.Protostar.SpecialSound      (SpecialSoundProtocol (..))
 
@@ -28,11 +29,11 @@ import           ZkFold.Base.Protocol.Protostar.SpecialSound      (SpecialSoundP
 --
 data IVCInstanceProof pi f c m
     = IVCInstanceProof
-    { ivcInstance       :: pi
-    , ivcCommits        :: [c] -- NARK proof π.x
-    , ivcAcc            :: Accumulator pi f c m
-    , ivcAcc'           :: Accumulator pi f c m
-    , ivcAccProof       :: [c]
+    { ivcInstance :: pi
+    , ivcCommits  :: [c] -- NARK proof π.x
+    , ivcAcc      :: Accumulator pi f c m
+    , ivcAcc'     :: Accumulator pi f c m
+    , ivcAccProof :: [c]
     } deriving (GHC.Generics.Generic)
 
 deriving instance (P.Show pi, P.Show f, P.Show c, P.Show m) => P.Show (IVCInstanceProof pi f c m)

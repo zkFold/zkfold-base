@@ -2,12 +2,12 @@
 
 module Tests.Protostar (specProtostar) where
 
-import           Prelude                                     (IO)
-import qualified Prelude                                     as P
+import           Prelude                           (IO)
+import qualified Prelude                           as P
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import           ZkFold.Base.Data.Vector           (Vector)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 data RecursiveFunction n c a
     = RecursiveFunction

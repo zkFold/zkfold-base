@@ -14,10 +14,10 @@ import           Tests.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
 import           Tests.Plonkup             (specPlonkup)
+import           Tests.Protostar           (specProtostar)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
 import           Tests.Univariate          (specUnivariate)
-import Tests.Protostar (specProtostar)
 
 main :: IO ()
 main = do
