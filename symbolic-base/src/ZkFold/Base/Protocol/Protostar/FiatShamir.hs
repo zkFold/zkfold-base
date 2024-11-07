@@ -7,11 +7,11 @@ module ZkFold.Base.Protocol.Protostar.FiatShamir where
 import           GHC.Generics
 import           Prelude                                     hiding (Bool (..), Eq (..), length, pi)
 
+import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 import           ZkFold.Prelude                              (length)
-import ZkFold.Base.Protocol.Protostar.Commit (HomomorphicCommit)
 
 newtype FiatShamir f a = FiatShamir a
     deriving Generic

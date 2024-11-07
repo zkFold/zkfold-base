@@ -3,6 +3,7 @@
 
 module ZkFold.Base.Protocol.Protostar.CommitOpen where
 
+import           Data.Kind                                   (Type)
 import           GHC.Generics
 import           Prelude                                     hiding (Num (..), length, pi, (&&))
 
@@ -10,7 +11,6 @@ import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..)
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (hcommit))
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..))
-import Data.Kind (Type)
 
 newtype CommitOpen (m :: Type) (c :: Type) a = CommitOpen a
 
