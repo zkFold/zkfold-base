@@ -87,7 +87,7 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, fromConstant k) | (k, s) <- toList (acRange c), v <- S.toList s]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
 
 ----------------------------------- Information -----------------------------------
