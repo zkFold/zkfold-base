@@ -57,10 +57,6 @@ import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
 
 
-
-import Debug.Trace 
-import qualified Prelude as P
-
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
 
@@ -85,20 +81,20 @@ instance MultiplicativeMonoid (UInt n r c) => Exponent (UInt n r c) Natural wher
 
 -- | @expMod n pow modulus@ calculates @n^pow % modulus@ where all values are arithmetised
 --
-expMod 
-    :: forall c n p m r 
+expMod
+    :: forall c n p m r
     .  Symbolic c
     => KnownRegisterSize r
-    => KnownNat p 
-    => KnownNat n 
-    => KnownNat m 
-    => KnownNat (2 * m) 
+    => KnownNat p
+    => KnownNat n
+    => KnownNat m
+    => KnownNat (2 * m)
     => KnownNat (NumberOfRegisters (BaseField c) (2 * m) r)
     => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
-    => UInt n r c 
-    -> UInt p r c 
-    -> UInt m r c 
+    => UInt n r c
+    -> UInt p r c
+    -> UInt m r c
     -> UInt m r c
 expMod n pow modulus = resize result
     where
@@ -114,20 +110,20 @@ expMod n pow modulus = resize result
         result :: UInt (2 * m) r c
         result = bitsPow (value @p) bits one n' m'
 
-bitsPow 
-    :: forall c n p r 
+bitsPow
+    :: forall c n p r
     .  Symbolic c
     => KnownRegisterSize r
-    => KnownNat n 
-    => KnownNat p 
+    => KnownNat n
+    => KnownNat p
     => KnownNat (NumberOfRegisters (BaseField c) n r)
     => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))
-    => Natural 
-    -> ByteString p c 
-    -> UInt n r c 
-    -> UInt n r c 
-    -> UInt n r c 
+    => Natural
+    -> ByteString p c
+    -> UInt n r c
+    -> UInt n r c
+    -> UInt n r c
     -> UInt n r c
 bitsPow 0 _ res _ _ = res
 bitsPow b bits res n m = bitsPow (b -! 1) bits newRes sq m
@@ -297,7 +293,7 @@ instance
                  in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
 asWords
-    :: forall wordSize regSize ctx k 
+    :: forall wordSize regSize ctx k
     .  Symbolic ctx
     => KnownNat (Ceil regSize wordSize)
     => KnownNat wordSize
@@ -311,7 +307,7 @@ asWords v = fromCircuitF v $ \regs -> do
       wordsPerReg = value @(Ceil regSize wordSize)
 
 -- | Word size in bits used in comparisons. Subject to change
-type OrdWord = 16 
+type OrdWord = 16
 
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownNat (NumberOfRegisters (BaseField c) n r)
@@ -322,15 +318,15 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
 
     x <  y = y > x
 
-    (UInt u1) >= (UInt u2) = 
+    (UInt u1) >= (UInt u2) =
         let w1 = asWords @OrdWord @regSize u1
             w2 = asWords @OrdWord @regSize u2
-         in bitwiseGE @OrdWord w1 w2 
+         in bitwiseGE @OrdWord w1 w2
 
-    (UInt u1) > (UInt u2) = 
+    (UInt u1) > (UInt u2) =
         let w1 = asWords @OrdWord @regSize u1
             w2 = asWords @OrdWord @regSize u2
-         in bitwiseGT @OrdWord w1 w2 
+         in bitwiseGT @OrdWord w1 w2
 
     max x y = bool @(Bool c) x y $ x < y
 

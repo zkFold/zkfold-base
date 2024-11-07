@@ -89,9 +89,13 @@ library
     import: options
     exposed-modules:
       ZkFold.Symbolic.Cardano.Wrapper
+      ZkFold.Symbolic.Cardano.Contracts.BabelFees
       ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
       ZkFold.Symbolic.Cardano.Contracts.ZkPass
+      ZkFold.Symbolic.Cardano.Contracts.MultiUserTx
       ZkFold.Symbolic.Cardano.Contracts.RandomOracle
+      ZkFold.Symbolic.Cardano.Contracts.SponsoredTx
+      ZkFold.Symbolic.Cardano.Contracts.ZkLogin
       ZkFold.Symbolic.Cardano.Types
       ZkFold.Symbolic.Cardano.Types.Address
       ZkFold.Symbolic.Cardano.Types.Basic

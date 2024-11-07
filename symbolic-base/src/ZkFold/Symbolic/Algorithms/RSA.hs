@@ -5,6 +5,7 @@
 module ZkFold.Symbolic.Algorithms.RSA
     ( sign
     , verify
+    , RSA
     , PublicKey (..)
     , PrivateKey (..)
     , Signature
@@ -27,7 +28,7 @@ import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Is
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
 
-type KeyLength = 512 
+type KeyLength = 512
 
 type Signature ctx = ByteString KeyLength ctx
 
@@ -65,6 +66,15 @@ deriving instance
 
 -- TODO: check if changing the order of @from@ amd @resize@ reduces the number of constraints
 
+type RSA ctx msgLen =
+   ( SHA2 "SHA256" ctx msgLen
+   , KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
+   , KnownNat (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)
+   , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * KeyLength) 'Auto) OrdWord)
+   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)))
+   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)))
+   )
+
 -- | Calculate hash of the message and raise it into power @exp@ modulo @n@
 --
 hashExp
@@ -91,11 +101,7 @@ hashExp msg exp modulus = force $ expMod msgI exp modulus
 
 sign
     :: forall ctx msgLen
-    .  SHA2 "SHA256" ctx msgLen
-    => KnownNat (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)
-    => NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)))
-    => NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)))
-    => KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * KeyLength) 'Auto) OrdWord)
+    .  RSA ctx msgLen
     => ByteString msgLen ctx
     -> PrivateKey ctx
     -> Signature ctx
@@ -103,11 +109,7 @@ sign msg PrivateKey{..} = from $ hashExp msg prvD prvN
 
 verify
     :: forall ctx msgLen
-    .  SHA2 "SHA256" ctx msgLen
-    => KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
-    => KnownNat (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)
-    => NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)))
-    => KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * KeyLength) 'Auto) OrdWord)
+    .  RSA ctx msgLen
     => ByteString msgLen ctx
     -> Signature ctx
     -> PublicKey ctx
