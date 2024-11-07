@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.Protostar.CommitOpen where
 
@@ -10,7 +9,7 @@ import           Prelude                                     hiding (Num (..), l
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), (+))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (hcommit))
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), BasicSpecialSoundProtocol)
 
 newtype CommitOpen (m :: Type) (c :: Type) a = CommitOpen a
 
@@ -21,8 +20,7 @@ data CommitOpenProverMessage m c = Commit c | Open [m]
     deriving Generic
 
 instance
-    ( SpecialSoundProtocol f a
-    , ProverMessage f a ~ m
+    ( BasicSpecialSoundProtocol f (Input f a) m a
     , HomomorphicCommit m c
     ) => SpecialSoundProtocol f (CommitOpen m c a) where
       type Witness f (CommitOpen m c a)         = (Witness f a, [m])

@@ -1,11 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
 import           Data.Map.Strict                             (elems)
 import qualified Data.Map.Strict                             as M
-import           Prelude                                     (($))
+import           Prelude                                     (type(~), ($))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -52,8 +53,15 @@ class SpecialSoundProtocol f a where
         -> [VerifierMessage f a] -- ^ random challenges
         -> VerifierOutput f a    -- ^ verifier output
 
-instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
+type BasicSpecialSoundProtocol f pi m a =
+  ( SpecialSoundProtocol f a
+  , Witness f a ~ ()
+  , Input f a ~ pi
+  , ProverMessage f a ~ m
+  , VerifierMessage f a ~ f
+  )
 
+instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
     type Witness a (ArithmeticCircuit a (Vector n) o) = ()
     type Input a (ArithmeticCircuit a (Vector n) o) = Vector n a
     type ProverMessage a (ArithmeticCircuit a (Vector n) o) = [a]

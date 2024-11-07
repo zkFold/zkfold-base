@@ -1,15 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module ZkFold.Base.Protocol.Protostar.IVC where
 
 import           Control.DeepSeq                                  (NFData)
 import           Control.Lens                                     ((^.))
 import           GHC.Generics                                     (Generic)
-import           Prelude                                          (type (~))
 import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -22,7 +18,7 @@ import           ZkFold.Base.Protocol.Protostar.FiatShamir
 import           ZkFold.Base.Protocol.Protostar.NARK              (InstanceProofPair (..), NARKProof (..),
                                                                    instanceProof)
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Base.Protocol.Protostar.SpecialSound      (SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound      (BasicSpecialSoundProtocol)
 
 -- | The final result of recursion and the final accumulator.
 -- Accumulation decider is an arithmetizable function which can be called on the final accumulator.
@@ -50,14 +46,10 @@ ivcInitialize =
     in IVCInstanceProof zero [zero] acc acc []
 
 ivcIterate :: forall f pi c m a .
-    ( RandomOracle pi f
+    ( BasicSpecialSoundProtocol f pi m a
+    , RandomOracle pi f
     , RandomOracle (f, c) f
     , HomomorphicCommit m c
-    , SpecialSoundProtocol f a
-    , Witness f a ~ ()
-    , Input f a ~ pi
-    , ProverMessage f a ~ m
-    , VerifierMessage f a ~ f
     , AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a))
     ) => FiatShamir f (CommitOpen m c a) -> IVCInstanceProof pi f c m -> pi -> IVCInstanceProof pi f c m
 ivcIterate fs (IVCInstanceProof _ _ _ acc' _) pi' =

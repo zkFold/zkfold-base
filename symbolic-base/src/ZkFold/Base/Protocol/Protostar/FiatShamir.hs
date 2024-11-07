@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Protostar.FiatShamir where
@@ -10,16 +9,14 @@ import           Prelude                                     hiding (Bool (..), 
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (BasicSpecialSoundProtocol, SpecialSoundProtocol (..))
 import           ZkFold.Prelude                              (length)
 
 newtype FiatShamir f a = FiatShamir a
     deriving Generic
 
 instance
-    ( SpecialSoundProtocol f a
-    , ProverMessage f a ~ m
-    , VerifierMessage f a ~ f
+    ( BasicSpecialSoundProtocol f (Input f a) m a
     , RandomOracle (Input f a) f
     , RandomOracle (f, c) f
     , HomomorphicCommit m c

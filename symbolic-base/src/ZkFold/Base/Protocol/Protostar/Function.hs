@@ -1,8 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes     #-}
 {-# LANGUAGE TypeOperators           #-}
-{-# LANGUAGE UndecidableInstances    #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module ZkFold.Base.Protocol.Protostar.Function where
 

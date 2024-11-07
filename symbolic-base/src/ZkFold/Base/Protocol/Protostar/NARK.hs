@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.Protostar.NARK where
 
@@ -12,7 +11,7 @@ import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir)
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), BasicSpecialSoundProtocol)
 
 -- Page 18, section 3.4, The accumulation predicate
 --
@@ -27,14 +26,10 @@ data InstanceProofPair pi c m = InstanceProofPair pi (NARKProof c m)
     deriving (Show, Generic, NFData)
 
 instanceProof :: forall a f pi c m .
-    ( RandomOracle pi f
+    ( BasicSpecialSoundProtocol f pi m a
+    , RandomOracle pi f
     , RandomOracle (f, c) f
     , HomomorphicCommit m c
-    , SpecialSoundProtocol f a
-    , Witness f a ~ ()
-    , Input f a ~ pi
-    , ProverMessage f a ~ m
-    , VerifierMessage f a ~ f
     ) => FiatShamir f (CommitOpen m c a) -> pi -> InstanceProofPair pi c m
 instanceProof a pi =
     let (c, m) = head $ prover @f a () pi () 0
