@@ -309,6 +309,12 @@ instance (KnownNat size, Ring c) => IsList (PolyVec c size) where
 instance Scale c' c => Scale c' (PolyVec c size) where
     scale c (PV p) = PV (scale c <$> p)
 
+instance (FromConstant Natural c, AdditiveMonoid c, KnownNat size) => FromConstant Natural (PolyVec c size) where
+    fromConstant n = PV $ V.singleton (fromConstant n) V.++ V.replicate (fromIntegral (value @size -! 1)) zero
+
+instance (FromConstant Integer c, AdditiveMonoid c, KnownNat size) => FromConstant Integer (PolyVec c size) where
+    fromConstant n = PV $ V.singleton (fromConstant n) V.++ V.replicate (fromIntegral (value @size -! 1)) zero
+
 instance Ring c => AdditiveSemigroup (PolyVec c size) where
     PV l + PV r = PV $ V.zipWith (+) l r
 

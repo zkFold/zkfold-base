@@ -11,6 +11,7 @@ import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Polynomials.Univariate       (PolyVec)
 import           ZkFold.Base.Data.ByteString                      (Binary)
 import           ZkFold.Base.Data.Vector                          (Vector, append, drop, take)
 import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
@@ -44,6 +45,7 @@ proveFunctionImage :: forall pi f c m n k .
     , KnownNat k
     , k ~ n + n
     , Arithmetic f
+    , Ring (PolyVec f 3) -- I don't know why this one is not inferred
     , Binary f
     , pi ~ [f]
     , Scale f c

@@ -11,7 +11,7 @@ import           Control.Lens                                ((^.))
 import           Data.List                                   (transpose)
 import qualified Data.Vector                                 as DV
 import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     (concatMap, type (~), ($), (.), (<$>))
+import           Prelude                                     (concatMap, ($), (.), (<$>))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -44,32 +44,15 @@ class AccumulatorScheme pi f c m a where
            -> Accumulator pi f c m        -- final accumulator
            -> ([c], c)                    -- returns zeros if the final accumulator is valid
 
-type SpecialSoundAlgebraicMap f pi m a =
-  ( AlgebraicMap f a,
-    MapInput f a ~ pi,
-    MapMessage f a ~ m
-  )
-
 instance
-    ( AdditiveGroup pi
-    , AdditiveGroup c
-    , AdditiveSemigroup m
-    , Ring f
-    , Scale f pi
-    , Scale f c
-    , Scale f m
+    ( Scale f c
     , RandomOracle pi f         -- Random oracle for compressing public input
     , RandomOracle c f          -- Random oracle ρ_NARK
     , HomomorphicCommit [f] c
     , HomomorphicCommit m c
-    , IsList pi
-    , Item pi ~ f
-    , IsList m
-    , Item m ~ f
-    , SpecialSoundAlgebraicMap f pi m a
-    , SpecialSoundAlgebraicMap (PU.PolyVec f deg) [PU.PolyVec f deg] [PU.PolyVec f deg] a
-    , KnownNat deg
-    , Degree a + 1 ~ deg
+    , AlgebraicMap f pi m a
+    , AlgebraicMap (PU.PolyVec f (Degree a + 1)) [PU.PolyVec f (Degree a + 1)] [PU.PolyVec f (Degree a + 1)] a
+    , KnownNat (Degree a + 1)
     ) => AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
@@ -81,25 +64,25 @@ instance
           -- Fig. 3, step 2
 
           -- X + mu as a univariate polynomial
-          polyMu :: PU.PolyVec f deg
+          polyMu :: PU.PolyVec f (Degree a + 1)
           polyMu = PU.polyVecLinear one (acc^.x^.mu)
 
           -- X * pi + pi' as a list of univariate polynomials
-          polyPi :: [PU.PolyVec f deg]
+          polyPi :: [PU.PolyVec f (Degree a + 1)]
           polyPi = P.zipWith (PU.polyVecLinear @f) (toList pubi) (toList (acc^.x^.pi))
 
           -- X * mi + mi'
-          polyW :: [PU.PolyVec f deg]
+          polyW :: [PU.PolyVec f (Degree a + 1)]
           polyW = P.zipWith (PU.polyVecLinear @f) (concatMap toList pi_w) (concatMap toList (acc^.w))
 
           -- X * ri + ri'
-          polyR :: [PU.PolyVec f deg]
+          polyR :: [PU.PolyVec f (Degree a + 1)]
           polyR = P.zipWith (P.flip PU.polyVecLinear) (acc^.x^.r) r_i
 
           -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
-          e_uni :: [PU.PolyVec f deg]
-          e_uni = algebraicMap @(PU.PolyVec f deg) sps polyPi [polyW] polyR polyMu
+          e_uni :: [PU.PolyVec f (Degree a + 1)]
+          e_uni = algebraicMap sps polyPi [polyW] polyR polyMu
 
           -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
           e_all = transpose $ DV.toList . PU.fromPolyVec <$> e_uni

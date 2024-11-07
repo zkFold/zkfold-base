@@ -47,8 +47,10 @@ ivcInitialize =
 
 ivcIterate :: forall f pi c m a .
     ( BasicSpecialSoundProtocol f pi m a
+    , AdditiveSemigroup f
+    , RandomOracle f f
     , RandomOracle pi f
-    , RandomOracle (f, c) f
+    , RandomOracle c f
     , HomomorphicCommit m c
     , AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a))
     ) => FiatShamir f (CommitOpen m c a) -> IVCInstanceProof pi f c m -> pi -> IVCInstanceProof pi f c m

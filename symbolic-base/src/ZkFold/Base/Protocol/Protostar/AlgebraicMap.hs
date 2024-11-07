@@ -4,10 +4,9 @@ module ZkFold.Base.Protocol.Protostar.AlgebraicMap where
 
 import           Data.Functor.Rep                                    (tabulate)
 import           Data.List                                           (foldl')
-import           Data.Map.Strict                                     (Map, fromList)
+import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
-import           GHC.IsList                                          (toList)
-import           Prelude                                             (fmap, zip, ($), (++), (.), (<$>))
+import           Prelude                                             (type(~), fmap, zip, ($), (++), (.), (<$>))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -20,6 +19,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
+import GHC.IsList (IsList(..))
 
 -- | Algebraic map is a much more versatile and powerful tool when used separatey from SpecialSoundProtocol.
 -- It calculates a system of equations @[f]@ defining @a@ in some way.
@@ -27,30 +27,42 @@ import           ZkFold.Symbolic.Data.Eq
 -- However, @f@ can be a polynomial, in which case the result will be a system of polynomials.
 -- This polymorphism is exploited in the AccumulatorScheme prover.
 --
-class AlgebraicMap f a where
-    type MapInput f a
-    type MapMessage f a
+class
+  ( Ring f
+  , AdditiveGroup pi
+  , Scale f pi
+  , IsList pi
+  , Item pi ~ f
+  , AdditiveSemigroup m
+  , Scale f m
+  , IsList m
+  , Item m ~ f
+  ) => AlgebraicMap f pi m a where
     type Degree a :: Natural
     -- ^ d in the paper, the verifier degree
 
     -- | the algebraic map V_sps computed by the verifier.
     algebraicMap :: a
-        -> MapInput f a     -- ^ public input
-        -> [MapMessage f a] -- ^ NARK proof witness (the list of prover messages)
-        -> [f]              -- ^ Verifier random challenges
-        -> f                -- ^ Slack variable for padding
+        -> pi     -- ^ public input
+        -> [m]    -- ^ NARK proof witness (the list of prover messages)
+        -> [f]    -- ^ Verifier random challenges
+        -> f      -- ^ Slack variable for padding
         -> [f]
 
 instance
   ( Arithmetic a
   , KnownNat n
   , Scale a f
-  , AdditiveMonoid f
-  , MultiplicativeMonoid f
-  ) => AlgebraicMap f (ArithmeticCircuit a (Vector n) o) where
-
-    type MapInput f (ArithmeticCircuit a (Vector n) o) = [f]
-    type MapMessage f (ArithmeticCircuit a (Vector n) o) = [f]
+  , Ring f
+  , AdditiveGroup pi
+  , Scale f pi
+  , IsList pi
+  , Item pi ~ f
+  , AdditiveSemigroup m
+  , Scale f m
+  , IsList m
+  , Item m ~ f
+  ) => AlgebraicMap f pi m (ArithmeticCircuit a (Vector n) o) where
     type Degree (ArithmeticCircuit a (Vector n) o) = 2
 
     -- We can use the polynomial system from the circuit as a base for V_sps.
@@ -61,7 +73,7 @@ instance
             sys = M.elems (acSystem ac)
 
             witness :: Map (SysVar (Vector n)) f
-            witness = fromList $ zip (getAllVars ac) (pi ++ P.head pm)
+            witness = M.fromList $ zip (getAllVars ac) (toList pi ++ toList (P.head pm))
 
             varMap :: SysVar (Vector n) -> f
             varMap x = M.findWithDefault zero x witness
