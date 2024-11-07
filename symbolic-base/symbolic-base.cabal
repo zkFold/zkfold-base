@@ -113,7 +113,6 @@ library
       ZkFold.Base.Data.HFunctor
       ZkFold.Base.Data.Matrix
       ZkFold.Base.Data.Package
-      ZkFold.Base.Data.Par1
       ZkFold.Base.Data.Product
       ZkFold.Base.Data.Sparse.Matrix
       ZkFold.Base.Data.Sparse.Vector
