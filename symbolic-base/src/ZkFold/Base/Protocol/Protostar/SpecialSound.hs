@@ -12,7 +12,7 @@ import qualified Prelude                                     as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap as AM
-import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 
@@ -63,7 +63,7 @@ type BasicSpecialSoundProtocol f pi m a =
 
 instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
     type Witness a (ArithmeticCircuit a (Vector n) o) = ()
-    type Input a (ArithmeticCircuit a (Vector n) o) = Vector n a
+    type Input a (ArithmeticCircuit a (Vector n) o) = [a]
     type ProverMessage a (ArithmeticCircuit a (Vector n) o) = [a]
     type VerifierMessage a (ArithmeticCircuit a (Vector n) o) = a
     type VerifierOutput a (ArithmeticCircuit a (Vector n) o)  = [a]
@@ -77,8 +77,8 @@ instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit
     -- The transcript will be empty at this point, it is a one-round protocol.
     -- Input is arithmetised. We need to combine its witness with the circuit's witness.
     --
-    prover ac _ pi _ _ = elems $ witnessGenerator ac pi
+    prover ac _ pi _ _ = elems $ witnessGenerator ac $ unsafeToVector pi
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --
-    verifier rc i pm ts = AM.algebraicMap rc i pm ts one
+    verifier ac pi pm ts = AM.algebraicMap ac pi pm ts one

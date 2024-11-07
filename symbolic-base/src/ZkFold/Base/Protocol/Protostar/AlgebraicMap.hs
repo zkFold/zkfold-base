@@ -49,7 +49,7 @@ instance
   , MultiplicativeMonoid f
   ) => AlgebraicMap f (ArithmeticCircuit a (Vector n) o) where
 
-    type MapInput f (ArithmeticCircuit a (Vector n) o) = Vector n f
+    type MapInput f (ArithmeticCircuit a (Vector n) o) = [f]
     type MapMessage f (ArithmeticCircuit a (Vector n) o) = [f]
     type Degree (ArithmeticCircuit a (Vector n) o) = 2
 
@@ -61,7 +61,7 @@ instance
             sys = M.elems (acSystem ac)
 
             witness :: Map (SysVar (Vector n)) f
-            witness = fromList $ zip (getAllVars ac) (toList pi ++ P.head pm)
+            witness = fromList $ zip (getAllVars ac) (pi ++ P.head pm)
 
             varMap :: SysVar (Vector n) -> f
             varMap x = M.findWithDefault zero x witness

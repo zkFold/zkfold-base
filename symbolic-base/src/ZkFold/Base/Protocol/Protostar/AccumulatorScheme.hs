@@ -17,7 +17,6 @@ import qualified Prelude                                     as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
-import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
@@ -45,6 +44,12 @@ class AccumulatorScheme pi f c m a where
            -> Accumulator pi f c m        -- final accumulator
            -> ([c], c)                    -- returns zeros if the final accumulator is valid
 
+type SpecialSoundAlgebraicMap f pi m a =
+  ( AlgebraicMap f a,
+    MapInput f a ~ pi,
+    MapMessage f a ~ m
+  )
+
 instance
     ( AdditiveGroup pi
     , AdditiveGroup c
@@ -61,14 +66,10 @@ instance
     , Item pi ~ f
     , IsList m
     , Item m ~ f
-    , AlgebraicMap f a
-    , MapInput f a ~ pi
-    , MapMessage f a ~ m
+    , SpecialSoundAlgebraicMap f pi m a
+    , SpecialSoundAlgebraicMap (PU.PolyVec f deg) [PU.PolyVec f deg] [PU.PolyVec f deg] a
     , KnownNat deg
     , Degree a + 1 ~ deg
-    , AlgebraicMap (PU.PolyVec f deg) a
-    , MapInput (PU.PolyVec f deg) a ~ Vector n (PU.PolyVec f deg)
-    , MapMessage (PU.PolyVec f deg) a ~ [PU.PolyVec f deg]
     ) => AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
@@ -98,7 +99,7 @@ instance
           -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
           e_uni :: [PU.PolyVec f deg]
-          e_uni = algebraicMap @(PU.PolyVec f deg) sps (fromList polyPi) [polyW] polyR polyMu
+          e_uni = algebraicMap @(PU.PolyVec f deg) sps polyPi [polyW] polyR polyMu
 
           -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
           e_all = transpose $ DV.toList . PU.fromPolyVec <$> e_uni

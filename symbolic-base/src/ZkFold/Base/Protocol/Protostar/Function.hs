@@ -5,6 +5,7 @@ module ZkFold.Base.Protocol.Protostar.Function where
 
 import           Data.Zip                                         (zipWith)
 import           GHC.Generics                                     (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
+import           GHC.IsList                                       (toList)
 import           Prelude                                          (foldl, fst, type (~), ($), (.))
 import qualified Prelude                                          as P
 
@@ -44,10 +45,8 @@ proveFunctionImage :: forall pi f c m n k .
     , k ~ n + n
     , Arithmetic f
     , Binary f
-    , pi ~ (Vector (n + n)) f
-    , AdditiveGroup (Vector k f)
+    , pi ~ [f]
     , Scale f c
-    , Scale f (Vector k f)
     , RandomOracle f f
     , RandomOracle pi f
     , RandomOracle c f
@@ -66,7 +65,7 @@ proveFunctionImage func x0 n =
         step (ip, x) _ =
             let x' = FieldElement . Interpreter . Par1 P.<$> x
                 y = unPar1 . runInterpreter . fromFieldElement P.<$> func x'
-            in (ivcIterate @f fs ip (x `append` y), y)
+            in (ivcIterate @f fs ip (toList $ x `append` y), y)
 
     in fst $ foldl step (ivcInitialize, x0) [1..n]
 
