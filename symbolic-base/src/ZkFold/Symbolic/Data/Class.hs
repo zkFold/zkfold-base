@@ -107,19 +107,6 @@ instance
     , Support y ~ Support z
     ) => SymbolicData (w, x, y, z) where
 
-{-
-
--- When this code is commented out,
--- `ivcVerifierAc` no longer compiles.
-
-    type Context (w, x, y, z) = Context (w, (x, y, z))
-    type Support (w, x, y, z) = Support (w, (x, y, z))
-    type Layout (w, x, y, z) = Layout (w, (x, y, z))
-
-    pieces (a, b, c, d) = pieces (a, (b, c, d))
-    restore f = let (a, (b, c, d)) = restore f in (a, b, c, d)
--}
-
 instance
     ( SymbolicData v
     , SymbolicData w
