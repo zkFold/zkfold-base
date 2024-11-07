@@ -125,7 +125,7 @@ ivcVerifierAc
     => Context y ~ ctx
     => Support y ~ Proxy ctx
     => Layout y ~ Par1
-    => t ~ ((i,c,(i,c,f,c,f),(i,c,f,c,f),c),(a,(f,f,f),(i,c,f,c,f),m),Proxy ctx)
+    => t ~ (((i,c),(((i,c),(f,c,f)),(((i,c),(f,(c,f))),c))),((a,((f,(f,f)),(((i,c),(f,(c,f))),m))),Proxy ctx))
     => ctx ~ ArithmeticCircuit a (Layout t)
     => Acc.AccumulatorScheme i f c m ctx a
     => y
