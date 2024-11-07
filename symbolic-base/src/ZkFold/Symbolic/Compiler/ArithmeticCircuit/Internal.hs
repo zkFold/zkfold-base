@@ -42,7 +42,7 @@ import           Data.Semialign                                        (unzipDef
 import           Data.Semigroup.Generic                                (GenericSemigroupMonoid (..))
 import qualified Data.Set                                              as S
 import           GHC.Generics                                          (Generic, Par1 (..), U1 (..), (:*:) (..))
-import           Optics
+import           Optics                                                hiding (at)
 import           Prelude                                               hiding (Num (..), drop, length, product, splitAt,
                                                                         sum, take, (!!), (^))
 
@@ -56,6 +56,7 @@ import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | The type that represents a constraint in the arithmetic circuit.
@@ -186,12 +187,12 @@ instance
 
 instance
   ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
-  , o ~ U1) => MonadCircuit (Var a i) a (State (ArithmeticCircuit a i o)) where
+  , o ~ U1) => MonadCircuit (Var a i) a (WitnessF (Var a i) a) (State (ArithmeticCircuit a i o)) where
 
-    unconstrained witness = do
-      let v = toVar @a witness
+    unconstrained wf = do
+      let v = toVar @a wf
       -- TODO: forbid reassignment of variables
-      zoom #acWitness . modify $ insert v $ \i w -> witness $ \case
+      zoom #acWitness . modify $ insert v $ \i w -> witnessF wf $ \case
         SysVar (InVar inV) -> index i inV
         SysVar (NewVar newV) -> w ! newV
         ConstVar cV -> fromConstant cV
@@ -203,7 +204,7 @@ instance
           SysVar sysV -> var sysV
           ConstVar cV -> fromConstant cV
       in
-        zoom #acSystem . modify $ insert (toVar @a p) (p evalConstVar)
+        zoom #acSystem . modify $ insert (toVar (p at)) (p evalConstVar)
 
     rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
@@ -233,8 +234,8 @@ instance
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
 toVar ::
   forall a i. (Finite a, Binary a, Binary (Rep i)) =>
-  Witness (Var a i) a -> ByteString
-toVar witness = runHash @(Just (Order a)) $ witness $ \case
+  WitnessF (Var a i) a -> ByteString
+toVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   SysVar (InVar inV) -> merkleHash inV
   SysVar (NewVar newV) -> M newV
   ConstVar cV -> fromConstant cV
