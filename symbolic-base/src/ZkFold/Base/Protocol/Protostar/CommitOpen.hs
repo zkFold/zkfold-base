@@ -9,7 +9,7 @@ import           Prelude                                     hiding (Num (..), l
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), (+))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (hcommit))
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), BasicSpecialSoundProtocol)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (BasicSpecialSoundProtocol, SpecialSoundProtocol (..))
 
 newtype CommitOpen (m :: Type) (c :: Type) a = CommitOpen a
 

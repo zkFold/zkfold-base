@@ -1,18 +1,18 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
 import           Data.Map.Strict                             (elems)
 import qualified Data.Map.Strict                             as M
-import           Prelude                                     (type(~), ($))
+import           Prelude                                     (type (~), ($))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap as AM
 import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector)
+import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap as AM
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 

@@ -6,7 +6,8 @@ import           Data.Functor.Rep                                    (tabulate)
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
-import           Prelude                                             (type(~), fmap, zip, ($), (++), (.), (<$>))
+import           GHC.IsList                                          (IsList (..))
+import           Prelude                                             (fmap, type (~), zip, ($), (++), (.), (<$>))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -19,7 +20,6 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
-import GHC.IsList (IsList(..))
 
 -- | Algebraic map is a much more versatile and powerful tool when used separatey from SpecialSoundProtocol.
 -- It calculates a system of equations @[f]@ defining @a@ in some way.

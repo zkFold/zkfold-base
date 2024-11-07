@@ -1,28 +1,28 @@
-{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.Protostar.Function where
 
 
-import           Data.Zip                                         (zipWith)
-import           GHC.Generics                                     (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
-import           GHC.IsList                                       (toList)
-import           Prelude                                          (foldl, fst, type (~), ($), (.))
-import qualified Prelude                                          as P
+import           Data.Zip                                   (zipWith)
+import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
+import           GHC.IsList                                 (toList)
+import           Prelude                                    (foldl, fst, type (~), ($), (.))
+import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Univariate       (PolyVec)
-import           ZkFold.Base.Data.ByteString                      (Binary)
-import           ZkFold.Base.Data.Vector                          (Vector, append, drop, take)
-import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
-import           ZkFold.Base.Protocol.Protostar.CommitOpen        (CommitOpen (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir        (FiatShamir (..))
-import           ZkFold.Base.Protocol.Protostar.IVC               (IVCInstanceProof (..), ivcInitialize, ivcIterate)
-import           ZkFold.Base.Protocol.Protostar.Oracle            (RandomOracle)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
+import           ZkFold.Base.Data.ByteString                (Binary)
+import           ZkFold.Base.Data.Vector                    (Vector, append, drop, take)
+import           ZkFold.Base.Protocol.Protostar.Commit      (HomomorphicCommit)
+import           ZkFold.Base.Protocol.Protostar.CommitOpen  (CommitOpen (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir  (FiatShamir (..))
+import           ZkFold.Base.Protocol.Protostar.IVC         (IVCInstanceProof (..), ivcInitialize, ivcIterate)
+import           ZkFold.Base.Protocol.Protostar.Oracle      (RandomOracle)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.FieldElement                (FieldElement (..))
-import           ZkFold.Symbolic.Interpreter                      (Interpreter (..))
+import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
+import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
 
 functionfToCircuit :: forall a n m i o.
     ( KnownNat n
