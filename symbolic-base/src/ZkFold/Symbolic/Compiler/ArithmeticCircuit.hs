@@ -37,6 +37,7 @@ import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
                                                                       take)
+import qualified Data.Set                                            as S
 import           Data.Void                                           (absurd)
 import           GHC.Generics                                        (U1 (..))
 import           Numeric.Natural                                     (Natural)
@@ -86,7 +87,7 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar k, v) | (k,v) <- toList (acRange c)]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, fromConstant k) | (k, s) <- toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
 
 ----------------------------------- Information -----------------------------------

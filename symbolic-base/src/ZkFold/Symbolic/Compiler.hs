@@ -10,7 +10,7 @@ module ZkFold.Symbolic.Compiler (
     solder,
 ) where
 
-import           Data.Aeson                                 (FromJSON, ToJSON)
+import           Data.Aeson                                 (FromJSON, ToJSON, ToJSONKey)
 import           Data.Binary                                (Binary)
 import           Data.Function                              (const, (.))
 import           Data.Functor                               (($>))
@@ -109,6 +109,7 @@ compileIO ::
     ( c ~ ArithmeticCircuit a l
     , FromJSON a
     , ToJSON a
+    , ToJSONKey a
     , SymbolicData f
     , Context f ~ c
     , Support f ~ s

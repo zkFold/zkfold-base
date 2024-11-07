@@ -90,6 +90,7 @@ library
     exposed-modules:
       ZkFold.Symbolic.Cardano.Wrapper
       ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
+      ZkFold.Symbolic.Cardano.Contracts.ZkPass
       ZkFold.Symbolic.Cardano.Contracts.RandomOracle
       ZkFold.Symbolic.Cardano.Types
       ZkFold.Symbolic.Cardano.Types.Address
@@ -100,12 +101,6 @@ library
       ZkFold.Symbolic.Cardano.Types.OutputRef
       ZkFold.Symbolic.Cardano.Types.Transaction
       ZkFold.Symbolic.Cardano.Types.Value
-      ZkFold.Symbolic.Cardano.UPLC
-      ZkFold.Symbolic.Cardano.UPLC.Builtins
-      ZkFold.Symbolic.Cardano.UPLC.Inference
-      ZkFold.Symbolic.Cardano.UPLC.Inference.Internal
-      ZkFold.Symbolic.Cardano.UPLC.Term
-      ZkFold.Symbolic.Cardano.UPLC.Type
     build-depends:
       base                          >= 4.9 && < 5,
       containers                            < 0.7,
