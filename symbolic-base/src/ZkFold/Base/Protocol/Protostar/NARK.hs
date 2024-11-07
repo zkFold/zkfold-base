@@ -8,7 +8,9 @@ import           Control.DeepSeq                             (NFData (..))
 import           GHC.Generics
 import           Prelude                                     hiding (length, pi)
 
-import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit(..))
+import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup)
+import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir)
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle(..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol(..))
 
@@ -25,17 +27,18 @@ data InstanceProofPair pi c m = InstanceProofPair pi (NARKProof c m)
     deriving (Show, Generic, NFData)
 
 instanceProof :: forall a f pi c m .
-    ( SpecialSoundProtocol f a
+    ( AdditiveGroup c
+    , RandomOracle pi f
+    , RandomOracle (f, c) f
+    , SpecialSoundProtocol f a
     , Witness f a ~ ()
     , Input f a ~ pi
     , ProverMessage f a ~ m
-    , RandomOracle pi f
-    , HomomorphicCommit f m c
-    ) => a -> f -> pi -> InstanceProofPair pi c m
-instanceProof a ck pi =
-    -- TODO: Since it is a 1-round protocol, we do not use the oracle value here.
-    let m = prover @f a () pi (oracle pi) 0
-    in InstanceProofPair pi (NARKProof [hcommit ck m] [m])
+    , VerifierMessage f a ~ f
+    ) => FiatShamir f (CommitOpen m c a) -> pi -> InstanceProofPair pi c m
+instanceProof a pi =
+    let (c, m) = head $ prover @f a () pi () 0
+    in InstanceProofPair pi (NARKProof [c] [m])
 
 {--
 toAccumulatorInstance :: (FiniteField f, AdditiveGroup c) => (f -> c -> f) -> NARKInstance f c -> AccumulatorInstance f c

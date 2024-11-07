@@ -33,17 +33,17 @@ class SpecialSoundProtocol f a where
       -- ^ k in the paper
 
       prover :: a
-        -> Witness f a        -- ^ witness
-        -> Input f a          -- ^ public input
-        -> f                  -- ^ current random challenge
-        -> Natural            -- ^ round number (starting from 0)
+        -> Witness f a         -- ^ witness
+        -> Input f a           -- ^ public input
+        -> VerifierMessage f a -- ^ current random challenge
+        -> Natural             -- ^ round number (starting from 0)
         -> ProverMessage f a
 
       verifier :: a
-        -> Input f a           -- ^ public input
-        -> [ProverMessage f a] -- ^ prover messages
-        -> [f]                 -- ^ random challenges
-        -> VerifierOutput f a  -- ^ verifier output
+        -> Input f a             -- ^ public input
+        -> [ProverMessage f a]   -- ^ prover messages
+        -> [VerifierMessage f a] -- ^ random challenges
+        -> VerifierOutput f a    -- ^ verifier output
 
 -- | Algebraic map is a much more versatile and powerful tool when used separatey from SpecialSoundProtocol.
 -- It calculates a system of equations @[f]@ defining @a@ in some way.

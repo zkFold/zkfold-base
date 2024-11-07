@@ -1,30 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Protostar (specProtostar) where
 
-import           Control.Monad                               (replicateM)
-import           Data.Kind                                   (Type)
-import           Prelude                                     (IO, id, type (~), ($), (.), (<$>), (<*>), (<>), print)
+import           Prelude                                     (IO)
 import qualified Prelude                                     as P
-import qualified Test.Hspec
-import           Test.Hspec                                  (Spec, describe, hspec)
-import           Test.QuickCheck (Arbitrary (..), chooseInteger, property, withMaxSuccess, Testable)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
-import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar
-import           ZkFold.Prelude                              ((!!))
-import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-import GHC.IsList (IsList(..))
 
 data RecursiveFunction n c a
     = RecursiveFunction
@@ -89,16 +72,16 @@ instance P.Show a => P.Show (RecursiveFunction n c a) where
 --}
 -- TODO: fix the tests and their speed (requires at least in-circuit elliptic curves)
 
-fib :: AdditiveSemigroup x => Vector 2 x -> Vector 2 x
-fib x =
-    let [a, b] = toList x
-     in fromList [b, a + b]
+-- fib :: AdditiveSemigroup x => Vector 2 x -> Vector 2 x
+-- fib x =
+--     let [a, b] = toList x
+--      in fromList [b, a + b]
 
 specProtostar :: IO ()
 specProtostar = do
-    let ProtostarResult{..} = iterate fib (fromList [one :: Zp BLS12_381_Scalar, one]) 10
+    -- let ProtostarResult{..} = iterate fib (fromList [one :: Zp BLS12_381_Scalar, one]) 10
         -- RecursiveFunction{..} = RecursiveFunction 10 (fromList [one, one]) fib
-    print result
+    -- print result
     -- print $ evaluateRF (RecursiveFunction 10 (fromList [one, one]) fib)
     P.pure ()
 {--  Too optimistic to think these tests will work fast enough...

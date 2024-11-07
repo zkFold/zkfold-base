@@ -47,7 +47,7 @@ instance (Ring f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (ProtostarGa
     prover :: ProtostarGate m n c d
           -> Witness f (ProtostarGate m n c d)
           -> Input f (ProtostarGate m n c d)
-          -> f
+          -> VerifierMessage f (ProtostarGate m n c d)
           -> Natural
           -> ProverMessage f (ProtostarGate m n c d)
     prover _ w _ _ _ = w
@@ -55,10 +55,10 @@ instance (Ring f, KnownNat m, KnownNat n) => SpecialSoundProtocol f (ProtostarGa
     verifier :: ProtostarGate m n c d
              -> Input f (ProtostarGate m n c d)
              -> [ProverMessage f (ProtostarGate m n c d)]
+             -> [VerifierMessage f (ProtostarGate m n c d)]
              -> [f]
-             -> [f]
-    verifier gate (s, g) [w] ts = algebraicMap @f gate (s, g) [w] ts one
-    verifier _ _ _ _            = error "Invalid transcript"
+    verifier gate (s, g) [w] _ = algebraicMap @f gate (s, g) [w] [] one
+    verifier _ _ _ _           = error "Invalid transcript"
 
 instance (Ring f, KnownNat m, KnownNat n) => AlgebraicMap f (ProtostarGate m n c d) where
     type MapInput f (ProtostarGate m n c d)    = (Matrix m n f, Vector m (PolynomialProtostar f c d))

@@ -30,7 +30,7 @@ instance (Ring f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutation n)
     prover :: ProtostarPermutation n
            -> Witness f (ProtostarPermutation n)
            -> Input f (ProtostarPermutation n)
-           -> f
+           -> VerifierMessage f (ProtostarPermutation n)
            -> Natural
            -> ProverMessage f (ProtostarPermutation n)
     prover _ w _ _ _ = w
@@ -38,9 +38,9 @@ instance (Ring f, KnownNat n) => SpecialSoundProtocol f (ProtostarPermutation n)
     verifier :: ProtostarPermutation n
              -> Input f (ProtostarPermutation n)
              -> [ProverMessage f (ProtostarPermutation n)]
+             -> [VerifierMessage f (ProtostarPermutation n)]
              -> [f]
-             -> [f]
-    verifier p sigma [w] ts = algebraicMap p sigma [w] ts one - V.fromVector w
+    verifier p sigma [w] _ = algebraicMap p sigma [w] [] one - V.fromVector w
     verifier _ _     _   _  = error "Invalid transcript"
 
 instance KnownNat n => AlgebraicMap f (ProtostarPermutation n) where

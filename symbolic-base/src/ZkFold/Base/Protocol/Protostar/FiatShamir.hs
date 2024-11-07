@@ -19,6 +19,7 @@ newtype FiatShamir f a = FiatShamir a
 instance
     ( SpecialSoundProtocol f a
     , ProverMessage f a ~ m
+    , VerifierMessage f a ~ f
     , AdditiveGroup c
     , RandomOracle (Input f a) f
     , RandomOracle (f, c) f

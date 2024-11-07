@@ -12,7 +12,7 @@ import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map, fromList, elems)
 import qualified Data.Map.Strict                                     as M
 import           GHC.IsList                                          (toList)
-import           Prelude                                             (type (~), fmap, ($), (.), (<$>), undefined, zip, (++))
+import           Prelude                                             (fmap, ($), (.), (<$>), zip, (++))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -26,7 +26,6 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FieldElement
 
 instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
 
@@ -50,34 +49,6 @@ instance (KnownNat n, Arithmetic a) => SPS.SpecialSoundProtocol a (ArithmeticCir
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --
     verifier rc i pm ts = SPS.algebraicMap rc i pm ts one
-
-instance
-    ( KnownNat n
-    , Arithmetic a
-    , Symbolic ctx
-    , BaseField ctx ~ a
-    ) => SPS.SpecialSoundProtocol (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) where
-
-    type Witness (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = ()
-    type Input (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = Vector n (FieldElement ctx)
-    type ProverMessage (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = [FieldElement ctx]
-    type VerifierMessage (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = FieldElement ctx
-    type VerifierOutput (FieldElement ctx) (ArithmeticCircuit a (Vector n) o)  = [FieldElement ctx]
-    type Degree (ArithmeticCircuit a (Vector n) o) = 2
-
-    -- One round for Plonk
-    rounds = P.const 1
-
-    outputLength ac = P.fromIntegral $ M.size (acSystem ac)
-
-    -- The transcript will be empty at this point, it is a one-round protocol.
-    -- Input is arithmetised. We need to combine its witness with the circuit's witness.
-    --
-    prover = undefined
-
-    -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
-    --
-    verifier rc pi pm ts = SPS.algebraicMap @(FieldElement ctx) rc pi pm ts one
 
 instance
   ( KnownNat n

@@ -150,13 +150,15 @@ library
       ZkFold.Base.Protocol.Protostar.CommitOpen
       ZkFold.Base.Protocol.Protostar.Commit
       ZkFold.Base.Protocol.Protostar.FiatShamir
-      ZkFold.Base.Protocol.Protostar.Fold
+      -- ZkFold.Base.Protocol.Protostar.Fold
       ZkFold.Base.Protocol.Protostar.Function
       ZkFold.Base.Protocol.Protostar.Gate
+      ZkFold.Base.Protocol.Protostar.IVC
       ZkFold.Base.Protocol.Protostar.Lookup
       ZkFold.Base.Protocol.Protostar.NARK
       ZkFold.Base.Protocol.Protostar.Oracle
       ZkFold.Base.Protocol.Protostar.Permutation
+      ZkFold.Base.Protocol.Protostar.RecursiveCircuit
       ZkFold.Base.Protocol.Protostar.SpecialSound
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Base.Protocol.NonInteractiveProof.Internal

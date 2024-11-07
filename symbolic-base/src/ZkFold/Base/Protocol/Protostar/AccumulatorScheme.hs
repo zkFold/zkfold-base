@@ -24,6 +24,7 @@ import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
 import           ZkFold.Base.Protocol.Protostar.NARK         (NARKProof (..), InstanceProofPair (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), MapInput, SpecialSoundProtocol (..))
+import ZkFold.Base.Data.Vector (Vector)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
@@ -68,8 +69,8 @@ instance
     , Degree (FiatShamir f (CommitOpen m c a)) + 1 ~ deg
     , KnownNat deg
     , AlgebraicMap (PU.PolyVec f deg) a
-    , MapInput (PU.PolyVec f deg) a ~ [PU.PolyVec f deg]
-    , MapMessage (PU.PolyVec f deg) a ~ PU.PolyVec f deg
+    , MapInput (PU.PolyVec f deg) a ~ Vector n (PU.PolyVec f deg)
+    , MapMessage (PU.PolyVec f deg) a ~ [PU.PolyVec f deg]
     ) => AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen _ sps)) ck acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
@@ -99,7 +100,7 @@ instance
           -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
           e_uni :: [PU.PolyVec f deg]
-          e_uni = algebraicMap @(PU.PolyVec f deg) sps polyPi polyW polyR polyMu
+          e_uni = algebraicMap @(PU.PolyVec f deg) sps (fromList polyPi) [polyW] polyR polyMu
 
           -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
           e_all = transpose $ DV.toList . PU.fromPolyVec <$> e_uni
