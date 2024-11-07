@@ -42,11 +42,11 @@ class AlgebraicMap f a where
         -> [f]
 
 instance
-  ( KnownNat n
-  , Arithmetic a
+  ( Arithmetic a
+  , KnownNat n
   , Scale a f
-  , MultiplicativeMonoid f
   , AdditiveMonoid f
+  , MultiplicativeMonoid f
   ) => AlgebraicMap f (ArithmeticCircuit a (Vector n) o) where
 
     type MapInput f (ArithmeticCircuit a (Vector n) o) = Vector n f
@@ -73,12 +73,11 @@ instance
             f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
 
 
-padDecomposition
-    :: forall f d
-    .  KnownNat d
-    => MultiplicativeMonoid f
-    => AdditiveMonoid f
-    => f -> V.Vector d [f] -> [f]
+padDecomposition :: forall f d .
+    ( KnownNat d
+    , MultiplicativeMonoid f
+    , AdditiveMonoid f
+     ) => f -> V.Vector d [f] -> [f]
 padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) * ) <$> p)
     where
         d = value @d -! 1

@@ -52,7 +52,7 @@ class SpecialSoundProtocol f a where
         -> [VerifierMessage f a] -- ^ random challenges
         -> VerifierOutput f a    -- ^ verifier output
 
-instance (KnownNat n, Arithmetic a) => SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
+instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
 
     type Witness a (ArithmeticCircuit a (Vector n) o) = ()
     type Input a (ArithmeticCircuit a (Vector n) o) = Vector n a

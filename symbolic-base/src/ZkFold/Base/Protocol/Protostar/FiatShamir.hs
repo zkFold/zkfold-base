@@ -26,7 +26,7 @@ instance
     ) => SpecialSoundProtocol f (FiatShamir f (CommitOpen m c a)) where
         type Witness f (FiatShamir f (CommitOpen m c a))         = Witness f a
         type Input f (FiatShamir f (CommitOpen m c a))           = Input f a
-        type ProverMessage f (FiatShamir f (CommitOpen m c a))   = [(c, ProverMessage f a)]
+        type ProverMessage f (FiatShamir f (CommitOpen m c a))   = [(c, m)]
         type VerifierMessage f (FiatShamir f (CommitOpen m c a)) = ()
         type VerifierOutput f (FiatShamir f (CommitOpen m c a))  = VerifierOutput f (CommitOpen m c a)
 
