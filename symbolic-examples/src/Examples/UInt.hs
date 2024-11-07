@@ -15,8 +15,8 @@ import           GHC.TypeNats
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
-import           ZkFold.Symbolic.Data.Combinators (KnownRegisterSize, NumberOfRegisters, Ceil, GetRegisterSize)
-import           ZkFold.Symbolic.Data.UInt        (StrictNum (..), UInt, OrdWord)
+import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, NumberOfRegisters, resize)
+import           ZkFold.Symbolic.Data.UInt        (OrdWord, StrictNum (..), UInt)
 
 exampleUIntMul ::
   (KnownNat n, KnownRegisterSize r, Symbolic c) =>
