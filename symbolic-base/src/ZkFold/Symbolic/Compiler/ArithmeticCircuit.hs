@@ -102,7 +102,7 @@ acSizeM = length . acWitness
 
 -- | Calculates the number of range lookups in the system.
 acSizeR :: ArithmeticCircuit a i o -> Natural
-acSizeR = length . acRange
+acSizeR = sum . map length . elems . acRange
 
 acValue :: Functor o => ArithmeticCircuit a U1 o -> o a
 acValue r = eval r U1

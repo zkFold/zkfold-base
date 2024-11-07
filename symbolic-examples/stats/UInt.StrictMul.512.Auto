@@ -1,4 +1,4 @@
 UInt.StrictMul.512.Auto
 Number of constraints: 1208
 Number of variables: 2314
-Number of range lookups: 1132
+Number of range lookups: 108
