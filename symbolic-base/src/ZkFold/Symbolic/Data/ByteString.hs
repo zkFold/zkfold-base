@@ -32,7 +32,7 @@ import           Data.Kind                          (Type)
 import           Data.List                          (reverse, unfoldr)
 import           Data.Maybe                         (Maybe (..))
 import           Data.String                        (IsString (..))
-import           Data.Traversable                   (for)
+import           Data.Traversable                   (for, mapM)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
 import           Numeric                            (readHex, showHex)
@@ -194,7 +194,7 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
             )
             where
                 vecToNat :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural
-                vecToNat =  Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0
+                vecToNat = Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0
 
                 cons i j x =
                     let xi = x i
