@@ -70,6 +70,7 @@ protostar func =
         fs :: FiatShamir f (CommitOpen m c (ArithmeticCircuit a (Vector n) (Vector n)))
         fs = FiatShamir @f (CommitOpen @m @c stepCircuit)
 
+        -- The verification function for the IVC instance-proof
         vf :: IVCInstanceProof pi f c m -> ((f, pi, f, c, c), (c, c))
         vf = ivcVerify' @pi @f @c @m fs
 
