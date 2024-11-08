@@ -47,7 +47,7 @@ ivcInitialize =
 
 ivcIterate :: forall f pi c m a .
     ( BasicSpecialSoundProtocol f pi m a
-    , AdditiveSemigroup f
+    , Ring f
     , RandomOracle f f
     , RandomOracle pi f
     , RandomOracle c f
