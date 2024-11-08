@@ -8,7 +8,7 @@ import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (bool)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
-import           Data.Map                                            (elems, keys)
+import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Set                                            as S
