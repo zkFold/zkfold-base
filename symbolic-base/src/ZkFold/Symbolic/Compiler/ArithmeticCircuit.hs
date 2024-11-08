@@ -57,6 +57,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
+import qualified Data.Map.Monoidal as M 
 
 --------------------------------- High-level functions --------------------------------
 
@@ -87,7 +88,7 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- toList (acRange c), v <- S.toList s]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
 
 ----------------------------------- Information -----------------------------------
@@ -102,7 +103,7 @@ acSizeM = length . acWitness
 
 -- | Calculates the number of range lookups in the system.
 acSizeR :: ArithmeticCircuit a i o -> Natural
-acSizeR = sum . map length . elems . acRange
+acSizeR = sum . map length . M.elems . acRange
 
 acValue :: Functor o => ArithmeticCircuit a U1 o -> o a
 acValue r = eval r U1

@@ -29,6 +29,7 @@ import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
 import           ZkFold.Prelude                                      (length, replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import qualified Data.Map.Monoidal as M 
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i n l a = PlonkupRelation
@@ -78,13 +79,13 @@ toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (fromVector xPub)
         plonkConstraints    = map (evalPolynomial evalMonomial (var . SysVar)) (elems (acSystem ac))
-        rs = map toConstant $ keys $ acRange ac
+        rs = map toConstant $ M.keys $ acRange ac
         -- TODO: We are expecting at most one range.
         t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
         -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.
-        xLookup = concatMap S.toList $ elems (acRange ac)
+        xLookup = concatMap S.toList $ M.elems (acRange ac)
 
         -- The total number of constraints in the relation.
         n'      = acSizeN ac + value @l + length xLookup
