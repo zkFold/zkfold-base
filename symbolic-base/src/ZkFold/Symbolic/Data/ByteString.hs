@@ -32,7 +32,7 @@ import           Data.Kind                          (Type)
 import           Data.List                          (reverse, unfoldr)
 import           Data.Maybe                         (Maybe (..))
 import           Data.String                        (IsString (..))
-import           Data.Traversable                   (for)
+import           Data.Traversable                   (for, mapM)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.Natural                        (naturalFromInteger)
 import           Numeric                            (readHex, showHex)
@@ -59,7 +59,7 @@ import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, MonadCircuit, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, newAssigned)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -168,15 +168,9 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
     false = fromConstant (0 :: Natural)
     true = not false
 
-    not (ByteString bits) =  ByteString $ fromCircuitF bits solve
-        where
-            solve :: MonadCircuit i (BaseField c) m => Vector n i -> m (Vector n i)
-            solve xv = do
-                let xs = V.fromVector xv
-                ys <-  for xs $ \i -> newAssigned (\p -> one - p i)
-                return $ V.unsafeToVector ys
+    not (ByteString bits) = ByteString $ fromCircuitF bits $ mapM (\i -> newAssigned (\p -> one - p i))
 
-    l || r =  bitwiseOperation l r cons
+    l || r = bitwiseOperation l r cons
         where
             cons i j x =
                         let xi = x i
@@ -190,21 +184,22 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                             xj = x j
                         in xi * xj
 
-    xor (ByteString l) (ByteString r) = ByteString $ symbolic2F l r (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n)) solve
-        where
-            vecToNat :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural
-            vecToNat =  Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0
-
-            solve :: MonadCircuit i (BaseField c) m => Vector n i -> Vector n i -> m (Vector n i)
-            solve lv rv = do
+    xor (ByteString l) (ByteString r) =
+        ByteString $ symbolic2F l r
+            (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n))
+            (\lv rv -> do
                 let varsLeft = lv
                     varsRight = rv
                 zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+            )
+            where
+                vecToNat :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural
+                vecToNat = Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0
 
-            cons i j x =
-                        let xi = x i
-                            xj = x j
-                        in xi + xj - (xi * xj + xi * xj)
+                cons i j x =
+                    let xi = x i
+                        xj = x j
+                     in xi + xj - (xi * xj + xi * xj)
 
 -- | A ByteString of length @n@ can only be split into words of length @wordSize@ if all of the following conditions are met:
 -- 1. @wordSize@ is not greater than @n@;
@@ -234,18 +229,18 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
     shiftBits bs@(ByteString oldBits) s
       | s == 0 = bs
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
-      | otherwise = ByteString $ symbolicF oldBits (\v ->  V.shift v s (fromConstant (0 :: Integer))) solve
-      where
-        solve :: forall a m. MonadCircuit a (BaseField c) m => Vector n a -> m (Vector n a)
-        solve bitsV = do
-            let bits = V.fromVector bitsV
-            zeros <- replicateM (Haskell.fromIntegral $ Haskell.abs s) $ newAssigned (Haskell.const zero)
+      | otherwise = ByteString $ symbolicF oldBits
+          (\v ->  V.shift v s (fromConstant (0 :: Integer)))
+          (\bitsV -> do
+              let bits = V.fromVector bitsV
+              zeros <- replicateM (Haskell.fromIntegral $ Haskell.abs s) $ newAssigned (Haskell.const zero)
 
-            let newBits = case s < 0 of
-                        Haskell.True  -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
-                        Haskell.False -> drop (Haskell.fromIntegral s) $ bits <> zeros
+              let newBits = case s < 0 of
+                          Haskell.True  -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
+                          Haskell.False -> drop (Haskell.fromIntegral s) $ bits <> zeros
 
-            pure $ V.unsafeToVector newBits
+              pure $ V.unsafeToVector newBits
+          )
 
     rotateBits (ByteString bits) s = ByteString $ hmap (`V.rotate` s) bits
 
@@ -254,58 +249,46 @@ instance
   , KnownNat k
   , KnownNat n
   ) => Resize (ByteString k c) (ByteString n c) where
-    resize (ByteString oldBits) = ByteString $ symbolicF oldBits (\v ->  V.unsafeToVector $ zeroA <> takeMin (V.fromVector v)) solve
-      where
-        solve :: forall i m. MonadCircuit i (BaseField c) m => Vector k i -> m (Vector n i)
-        solve bitsV = do
+    resize (ByteString oldBits) = ByteString $ symbolicF oldBits
+        (\v ->  V.unsafeToVector $ zeroA <> takeMin (V.fromVector v))
+        (\bitsV -> do
             let bits = V.fromVector bitsV
             zeros <- replicateM diff $ newAssigned (Haskell.const zero)
             return $ V.unsafeToVector $ zeros <> takeMin bits
+        )
+        where
+            diff :: Haskell.Int
+            diff = Haskell.fromIntegral (getNatural @n) Haskell.- Haskell.fromIntegral (getNatural @k)
 
-        diff :: Haskell.Int
-        diff = Haskell.fromIntegral (getNatural @n) Haskell.- Haskell.fromIntegral (getNatural @k)
+            takeMin :: [a] -> [a]
+            takeMin = Haskell.take (Haskell.min (Haskell.fromIntegral $ getNatural @n) (Haskell.fromIntegral $ getNatural @k))
 
-        takeMin :: [a] -> [a]
-        takeMin = Haskell.take (Haskell.min (Haskell.fromIntegral $ getNatural @n) (Haskell.fromIntegral $ getNatural @k))
-
-        zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
+            zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
 
 instance
   ( Symbolic c
   , KnownNat n
   ) => SymbolicInput (ByteString n c) where
-  isValid (ByteString bits) = Bool $ fromCircuitF bits solve
-    where
-        solve :: MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
-        solve v = do
-            let vs = V.fromVector v
-            ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
-            us <-for ys $ \i -> isZero $ Par1 i
-            helper us
 
-        helper :: MonadCircuit i a m => [Par1 i] -> m (Par1 i)
-        helper xs = case xs of
+    isValid (ByteString bits) = Bool $ fromCircuitF bits $ \v -> do
+        let vs = V.fromVector v
+        ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
+        us <-for ys $ \i -> isZero $ Par1 i
+        case us of
             []       -> Par1 <$> newAssigned (const one)
             (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
 
-
 isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
-isSet (ByteString bits) ix = Bool $ fromCircuitF bits solve
-    where
-        solve :: forall i m . MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
-        solve v = do
-            let vs = V.fromVector v
-            return $ Par1 $ (!! ix) vs
+isSet (ByteString bits) ix = Bool $ fromCircuitF bits $ \v -> do
+    let vs = V.fromVector v
+    return $ Par1 $ (!! ix) vs
 
 isUnset :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
-isUnset (ByteString bits) ix = Bool $ fromCircuitF bits solve
-    where
-        solve :: forall i m . MonadCircuit i (BaseField c) m => Vector n i -> m (Par1 i)
-        solve v = do
-            let vs = V.fromVector v
-                i = (!! ix) vs
-            j <- newAssigned $ \p -> one - p i
-            return $ Par1 j
+isUnset (ByteString bits) ix = Bool $ fromCircuitF bits $ \v -> do
+    let vs = V.fromVector v
+        i = (!! ix) vs
+    j <- newAssigned $ \p -> one - p i
+    return $ Par1 j
 
 --------------------------------------------------------------------------------
 
@@ -335,13 +318,11 @@ bitwiseOperation
     -> ByteString n c
     -> (forall i. i -> i -> ClosedPoly i (BaseField c))
     -> ByteString n c
-bitwiseOperation (ByteString bits1) (ByteString bits2) cons = ByteString $ fromCircuit2F bits1 bits2 solve
-    where
-        solve :: MonadCircuit i (BaseField c) m => Vector n i -> Vector n i -> m (Vector n i)
-        solve lv rv = do
-            let varsLeft = lv
-                varsRight = rv
-            zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+bitwiseOperation (ByteString bits1) (ByteString bits2) cons =
+    ByteString $ fromCircuit2F bits1 bits2 $ \lv rv -> do
+        let varsLeft = lv
+            varsRight = rv
+        zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
   from = ByteString . binaryExpansion

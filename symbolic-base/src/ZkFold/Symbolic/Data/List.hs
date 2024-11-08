@@ -22,8 +22,8 @@ import           ZkFold.Symbolic.MonadCircuit
 
 data List (context :: (Type -> Type) -> Type) x
     = List
-        { lHash    :: (context (Layout x))
-        , lSize    :: (context Par1)
+        { lHash    :: context (Layout x)
+        , lSize    :: context Par1
         , lWitness :: [x]
         -- ^ TODO: As the name suggests, this is only needed in witness cinstruction in uncons.
         -- This list is never used in circuit itlest.
@@ -117,7 +117,7 @@ head xs@List{..} = bool (restore $ \_ -> unsafeHead) (restore $ \_ -> embed $ pu
         --
         unsafeHead :: context (Layout x)
         unsafeHead = fromCircuit3F lHash xRepr lSize $
-            \vHash vRepr (Par1 s) -> zipWithM (\h r -> newConstrained (\p v -> p h + p v * (p s + one)) ($ r)) vHash vRepr
+            \vHash vRepr (Par1 s) -> zipWithM (\h r -> newConstrained (\p v -> p h + p v * (p s + one)) (at r)) vHash vRepr
 
 tail
     :: forall context x

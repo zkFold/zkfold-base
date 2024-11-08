@@ -67,7 +67,7 @@ import           ZkFold.Symbolic.MonadCircuit                        (MonadCircu
 optimize :: ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 optimize = id
 
-desugarRange :: (Arithmetic a, MonadCircuit i a m) => i -> a -> m ()
+desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> a -> m ()
 desugarRange i b
   | b == negate one = return ()
   | otherwise = do
