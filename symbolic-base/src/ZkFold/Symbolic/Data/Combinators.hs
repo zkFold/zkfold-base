@@ -44,8 +44,7 @@ class Resize a b where
 -- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 --
 toBits
-    :: forall v a m
-    .  (MonadCircuit v a m, Arithmetic a)
+    :: (MonadCircuit v a w m, Arithmetic a)
     => [v]
     -> Natural
     -> Natural
@@ -60,10 +59,9 @@ toBits regs hiBits loBits = do
 -- | The inverse of @toBits@.
 --
 fromBits
-    :: forall a
-    .  Natural
+    :: Natural
     -> Natural
-    -> (forall v m. MonadCircuit v a m => [v] -> m [v])
+    -> (forall v w m. MonadCircuit v a w m => [v] -> m [v])
 fromBits hiBits loBits bits = do
     let (bitsHighNew, bitsLowNew) = splitAt (Haskell.fromIntegral hiBits) bits
     let lowVarsNew = chunksOf (Haskell.fromIntegral loBits) bitsLowNew
@@ -169,27 +167,27 @@ minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` max
 
 ---------------------------------------------------------------
 
-expansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
+expansion :: (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
 expansion = expansionW @1
 
-expansionW :: forall r i a m . (KnownNat r, MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
+expansionW :: forall r i a w m . (KnownNat r, MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
 expansionW n k = do
     words <- wordsOf @r n k
     k' <- hornerW @r words
     constraint (\x -> x k - x k')
     return words
 
-bitsOf :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
+bitsOf :: (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
 bitsOf = wordsOf @1
 
-wordsOf :: forall r i a m . (KnownNat r, MonadCircuit i a m, Arithmetic a) => Natural -> i -> m [i]
+wordsOf :: forall r i a w m . (KnownNat r, MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
 -- ^ @wordsOf n k@ creates @n@ r-bit words and sets their witnesses equal to @n@ smaller
 -- words of @k@.
 wordsOf n k = for [0 .. n -! 1] $ \j ->
-    newRanged (fromConstant $ wordSize -! 1) (repr j . ($ k))
+    newRanged (fromConstant $ wordSize -! 1) (repr j (at k))
     where
         wordSize :: Natural
         wordSize = 2 ^ value @r
@@ -201,7 +199,7 @@ wordsOf n k = for [0 .. n -! 1] $ \j ->
               . (`div` fromConstant (wordSize ^ j))
               . toConstant
 
-hornerW :: forall r i a m . (KnownNat r, MonadCircuit i a m) => [i] -> m i
+hornerW :: forall r i a w m . (KnownNat r, MonadCircuit i a w m) => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + (2^r) b1 + ... + 2^rn bn@ using
 -- Horner's scheme.
 hornerW xs = case reverse xs of
@@ -211,18 +209,18 @@ hornerW xs = case reverse xs of
         wordSize :: Natural
         wordSize = 2 ^ (value @r)
 
-horner :: MonadCircuit i a m => [i] -> m i
+horner :: MonadCircuit i a w m => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
 -- Horner's scheme.
 horner = hornerW @1
 
-splitExpansion :: (MonadCircuit i a m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
+splitExpansion :: (MonadCircuit i a w m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
 -- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).
 splitExpansion n1 n2 k = do
-    l <- newRanged (fromConstant @Natural $ 2 ^ n1 -! 1) $ lower . ($ k)
-    h <- newRanged (fromConstant @Natural $ 2 ^ n2 -! 1) $ upper . ($ k)
+    l <- newRanged (fromConstant @Natural $ 2 ^ n1 -! 1) $ lower (at k)
+    h <- newRanged (fromConstant @Natural $ 2 ^ n2 -! 1) $ upper (at k)
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where
@@ -237,11 +235,11 @@ splitExpansion n1 n2 k = do
             . (`div` fromConstant @Natural (2 ^ n1))
             . toConstant
 
-runInvert :: (MonadCircuit i a m, Representable f, Traversable f) => f i -> m (f i, f i)
+runInvert :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i, f i)
 runInvert is = do
-    js <- for is $ \i -> newConstrained (\x j -> x i * x j) (\x -> let xi = x i in one - xi // xi)
-    ks <- for (mzipRep is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv . ($ i))
+    js <- for is $ \i -> newConstrained (\x j -> x i * x j) (one - at i // at i)
+    ks <- for (mzipRep is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv (at i))
     return (js, ks)
 
-isZero :: (MonadCircuit i a m, Representable f, Traversable f) => f i -> m (f i)
+isZero :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i)
 isZero is = Haskell.fst <$> runInvert is

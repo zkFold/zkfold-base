@@ -94,7 +94,7 @@ fromZp = (\(FFA (Interpreter xs) :: FFA p (Interpreter a)) -> xs) . fromConstant
 
 -- | Subtracts @m@ from @i@ if @i@ is not less than @m@
 --
-condSubOF :: forall i a m . (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m (i, i)
+condSubOF :: forall i a w m . (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m (i, i)
 condSubOF m i = do
   z <- newAssigned zero
   bm <- forM (wordExpansion @8 m ++ [0]) $ \x -> if x Haskell.== 0 then pure z else newAssigned (fromConstant x)
@@ -103,13 +103,13 @@ condSubOF m i = do
   res <- newAssigned (($ i) - ($ ovf) * fromConstant m)
   return (res, ovf)
 
-condSub :: (MonadCircuit i a m, Arithmetic a) => Natural -> i -> m i
+condSub :: (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m i
 condSub m x = fst <$> condSubOF m x
 
-smallCut :: forall i a m. (Arithmetic a, MonadCircuit i a m) => Vector Size i -> m (Vector Size i)
+smallCut :: forall i a w m. (Arithmetic a, MonadCircuit i a w m) => Vector Size i -> m (Vector Size i)
 smallCut = zipWithM condSub $ coprimes @a
 
-bigSub :: (Arithmetic a, MonadCircuit i a m) => Natural -> i -> m i
+bigSub :: (Arithmetic a, MonadCircuit i a w m) => Natural -> i -> m i
 bigSub m j = trimPow j >>= trimPow >>= condSub m
   where
     s = Haskell.ceiling (log2 m) :: Natural
@@ -117,16 +117,16 @@ bigSub m j = trimPow j >>= trimPow >>= condSub m
       (l, h) <- splitExpansion s s i
       newAssigned (($ l) + ($ h) * fromConstant ((2 ^ s) -! m))
 
-bigCut :: forall i a m. (Arithmetic a, MonadCircuit i a m) => Vector Size i -> m (Vector Size i)
+bigCut :: forall i a w m. (Arithmetic a, MonadCircuit i a w m) => Vector Size i -> m (Vector Size i)
 bigCut = zipWithM bigSub $ coprimes @a
 
-cast :: forall p i a m. (KnownNat p, Arithmetic a, MonadCircuit i a m) => Vector Size i -> m (Vector Size i)
+cast :: forall p i a w m. (KnownNat p, Arithmetic a, MonadCircuit i a w m) => Vector Size i -> m (Vector Size i)
 cast xs = do
   gs <- zipWithM (\i m -> newAssigned $ ($ i) * fromConstant m) xs (minv @a) >>= bigCut
   zi <- newAssigned (const zero)
   let binary g m = snd <$> iterateM sigma (binstep m) (g, zi)
       binstep m (i, ci) = do
-        (i', j) <- newAssigned (($ i) + ($ i)) >>= condSubOF @i @a @m m
+        (i', j) <- newAssigned (($ i) + ($ i)) >>= condSubOF @i @a @w @m m
         ci' <- newAssigned (($ ci) + ($ ci) + ($ j))
         return (i', ci')
   base <- newAssigned (fromConstant (3 * (2 ^ (sigma -! 2)) :: Natural))
@@ -141,7 +141,7 @@ cast xs = do
     newAssigned (($ dot) + fromConstant (m -! (mprod @a @p `mod` m)) * ($ residue))
         >>= bigSub m
 
-mul :: forall p i a m. (KnownNat p, Arithmetic a, MonadCircuit i a m) => Vector Size i -> Vector Size i -> m (Vector Size i)
+mul :: forall p i a w m. (KnownNat p, Arithmetic a, MonadCircuit i a w m) => Vector Size i -> Vector Size i -> m (Vector Size i)
 mul xs ys = zipWithM (\i j -> newAssigned (\w -> w i * w j)) xs ys >>= bigCut >>= cast @p
 
 natPowM :: Monad m => (a -> a -> m a) -> m a -> Natural -> a -> m a
@@ -151,7 +151,7 @@ natPowM f z n x
   | Haskell.even n    = natPowM f z (n `div` 2) x >>= \y -> f y y
   | Haskell.otherwise = natPowM f z (n -! 1) x >>= f x
 
-oneM :: MonadCircuit i a m => m (Vector Size i)
+oneM :: MonadCircuit i a w m => m (Vector Size i)
 oneM = pure <$> newAssigned (const one)
 
 instance (KnownNat p, Arithmetic a) => ToConstant (FFA p (Interpreter a)) where

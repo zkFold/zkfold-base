@@ -22,12 +22,12 @@ import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Class            (Arithmetic, Symbolic (BaseField, symbolicF), symbolic2F)
+import           ZkFold.Symbolic.Class            (Symbolic (BaseField, symbolicF), symbolic2F)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion)
 import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
-import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned, newRanged, rangeConstraint)
+import           ZkFold.Symbolic.MonadCircuit
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
@@ -104,7 +104,7 @@ bitwiseGE xs ys = Bool $
     (\us vs -> Par1 $ Haskell.bool zero one (toList us Haskell.>= toList vs))
     $ \is js -> Par1 <$> blueprintGE @r is js
 
-blueprintGE :: forall r i a m f . (Arithmetic a, MonadCircuit i a m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m i
+blueprintGE :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m i
 blueprintGE xs ys = do
   (_, hasNegOne) <- circuitDelta @r xs ys
   newAssigned $ \p -> one - p hasNegOne
@@ -120,7 +120,7 @@ bitwiseGT xs ys = Bool $
 
 -- | Compare two sets of r-bit words lexicographically
 --
-circuitDelta :: forall r i a m f . (Arithmetic a, MonadCircuit i a m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m (i, i)
+circuitDelta :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m (i, i)
 circuitDelta l r = do
     z1 <- newAssigned (Haskell.const zero)
     z2 <- newAssigned (Haskell.const zero)
@@ -141,18 +141,18 @@ circuitDelta l r = do
                 -- Because of our laws for @finv@, @q // q@ is 1 if @q@ is not zero, and zero otherwise.
                 -- This is exactly the opposite of what @f1@ should be.
                 f1 <- newRanged one $
-                    \p -> let q = fromConstant $ (toConstant (p y + one) `div` toConstant (p x + one))
-                           in one - q // q
+                    let q = fromConstant (toConstant (at y + one @w) `div` toConstant (at x + one @w))
+                     in one - q // q
 
                 -- f2 is one if and only if y > x and zero otherwise
                 f2 <- newRanged one $
-                    \p -> let q = fromConstant $ (toConstant (p x + one) `div` toConstant (p y + one))
-                           in one - q // q
+                    let q = fromConstant (toConstant (at x + one @w) `div` toConstant (at y + one @w))
+                     in one - q // q
 
                 dxy <- newAssigned (\p -> p x - p y)
 
                 d1  <- newAssigned (\p -> p f1 * p dxy - p f1)
-                d1' <- newAssigned (\p -> (one - p f1) * (negate $ p dxy))
+                d1' <- newAssigned (\p -> (one - p f1) * negate (p dxy))
                 rangeConstraint d1  bound
                 rangeConstraint d1' bound
 
