@@ -690,3 +690,81 @@ instance FromConstant b a => FromConstant b (p -> a) where
 instance Semiring a => Semiring (p -> a)
 
 instance Ring a => Ring (p -> a)
+
+---------------------------------------------------------------------------------
+
+instance (Finite a) => Finite (Maybe a) where 
+    type Order (Maybe a) = Order a
+
+instance (FromConstant Integer a) => FromConstant Integer (Maybe a) where
+    fromConstant = Just . fromConstant 
+
+instance (FromConstant Natural a) => FromConstant Natural (Maybe a) where
+    fromConstant = Just . fromConstant
+
+-- instance FromConstant (Maybe a) (Maybe a)
+instance (AdditiveSemigroup a) => AdditiveSemigroup (Maybe a) where
+    (+) :: Maybe a -> Maybe a -> Maybe a
+    (+) = liftA2 (+)
+
+instance (MultiplicativeSemigroup a) => MultiplicativeSemigroup (Maybe a) where
+    (*) :: Maybe a -> Maybe a -> Maybe a
+    (*) = liftA2 (*) 
+
+instance (FromConstant Natural a, MultiplicativeSemigroup a) => Scale Natural (Maybe a)
+instance (FromConstant Integer a, MultiplicativeSemigroup a) => Scale Integer (Maybe a)
+
+instance (AdditiveMonoid a, AdditiveSemigroup a, MultiplicativeSemigroup a, FromConstant Natural a) => AdditiveMonoid (Maybe a) where
+    zero :: Maybe a
+    zero = Just zero
+
+instance Exponent a Natural => Exponent (Maybe a) Natural where
+    (^) :: Maybe a -> Natural -> Maybe a
+    (^) m n = liftA2 (^) m (Just n)
+
+instance Exponent a Integer => Exponent (Maybe a) Integer where
+    (^) :: Maybe a -> Integer -> Maybe a
+    (^) m n = liftA2 (^) m (Just n)
+
+instance (MultiplicativeMonoid a, Exponent a Natural) => MultiplicativeMonoid (Maybe a) where
+    one :: Maybe a
+    one = Just one
+
+instance (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semiring (Maybe a)
+
+instance (AdditiveMonoid a, Scale Integer a, FromConstant Integer a, MultiplicativeSemigroup a, FromConstant Natural a) => AdditiveGroup (Maybe a) where
+
+    (-) :: Maybe a -> Maybe a -> Maybe a
+    x - y = x + negate y
+
+    negate :: Maybe a -> Maybe a
+    negate x = zero - x
+
+instance (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring (Maybe a)
+
+instance Field a => Field (Maybe a) where
+    (//) :: Maybe a -> Maybe a -> Maybe a
+    x // y = x * finv y
+
+    finv :: Maybe a -> Maybe a
+    finv x = one // x
+
+    rootOfUnity :: Natural -> Maybe (Maybe a)
+    rootOfUnity 0 = Just one
+    rootOfUnity _ = Nothing
+
+
+instance ToConstant a => ToConstant (Maybe a) where
+    type Const (Maybe a) = Natural
+    -- has to be right inverse to @'fromConstant'@.
+    toConstant :: Maybe a -> Const (Maybe a)
+    toConstant = toConstant
+
+instance Scale a a => Scale a (Maybe a) where
+    scale s = fmap (scale s)
+
+instance FromConstant a (Maybe a) where
+    fromConstant = Just
+
+-- instance FromConstant Natural a => FromConstant (Maybe Natural) (Maybe a) where
+--     fromConstant = fmap fromConstant

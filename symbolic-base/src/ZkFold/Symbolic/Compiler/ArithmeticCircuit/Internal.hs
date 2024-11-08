@@ -195,7 +195,12 @@ instance
         SysVar (InVar inV) -> index i inV
         SysVar (NewVar newV) -> w ! newV
         ConstVar cV -> fromConstant cV
-      return (SysVar (NewVar v))
+      return $ (\case
+        Just cV -> ConstVar cV
+        _           -> SysVar (NewVar v)) $
+          witness (\case
+            ConstVar cV -> Just cV
+            _           -> Nothing)
 
     constraint p =
       let
