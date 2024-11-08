@@ -336,6 +336,10 @@ instance (Field c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) wh
 instance (Field c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
     one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
 
+instance (Field c, KnownNat size) => Semiring (PolyVec c size)
+
+instance (Field c, KnownNat size) => Ring (PolyVec c size)
+
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec <$> V.replicateM (fromIntegral $ value @size) arbitrary
 

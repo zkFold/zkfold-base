@@ -53,3 +53,6 @@ instance (KnownNat n, Symbolic c, NFData (c (Vector Size)))
 
 instance (PedersonSetup n c, Scale f c, AdditiveGroup c) => HomomorphicCommit (Vector n f) c where
     hcommit v = sum $ zipWith scale v groupElements
+
+instance (PedersonSetup 100 c, Scale f c, AdditiveGroup c) => HomomorphicCommit [f] c where
+    hcommit v = sum $ zipWith scale v (toList $ groupElements @100)
