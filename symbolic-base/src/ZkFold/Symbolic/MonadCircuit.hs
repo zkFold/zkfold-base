@@ -6,7 +6,7 @@ module ZkFold.Symbolic.MonadCircuit where
 import           Control.Applicative             (Applicative)
 import           Control.Monad                   (Monad (return))
 import           Data.Eq                         (Eq)
-import           Data.Function                   (id)
+import           Data.Function                   ((.))
 import           Data.Functor                    (Functor)
 import           Data.Functor.Identity           (Identity (..))
 import           Data.Ord                        (Ord)
@@ -20,15 +20,15 @@ import           ZkFold.Base.Algebra.Basic.Class
 type WitnessField n a = ( FiniteField a, ToConstant a, Const a ~ n
                         , FromConstant n a, SemiEuclidean n)
 
--- | A type of witness builders. @var@ is a type of variables, @a@ is a base field.
+-- | A type of witness builders. @i@ is a type of variables, @a@ is a base field.
 --
--- A function is a witness builder if, given an arbitrary field of witnesses @x@
--- over @a@ and a function mapping known variables to their witnesses,
--- it computes the new witness in @x@.
---
--- NOTE: the property above is correct by construction for each function of a
--- suitable type, you don't have to check it yourself.
-type Witness var a = forall x n . (Algebra a x, WitnessField n x) => (var -> x) -> x
+-- Witness builders should support all the operations of witnesses,
+-- and in addition there should be a corresponding builder for each variable.
+class ( FromConstant a w, Scale a w, FiniteField w
+      , ToConstant w, FromConstant (Const w) w, SemiEuclidean (Const w)
+      ) => Witness i a w | w -> i, w -> a where
+  -- | @at x@ is a witness builder whose value is equal to the value of @x@.
+  at :: i -> w
 
 -- | A type of polynomial expressions.
 -- @var@ is a type of variables, @a@ is a base field.
@@ -54,7 +54,7 @@ type ClosedPoly var a = forall x . Algebra a x => (var -> x) -> x
 type NewConstraint var a = forall x . Algebra a x => (var -> x) -> var -> x
 
 -- | A monadic DSL for constructing arithmetic circuits.
--- @var@ is a type of variables, @a@ is a base field
+-- @var@ is a type of variables, @a@ is a base field, @w@ is a type of witnesses
 -- and @m@ is a monad for constructing the circuit.
 --
 -- DSL provides the following guarantees:
@@ -69,12 +69,12 @@ type NewConstraint var a = forall x . Algebra a x => (var -> x) -> var -> x
 -- * That provided witnesses satisfy the provided constraints. To check this,
 --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
 -- * That introduced constraints are supported by the zk-SNARK utilized for later proving.
-class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a where
+class (Monad m, FromConstant a var, Witness var a w) => MonadCircuit var a w m | m -> var, m -> a, m -> w where
   -- | Creates new variable from witness.
   --
   -- NOTE: this does not add any constraints to the system,
   -- use 'rangeConstraint' or 'constraint' to add them.
-  unconstrained :: Witness var a -> m var
+  unconstrained :: w -> m var
 
   -- | Adds new polynomial constraint to the system.
   -- E.g., @'constraint' (\\x -> x i)@ forces variable @var@ to be zero.
@@ -99,14 +99,14 @@ class (Monad m, FromConstant a var) => MonadCircuit var a m | m -> var, m -> a w
   -- NOTE: is is not checked (yet) whether the corresponding constraint is in
   -- appropriate form for zkSNARK in use.
   newAssigned :: ClosedPoly var a -> m var
-  newAssigned p = newConstrained (\x var -> p x - x var) p
+  newAssigned p = newConstrained (\x var -> p x - x var) (p at)
 
 -- | Creates new variable from witness constrained with an inclusive upper bound.
 -- E.g., @'newRanged' b (\\x -> x var - one)@ creates new variable whose value
 -- is equal to @x var - one@ and which is expected to be in range @[0..b]@.
 --
 -- NOTE: this adds a range constraint to the system.
-newRanged :: MonadCircuit var a m => a -> Witness var a -> m var
+newRanged :: MonadCircuit var a w m => a -> w -> m var
 newRanged upperBound witness = do
   v <- unconstrained witness
   rangeConstraint v upperBound
@@ -121,7 +121,7 @@ newRanged upperBound witness = do
 --
 -- NOTE: it is not checked (yet) whether provided constraint is in
 -- appropriate form for zkSNARK in use.
-newConstrained :: MonadCircuit var a m => NewConstraint var a -> Witness var a -> m var
+newConstrained :: MonadCircuit var a w m => NewConstraint var a -> w -> m var
 newConstrained poly witness = do
   v <- unconstrained witness
   constraint (`poly` v)
@@ -136,7 +136,23 @@ type Arithmetic a = (WitnessField Natural a, Eq a, Ord a)
 newtype Witnesses n a x = Witnesses { runWitnesses :: x }
   deriving (Functor, Applicative, Monad) via Identity
 
-instance WitnessField n a => MonadCircuit a a (Witnesses n a) where
-  unconstrained w = return (w id)
+newtype WitnessOf n a = WitnessOf { witnessOf :: a }
+  deriving newtype ( AdditiveSemigroup, AdditiveMonoid, AdditiveGroup, MultiplicativeSemigroup, MultiplicativeMonoid, Field)
+
+deriving newtype instance FromConstant c a => FromConstant c (WitnessOf n a)
+instance {-# OVERLAPPING #-} FromConstant (WitnessOf n a) (WitnessOf n a)
+deriving newtype instance (ToConstant a, Const a ~ n) => ToConstant (WitnessOf n a)
+deriving newtype instance Finite a => Finite (WitnessOf n a)
+deriving newtype instance Scale c a => Scale c (WitnessOf n a)
+instance {-# OVERLAPPING #-} MultiplicativeSemigroup a => Scale (WitnessOf n a) (WitnessOf n a)
+instance Exponent a p => Exponent (WitnessOf n a) p where WitnessOf x ^ p = WitnessOf (x ^ p)
+deriving newtype instance Semiring a => Semiring (WitnessOf n a)
+deriving newtype instance Ring a => Ring (WitnessOf n a)
+
+instance WitnessField n a => Witness a a (WitnessOf n a) where
+  at = WitnessOf
+
+instance WitnessField n a => MonadCircuit a a (WitnessOf n a) (Witnesses n a) where
+  unconstrained = return . witnessOf
   constraint _ = return ()
   rangeConstraint _ _ = return ()

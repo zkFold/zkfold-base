@@ -87,7 +87,7 @@ arbitrary' ac iter = do
 createRangeConstraint :: Symbolic c => FieldElement c -> BaseField c -> FieldElement c
 createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par1 v) ->  Par1 <$> solve v a)
   where
-    solve :: MonadCircuit var a m => var -> a -> m var
+    solve :: MonadCircuit var a w m => var -> a -> m var
     solve v b = do
       v' <- newAssigned (Haskell.const zero)
       rangeConstraint v' b

@@ -26,7 +26,7 @@ import           ZkFold.Symbolic.MonadCircuit
 --
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
-type CircuitFun f g a = forall i m. MonadCircuit i a m => f i -> m (g i)
+type CircuitFun f g a = forall i w m. MonadCircuit i a w m => f i -> m (g i)
 
 -- | A Symbolic DSL for performant pure computations with arithmetic circuits.
 -- @c@ is a generic context in which computations are performed.
@@ -59,37 +59,37 @@ embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
 
 symbolic2F ::
     (Symbolic c, BaseField c ~ a) => c f -> c g -> (f a -> g a -> h a) ->
-    (forall i m. MonadCircuit i a m => f i -> g i -> m (h i)) -> c h
+    (forall i w m. MonadCircuit i a w m => f i -> g i -> m (h i)) -> c h
 -- | Runs the binary function from @f@ and @g@ into @h@ in a generic context @c@.
 symbolic2F x y f m = symbolicF (hpair x y) (uncurryP f) (uncurryP m)
 
 fromCircuit2F ::
     Symbolic c => c f -> c g ->
-    (forall i m. MonadCircuit i (BaseField c) m => f i -> g i -> m (h i)) -> c h
+    (forall i w m. MonadCircuit i (BaseField c) w m => f i -> g i -> m (h i)) -> c h
 -- | Runs the binary @'CircuitFun'@ in a generic context.
 fromCircuit2F x y m = fromCircuitF (hpair x y) (uncurryP m)
 
 symbolic3F ::
     (Symbolic c, BaseField c ~ a) => c f -> c g -> c h -> (f a -> g a -> h a -> k a) ->
-    (forall i m. MonadCircuit i a m => f i -> g i -> h i -> m (k i)) -> c k
+    (forall i w m. MonadCircuit i a w m => f i -> g i -> h i -> m (k i)) -> c k
 -- | Runs the ternary function from @f@, @g@ and @h@ into @k@ in a context @c@.
 symbolic3F x y z f m = symbolic2F (hpair x y) z (uncurryP f) (uncurryP m)
 
 fromCircuit3F ::
     Symbolic c => c f -> c g -> c h ->
-    (forall i m. MonadCircuit i (BaseField c) m => f i -> g i -> h i -> m (k i)) -> c k
+    (forall i w m. MonadCircuit i (BaseField c) w m => f i -> g i -> h i -> m (k i)) -> c k
 -- | Runs the ternary @'CircuitFun'@ in a generic context.
 fromCircuit3F x y z m = fromCircuit2F (hpair x y) z (uncurryP m)
 
 symbolicVF ::
     (Symbolic c, BaseField c ~ a, Foldable f, Functor f) =>
     f (c g) -> (f (g a) -> h a) ->
-    (forall i m. MonadCircuit i a m => f (g i) -> m (h i)) -> c h
+    (forall i w m. MonadCircuit i a w m => f (g i) -> m (h i)) -> c h
 -- | Given a generic context @c@, runs the function from @f@ many @c g@'s into @c h@.
 symbolicVF xs f m = symbolicF (pack xs) (f . unComp1) (m . unComp1)
 
 fromCircuitVF ::
     (Symbolic c, Foldable f, Functor f) => f (c g) ->
-    (forall i m. MonadCircuit i (BaseField c) m => f (g i) -> m (h i)) -> c h
+    (forall i w m. MonadCircuit i (BaseField c) w m => f (g i) -> m (h i)) -> c h
 -- | Given a generic context @c@, runs the @'CircuitFun'@ from @f@ many @c g@'s into @c h@.
 fromCircuitVF xs m = fromCircuitF (pack xs) (m . unComp1)
