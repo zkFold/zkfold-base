@@ -37,6 +37,7 @@ import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
                                                                       take)
+import qualified Data.Map.Monoidal                                   as M
 import qualified Data.Set                                            as S
 import           Data.Void                                           (absurd)
 import           GHC.Generics                                        (U1 (..))
@@ -57,7 +58,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
-import qualified Data.Map.Monoidal as M 
 
 --------------------------------- High-level functions --------------------------------
 

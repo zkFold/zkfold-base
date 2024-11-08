@@ -9,6 +9,7 @@ import           Data.Bool                                           (bool)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
 import           Data.Map                                            (elems, keys)
+import qualified Data.Map.Monoidal                                   as M
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Set                                            as S
 import           GHC.IsList                                          (IsList (..))
@@ -29,7 +30,6 @@ import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
 import           ZkFold.Prelude                                      (length, replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import qualified Data.Map.Monoidal as M 
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i n l a = PlonkupRelation
