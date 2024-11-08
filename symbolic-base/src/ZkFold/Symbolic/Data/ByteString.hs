@@ -168,10 +168,7 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
     false = fromConstant (0 :: Natural)
     true = not false
 
-    not (ByteString bits) = ByteString $ fromCircuitF bits $ \xv -> do
-        let xs = V.fromVector xv
-        ys <- for xs $ \i -> newAssigned (\p -> one - p i)
-        return $ V.unsafeToVector ys
+    not (ByteString bits) = ByteString $ fromCircuitF bits $ mapM (\i -> newAssigned (\p -> one - p i))
 
     l || r = bitwiseOperation l r cons
         where
