@@ -69,6 +69,13 @@ ivcVerify a (IVCInstanceProof {..}) =
         ( Acc.verifier @pi @f @c @m @a ivcInstance ivcCommits accX accX' ivcAccProof
         , decider @pi @f @c @m @a a ivcAcc')
 
+ivcVerify':: forall pi f c m a .
+    ( AccumulatorScheme pi f c m a
+    ) => a -> IVCInstanceProof pi f c m -> ((f, pi, f, c, c), (c, c))
+ivcVerify' a ip =
+    let ((x1, x2, x3, x4, x5), (x6, x7)) = ivcVerify @pi @f @c @m @a a ip
+    in ((x1, x2, P.head x3, P.head x4, x5), (P.head x6, x7))
+
 -- toFS
 --     :: forall pi f c m
 --     .  HomomorphicCommit f m c
