@@ -210,6 +210,7 @@ library
       deepseq                          <= 1.5.0.0,
       distributive                               ,
       lens                                       ,
+      monoidal-containers                        ,
       mtl                                   < 2.4,
       optics                                < 0.5,
       pretty-simple                         < 4.2,
