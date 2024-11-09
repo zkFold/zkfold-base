@@ -18,12 +18,13 @@ import           Data.Functor                     ((<$>))
 import           Data.Functor.Rep                 (Representable)
 import           Data.List                        (map, null, (++))
 import           Data.Maybe                       (Maybe (..))
+import           Data.Ord                         ((<))
 import           Data.Proxy                       (Proxy (..))
 import           Data.Traversable                 (Traversable, traverse)
 import           Data.Typeable                    (Typeable, cast)
 import           Prelude                          (error, fromIntegral)
 
-import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..))
+import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), (+))
 import           ZkFold.Prelude                   ((!!))
 import           ZkFold.Symbolic.Class            (Symbolic)
 import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
@@ -120,7 +121,7 @@ impl _   (TConstant _) (_:_)           = Nothing -- constants are not functions!
 impl env (TBuiltin f)  args            = applyBuiltin env f args -- inspect builtin
 impl _   (TLam _)      []              = Nothing -- not enough arguments supplied!
 impl _   (TLam _)      (ACase _:_)     = Nothing -- lambda cannot be pattern-matched!
-impl env (TLam f)      (AThunk t:args) = impl (t:env) f args -- prepend an arg to env for eval of a body
+impl env (TLam f)      (AThunk t:args) = beta t env f args -- eval body
 impl env (TApp f x)    args            = impl env f (aTerm x : args) -- prepend new arg for eval of a function
 impl env (TDelay t)    args            = impl env t args -- we skip delays. Maybe wrong, but simpler
 impl env (TForce t)    args            = impl env t args -- we skip forcings. Maybe wrong, but simpler.
@@ -135,6 +136,26 @@ applyVar :: Sym c => Env c -> DeBruijnIndex -> [Arg c] -> SomeValue c
 applyVar ctx i args = case ctx !! i of
   Left t  -> impl ctx t args -- evaluate the term
   Right v -> if null args then v else Nothing -- data are not functions!
+
+-- | Prepares context and arguments to enter new scope, and evaluates the body.
+-- Classic stuff when working with de Bruijn indices.
+beta :: Sym c => Thunk c -> Env c -> Term -> [Arg c] -> SomeValue c
+beta e env t args = impl (e : map shiftT env) t (map shiftA args)
+  where
+    shiftA (ACase ts)     = ACase (map (`shift` 0) ts)
+    shiftA (AThunk thunk) = AThunk (shiftT thunk)
+    shiftT (Left term)   = Left (shift term 0)
+    shiftT (Right value) = Right value
+    shift (TVariable i) b        = TVariable (i + if i < b then 0 else 1)
+    shift (TConstant c) _        = TConstant c
+    shift (TBuiltin f) _         = TBuiltin f
+    shift (TLam body) b          = TLam $ shift body (b + 1)
+    shift (TApp fun arg) b       = TApp (shift fun b) (shift arg b)
+    shift (TDelay term) b        = TDelay (shift term b)
+    shift (TForce term) b        = TForce (shift term b)
+    shift (TConstr tag fields) b = TConstr tag $ map (`shift` b) fields
+    shift (TCase scr brs) b      = TCase (shift scr b) $ map (`shift` b) brs
+    shift TError _               = TError
 
 -- | Inspect the builtin.
 applyBuiltin :: Sym c => Env c -> BuiltinFunction s t -> [Arg c] -> SomeValue c
