@@ -5,7 +5,9 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE KindSignatures         #-}
+{-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeApplications       #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
 
@@ -235,11 +237,10 @@ instance
 applyPoly :: Sym c => Env c -> BuiltinPolyFunction s t -> [Arg c] -> SomeValue c
 applyPoly ctx IfThenElse (ct:tt:et:args) = do
   MaybeValue c0 <- evalArg ctx ct []
-  MaybeValue t <- evalArg ctx tt args
-  MaybeValue e0 <- evalArg ctx et args
-  c :: Symbolic.Maybe c (Bool c) <- cast c0
-  e <- cast e0
-  return $ MaybeValue (Symbolic.maybe Symbolic.nothing (bool e t) c)
+  withArms (evalArg ctx tt args) (evalArg ctx et args) $ \t e0 -> do
+    c :: Symbolic.Maybe c (Bool c) <- cast c0
+    e <- cast e0
+    return $ MaybeValue (Symbolic.maybe Symbolic.nothing (bool e t) c)
 applyPoly ctx ChooseUnit (_:t:args) = evalArg ctx t args
 applyPoly ctx Trace (_:t:args) = evalArg ctx t args
 applyPoly ctx FstPair [arg] = do
@@ -253,6 +254,17 @@ applyPoly ctx SndPair [arg] = do
 applyPoly _ (BPFList _) _ = error "FIXME: UPLC List support"
 applyPoly _ ChooseData _ = error "FIXME: UPLC Data support"
 applyPoly _ _ _ = Nothing
+
+-- | Correct error propagation for if-then-else
+withArms ::
+  Sym c => SomeValue c -> SomeValue c ->
+  ( forall s t u v. (IsData s u c, IsData t v c) =>
+    Symbolic.Maybe c u -> Symbolic.Maybe c v -> Maybe r
+  ) -> Maybe r
+withArms (Just (MaybeValue t)) (Just (MaybeValue e0)) f = f t e0
+withArms (Just (MaybeValue @_ @_ @u t)) Nothing f       = f t (Symbolic.nothing @u)
+withArms Nothing (Just (MaybeValue @_ @_ @v e0)) f      = f (Symbolic.nothing @v) e0
+withArms Nothing Nothing _                              = Nothing
 
 -- | Helper function.
 symMaybe :: (Sym c, IsData d t c) => Symbolic.Maybe c u -> t -> Symbolic.Maybe c t
