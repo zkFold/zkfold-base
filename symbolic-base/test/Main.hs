@@ -21,7 +21,6 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
-    specProtostar
     -- Base
     specBinary
 
@@ -47,7 +46,7 @@ main = do
     -- Protocols
     specPlonkup
     specNonInteractiveProof
---    specProtostar
+    specProtostar
 
     -- Cryptography
     specSHA2Natural

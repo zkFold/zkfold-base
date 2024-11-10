@@ -55,6 +55,7 @@ protostar func =
         stepFunction x u y = fromList $ toList (func x u) - toList y
 
         -- The circuit for one step of the recursion with full input
+        -- TODO: make the output `U1` by forcing the output to be a vector of zeros
         stepCircuit' :: ArithmeticCircuit a (Vector n :*: Vector k :*: Vector n) (Vector n)
         stepCircuit' =
             hlmap (\(x :*: u :*: y) -> Comp1 (Par1 <$> x) :*: Comp1 (Par1 <$> u) :*: Comp1 (Par1 <$> y) :*: U1)
