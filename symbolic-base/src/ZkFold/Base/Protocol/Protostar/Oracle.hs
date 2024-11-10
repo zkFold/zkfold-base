@@ -10,7 +10,7 @@ import           Data.Proxy                                     (Proxy (..))
 import qualified Data.Vector                                    as V
 import           GHC.Generics
 import           GHC.TypeLits
-import           Prelude                                        (($), (.), (<$>), foldl)
+import           Prelude                                        (foldl, ($), (.), (<$>))
 import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class

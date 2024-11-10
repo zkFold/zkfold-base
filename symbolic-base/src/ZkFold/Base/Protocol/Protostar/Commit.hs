@@ -2,8 +2,11 @@
 
 module ZkFold.Base.Protocol.Protostar.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
-import           GHC.IsList                                  (IsList(..))
-import           Prelude                                     hiding (Num (..), take, sum, zipWith)
+import           Control.DeepSeq                             (NFData)
+import           Data.Void                                   (Void)
+import           Data.Zip                                    (zipWith)
+import           GHC.IsList                                  (IsList (..))
+import           Prelude                                     hiding (Num (..), sum, take, zipWith)
 import           System.Random                               (Random (..), mkStdGen)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -12,15 +15,12 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
-import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Prelude                              (take)
+import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Data.Ed25519                ()
-import ZkFold.Symbolic.Class (Symbolic)
-import Control.DeepSeq (NFData)
-import ZkFold.Symbolic.Data.FFA (Size)
-import Data.Void (Void)
-import Data.Zip (zipWith)
+import           ZkFold.Symbolic.Data.FFA                    (Size)
 
 -- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
 --
