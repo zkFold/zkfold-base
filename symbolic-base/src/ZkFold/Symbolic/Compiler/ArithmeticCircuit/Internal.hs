@@ -35,13 +35,15 @@ import           Data.Binary                                           (Binary)
 import           Data.ByteString                                       (ByteString)
 import           Data.Foldable                                         (fold, toList)
 import           Data.Functor.Rep
-import           Data.Map.Strict                                       hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                        take, toList)
-import           Data.Maybe                                            (fromMaybe)
+import           Data.Map.Monoidal                                     (MonoidalMap, insertWith)
+import           Data.Map.Strict                                       hiding (drop, foldl, foldr, insertWith, map,
+                                                                        null, splitAt, take, toList)
+import           Data.Maybe                                            (catMaybes, fromMaybe)
 import           Data.Semialign                                        (unzipDefault)
 import           Data.Semigroup.Generic                                (GenericSemigroupMonoid (..))
+import qualified Data.Set                                              as S
 import           GHC.Generics                                          (Generic, Par1 (..), U1 (..), (:*:) (..))
-import           Optics
+import           Optics                                                hiding (at)
 import           Prelude                                               hiding (Num (..), drop, length, product, splitAt,
                                                                         sum, take, (!!), (^))
 
@@ -55,6 +57,7 @@ import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | The type that represents a constraint in the arithmetic circuit.
@@ -65,7 +68,7 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acRange   :: Map (SysVar i) a,
+        acRange   :: MonoidalMap a (S.Set (SysVar i)),
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (i a -> Map ByteString a -> a),
         -- ^ The witness generation functions
@@ -74,10 +77,10 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     } deriving (Generic)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance (Ord (Rep i), o ~ U1) => Semigroup (ArithmeticCircuit a i o)
+  instance (Ord a, Ord (Rep i), o ~ U1) => Semigroup (ArithmeticCircuit a i o)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance (Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a i o)
+  instance (Ord a, Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a i o)
 
 instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
     => NFData (ArithmeticCircuit a i o)
@@ -151,7 +154,7 @@ hlmap ::
   (forall x . j x -> i x) -> ArithmeticCircuit a i o -> ArithmeticCircuit a j o
 hlmap f (ArithmeticCircuit s r w o) = ArithmeticCircuit
   { acSystem = mapVars (imapSysVar f) <$> s
-  , acRange = mapKeys (imapSysVar f) r
+  , acRange = S.map (imapSysVar f) <$> r
   , acWitness = (\g j p -> g (f j) p) <$> w
   , acOutput = imapVar f <$> o
   }
@@ -167,11 +170,11 @@ behead = liftA2 (,) (set #acOutput U1) acOutput
 instance HFunctor (ArithmeticCircuit a i) where
     hmap = over #acOutput
 
-instance Ord (Rep i) => HApplicative (ArithmeticCircuit a i) where
+instance (Ord (Rep i), Ord a) => HApplicative (ArithmeticCircuit a i) where
     hpure = crown mempty
     hliftA2 f (behead -> (c, o)) (behead -> (d, p)) = crown (c <> d) (f o p)
 
-instance Ord (Rep i) => Package (ArithmeticCircuit a i) where
+instance (Ord (Rep i), Ord a) => Package (ArithmeticCircuit a i) where
     unpackWith f (behead -> (c, o)) = crown c <$> f o
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
@@ -185,12 +188,12 @@ instance
 
 instance
   ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
-  , o ~ U1) => MonadCircuit (Var a i) a (State (ArithmeticCircuit a i o)) where
+  , o ~ U1) => MonadCircuit (Var a i) a (WitnessF (Var a i) a) (State (ArithmeticCircuit a i o)) where
 
-    unconstrained witness = do
-      let v = toVar @a witness
+    unconstrained wf = do
+      let v = toVar @a wf
       -- TODO: forbid reassignment of variables
-      zoom #acWitness . modify $ insert v $ \i w -> witness $ \case
+      zoom #acWitness . modify $ insert v $ \i w -> witnessF wf $ \case
         SysVar (InVar inV) -> index i inV
         SysVar (NewVar newV) -> w ! newV
         ConstVar cV -> fromConstant cV
@@ -202,10 +205,10 @@ instance
           SysVar sysV -> var sysV
           ConstVar cV -> fromConstant cV
       in
-        zoom #acSystem . modify $ insert (toVar @a p) (p evalConstVar)
+        zoom #acSystem . modify $ insert (toVar (p at)) (p evalConstVar)
 
     rangeConstraint (SysVar v) upperBound =
-      zoom #acRange . modify $ insert v upperBound
+      zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
     -- FIXME range-constrain other variable types
     rangeConstraint _ _ = error "Cannot range-constrain this variable"
 
@@ -232,8 +235,8 @@ instance
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
 toVar ::
   forall a i. (Finite a, Binary a, Binary (Rep i)) =>
-  Witness (Var a i) a -> ByteString
-toVar witness = runHash @(Just (Order a)) $ witness $ \case
+  WitnessF (Var a i) a -> ByteString
+toVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   SysVar (InVar inV) -> merkleHash inV
   SysVar (NewVar newV) -> M newV
   ConstVar cV -> fromConstant cV
@@ -267,7 +270,7 @@ apply ::
   i a -> ArithmeticCircuit a (i :*: j) U1 -> ArithmeticCircuit a j U1
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
-  , acRange = mapKeys' (acRange ac)
+  , acRange = S.fromList . catMaybes . toList . filterSet <$> acRange ac
   , acWitness = fmap witF (acWitness ac)
   , acOutput = U1
   }
@@ -277,12 +280,12 @@ apply xs ac = ac
     varF (NewVar v)        = var (NewVar v)
     witF f j = f (xs :*: j)
 
-    mapKeys' :: Ord (SysVar j) =>  Map (SysVar (i :*: j)) a ->  Map (SysVar j) a
-    mapKeys' m = fromList $
-                  foldrWithKey (\k x ms -> case k of
-                    NewVar v        -> (NewVar v, x) : ms
-                    InVar (Right v) -> (InVar v, x) : ms
-                    _               -> ms) [] m
+    filterSet :: Ord (Rep j) => S.Set (SysVar (i :*: j)) ->  S.Set (Maybe (SysVar j))
+    filterSet = S.map (\case
+                    NewVar v        -> Just (NewVar v)
+                    InVar (Right v) -> Just (InVar v)
+                    _               -> Nothing)
+
 
 -- TODO: Add proper symbolic application functions
 

@@ -16,7 +16,6 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Data.Par1                       ()
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler

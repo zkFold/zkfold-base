@@ -32,7 +32,7 @@ verifySignature ::
     , SymbolicData (TxOut context)
     , KnownNat (NumberOfRegisters (BaseField context) 256 'Auto)
     ) => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
-verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (extend pub :: ByteString 256 context))
+verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (resize pub :: ByteString 256 context))
     where
         base :: UInt 256 Auto context
         base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)

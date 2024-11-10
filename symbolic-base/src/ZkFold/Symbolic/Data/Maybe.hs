@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Maybe (
-    Maybe, maybe, just, nothing, fromMaybe, isNothing, isJust, find
+    Maybe, maybe, just, nothing, fromMaybe, fromJust, isNothing, isJust, find
 ) where
 
 import           Data.Function                    ((.))
@@ -25,7 +25,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
 
-data Maybe context x = Maybe (Bool context) x
+data Maybe context x = Maybe { isJust :: Bool context, fromJust :: x }
   deriving stock
     ( Haskell.Functor
     , Haskell.Foldable
@@ -62,9 +62,6 @@ fromMaybe a (Maybe (Bool h) t) = restore $ \i ->
 
 isNothing :: Symbolic c => Maybe c x -> Bool c
 isNothing (Maybe h _) = not h
-
-isJust :: Maybe c x -> Bool c
-isJust (Maybe h _) = h
 
 instance
     ( HApplicative c

@@ -37,6 +37,8 @@ import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
                                                                       take)
+import qualified Data.Map.Monoidal                                   as M
+import qualified Data.Set                                            as S
 import           Data.Void                                           (absurd)
 import           GHC.Generics                                        (U1 (..))
 import           Numeric.Natural                                     (Natural)
@@ -65,7 +67,7 @@ import           ZkFold.Symbolic.MonadCircuit                        (MonadCircu
 optimize :: ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 optimize = id
 
-desugarRange :: (Arithmetic a, MonadCircuit i a m) => i -> a -> m ()
+desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> a -> m ()
 desugarRange i b
   | b == negate one = return ()
   | otherwise = do
@@ -86,7 +88,7 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar k, v) | (k,v) <- toList (acRange c)]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
 
 ----------------------------------- Information -----------------------------------
@@ -101,7 +103,7 @@ acSizeM = length . acWitness
 
 -- | Calculates the number of range lookups in the system.
 acSizeR :: ArithmeticCircuit a i o -> Natural
-acSizeR = length . acRange
+acSizeR = sum . map length . M.elems . acRange
 
 acValue :: Functor o => ArithmeticCircuit a U1 o -> o a
 acValue r = eval r U1
