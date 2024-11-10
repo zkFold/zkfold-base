@@ -27,6 +27,8 @@ import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
+-- TODO: define the initial accumulator
+--
 class AccumulatorScheme pi f c m a where
   prover   :: a
            -> Accumulator pi f c m        -- accumulator
