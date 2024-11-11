@@ -198,23 +198,25 @@ instance
         ConstVar cV -> fromConstant cV
       return $ (\case
         Just cV -> ConstVar cV
-        _           -> SysVar (NewVar v)) $
-          witness (\case
+        _       -> SysVar (NewVar v)) $
+          witnessF wf $ \case
             ConstVar cV -> Just cV
-            _           -> Nothing)
+            _           -> Nothing
 
     constraint p =
       let
         evalConstVar = \case
           SysVar sysV -> var sysV
-          ConstVar cV -> fromConstant cV
+          ConstVar cV -> if cV == zero 
+                          then fromConstant cV
+                          else error "constant not equal zero"
       in
         zoom #acSystem . modify $ insert (toVar (p at)) (p evalConstVar)
 
     rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
     -- FIXME range-constrain other variable types
-    rangeConstraint _ _ = error "Cannot range-constrain this variable"
+    rangeConstraint _ _ = return () -- error "Cannot range-constrain this variable"
 
 -- | Generates new variable index given a witness for it.
 --
