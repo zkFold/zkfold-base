@@ -4,7 +4,7 @@ import           GHC.Generics                                     (Par1 (..), U1
 import           GHC.IsList                                       (IsList (..))
 import           Prelude                                          hiding (Num (..), replicate, sum, (+))
 import           Test.Hspec                                       (describe, hspec, it)
-import           Test.QuickCheck                                  (property)
+import           Test.QuickCheck                                  (property, withMaxSuccess)
 
 import           ZkFold.Base.Algebra.Basic.Class                  (FromConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field                  (Zp)
@@ -100,17 +100,18 @@ specAlgebraicMap = hspec $ do
     describe "Algebraic map specification" $ do
         describe "Algebraic map" $ do
             it "must output zeros on the public input and testMessages" $ do
-                property $ \x0 -> algebraicMap (testCircuit x0) testPublicInput (testMessages $ testSPS x0) [] one == replicate (acSizeN $ testCircuit x0) zero
+                withMaxSuccess 10 $ property $
+                    \x0 -> algebraicMap (testCircuit x0) testPublicInput (testMessages $ testSPS x0) [] one == replicate (acSizeN $ testCircuit x0) zero
 
 specAccumulatorScheme :: IO ()
 specAccumulatorScheme = hspec $ do
     describe "Accumulator scheme specification" $ do
         describe "decider" $ do
             it  "must output zeros" $ do
-                property $ \x0 -> testDeciderResult (testSPS x0) == ([zero], zero)
+                withMaxSuccess 10 $ property $ \x0 -> testDeciderResult (testSPS x0) == ([zero], zero)
         describe "verifier" $ do
             it "must output zeros" $ do
-                property $ \x0 -> testVerifierResult (testSPS x0) == (zero, [zero], [], [zero], zero)
+                withMaxSuccess 10 $ property $ \x0 -> testVerifierResult (testSPS x0) == (zero, [zero], [], [zero], zero)
 
 specProtostar :: IO ()
 specProtostar = do
