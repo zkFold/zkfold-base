@@ -36,7 +36,7 @@ deriving instance (Haskell.Eq (SingleAsset context)) => Haskell.Eq (Liability co
 deriving instance Symbolic context => SymbolicData (Liability context)
 
 -- TODO: derive this automatically
-instance 
+instance
     ( Symbolic context
     , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
     ) => SymbolicInput (Liability context) where
@@ -45,14 +45,12 @@ instance
 data Output tokens datum context = Output {
         txoAddress   :: Address context,
         txoTokens    :: Value tokens context,
-        txoLiability :: Liability context,
         txoDatumHash :: DatumHash context
     }
 
 deriving instance
     ( Haskell.Eq (Address context)
     , Haskell.Eq (Value tokens context)
-    , Haskell.Eq (Liability context)
     , Haskell.Eq (DatumHash context)
     ) => Haskell.Eq (Output tokens datum context)
 
@@ -64,7 +62,7 @@ instance
     , KnownNat tokens
     , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
     ) => SymbolicInput (Output tokens datum context) where
-    isValid (Output a t l d) = isValid (a, (t, l, d))
+    isValid (Output a t d) = isValid (a, t,  d)
 
 deriving via (Structural (Output tokens datum context))
          instance
