@@ -37,6 +37,7 @@ instance
     , Symbolic ctx
     , FromConstant a (BaseField ctx)
     , Scale a (BaseField ctx)
+    , KnownNat n
     ) => SPS.SpecialSoundProtocol (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) where
 
     type Witness (FieldElement ctx) (ArithmeticCircuit a (Vector n) o) = (Vector n a, Map ByteString a)

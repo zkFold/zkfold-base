@@ -47,6 +47,9 @@ class (HApplicative c, Package c, Arithmetic (BaseField c)) => Symbolic c where
     -- | Type of witnesses usable inside circuit construction
     type WitnessField c :: Type
 
+    -- | Computes witnesses (exact value may depend on the input to context).
+    witnessF :: Functor f => c f -> f (WitnessField c)
+
     -- | To perform computations in a generic context @c@ -- that is, to form a
     -- mapping between @c f@ and @c g@ for given @f@ and @g@ -- you need to
     -- provide an algorithm for turning @f@ into @g@ inside a circuit.

@@ -174,6 +174,7 @@ iterate f i0 n = iteration n ck f ac i0_arith i0 initialAccumulator (Acc.KeyScal
 instanceProof
     :: forall ctx n comm a
     .  Symbolic ctx
+    => KnownNat n
     => Arithmetic a
     => Scale a (BaseField ctx)
     => FromConstant a (BaseField ctx)
