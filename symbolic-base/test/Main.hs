@@ -21,7 +21,6 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
-{--
     -- Base
     specBinary
 
@@ -52,7 +51,6 @@ main = do
     -- Cryptography
     specSHA2Natural
     specSHA2
---}
     specRSA
 
     -- TODO: implement a proper blake2b test
