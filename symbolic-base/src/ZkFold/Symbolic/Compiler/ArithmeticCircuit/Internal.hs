@@ -35,8 +35,9 @@ import           Data.Binary                                           (Binary)
 import           Data.ByteString                                       (ByteString)
 import           Data.Foldable                                         (fold, toList)
 import           Data.Functor.Rep
-import           Data.Map.Strict                                       hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                        take, toList)
+import           Data.Map.Monoidal                                     (MonoidalMap, insertWith)
+import           Data.Map.Strict                                       hiding (drop, foldl, foldr, insertWith, map,
+                                                                        null, splitAt, take, toList)
 import           Data.Maybe                                            (catMaybes, fromMaybe)
 import           Data.Semialign                                        (unzipDefault)
 import           Data.Semigroup.Generic                                (GenericSemigroupMonoid (..))
@@ -67,7 +68,7 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acRange   :: Map a (S.Set (SysVar i)),
+        acRange   :: MonoidalMap a (S.Set (SysVar i)),
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (i a -> Map ByteString a -> a),
         -- ^ The witness generation functions
@@ -76,10 +77,10 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     } deriving (Generic)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance (Ord a, o ~ U1) => Semigroup (ArithmeticCircuit a i o)
+  instance (Ord a, Ord (Rep i), o ~ U1) => Semigroup (ArithmeticCircuit a i o)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance (Ord a, o ~ U1) => Monoid (ArithmeticCircuit a i o)
+  instance (Ord a, Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a i o)
 
 instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
     => NFData (ArithmeticCircuit a i o)
