@@ -1,12 +1,15 @@
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module ZkFold.Symbolic.Cardano.Types.Output (
     module ZkFold.Symbolic.Cardano.Types.Output.Datum,
-    Output(..)
+    Output(..),
+    Liability(..)
 ) where
 
+import           GHC.Generics                               (Generic)
 import           Prelude                                    hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                                    as Haskell
 
@@ -14,7 +17,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Cardano.Types.Address      (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Output.Datum
-import           ZkFold.Symbolic.Cardano.Types.Value        (Value)
+import           ZkFold.Symbolic.Cardano.Types.Value        (SingleAsset, Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators           (NumberOfRegisters, RegisterSize (..))
@@ -22,36 +25,46 @@ import           ZkFold.Symbolic.Data.Eq                    (Eq)
 import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput (..))
 
+data Liability context
+    = Liability
+        { lLiability :: SingleAsset context -- Liability in native tokens
+        , lBabel     :: SingleAsset context -- Offer in any other tokens
+        }
+
+deriving instance Generic (Liability context)
+deriving instance (Haskell.Eq (SingleAsset context)) => Haskell.Eq (Liability context)
+deriving instance Symbolic context => SymbolicData (Liability context)
+
+-- TODO: derive this automatically
+instance 
+    ( Symbolic context
+    , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+    ) => SymbolicInput (Liability context) where
+    isValid Liability{..} = isValid (lLiability, lBabel)
+
 data Output tokens datum context = Output {
         txoAddress   :: Address context,
         txoTokens    :: Value tokens context,
+        txoLiability :: Liability context,
         txoDatumHash :: DatumHash context
     }
 
 deriving instance
     ( Haskell.Eq (Address context)
     , Haskell.Eq (Value tokens context)
+    , Haskell.Eq (Liability context)
     , Haskell.Eq (DatumHash context)
     ) => Haskell.Eq (Output tokens datum context)
 
-instance
-    ( Symbolic context
-    , KnownNat tokens
-    ) => SymbolicData (Output tokens datum context) where
-
-  type Context (Output tokens datum context) = Context (Address context, Value tokens context, DatumHash context)
-  type Support (Output tokens datum context) = Support (Address context, Value tokens context, DatumHash context)
-  type Layout (Output tokens datum context) = Layout (Address context, Value tokens context, DatumHash context)
-
-  pieces (Output a b c) = pieces (a, b, c)
-  restore f = let (a, b, c) = restore f in Output a b c
+deriving instance Generic (Output tokens datum context)
+deriving instance (KnownNat tokens, Symbolic context) => SymbolicData (Output tokens datum context)
 
 instance
     ( Symbolic context
     , KnownNat tokens
     , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
     ) => SymbolicInput (Output tokens datum context) where
-    isValid (Output a t d) = isValid (a, t, d)
+    isValid (Output a t l d) = isValid (a, (t, l, d))
 
 deriving via (Structural (Output tokens datum context))
          instance
@@ -59,3 +72,4 @@ deriving via (Structural (Output tokens datum context))
             , KnownNat tokens
             , KnownNat (NumberOfRegisters (BaseField context) 64 'Auto)
             ) => Eq (Bool context) (Output tokens datum context)
+
