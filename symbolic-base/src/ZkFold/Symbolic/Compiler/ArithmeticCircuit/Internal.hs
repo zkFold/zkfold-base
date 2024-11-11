@@ -190,34 +190,37 @@ instance
   ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
   , o ~ U1) => MonadCircuit (Var a i) a (WitnessF (Var a i) a) (State (ArithmeticCircuit a i o)) where
 
-    unconstrained wf = do
-      let v = toVar @a wf
-      -- TODO: forbid reassignment of variables
-      zoom #acWitness . modify $ insert v $ \i w -> witnessF wf $ \case
-        SysVar (InVar inV) -> index i inV
-        SysVar (NewVar newV) -> w ! newV
-        ConstVar cV -> fromConstant cV
-      return $ (\case
-        Just cV -> ConstVar cV
-        _       -> SysVar (NewVar v)) $
-          witnessF wf $ \case
+    unconstrained wf =
+      let res = witnessF wf $ \case
             ConstVar cV -> Just cV
             _           -> Nothing
+      in case res of
+        Just cV -> return (ConstVar cV)
+        Nothing -> do
+          let v = toVar @a wf
+          zoom #acWitness . modify $ insert v $ \i w -> witnessF wf $ \case
+            SysVar (InVar inV) -> index i inV
+            SysVar (NewVar newV) -> w ! newV
+            ConstVar cV -> fromConstant cV
+          return $ SysVar (NewVar v)
+
 
     constraint p =
       let
         evalConstVar = \case
           SysVar sysV -> var sysV
           ConstVar cV -> if cV == zero 
-                          then fromConstant cV
-                          else error "constant not equal zero"
+                            then fromConstant cV
+                            else error "The constant is not equal to zero"
       in
         zoom #acSystem . modify $ insert (toVar (p at)) (p evalConstVar)
 
     rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
-    -- FIXME range-constrain other variable types
-    rangeConstraint _ _ = return () -- error "Cannot range-constrain this variable"
+    rangeConstraint (ConstVar c) upperBound = 
+      if c <= upperBound 
+        then return ()
+        else error "The constant does not belong to the interval"
 
 -- | Generates new variable index given a witness for it.
 --

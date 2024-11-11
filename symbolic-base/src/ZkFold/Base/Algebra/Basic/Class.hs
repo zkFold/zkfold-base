@@ -702,7 +702,6 @@ instance (FromConstant Integer a) => FromConstant Integer (Maybe a) where
 instance (FromConstant Natural a) => FromConstant Natural (Maybe a) where
     fromConstant = Just . fromConstant
 
--- instance FromConstant (Maybe a) (Maybe a)
 instance (AdditiveSemigroup a) => AdditiveSemigroup (Maybe a) where
     (+) :: Maybe a -> Maybe a -> Maybe a
     (+) = liftA2 (+)
@@ -756,7 +755,6 @@ instance Field a => Field (Maybe a) where
 
 instance ToConstant a => ToConstant (Maybe a) where
     type Const (Maybe a) = Natural
-    -- has to be right inverse to @'fromConstant'@.
     toConstant :: Maybe a -> Const (Maybe a)
     toConstant = toConstant
 
@@ -765,6 +763,3 @@ instance Scale a a => Scale a (Maybe a) where
 
 instance FromConstant a (Maybe a) where
     fromConstant = Just
-
--- instance FromConstant Natural a => FromConstant (Maybe Natural) (Maybe a) where
---     fromConstant = fmap fromConstant
