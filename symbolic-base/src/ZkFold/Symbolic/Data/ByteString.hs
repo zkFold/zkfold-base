@@ -18,6 +18,7 @@ module ZkFold.Symbolic.Data.ByteString
     , toWords
     , concat
     , truncate
+    , append
     , emptyByteString
     , toBsBits
     ) where
@@ -223,6 +224,18 @@ truncate :: forall m n c. (
   , n <= m
   ) => ByteString m c -> ByteString n c
 truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
+
+
+append
+    :: forall m n c
+    .  Symbolic c
+    => KnownNat m
+    => KnownNat n
+    => ByteString m c
+    -> ByteString n c
+    -> ByteString (m + n) c
+append (ByteString bits1) (ByteString bits2) =
+    ByteString $ fromCircuit2F bits1 bits2 $ \v1 v2 -> pure $ v1 `V.append` v2
 
 --------------------------------------------------------------------------------
 instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
