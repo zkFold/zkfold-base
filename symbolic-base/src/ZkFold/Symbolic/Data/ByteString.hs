@@ -226,7 +226,7 @@ truncate :: forall m n c. (
 truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
 
 
-append 
+append
     :: forall m n c
     .  Symbolic c
     => KnownNat m
@@ -234,7 +234,7 @@ append
     => ByteString m c
     -> ByteString n c
     -> ByteString (m + n) c
-append (ByteString bits1) (ByteString bits2) = 
+append (ByteString bits1) (ByteString bits2) =
     ByteString $ fromCircuit2F bits1 bits2 $ \v1 v2 -> pure $ v1 `V.append` v2
 
 --------------------------------------------------------------------------------
