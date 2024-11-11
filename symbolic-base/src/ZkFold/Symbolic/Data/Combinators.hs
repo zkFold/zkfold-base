@@ -92,6 +92,12 @@ registerSize = case regSize @r of
     Auto     -> Haskell.ceiling (getNatural @n % numberOfRegisters @a @n @r)
     Fixed rs -> rs
 
+type Ceil a b = Div (a + b - 1) b
+
+type family GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) :: Natural where
+    GetRegisterSize a bits (Fixed rs) = rs
+    GetRegisterSize a bits Auto       = Ceil bits (NumberOfRegisters a bits Auto)
+
 type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize ) :: Natural where
   NumberOfRegisters a bits (Fixed rs) = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
   NumberOfRegisters a bits Auto       = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
