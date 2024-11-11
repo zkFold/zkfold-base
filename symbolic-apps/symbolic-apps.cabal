@@ -92,9 +92,9 @@ library
     -- other-modules:
     -- other-extensions:
     build-depends:
-      base >= 4.9 && < 5,
-      symbolic-base,
-      aeson
+      base                           >= 4.9 && < 5,
+      symbolic-base                               ,
+      aeson                                       ,
     hs-source-dirs:   src
     default-language: Haskell2010
 
