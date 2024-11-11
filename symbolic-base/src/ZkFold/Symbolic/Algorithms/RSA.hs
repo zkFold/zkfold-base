@@ -13,15 +13,11 @@ module ZkFold.Symbolic.Algorithms.RSA
     ) where
 
 import           Control.DeepSeq                      (NFData, force)
-import           Data.Proxy                           (Proxy)
-import           GHC.Generics                         (Generic, (:*:) (..))
-import           Prelude                              (($), (.), (<$>), (<*>))
+import           GHC.Generics                         (Generic)
+import           Prelude                              (($))
 import qualified Prelude                              as P
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Control.HApplicative     (hliftA2)
-import           ZkFold.Base.Data.HFunctor            (hmap)
-import           ZkFold.Base.Data.Product             (fstP, sndP)
 import           ZkFold.Base.Data.Vector              (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2 (SHA2, sha2)
 import           ZkFold.Symbolic.Class
@@ -52,13 +48,7 @@ deriving instance
     , P.Show (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
     ) => P.Show (PrivateKey context)
 
-instance Symbolic ctx => SymbolicData (PrivateKey ctx) where
-    type Context (PrivateKey ctx) = ctx
-    type Support (PrivateKey ctx) = Proxy ctx
-    type Layout (PrivateKey ctx) = Layout (UInt KeyLength 'Auto ctx) :*: Layout (UInt KeyLength 'Auto ctx)
-
-    pieces PrivateKey{..} = hliftA2 (:*:) <$> pieces prvD <*> pieces prvN
-    restore f = PrivateKey (restore (hmap fstP . f)) (restore (hmap sndP . f))
+deriving instance Symbolic ctx => SymbolicData (PrivateKey ctx)
 
 instance
   ( Symbolic ctx
@@ -87,13 +77,7 @@ deriving instance
     , P.Show (BaseField context)
     ) =>  P.Show  (PublicKey context)
 
-instance Symbolic ctx => SymbolicData (PublicKey ctx) where
-    type Context (PublicKey ctx) = ctx
-    type Support (PublicKey ctx) = Proxy ctx
-    type Layout (PublicKey ctx) = Layout (UInt 32 'Auto ctx) :*: Layout (UInt KeyLength 'Auto ctx)
-
-    pieces PublicKey{..} = hliftA2 (:*:) <$> pieces pubE <*> pieces pubN
-    restore f = PublicKey (restore (hmap fstP . f)) (restore (hmap sndP . f))
+deriving instance Symbolic ctx => SymbolicData (PublicKey ctx)
 
 instance
   ( Symbolic ctx
