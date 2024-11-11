@@ -13,7 +13,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Sparse.Vector              (SVector (..))
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..), SpecialSoundTranscript)
-import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
+import           ZkFold.Symbolic.Class                       (Arithmetic)
 
 data ProtostarLookup (l :: Natural) (sizeT :: Natural)
     deriving Generic

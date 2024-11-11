@@ -8,7 +8,7 @@ import           ZkFold.Base.Algebra.Basic.Permutations      (Permutation, apply
 import           ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (AlgebraicMap (..), SpecialSoundProtocol (..),
                                                               SpecialSoundTranscript)
-import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
+import           ZkFold.Symbolic.Class                       (Arithmetic)
 
 data ProtostarPermutation (n :: Natural)
 

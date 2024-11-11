@@ -15,7 +15,7 @@ import           ZkFold.Base.Data.Vector                      (Vector)
 import           ZkFold.Base.Protocol.Protostar.Internal      (PolynomialProtostar (..))
 import           ZkFold.Base.Protocol.Protostar.SpecialSound  (AlgebraicMap (..), SpecialSoundProtocol (..),
                                                                SpecialSoundTranscript)
-import           ZkFold.Symbolic.MonadCircuit                 (Arithmetic)
+import           ZkFold.Symbolic.Class                        (Arithmetic)
 
 data ProtostarGate (m :: Natural) (n :: Natural) (c :: Natural) (d :: Natural)
     deriving Generic
