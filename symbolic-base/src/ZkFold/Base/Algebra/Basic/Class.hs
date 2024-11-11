@@ -693,11 +693,11 @@ instance Ring a => Ring (p -> a)
 
 ---------------------------------------------------------------------------------
 
-instance (Finite a) => Finite (Maybe a) where 
+instance (Finite a) => Finite (Maybe a) where
     type Order (Maybe a) = Order a
 
 instance (FromConstant Integer a) => FromConstant Integer (Maybe a) where
-    fromConstant = Just . fromConstant 
+    fromConstant = Just . fromConstant
 
 instance (FromConstant Natural a) => FromConstant Natural (Maybe a) where
     fromConstant = Just . fromConstant
@@ -708,7 +708,7 @@ instance (AdditiveSemigroup a) => AdditiveSemigroup (Maybe a) where
 
 instance (MultiplicativeSemigroup a) => MultiplicativeSemigroup (Maybe a) where
     (*) :: Maybe a -> Maybe a -> Maybe a
-    (*) = liftA2 (*) 
+    (*) = liftA2 (*)
 
 instance (FromConstant Natural a, MultiplicativeSemigroup a) => Scale Natural (Maybe a)
 instance (FromConstant Integer a, MultiplicativeSemigroup a) => Scale Integer (Maybe a)

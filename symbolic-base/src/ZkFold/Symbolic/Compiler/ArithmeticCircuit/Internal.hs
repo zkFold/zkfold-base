@@ -209,7 +209,7 @@ instance
       let
         evalConstVar = \case
           SysVar sysV -> var sysV
-          ConstVar cV -> if cV == zero 
+          ConstVar cV -> if cV == zero
                             then fromConstant cV
                             else error "The constant is not equal to zero"
       in
@@ -217,8 +217,8 @@ instance
 
     rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
-    rangeConstraint (ConstVar c) upperBound = 
-      if c <= upperBound 
+    rangeConstraint (ConstVar c) upperBound =
+      if c <= upperBound
         then return ()
         else error "The constant does not belong to the interval"
 
