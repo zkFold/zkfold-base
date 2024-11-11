@@ -1,10 +1,10 @@
 module ZkFold.Symbolic.Ledger.Types.OutputRef where
 
-import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Data.Combinators   (RegisterSize(Auto))
-import           ZkFold.Symbolic.Data.UInt          (UInt)
-import           ZkFold.Symbolic.Ledger.Types.Hash  (Hash)
+import           ZkFold.Symbolic.Data.Combinators  (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.UInt         (UInt)
+import           ZkFold.Symbolic.Ledger.Types.Hash (Hash)
 
 -- | Transaction hash.
 type TransactionId = Hash
