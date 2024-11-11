@@ -3,7 +3,7 @@ module ZkFold.Symbolic.Ledger.Validation.PublicInput where
 import           Prelude                                  hiding (Bool, Eq, all, any, head, init, last, length, splitAt,
                                                            tail, (&&), (*), (+), (/=), (==))
 
-import           ZkFold.Symbolic.Data.Bool                (all, any, (&&))
+import           ZkFold.Symbolic.Data.Bool                (Bool, all, any, (&&))
 import           ZkFold.Symbolic.Data.Eq                  (Eq (..))
 import           ZkFold.Symbolic.Data.List                (head, last)
 import           ZkFold.Symbolic.Ledger.Types
@@ -25,13 +25,13 @@ publicInputExisted ::
 publicInputExisted bId i w =
     let u      = head w
         u0     = last w
-        inputs = updatePublicInputsProduced u0
+        inputs = updateTransactions u0
 
     in updateChainIsValid w
     -- ^ The update chain is valid
     && updateId u == bId
     -- ^ The most recent update is the current block
-    && any (== i) inputs
+    && any ((== refId (txiOutputRef i)) . snd) inputs
     -- ^ The input is included in the least recent update in the chain
 
 -- | Checks if the private input was not spent.
@@ -51,7 +51,7 @@ publicInputNotSpent bId i w =
     -- ^ The update chain is valid
     && updateId u == bId
     -- ^ The most recent update is the current block
-    && all (all (/= i) . updatePublicInputsSpent) w
+    && all (all (/= refId (txiOutputRef i)) . _) w
     -- ^ The input is not spent in any of the updates in the chain
 
 -- | Checks if the public input is valid.

@@ -4,9 +4,10 @@ import           Prelude                                       hiding (Bool, Eq 
                                                                 (*), (+), (++), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Data.Bool                     (Bool)
 import           ZkFold.Symbolic.Data.Conditional              (bool)
 import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
-import           ZkFold.Symbolic.Data.List                     (emptyList, (++), (.:), (\\))
+import           ZkFold.Symbolic.Data.List                     (List, emptyList, (++), (.:), (\\))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
 
@@ -23,9 +24,9 @@ bridgeFromLedger = undefined
 applyTransaction :: Signature context => Transaction context -> TransactionWitness context -> Update context -> Update context
 applyTransaction tx w u =
    let res = transactionIsValid (updateId u) tx w
-       insSpent = (updatePublicInputsSpent u ++ txPublicInputs tx) \\ updatePublicInputsProduced u
-       insProduced = updatePublicInputsProduced u \\ txPublicInputs tx
-       spendingContracts = txoAddress . txiOutput <$> txPublicInputs tx
+       insSpent = (updatePublicInputsSpent u) \\ updatePublicInputsProduced u
+       insProduced = updatePublicInputsProduced u
+       spendingContracts = txoAddress . txiOutput <$> txInputs tx
        mintingContracts  = (\(Value s _ _) -> s) <$> txMint tx
        u' = u { updateTransactionData = updateTransactionData u ++ fmap (, txId tx) (spendingContracts ++ mintingContracts)
               , updatePublicInputsSpent = insSpent

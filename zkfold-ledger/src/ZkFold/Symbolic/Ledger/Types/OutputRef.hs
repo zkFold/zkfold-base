@@ -2,14 +2,15 @@ module ZkFold.Symbolic.Ledger.Types.OutputRef where
 
 import           Prelude                            hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Ledger.Types.Basic
+import           ZkFold.Symbolic.Data.Combinators   (RegisterSize(Auto))
+import           ZkFold.Symbolic.Data.UInt          (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Hash  (Hash)
 
 -- | Transaction hash.
-type TransactionId context = Hash context
+type TransactionId = Hash
 
 -- | Index of an output in the transaction's output list.
-type OutputIndex context   = UInt32 context
+type OutputIndex = UInt 32 Auto
 
 -- | Reference to a transaction output.
 data OutputRef context = OutputRef

@@ -1,8 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 module ZkFold.Symbolic.Ledger.Types (
     module ZkFold.Symbolic.Ledger.Types.Address,
-    module ZkFold.Symbolic.Ledger.Types.Basic,
-    module ZkFold.Symbolic.Ledger.Types.Bridge,
     module ZkFold.Symbolic.Ledger.Types.Contract,
     module ZkFold.Symbolic.Ledger.Types.Hash,
     module ZkFold.Symbolic.Ledger.Types.Input,
@@ -29,9 +27,11 @@ import           ZkFold.Symbolic.Class                    (Symbolic)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional         (Conditional)
 import           ZkFold.Symbolic.Data.Eq                  (Eq)
+import           ZkFold.Symbolic.Data.Bool                (Bool)
+import           ZkFold.Symbolic.Data.Combinators         (RegisterSize(Auto))
+import           ZkFold.Symbolic.Data.List                (List)
+import           ZkFold.Symbolic.Data.UInt                (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Address
-import           ZkFold.Symbolic.Ledger.Types.Basic
-import           ZkFold.Symbolic.Ledger.Types.Bridge
 import           ZkFold.Symbolic.Ledger.Types.Contract
 import           ZkFold.Symbolic.Ledger.Types.Hash
 import           ZkFold.Symbolic.Ledger.Types.Input
@@ -53,7 +53,7 @@ import           ZkFold.Symbolic.Ledger.Types.Value
 
 type Signature context =
     ( Symbolic context
-    , AdditiveMonoid (UInt32 context)
+    , AdditiveMonoid (UInt 32 Auto context)
     , AdditiveMonoid (Value context)
     , Conditional (Bool context) (Update context)
     , Eq (Bool context) (Hash context)
@@ -71,7 +71,7 @@ type Signature context =
     , Eq (Bool context) (List context (List context (TransactionId context)))
     , Foldable (List context)
     , Functor (List context)
-    , MultiplicativeMonoid (UInt32 context)
+    , MultiplicativeMonoid (UInt 32 Auto context)
     , Zip (List context)
 
     -- TODO: The instances below are most likely NOT NEEDED.

@@ -2,7 +2,8 @@ module ZkFold.Symbolic.Ledger.Types.Value where
 
 import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Ledger.Types.Basic
+import           ZkFold.Symbolic.Data.Combinators      (RegisterSize(Auto))
+import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
 
 -- | Input to the minting contract. Usually a token name.
@@ -18,4 +19,8 @@ type CurrencySymbol context = ContractId context
 -- | A value represents the amount of tokens that is contained in a transaction output.
 -- The `ContractId` corresponds to the contract that minted the tokens with the `Token` containing the input data.
 -- The `UInt64` contains the amount of tokens.
-data Value context = Value (CurrencySymbol context) (Token context) (UInt64 context)
+data Value context = Value
+  { mintingPolicy :: CurrencySymbol context
+  , tokenInstance :: Token context
+  , tokenQuantity :: UInt 64 Auto context
+  }
