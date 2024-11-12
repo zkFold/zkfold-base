@@ -7,8 +7,7 @@ module ZkFold.Base.Protocol.Protostar.SpecialSound where
 import           Data.Functor.Rep                            (Representable(..))
 import           Data.Map.Strict                             (elems)
 import qualified Data.Map.Strict                             as M
-import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     (Ord, type (~), ($), Foldable)
+import           Prelude                                     (type (~), ($))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -62,7 +61,7 @@ type BasicSpecialSoundProtocol f pi m a =
   , VerifierMessage f a ~ f
   )
 
-instance (Representable i, Ord (Rep i), Foldable i, IsList (i a), Item (i a) ~ a, Arithmetic a, AdditiveGroup (i a), Scale a (i a))
+instance (Representable i, Arithmetic a, AdditiveGroup (i a), Scale a (i a))
       => SpecialSoundProtocol a (ArithmeticCircuit a i o) where
     type Witness a (ArithmeticCircuit a i o) = ()
     type Input a (ArithmeticCircuit a i o) = i a
@@ -75,9 +74,7 @@ instance (Representable i, Ord (Rep i), Foldable i, IsList (i a), Item (i a) ~ a
 
     outputLength ac = P.fromIntegral $ M.size (acSystem ac)
 
-    -- The transcript will be empty at this point, it is a one-round protocol.
-    -- Input is arithmetised. We need to combine its witness with the circuit's witness.
-    --
+    -- Just return the witness values on the public input
     prover ac _ pi _ _ = elems $ witnessGenerator ac pi
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros

@@ -10,8 +10,9 @@ module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 import           Control.Lens                                ((^.))
 import           Data.List                                   (transpose)
 import qualified Data.Vector                                 as DV
+import           Data.Zip                                    (Zip (..))
 import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     (concatMap, ($), (.), (<$>))
+import           Prelude                                     (type (~), concatMap, ($), (.), (<$>))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -53,8 +54,12 @@ instance
     , HomomorphicCommit [f] c
     , HomomorphicCommit m c
     , AlgebraicMap f pi m a
-    , AlgebraicMap (PU.PolyVec f (Degree a + 1)) [PU.PolyVec f (Degree a + 1)] [PU.PolyVec f (Degree a + 1)] a
+    , AlgebraicMap (PU.PolyVec f (Degree a + 1)) (i (PU.PolyVec f (Degree a + 1))) [PU.PolyVec f (Degree a + 1)] a
     , KnownNat (Degree a + 1)
+    , Zip i
+    , pi ~ i f
+    , IsList m
+    , Item m ~ f
     ) => AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
@@ -70,8 +75,8 @@ instance
           polyMu = PU.polyVecLinear one (acc^.x^.mu)
 
           -- X * pi + pi' as a list of univariate polynomials
-          polyPi :: [PU.PolyVec f (Degree a + 1)]
-          polyPi = P.zipWith (PU.polyVecLinear @f) (toList pubi) (toList (acc^.x^.pi))
+          polyPi :: i (PU.PolyVec f (Degree a + 1))
+          polyPi = zipWith (PU.polyVecLinear @f) pubi (acc^.x^.pi)
 
           -- X * mi + mi'
           polyW :: [PU.PolyVec f (Degree a + 1)]

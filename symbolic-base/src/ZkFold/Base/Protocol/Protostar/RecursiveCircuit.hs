@@ -10,7 +10,6 @@ import           Prelude                                    hiding (Num (..), dr
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat)
-import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
 import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Data.HFunctor                  (hmap)
 import           ZkFold.Base.Data.Vector                    (Vector, head)
@@ -34,18 +33,14 @@ protostar :: forall a n k i o ctx f pi m c .
     , KnownNat k
     , ctx ~ ArithmeticCircuit a i
     , f ~ FieldElement ctx
-    , pi ~ [f]
+    , pi ~ Vector n f
     , m ~ [f]
     , c ~ f
     , SymbolicInput (IVCInstanceProof pi f c m)
     , Context (IVCInstanceProof pi f c m) ~ ctx
-    , SymbolicData [f]
-    , Context [f] ~ ctx
-    , Support [f] ~ Proxy ctx
-    , Ring (PolyVec f 3)
     , HomomorphicCommit m c
     , i ~ Layout (IVCInstanceProof pi f c m) :*: U1
-    , o ~ (((Par1 :*: Layout [FieldElement ctx]) :*: (Par1 :*: (Par1 :*: Par1))) :*: (Par1 :*: Par1))
+    , o ~ (((Par1 :*: (Vector n :.: Par1)) :*: (Par1 :*: (Par1 :*: Par1))) :*: (Par1 :*: Par1))
     ) => (forall ctx' . Symbolic ctx' => Vector n (FieldElement ctx') -> Vector k (FieldElement ctx') -> Vector n (FieldElement ctx'))
     -> ArithmeticCircuit a i o
 protostar func =

@@ -3,13 +3,13 @@
 
 module ZkFold.Base.Protocol.Protostar.AlgebraicMap where
 
+import           Data.ByteString                                     (ByteString)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.List                                           (foldl')
-import           Data.Map.Strict                                     (Map)
+import           Data.Map.Strict                                     (Map, keys)
 import qualified Data.Map.Strict                                     as M
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             (Foldable, Ord, fmap, type (~), zip, ($), (++),
-                                                                      (.), (<$>))
+import           Prelude                                             (type (~), fmap, zip, ($), (.), (<$>))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -33,12 +33,8 @@ class
   ( Ring f
   , AdditiveGroup pi
   , Scale f pi
-  , IsList pi
-  , Item pi ~ f
   , AdditiveSemigroup m
   , Scale f m
-  , IsList m
-  , Item m ~ f
   ) => AlgebraicMap f pi m a where
     type Degree a :: Natural
     -- ^ d in the paper, the verifier degree
@@ -52,16 +48,13 @@ class
         -> [f]
 
 instance
-  (Representable i
-  , Ord (Rep i)
-  , Foldable i
+  ( Representable i
   , Arithmetic a
   , Scale a f
   , Ring f
   , AdditiveGroup pi
   , Scale f pi
-  , IsList pi
-  , Item pi ~ f
+  , pi ~ i f
   , AdditiveSemigroup m
   , Scale f m
   , IsList m
@@ -76,11 +69,12 @@ instance
             sys :: [PM.Poly a (SysVar i) Natural]
             sys = M.elems (acSystem ac)
 
-            witness :: Map (SysVar i) f
-            witness = M.fromList $ zip (getAllVars ac) (toList pi ++ toList (P.head pm))
+            witness :: Map ByteString f
+            witness = M.fromList $ zip (keys $ acWitness ac) (toList (P.head pm))
 
             varMap :: SysVar i -> f
-            varMap x = M.findWithDefault zero x witness
+            varMap (InVar inV)   = index pi inV
+            varMap (NewVar newV) = M.findWithDefault zero newV witness
 
             f_sps :: Vector 3 [PM.Poly a (SysVar i) Natural]
             f_sps = degreeDecomposition @(Degree (ArithmeticCircuit a i o)) $ sys
