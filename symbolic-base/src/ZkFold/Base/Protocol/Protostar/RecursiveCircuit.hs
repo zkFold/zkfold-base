@@ -51,11 +51,12 @@ protostar :: forall a n k i o ctx f pi m c .
 protostar func =
     let
         -- The step function for the recursion: `F(x, u, y) = f(x, u) - y`
+        -- TODO: this shouldn't be needed due to the next step
         stepFunction :: forall ctx' . Symbolic ctx' => Vector n (FieldElement ctx') -> Vector k (FieldElement ctx') -> Vector n (FieldElement ctx') -> Vector n (FieldElement ctx')
         stepFunction x u y = fromList $ toList (func x u) - toList y
 
         -- The circuit for one step of the recursion with full input
-        -- TODO: make the output `U1` by forcing the output to be a vector of zeros
+        -- TODO: apply the transformation that adds the output to the input and sets the new output to be `U1`
         stepCircuit' :: ArithmeticCircuit a (Vector n :*: Vector k :*: Vector n) (Vector n)
         stepCircuit' =
             hlmap (\(x :*: u :*: y) -> Comp1 (Par1 <$> x) :*: Comp1 (Par1 <$> u) :*: Comp1 (Par1 <$> y) :*: U1)
@@ -63,7 +64,7 @@ protostar func =
             $ compile @a stepFunction
 
         -- The circuit for one step of the recursion with extra witness
-        -- TODO: instead of supplying `head y`, we need to pull the actual values for `x` and `u` from the extra witness
+        -- TODO: apply the transformation that removes a part of the input and sets it as an extra witness
         stepCircuit :: ArithmeticCircuit a (Vector n) (Vector n)
         stepCircuit = hlmap (\y -> tabulate (const (head y)) :*: tabulate (const (head y)) :*: y) stepCircuit'
 
