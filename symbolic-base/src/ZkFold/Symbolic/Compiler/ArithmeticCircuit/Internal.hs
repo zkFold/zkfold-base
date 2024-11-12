@@ -209,11 +209,12 @@ instance
       let
         evalConstVar = \case
           SysVar sysV -> var sysV
-          ConstVar cV -> if cV == zero
-                            then fromConstant cV
-                            else error "The constant is not equal to zero"
+          ConstVar cV -> fromConstant cV
+        r = p evalConstVar
       in
-        zoom #acSystem . modify $ insert (toVar (p at)) (p evalConstVar)
+        if r == zero
+          then return $ error "constrained variable not equal zero"
+          else zoom #acSystem . modify $ insert (toVar (p at)) (p evalConstVar)
 
     rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)

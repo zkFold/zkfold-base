@@ -693,27 +693,30 @@ instance Ring a => Ring (p -> a)
 
 ---------------------------------------------------------------------------------
 
-instance (Finite a) => Finite (Maybe a) where
+instance Finite a => Finite (Maybe a) where
     type Order (Maybe a) = Order a
 
-instance (FromConstant Integer a) => FromConstant Integer (Maybe a) where
+instance FromConstant Integer a => FromConstant Integer (Maybe a) where
     fromConstant = Just . fromConstant
 
-instance (FromConstant Natural a) => FromConstant Natural (Maybe a) where
+instance FromConstant Natural a => FromConstant Natural (Maybe a) where
     fromConstant = Just . fromConstant
 
-instance (AdditiveSemigroup a) => AdditiveSemigroup (Maybe a) where
+instance AdditiveSemigroup a => AdditiveSemigroup (Maybe a) where
     (+) :: Maybe a -> Maybe a -> Maybe a
     (+) = liftA2 (+)
 
-instance (MultiplicativeSemigroup a) => MultiplicativeSemigroup (Maybe a) where
+instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Maybe a) where
     (*) :: Maybe a -> Maybe a -> Maybe a
     (*) = liftA2 (*)
 
-instance (FromConstant Natural a, MultiplicativeSemigroup a) => Scale Natural (Maybe a)
-instance (FromConstant Integer a, MultiplicativeSemigroup a) => Scale Integer (Maybe a)
+instance Scale Natural a => Scale Natural (Maybe a) where
+    scale = fmap . scale
 
-instance (AdditiveMonoid a, AdditiveSemigroup a, MultiplicativeSemigroup a, FromConstant Natural a) => AdditiveMonoid (Maybe a) where
+instance Scale Integer a => Scale Integer (Maybe a) where
+    scale = fmap . scale
+
+instance AdditiveMonoid a => AdditiveMonoid (Maybe a) where
     zero :: Maybe a
     zero = Just zero
 
@@ -725,41 +728,39 @@ instance Exponent a Integer => Exponent (Maybe a) Integer where
     (^) :: Maybe a -> Integer -> Maybe a
     (^) m n = liftA2 (^) m (Just n)
 
-instance (MultiplicativeMonoid a, Exponent a Natural) => MultiplicativeMonoid (Maybe a) where
+instance MultiplicativeMonoid a => MultiplicativeMonoid (Maybe a) where
     one :: Maybe a
     one = Just one
 
-instance (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semiring (Maybe a)
+instance Semiring a => Semiring (Maybe a)
 
-instance (AdditiveMonoid a, Scale Integer a, FromConstant Integer a, MultiplicativeSemigroup a, FromConstant Natural a) => AdditiveGroup (Maybe a) where
-
-    (-) :: Maybe a -> Maybe a -> Maybe a
-    x - y = x + negate y
-
+instance AdditiveGroup a => AdditiveGroup (Maybe a) where
     negate :: Maybe a -> Maybe a
-    negate x = zero - x
+    negate = fmap negate
 
-instance (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring (Maybe a)
+instance Ring a => Ring (Maybe a)
 
 instance Field a => Field (Maybe a) where
-    (//) :: Maybe a -> Maybe a -> Maybe a
-    x // y = x * finv y
-
     finv :: Maybe a -> Maybe a
-    finv x = one // x
+    finv = fmap finv
 
     rootOfUnity :: Natural -> Maybe (Maybe a)
-    rootOfUnity 0 = Just one
-    rootOfUnity _ = Nothing
-
+    rootOfUnity = Just . rootOfUnity @a
 
 instance ToConstant a => ToConstant (Maybe a) where
-    type Const (Maybe a) = Natural
-    toConstant :: Maybe a -> Const (Maybe a)
-    toConstant = toConstant
+    type Const (Maybe a) = Maybe (Const a)
+    toConstant :: Maybe a -> Maybe (Const a)
+    toConstant = fmap toConstant
 
 instance Scale a a => Scale a (Maybe a) where
     scale s = fmap (scale s)
 
 instance FromConstant a (Maybe a) where
     fromConstant = Just
+
+instance FromConstant Natural a => FromConstant (Maybe Natural) (Maybe a) where
+    fromConstant = fmap fromConstant
+
+instance SemiEuclidean Natural => SemiEuclidean (Maybe Natural) where
+    divMod (Just a) (Just b) = let (d, m) = divMod a b in (Just d, Just m)
+    divMod _ _ = (Nothing, Nothing)
