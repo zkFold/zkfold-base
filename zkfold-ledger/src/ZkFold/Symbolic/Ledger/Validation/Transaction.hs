@@ -4,9 +4,8 @@ import           Prelude                                        hiding (Bool, Eq
                                                                  (+), (++), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Data.Bool                      (Bool, BoolType (..), all)
+import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Eq                        (Eq (..))
-import           ZkFold.Symbolic.Data.List                      (List)
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Contract
 import           ZkFold.Symbolic.Ledger.Validation.PrivateInput
@@ -37,11 +36,14 @@ transactionInputsAreValid ::
    -> TransactionInputsWitness context
    -- ^ The witness data for the inputs of the transaction.
    -> Bool context
-transactionInputsAreValid bId tx (wPrv, _wPub) =
+transactionInputsAreValid bId tx (wPrv, wPub) =
    let privateInputs = txInputs tx
+       publicInputs = txPublicInputs tx
 
    in all (uncurry $ privateInputIsValid bId) wPrv
    && privateInputs == fmap fst wPrv
+   && all (uncurry $ publicInputIsValid bId) wPub
+   && publicInputs == fmap fst wPub
 
 -- | Checks if the balance of a transaction is correct.
 transactionBalanceIsCorrect ::
