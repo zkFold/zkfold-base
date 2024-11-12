@@ -3,9 +3,9 @@ module ZkFold.Symbolic.Ledger.Validation.PrivateInput where
 import           Prelude                                  hiding (Bool, Eq, all, any, filter, head, init, last, length,
                                                            splitAt, tail, (&&), (*), (+), (/=), (==))
 
-import           ZkFold.Symbolic.Data.Bool                (Bool, all, any, (&&))
+import           ZkFold.Symbolic.Data.Bool                (all, any, (&&))
 import           ZkFold.Symbolic.Data.Eq                  (Eq (..))
-import           ZkFold.Symbolic.Data.List                (List, emptyList, filter, head, last, (.:))
+import           ZkFold.Symbolic.Data.List                (emptyList, filter, head, last, (.:))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Common (updateChainIsValid)
 
@@ -35,7 +35,7 @@ privateInputExisted bId i (wTx, wCTxs) =
     -- ^ The update chain is valid
     && updateId u == bId
     -- ^ The most recent update is the current block
-    && any (== txId wTx) (fst <$> updateNewAssignments u0)
+    && any (== txId wTx) (snd <$> updateTransactionData u0)
     -- ^ The transaction is included in the least recent update in the chain
     && any (== o) (txOutputs wTx)
     -- ^ The output of the transaction is the same as the input to check
@@ -55,7 +55,7 @@ privateInputNotSpent bId i (_, wCTxs) =
         u         = head wUpdates
 
         -- Get the transaction ids for a particular contract id from the update
-        txIds upd = fst <$> filter (\(cId, _) -> cId == addr) (updateNewAssignments upd)
+        txIds upd = snd <$> filter (\(cId, _) -> cId == addr) (updateTransactionData upd)
         -- Transactions in each update
         txs       = fmap snd wCTxs
 
