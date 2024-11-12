@@ -1,4 +1,4 @@
-module ZkFold.Symbolic.Ledger.Validation.OfflineInput where
+module ZkFold.Symbolic.Ledger.Validation.Input where
 
 import           Prelude                                  hiding (Bool, Eq, Maybe, all, any, filter, head, init, last, length, maybe,
                                                            splitAt, tail, (&&), (*), (+), (/=), (==))
@@ -10,25 +10,24 @@ import           ZkFold.Symbolic.Data.Maybe               (maybe)
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Common (updateChainIsValid)
 
--- | Witness data that is required to prove the validity of a transaction input
--- from an offline transaction output.
-type OfflineInputWitness context =
-    ( Transaction context
-    , List context (Update context, List context (Transaction context))
-    , Update context
-    )
+-- | Witness data that is required to prove the validity of an input.
+data InputWitness context
+  = OfflineTxInputWitness
+      (Transaction context)
+      (List context (Update context, List context (Transaction context)))
+      (Update context)
 
--- | Checks if the offline input existed.
-offlineInputExisted ::
+-- | Checks if the input existed.
+inputExisted ::
        Signature context
     => Hash context
     -- ^ The id of the current block.
     -> Input context
     -- ^ The transaction input to check.
-    -> OfflineInputWitness context
+    -> InputWitness context
     -- ^ The witness data for the input.
     -> Bool context
-offlineInputExisted bId i (wTx, wCTxs, _) =
+inputExisted bId i (OfflineTxInputWitness wTx wCTxs _) =
     let wUpdates = fmap fst wCTxs
         u        = head wUpdates
         u0       = last wUpdates
@@ -43,17 +42,17 @@ offlineInputExisted bId i (wTx, wCTxs, _) =
     && any (== o) (txOutputs wTx)
     -- ^ The output of the transaction is the same as the input to check
 
--- | Checks if the transaction input from on offline transaction output was not spent.
-offlineInputNotSpent ::
+-- | Checks if the input was not spent.
+inputNotSpent ::
        (Signature context, Eq (Bool context) (AddressIndex context))
     => Hash context
     -- ^ The id of the current block.
     -> Input context
     -- ^ The transaction input to check.
-    -> OfflineInputWitness context
+    -> InputWitness context
     -- ^ The witness data for the offline input.
     -> Bool context
-offlineInputNotSpent bId i (_, wCTxs, upd) =
+inputNotSpent bId i (OfflineTxInputWitness _ wCTxs upd) =
     let wUpdates    = fmap fst wCTxs
         u           = head wUpdates
         inputAddr   = txoAddress $ txiOutput i
@@ -77,16 +76,16 @@ offlineInputNotSpent bId i (_, wCTxs, upd) =
           -- ^ The input is not spent in any of the contract transactions
     in maybe false validAddrIx addrIxMaybe
 
--- | Checks if the offline input is valid.
-offlineInputIsValid ::
+-- | Checks if the input is valid.
+inputIsValid ::
        (Signature context,  Eq (Bool context) (AddressIndex context))
     => Hash context
     -- ^ The id of the current block.
     -> Input context
     -- ^ The transaction input to check.
-    -> OfflineInputWitness context
+    -> InputWitness context
     -- ^ The witness data for the offline input.
     -> Bool context
-offlineInputIsValid bId i w =
-       offlineInputExisted bId i w
-    && offlineInputNotSpent bId i w
+inputIsValid bId i w =
+       inputExisted bId i w
+    && inputNotSpent bId i w
