@@ -763,4 +763,4 @@ instance FromConstant Natural a => FromConstant (Maybe Natural) (Maybe a) where
 
 instance SemiEuclidean Natural => SemiEuclidean (Maybe Natural) where
     divMod (Just a) (Just b) = let (d, m) = divMod a b in (Just d, Just m)
-    divMod _ _ = (Nothing, Nothing)
+    divMod _ _               = (Nothing, Nothing)
