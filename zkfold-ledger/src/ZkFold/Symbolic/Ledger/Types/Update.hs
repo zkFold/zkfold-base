@@ -13,15 +13,12 @@ import           ZkFold.Symbolic.Ledger.Types.Input     (Input)
 import           ZkFold.Symbolic.Ledger.Types.Output    (Output)
 import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 
--- TODO: Add contract public data to the update.
-
--- | Block hash of the corresponding block.
-type UpdateId = Hash
-
 type AddressIndex = UInt 40 Auto
 
+-- TODO: Add contract public data to the update.
+
 data Update context = Update
-  { updateId              :: UpdateId context
+  { updateOnlineTxsRoot   :: Hash context
     -- ^ the Merkle tree root of the TxId list of transactions that contains online transactions.
   , updateNewAssignments  :: List context (Address context, AddressIndex context)
     -- ^ the map from addresses into assigned indices. Only new assignments.
