@@ -21,6 +21,7 @@ import           Examples.Fibonacci                          (exampleFibonacci)
 import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
+import           Examples.RSA                                (exampleRSA)
 import           Examples.UInt
 import           GHC.Generics                                (Par1, (:*:), (:.:))
 
@@ -91,6 +92,7 @@ examples =
   , ("FFA.Add.097", exampleOutput exampleFFAadd097)
   , ("FFA.Mul.337", exampleOutput exampleFFAmul337)
   , ("FFA.Mul.097", exampleOutput exampleFFAmul097)
+  , ("RSA.sign.verify.256", exampleOutput exampleRSA)
 --  , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
 --  , ("PedersonCommitment", exampleOutput exampleCommitment)
   , ("BatchTransfer", exampleOutput exampleBatchTransfer)

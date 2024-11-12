@@ -8,7 +8,7 @@ module ZkFold.Symbolic.Cardano.Types (
     module ZkFold.Symbolic.Cardano.Types.Value
 ) where
 
-import           Prelude                                   hiding (Bool, Eq, length, splitAt, (*), (+))
+-- import           Prelude                                   hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Cardano.Types.Address
 import           ZkFold.Symbolic.Cardano.Types.Basic

@@ -15,6 +15,7 @@ import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
 import           Tests.Plonkup             (specPlonkup)
 import           Tests.Protostar           (specProtostar)
+import           Tests.RSA                 (specRSA)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
 import           Tests.Univariate          (specUnivariate)
@@ -51,6 +52,7 @@ main = do
     -- Cryptography
     specSHA2Natural
     specSHA2
+    specRSA
 
     -- TODO: implement a proper blake2b test
     specBlake2b
