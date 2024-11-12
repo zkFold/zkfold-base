@@ -48,3 +48,7 @@ data Update context = Update
   }
 
 type UpdateChain context = List context (Update context)
+
+-- | Get the block of the `Update`
+updateId :: Update context -> Hash context
+updateId = undefined
