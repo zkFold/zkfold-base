@@ -3,12 +3,13 @@
 
 module ZkFold.Base.Protocol.Protostar.AlgebraicMap where
 
-import           Data.Functor.Rep                                    (tabulate, Representable (..))
+import           Data.Functor.Rep                                    (Representable (..), tabulate)
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             (fmap, type (~), zip, ($), (++), (.), (<$>), Foldable, Ord)
+import           Prelude                                             (Foldable, Ord, fmap, type (~), zip, ($), (++),
+                                                                      (.), (<$>))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
