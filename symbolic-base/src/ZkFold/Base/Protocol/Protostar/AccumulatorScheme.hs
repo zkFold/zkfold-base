@@ -12,7 +12,7 @@ import           Data.List                                   (transpose)
 import qualified Data.Vector                                 as DV
 import           Data.Zip                                    (Zip (..))
 import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     (type (~), concatMap, ($), (.), (<$>))
+import           Prelude                                     (type (~), ($), (.), (<$>))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -79,8 +79,8 @@ instance
           polyPi = zipWith (PU.polyVecLinear @f) pubi (acc^.x^.pi)
 
           -- X * mi + mi'
-          polyW :: [PU.PolyVec f (Degree a + 1)]
-          polyW = P.zipWith (PU.polyVecLinear @f) (concatMap toList pi_w) (concatMap toList (acc^.w))
+          polyW :: [[PU.PolyVec f (Degree a + 1)]]
+          polyW = zipWith (\a b -> zipWith (PU.polyVecLinear @f) (toList  a) (toList b)) pi_w (acc^.w)
 
           -- X * ri + ri'
           polyR :: [PU.PolyVec f (Degree a + 1)]
@@ -89,7 +89,7 @@ instance
           -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
           e_uni :: [PU.PolyVec f (Degree a + 1)]
-          e_uni = algebraicMap sps polyPi [polyW] polyR polyMu
+          e_uni = algebraicMap sps polyPi polyW polyR polyMu
 
           -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
           e_all = transpose $ DV.toList . PU.fromPolyVec <$> e_uni
