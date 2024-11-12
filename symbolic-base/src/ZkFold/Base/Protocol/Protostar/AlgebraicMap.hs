@@ -3,7 +3,7 @@
 
 module ZkFold.Base.Protocol.Protostar.AlgebraicMap where
 
-import           Data.Functor.Rep                                    (tabulate, Representable (..))
+import           Data.Functor.Rep                                    (Representable (..))
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M

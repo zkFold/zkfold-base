@@ -4,14 +4,15 @@
 
 module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
+import           Data.Functor.Rep                            (Representable(..))
 import           Data.Map.Strict                             (elems)
 import qualified Data.Map.Strict                             as M
-import           Prelude                                     (type (~), ($))
+import           GHC.IsList                                  (IsList (..))
+import           Prelude                                     (Ord, type (~), ($), Foldable)
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector)
 import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap as AM
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
@@ -61,13 +62,13 @@ type BasicSpecialSoundProtocol f pi m a =
   , VerifierMessage f a ~ f
   )
 
-instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
-    type Witness a (ArithmeticCircuit a (Vector n) o) = ()
-    type Input a (ArithmeticCircuit a (Vector n) o) = [a]
-    type ProverMessage a (ArithmeticCircuit a (Vector n) o) = [a]
-    type VerifierMessage a (ArithmeticCircuit a (Vector n) o) = a
-    type VerifierOutput a (ArithmeticCircuit a (Vector n) o)  = [a]
-    -- type Degree (ArithmeticCircuit a (Vector n) o) = AM.Degree (ArithmeticCircuit a (Vector n) o)
+instance (Representable i, Ord (Rep i), Foldable i, IsList (i a), Item (i a) ~ a, Arithmetic a, AdditiveGroup (i a), Scale a (i a))
+      => SpecialSoundProtocol a (ArithmeticCircuit a i o) where
+    type Witness a (ArithmeticCircuit a i o) = ()
+    type Input a (ArithmeticCircuit a i o) = i a
+    type ProverMessage a (ArithmeticCircuit a i o) = [a]
+    type VerifierMessage a (ArithmeticCircuit a i o) = a
+    type VerifierOutput a (ArithmeticCircuit a i o)  = [a]
 
     -- One round for Plonk
     rounds = P.const 1
@@ -77,7 +78,7 @@ instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit
     -- The transcript will be empty at this point, it is a one-round protocol.
     -- Input is arithmetised. We need to combine its witness with the circuit's witness.
     --
-    prover ac _ pi _ _ = elems $ witnessGenerator ac $ unsafeToVector pi
+    prover ac _ pi _ _ = elems $ witnessGenerator ac pi
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --

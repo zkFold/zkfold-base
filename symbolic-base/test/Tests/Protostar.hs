@@ -28,7 +28,7 @@ import           ZkFold.Symbolic.Data.FieldElement                (FieldElement 
 
 type F = Zp BLS12_381_Scalar
 type G = Point BLS12_381_G1
-type PI = [F]
+type PI = Vector 1 F
 type M = [F]
 type AC = ArithmeticCircuit F (Vector 1) (Vector 1)
 type SPS = FiatShamir F (CommitOpen M G AC)
@@ -54,7 +54,7 @@ testMessageLength :: SPS -> Natural
 testMessageLength (FiatShamir (CommitOpen ac)) = acSizeM ac
 
 initAccumulator :: SPS -> Accumulator PI F G M
-initAccumulator sps = Accumulator (AccumulatorInstance [zero] [zero] [] zero zero) [replicate (testMessageLength sps) zero]
+initAccumulator sps = Accumulator (AccumulatorInstance (singleton zero) [zero] [] zero zero) [replicate (testMessageLength sps) zero]
 
 initAccumulatorInstance :: SPS -> AccumulatorInstance PI F G
 initAccumulatorInstance sps =
@@ -62,7 +62,7 @@ initAccumulatorInstance sps =
     in ai
 
 testPublicInput :: PI
-testPublicInput = [fromConstant @Natural 42]
+testPublicInput = singleton $ fromConstant @Natural 42
 
 testInstanceProofPair :: SPS -> InstanceProofPair PI G M
 testInstanceProofPair sps = instanceProof @_ @F sps testPublicInput
@@ -111,7 +111,7 @@ specAccumulatorScheme = hspec $ do
                 withMaxSuccess 10 $ property $ \x0 -> testDeciderResult (testSPS x0) == ([zero], zero)
         describe "verifier" $ do
             it "must output zeros" $ do
-                withMaxSuccess 10 $ property $ \x0 -> testVerifierResult (testSPS x0) == (zero, [zero], [], [zero], zero)
+                withMaxSuccess 10 $ property $ \x0 -> testVerifierResult (testSPS x0) == (zero, singleton zero, [], [zero], zero)
 
 specProtostar :: IO ()
 specProtostar = do

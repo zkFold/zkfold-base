@@ -17,8 +17,8 @@ import qualified Data.Vector.Split                as V
 import           Data.Zip                         (Semialign (..), Zip (..))
 import           GHC.Generics                     (Generic)
 import           GHC.IsList                       (IsList (..))
-import           Prelude                          hiding (concat, drop, head, length, mod, replicate, sum, tail, take,
-                                                   zip, zipWith, (*))
+import           Prelude                          hiding (concat, drop, head, length, mod, replicate, sum, negate, tail, take,
+                                                   zip, zipWith, (+), (-), (*))
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 
@@ -172,3 +172,19 @@ instance (Random a, KnownNat size) => Random (Vector size a) where
 
 instance ToJSON a => ToJSON (Vector n a) where
     toJSON (Vector xs) = toJSON xs
+
+-------------------------------------------------- Algebraic instances --------------------------------------------------
+
+instance (AdditiveSemigroup a) => AdditiveSemigroup (Vector n a) where
+    (+) = zipWith (+)
+
+instance (Scale b a) => Scale b (Vector n a) where
+    scale = fmap . scale
+
+instance (AdditiveMonoid a, KnownNat n) => AdditiveMonoid (Vector n a) where
+    zero = tabulate (const zero)
+
+instance (AdditiveGroup a, KnownNat n) => AdditiveGroup (Vector n a) where
+    negate = fmap negate
+
+    (-) = zipWith (-)
