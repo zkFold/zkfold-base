@@ -1,9 +1,9 @@
 module ZkFold.Symbolic.Ledger.Validation.OfflineInput where
 
-import           Prelude                                  hiding (Bool, Eq, Maybe, all, any, filter, head, init, last, length, maybe,
-                                                           splitAt, tail, (&&), (*), (+), (/=), (==))
+import           Prelude                                  hiding (Bool, Eq, Maybe, all, any, filter, head, init, last,
+                                                           length, maybe, splitAt, tail, (&&), (*), (+), (/=), (==))
 
-import           ZkFold.Symbolic.Data.Bool                (Bool, all, any, (&&), false)
+import           ZkFold.Symbolic.Data.Bool                (Bool, all, any, false, (&&))
 import           ZkFold.Symbolic.Data.Eq                  (Eq (..))
 import           ZkFold.Symbolic.Data.List                (List, emptyList, filter, findList, head, last, (.:))
 import           ZkFold.Symbolic.Data.Maybe               (maybe)
