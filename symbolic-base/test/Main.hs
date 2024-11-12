@@ -56,6 +56,5 @@ main = do
 
     -- TODO: implement a proper blake2b test
     specBlake2b
-    -- specBlake2b
 
     putStrLn "\nAll tests passed!"
