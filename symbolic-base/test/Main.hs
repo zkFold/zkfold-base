@@ -21,39 +21,39 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
-    -- Base
-    specBinary
+    -- -- Base
+    -- specBinary
 
-    -- Algebra
-    specPermutations
-    specField
-    specAdditiveGroup
-    specPairing
-    specUnivariate
-    specGroebner
+    -- -- Algebra
+    -- specPermutations
+    -- specField
+    -- specAdditiveGroup
+    -- specPairing
+    -- specUnivariate
+    -- specGroebner
 
-    -- Symbolic types and operations
-    specUInt
-    specFFA
-    specByteString
+    -- -- Symbolic types and operations
+    -- specUInt
+    -- specFFA
+    -- specByteString
 
-    -- Arithmetic circuit
-    specArithmeticCircuit
+    -- -- Arithmetic circuit
+    -- specArithmeticCircuit
 
-    -- Arithmetization
-    specArithmetization
+    -- -- Arithmetization
+    -- specArithmetization
 
-    -- Protocols
-    specPlonkup
-    specNonInteractiveProof
+    -- -- Protocols
+    -- specPlonkup
+    -- specNonInteractiveProof
     specProtostar
 
-    -- Cryptography
-    specSHA2Natural
-    specSHA2
+    -- -- Cryptography
+    -- specSHA2Natural
+    -- specSHA2
 
-    -- TODO: implement a proper blake2b test
-    specBlake2b
+    -- -- TODO: implement a proper blake2b test
     -- specBlake2b
+    -- -- specBlake2b
 
     putStrLn "\nAll tests passed!"

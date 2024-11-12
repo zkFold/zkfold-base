@@ -1,13 +1,14 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Protostar.AlgebraicMap where
 
-import           Data.Functor.Rep                                    (tabulate)
+import           Data.Functor.Rep                                    (tabulate, Representable (..))
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map)
 import qualified Data.Map.Strict                                     as M
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             (fmap, type (~), zip, ($), (++), (.), (<$>))
+import           Prelude                                             (fmap, type (~), zip, ($), (++), (.), (<$>), Foldable, Ord)
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -50,8 +51,10 @@ class
         -> [f]
 
 instance
-  ( Arithmetic a
-  , KnownNat n
+  (Representable i
+  , Ord (Rep i)
+  , Foldable i
+  , Arithmetic a
   , Scale a f
   , Ring f
   , AdditiveGroup pi
@@ -62,24 +65,24 @@ instance
   , Scale f m
   , IsList m
   , Item m ~ f
-  ) => AlgebraicMap f pi m (ArithmeticCircuit a (Vector n) o) where
-    type Degree (ArithmeticCircuit a (Vector n) o) = 2
+  ) => AlgebraicMap f pi m (ArithmeticCircuit a i o) where
+    type Degree (ArithmeticCircuit a i o) = 2
 
     -- We can use the polynomial system from the circuit as a base for V_sps.
     --
     algebraicMap ac pi pm _ pad = padDecomposition pad f_sps_uni
         where
-            sys :: [PM.Poly a (SysVar (Vector n)) Natural]
+            sys :: [PM.Poly a (SysVar i) Natural]
             sys = M.elems (acSystem ac)
 
-            witness :: Map (SysVar (Vector n)) f
+            witness :: Map (SysVar i) f
             witness = M.fromList $ zip (getAllVars ac) (toList pi ++ toList (P.head pm))
 
-            varMap :: SysVar (Vector n) -> f
+            varMap :: SysVar i -> f
             varMap x = M.findWithDefault zero x witness
 
-            f_sps :: Vector 3 [PM.Poly a (SysVar (Vector n)) Natural]
-            f_sps = degreeDecomposition @(Degree (ArithmeticCircuit a (Vector n) o)) $ sys
+            f_sps :: Vector 3 [PM.Poly a (SysVar i) Natural]
+            f_sps = degreeDecomposition @(Degree (ArithmeticCircuit a i o)) $ sys
 
             f_sps_uni :: Vector 3 [f]
             f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
