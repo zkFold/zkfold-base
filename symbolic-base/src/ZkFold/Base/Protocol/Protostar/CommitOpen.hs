@@ -22,9 +22,8 @@ data CommitOpenProverMessage m c = Commit c | Open [m]
 instance
     ( BasicSpecialSoundProtocol f pi m a
     , HomomorphicCommit m c
-    ) => SpecialSoundProtocol f pi m (CommitOpen m c a) where
+    ) => SpecialSoundProtocol f pi (CommitOpenProverMessage m c) (CommitOpen m c a) where
       type Witness f (CommitOpen m c a)         = (Witness f a, [m])
-      type ProverMessage f (CommitOpen m c a)   = CommitOpenProverMessage m c
       type VerifierMessage f (CommitOpen m c a) = VerifierMessage f a
       type VerifierOutput f (CommitOpen m c a)  = ([c], VerifierOutput f a)
 

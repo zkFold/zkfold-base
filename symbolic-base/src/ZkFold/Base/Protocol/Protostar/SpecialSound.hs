@@ -29,7 +29,6 @@ and checks that the output is a zero vector of length l.
 --}
 class SpecialSoundProtocol f pi m a where
       type Witness f a
-      type ProverMessage f a
       type VerifierMessage f a
       type VerifierOutput f a
 
@@ -44,25 +43,23 @@ class SpecialSoundProtocol f pi m a where
         -> pi                   -- ^ public input
         -> VerifierMessage f a -- ^ current random challenge
         -> Natural             -- ^ round number (starting from 0)
-        -> ProverMessage f a
+        -> m
 
       verifier :: a
         -> pi                    -- ^ public input
-        -> [ProverMessage f a]   -- ^ prover messages
+        -> [m]   -- ^ prover messages
         -> [VerifierMessage f a] -- ^ random challenges
         -> VerifierOutput f a    -- ^ verifier output
 
 type BasicSpecialSoundProtocol f pi m a =
   ( SpecialSoundProtocol f pi m a
   , Witness f a ~ ()
-  , ProverMessage f a ~ m
   , VerifierMessage f a ~ f
   )
 
 instance (Representable i, Arithmetic a, AdditiveGroup (i a), Scale a (i a))
       => SpecialSoundProtocol a (i a) [a] (ArithmeticCircuit a i o) where
     type Witness a (ArithmeticCircuit a i o) = ()
-    type ProverMessage a (ArithmeticCircuit a i o) = [a]
     type VerifierMessage a (ArithmeticCircuit a i o) = a
     type VerifierOutput a (ArithmeticCircuit a i o)  = [a]
 

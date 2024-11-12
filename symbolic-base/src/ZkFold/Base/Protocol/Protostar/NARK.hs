@@ -32,7 +32,7 @@ instanceProof :: forall a f pi c m .
     , HomomorphicCommit m c
     ) => FiatShamir f (CommitOpen m c a) -> pi -> InstanceProofPair pi c m
 instanceProof a pi =
-    let (c, m) = head $ prover @f @pi @m a () pi () 0
+    let (c, m) = head $ prover @f @pi @[(c, m)] a () pi () 0
     in InstanceProofPair pi (NARKProof [c] [m])
 
 {--
