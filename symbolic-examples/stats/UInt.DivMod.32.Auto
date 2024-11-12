@@ -1,4 +1,4 @@
 UInt.DivMod.32.Auto
-Number of constraints: 11984
-Number of variables: 15207
-Number of range lookups: 7484
+Number of constraints: 1426
+Number of variables: 1770
+Number of range lookups: 766
