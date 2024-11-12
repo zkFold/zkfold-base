@@ -1,15 +1,12 @@
 module ZkFold.Symbolic.Ledger.Validation.OfflineInput where
 
-import           Data.Functor.Rep                         (Representable)
 import           Prelude                                  hiding (Bool, Eq, Maybe, all, any, filter, head, init, last, length, maybe,
                                                            splitAt, tail, (&&), (*), (+), (/=), (==))
 
-import           ZkFold.Symbolic.Class                    (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                (Bool, all, any, (&&), false)
-import           ZkFold.Symbolic.Data.Class               (SymbolicData (Layout))
 import           ZkFold.Symbolic.Data.Eq                  (Eq (..))
 import           ZkFold.Symbolic.Data.List                (List, emptyList, filter, findList, head, last, (.:))
-import           ZkFold.Symbolic.Data.Maybe               (Maybe, maybe)
+import           ZkFold.Symbolic.Data.Maybe               (maybe)
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Common (updateChainIsValid)
 
@@ -48,7 +45,7 @@ offlineInputExisted bId i (wTx, wCTxs, _) =
 
 -- | Checks if the transaction input from on offline transaction output was not spent.
 offlineInputNotSpent ::
-       (Signature context, Representable (Layout (Hash context)), Eq (Bool context) (AddressIndex context))
+       (Signature context, Eq (Bool context) (AddressIndex context))
     => Hash context
     -- ^ The id of the current block.
     -> Input context
@@ -59,18 +56,16 @@ offlineInputNotSpent ::
 offlineInputNotSpent bId i (_, wCTxs, upd) =
     let wUpdates    = fmap fst wCTxs
         u           = head wUpdates
-        addr        = txoAddress $ txiOutput i
+        inputAddr   = txoAddress $ txiOutput i
         -- Get the new assigned index for the input address, maybe
-        addrIxMaybe = findList (\(addrK, _ix) -> addr == addrK) (updateNewAssignments upd)
+        addrIxMaybe = findList (\(addr, _ix) -> addr == inputAddr) (updateNewAssignments upd)
         validAddrIx (_addr, addrIx) =
           let
 
               -- Get the transaction ids for a particular contract id from the update
-              txIds upd = snd <$> filter (\(cId, _) -> cId == addrIx) (updateTransactions upd)
+              txIds upd' = snd <$> filter (\(cId, _) -> cId == addrIx) (updateTransactions upd')
               -- Transactions in each update
               txs       = fmap snd wCTxs
-
-              addr = txoAddress $ txiOutput i
 
           in updateChainIsValid wUpdates
           -- ^ The update chain is valid
@@ -84,7 +79,7 @@ offlineInputNotSpent bId i (_, wCTxs, upd) =
 
 -- | Checks if the offline input is valid.
 offlineInputIsValid ::
-       (Signature context, Representable (Layout (Hash context)), Symbolic context, Eq (Bool context) (AddressIndex context))
+       (Signature context,  Eq (Bool context) (AddressIndex context))
     => Hash context
     -- ^ The id of the current block.
     -> Input context
