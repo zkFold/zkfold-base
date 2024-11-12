@@ -1,101 +1,119 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
-
 module Tests.Protostar (specProtostar) where
 
-import           Control.Monad                               (replicateM)
-import           Data.Kind                                   (Type)
-import           Prelude                                     (IO, id, type (~), ($), (.), (<$>), (<*>), (<>))
-import qualified Prelude                                     as P
-import qualified Test.Hspec
-import           Test.Hspec                                  (Spec, describe, hspec)
-import           Test.QuickCheck
+import           GHC.Generics                                     (Par1 (..), U1 (..), type (:*:) (..), type (:.:) (..))
+import           GHC.IsList                                       (IsList (..))
+import           Prelude                                          hiding (Num (..), replicate, sum, (+))
+import           Test.Hspec                                       (describe, hspec, it)
+import           Test.QuickCheck                                  (property, withMaxSuccess)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
-import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar
-import           ZkFold.Prelude                              ((!!))
-import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import           ZkFold.Base.Algebra.Basic.Class                  (FromConstant (..), one, zero)
+import           ZkFold.Base.Algebra.Basic.Field                  (Zp)
+import           ZkFold.Base.Algebra.Basic.Number                 (Natural)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381      (BLS12_381_G1, BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.Class          (Point)
+import           ZkFold.Base.Algebra.Polynomials.Univariate       (PolyVec, evalPolyVec)
+import           ZkFold.Base.Data.HFunctor                        (hmap)
+import           ZkFold.Base.Data.Vector                          (Vector, item, singleton)
+import           ZkFold.Base.Protocol.Protostar.Accumulator       (Accumulator (..), AccumulatorInstance (..))
+import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
+import           ZkFold.Base.Protocol.Protostar.AlgebraicMap      (AlgebraicMap (..))
+import           ZkFold.Base.Protocol.Protostar.CommitOpen        (CommitOpen (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir        (FiatShamir (..))
+import           ZkFold.Base.Protocol.Protostar.NARK              (InstanceProofPair (..), NARKProof (..),
+                                                                   instanceProof)
+import           ZkFold.Prelude                                   (replicate)
+import           ZkFold.Symbolic.Class                            (Symbolic)
+import           ZkFold.Symbolic.Compiler                         (ArithmeticCircuit, acSizeM, acSizeN, compile, hlmap)
+import           ZkFold.Symbolic.Data.FieldElement                (FieldElement (..))
 
-data RecursiveFunction n c a
-    = RecursiveFunction
-        { rIterations :: Natural
-        , rInitial    :: Vector n a
-        , rFunction   :: Vector n (FieldElement c) -> Vector n (FieldElement c)
-        }
+type F = Zp BLS12_381_Scalar
+type G = Point BLS12_381_G1
+type PI = [F]
+type M = [F]
+type AC = ArithmeticCircuit F (Vector 1) (Vector 1)
+type SPS = FiatShamir F (CommitOpen M G AC)
+type PARDEG = 5
+type PAR = PolyVec F PARDEG
 
-instance P.Show a => P.Show (RecursiveFunction n c a) where
-    show RecursiveFunction{..} = P.unlines [P.show rIterations, P.show rInitial]
+testFunction :: forall ctx . (Symbolic ctx, FromConstant F (FieldElement ctx))
+    => PAR -> Vector 1 (FieldElement ctx) -> Vector 1 (FieldElement ctx)
+testFunction p x =
+    let p' = fromList $ map fromConstant $ toList p :: PolyVec (FieldElement ctx) PARDEG
+    in singleton $ evalPolyVec p' $ item x
 
-instance
-    ( KnownNat n
-    , Arbitrary a
-    , Symbolic c
-    , MultiplicativeSemigroup (FieldElement c)
-    ) => Arbitrary (RecursiveFunction n c a) where
-    -- Given a column-vector v, generate two random matrices L and R and compute (Lv *_h Rv) where *_h is Hadamard product
-    -- This will construct a reasonably complicated recursive function for testing purposes
-    arbitrary = do
-        rIterations <- P.fromIntegral <$> chooseInteger (1, 100)
-        rInitial <- arbitrary
-        let generateFE  = fromConstant <$> chooseInteger (0, 10)
-            generateFEV = V.unsafeToVector <$> replicateM (P.fromIntegral $ value @n) generateFE
-        vectorsL <- replicateM (P.fromIntegral $ value @n) generateFEV
-        vectorsR <- replicateM (P.fromIntegral $ value @n) generateFEV
-        let rFunction v = V.generate (\i -> sum ((*) <$> (vectorsL !! i) <*> v) * sum ((*) <$> (vectorsR !! i) <*> v))
-        P.pure RecursiveFunction{..}
+testCircuit :: PAR -> AC
+testCircuit p =
+    hlmap (\x -> Comp1 (Par1 <$> x) :*: U1)
+    $ hmap (\(Comp1 x') -> unPar1 <$> x')
+    $ compile @F $ testFunction p
 
-evaluateRF
-    :: forall n c a
-    .  c ~ ArithmeticCircuit a (Vector n)
-    => KnownNat n
-    => RecursiveFunction n c a
-    -> Vector n a
-evaluateRF RecursiveFunction{..} =
-    let res = nTimes rIterations rFunction
-        ac  = compile @a res
-     in eval ac rInitial
+testSPS :: PAR -> SPS
+testSPS = FiatShamir . CommitOpen . testCircuit
 
--- I can't believe there is no such function in Prelude
-nTimes :: Natural -> (a -> a) -> (a -> a)
-nTimes 0 _ = id
-nTimes 1 f = f
-nTimes n f = f . nTimes (n -! 1) f
+testMessageLength :: SPS -> Natural
+testMessageLength (FiatShamir (CommitOpen ac)) = acSizeM ac
 
-it :: Testable prop => P.String -> prop -> Spec
-it desc prop = Test.Hspec.it desc (property prop)
+initAccumulator :: SPS -> Accumulator PI F G M
+initAccumulator sps = Accumulator (AccumulatorInstance [zero] [zero] [] zero zero) [replicate (testMessageLength sps) zero]
 
-specProtostarN
-    :: forall (c :: (Type -> Type) -> Type) n
-    .  KnownNat n
-    => c ~ ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector n)
-    => Symbolic c
-    => IO ()
-specProtostarN = hspec $
-    describe ("Test recursive functions of " <> P.show (value @n) <> " arguments") $
-        it "folds correctly" $ withMaxSuccess 10 $ \(rf :: RecursiveFunction n c (Zp BLS12_381_Scalar)) -> P.undefined rf === (1 :: Natural)
-{--
-            let ProtostarResult{..} = iterate @c @n @(Point (Ed25519 c)) @(Zp BLS12_381_Scalar) rFunction rInitial rIterations
-             in result === (fromConstant <$> evaluateRF (rf :: RecursiveFunction n c (Zp BLS12_381_Scalar)))
---}
--- TODO: fix the tests and their speed (requires at least in-circuit elliptic curves)
+initAccumulatorInstance :: SPS -> AccumulatorInstance PI F G
+initAccumulatorInstance sps =
+    let Accumulator ai _ = initAccumulator sps
+    in ai
+
+testPublicInput :: PI
+testPublicInput = [fromConstant @Natural 42]
+
+testInstanceProofPair :: SPS -> InstanceProofPair PI G M
+testInstanceProofPair sps = instanceProof @_ @F sps testPublicInput
+
+testMessages :: SPS -> [M]
+testMessages sps =
+    let InstanceProofPair _ (NARKProof _ ms) = testInstanceProofPair sps
+    in ms
+
+testNarkProof :: SPS -> [G]
+testNarkProof sps =
+    let InstanceProofPair _ (NARKProof cs _) = testInstanceProofPair sps
+    in cs
+
+testAccumulator :: SPS -> Accumulator PI F G M
+testAccumulator sps = fst $ Acc.prover sps (initAccumulator sps) $ testInstanceProofPair sps
+
+testAccumulatorInstance :: SPS -> AccumulatorInstance PI F G
+testAccumulatorInstance sps =
+    let Accumulator ai _ = testAccumulator sps
+    in ai
+
+testAccumulationProof :: SPS -> [G]
+testAccumulationProof sps = snd $ Acc.prover sps (initAccumulator sps) $ testInstanceProofPair sps
+
+testDeciderResult :: SPS -> ([G], G)
+testDeciderResult sps = decider sps $ testAccumulator sps
+
+testVerifierResult :: SPS -> (F, PI, [F], [G], G)
+testVerifierResult sps = Acc.verifier @PI @F @G @M @(FiatShamir F (CommitOpen M G AC))
+    testPublicInput (testNarkProof sps) (initAccumulatorInstance sps) (testAccumulatorInstance sps) (testAccumulationProof sps)
+
+specAlgebraicMap :: IO ()
+specAlgebraicMap = hspec $ do
+    describe "Algebraic map specification" $ do
+        describe "Algebraic map" $ do
+            it "must output zeros on the public input and testMessages" $ do
+                withMaxSuccess 10 $ property $
+                    \x0 -> algebraicMap (testCircuit x0) testPublicInput (testMessages $ testSPS x0) [] one == replicate (acSizeN $ testCircuit x0) zero
+
+specAccumulatorScheme :: IO ()
+specAccumulatorScheme = hspec $ do
+    describe "Accumulator scheme specification" $ do
+        describe "decider" $ do
+            it  "must output zeros" $ do
+                withMaxSuccess 10 $ property $ \x0 -> testDeciderResult (testSPS x0) == ([zero], zero)
+        describe "verifier" $ do
+            it "must output zeros" $ do
+                withMaxSuccess 10 $ property $ \x0 -> testVerifierResult (testSPS x0) == (zero, [zero], [], [zero], zero)
 
 specProtostar :: IO ()
 specProtostar = do
-    P.pure ()
-{--  Too optimistic to think these tests will work fast enough...
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 1)) @1
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 2)) @2
-
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 3)) @3
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 10)) @10
-    specProtostarN @(ArithmeticCircuit (Zp BLS12_381_Scalar) (Vector 100)) @100
---}
+    specAlgebraicMap
+    specAccumulatorScheme
