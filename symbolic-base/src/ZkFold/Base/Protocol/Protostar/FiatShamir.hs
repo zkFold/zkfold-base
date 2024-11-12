@@ -16,18 +16,17 @@ newtype FiatShamir f a = FiatShamir a
     deriving Generic
 
 instance
-    ( BasicSpecialSoundProtocol f (Input f a) m a
-    , RandomOracle (Input f a) f
+    ( BasicSpecialSoundProtocol f pi m a
+    , RandomOracle pi f
     , RandomOracle (f, c) f
     , HomomorphicCommit m c
-    ) => SpecialSoundProtocol f (FiatShamir f (CommitOpen m c a)) where
+    ) => SpecialSoundProtocol f pi m (FiatShamir f (CommitOpen m c a)) where
         type Witness f (FiatShamir f (CommitOpen m c a))         = Witness f a
-        type Input f (FiatShamir f (CommitOpen m c a))           = Input f a
         type ProverMessage f (FiatShamir f (CommitOpen m c a))   = [(c, m)]
         type VerifierMessage f (FiatShamir f (CommitOpen m c a)) = ()
         type VerifierOutput f (FiatShamir f (CommitOpen m c a))  = VerifierOutput f (CommitOpen m c a)
 
-        outputLength (FiatShamir a) = outputLength @f a
+        outputLength (FiatShamir a) = outputLength @f @pi @m a
 
         rounds _ = 1
 
@@ -35,18 +34,18 @@ instance
             let r0 = oracle pi
                 f (ms, cs, rs) _ =
                   let r   = last rs
-                      m   = prover @f a w pi r (length ms)
-                      c   = case prover @f a' (w, ms) pi r (length ms) of
+                      m   = prover @f @pi @m a w pi r (length ms)
+                      c   = case prover @f @pi @m a' (w, ms) pi r (length ms) of
                                 Commit c' -> c'
                                 _         -> error "Invalid message"
                   in (ms ++ [m], cs ++ [c], rs ++ [oracle @(f, c) (r, c)])
 
-                (ms', cs', _) = foldl f ([], [], [r0]) [1 .. rounds @f a]
+                (ms', cs', _) = foldl f ([], [], [r0]) [1 .. rounds @f @pi @m a]
             in zip cs' ms'
 
         verifier (FiatShamir a) pi [ms'] _ =
             let (cs, ms) = unzip ms'
                 r0 = oracle pi
                 rs = foldl (\acc c -> acc ++ [oracle @(f, c) (last acc, c)]) [r0] cs
-            in verifier @f a pi (Open ms : map Commit cs) rs
+            in verifier @f @pi @m a pi (Open ms : map Commit cs) rs
         verifier _ _ _ _ = error "Invalid message"

@@ -21,11 +21,9 @@ data ProtostarLookup (l :: Natural) (sizeT :: Natural)
 data ProtostarLookupParams f sizeT = ProtostarLookupParams (Zp sizeT -> f) (f -> [Zp sizeT])
     deriving Generic
 
-instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLookup l sizeT) where
+instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (ProtostarLookupParams f sizeT) m (ProtostarLookup l sizeT) where
     type Witness f (ProtostarLookup l sizeT)         = Vector l f
     -- ^ w in the paper
-    type Input f (ProtostarLookup l sizeT)           = ProtostarLookupParams f sizeT
-    -- ^ t and t^{-1} from the paper
     type ProverMessage f (ProtostarLookup l sizeT)   = (Vector l f, SVector sizeT f)
     -- ^ (w, m) or (h, g) in the paper
     type VerifierMessage f (ProtostarLookup l sizeT) = f
@@ -38,7 +36,7 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
 
     prover :: ProtostarLookup l sizeT
            -> Witness f (ProtostarLookup l sizeT)
-           -> Input f (ProtostarLookup l sizeT)
+           -> ProtostarLookupParams f sizeT
            -> f
            -> Natural
            -> ProverMessage f (ProtostarLookup l sizeT)
@@ -53,7 +51,7 @@ instance (Arithmetic f, KnownNat l, KnownNat sizeT) => SpecialSoundProtocol f (P
     prover _ _ _ _ _ = error "Invalid round"
 
     verifier :: ProtostarLookup l sizeT
-             -> Input f (ProtostarLookup l sizeT)
+             -> ProtostarLookupParams f sizeT
              -> [ProverMessage f (ProtostarLookup l sizeT)]
              -> [f]
              -> Bool

@@ -3,7 +3,6 @@
 module ZkFold.Base.Protocol.Protostar.RecursiveCircuit where
 
 import           Data.Functor.Rep                           (tabulate)
-import           Data.Typeable                              (Proxy)
 import           GHC.Generics                               (Par1 (..), U1 (..), type (:.:) (..), (:*:) (..))
 import           GHC.IsList                                 (IsList (..))
 import           Prelude                                    hiding (Num (..), drop, head, take, zipWith)

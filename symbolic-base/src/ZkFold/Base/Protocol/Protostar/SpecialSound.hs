@@ -27,9 +27,8 @@ challenge ri ∈ F. After the final message mk, the verifier computes the algebr
 and checks that the output is a zero vector of length l.
 
 --}
-class SpecialSoundProtocol f a where
+class SpecialSoundProtocol f pi m a where
       type Witness f a
-      type Input f a
       type ProverMessage f a
       type VerifierMessage f a
       type VerifierOutput f a
@@ -42,29 +41,27 @@ class SpecialSoundProtocol f a where
 
       prover :: a
         -> Witness f a         -- ^ witness
-        -> Input f a           -- ^ public input
+        -> pi                   -- ^ public input
         -> VerifierMessage f a -- ^ current random challenge
         -> Natural             -- ^ round number (starting from 0)
         -> ProverMessage f a
 
       verifier :: a
-        -> Input f a             -- ^ public input
+        -> pi                    -- ^ public input
         -> [ProverMessage f a]   -- ^ prover messages
         -> [VerifierMessage f a] -- ^ random challenges
         -> VerifierOutput f a    -- ^ verifier output
 
 type BasicSpecialSoundProtocol f pi m a =
-  ( SpecialSoundProtocol f a
+  ( SpecialSoundProtocol f pi m a
   , Witness f a ~ ()
-  , Input f a ~ pi
   , ProverMessage f a ~ m
   , VerifierMessage f a ~ f
   )
 
 instance (Representable i, Arithmetic a, AdditiveGroup (i a), Scale a (i a))
-      => SpecialSoundProtocol a (ArithmeticCircuit a i o) where
+      => SpecialSoundProtocol a (i a) [a] (ArithmeticCircuit a i o) where
     type Witness a (ArithmeticCircuit a i o) = ()
-    type Input a (ArithmeticCircuit a i o) = i a
     type ProverMessage a (ArithmeticCircuit a i o) = [a]
     type VerifierMessage a (ArithmeticCircuit a i o) = a
     type VerifierOutput a (ArithmeticCircuit a i o)  = [a]
