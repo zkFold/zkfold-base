@@ -21,7 +21,9 @@ type UpdateId = Hash
 type AddressIndex = UInt 40 Auto
 
 data Update context = Update
-  { updateNewAssignments  :: List context (Address context, AddressIndex context)
+  { updateId              :: UpdateId context
+    -- ^ the Merkle tree root of the TxId list of transactions that contains online transactions.
+  , updateNewAssignments  :: List context (Address context, AddressIndex context)
     -- ^ the map from addresses into assigned indices. Only new assignments.
   , updateSpentOutputs    :: List context (AddressIndex context, Bool context)
     -- ^ the map from address indices into boolean values.
@@ -47,8 +49,5 @@ data Update context = Update
     -- a user proves that there is a transaction in this update
     -- that produced this Input.
   }
-
-updateId :: Update context -> UpdateId context
-updateId = undefined
 
 type UpdateChain context = List context (Update context)
