@@ -3,30 +3,21 @@
 
 module ZkFold.Symbolic.MonadCircuit where
 
-import           Control.Applicative             (Applicative)
 import           Control.Monad                   (Monad (return))
-import           Data.Eq                         (Eq)
-import           Data.Function                   ((.))
-import           Data.Functor                    (Functor)
-import           Data.Functor.Identity           (Identity (..))
-import           Data.Ord                        (Ord)
 import           Data.Type.Equality              (type (~))
-import           Numeric.Natural                 (Natural)
 
 import           ZkFold.Base.Algebra.Basic.Class
 
--- | A @'WitnessField'@ should support all algebraic operations
--- used inside an arithmetic circuit.
-type WitnessField n a = ( FiniteField a, ToConstant a, Const a ~ n
+-- | A 'ResidueField' is a 'FiniteField'
+-- backed by a 'SemiEuclidean' constant type.
+type ResidueField n a = ( FiniteField a, ToConstant a, Const a ~ n
                         , FromConstant n a, SemiEuclidean n)
 
--- | A type of witness builders. @i@ is a type of variables, @a@ is a base field.
+-- | A type of witness builders. @i@ is a type of variables.
 --
 -- Witness builders should support all the operations of witnesses,
 -- and in addition there should be a corresponding builder for each variable.
-class ( FromConstant a w, Scale a w, FiniteField w
-      , ToConstant w, FromConstant (Const w) w, SemiEuclidean (Const w)
-      ) => Witness i a w | w -> i, w -> a where
+class ResidueField (Const w) w => Witness i w | w -> i where
   -- | @at x@ is a witness builder whose value is equal to the value of @x@.
   at :: i -> w
 
@@ -69,7 +60,9 @@ type NewConstraint var a = forall x . Algebra a x => (var -> x) -> var -> x
 -- * That provided witnesses satisfy the provided constraints. To check this,
 --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
 -- * That introduced constraints are supported by the zk-SNARK utilized for later proving.
-class (Monad m, FromConstant a var, Witness var a w) => MonadCircuit var a w m | m -> var, m -> a, m -> w where
+class ( Monad m, FromConstant a var
+      , FromConstant a w, Scale a w, Witness var w
+      ) => MonadCircuit var a w m | m -> var, m -> a, m -> w where
   -- | Creates new variable from witness.
   --
   -- NOTE: this does not add any constraints to the system,
@@ -126,33 +119,3 @@ newConstrained poly witness = do
   v <- unconstrained witness
   constraint (`poly` v)
   return v
-
--- | Field of witnesses with decidable equality and ordering
--- is called an ``arithmetic'' field.
-type Arithmetic a = (WitnessField Natural a, Eq a, Ord a)
-
--- | An example implementation of a @'MonadCircuit'@ which computes witnesses
--- immediately and drops the constraints.
-newtype Witnesses n a x = Witnesses { runWitnesses :: x }
-  deriving (Functor, Applicative, Monad) via Identity
-
-newtype WitnessOf n a = WitnessOf { witnessOf :: a }
-  deriving newtype ( AdditiveSemigroup, AdditiveMonoid, AdditiveGroup, MultiplicativeSemigroup, MultiplicativeMonoid, Field)
-
-deriving newtype instance FromConstant c a => FromConstant c (WitnessOf n a)
-instance {-# OVERLAPPING #-} FromConstant (WitnessOf n a) (WitnessOf n a)
-deriving newtype instance (ToConstant a, Const a ~ n) => ToConstant (WitnessOf n a)
-deriving newtype instance Finite a => Finite (WitnessOf n a)
-deriving newtype instance Scale c a => Scale c (WitnessOf n a)
-instance {-# OVERLAPPING #-} MultiplicativeSemigroup a => Scale (WitnessOf n a) (WitnessOf n a)
-instance Exponent a p => Exponent (WitnessOf n a) p where WitnessOf x ^ p = WitnessOf (x ^ p)
-deriving newtype instance Semiring a => Semiring (WitnessOf n a)
-deriving newtype instance Ring a => Ring (WitnessOf n a)
-
-instance WitnessField n a => Witness a a (WitnessOf n a) where
-  at = WitnessOf
-
-instance WitnessField n a => MonadCircuit a a (WitnessOf n a) (Witnesses n a) where
-  unconstrained = return . witnessOf
-  constraint _ = return ()
-  rangeConstraint _ _ = return ()
