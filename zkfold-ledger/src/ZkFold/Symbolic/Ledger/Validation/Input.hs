@@ -16,6 +16,8 @@ data InputWitness context
       (Transaction context)
       (List context (Update context, List context (Transaction context)))
       (Update context)
+  | OnlineTxInputWitness
+  | BridgedTxInputWitness
 
 -- | Checks if the input existed.
 inputExisted ::
