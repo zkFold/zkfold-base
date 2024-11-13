@@ -189,3 +189,6 @@ _ \\ _ = undefined
 -- TODO: Use the `find` from ZkFold.Symbolic.Data.Maybe
 findList :: (x -> Bool context) -> List context x -> Maybe context x
 findList = undefined
+
+findMap :: key -> List context (key, val) -> Maybe context val
+findMap = undefined

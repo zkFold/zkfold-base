@@ -89,8 +89,6 @@ library
     exposed-modules:
       ZkFold.Symbolic.Ledger.Types
       ZkFold.Symbolic.Ledger.Types.Address
-      ZkFold.Symbolic.Ledger.Types.Basic
-      ZkFold.Symbolic.Ledger.Types.Bridge
       ZkFold.Symbolic.Ledger.Types.Contract
       ZkFold.Symbolic.Ledger.Types.Hash
       ZkFold.Symbolic.Ledger.Types.Input
@@ -99,11 +97,11 @@ library
       ZkFold.Symbolic.Ledger.Types.Transaction
       ZkFold.Symbolic.Ledger.Types.Update
       ZkFold.Symbolic.Ledger.Types.Value
-      ZkFold.Symbolic.Ledger.Validation.Bridge
       ZkFold.Symbolic.Ledger.Validation.Contract
       ZkFold.Symbolic.Ledger.Validation.Common
-      ZkFold.Symbolic.Ledger.Validation.PrivateInput
-      ZkFold.Symbolic.Ledger.Validation.PublicInput
+      ZkFold.Symbolic.Ledger.Validation.Input
+      -- ZkFold.Symbolic.Ledger.Validation.PrivateInput
+      -- ZkFold.Symbolic.Ledger.Validation.PublicInput
       ZkFold.Symbolic.Ledger.Validation.Transaction
       ZkFold.Symbolic.Ledger.Validation.Update
     build-depends:
