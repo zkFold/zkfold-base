@@ -81,7 +81,7 @@ maybe :: forall a b c .
     (Symbolic c, SymbolicData b, Context b ~ c) =>
     (Representable (Layout b), Traversable (Layout b)) =>
     b -> (a -> b) -> Maybe c a -> b
-maybe d h x@(Maybe _ v) = bool @(Bool c) d (h v) $ isNothing x
+maybe d h x@(Maybe _ v) = bool @(Bool c) d (h v) $ isJust x
 
 find :: forall a c t .
     (Symbolic c, SymbolicData a, Context a ~ c, Support a ~ Proxy c) =>
