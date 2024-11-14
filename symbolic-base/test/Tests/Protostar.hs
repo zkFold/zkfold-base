@@ -57,7 +57,7 @@ testSPS = FiatShamir . CommitOpen . testCircuit
 testMessageLength :: SPS -> Natural
 testMessageLength (FiatShamir (CommitOpen ac)) = acSizeM ac
 
-initAccumulator :: SPS -> Accumulator F I G M K
+initAccumulator :: SPS -> Accumulator F I M G K
 initAccumulator sps = Accumulator (AccumulatorInstance (singleton zero) (singleton zero) (unsafeToVector []) zero zero) (singleton $ replicate (testMessageLength sps) zero)
 
 initAccumulatorInstance :: SPS -> AccumulatorInstance F I G K
@@ -68,8 +68,8 @@ initAccumulatorInstance sps =
 testPublicInput :: I F
 testPublicInput = singleton $ fromConstant @Natural 42
 
-testInstanceProofPair :: SPS -> InstanceProofPair F I G M K
-testInstanceProofPair sps = instanceProof @_ @F @_ @_ @D sps testPublicInput
+testInstanceProofPair :: SPS -> InstanceProofPair F I M G K
+testInstanceProofPair sps = instanceProof @_ @_ @_ @_ @D sps testPublicInput
 
 testMessages :: SPS -> Vector K M
 testMessages sps =
@@ -81,8 +81,8 @@ testNarkProof sps =
     let InstanceProofPair _ (NARKProof cs _) = testInstanceProofPair sps
     in cs
 
-testAccumulator :: SPS -> Accumulator F I G M K
-testAccumulator sps = fst $ Acc.prover @F @I @G @M @K @D sps (initAccumulator sps) $ testInstanceProofPair sps
+testAccumulator :: SPS -> Accumulator F I M G K
+testAccumulator sps = fst $ Acc.prover @F @I @M @G @D @K sps (initAccumulator sps) $ testInstanceProofPair sps
 
 testAccumulatorInstance :: SPS -> AccumulatorInstance F I G K
 testAccumulatorInstance sps =
@@ -93,10 +93,10 @@ testAccumulationProof :: SPS -> Vector (D - 1) G
 testAccumulationProof sps = snd $ Acc.prover sps (initAccumulator sps) $ testInstanceProofPair sps
 
 testDeciderResult :: SPS -> (Vector K G, G)
-testDeciderResult sps = decider @F @I @G @M @K @D sps $ testAccumulator sps
+testDeciderResult sps = decider @F @I @M @G @D @K sps $ testAccumulator sps
 
 testVerifierResult :: SPS -> (F, I F, Vector (K-1) F, Vector K G, G)
-testVerifierResult sps = Acc.verifier @F @I @G @M @K @D @(FiatShamir (CommitOpen AC))
+testVerifierResult sps = Acc.verifier @F @I @M @G @D @K @(FiatShamir (CommitOpen AC))
     testPublicInput (testNarkProof sps) (initAccumulatorInstance sps) (testAccumulatorInstance sps) (testAccumulationProof sps)
 
 specAlgebraicMap :: IO ()

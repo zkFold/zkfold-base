@@ -67,9 +67,9 @@ instance
 
 
 padDecomposition :: forall f n .
-    ( KnownNat n
-    , MultiplicativeMonoid f
+    ( MultiplicativeMonoid f
     , AdditiveMonoid f
+    , KnownNat n
      ) => f -> V.Vector n [f] -> [f]
 padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) * ) <$> p)
     where

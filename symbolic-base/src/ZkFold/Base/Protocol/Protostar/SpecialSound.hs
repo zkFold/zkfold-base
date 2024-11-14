@@ -6,9 +6,7 @@ module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
 import           Data.Functor.Rep                            (Representable(..))
 import           Data.Map.Strict                             (elems)
-import qualified Data.Map.Strict                             as M
 import           Prelude                                     (($))
-import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -28,11 +26,8 @@ challenge ri ∈ F. After the final message mk, the verifier computes the algebr
 and checks that the output is a zero vector of length l.
 
 --}
-class SpecialSoundProtocol f i m d k a where
-      type VerifierOutput f i m d k a
-
-      outputLength :: a -> Natural
-      -- ^ l in the paper, the number of algebraic equations checked by the verifier
+class SpecialSoundProtocol f i m c d k a where
+      type VerifierOutput f i m c d k a
 
       prover :: a
         -> i f                        -- ^ public input
@@ -44,12 +39,10 @@ class SpecialSoundProtocol f i m d k a where
         -> i f                        -- ^ public input
         -> Vector k m                 -- ^ prover messages
         -> Vector (k-1) f             -- ^ random challenges
-        -> VerifierOutput f i m d k a -- ^ verifier output
+        -> VerifierOutput f i m c d k a -- ^ verifier output
 
-instance (Arithmetic a, Representable i, KnownNat (d + 1)) => SpecialSoundProtocol a i [a] d 1 (ArithmeticCircuit a i o) where
-    type VerifierOutput a i [a] d 1 (ArithmeticCircuit a i o) = [a]
-
-    outputLength ac = P.fromIntegral $ M.size (acSystem ac)
+instance (Arithmetic a, Representable i, KnownNat (d + 1)) => SpecialSoundProtocol a i [a] c d 1 (ArithmeticCircuit a i o) where
+    type VerifierOutput a i [a] c d 1 (ArithmeticCircuit a i o) = [a]
 
     -- Just return the witness values on the public input
     prover ac pi _ _ = elems $ witnessGenerator ac pi

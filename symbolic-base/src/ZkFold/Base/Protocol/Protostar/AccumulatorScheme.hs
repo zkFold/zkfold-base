@@ -31,11 +31,11 @@ import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 --
 -- TODO: define the initial accumulator
 --
-class AccumulatorScheme f i c m k d a where
+class AccumulatorScheme f i m c d k a where
   prover   :: a
-           -> Accumulator f i c m k                      -- accumulator
-           -> InstanceProofPair f i c m k                -- instance-proof pair (pi, π)
-           -> (Accumulator f i c m k, Vector (d - 1) c)  -- updated accumulator and accumulation proof
+           -> Accumulator f i m c k                      -- accumulator
+           -> InstanceProofPair f i m c k                -- instance-proof pair (pi, π)
+           -> (Accumulator f i m c k, Vector (d - 1) c)  -- updated accumulator and accumulation proof
 
   verifier :: i f                                        -- Public input
            -> Vector k c                                 -- NARK proof π.x
@@ -45,22 +45,22 @@ class AccumulatorScheme f i c m k d a where
            -> (f, i f, Vector (k-1) f, Vector k c, c)    -- returns zeros if the accumulation proof is correct
 
   decider  :: a
-           -> Accumulator f i c m k                      -- final accumulator
+           -> Accumulator f i m c k                      -- final accumulator
            -> (Vector k c, c)                            -- returns zeros if the final accumulator is valid
 
 instance
-    ( Ring f
-    , KnownNat k
-    , Zip i
+    ( AlgebraicMap f i d a
+    , AlgebraicMap (PU.PolyVec f (d + 1)) i d a
+    , Ring f
+    , Zip i    
     , KnownNat (d - 1)
     , KnownNat (d + 1)
-    , AlgebraicMap f i d a
-    , AlgebraicMap (PU.PolyVec f (d + 1)) i d a
+    , Scale f c
     , HomomorphicCommit [f] c
     , RandomOracle (i f) f    -- Random oracle for compressing public input
     , RandomOracle c f        -- Random oracle ρ_NARK
-    , Scale f c
-    ) => AccumulatorScheme f i c [f] k d (FiatShamir (CommitOpen a)) where
+    , KnownNat k
+    ) => AccumulatorScheme f i [f] c d k (FiatShamir (CommitOpen a)) where
   prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
       where

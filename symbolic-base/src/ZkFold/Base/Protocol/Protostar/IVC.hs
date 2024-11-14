@@ -27,48 +27,48 @@ import           ZkFold.Base.Protocol.Protostar.SpecialSound      (SpecialSoundP
 -- | The final result of recursion and the final accumulator.
 -- Accumulation decider is an arithmetizable function which can be called on the final accumulator.
 --
-data IVCInstanceProof f i c m k d
+data IVCInstanceProof f i m c d k
     = IVCInstanceProof
     { ivcInstance :: i f
     , ivcCommits  :: Vector k c -- NARK proof π.x
-    , ivcAcc      :: Accumulator f i c m k
-    , ivcAcc'     :: Accumulator f i c m k
+    , ivcAcc      :: Accumulator f i m c k
+    , ivcAcc'     :: Accumulator f i m c k
     , ivcAccProof :: Vector (d-1) c
     } deriving (GHC.Generics.Generic)
 
-deriving instance (P.Show f, P.Show (i f), P.Show c, P.Show m) => P.Show (IVCInstanceProof f i c m k d)
-deriving instance (NFData f, NFData (i f), NFData c, NFData m) => NFData (IVCInstanceProof f i c m k d)
+deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCInstanceProof f i m c d k)
+deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCInstanceProof f i m c d k)
 
 ivcInitialize ::
     ( AdditiveMonoid f
     , Representable i
+    , m ~ Vector 1 f
     , AdditiveMonoid c
-    , m ~ Vector 1 f 
-    ) => IVCInstanceProof f i c m 1 d
+    ) => IVCInstanceProof f i m c d 1
 ivcInitialize =
     let acc = Accumulator (AccumulatorInstance (tabulate zero) (singleton zero) (unsafeToVector []) zero zero) (singleton zero)
     in IVCInstanceProof (tabulate zero) (singleton zero) acc acc (unsafeToVector [])
 
-ivcIterate :: forall f i c m k (d :: Natural) a .
-    ( Ring f
-    , KnownNat k
-    , SpecialSoundProtocol f i m d k a
+ivcIterate :: forall f i m c (d :: Natural) k a .
+    ( SpecialSoundProtocol f i m c d k a
+    , Ring f
     , HomomorphicCommit m c
     , RandomOracle (i f) f
     , RandomOracle c f
-    , AccumulatorScheme f i c m k d (FiatShamir (CommitOpen a))
-    ) => FiatShamir (CommitOpen a) -> IVCInstanceProof f i c m k d -> i f -> IVCInstanceProof f i c m k d
+    , KnownNat k
+    , AccumulatorScheme f i m c d k (FiatShamir (CommitOpen a))
+    ) => FiatShamir (CommitOpen a) -> IVCInstanceProof f i m c d k -> i f -> IVCInstanceProof f i m c d k
 ivcIterate fs (IVCInstanceProof _ _ _ acc' _) pi' =
     let narkIP@(InstanceProofPair _ (NARKProof cs _)) = instanceProof @_ @_ @_ @_ @d fs pi'
         (acc'', accProof') = Acc.prover fs acc' narkIP
     in IVCInstanceProof pi' cs acc' acc'' accProof'
 
-ivcVerify :: forall f i c m k d a .
-    ( AccumulatorScheme f i c m k d a
-    ) => a -> IVCInstanceProof f i c m k d -> ((f, i f, Vector (k-1) f, Vector k c, c), (Vector k c, c))
+ivcVerify :: forall f i m c d k a .
+    ( AccumulatorScheme f i m c d k a
+    ) => a -> IVCInstanceProof f i m c d k -> ((f, i f, Vector (k-1) f, Vector k c, c), (Vector k c, c))
 ivcVerify a (IVCInstanceProof {..}) =
     let accX  = ivcAcc^.x
         accX' = ivcAcc'^.x
     in
-        ( Acc.verifier @f @i @c @m @k @d @a ivcInstance ivcCommits accX accX' ivcAccProof
-        , decider @f @i @c @m @k @d @a a ivcAcc')
+        ( Acc.verifier @f @i @m @c @d @k @a ivcInstance ivcCommits accX accX' ivcAccProof
+        , decider @f @i @m @c @d @k @a a ivcAcc')

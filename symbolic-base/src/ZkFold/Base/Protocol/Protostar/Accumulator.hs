@@ -28,7 +28,7 @@ makeLenses ''AccumulatorInstance
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
-data Accumulator f i c m k
+data Accumulator f i m c k
     = Accumulator
         { _x :: AccumulatorInstance f i c k
         , _w :: Vector k m
