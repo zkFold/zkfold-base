@@ -179,7 +179,7 @@ instance (Ord (Rep i), Ord a) => Package (ArithmeticCircuit a i) where
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
 instance
-  (Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)) =>
+  (Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
   Symbolic (ArithmeticCircuit a i) where
     type BaseField (ArithmeticCircuit a i) = a
     type WitnessField (ArithmeticCircuit a i) = WitnessF a (SysVar i)

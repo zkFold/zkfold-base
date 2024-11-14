@@ -2,7 +2,8 @@
 
 module ZkFold.Base.Protocol.Protostar.RecursiveCircuit where
 
-import           Data.Functor.Rep                           (tabulate)
+import           Control.DeepSeq                            (NFData)
+import           Data.Functor.Rep                           (Rep, tabulate)
 import           Data.Typeable                              (Proxy)
 import           GHC.Generics                               (Par1 (..), U1 (..), type (:.:) (..), (:*:) (..))
 import           GHC.IsList                                 (IsList (..))
@@ -45,6 +46,7 @@ protostar :: forall a n k i o ctx f pi m c .
     , Ring (PolyVec f 3)
     , HomomorphicCommit m c
     , i ~ Layout (IVCInstanceProof pi f c m) :*: U1
+    , NFData (Rep (Layout (IVCInstanceProof pi f c m)))
     , o ~ (((Par1 :*: Layout [FieldElement ctx]) :*: (Par1 :*: (Par1 :*: Par1))) :*: (Par1 :*: Par1))
     ) => (forall ctx' . Symbolic ctx' => Vector n (FieldElement ctx') -> Vector k (FieldElement ctx') -> Vector n (FieldElement ctx'))
     -> ArithmeticCircuit a i o

@@ -3,6 +3,7 @@
 
 module Tests.Arithmetization (specArithmetization) where
 
+import           Control.DeepSeq                             (NFData)
 import           Data.Binary                                 (Binary)
 import           Data.Functor.Rep                            (Representable (..))
 import           GHC.Generics                                (Par1)
@@ -31,7 +32,7 @@ specArithmetization' ::
   forall a i .
   (Arithmetic a, Arbitrary a, Binary a, Arbitrary (i a)) =>
   (Show a, Show (ArithmeticCircuitTest a i Par1)) =>
-  (Arbitrary (Rep i), Binary (Rep i), Ord (Rep i)) =>
+  (Arbitrary (Rep i), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
   (Representable i, Traversable i) => IO ()
 specArithmetization' = hspec $ do
     describe "Arithmetization specification" $ do

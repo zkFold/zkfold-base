@@ -2,6 +2,7 @@
 
 module ZkFold.Symbolic.Class where
 
+import           Control.DeepSeq                  (NFData)
 import           Control.Monad
 import           Data.Eq                          (Eq)
 import           Data.Foldable                    (Foldable)
@@ -21,7 +22,7 @@ import           ZkFold.Symbolic.MonadCircuit
 
 -- | Field of residues with decidable equality and ordering
 -- is called an ``arithmetic'' field.
-type Arithmetic a = (ResidueField Natural a, Eq a, Ord a)
+type Arithmetic a = (ResidueField Natural a, Eq a, Ord a, NFData a)
 
 -- | A type of mappings between functors inside a circuit.
 -- @fs@ are input functors, @g@ is an output functor, @c@ is context.
@@ -33,7 +34,7 @@ type Arithmetic a = (ResidueField Natural a, Eq a, Ord a)
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
 type CircuitFun (fs :: [Type -> Type]) (g :: Type -> Type) (c :: (Type -> Type) -> Type) =
-  forall i m. MonadCircuit i (BaseField c) (WitnessField c) m => FunBody fs g i m
+  forall i m. (NFData i, MonadCircuit i (BaseField c) (WitnessField c) m) => FunBody fs g i m
 
 type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m :: Type -> Type) where
   FunBody '[] g i m = m (g i)
