@@ -27,6 +27,7 @@ import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
+import           ZkFold.Symbolic.Class            (Arithmetic)
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | A class for isomorphic types.
@@ -198,7 +199,7 @@ wordsOf n k = for [0 .. n -! 1] $ \j ->
         wordSize :: Natural
         wordSize = 2 ^ value @r
 
-        repr :: WitnessField n x => Natural -> x -> x
+        repr :: ResidueField n x => Natural -> x -> x
         repr j =
               fromConstant
               . (`mod` fromConstant wordSize)
@@ -230,11 +231,11 @@ splitExpansion n1 n2 k = do
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where
-        lower :: WitnessField n a => a -> a
+        lower :: ResidueField n a => a -> a
         lower =
             fromConstant . (`mod` fromConstant @Natural (2 ^ n1)) . toConstant
 
-        upper :: WitnessField n a => a -> a
+        upper :: ResidueField n a => a -> a
         upper =
             fromConstant
             . (`mod` fromConstant @Natural (2 ^ n2))
