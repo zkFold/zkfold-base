@@ -35,15 +35,15 @@ class SpecialSoundProtocol f pi m k a where
       -- ^ l in the paper, the number of algebraic equations checked by the verifier
 
       prover :: a
-        -> pi                    -- ^ public input
-        -> f    -- ^ current random challenge
-        -> Natural               -- ^ round number (starting from 0)
+        -> pi                           -- ^ public input
+        -> f                            -- ^ current random challenge
+        -> Natural                      -- ^ round number (starting from 0)
         -> m
 
       verifier :: a
         -> pi                           -- ^ public input
         -> Vector k m                   -- ^ prover messages
-        -> Vector (k-1) f -- ^ random challenges
+        -> Vector (k-1) f               -- ^ random challenges
         -> VerifierOutput f pi m k a    -- ^ verifier output
 
 type BasicSpecialSoundProtocol f pi m k a =
