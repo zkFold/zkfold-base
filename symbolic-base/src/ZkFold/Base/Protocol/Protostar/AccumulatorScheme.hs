@@ -34,10 +34,10 @@ import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 class AccumulatorScheme f i c m k d a where
   prover   :: a
            -> Accumulator f i c m k                      -- accumulator
-           -> InstanceProofPair f i c m k                 -- instance-proof pair (pi, π)
+           -> InstanceProofPair f i c m k                -- instance-proof pair (pi, π)
            -> (Accumulator f i c m k, Vector (d - 1) c)  -- updated accumulator and accumulation proof
 
-  verifier :: i f                                         -- Public input
+  verifier :: i f                                        -- Public input
            -> Vector k c                                 -- NARK proof π.x
            -> AccumulatorInstance f i c k                -- accumulator instance acc.x
            -> AccumulatorInstance f i c k                -- updated accumulator instance acc'.x
@@ -49,19 +49,18 @@ class AccumulatorScheme f i c m k d a where
            -> (Vector k c, c)                            -- returns zeros if the final accumulator is valid
 
 instance
-    ( Scale f c
-    , RandomOracle (i f) f         -- Random oracle for compressing public input
-    , RandomOracle c f          -- Random oracle ρ_NARK
-    , HomomorphicCommit [f] c
-    , Ring f
+    ( Ring f
+    , KnownNat k
+    , Zip i
+    , KnownNat (d - 1)
+    , KnownNat (d + 1)
     , AlgebraicMap f i d a
     , AlgebraicMap (PU.PolyVec f (d + 1)) i d a
-    , KnownNat (d + 1)
-    , Zip i
+    , HomomorphicCommit [f] c
+    , RandomOracle (i f) f    -- Random oracle for compressing public input
+    , RandomOracle c f        -- Random oracle ρ_NARK
+    , Scale f c
     , m ~ [f]
-    -- , pi ~ i f
-    , KnownNat k
-    , KnownNat (d - 1)
     ) => AccumulatorScheme f i c m k d (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)

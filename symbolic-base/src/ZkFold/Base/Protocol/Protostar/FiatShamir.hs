@@ -3,22 +3,25 @@ module ZkFold.Base.Protocol.Protostar.FiatShamir where
 import           GHC.Generics                                (Generic)
 import           Prelude                                     hiding (Bool (..), Eq (..), length, unzip, pi)
 
-import           ZkFold.Base.Algebra.Basic.Number            (value)
+import           ZkFold.Base.Algebra.Basic.Class             (Ring)
+import           ZkFold.Base.Algebra.Basic.Number            (value, KnownNat)
 import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector, item)
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (BasicSpecialSoundProtocol, SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 import           ZkFold.Prelude                              (length)
 
 newtype FiatShamir f a = FiatShamir a
     deriving Generic
 
 instance
-    ( BasicSpecialSoundProtocol f i m k a
-    , RandomOracle (i f) f
-    , RandomOracle (f, c) f
+    ( Ring f
+    , KnownNat k
+    , SpecialSoundProtocol f i m k a
     , HomomorphicCommit m c
+    , RandomOracle (i f) f
+    , RandomOracle c f
     ) => SpecialSoundProtocol f i (Vector k (m, c)) 1 (FiatShamir f (CommitOpen m c a)) where
         type VerifierOutput f i (Vector k (m, c)) 1 (FiatShamir f (CommitOpen m c a))  = VerifierOutput f i (m, c) k (CommitOpen m c a)
 
@@ -29,7 +32,7 @@ instance
                 f (ms, cs, rs) _ =
                   let r   = last rs
                       (m, c) = prover @f @i @(m, c) @k a pi r (length ms)
-                  in (ms ++ [m], cs ++ [c], rs ++ [oracle @(f, c) (r, c)])
+                  in (ms ++ [m], cs ++ [c], rs ++ [oracle (r, c)])
 
                 (ms', cs', _) = foldl f ([], [], [r0]) [1 .. value @k]
             in unsafeToVector $ zip ms' cs'

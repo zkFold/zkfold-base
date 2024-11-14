@@ -7,12 +7,14 @@ import           Data.Zip                                    (unzip)
 import           GHC.Generics
 import           Prelude                                     hiding (length, head, unzip, pi)
 
+import           ZkFold.Base.Algebra.Basic.Class             (Ring)
+import           ZkFold.Base.Algebra.Basic.Number            (KnownNat)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir)
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (BasicSpecialSoundProtocol, SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 
 -- Page 18, section 3.4, The accumulation predicate
 --
@@ -27,27 +29,13 @@ data InstanceProofPair f i c m k = InstanceProofPair (i f) (NARKProof c m k)
     deriving (Show, Generic, NFData)
 
 instanceProof :: forall a f i m k c .
-    ( BasicSpecialSoundProtocol f i m k a
-    , RandomOracle (i f) f
-    , RandomOracle (f, c) f
+    ( Ring f
+    , KnownNat k
+    , SpecialSoundProtocol f i m k a
     , HomomorphicCommit m c
+    , RandomOracle (i f) f
+    , RandomOracle c f
     ) => FiatShamir f (CommitOpen m c a) -> i f -> InstanceProofPair f i c m k
 instanceProof a pi =
     let (ms, cs) = unzip $ prover @f @i @(Vector k (m, c)) @1 a pi (oracle pi) 0
     in InstanceProofPair pi (NARKProof cs ms)
-
-{--
-toAccumulatorInstance :: (FiniteField f, AdditiveGroup c) => (f -> c -> f) -> NARKInstance f c -> AccumulatorInstance f c
-toAccumulatorInstance oracle (NARKInstance i cs) =
-      let r0 = oracle i zero
-          f acc@(r:_) c = oracle r c : acc
-          f []        _ = error "Invalid accumulator instance"
-          rs = init $ reverse $ foldl f [r0] cs
-      in AccumulatorInstance i cs rs zero one
-
-toAccumulatorWitness :: NARKWitness m -> AccumulatorWitness m
-toAccumulatorWitness (NARKWitness ms) = AccumulatorWitness ms
-
-toAccumulator :: (FiniteField f, AdditiveGroup c) => (f -> c -> f) -> NARKPair pi f c m -> Accumulator f c m
-toAccumulator oracle (NARKPair i w) = Accumulator (toAccumulatorInstance oracle i) (toAccumulatorWitness w)
---}

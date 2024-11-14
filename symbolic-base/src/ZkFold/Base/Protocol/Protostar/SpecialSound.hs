@@ -46,11 +46,6 @@ class SpecialSoundProtocol f i m k a where
         -> Vector (k-1) f               -- ^ random challenges
         -> VerifierOutput f i m k a     -- ^ verifier output
 
-type BasicSpecialSoundProtocol f i m k a =
-  ( SpecialSoundProtocol f i m k a
-  , KnownNat k
-  )
-
 instance (Representable i, Arithmetic a) => SpecialSoundProtocol a i [a] 1 (ArithmeticCircuit a i o) where
     type VerifierOutput a i [a] 1 (ArithmeticCircuit a i o)  = [a]
 

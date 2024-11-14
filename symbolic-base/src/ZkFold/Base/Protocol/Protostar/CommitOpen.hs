@@ -10,7 +10,7 @@ import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (hcommit))
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (BasicSpecialSoundProtocol, SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 
 newtype CommitOpen (m :: Type) (c :: Type) a = CommitOpen a
 
@@ -18,7 +18,7 @@ instance RandomOracle a b => RandomOracle (CommitOpen m c a) b where
     oracle (CommitOpen a) = oracle a
 
 instance
-    ( BasicSpecialSoundProtocol f i m k a
+    ( SpecialSoundProtocol f i m k a
     , HomomorphicCommit m c
     ) => SpecialSoundProtocol f i (m, c) k (CommitOpen m c a) where
       type VerifierOutput f i (m, c) k (CommitOpen m c a)  = (Vector k c, VerifierOutput f i m k a)
