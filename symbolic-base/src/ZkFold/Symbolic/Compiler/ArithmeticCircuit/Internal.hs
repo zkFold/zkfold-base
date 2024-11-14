@@ -182,7 +182,8 @@ instance
   (Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)) =>
   Symbolic (ArithmeticCircuit a i) where
     type BaseField (ArithmeticCircuit a i) = a
-    symbolicF (behead -> (c, o)) _ f = uncurry (set #acOutput) (runState (f o) c)
+    type WitnessField (ArithmeticCircuit a i) = WitnessF (Var a i) a
+    fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
 
 ----------------------------- MonadCircuit instance ----------------------------
 

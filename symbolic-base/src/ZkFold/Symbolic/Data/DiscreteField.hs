@@ -5,9 +5,9 @@ import           Prelude                         hiding (Bool)
 import qualified Prelude                         as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Symbolic.Class           (Arithmetic)
 import           ZkFold.Symbolic.Data.Bool       (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Interpreter     (Interpreter)
-import           ZkFold.Symbolic.MonadCircuit    (Arithmetic)
 
 class (BoolType b, Field a) => DiscreteField b a where
     isZero :: a -> b

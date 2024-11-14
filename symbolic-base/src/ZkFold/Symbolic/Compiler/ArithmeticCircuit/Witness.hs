@@ -7,9 +7,9 @@ import           Numeric.Natural                 (Natural)
 import           Prelude                         (Integer)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.MonadCircuit
+import           ZkFold.Symbolic.MonadCircuit    (ResidueField, Witness (..))
 
-type IsWitness a n w = (Scale a w, FromConstant a w, WitnessField n w)
+type IsWitness a n w = (Scale a w, FromConstant a w, ResidueField n w)
 
 newtype WitnessF v a = WitnessF { witnessF :: forall n w. IsWitness a n w => (v -> w) -> w }
 
@@ -53,5 +53,5 @@ instance SemiEuclidean (EuclideanF v a) where
   EuclideanF f `div` EuclideanF g = EuclideanF (\x -> f x `div` g x)
   EuclideanF f `mod` EuclideanF g = EuclideanF (\x -> f x `mod` g x)
 
-instance Arithmetic a => Witness v a (WitnessF v a) where
+instance Finite a => Witness v (WitnessF v a) where
   at i = WitnessF (\x -> x i)
