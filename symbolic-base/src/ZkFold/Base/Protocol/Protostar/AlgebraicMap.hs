@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -8,8 +9,7 @@ import           Data.Functor.Rep                                    (Representa
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map, keys)
 import qualified Data.Map.Strict                                     as M
-import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             (type (~), fmap, zip, ($), (.), (<$>))
+import           Prelude                                             (fmap, zip, ($), (.), (<$>))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -29,39 +29,22 @@ import           ZkFold.Symbolic.Data.Eq
 -- However, @f@ can be a polynomial, in which case the result will be a system of polynomials.
 -- This polymorphism is exploited in the AccumulatorScheme prover.
 --
-class
-  ( Ring f
-  , AdditiveGroup pi
-  , Scale f pi
-  , AdditiveSemigroup m
-  , Scale f m
-  ) => AlgebraicMap f pi m a where
-    type Degree a :: Natural
-    -- ^ d in the paper, the verifier degree
-
+class AlgebraicMap f i (d :: Natural) a where
     -- | the algebraic map V_sps computed by the verifier.
     algebraicMap :: a
-        -> pi             -- ^ public input
-        -> Vector k m     -- ^ NARK proof witness (the list of prover messages)
+        -> i f            -- ^ public input
+        -> Vector k [f]   -- ^ NARK proof witness (the list of prover messages)
         -> Vector (k-1) f -- ^ Verifier random challenges
         -> f              -- ^ Slack variable for padding
         -> [f]
 
 instance
-  ( Representable i
+  ( Ring f
+  , Representable i
+  , KnownNat (d + 1)
   , Arithmetic a
   , Scale a f
-  , Ring f
-  , AdditiveGroup pi
-  , Scale f pi
-  , pi ~ i f
-  , AdditiveSemigroup m
-  , Scale f m
-  , IsList m
-  , Item m ~ f
-  ) => AlgebraicMap f pi m (ArithmeticCircuit a i o) where
-    type Degree (ArithmeticCircuit a i o) = 2
-
+  ) => AlgebraicMap f i d (ArithmeticCircuit a i o) where
     -- We can use the polynomial system from the circuit as a base for V_sps.
     --
     algebraicMap ac pi pm _ pad = padDecomposition pad f_sps_uni
@@ -70,31 +53,31 @@ instance
             sys = M.elems (acSystem ac)
 
             witness :: Map ByteString f
-            witness = M.fromList $ zip (keys $ acWitness ac) (toList (V.head pm))
+            witness = M.fromList $ zip (keys $ acWitness ac) (V.head pm)
 
             varMap :: SysVar i -> f
             varMap (InVar inV)   = index pi inV
             varMap (NewVar newV) = M.findWithDefault zero newV witness
 
-            f_sps :: Vector 3 [PM.Poly a (SysVar i) Natural]
-            f_sps = degreeDecomposition @(Degree (ArithmeticCircuit a i o)) $ sys
+            f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
+            f_sps = degreeDecomposition @_ @d $ sys
 
-            f_sps_uni :: Vector 3 [f]
+            f_sps_uni :: Vector (d+1) [f]
             f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
 
 
-padDecomposition :: forall f d .
-    ( KnownNat d
+padDecomposition :: forall f n .
+    ( KnownNat n
     , MultiplicativeMonoid f
     , AdditiveMonoid f
-     ) => f -> V.Vector d [f] -> [f]
+     ) => f -> V.Vector n [f] -> [f]
 padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) * ) <$> p)
     where
-        d = value @d -! 1
+        d = value @n -! 1
 
--- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @n@
+-- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @d@
 --
-degreeDecomposition :: forall n f v . KnownNat (n + 1) => [Poly f v Natural] -> V.Vector (n + 1) [Poly f v Natural]
+degreeDecomposition :: forall f d v . KnownNat (d + 1) => [Poly f v Natural] -> V.Vector (d + 1) [Poly f v Natural]
 degreeDecomposition lmap = tabulate (degree_j . toConstant)
     where
         degree_j :: Natural -> [Poly f v Natural]

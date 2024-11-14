@@ -13,9 +13,9 @@ import           ZkFold.Base.Algebra.Basic.Number (type(-))
 import           ZkFold.Base.Data.Vector          (Vector)
 
 -- Page 19, Accumulator instance
-data AccumulatorInstance pi f c k
+data AccumulatorInstance f i c k
     = AccumulatorInstance
-        { _pi :: pi             -- pi ∈ M^{l_in} in the paper
+        { _pi :: i f            -- pi ∈ M^{l_in} in the paper
         , _c  :: Vector k c     -- [C_i] ∈ C^k in the paper
         , _r  :: Vector (k-1) f -- [r_i] ∈ F^{k-1} in the paper
         , _e  :: c              -- E ∈ C in the paper
@@ -28,9 +28,9 @@ makeLenses ''AccumulatorInstance
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
-data Accumulator pi f c m k
+data Accumulator f i c m k
     = Accumulator
-        { _x :: AccumulatorInstance pi f c k
+        { _x :: AccumulatorInstance f i c k
         , _w :: Vector k m
         }
     deriving (Show, Generic, NFData)

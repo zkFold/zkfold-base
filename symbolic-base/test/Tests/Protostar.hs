@@ -30,12 +30,12 @@ import           ZkFold.Symbolic.Data.FieldElement                (FieldElement 
 
 type F = Zp BLS12_381_Scalar
 type G = Point BLS12_381_G1
-type PI = Vector 1 F
+type I = Vector 1
 type M = [F]
 type K = 1
 type AC = ArithmeticCircuit F (Vector 1) (Vector 1)
 type SPS = FiatShamir F (CommitOpen M G AC)
-type D = Degree AC
+type D = 2
 type PARDEG = 5
 type PAR = PolyVec F PARDEG
 
@@ -57,18 +57,18 @@ testSPS = FiatShamir . CommitOpen . testCircuit
 testMessageLength :: SPS -> Natural
 testMessageLength (FiatShamir (CommitOpen ac)) = acSizeM ac
 
-initAccumulator :: SPS -> Accumulator PI F G M K
+initAccumulator :: SPS -> Accumulator F I G M K
 initAccumulator sps = Accumulator (AccumulatorInstance (singleton zero) (singleton zero) (unsafeToVector []) zero zero) (singleton $ replicate (testMessageLength sps) zero)
 
-initAccumulatorInstance :: SPS -> AccumulatorInstance PI F G K
+initAccumulatorInstance :: SPS -> AccumulatorInstance F I G K
 initAccumulatorInstance sps =
     let Accumulator ai _ = initAccumulator sps
     in ai
 
-testPublicInput :: PI
+testPublicInput :: I F
 testPublicInput = singleton $ fromConstant @Natural 42
 
-testInstanceProofPair :: SPS -> InstanceProofPair PI G M K
+testInstanceProofPair :: SPS -> InstanceProofPair F I G M K
 testInstanceProofPair sps = instanceProof @_ @F sps testPublicInput
 
 testMessages :: SPS -> Vector K M
@@ -81,10 +81,10 @@ testNarkProof sps =
     let InstanceProofPair _ (NARKProof cs _) = testInstanceProofPair sps
     in cs
 
-testAccumulator :: SPS -> Accumulator PI F G M K
-testAccumulator sps = fst $ Acc.prover  @PI @F @G @M @K @D sps (initAccumulator sps) $ testInstanceProofPair sps
+testAccumulator :: SPS -> Accumulator F I G M K
+testAccumulator sps = fst $ Acc.prover @F @I @G @M @K @D sps (initAccumulator sps) $ testInstanceProofPair sps
 
-testAccumulatorInstance :: SPS -> AccumulatorInstance PI F G K
+testAccumulatorInstance :: SPS -> AccumulatorInstance F I G K
 testAccumulatorInstance sps =
     let Accumulator ai _ = testAccumulator sps
     in ai
@@ -93,10 +93,10 @@ testAccumulationProof :: SPS -> Vector (D - 1) G
 testAccumulationProof sps = snd $ Acc.prover sps (initAccumulator sps) $ testInstanceProofPair sps
 
 testDeciderResult :: SPS -> (Vector K G, G)
-testDeciderResult sps = decider  @PI @F @G @M @K @D sps $ testAccumulator sps
+testDeciderResult sps = decider @F @I @G @M @K @D sps $ testAccumulator sps
 
-testVerifierResult :: SPS -> (F, PI, Vector (K-1) F, Vector K G, G)
-testVerifierResult sps = Acc.verifier @PI @F @G @M @K @D @(FiatShamir F (CommitOpen M G AC))
+testVerifierResult :: SPS -> (F, I F, Vector (K-1) F, Vector K G, G)
+testVerifierResult sps = Acc.verifier @F @I @G @M @K @D @(FiatShamir F (CommitOpen M G AC))
     testPublicInput (testNarkProof sps) (initAccumulatorInstance sps) (testAccumulatorInstance sps) (testAccumulationProof sps)
 
 specAlgebraicMap :: IO ()
@@ -105,7 +105,7 @@ specAlgebraicMap = hspec $ do
         describe "Algebraic map" $ do
             it "must output zeros on the public input and testMessages" $ do
                 withMaxSuccess 10 $ property $
-                    \x0 -> algebraicMap (testCircuit x0) testPublicInput (testMessages $ testSPS x0) (unsafeToVector []) one == replicate (acSizeN $ testCircuit x0) zero
+                    \x0 -> algebraicMap @_ @_ @D (testCircuit x0) testPublicInput (testMessages $ testSPS x0) (unsafeToVector []) one == replicate (acSizeN $ testCircuit x0) zero
 
 specAccumulatorScheme :: IO ()
 specAccumulatorScheme = hspec $ do

@@ -9,7 +9,7 @@ import           GHC.IsList                                 (IsList (..))
 import           Prelude                                    hiding (Num (..), drop, head, take, zipWith)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type(-))
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (-), type (+))
 import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Data.HFunctor                  (hmap)
 import           ZkFold.Base.Data.Vector                    (Vector, head)
@@ -26,22 +26,23 @@ import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
 -- | Takes a function `f` and returns a circuit `C` with input `y` and witness `w`.
 -- The circuit is such that `C(y, w) = 0` implies that `y = x(n)` for some positive `n` where
 -- `x(k+1) = f(x(k), u(k))` for all `k` and some `u`.
-protostar :: forall a n k i o ctx f pi m c d .
+protostar :: forall a n k i o ctx f i0 m c d .
     ( Binary a
     , Arithmetic a
     , KnownNat n
     , KnownNat k
     , ctx ~ ArithmeticCircuit a i
     , f ~ FieldElement ctx
-    , pi ~ Vector n f
+    , i0 ~ Vector n
     , m ~ [f]
     , c ~ f
-    , SymbolicInput (IVCInstanceProof pi f c m k d)
-    , Context (IVCInstanceProof pi f c m k d) ~ ctx
+    , SymbolicInput (IVCInstanceProof f i0 c m k d)
+    , Context (IVCInstanceProof f i0 c m k d) ~ ctx
     , HomomorphicCommit m c
-    , i ~ Layout (IVCInstanceProof pi f c m k d) :*: U1
+    , i ~ Layout (IVCInstanceProof f i0 c m k d) :*: U1
     , KnownNat (k - 1)
     , KnownNat (d - 1)
+    , KnownNat (d + 1)
     , o ~ (((Par1 :*: (Vector n :.: Par1)) :*: ((Vector (k - 1) :.: Par1) :*: ((Vector k :.: Par1) :*: Par1))) :*: ((Vector k :.: Par1) :*: Par1))
     ) => (forall ctx' . Symbolic ctx' => Vector n (FieldElement ctx') -> Vector k (FieldElement ctx') -> Vector n (FieldElement ctx'))
     -> ArithmeticCircuit a i o
@@ -70,8 +71,8 @@ protostar func =
         fs = FiatShamir @f (CommitOpen @m @c stepCircuit)
 
         -- The verification function for the IVC instance-proof
-        vf :: IVCInstanceProof pi f c m k d -> ((f, pi, Vector (k-1) f, Vector k c, c), (Vector k c, c))
-        vf = ivcVerify @pi @f @c @m @k @d fs
+        vf :: IVCInstanceProof f i0 c m k d -> ((f, i0 f, Vector (k-1) f, Vector k c, c), (Vector k c, c))
+        vf = ivcVerify @f @i0 @c @m @k @d fs
 
         -- TODO: the circuit input and output must be both transformed into `Vector n`
         circuit = compile @a vf

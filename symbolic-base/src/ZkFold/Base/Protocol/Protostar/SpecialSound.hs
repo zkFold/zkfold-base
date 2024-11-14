@@ -28,32 +28,31 @@ challenge ri ∈ F. After the final message mk, the verifier computes the algebr
 and checks that the output is a zero vector of length l.
 
 --}
-class SpecialSoundProtocol f pi m k a where
-      type VerifierOutput f pi m k a
+class SpecialSoundProtocol f i m k a where
+      type VerifierOutput f i m k a
 
       outputLength :: a -> Natural
       -- ^ l in the paper, the number of algebraic equations checked by the verifier
 
       prover :: a
-        -> pi                           -- ^ public input
+        -> i f                          -- ^ public input
         -> f                            -- ^ current random challenge
         -> Natural                      -- ^ round number (starting from 0)
         -> m
 
       verifier :: a
-        -> pi                           -- ^ public input
+        -> i f                          -- ^ public input
         -> Vector k m                   -- ^ prover messages
         -> Vector (k-1) f               -- ^ random challenges
-        -> VerifierOutput f pi m k a    -- ^ verifier output
+        -> VerifierOutput f i m k a     -- ^ verifier output
 
-type BasicSpecialSoundProtocol f pi m k a =
-  ( SpecialSoundProtocol f pi m k a
+type BasicSpecialSoundProtocol f i m k a =
+  ( SpecialSoundProtocol f i m k a
   , KnownNat k
   )
 
-instance (Representable i, Arithmetic a, AdditiveGroup (i a), Scale a (i a))
-      => SpecialSoundProtocol a (i a) [a] 1 (ArithmeticCircuit a i o) where
-    type VerifierOutput a (i a) [a] 1 (ArithmeticCircuit a i o)  = [a]
+instance (Representable i, Arithmetic a) => SpecialSoundProtocol a i [a] 1 (ArithmeticCircuit a i o) where
+    type VerifierOutput a i [a] 1 (ArithmeticCircuit a i o)  = [a]
 
     outputLength ac = P.fromIntegral $ M.size (acSystem ac)
 
@@ -62,4 +61,4 @@ instance (Representable i, Arithmetic a, AdditiveGroup (i a), Scale a (i a))
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --
-    verifier ac pi pm ts = AM.algebraicMap ac pi pm ts one
+    verifier ac pi pm ts = AM.algebraicMap @_ @_ @2 ac pi pm ts one

@@ -23,17 +23,17 @@ data NARKProof c m k
         }
     deriving (Show, Generic, NFData)
 
-data InstanceProofPair pi c m k = InstanceProofPair pi (NARKProof c m k)
+data InstanceProofPair f i c m k = InstanceProofPair (i f) (NARKProof c m k)
     deriving (Show, Generic, NFData)
 
-instanceProof :: forall a f pi m k c .
-    ( BasicSpecialSoundProtocol f pi m k a
-    , RandomOracle pi f
+instanceProof :: forall a f i m k c .
+    ( BasicSpecialSoundProtocol f i m k a
+    , RandomOracle (i f) f
     , RandomOracle (f, c) f
     , HomomorphicCommit m c
-    ) => FiatShamir f (CommitOpen m c a) -> pi -> InstanceProofPair pi c m k
+    ) => FiatShamir f (CommitOpen m c a) -> i f -> InstanceProofPair f i c m k
 instanceProof a pi =
-    let (ms, cs) = unzip $ prover @f @pi @(Vector k (m, c)) @1 a pi (oracle pi) 0
+    let (ms, cs) = unzip $ prover @f @i @(Vector k (m, c)) @1 a pi (oracle pi) 0
     in InstanceProofPair pi (NARKProof cs ms)
 
 {--

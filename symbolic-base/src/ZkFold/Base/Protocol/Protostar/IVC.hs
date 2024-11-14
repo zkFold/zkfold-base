@@ -5,6 +5,7 @@ module ZkFold.Base.Protocol.Protostar.IVC where
 
 import           Control.DeepSeq                                  (NFData)
 import           Control.Lens                                     ((^.))
+import           Data.Functor.Rep                                 (Representable(..))
 import           Data.Type.Equality                               (type (~))
 import           GHC.Generics                                     (Generic)
 import qualified Prelude                                          as P
@@ -26,48 +27,48 @@ import           ZkFold.Base.Protocol.Protostar.SpecialSound      (BasicSpecialS
 -- | The final result of recursion and the final accumulator.
 -- Accumulation decider is an arithmetizable function which can be called on the final accumulator.
 --
-data IVCInstanceProof pi f c m k d
+data IVCInstanceProof f i c m k d
     = IVCInstanceProof
-    { ivcInstance :: pi
+    { ivcInstance :: i f
     , ivcCommits  :: Vector k c -- NARK proof π.x
-    , ivcAcc      :: Accumulator pi f c m k
-    , ivcAcc'     :: Accumulator pi f c m k
+    , ivcAcc      :: Accumulator f i c m k
+    , ivcAcc'     :: Accumulator f i c m k
     , ivcAccProof :: Vector (d-1) c
     } deriving (GHC.Generics.Generic)
 
-deriving instance (P.Show pi, P.Show f, P.Show c, P.Show m) => P.Show (IVCInstanceProof pi f c m k d)
-deriving instance (NFData pi, NFData f, NFData c, NFData m) => NFData (IVCInstanceProof pi f c m k d)
+deriving instance (P.Show f, P.Show (i f), P.Show c, P.Show m) => P.Show (IVCInstanceProof f i c m k d)
+deriving instance (NFData f, NFData (i f), NFData c, NFData m) => NFData (IVCInstanceProof f i c m k d)
 
 ivcInitialize ::
     ( AdditiveMonoid f
-    , AdditiveMonoid pi
+    -- , AdditiveMonoid pi
     , AdditiveMonoid c
-    , m ~ Vector 1 f
-    ) => IVCInstanceProof pi f c m 1 d
+    , m ~ Vector 1 f, Representable i
+    ) => IVCInstanceProof f i c m 1 d
 ivcInitialize =
-    let acc = Accumulator (AccumulatorInstance zero (singleton zero) (unsafeToVector []) zero zero) (singleton zero)
-    in IVCInstanceProof zero (singleton zero) acc acc (unsafeToVector [])
+    let acc = Accumulator (AccumulatorInstance (tabulate zero) (singleton zero) (unsafeToVector []) zero zero) (singleton zero)
+    in IVCInstanceProof (tabulate zero) (singleton zero) acc acc (unsafeToVector [])
 
-ivcIterate :: forall f pi c m k d a .
-    ( BasicSpecialSoundProtocol f pi m k a
+ivcIterate :: forall f i c m k d a .
+    ( BasicSpecialSoundProtocol f i m k a
     , Ring f
     , RandomOracle f f
-    , RandomOracle pi f
+    , RandomOracle (i f) f
     , RandomOracle c f
     , HomomorphicCommit m c
-    , AccumulatorScheme pi f c m k d (FiatShamir f (CommitOpen m c a))
-    ) => FiatShamir f (CommitOpen m c a) -> IVCInstanceProof pi f c m k d -> pi -> IVCInstanceProof pi f c m k d
+    , AccumulatorScheme f i c m k d (FiatShamir f (CommitOpen m c a))
+    ) => FiatShamir f (CommitOpen m c a) -> IVCInstanceProof f i c m k d -> i f -> IVCInstanceProof f i c m k d
 ivcIterate fs (IVCInstanceProof _ _ _ acc' _) pi' =
     let narkIP@(InstanceProofPair _ (NARKProof cs _)) = instanceProof fs pi'
         (acc'', accProof') = Acc.prover fs acc' narkIP
     in IVCInstanceProof pi' cs acc' acc'' accProof'
 
-ivcVerify :: forall pi f c m k d a .
-    ( AccumulatorScheme pi f c m k d a
-    ) => a -> IVCInstanceProof pi f c m k d -> ((f, pi, Vector (k-1) f, Vector k c, c), (Vector k c, c))
+ivcVerify :: forall f i c m k d a .
+    ( AccumulatorScheme f i c m k d a
+    ) => a -> IVCInstanceProof f i c m k d -> ((f, i f, Vector (k-1) f, Vector k c, c), (Vector k c, c))
 ivcVerify a (IVCInstanceProof {..}) =
     let accX  = ivcAcc^.x
         accX' = ivcAcc'^.x
     in
-        ( Acc.verifier @pi @f @c @m @k @d @a ivcInstance ivcCommits accX accX' ivcAccProof
-        , decider @pi @f @c @m @k @d @a a ivcAcc')
+        ( Acc.verifier @f @i @c @m @k @d @a ivcInstance ivcCommits accX accX' ivcAccProof
+        , decider @f @i @c @m @k @d @a a ivcAcc')
