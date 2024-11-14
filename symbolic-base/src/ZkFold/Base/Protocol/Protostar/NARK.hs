@@ -1,12 +1,13 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 
 module ZkFold.Base.Protocol.Protostar.NARK where
 
 import           Control.DeepSeq                             (NFData (..))
+import           Data.Zip                                    (unzip)
 import           GHC.Generics
-import           Prelude                                     hiding (length, pi)
+import           Prelude                                     hiding (length, head, unzip, pi)
 
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir)
@@ -15,25 +16,25 @@ import           ZkFold.Base.Protocol.Protostar.SpecialSound (BasicSpecialSoundP
 
 -- Page 18, section 3.4, The accumulation predicate
 --
-data NARKProof c m
+data NARKProof c m k
     = NARKProof
-        { narkCommits :: [c] -- Commits [C_i] ∈  C^k
-        , narkWitness :: [m] -- prover messages in the special-sound protocol [m_i]
+        { narkCommits :: Vector k c -- Commits [C_i] ∈  C^k
+        , narkWitness :: Vector k m -- prover messages in the special-sound protocol [m_i]
         }
     deriving (Show, Generic, NFData)
 
-data InstanceProofPair pi c m = InstanceProofPair pi (NARKProof c m)
+data InstanceProofPair pi c m k = InstanceProofPair pi (NARKProof c m k)
     deriving (Show, Generic, NFData)
 
-instanceProof :: forall a f pi c m .
-    ( BasicSpecialSoundProtocol f pi m a
+instanceProof :: forall a f pi m k c .
+    ( BasicSpecialSoundProtocol f pi m k a
     , RandomOracle pi f
     , RandomOracle (f, c) f
     , HomomorphicCommit m c
-    ) => FiatShamir f (CommitOpen m c a) -> pi -> InstanceProofPair pi c m
+    ) => FiatShamir f (CommitOpen m c a) -> pi -> InstanceProofPair pi c m k
 instanceProof a pi =
-    let (c, m) = head $ prover @f @pi @[(c, m)] a () pi () 0
-    in InstanceProofPair pi (NARKProof [c] [m])
+    let (ms, cs) = unzip $ prover @f @pi @(Vector k (m, c)) @1 a pi (oracle pi) 0
+    in InstanceProofPair pi (NARKProof cs ms)
 
 {--
 toAccumulatorInstance :: (FiniteField f, AdditiveGroup c) => (f -> c -> f) -> NARKInstance f c -> AccumulatorInstance f c

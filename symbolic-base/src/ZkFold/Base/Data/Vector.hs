@@ -14,11 +14,11 @@ import           Data.These                       (These (..))
 import qualified Data.Vector                      as V
 import           Data.Vector.Binary               ()
 import qualified Data.Vector.Split                as V
-import           Data.Zip                         (Semialign (..), Zip (..))
+import           Data.Zip                         (Semialign (..), Zip (..), Unzip (..))
 import           GHC.Generics                     (Generic)
 import           GHC.IsList                       (IsList (..))
 import           Prelude                          hiding (concat, drop, head, length, mod, replicate, sum, negate, tail, take,
-                                                   zip, zipWith, (+), (-), (*))
+                                                   zip, zipWith, unzip, (+), (-), (*))
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 
@@ -37,7 +37,7 @@ knownNat = fromIntegral (value @size)
 
 instance KnownNat size => Representable (Vector size) where
   type Rep (Vector size) = Zp size
-  index (Vector v) ix = v V.! (fromIntegral (fromZp ix))
+  index (Vector v) ix = v V.! fromIntegral (fromZp ix)
   tabulate f = Vector (V.generate (knownNat @size) (f . fromIntegral))
 
 instance KnownNat size => Distributive (Vector size) where
@@ -162,6 +162,9 @@ instance Zip (Vector size) where
     zip (Vector as) (Vector bs) = Vector $ V.zip as bs
 
     zipWith f (Vector as) (Vector bs) = Vector $ V.zipWith f as bs
+
+instance Unzip (Vector size) where
+    unzip (Vector as) = (Vector (fst <$> as), Vector (snd <$> as))
 
 instance (Arbitrary a, KnownNat size) => Arbitrary (Vector size a) where
     arbitrary = sequenceA (pureRep arbitrary)

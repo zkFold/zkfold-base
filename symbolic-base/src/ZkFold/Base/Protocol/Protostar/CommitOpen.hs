@@ -3,10 +3,11 @@
 module ZkFold.Base.Protocol.Protostar.CommitOpen where
 
 import           Data.Kind                                   (Type)
-import           GHC.Generics
-import           Prelude                                     hiding (Num (..), length, pi, (&&))
+import           Data.Zip                                    (zipWith)
+import           Prelude                                     hiding (Num (..), length, pi, zipWith, tail, (&&))
 
-import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..), (+))
+import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..))
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (hcommit))
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Base.Protocol.Protostar.SpecialSound (BasicSpecialSoundProtocol, SpecialSoundProtocol (..))
@@ -16,26 +17,19 @@ newtype CommitOpen (m :: Type) (c :: Type) a = CommitOpen a
 instance RandomOracle a b => RandomOracle (CommitOpen m c a) b where
     oracle (CommitOpen a) = oracle a
 
-data CommitOpenProverMessage m c = Commit c | Open [m]
-    deriving Generic
-
 instance
-    ( BasicSpecialSoundProtocol f pi m a
+    ( BasicSpecialSoundProtocol f pi m k a
     , HomomorphicCommit m c
-    ) => SpecialSoundProtocol f pi (CommitOpenProverMessage m c) (CommitOpen m c a) where
-      type Witness f (CommitOpen m c a)         = (Witness f a, [m])
-      type VerifierMessage f (CommitOpen m c a) = VerifierMessage f a
-      type VerifierOutput f (CommitOpen m c a)  = ([c], VerifierOutput f a)
+    ) => SpecialSoundProtocol f pi (m, c) k (CommitOpen m c a) where
+      type VerifierOutput f pi (m, c) k (CommitOpen m c a)  = (Vector k c, VerifierOutput f pi m k a)
 
-      outputLength (CommitOpen a) = outputLength @f @pi @m a
+      outputLength (CommitOpen a) = outputLength @f @pi @m @k a
 
-      rounds (CommitOpen a) = rounds @f @pi @m a + 1
+      prover (CommitOpen a) pi r i =
+            let m = prover @f @pi @m @k a pi r i
+            in (m, hcommit m)
 
-      prover (CommitOpen a) (w, ms) pi r i
-            | i <= rounds @f @pi @m a = Commit $ hcommit $ prover @f @pi @m a w pi r i
-            | otherwise        = Open ms
-
-      verifier (CommitOpen a) pi ((Open ms):mss) (_:rs) = (zipWith (-) (map hcommit ms) (map f mss), verifier @f @pi @m a pi ms rs)
-            where f (Commit c) = c
-                  f _          = error "Invalid message"
-      verifier _ _ _ _ = error "Invalid transcript"
+      verifier (CommitOpen a) pi pms rs =
+            let ms = fmap fst pms
+                cs = fmap snd pms
+            in (zipWith (-) (fmap hcommit ms) cs, verifier @f @pi @m a pi ms rs)

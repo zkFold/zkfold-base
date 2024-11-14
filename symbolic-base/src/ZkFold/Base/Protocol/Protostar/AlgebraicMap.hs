@@ -41,10 +41,10 @@ class
 
     -- | the algebraic map V_sps computed by the verifier.
     algebraicMap :: a
-        -> pi     -- ^ public input
-        -> [m]    -- ^ NARK proof witness (the list of prover messages)
-        -> [f]    -- ^ Verifier random challenges
-        -> f      -- ^ Slack variable for padding
+        -> pi             -- ^ public input
+        -> Vector k m     -- ^ NARK proof witness (the list of prover messages)
+        -> Vector (k-1) f -- ^ Verifier random challenges
+        -> f              -- ^ Slack variable for padding
         -> [f]
 
 instance
@@ -70,7 +70,7 @@ instance
             sys = M.elems (acSystem ac)
 
             witness :: Map ByteString f
-            witness = M.fromList $ zip (keys $ acWitness ac) (toList (P.head pm))
+            witness = M.fromList $ zip (keys $ acWitness ac) (toList (V.head pm))
 
             varMap :: SysVar i -> f
             varMap (InVar inV)   = index pi inV

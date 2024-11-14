@@ -18,6 +18,7 @@ import qualified Prelude                                     as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
+import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector, mapWithIx)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
@@ -30,22 +31,22 @@ import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 --
 -- TODO: define the initial accumulator
 --
-class AccumulatorScheme pi f c m a where
+class AccumulatorScheme pi f c m k d a where
   prover   :: a
-           -> Accumulator pi f c m        -- accumulator
-           -> InstanceProofPair pi c m    -- instance-proof pair (pi, π)
-           -> (Accumulator pi f c m, [c]) -- updated accumulator and accumulation proof
+           -> Accumulator pi f c m k                     -- accumulator
+           -> InstanceProofPair pi c m k                 -- instance-proof pair (pi, π)
+           -> (Accumulator pi f c m k, Vector (d - 1) c) -- updated accumulator and accumulation proof
 
-  verifier :: pi                          -- Public input
-           -> [c]                         -- NARK proof π.x
-           -> AccumulatorInstance pi f c  -- accumulator instance acc.x
-           -> AccumulatorInstance pi f c  -- updated accumulator instance acc'.x
-           -> [c]                         -- accumulation proof E_j
-           -> (f, pi, [f], [c], c)        -- returns zeros if the accumulation proof is correct
+  verifier :: pi                                         -- Public input
+           -> Vector k c                                 -- NARK proof π.x
+           -> AccumulatorInstance pi f c k               -- accumulator instance acc.x
+           -> AccumulatorInstance pi f c k               -- updated accumulator instance acc'.x
+           -> Vector (d - 1) c                           -- accumulation proof E_j
+           -> (f, pi, Vector (k-1) f, Vector k c, c)     -- returns zeros if the accumulation proof is correct
 
   decider  :: a
-           -> Accumulator pi f c m        -- final accumulator
-           -> ([c], c)                    -- returns zeros if the final accumulator is valid
+           -> Accumulator pi f c m k                     -- final accumulator
+           -> (Vector k c, c)                            -- returns zeros if the final accumulator is valid
 
 instance
     ( Scale f c
@@ -60,13 +61,16 @@ instance
     , pi ~ i f
     , IsList m
     , Item m ~ f
-    ) => AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a)) where
+    , KnownNat k
+    , KnownNat (k-1)
+    , KnownNat (d - 1)
+    ) => AccumulatorScheme pi f c m k d (FiatShamir f (CommitOpen m c a)) where
   prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
       where
           -- Fig. 3, step 1
-          r_i :: [f]
-          r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) pi_x
+          r_i :: Vector (k-1) f
+          r_i = unsafeToVector $ P.tail $ P.tail $ P.scanl (P.curry oracle) (oracle pubi) $ toList pi_x
 
           -- Fig. 3, step 2
 
@@ -79,12 +83,12 @@ instance
           polyPi = zipWith (PU.polyVecLinear @f) pubi (acc^.x^.pi)
 
           -- X * mi + mi'
-          polyW :: [[PU.PolyVec f (Degree a + 1)]]
+          polyW :: Vector k [PU.PolyVec f (Degree a + 1)]
           polyW = zipWith (\a b -> zipWith (PU.polyVecLinear @f) (toList  a) (toList b)) pi_w (acc^.w)
 
           -- X * ri + ri'
-          polyR :: [PU.PolyVec f (Degree a + 1)]
-          polyR = P.zipWith (P.flip PU.polyVecLinear) (acc^.x^.r) r_i
+          polyR :: Vector (k-1) (PU.PolyVec f (Degree a + 1))
+          polyR = zipWith (P.flip PU.polyVecLinear) (acc^.x^.r) r_i
 
           -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
@@ -95,8 +99,8 @@ instance
           e_all = transpose $ DV.toList . PU.fromPolyVec <$> e_uni
 
           -- e_j are coefficients of degree-j homogenous polynomials where j is from the range [1, d - 1]
-          e_j :: [[f]]
-          e_j = P.tail . P.init $ e_all
+          e_j :: Vector (d-1) [f]
+          e_j = unsafeToVector $ P.tail . P.init $ e_all
 
           -- Fig. 3, step 3
           pf = hcommit <$> e_j
@@ -113,14 +117,14 @@ instance
           m_i'' = scale alpha pi_w + acc^.w
 
           -- Fig. 3, step 7
-          eCapital' = acc^.x^.e + sum (P.zipWith (\e' p -> scale (alpha ^ p) e') pf [1::Natural ..])
+          eCapital' = acc^.x^.e + sum (mapWithIx (\i a -> scale (alpha ^ (i+1)) a) pf)
 
 
   verifier pubi c_i acc acc' pf = (muDiff, piDiff, riDiff, ciDiff, eDiff)
       where
           -- Fig. 4, step 1
-          r_i :: [f]
-          r_i = P.tail $ P.scanl (P.curry oracle) (oracle pubi) c_i
+          r_i :: Vector (k-1) f
+          r_i = unsafeToVector $ P.tail $ P.tail $ P.scanl (P.curry oracle) (oracle pubi) $ toList c_i
 
           -- Fig. 4, step 2
           alpha :: f
@@ -139,12 +143,12 @@ instance
           ciDiff = acc'^.c  - ci''
 
           -- Fig 4, step 5
-          eDiff = acc'^.e - (acc^.e + sum (P.zipWith scale ((alpha ^) <$> [1 :: Natural ..]) pf))
+          eDiff = acc'^.e - (acc^.e + sum (mapWithIx (\i a -> scale (alpha ^ (i+1)) a) pf))
 
   decider (FiatShamir (CommitOpen sps)) acc = (commitsDiff, eDiff)
       where
           -- Fig. 5, step 1
-          commitsDiff = P.zipWith (\cm m_acc -> cm - hcommit m_acc) (acc^.x^.c) (acc^.w)
+          commitsDiff = zipWith (\cm m_acc -> cm - hcommit m_acc) (acc^.x^.c) (acc^.w)
 
           -- Fig. 5, step 2
           err :: [f]
