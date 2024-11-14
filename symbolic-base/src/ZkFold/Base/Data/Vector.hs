@@ -14,11 +14,11 @@ import           Data.These                       (These (..))
 import qualified Data.Vector                      as V
 import           Data.Vector.Binary               ()
 import qualified Data.Vector.Split                as V
-import           Data.Zip                         (Semialign (..), Zip (..), Unzip (..))
+import           Data.Zip                         (Semialign (..), Unzip (..), Zip (..))
 import           GHC.Generics                     (Generic)
 import           GHC.IsList                       (IsList (..))
-import           Prelude                          hiding (concat, drop, head, length, mod, replicate, sum, negate, tail, take,
-                                                   zip, zipWith, unzip, (+), (-), (*))
+import           Prelude                          hiding (concat, drop, head, length, mod, negate, replicate, sum, tail,
+                                                   take, unzip, zip, zipWith, (*), (+), (-))
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 

@@ -1,6 +1,6 @@
-{-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DeriveAnyClass  #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators   #-}
 
 module ZkFold.Base.Protocol.Protostar.Accumulator where
 
@@ -9,7 +9,7 @@ import           Control.Lens.Combinators         (makeLenses)
 import           GHC.Generics
 import           Prelude                          hiding (length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Number (type(-))
+import           ZkFold.Base.Algebra.Basic.Number (type (-))
 import           ZkFold.Base.Data.Vector          (Vector)
 
 -- Page 19, Accumulator instance

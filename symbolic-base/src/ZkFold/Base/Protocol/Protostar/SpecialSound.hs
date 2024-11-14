@@ -4,7 +4,7 @@
 
 module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
-import           Data.Functor.Rep                            (Representable(..))
+import           Data.Functor.Rep                            (Representable (..))
 import           Data.Map.Strict                             (elems)
 import           Prelude                                     (($))
 

@@ -4,7 +4,7 @@
 module ZkFold.Base.Protocol.Protostar.CommitOpen where
 
 import           Data.Zip                                    (zipWith)
-import           Prelude                                     hiding (Num (..), length, pi, zipWith, tail, (&&))
+import           Prelude                                     hiding (Num (..), length, pi, tail, zipWith, (&&))
 
 import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..))
 import           ZkFold.Base.Data.Vector                     (Vector)

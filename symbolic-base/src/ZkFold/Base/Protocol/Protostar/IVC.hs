@@ -1,17 +1,17 @@
-{-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TypeOperators  #-}
 
 module ZkFold.Base.Protocol.Protostar.IVC where
 
 import           Control.DeepSeq                                  (NFData)
 import           Control.Lens                                     ((^.))
-import           Data.Functor.Rep                                 (Representable(..))
+import           Data.Functor.Rep                                 (Representable (..))
 import           Data.Type.Equality                               (type (~))
 import           GHC.Generics                                     (Generic)
 import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                 (type (-), KnownNat, Natural)
+import           ZkFold.Base.Algebra.Basic.Number                 (KnownNat, Natural, type (-))
 import           ZkFold.Base.Data.Vector                          (Vector, singleton, unsafeToVector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc

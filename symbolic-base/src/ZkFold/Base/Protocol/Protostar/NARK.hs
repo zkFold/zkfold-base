@@ -6,7 +6,7 @@ module ZkFold.Base.Protocol.Protostar.NARK where
 import           Control.DeepSeq                             (NFData (..))
 import           Data.Zip                                    (unzip)
 import           GHC.Generics
-import           Prelude                                     hiding (length, head, unzip, pi)
+import           Prelude                                     hiding (head, length, pi, unzip)
 
 import           ZkFold.Base.Algebra.Basic.Class             (Ring)
 import           ZkFold.Base.Algebra.Basic.Number            (KnownNat)

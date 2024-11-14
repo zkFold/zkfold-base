@@ -3,25 +3,25 @@
 
 module ZkFold.Base.Protocol.Protostar.RecursiveCircuit where
 
-import           Data.Functor.Rep                           (tabulate)
-import           GHC.Generics                               (Par1 (..), U1 (..), type (:.:) (..), (:*:) (..))
-import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    hiding (Num (..), drop, head, take, zipWith)
+import           Data.Functor.Rep                          (tabulate)
+import           GHC.Generics                              (Par1 (..), U1 (..), type (:.:) (..), (:*:) (..))
+import           GHC.IsList                                (IsList (..))
+import           Prelude                                   hiding (Num (..), drop, head, take, zipWith)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (-), type (+))
-import           ZkFold.Base.Data.ByteString                (Binary)
-import           ZkFold.Base.Data.HFunctor                  (hmap)
-import           ZkFold.Base.Data.Vector                    (Vector, head)
-import           ZkFold.Base.Protocol.Protostar.Commit      (HomomorphicCommit)
-import           ZkFold.Base.Protocol.Protostar.CommitOpen  (CommitOpen (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir  (FiatShamir (..))
-import           ZkFold.Base.Protocol.Protostar.IVC         (IVCInstanceProof, ivcVerify)
+import           ZkFold.Base.Algebra.Basic.Number          (KnownNat, type (+), type (-))
+import           ZkFold.Base.Data.ByteString               (Binary)
+import           ZkFold.Base.Data.HFunctor                 (hmap)
+import           ZkFold.Base.Data.Vector                   (Vector, head)
+import           ZkFold.Base.Protocol.Protostar.Commit     (HomomorphicCommit)
+import           ZkFold.Base.Protocol.Protostar.CommitOpen (CommitOpen (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir (FiatShamir (..))
+import           ZkFold.Base.Protocol.Protostar.IVC        (IVCInstanceProof, ivcVerify)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
-import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
+import           ZkFold.Symbolic.Data.Class                (SymbolicData (..))
+import           ZkFold.Symbolic.Data.FieldElement         (FieldElement (..))
+import           ZkFold.Symbolic.Data.Input                (SymbolicInput)
 
 -- | Takes a function `f` and returns a circuit `C` with input `y` and witness `w`.
 -- The circuit is such that `C(y, w) = 0` implies that `y = x(n)` for some positive `n` where

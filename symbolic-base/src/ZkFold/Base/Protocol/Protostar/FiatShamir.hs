@@ -3,11 +3,11 @@
 module ZkFold.Base.Protocol.Protostar.FiatShamir where
 
 import           GHC.Generics                                (Generic)
-import           Prelude                                     hiding (Bool (..), Eq (..), length, unzip, pi)
+import           Prelude                                     hiding (Bool (..), Eq (..), length, pi, unzip)
 
 import           ZkFold.Base.Algebra.Basic.Class             (Ring)
-import           ZkFold.Base.Algebra.Basic.Number            (value, KnownNat)
-import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector, item)
+import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, value)
+import           ZkFold.Base.Data.Vector                     (Vector, item, unsafeToVector)
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))

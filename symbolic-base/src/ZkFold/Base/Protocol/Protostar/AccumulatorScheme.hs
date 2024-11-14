@@ -12,13 +12,13 @@ import           Data.List                                   (transpose)
 import qualified Data.Vector                                 as DV
 import           Data.Zip                                    (Zip (..))
 import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     (($), (.), (<$>), fmap)
+import           Prelude                                     (fmap, ($), (.), (<$>))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
-import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector, mapWithIx)
+import           ZkFold.Base.Data.Vector                     (Vector, mapWithIx, unsafeToVector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
@@ -52,7 +52,7 @@ instance
     ( AlgebraicMap f i d a
     , AlgebraicMap (PU.PolyVec f (d + 1)) i d a
     , Ring f
-    , Zip i    
+    , Zip i
     , KnownNat (d - 1)
     , KnownNat (d + 1)
     , Scale f c
