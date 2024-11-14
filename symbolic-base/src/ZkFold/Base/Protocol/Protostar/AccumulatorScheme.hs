@@ -12,7 +12,7 @@ import           Data.List                                   (transpose)
 import qualified Data.Vector                                 as DV
 import           Data.Zip                                    (Zip (..))
 import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     (type (~), ($), (.), (<$>), fmap)
+import           Prelude                                     (($), (.), (<$>), fmap)
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -60,8 +60,7 @@ instance
     , RandomOracle (i f) f    -- Random oracle for compressing public input
     , RandomOracle c f        -- Random oracle ρ_NARK
     , Scale f c
-    , m ~ [f]
-    ) => AccumulatorScheme f i c m k d (FiatShamir f (CommitOpen m c a)) where
+    ) => AccumulatorScheme f i c [f] k d (FiatShamir (CommitOpen a)) where
   prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
       where
@@ -81,7 +80,7 @@ instance
 
           -- X * mi + mi'
           polyW :: Vector k [PU.PolyVec f (d + 1)]
-          polyW = zipWith (\a b -> zipWith (PU.polyVecLinear @f) (toList  a) (toList b)) pi_w (acc^.w)
+          polyW = zipWith (zipWith (PU.polyVecLinear @f)) pi_w (acc^.w)
 
           -- X * ri + ri'
           polyR :: Vector (k-1) (PU.PolyVec f (d + 1))

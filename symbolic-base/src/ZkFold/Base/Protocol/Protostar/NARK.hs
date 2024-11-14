@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 
 module ZkFold.Base.Protocol.Protostar.NARK where
@@ -28,14 +29,14 @@ data NARKProof c m k
 data InstanceProofPair f i c m k = InstanceProofPair (i f) (NARKProof c m k)
     deriving (Show, Generic, NFData)
 
-instanceProof :: forall a f i m k c .
+instanceProof :: forall a f i m d k c .
     ( Ring f
     , KnownNat k
-    , SpecialSoundProtocol f i m k a
+    , SpecialSoundProtocol f i m d k a
     , HomomorphicCommit m c
     , RandomOracle (i f) f
     , RandomOracle c f
-    ) => FiatShamir f (CommitOpen m c a) -> i f -> InstanceProofPair f i c m k
+    ) => FiatShamir (CommitOpen a) -> i f -> InstanceProofPair f i c m k
 instanceProof a pi =
-    let (ms, cs) = unzip $ prover @f @i @(Vector k (m, c)) @1 a pi (oracle pi) 0
+    let (ms, cs) = unzip $ prover @f @i @_ @d @1 a pi (oracle pi) 0
     in InstanceProofPair pi (NARKProof cs ms)

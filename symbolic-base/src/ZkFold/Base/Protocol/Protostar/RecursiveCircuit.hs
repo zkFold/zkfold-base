@@ -67,8 +67,8 @@ protostar func =
         stepCircuit = hlmap (\y -> tabulate (const (head y)) :*: tabulate (const (head y)) :*: y) stepCircuit'
 
         -- The Fiat-Shamired commit-open special-sound protocol for the circuit
-        fs :: FiatShamir f (CommitOpen m c (ArithmeticCircuit a (Vector n) (Vector n)))
-        fs = FiatShamir @f (CommitOpen @m @c stepCircuit)
+        fs :: FiatShamir (CommitOpen (ArithmeticCircuit a (Vector n) (Vector n)))
+        fs = FiatShamir (CommitOpen stepCircuit)
 
         -- The verification function for the IVC instance-proof
         vf :: IVCInstanceProof f i0 c m k d -> ((f, i0 f, Vector (k-1) f, Vector k c, c), (Vector k c, c))

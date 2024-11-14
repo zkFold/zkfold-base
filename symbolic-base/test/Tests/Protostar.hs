@@ -34,7 +34,7 @@ type I = Vector 1
 type M = [F]
 type K = 1
 type AC = ArithmeticCircuit F (Vector 1) (Vector 1)
-type SPS = FiatShamir F (CommitOpen M G AC)
+type SPS = FiatShamir (CommitOpen AC)
 type D = 2
 type PARDEG = 5
 type PAR = PolyVec F PARDEG
@@ -69,7 +69,7 @@ testPublicInput :: I F
 testPublicInput = singleton $ fromConstant @Natural 42
 
 testInstanceProofPair :: SPS -> InstanceProofPair F I G M K
-testInstanceProofPair sps = instanceProof @_ @F sps testPublicInput
+testInstanceProofPair sps = instanceProof @_ @F @_ @_ @D sps testPublicInput
 
 testMessages :: SPS -> Vector K M
 testMessages sps =
@@ -96,7 +96,7 @@ testDeciderResult :: SPS -> (Vector K G, G)
 testDeciderResult sps = decider @F @I @G @M @K @D sps $ testAccumulator sps
 
 testVerifierResult :: SPS -> (F, I F, Vector (K-1) F, Vector K G, G)
-testVerifierResult sps = Acc.verifier @F @I @G @M @K @D @(FiatShamir F (CommitOpen M G AC))
+testVerifierResult sps = Acc.verifier @F @I @G @M @K @D @(FiatShamir (CommitOpen AC))
     testPublicInput (testNarkProof sps) (initAccumulatorInstance sps) (testAccumulatorInstance sps) (testAccumulationProof sps)
 
 specAlgebraicMap :: IO ()

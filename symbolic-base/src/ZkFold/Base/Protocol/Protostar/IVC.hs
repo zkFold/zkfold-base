@@ -11,7 +11,7 @@ import           GHC.Generics                                     (Generic)
 import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                 (type (-), KnownNat)
+import           ZkFold.Base.Algebra.Basic.Number                 (type (-), KnownNat, Natural)
 import           ZkFold.Base.Data.Vector                          (Vector, singleton, unsafeToVector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
@@ -49,17 +49,17 @@ ivcInitialize =
     let acc = Accumulator (AccumulatorInstance (tabulate zero) (singleton zero) (unsafeToVector []) zero zero) (singleton zero)
     in IVCInstanceProof (tabulate zero) (singleton zero) acc acc (unsafeToVector [])
 
-ivcIterate :: forall f i c m k d a .
+ivcIterate :: forall f i c m k (d :: Natural) a .
     ( Ring f
     , KnownNat k
-    , SpecialSoundProtocol f i m k a
+    , SpecialSoundProtocol f i m d k a
     , HomomorphicCommit m c
     , RandomOracle (i f) f
     , RandomOracle c f
-    , AccumulatorScheme f i c m k d (FiatShamir f (CommitOpen m c a))
-    ) => FiatShamir f (CommitOpen m c a) -> IVCInstanceProof f i c m k d -> i f -> IVCInstanceProof f i c m k d
+    , AccumulatorScheme f i c m k d (FiatShamir (CommitOpen a))
+    ) => FiatShamir (CommitOpen a) -> IVCInstanceProof f i c m k d -> i f -> IVCInstanceProof f i c m k d
 ivcIterate fs (IVCInstanceProof _ _ _ acc' _) pi' =
-    let narkIP@(InstanceProofPair _ (NARKProof cs _)) = instanceProof fs pi'
+    let narkIP@(InstanceProofPair _ (NARKProof cs _)) = instanceProof @_ @_ @_ @_ @d fs pi'
         (acc'', accProof') = Acc.prover fs acc' narkIP
     in IVCInstanceProof pi' cs acc' acc'' accProof'
 
