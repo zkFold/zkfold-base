@@ -150,7 +150,6 @@ library
       ZkFold.Base.Protocol.Protostar.Commit
       ZkFold.Base.Protocol.Protostar.FiatShamir
       ZkFold.Base.Protocol.Protostar.IVC
-      -- ZkFold.Base.Protocol.Protostar.Lookup
       ZkFold.Base.Protocol.Protostar.NARK
       ZkFold.Base.Protocol.Protostar.Oracle
       ZkFold.Base.Protocol.Protostar.RecursiveCircuit
