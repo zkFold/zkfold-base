@@ -10,7 +10,7 @@ module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 import           Control.Lens                                ((^.))
 import           Data.Constraint                             (withDict)
 import           Data.Constraint.Nat                         (plusMinusInverse1)
-import           Data.Functor.Rep                            (Representable(..))
+import           Data.Functor.Rep                            (Representable (..))
 import           Data.Zip                                    (Zip (..))
 import           GHC.IsList                                  (IsList (..))
 import           Prelude                                     (fmap, ($), (.), (<$>))
@@ -19,7 +19,7 @@ import qualified Prelude                                     as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
-import           ZkFold.Base.Data.Vector                     (Vector, mapWithIx, unsafeToVector, init, tail)
+import           ZkFold.Base.Data.Vector                     (Vector, init, mapWithIx, tail, unsafeToVector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))

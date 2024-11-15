@@ -1,16 +1,16 @@
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.Protostar.FiatShamir where
 
 import           Data.Constraint                             (withDict)
 import           Data.Constraint.Nat                         (plusMinusInverse1)
 import           GHC.Generics                                (Generic)
-import           Prelude                                     hiding (Bool (..), Eq (..), length, pi, unzip, init, scanl)
+import           Prelude                                     hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
 import           ZkFold.Base.Algebra.Basic.Class             (Ring)
 import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, type (-))
-import           ZkFold.Base.Data.Vector                     (Vector, item, scanl, init, unfold)
+import           ZkFold.Base.Data.Vector                     (Vector, init, item, scanl, unfold)
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
