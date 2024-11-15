@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds   #-}
-{-# LANGUAGE TemplateHaskell  #-}
 {-# LANGUAGE TypeOperators    #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -12,9 +11,9 @@ import           Data.Function                               (const, ($))
 import           Data.Functor                                (Functor, (<$>))
 import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
 import           System.IO                                   (IO)
+import           Test.Hspec                                  (describe, hspec)
+import           Test.Hspec.QuickCheck                       (prop)
 import           Test.QuickCheck
-import           Test.Tasty                                  (defaultMain)
-import           Test.Tasty.QuickCheck                       (testProperties)
 import           Text.Show                                   (Show)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -58,45 +57,26 @@ infixl 1 $$
 ($$) :: Term -> Term -> Term
 ($$) = TApp
 
-prop_triv :: Property
-prop_triv = areSame contractV3 (TLam tFalse) (const true)
-
-prop_err :: Property
-prop_err = areSame contractV3 (TLam TError) (const false)
-
-prop_sub :: Property
-prop_sub =
-  areSame contractV3 (TLam $ TLam (TVariable 0) $$ tTrue) (const true)
-
-prop_pair_ok :: Property
-prop_pair_ok = areSame contractV3
-  (TLam $ TBuiltin (BFPoly FstPair) $$ TConstant (CPair (CUnit ()) (CBool false)))
-  (const true)
-
-prop_pair_err :: Property
-prop_pair_err =
-  areSame contractV3 (TLam $ TBuiltin (BFPoly SndPair) $$ tTrue) (const false)
-
-prop_if_triv :: Property
-prop_if_triv = areSame contractV3
-  (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tTrue $$ tFalse)
-  (const true)
-
-prop_if_ok :: Property
-prop_if_ok = areSame contractV3
-  (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tUnit $$ TError)
-  (const true)
-
-prop_if_err :: Property
-prop_if_err = areSame contractV3
-  (TLam $ TBuiltin (BFPoly IfThenElse) $$ tFalse $$ tUnit $$ TError)
-  (const false)
-
-prop_if_sub :: Property
-prop_if_sub = areSame contractV3
-  (TLam $ TLam (TVariable 0 $$ tTrue $$ tUnit $$ TError) $$ TBuiltin (BFPoly IfThenElse))
-  (const true)
-
-return []
 main :: IO ()
-main = defaultMain $ testProperties "UPLC tests" $allProperties
+main = hspec $ describe "UPLC tests" $ do
+  prop "false is ok" $ areSame contractV3 (TLam tFalse) (const true)
+  prop "error is not ok" $ areSame contractV3 (TLam TError) (const false)
+  prop "substitution is ok" $
+    areSame contractV3 (TLam $ TLam (TVariable 0) $$ tTrue) (const true)
+  prop "pair is ok" $ areSame contractV3
+    (TLam $ TBuiltin (BFPoly FstPair) $$ TConstant (CPair (CUnit ()) (CBool false)))
+    (const true)
+  prop "bool is not a pair" $
+    areSame contractV3 (TLam $ TBuiltin (BFPoly SndPair) $$ tTrue) (const false)
+  prop "trivial if if ok" $ areSame contractV3
+    (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tTrue $$ tFalse)
+    (const true)
+  prop "lazy error in if is ok" $ areSame contractV3
+    (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tUnit $$ TError)
+    (const true)
+  prop "error propagation in if" $ areSame contractV3
+    (TLam $ TBuiltin (BFPoly IfThenElse) $$ tFalse $$ tUnit $$ TError)
+    (const false)
+  prop "if as an argument is ok" $ areSame contractV3
+    (TLam $ TLam (TVariable 0 $$ tTrue $$ tUnit $$ TError) $$ TBuiltin (BFPoly IfThenElse))
+    (const true)

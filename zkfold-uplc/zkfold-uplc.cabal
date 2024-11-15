@@ -55,10 +55,9 @@ test-suite zkfold-uplc-test
     type:               exitcode-stdio-1.0
     main-is:            Test.hs
     build-depends:
-      base            ,
-      symbolic-base   ,
-      tasty           ,
-      tasty-quickcheck,
-      QuickCheck      ,
+      base         ,
+      hspec        ,
+      symbolic-base,
+      QuickCheck   ,
       zkfold-uplc
     hs-source-dirs:     test
