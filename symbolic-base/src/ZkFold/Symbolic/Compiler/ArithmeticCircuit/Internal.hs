@@ -199,22 +199,22 @@ instance
   ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
   , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (SysVar i)) (State (ArithmeticCircuit a i o)) where
 
-    unconstrained wf = do
-      let v = toVar @a wf
-      -- TODO: forbid reassignment of variables
-      zoom #acWitness $ modify (insert v wf)
-      return $ SysVar (NewVar v)
+    unconstrained wf = case runWitnessF wf $ const Nothing of
+      Just cV -> return (ConstVar cV)
+      Nothing -> do
+        let v = toVar @a wf
+        -- TODO: forbid reassignment of variables
+        zoom #acWitness $ modify (insert v wf)
+        return $ SysVar (NewVar v)
 
     constraint p =
-      let
-        evalConstVar = \case
-          SysVar sysV -> var sysV
-          ConstVar cV -> fromConstant cV
-        r = p evalConstVar
-      in
-        if r == zero
-          then return $ error "constrained variable not equal zero"
-          else zoom #acSystem . modify $ insert (toVar (p at)) (p evalConstVar)
+      let evalConstVar = \case
+            SysVar sysV -> var sysV
+            ConstVar cV -> fromConstant cV
+          r = p evalConstVar
+      in if r == zero
+        then return ()
+        else zoom #acSystem . modify $ insert (toVar (p at)) r
 
     rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
