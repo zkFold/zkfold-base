@@ -19,7 +19,7 @@ import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (AccumulatorSc
 import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
-import           ZkFold.Base.Protocol.Protostar.NARK              (InstanceProofPair (..), NARKProof (..),
+import           ZkFold.Base.Protocol.Protostar.NARK              (NARKInstanceProof (..), NARKProof (..),
                                                                    instanceProof)
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Base.Protocol.Protostar.SpecialSound      (SpecialSoundProtocol)
@@ -59,7 +59,7 @@ ivcIterate :: forall f i m c (d :: Natural) k a .
     , AccumulatorScheme f i m c d k (FiatShamir (CommitOpen a))
     ) => FiatShamir (CommitOpen a) -> IVCInstanceProof f i m c d k -> i f -> IVCInstanceProof f i m c d k
 ivcIterate fs (IVCInstanceProof _ _ _ acc' _) pi' =
-    let narkIP@(InstanceProofPair _ (NARKProof cs _)) = instanceProof @_ @_ @_ @_ @d fs pi'
+    let narkIP@(NARKInstanceProof _ (NARKProof cs _)) = instanceProof @_ @_ @_ @_ @d fs pi'
         (acc'', accProof') = Acc.prover fs acc' narkIP
     in IVCInstanceProof pi' cs acc' acc'' accProof'
 

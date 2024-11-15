@@ -21,7 +21,7 @@ import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
 import           ZkFold.Base.Protocol.Protostar.AlgebraicMap      (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.CommitOpen        (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir        (FiatShamir (..))
-import           ZkFold.Base.Protocol.Protostar.NARK              (InstanceProofPair (..), NARKProof (..),
+import           ZkFold.Base.Protocol.Protostar.NARK              (NARKInstanceProof (..), NARKProof (..),
                                                                    instanceProof)
 import           ZkFold.Prelude                                   (replicate)
 import           ZkFold.Symbolic.Class                            (Symbolic)
@@ -68,17 +68,17 @@ initAccumulatorInstance sps =
 testPublicInput :: I F
 testPublicInput = singleton $ fromConstant @Natural 42
 
-testInstanceProofPair :: SPS -> InstanceProofPair F I M G K
+testInstanceProofPair :: SPS -> NARKInstanceProof F I M G K
 testInstanceProofPair sps = instanceProof @_ @_ @_ @_ @D sps testPublicInput
 
 testMessages :: SPS -> Vector K M
 testMessages sps =
-    let InstanceProofPair _ (NARKProof _ ms) = testInstanceProofPair sps
+    let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair sps
     in ms
 
 testNarkProof :: SPS -> Vector K G
 testNarkProof sps =
-    let InstanceProofPair _ (NARKProof cs _) = testInstanceProofPair sps
+    let NARKInstanceProof _ (NARKProof cs _) = testInstanceProofPair sps
     in cs
 
 testAccumulator :: SPS -> Accumulator F I M G K

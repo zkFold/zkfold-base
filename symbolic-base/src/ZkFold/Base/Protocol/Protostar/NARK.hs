@@ -26,7 +26,7 @@ data NARKProof k m c
         }
     deriving (Show, Generic, NFData)
 
-data InstanceProofPair f i m c k = InstanceProofPair (i f) (NARKProof k m c)
+data NARKInstanceProof f i m c k = NARKInstanceProof (i f) (NARKProof k m c)
     deriving (Show, Generic, NFData)
 
 instanceProof :: forall f i m c d k a .
@@ -36,7 +36,7 @@ instanceProof :: forall f i m c d k a .
     , RandomOracle (i f) f
     , RandomOracle c f
     , KnownNat k
-    ) => FiatShamir (CommitOpen a) -> i f -> InstanceProofPair f i m c k
+    ) => FiatShamir (CommitOpen a) -> i f -> NARKInstanceProof f i m c k
 instanceProof a pi =
     let (ms, cs) = unzip $ prover @f @i @_ @c @d @1 a pi (oracle pi) 0
-    in InstanceProofPair pi (NARKProof cs ms)
+    in NARKInstanceProof pi (NARKProof cs ms)

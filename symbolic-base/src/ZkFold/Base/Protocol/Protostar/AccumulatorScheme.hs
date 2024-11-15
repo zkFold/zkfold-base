@@ -25,7 +25,7 @@ import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..), transcriptFiatShamir)
-import           ZkFold.Base.Protocol.Protostar.NARK         (InstanceProofPair (..), NARKProof (..))
+import           ZkFold.Base.Protocol.Protostar.NARK         (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
@@ -35,7 +35,7 @@ import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 class AccumulatorScheme f i m c d k a where
   prover   :: a
            -> Accumulator f i m c k                      -- accumulator
-           -> InstanceProofPair f i m c k                -- instance-proof pair (pi, π)
+           -> NARKInstanceProof f i m c k                -- instance-proof pair (pi, π)
            -> (Accumulator f i m c k, Vector (d - 1) c)  -- updated accumulator and accumulation proof
 
   verifier :: i f                                        -- Public input
@@ -62,7 +62,7 @@ instance
     , RandomOracle c f        -- Random oracle ρ_NARK
     , KnownNat k
     ) => AccumulatorScheme f i [f] c d k (FiatShamir (CommitOpen a)) where
-  prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
+  prover (FiatShamir (CommitOpen sps)) acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
       where
           r_0 :: f
