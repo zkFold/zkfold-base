@@ -51,7 +51,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, mapVars,
-                                                                        var)
+                                                                        var, variables)
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
@@ -212,7 +212,7 @@ instance
             SysVar sysV -> var sysV
             ConstVar cV -> fromConstant cV
           r = p evalConstVar
-      in if r == zero
+      in if null $ variables r
         then return ()
         else zoom #acSystem . modify $ insert (toVar (p at)) r
 
