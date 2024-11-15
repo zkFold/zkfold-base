@@ -22,7 +22,7 @@ import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Class            (Symbolic (BaseField, symbolicF), symbolic2F)
+import           ZkFold.Symbolic.Class            (Arithmetic, Symbolic (BaseField), symbolic2F, symbolicF)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion)

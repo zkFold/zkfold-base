@@ -17,8 +17,8 @@ import           Tests.Arithmetization.Test4                 (specArithmetizatio
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.MonadCircuit                (Arithmetic)
 
 propCircuitInvariance :: (Arithmetic a, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuitTest a i Par1 -> Bool
 propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
