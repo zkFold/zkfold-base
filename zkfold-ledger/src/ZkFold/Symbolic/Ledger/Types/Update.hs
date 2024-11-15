@@ -15,6 +15,9 @@ import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 
 type AddressIndex = UInt 40 Auto
 
+getAddressIndex :: Input context -> AddressIndex context
+getAddressIndex = undefined
+
 -- TODO: Add contract public data to the update.
 
 data Update context = Update
@@ -52,3 +55,6 @@ type UpdateChain context = List context (Update context)
 -- | Get the block of the `Update`
 updateId :: Update context -> Hash context
 updateId = undefined
+
+merkleTreeRoot :: List context (AddressIndex context, TransactionId context) -> Hash context
+merkleTreeRoot = undefined

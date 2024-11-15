@@ -39,18 +39,6 @@ transactionInputsAreValid bId tx w =
    in all (uncurry $ inputIsValid bId) w
    && inputs == fmap fst w
 
--- | Checks if the balance of a transaction is correct.
--- transactionBalanceIsCorrect ::
---       Signature context
---    => Transaction context
---    -> Bool context
--- transactionBalanceIsCorrect tx =
---    let spending  = sum (txoValue . txiOutput <$> txInputs tx)
---        minting   = sum $ txMint tx
---        producing = sum $ txoValue <$> txOutputs tx
-
---    in producing == spending + minting
-
 -- | Checks if a transaction satisfies the included contracts.
 transactionContractsAreSatisfied ::
       Signature context
@@ -78,5 +66,4 @@ transactionIsValid ::
    -> Bool context
 transactionIsValid bId tx (wInputs, wContracts) =
        transactionInputsAreValid bId tx wInputs
-    -- && transactionBalanceIsCorrect tx
     && transactionContractsAreSatisfied tx wContracts

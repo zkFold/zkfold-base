@@ -1,23 +1,29 @@
 module ZkFold.Symbolic.Ledger.Validation.Input where
 
 import           Prelude                                  hiding (Bool, Eq, Maybe, all, any, filter, head, init, last,
-                                                           length, maybe, splitAt, tail, (&&), (*), (+), (/=), (==))
+                                                           length, maybe, splitAt, tail, (&&), (*), (+), (/=), (==), (++), (!!), concat)
 
 import           ZkFold.Symbolic.Data.Bool                (Bool, all, any, false, (&&))
 import           ZkFold.Symbolic.Data.Eq                  (Eq (..))
-import           ZkFold.Symbolic.Data.List                (List, emptyList, filter, findList, head, last, (.:))
+import           ZkFold.Symbolic.Data.List                (List, emptyList, filter, findList, head, last, (.:), (++), singleton, (!!), concat)
 import           ZkFold.Symbolic.Data.Maybe               (maybe)
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Common (updateChainIsValid)
 
 -- | Witness data that is required to prove the validity of an input.
-data InputWitness context
-  = OfflineTxInputWitness
-      (Transaction context)
-      (List context (Update context, List context (Transaction context)))
-      (Update context)
-  | OnlineTxInputWitness
-  | BridgedTxInputWitness
+data InputWitness context = InputWitness
+    { inputWitnessTx :: Transaction context
+    , inputWitnessDataLeastRecent :: InputWitnessDatum context
+    , inputWitnessDataRest :: List context (Update context, List context (AddressIndex context, TransactionId context))
+    , inputWitnessAllTxs :: List context (Transaction context)
+      -- ^ all transactions which spend from the address of the given input
+    }
+
+data InputWitnessDatum context = InputWitnessDatum
+    { inputWitnessUpdate :: Update context
+    , inputWitnessOnlineTxs :: List context (AddressIndex context, Transaction context)
+    , inputWitnessOfflineTxs :: List context (Transaction context)
+    }
 
 -- | Checks if the input existed.
 inputExisted ::
@@ -29,20 +35,30 @@ inputExisted ::
     -> InputWitness context
     -- ^ The witness data for the input.
     -> Bool context
-inputExisted bId i (OfflineTxInputWitness wTx wCTxs _) =
-    let wUpdates = fmap fst wCTxs
-        u        = head wUpdates
-        u0       = last wUpdates
-        o        = txiOutput i
+inputExisted blockId i witness =
+    let wUpdates = (fst <$> inputWitnessDataRest witness)
+          ++ singleton (inputWitnessUpdate (inputWitnessDataLeastRecent witness))
+        updMostRecent = head (fst <$> inputWitnessDataRest witness)
+        updLeastRecentTxs = inputWitnessDataLeastRecent witness
+        onAndOfflineTxs = (snd <$> inputWitnessOnlineTxs updLeastRecentTxs)
+          ++ inputWitnessOfflineTxs updLeastRecentTxs
+        or = txiOutputRef i
 
     in updateChainIsValid wUpdates
     -- ^ The update chain is valid
-    && updateId u == bId
+    && updateId updMostRecent == blockId
     -- ^ The most recent update is the current block
-    && any (== txId wTx) (snd <$> updateTransactions u0)
+    && any (== txId (inputWitnessTx witness)) (txId <$> onAndOfflineTxs)
     -- ^ The transaction is included in the least recent update in the chain
-    && any (== o) (txOutputs wTx)
-    -- ^ The output of the transaction is the same as the input to check
+    && refId (txiOutputRef i) == txId (inputWitnessTx witness)
+    && txiOutput i == txOutputs (inputWitnessTx witness) !! refIdx (txiOutputRef i)
+    -- ^ The output of the transaction is consistent
+    && (txId <$> inputWitnessOfflineTxs updLeastRecentTxs)
+    == (snd <$> updateTransactions (inputWitnessUpdate updLeastRecentTxs))
+    -- ^ The offline transactions of the witness are consistent
+    && merkleTreeRoot ((\(ix, tx) -> (ix, txId tx)) <$> inputWitnessOnlineTxs updLeastRecentTxs)
+    == updateOnlineTxsRoot (inputWitnessUpdate (inputWitnessDataLeastRecent witness))
+    -- ^ The online transactions of the witness are consistent
 
 -- | Checks if the input was not spent.
 inputNotSpent ::
@@ -54,29 +70,22 @@ inputNotSpent ::
     -> InputWitness context
     -- ^ The witness data for the offline input.
     -> Bool context
-inputNotSpent bId i (OfflineTxInputWitness _ wCTxs upd) =
-    let wUpdates    = fmap fst wCTxs
-        u           = head wUpdates
-        inputAddr   = txoAddress $ txiOutput i
-        -- Get the new assigned index for the input address, maybe
-        addrIxMaybe = findList (\(addr, _ix) -> addr == inputAddr) (updateNewAssignments upd)
-        validAddrIx (_addr, addrIx) =
-          let
-
-              -- Get the transaction ids for a particular contract id from the update
-              txIds upd' = snd <$> filter (\(cId, _) -> cId == addrIx) (updateTransactions upd')
-              -- Transactions in each update
-              txs       = fmap snd wCTxs
-
-          in updateChainIsValid wUpdates
-          -- ^ The update chain is valid
-          && updateId u == bId
-          -- ^ The most recent update is the current block
-          && foldl (flip (.:)) emptyList (txIds <$> wUpdates) == fmap (fmap txId) txs
-          -- ^ The witness data is consistent
-          && all (all (all (/= i) . txInputs)) txs
-          -- ^ The input is not spent in any of the contract transactions
-    in maybe false validAddrIx addrIxMaybe
+inputNotSpent blockId i witness =
+    let addrIx = getAddressIndex i
+        inputs = concat (txInputs <$> inputWitnessAllTxs witness)
+        expectedTxs = txId <$> inputWitnessAllTxs witness
+        actualOnlineTxs = snd <$> inputWitnessDataRest witness
+        actualOfflineTxs = updateTransactions . fst <$> inputWitnessDataRest witness
+        actualTxs = concat $ actualOnlineTxs ++ actualOfflineTxs
+        wUpdates = (fst <$> inputWitnessDataRest witness)
+          ++ singleton (inputWitnessUpdate (inputWitnessDataLeastRecent witness))
+        expectedMerkleRoots = updateOnlineTxsRoot <$> wUpdates
+        actualMerkleRoots = merkleTreeRoot . snd <$> inputWitnessDataRest witness
+    in all (/= i) inputs
+    -- ^ check that inputs are unspent
+    && expectedTxs == (snd <$> actualTxs)
+    && expectedMerkleRoots == actualMerkleRoots
+    -- ^ consistency checks
 
 -- | Checks if the input is valid.
 inputIsValid ::

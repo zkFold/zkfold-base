@@ -19,6 +19,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Maybe
+import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.MonadCircuit
 
 data List (context :: (Type -> Type) -> Type) x
@@ -50,6 +51,19 @@ null
     => List context x
     -> Bool context
 null List{..} = Bool (fromCircuitF lSize (fmap fst . runInvert))
+
+singleton
+    :: forall context x
+    .  Symbolic context
+    => Applicative (Layout x)
+    => Traversable (Layout x)
+    => Zip (Layout x)
+    => SymbolicData x
+    => Context x ~ context
+    => Support x ~ Proxy context
+    => x
+    -> List context x
+singleton x = x .: emptyList
 
 infixr 5 .:
 (.:)
@@ -174,6 +188,9 @@ last = undefined
 (++) :: List context x -> List context x -> List context x
 _ ++ _ = undefined
 
+concat :: List context (List context x) -> List context x
+concat = undefined
+
 filter ::
        (x -> Bool context)
     -> List context x
@@ -192,3 +209,6 @@ findList = undefined
 
 findMap :: key -> List context (key, val) -> Maybe context val
 findMap = undefined
+
+(!!) :: List context x -> UInt n Auto context -> x
+(!!) = undefined
