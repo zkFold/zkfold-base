@@ -47,6 +47,6 @@ instance (Arithmetic a, Representable i, KnownNat (d + 1)) => SpecialSoundProtoc
     -- Just return the witness values on the public input
     prover ac pi _ _ = elems $ witnessGenerator ac pi
 
-    -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
+    -- | Evaluate the algebraic map on public inputs and prover messages
     --
     verifier ac pi pm ts = AM.algebraicMap @_ @_ @d ac pi pm ts one

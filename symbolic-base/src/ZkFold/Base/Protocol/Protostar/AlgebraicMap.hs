@@ -23,14 +23,13 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
 
--- | Algebraic map is a much more versatile and powerful tool when used separatey from SpecialSoundProtocol.
--- It calculates a system of equations @[f]@ defining @a@ in some way.
--- If @f@ is a number or a field element, then the result is a vector of polynomial values.
--- However, @f@ can be a polynomial, in which case the result will be a system of polynomials.
--- This polymorphism is exploited in the AccumulatorScheme prover.
+-- | Algebraic map of @a@.
+-- It calculates a system of equations defining @a@ in some way.
+-- The inputs are polymorphic in a ring element @f@.
+-- The main application is to define the verifier's algebraic map in the NARK protocol.
 --
-class AlgebraicMap f i (d :: Natural) a where
-    -- | the algebraic map V_sps computed by the verifier.
+class (Ring f) => AlgebraicMap f i (d :: Natural) a where
+    -- | the algebraic map Vsps computed by the NARK verifier.
     algebraicMap :: a
         -> i f            -- ^ public input
         -> Vector k [f]   -- ^ NARK proof witness (the list of prover messages)
@@ -45,7 +44,7 @@ instance
   , Arithmetic a
   , Scale a f
   ) => AlgebraicMap f i d (ArithmeticCircuit a i o) where
-    -- We can use the polynomial system from the circuit as a base for V_sps.
+    -- We can use the polynomial system from the circuit as a base for Vsps.
     --
     algebraicMap ac pi pm _ pad = padDecomposition pad f_sps_uni
         where
