@@ -170,7 +170,7 @@ instance Zip (Vector size) where
     zipWith f (Vector as) (Vector bs) = Vector $ V.zipWith f as bs
 
 instance Unzip (Vector size) where
-    unzip (Vector as) = (Vector (fst <$> as), Vector (snd <$> as))
+    unzip v = (fst <$> v, snd <$> v)
 
 instance (Arbitrary a, KnownNat size) => Arbitrary (Vector size a) where
     arbitrary = sequenceA (pureRep arbitrary)
