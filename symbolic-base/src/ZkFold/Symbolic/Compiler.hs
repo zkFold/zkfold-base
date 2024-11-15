@@ -10,7 +10,6 @@ module ZkFold.Symbolic.Compiler (
     solder,
 ) where
 
-import           Control.DeepSeq                            (NFData)
 import           Data.Aeson                                 (FromJSON, ToJSON, ToJSONKey)
 import           Data.Binary                                (Binary)
 import           Data.Function                              (const, (.))
@@ -78,7 +77,6 @@ compileForceOne ::
     , Representable l
     , Binary (Rep l)
     , Ord (Rep l)
-    , NFData (Rep l)
     , SymbolicData y
     , Context y ~ c
     , Support y ~ Proxy c
