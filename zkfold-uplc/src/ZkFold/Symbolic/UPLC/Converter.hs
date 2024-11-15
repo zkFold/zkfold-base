@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification #-}
 
-module ZkFold.Symbolic.UPLC.Converter (ScriptType (..), SomeCircuit (..), convert) where
+module ZkFold.Symbolic.UPLC.Converter where
 
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1)
