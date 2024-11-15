@@ -84,6 +84,12 @@ head (Vector as) = V.head as
 tail :: Vector size a -> Vector (size - 1) a
 tail (Vector as) = Vector $ V.tail as
 
+init :: Vector size a -> Vector (size - 1) a
+init (Vector as) = Vector $ V.init as
+
+scanl :: forall size a b . (b -> a -> b) -> b -> Vector size a -> Vector (size + 1) b
+scanl f z (Vector as) = Vector $ V.scanl f z as
+
 singleton :: a -> Vector 1 a
 singleton = Vector . pure
 

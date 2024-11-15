@@ -30,15 +30,15 @@ class SpecialSoundProtocol f i m c d k a where
       type VerifierOutput f i m c d k a
 
       prover :: a
-        -> i f                        -- ^ public input
-        -> f                          -- ^ current random challenge
-        -> Natural                    -- ^ round number (starting from 0)
-        -> m                          -- ^ prover message
+        -> i f                          -- ^ public input
+        -> f                            -- ^ current random challenge
+        -> Natural                      -- ^ round number (starting from 1)
+        -> m                            -- ^ prover message
 
       verifier :: a
-        -> i f                        -- ^ public input
-        -> Vector k m                 -- ^ prover messages
-        -> Vector (k-1) f             -- ^ random challenges
+        -> i f                          -- ^ public input
+        -> Vector k m                   -- ^ prover messages
+        -> Vector (k-1) f               -- ^ random challenges
         -> VerifierOutput f i m c d k a -- ^ verifier output
 
 instance (Arithmetic a, Representable i, KnownNat (d + 1)) => SpecialSoundProtocol a i [a] c d 1 (ArithmeticCircuit a i o) where

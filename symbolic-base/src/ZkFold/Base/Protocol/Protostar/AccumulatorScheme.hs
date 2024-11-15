@@ -23,7 +23,7 @@ import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..), transcriptFiatShamir)
 import           ZkFold.Base.Protocol.Protostar.NARK         (InstanceProofPair (..), NARKProof (..))
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
 
@@ -64,9 +64,12 @@ instance
   prover (FiatShamir (CommitOpen sps)) acc (InstanceProofPair pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
       where
+          r_0 :: f
+          r_0 = oracle pubi
+
           -- Fig. 3, step 1
           r_i :: Vector (k-1) f
-          r_i = unsafeToVector $ P.tail $ P.tail $ P.scanl (P.curry oracle) (oracle pubi) $ toList pi_x
+          r_i = transcriptFiatShamir r_0 pi_x
 
           -- Fig. 3, step 2
 
