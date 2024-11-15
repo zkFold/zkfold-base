@@ -8,8 +8,9 @@
 module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
 
 import           Control.Lens                                ((^.))
-import           Data.List                                   (transpose)
-import qualified Data.Vector                                 as DV
+import           Data.Constraint                             (withDict)
+import           Data.Constraint.Nat                         (plusMinusInverse1)
+import           Data.Functor.Rep                            (Representable(..))
 import           Data.Zip                                    (Zip (..))
 import           GHC.IsList                                  (IsList (..))
 import           Prelude                                     (fmap, ($), (.), (<$>))
@@ -18,7 +19,7 @@ import qualified Prelude                                     as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
-import           ZkFold.Base.Data.Vector                     (Vector, mapWithIx, unsafeToVector)
+import           ZkFold.Base.Data.Vector                     (Vector, mapWithIx, unsafeToVector, init, tail)
 import           ZkFold.Base.Protocol.Protostar.Accumulator
 import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
@@ -91,15 +92,16 @@ instance
 
           -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
           --
-          e_uni :: [PU.PolyVec f (d + 1)]
-          e_uni = algebraicMap @_ @_ @d sps polyPi polyW polyR polyMu
+          e_uni :: [Vector (d + 1) f]
+          e_uni = unsafeToVector . toList <$> algebraicMap @_ @_ @d sps polyPi polyW polyR polyMu
 
           -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
-          e_all = transpose $ DV.toList . PU.fromPolyVec <$> e_uni
+          e_all :: Vector (d+1) [f]
+          e_all = tabulate (\i -> fmap (`index` i) e_uni)
 
           -- e_j are coefficients of degree-j homogenous polynomials where j is from the range [1, d - 1]
           e_j :: Vector (d-1) [f]
-          e_j = unsafeToVector $ P.tail . P.init $ e_all
+          e_j = withDict (plusMinusInverse1 @1 @d) $ tail $ init e_all
 
           -- Fig. 3, step 3
           pf = hcommit <$> e_j
