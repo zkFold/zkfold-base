@@ -31,11 +31,15 @@ benchOps desc p0 op = env (fromIntegral <$> randomRIO (1 :: Integer, 3)) $ \ ~n 
 
 main :: IO ()
 main = do
-  let a = fromConstant @Natural 0 :: FFA Ed25519_Scalar I
-  let b = fromConstant @Natural 1 :: FFA Ed25519_Scalar I
+  let a = fromConstant @Natural 0 :: FFA Ed25519_Scalar A
+--  let b = fromConstant @Natural 1 :: FFA Ed25519_Scalar A
   print a
-  print $ a // a
-  print $ b // a
+  let (FFA ap) = (a ^ (100000 :: Natural))
+--  let (FFA ap) = (scale (100000 :: Natural) a)
+  print $ exec ap
+  print a
+--  print $ a // a
+--  print $ b // a
 --  defaultMain
 --      [ bgroup "EC operations"
 --        [ benchOps "FFA Interpreter" (gen :: PtFFA I) scale

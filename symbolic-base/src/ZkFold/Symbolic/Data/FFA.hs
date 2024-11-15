@@ -5,7 +5,7 @@
 module ZkFold.Symbolic.Data.FFA (FFA (..), Size, coprimesDownFrom, coprimes) where
 
 import           Control.Applicative              (pure)
-import           Control.DeepSeq                  (NFData)
+import           Control.DeepSeq                  (NFData, force)
 import           Control.Monad                    (Monad, forM, return, (>>=))
 import           Data.Foldable                    (any, foldlM)
 import           Data.Function                    (const, ($), (.))
@@ -141,8 +141,8 @@ cast xs = do
     newAssigned (($ dot) + fromConstant (m -! (mprod @a @p `mod` m)) * ($ residue))
         >>= bigSub m
 
-mul :: forall p i a w m. (KnownNat p, Arithmetic a, MonadCircuit i a w m) => Vector Size i -> Vector Size i -> m (Vector Size i)
-mul xs ys = zipWithM (\i j -> newAssigned (\w -> w i * w j)) xs ys >>= bigCut >>= cast @p
+mul :: forall p i a w m. (KnownNat p, Arithmetic a, NFData i, MonadCircuit i a w m) => Vector Size i -> Vector Size i -> m (Vector Size i)
+mul xs ys = Haskell.fmap force $ zipWithM (\i j -> newAssigned (\w -> w i * w j)) xs ys >>= bigCut >>= cast @p
 
 natPowM :: Monad m => (a -> a -> m a) -> m a -> Natural -> a -> m a
 natPowM _ z 0 _ = z

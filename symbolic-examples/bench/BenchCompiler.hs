@@ -26,7 +26,7 @@ metrics name circuit =
 
 
 benchmark ::
-  (NFData a, Arithmetic a, NFData (o (Var a i)), NFData (Rep i), Representable i) =>
+  (Arithmetic a, NFData (o (Var a i)), NFData (Rep i), Representable i) =>
   String -> (() -> ArithmeticCircuit a i o) -> Benchmark
 benchmark name circuit = bgroup name
   [ bench "compilation" $ nf circuit ()
