@@ -105,14 +105,16 @@ acSizeM = length . acWitness
 acSizeR :: ArithmeticCircuit a i o -> Natural
 acSizeR = sum . map length . M.elems . acRange
 
-acValue :: Functor o => ArithmeticCircuit a U1 o -> o a
+acValue :: (Arithmetic a, Functor o) => ArithmeticCircuit a U1 o -> o a
 acValue r = eval r U1
 
 -- | Prints the constraint system, the witness, and the output.
 --
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
-acPrint :: (Show a, Show (o (Var a U1)), Show (o a), Functor o) => ArithmeticCircuit a U1 o -> IO ()
+acPrint ::
+  (Arithmetic a, Show a, Show (o (Var a U1)), Show (o a), Functor o) =>
+  ArithmeticCircuit a U1 o -> IO ()
 acPrint ac = do
     let m = elems (acSystem ac)
         w = witnessGenerator ac U1

@@ -29,6 +29,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
+import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -42,16 +43,16 @@ import           ZkFold.Symbolic.Interpreter                 (Interpreter (Inter
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-evalBool :: forall a . Bool (ArithmeticCircuit a U1) -> a
+evalBool :: forall a . Arithmetic a => Bool (ArithmeticCircuit a U1) -> a
 evalBool (Bool ac) = exec1 ac
 
 evalBoolVec :: forall a . Bool (Interpreter a) -> a
 evalBoolVec (Bool (Interpreter (Par1 v))) = v
 
-evalBS :: forall a n . ByteString n (ArithmeticCircuit a U1) -> ByteString n (Interpreter a)
+evalBS :: forall a n . Arithmetic a => ByteString n (ArithmeticCircuit a U1) -> ByteString n (Interpreter a)
 evalBS (ByteString bits) = ByteString $ Interpreter (exec bits)
 
-execAcUint :: forall a n r . UInt n r (ArithmeticCircuit a U1) -> Vector (NumberOfRegisters a n r) a
+execAcUint :: forall a n r . Arithmetic a => UInt n r (ArithmeticCircuit a U1) -> Vector (NumberOfRegisters a n r) a
 execAcUint (UInt v) = exec v
 
 execZpUint :: forall a n r . UInt n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
@@ -78,7 +79,7 @@ isHom
     -> Natural
     -> Property
 isHom f g h x y = execAcUint (fromConstant x `g` fromConstant y) === execZpUint (fromConstant x `f` fromConstant y)
-              .&. execZpUint (fromConstant x `f` fromConstant y) === (execZpUint @(Zp p) @n @r (fromConstant $ x `h` y))
+              .&. execZpUint (fromConstant x `f` fromConstant y) === execZpUint @(Zp p) @n @r (fromConstant $ x `h` y)
 
 with2n :: forall n {r}. KnownNat n => (KnownNat (2 * n) => r) -> r
 with2n = withDict (timesNat @2 @n)
@@ -131,8 +132,8 @@ specUInt' = hspec $ do
             let (acQ, acR) = (fromConstant num :: UInt n rs (ArithmeticCircuit (Zp p) U1)) `divMod` fromConstant d
                 (zpQ, zpR) = (fromConstant num :: UInt n rs (Interpreter (Zp p))) `divMod` fromConstant d
                 (trueQ, trueR) = num `divMod` d
-                refQ = execZpUint $ (fromConstant trueQ ::UInt n rs (Interpreter (Zp p)))
-                refR = execZpUint $ (fromConstant trueR ::UInt n rs (Interpreter (Zp p)))
+                refQ = execZpUint (fromConstant trueQ ::UInt n rs (Interpreter (Zp p)))
+                refR = execZpUint (fromConstant trueR ::UInt n rs (Interpreter (Zp p)))
             return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR) .&. (refQ, refR) === (execZpUint zpQ, execZpUint zpR)
 
         when (n <= 128) $ it "calculates gcd correctly" $ withMaxSuccess 10 $ do
@@ -246,4 +247,3 @@ less2n = unsafeAxiom
 
 withLess2n :: forall n {r}. ((n <= 2 * n) => r) -> r
 withLess2n = withDict (less2n @n)
-

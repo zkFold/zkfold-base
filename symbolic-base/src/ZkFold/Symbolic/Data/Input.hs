@@ -5,6 +5,7 @@ module ZkFold.Symbolic.Data.Input (
     SymbolicInput (..)
 ) where
 
+import           Control.DeepSeq                    (NFData)
 import           Control.Monad.Representable.Reader (Rep)
 import           Data.Functor.Rep                   (Representable)
 import           Data.Ord                           (Ord)
@@ -31,6 +32,7 @@ class
     , Representable (Layout d)
     , Binary (Rep (Layout d))
     , Ord (Rep (Layout d))
+    , NFData (Rep (Layout d))
     ) => SymbolicInput d where
     isValid :: d -> Bool (Context d)
 
@@ -46,6 +48,7 @@ instance
   ( Symbolic c
   , Binary (Rep f)
   , Ord (Rep f)
+  , NFData (Rep f)
   , Representable f) => SymbolicInput (c f) where
   isValid _ = true
 
