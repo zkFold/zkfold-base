@@ -32,6 +32,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2
+import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -138,7 +139,7 @@ specSHA2Natural = do
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . ByteString n (ArithmeticCircuit a U1) -> Vector n a
+eval :: forall a n . Arithmetic a => ByteString n (ArithmeticCircuit a U1) -> Vector n a
 eval (ByteString bits) = exec bits
 
 specSHA2bs
