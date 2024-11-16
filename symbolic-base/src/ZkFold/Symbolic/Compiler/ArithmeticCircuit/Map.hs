@@ -6,10 +6,12 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         ArithmeticCircuitTest(..)
     ) where
 
+import           Data.Functor                                        ((<&>))
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, fromList, map, null,
                                                                       splitAt, take, toList)
 import qualified Data.Map                                            as Map
+import qualified Data.Set                                            as Set
 import           GHC.IsList                                          (IsList (..))
 import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
@@ -51,14 +53,12 @@ mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
         backward = Map.fromAscList $ zip asc vars
         varF (InVar v)  = InVar v
         varF (NewVar v) = NewVar (forward ! v)
-        mappedCircuit = ac
-            {
-                acSystem  = fromList $ zip asc $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac),
-                -- TODO: the new arithmetic circuit expects the old input variables! We should make this safer.
-                acWitness = (`Map.compose` backward) $ (\f i m -> f i (Map.compose m forward)) <$> acWitness ac
-            }
-        varG = \case
-          SysVar v -> SysVar (varF v)
-          ConstVar c -> ConstVar c
-        mappedOutputs = varG <$> acOutput ac
-    in ArithmeticCircuitTest (mappedCircuit {acOutput = mappedOutputs}) wi
+        mappedCircuit = ArithmeticCircuit
+          { acRange   = Set.map varF <$> acRange ac
+          , acSystem  = fromList $ zip asc $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac)
+          , acWitness = (`Map.compose` backward) $ fmap varF <$> acWitness ac
+          , acOutput  = acOutput ac <&> \case
+              SysVar v -> SysVar (varF v)
+              ConstVar c -> ConstVar c
+          }
+    in ArithmeticCircuitTest mappedCircuit wi

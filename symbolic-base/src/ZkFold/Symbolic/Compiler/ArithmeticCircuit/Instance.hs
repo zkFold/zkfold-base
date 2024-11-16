@@ -6,6 +6,7 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
+import           Control.DeepSeq                                     (NFData)
 import           Data.Aeson                                          hiding (Bool)
 import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Representable (..))
@@ -35,6 +36,7 @@ instance
   , Arbitrary (Rep i)
   , Binary (Rep i)
   , Haskell.Ord (Rep i)
+  , NFData (Rep i)
   , Representable i
   , Haskell.Foldable i
   ) => Arbitrary (ArithmeticCircuit a i Par1) where
@@ -50,6 +52,7 @@ instance
   , Arbitrary (Rep i)
   , Binary (Rep i)
   , Haskell.Ord (Rep i)
+  , NFData (Rep i)
   , Representable i
   , Haskell.Foldable i
   , KnownNat l
@@ -61,7 +64,7 @@ instance
 
 arbitrary' ::
   forall a i .
-  (Arithmetic a, Binary a, Binary (Rep i), Haskell.Ord (Rep i)) =>
+  (Arithmetic a, Binary a, Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)) =>
   (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a i))

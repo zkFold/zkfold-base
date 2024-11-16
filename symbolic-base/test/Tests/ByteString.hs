@@ -26,6 +26,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
+import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -36,7 +37,7 @@ import           ZkFold.Symbolic.Interpreter                 (Interpreter (Inter
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . ByteString n (ArithmeticCircuit a U1) -> ByteString n (Interpreter a)
+eval :: forall a n . Arithmetic a => ByteString n (ArithmeticCircuit a U1) -> ByteString n (Interpreter a)
 eval (ByteString bits) = ByteString $ Interpreter (exec bits)
 
 type Binary a = a -> a -> a

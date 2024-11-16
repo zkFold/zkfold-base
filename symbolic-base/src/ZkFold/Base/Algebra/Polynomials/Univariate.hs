@@ -309,6 +309,12 @@ instance (KnownNat size, Ring c) => IsList (PolyVec c size) where
 instance Scale c' c => Scale c' (PolyVec c size) where
     scale c (PV p) = PV (scale c <$> p)
 
+instance (FromConstant Natural c, AdditiveMonoid c, KnownNat size) => FromConstant Natural (PolyVec c size) where
+    fromConstant n = PV $ V.singleton (fromConstant n) V.++ V.replicate (fromIntegral (value @size -! 1)) zero
+
+instance (FromConstant Integer c, AdditiveMonoid c, KnownNat size) => FromConstant Integer (PolyVec c size) where
+    fromConstant n = PV $ V.singleton (fromConstant n) V.++ V.replicate (fromIntegral (value @size -! 1)) zero
+
 instance Ring c => AdditiveSemigroup (PolyVec c size) where
     PV l + PV r = PV $ V.zipWith (+) l r
 
@@ -329,6 +335,10 @@ instance (Field c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) wh
 
 instance (Field c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
     one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
+
+instance (Field c, KnownNat size) => Semiring (PolyVec c size)
+
+instance (Field c, KnownNat size) => Ring (PolyVec c size)
 
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec <$> V.replicateM (fromIntegral $ value @size) arbitrary
@@ -361,11 +371,11 @@ a +. (PV cs) = PV $ fmap (+ a) cs
 polyVecConstant :: forall c size . (Ring c, KnownNat size) => c -> PolyVec c size
 polyVecConstant a0 = PV $ V.singleton a0 V.++ V.replicate (fromIntegral $ value @size -! 1) zero
 
--- p(x) = a0 + a1 * x
+-- p(x) = a1 * x + a0
 polyVecLinear :: forall c size . (Ring c, KnownNat size) => c -> c -> PolyVec c size
 polyVecLinear a1 a0 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ value @size -! 2) zero
 
--- p(x) = a0 + a1 * x + a2 * x^2
+-- p(x) = a2 * x^2 + a1 * x + a0
 polyVecQuadratic :: forall c size . (Ring c, KnownNat size) => c -> c -> c -> PolyVec c size
 polyVecQuadratic a2 a1 a0  = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ value @size -! 3) zero
 
