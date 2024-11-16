@@ -70,7 +70,7 @@ fromBits hiBits loBits bits = do
     highNew <- horner . Haskell.reverse $  bitsHighNew
     pure $ highNew : lowsNew
 
-data RegisterSize = Auto | Fixed Natural
+data RegisterSize = Auto | Fixed Natural deriving (Haskell.Eq)
 
 class KnownRegisterSize (r :: RegisterSize) where
   regSize :: RegisterSize

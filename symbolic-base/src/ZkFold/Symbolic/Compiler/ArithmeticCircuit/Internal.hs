@@ -51,7 +51,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, mapVars,
-                                                                        var, variables)
+                                                                        var)
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
@@ -211,10 +211,14 @@ instance
       let evalConstVar = \case
             SysVar sysV -> var sysV
             ConstVar cV -> fromConstant cV
-          r = p evalConstVar
-      in if null $ variables r
-        then return ()
-        else zoom #acSystem . modify $ insert (toVar (p at)) r
+          evalMaybe = \case
+            SysVar _ -> Nothing
+            ConstVar cV -> Just cV
+      in case p evalMaybe of
+        Just c -> if c ==zero
+                    then return ()
+                    else error "The constraint is non-zero"
+        Nothing -> zoom #acSystem . modify $ insert (toVar (p at)) (p evalConstVar)
 
     rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
