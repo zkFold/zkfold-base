@@ -1,12 +1,12 @@
 module ZkFold.Symbolic.Ledger.Validation.Input where
 
-import           Prelude                                  hiding (Bool, Eq, Maybe, all, any, filter, head, init, last,
-                                                           length, maybe, splitAt, tail, (&&), (*), (+), (/=), (==), (++), (!!), concat)
+import           Prelude                                  hiding (Bool, Eq, Maybe, all, any, concat, filter, head, init,
+                                                           last, length, maybe, splitAt, tail, (!!), (&&), (*), (+),
+                                                           (++), (/=), (==))
 
 import           ZkFold.Symbolic.Data.Bool                (Bool, all, any, (&&))
 import           ZkFold.Symbolic.Data.Eq                  (Eq (..))
 import           ZkFold.Symbolic.Data.List
-import           ZkFold.Symbolic.Data.Maybe               (maybe)
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Common (updateChainIsValid)
 
@@ -20,8 +20,8 @@ data InputWitness context = InputWitness
     }
 
 data InputWitnessDatum context = InputWitnessDatum
-    { inputWitnessUpdate :: Update context
-    , inputWitnessOnlineTxs :: List context (AddressIndex context, Transaction context)
+    { inputWitnessUpdate     :: Update context
+    , inputWitnessOnlineTxs  :: List context (AddressIndex context, Transaction context)
     , inputWitnessOfflineTxs :: List context (Transaction context)
     }
 
@@ -42,7 +42,6 @@ inputExisted blockId i witness =
         updLeastRecentTxs = inputWitnessDataLeastRecent witness
         onAndOfflineTxs = (snd <$> inputWitnessOnlineTxs updLeastRecentTxs)
           ++ inputWitnessOfflineTxs updLeastRecentTxs
-        or = txiOutputRef i
 
     in updateChainIsValid wUpdates
     -- ^ The update chain is valid
