@@ -2,9 +2,11 @@ module ZkFold.Symbolic.Ledger.Types.Update where
 
 import           Prelude                                hiding (Bool, Eq, length, splitAt, (*), (+))
 
+import           ZkFold.Symbolic.Class                  (Symbolic)
+import           ZkFold.Symbolic.Data.Class             (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool              (Bool)
 import           ZkFold.Symbolic.Data.Combinators       (RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.List              (List)
+import           ZkFold.Symbolic.Data.List              (List, emptyList)
 import           ZkFold.Symbolic.Data.UInt              (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Address   (Address)
 import           ZkFold.Symbolic.Ledger.Types.Contract  (ContractData)
@@ -49,6 +51,16 @@ data Update context = Update
     -- a user proves that there is a transaction in this update
     -- that produced this Input.
   }
+
+-- emptyUpdate ::
+--      Symbolic context
+--   => Applicative (Layout (List context (Input context)))
+--   => Applicative (Layout (List context (Output context)))
+--   => Applicative (Layout (ContractData context))
+--   => Applicative (Layout (Hash context))
+--   => Hash context
+--   -> Update context
+-- emptyUpdate hsh = Update hsh emptyList emptyList emptyList emptyList emptyList emptyList emptyList
 
 type UpdateChain context = List context (Update context)
 

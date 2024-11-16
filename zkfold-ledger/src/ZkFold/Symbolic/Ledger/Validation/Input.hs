@@ -3,9 +3,9 @@ module ZkFold.Symbolic.Ledger.Validation.Input where
 import           Prelude                                  hiding (Bool, Eq, Maybe, all, any, filter, head, init, last,
                                                            length, maybe, splitAt, tail, (&&), (*), (+), (/=), (==), (++), (!!), concat)
 
-import           ZkFold.Symbolic.Data.Bool                (Bool, all, any, false, (&&))
+import           ZkFold.Symbolic.Data.Bool                (Bool, all, any, (&&))
 import           ZkFold.Symbolic.Data.Eq                  (Eq (..))
-import           ZkFold.Symbolic.Data.List                (List, emptyList, filter, findList, head, last, (.:), (++), singleton, (!!), concat)
+import           ZkFold.Symbolic.Data.List
 import           ZkFold.Symbolic.Data.Maybe               (maybe)
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Common (updateChainIsValid)
@@ -62,17 +62,14 @@ inputExisted blockId i witness =
 
 -- | Checks if the input was not spent.
 inputNotSpent ::
-       (Signature context, Eq (Bool context) (AddressIndex context))
-    => Hash context
-    -- ^ The id of the current block.
-    -> Input context
+       Signature context
+    => Input context
     -- ^ The transaction input to check.
     -> InputWitness context
     -- ^ The witness data for the offline input.
     -> Bool context
-inputNotSpent blockId i witness =
-    let addrIx = getAddressIndex i
-        inputs = concat (txInputs <$> inputWitnessAllTxs witness)
+inputNotSpent i witness =
+    let inputs = concat (txInputs <$> inputWitnessAllTxs witness)
         expectedTxs = txId <$> inputWitnessAllTxs witness
         actualOnlineTxs = snd <$> inputWitnessDataRest witness
         actualOfflineTxs = updateTransactions . fst <$> inputWitnessDataRest witness
@@ -89,7 +86,7 @@ inputNotSpent blockId i witness =
 
 -- | Checks if the input is valid.
 inputIsValid ::
-       (Signature context,  Eq (Bool context) (AddressIndex context))
+       Signature context
     => Hash context
     -- ^ The id of the current block.
     -> Input context
@@ -99,4 +96,4 @@ inputIsValid ::
     -> Bool context
 inputIsValid bId i w =
        inputExisted bId i w
-    && inputNotSpent bId i w
+    && inputNotSpent i w
