@@ -3,8 +3,8 @@ module ZkFold.Symbolic.Ledger.Types.Update where
 import           Prelude                                hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Class                  (Symbolic)
-import           ZkFold.Symbolic.Data.Class             (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Bool              (Bool)
+import           ZkFold.Symbolic.Data.Class             (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators       (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.List              (List, emptyList)
 import           ZkFold.Symbolic.Data.UInt              (UInt)
