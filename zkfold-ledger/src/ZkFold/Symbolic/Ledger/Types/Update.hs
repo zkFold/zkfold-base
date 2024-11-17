@@ -5,11 +5,7 @@ import           Prelude                                hiding (Bool, Eq, length
 import           ZkFold.Symbolic.Class                  (Symbolic)
 import           ZkFold.Symbolic.Data.Bool              (Bool)
 import           ZkFold.Symbolic.Data.Class             (SymbolicData (..))
--- import           ZkFold.Symbolic.Data.Combinators       (RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.List              (List
-                                                        , emptyList
-                                                        )
--- import           ZkFold.Symbolic.Data.UInt              (UInt)
+import           ZkFold.Symbolic.Data.List              (List, emptyList)
 import           ZkFold.Symbolic.Ledger.Types.Address   (Address)
 import           ZkFold.Symbolic.Ledger.Types.Contract  (ContractData)
 import           ZkFold.Symbolic.Ledger.Types.Hash      (Hash)
