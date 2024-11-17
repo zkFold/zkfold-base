@@ -35,6 +35,7 @@ import           ZkFold.Base.Protocol.Plonkup.Testing
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import GHC.Generics (U1)
 
 -- | Polynomial types and specific polynomials that were causing exceptions
 --
@@ -63,8 +64,8 @@ propPlonkupRelationHolds PlonkupRelation {..} w =
 propSortByListIsCorrect :: Ord a => [a] -> Bool
 propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs
 
-propPlonkPolyEquality :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
-    => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
+propPlonkPolyEquality :: forall i p n l. (KnownNat i, KnownNat n, KnownNat l)
+    => Plonkup i p n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> ScalarField BLS12_381_G1
@@ -75,8 +76,8 @@ propPlonkPolyEquality plonk witness secret pow =
         p = with4n6 @n $ qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
-propPlonkGrandProductIsCorrect :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
-    => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
+propPlonkGrandProductIsCorrect :: forall i p n l. (KnownNat i, KnownNat n, KnownNat l)
+    => Plonkup i p n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> Bool
@@ -85,8 +86,8 @@ propPlonkGrandProductIsCorrect plonk witness secret =
         (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
     in head (toList $ fromPolyVec grandProduct1) == one
 
-propPlonkGrandProductEquality :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
-    => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
+propPlonkGrandProductEquality :: forall i p n l. (KnownNat i, KnownNat n, KnownNat l)
+    => Plonkup i p n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> ScalarField BLS12_381_G1
@@ -106,8 +107,8 @@ propPlonkGrandProductEquality plonk witness secret pow =
             * (z1X .*. omegas') .* alpha
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
-propLookupPolyEquality :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
-    => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
+propLookupPolyEquality :: forall i p n l. (KnownNat i, KnownNat n, KnownNat l)
+    => Plonkup i p n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> ScalarField BLS12_381_G1
@@ -119,8 +120,8 @@ propLookupPolyEquality plonk witness secret pow =
         p = with4n6 @n $ qkX * (aX - fX)
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
-propLookupGrandProductIsCorrect :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
-    => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
+propLookupGrandProductIsCorrect :: forall i p n l. (KnownNat i, KnownNat n, KnownNat l)
+    => Plonkup i p n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> Bool
@@ -129,8 +130,8 @@ propLookupGrandProductIsCorrect plonk witness secret =
         (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString @HaskellCore setup (witness, secret)
     in z2X `evalPolyVec` omega == one
 
-propLookupGrandProductEquality :: forall i n l. (KnownNat i, KnownNat n, KnownNat l)
-    => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
+propLookupGrandProductEquality :: forall i p n l. (KnownNat i, KnownNat n, KnownNat l)
+    => Plonkup i p n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> ScalarField BLS12_381_G1
@@ -145,8 +146,8 @@ propLookupGrandProductEquality plonk witness secret pow =
                 - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas'))
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
-propLinearizationPolyEvaluation :: forall i n l . (KnownNat i, KnownNat n, KnownNat l)
-    => Plonkup i n l BLS12_381_G1 BLS12_381_G2 ByteString
+propLinearizationPolyEvaluation :: forall i p n l . (KnownNat i, KnownNat n, KnownNat l)
+    => Plonkup i p n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
     -> Bool
@@ -169,16 +170,16 @@ specPlonkup = hspec $ do
         describe "Plonkup relation" $ do
             it "should hold" $ property $ propPlonkupRelationHolds @2 @32 @3 @(ScalarField BLS12_381_G1)
         describe "Plonk polynomials equality" $ do
-            it "should hold" $ property $ propPlonkPolyEquality @1 @32 @2
+            it "should hold" $ property $ propPlonkPolyEquality @1 @U1 @32 @2
         describe "Plonk grand product correctness" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductIsCorrect @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductIsCorrect @1 @U1 @32 @2
         describe "Plonkup grand product equality" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductEquality @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductEquality @1 @U1 @32 @2
         describe "Lookup polynomials equality" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propLookupPolyEquality @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propLookupPolyEquality @1 @U1 @32 @2
         describe "Lookup grand product correctness" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propLookupGrandProductIsCorrect @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propLookupGrandProductIsCorrect @1 @U1 @32 @2
         describe "Lookup grand product equality" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propLookupGrandProductEquality @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propLookupGrandProductEquality @1 @U1 @32 @2
         describe "Linearization polynomial in the challenge point" $ do
-            it "evaluates to zero" $ property $ withMaxSuccess 10 $ propLinearizationPolyEvaluation @1 @32 @2
+            it "evaluates to zero" $ property $ withMaxSuccess 10 $ propLinearizationPolyEvaluation @1 @U1 @32 @2

@@ -64,7 +64,7 @@ import           ZkFold.Symbolic.MonadCircuit                        (MonadCircu
 -- | Optimizes the constraint system.
 --
 -- TODO: Implement nontrivial optimizations.
-optimize :: ArithmeticCircuit a i o -> ArithmeticCircuit a i o
+optimize :: ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 optimize = id
 
 desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> a -> m ()
@@ -86,7 +86,7 @@ desugarRange i b
 -- | Desugars range constraints into polynomial constraints
 desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
-  ArithmeticCircuit a i o -> ArithmeticCircuit a i o
+  ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
   let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
@@ -94,18 +94,18 @@ desugarRanges c =
 ----------------------------------- Information -----------------------------------
 
 -- | Calculates the number of constraints in the system.
-acSizeN :: ArithmeticCircuit a i o -> Natural
+acSizeN :: ArithmeticCircuit a p i o -> Natural
 acSizeN = length . acSystem
 
 -- | Calculates the number of variables in the system.
-acSizeM :: ArithmeticCircuit a i o -> Natural
+acSizeM :: ArithmeticCircuit a p i o -> Natural
 acSizeM = length . acWitness
 
 -- | Calculates the number of range lookups in the system.
-acSizeR :: ArithmeticCircuit a i o -> Natural
+acSizeR :: ArithmeticCircuit a p i o -> Natural
 acSizeR = sum . map length . M.elems . acRange
 
-acValue :: (Arithmetic a, Functor o) => ArithmeticCircuit a U1 o -> o a
+acValue :: (Arithmetic a, Functor o) => ArithmeticCircuit a p U1 o -> o a
 acValue r = eval r U1
 
 -- | Prints the constraint system, the witness, and the output.
@@ -114,7 +114,7 @@ acValue r = eval r U1
 -- TODO: Check that all arguments have been applied.
 acPrint ::
   (Arithmetic a, Show a, Show (o (Var a U1)), Show (o a), Functor o) =>
-  ArithmeticCircuit a U1 o -> IO ()
+  ArithmeticCircuit a p U1 o -> IO ()
 acPrint ac = do
     let m = elems (acSystem ac)
         w = witnessGenerator ac U1
@@ -136,10 +136,10 @@ acPrint ac = do
 ---------------------------------- Testing -------------------------------------
 
 checkClosedCircuit
-    :: forall a n
+    :: forall a o
      . Arithmetic a
     => Show a
-    => ArithmeticCircuit a U1 n
+    => ArithmeticCircuit a U1 U1 o
     -> Property
 checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem c) ]
     where
@@ -153,7 +153,7 @@ checkCircuit
     => Arithmetic a
     => Show a
     => Representable i
-    => ArithmeticCircuit a i n
+    => ArithmeticCircuit a p i o
     -> Property
 checkCircuit c = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
     where

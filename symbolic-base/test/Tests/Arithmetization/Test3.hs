@@ -18,7 +18,7 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Ord          ((<=))
 import           ZkFold.Symbolic.Interpreter       (Interpreter (Interpreter))
 
-type R = ArithmeticCircuit (Zp 97) (Par1 :*: Par1 :*: U1)
+type R = ArithmeticCircuit (Zp 97) U1 (Par1 :*: Par1 :*: U1)
 
 -- A comparison test
 testFunc :: Symbolic c => FieldElement c -> FieldElement c -> Bool c

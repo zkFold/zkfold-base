@@ -61,13 +61,13 @@ type BasicSpecialSoundProtocol f pi m a =
   , VerifierMessage f a ~ f
   )
 
-instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a (Vector n) o) where
-    type Witness a (ArithmeticCircuit a (Vector n) o) = ()
-    type Input a (ArithmeticCircuit a (Vector n) o) = [a]
-    type ProverMessage a (ArithmeticCircuit a (Vector n) o) = [a]
-    type VerifierMessage a (ArithmeticCircuit a (Vector n) o) = a
-    type VerifierOutput a (ArithmeticCircuit a (Vector n) o)  = [a]
-    -- type Degree (ArithmeticCircuit a (Vector n) o) = AM.Degree (ArithmeticCircuit a (Vector n) o)
+instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a p (Vector n) o) where
+    type Witness a (ArithmeticCircuit a p (Vector n) o) = ()
+    type Input a (ArithmeticCircuit a p (Vector n) o) = [a]
+    type ProverMessage a (ArithmeticCircuit a p (Vector n) o) = [a]
+    type VerifierMessage a (ArithmeticCircuit a p (Vector n) o) = a
+    type VerifierOutput a (ArithmeticCircuit a p (Vector n) o)  = [a]
+    -- type Degree (ArithmeticCircuit a p (Vector n) o) = AM.Degree (ArithmeticCircuit a p (Vector n) o)
 
     -- One round for Plonk
     rounds = P.const 1

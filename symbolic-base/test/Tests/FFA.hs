@@ -47,7 +47,7 @@ specFFA' = hspec $ do
       execAcFFA @p @q (negate $ fromConstant x) === execZpFFA @p @q (negate $ fromConstant x)
     it "multiplies correctly" $ isHom @p @q (*) (*)
 
-execAcFFA :: (PrimeField (Zp p), PrimeField (Zp q)) => FFA q (ArithmeticCircuit (Zp p) U1) -> Zp q
+execAcFFA :: (PrimeField (Zp p), PrimeField (Zp q)) => FFA q (ArithmeticCircuit (Zp p) U1 U1) -> Zp q
 execAcFFA (FFA v) = execZpFFA $ FFA $ Interpreter (exec v)
 
 execZpFFA :: (PrimeField (Zp p), PrimeField (Zp q)) => FFA q (Interpreter (Zp p)) -> Zp q
@@ -56,5 +56,5 @@ execZpFFA = toConstant
 type Binary a = a -> a -> a
 type Predicate a = a -> a -> Property
 
-isHom :: (PrimeField (Zp p), PrimeField (Zp q)) => Binary (FFA q (Interpreter (Zp p))) -> Binary (FFA q (ArithmeticCircuit (Zp p) U1)) -> Predicate (Zp q)
+isHom :: (PrimeField (Zp p), PrimeField (Zp q)) => Binary (FFA q (Interpreter (Zp p))) -> Binary (FFA q (ArithmeticCircuit (Zp p) U1 U1)) -> Predicate (Zp q)
 isHom f g x y = execAcFFA (fromConstant x `g` fromConstant y) === execZpFFA (fromConstant x `f` fromConstant y)

@@ -35,6 +35,7 @@ import           Data.Binary                                           (Binary)
 import           Data.ByteString                                       (ByteString)
 import           Data.Foldable                                         (fold, toList)
 import           Data.Functor.Rep
+import           Data.Kind                                             (Type)
 import           Data.Map.Monoidal                                     (MonoidalMap, insertWith)
 import           Data.Map.Strict                                       hiding (drop, foldl, foldr, insertWith, map,
                                                                         null, splitAt, take, toList)
@@ -64,7 +65,7 @@ import           ZkFold.Symbolic.MonadCircuit
 type Constraint c i = Poly c (SysVar i) Natural
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
-data ArithmeticCircuit a i o = ArithmeticCircuit
+data ArithmeticCircuit a (p :: Type -> Type) i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
@@ -76,14 +77,14 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
         -- ^ The output variables
     } deriving (Generic)
 
-deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance (Ord a, Ord (Rep i), o ~ U1) => Semigroup (ArithmeticCircuit a i o)
+deriving via (GenericSemigroupMonoid (ArithmeticCircuit a p i o))
+  instance (Ord a, Ord (Rep i), o ~ U1) => Semigroup (ArithmeticCircuit a p i o)
 
-deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
-  instance (Ord a, Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a i o)
+deriving via (GenericSemigroupMonoid (ArithmeticCircuit a p i o))
+  instance (Ord a, Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a p i o)
 
 instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
-    => NFData (ArithmeticCircuit a i o)
+    => NFData (ArithmeticCircuit a p i o)
 
 -- | Variables are SHA256 digests (32 bytes)
 type VarField = Zp (2 ^ (32 * 8))
@@ -134,12 +135,12 @@ acInput :: Representable i => i (Var a i)
 acInput = fmapRep (SysVar . InVar) (tabulate id)
 
 
-getAllVars :: forall a i o. (Representable i, Foldable i) => ArithmeticCircuit a i o -> [SysVar i]
+getAllVars :: forall a p i o. (Representable i, Foldable i) => ArithmeticCircuit a p i o -> [SysVar i]
 getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where
   acInput0 :: i (SysVar i)
   acInput0 = fmapRep InVar (tabulate @i id)
 
-indexW :: (Arithmetic a, Representable i) => ArithmeticCircuit a i o -> i a -> Var a i -> a
+indexW :: (Arithmetic a, Representable i) => ArithmeticCircuit a p i o -> i a -> Var a i -> a
 indexW circuit inputs = \case
   SysVar (InVar inV) -> index inputs inV
   SysVar (NewVar newV) -> fromMaybe
@@ -151,7 +152,7 @@ indexW circuit inputs = \case
 
 hlmap ::
   (Representable i, Representable j, Ord (Rep j), Functor o) =>
-  (forall x . j x -> i x) -> ArithmeticCircuit a i o -> ArithmeticCircuit a j o
+  (forall x . j x -> i x) -> ArithmeticCircuit a p i o -> ArithmeticCircuit a p j o
 hlmap f (ArithmeticCircuit s r w o) = ArithmeticCircuit
   { acSystem = mapVars (imapSysVar f) <$> s
   , acRange = S.map (imapSysVar f) <$> r
@@ -161,28 +162,28 @@ hlmap f (ArithmeticCircuit s r w o) = ArithmeticCircuit
 
 --------------------------- Symbolic compiler context --------------------------
 
-crown :: ArithmeticCircuit a i g -> f (Var a i) -> ArithmeticCircuit a i f
+crown :: ArithmeticCircuit a p i g -> f (Var a i) -> ArithmeticCircuit a p i f
 crown = flip (set #acOutput)
 
-behead :: ArithmeticCircuit a i f -> (ArithmeticCircuit a i U1, f (Var a i))
+behead :: ArithmeticCircuit a p i f -> (ArithmeticCircuit a p i U1, f (Var a i))
 behead = liftA2 (,) (set #acOutput U1) acOutput
 
-instance HFunctor (ArithmeticCircuit a i) where
+instance HFunctor (ArithmeticCircuit a p i) where
     hmap = over #acOutput
 
-instance (Ord (Rep i), Ord a) => HApplicative (ArithmeticCircuit a i) where
+instance (Ord (Rep i), Ord a) => HApplicative (ArithmeticCircuit a p i) where
     hpure = crown mempty
     hliftA2 f (behead -> (c, o)) (behead -> (d, p)) = crown (c <> d) (f o p)
 
-instance (Ord (Rep i), Ord a) => Package (ArithmeticCircuit a i) where
+instance (Ord (Rep i), Ord a) => Package (ArithmeticCircuit a p i) where
     unpackWith f (behead -> (c, o)) = crown c <$> f o
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
 instance
   (Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
-  Symbolic (ArithmeticCircuit a i) where
-    type BaseField (ArithmeticCircuit a i) = a
-    type WitnessField (ArithmeticCircuit a i) = WitnessF a (SysVar i)
+  Symbolic (ArithmeticCircuit a p i) where
+    type BaseField (ArithmeticCircuit a p i) = a
+    type WitnessField (ArithmeticCircuit a p i) = WitnessF a (SysVar i)
     witnessF (behead -> (c, o)) = o <&> \case
       ConstVar cv -> fromConstant cv
       SysVar (InVar iv) -> at $ SysVar (InVar iv)
@@ -197,7 +198,7 @@ instance Finite a => Witness (Var a i) (WitnessF a (SysVar i)) where
 
 instance
   ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
-  , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (SysVar i)) (State (ArithmeticCircuit a i o)) where
+  , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (SysVar i)) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = do
       let v = toVar @a wf
@@ -250,7 +251,7 @@ toVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
 
 witnessGenerator ::
   (Arithmetic a, Representable i) =>
-  ArithmeticCircuit a i o -> i a -> Map ByteString a
+  ArithmeticCircuit a p i o -> i a -> Map ByteString a
 witnessGenerator circuit inputs =
   let result = acWitness circuit <&> \k -> runWitnessF k $ \case
         InVar iV -> index inputs iV
@@ -258,25 +259,25 @@ witnessGenerator circuit inputs =
   in result
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
-eval1 :: (Arithmetic a, Representable i) => ArithmeticCircuit a i Par1 -> i a -> a
+eval1 :: (Arithmetic a, Representable i) => ArithmeticCircuit a p i Par1 -> i a -> a
 eval1 ctx i = unPar1 (eval ctx i)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: (Arithmetic a, Representable i, Functor o) => ArithmeticCircuit a i o -> i a -> o a
+eval :: (Arithmetic a, Representable i, Functor o) => ArithmeticCircuit a p i o -> i a -> o a
 eval ctx i = indexW ctx i <$> acOutput ctx
 
 -- | Evaluates the arithmetic circuit with no inputs and one output.
-exec1 :: Arithmetic a => ArithmeticCircuit a U1 Par1 -> a
+exec1 :: Arithmetic a => ArithmeticCircuit a p U1 Par1 -> a
 exec1 ac = eval1 ac U1
 
 -- | Evaluates the arithmetic circuit with no inputs.
-exec :: (Arithmetic a, Functor o) => ArithmeticCircuit a U1 o -> o a
+exec :: (Arithmetic a, Functor o) => ArithmeticCircuit a p U1 o -> o a
 exec ac = eval ac U1
 
 -- | Applies the values of the first couple of inputs to the arithmetic circuit.
 apply ::
   (Eq a, Field a, Ord (Rep j), Representable i) =>
-  i a -> ArithmeticCircuit a (i :*: j) U1 -> ArithmeticCircuit a j U1
+  i a -> ArithmeticCircuit a p (i :*: j) U1 -> ArithmeticCircuit a p j U1
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
   , acRange = S.fromList . catMaybes . toList . filterSet <$> acRange ac

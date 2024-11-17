@@ -5,6 +5,7 @@ module Tests.NonInteractiveProof (specNonInteractiveProof) where
 
 import           Data.ByteString                             (ByteString)
 import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
+import           GHC.Generics                                (U1)
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (Arbitrary, Testable (property), withMaxSuccess)
@@ -33,5 +34,5 @@ specNonInteractiveProof' = hspec $ do
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
-    specNonInteractiveProof' @(Plonk 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
-    specNonInteractiveProof' @(Plonkup 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
+    specNonInteractiveProof' @(Plonk 1 U1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
+    specNonInteractiveProof' @(Plonkup 1 U1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore

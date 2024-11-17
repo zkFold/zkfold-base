@@ -59,13 +59,13 @@ instance
         ++ show polynomials ++ " "
         ++ show commitments
 
-plonkupSetup :: forall i n l c1 c2 ts core.
+plonkupSetup :: forall i p n l c1 c2 ts core.
     ( KnownNat i
     , KnownNat l
     , KnownNat n
     , Arithmetic (ScalarField c1)
     , Pairing c1 c2
-    , CoreFunction c1 core) => Plonkup i n l c1 c2 ts -> PlonkupSetup i n l c1 c2
+    , CoreFunction c1 core) => Plonkup i p n l c1 c2 ts -> PlonkupSetup i n l c1 c2
 plonkupSetup Plonkup {..} =
     let xs   = fromList $ map (x^) [0 .. (value @n + 5)]
         gs   = fmap (`mul` gen) xs

@@ -17,7 +17,7 @@ import           ZkFold.Symbolic.Class           (Arithmetic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Examples
 
-metrics :: String -> ArithmeticCircuit a i o -> ByteString
+metrics :: String -> ArithmeticCircuit a p i o -> ByteString
 metrics name circuit =
   fromString name
   <> "\nNumber of constraints: " <> fromString (show $ acSizeN circuit)
@@ -27,7 +27,7 @@ metrics name circuit =
 
 benchmark ::
   (Arithmetic a, NFData (o (Var a i)), NFData (Rep i), Representable i) =>
-  String -> (() -> ArithmeticCircuit a i o) -> Benchmark
+  String -> (() -> ArithmeticCircuit a p i o) -> Benchmark
 benchmark name circuit = bgroup name
   [ bench "compilation" $ nf circuit ()
   , env (return $ force $ circuit ()) $ \c ->

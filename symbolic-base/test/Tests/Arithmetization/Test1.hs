@@ -30,7 +30,7 @@ testFunc x y =
         g3 = c 2 // x
     in (g3 == y :: Bool c) ? g1 $ g2
 
-testResult :: forall a . Arithmetic a => ArithmeticCircuit a (Par1 :*: Par1 :*: U1) Par1 -> a -> a -> Haskell.Bool
+testResult :: forall a . Arithmetic a => ArithmeticCircuit a U1 (Par1 :*: Par1 :*: U1) Par1 -> a -> a -> Haskell.Bool
 testResult r x y = fromConstant (unPar1 $ eval r (Par1 x :*: Par1 y :*: U1)) Haskell.==
     testFunc @(Interpreter a) (fromConstant x) (fromConstant y)
 

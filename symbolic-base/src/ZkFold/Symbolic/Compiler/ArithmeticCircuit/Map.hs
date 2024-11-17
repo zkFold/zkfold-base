@@ -26,17 +26,17 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 
-data ArithmeticCircuitTest a i o = ArithmeticCircuitTest
+data ArithmeticCircuitTest a p i o = ArithmeticCircuitTest
     {
-        arithmeticCircuit :: ArithmeticCircuit a i o
+        arithmeticCircuit :: ArithmeticCircuit a p i o
         , witnessInput    :: i a
     }
 
-instance (Show (ArithmeticCircuit a i o), Show a, Show (i a)) => Show (ArithmeticCircuitTest a i o) where
+instance (Show (ArithmeticCircuit a p i o), Show a, Show (i a)) => Show (ArithmeticCircuitTest a p i o) where
     show (ArithmeticCircuitTest ac wi) = show ac ++ ",\nwitnessInput: " ++ show wi
 
-instance (Arithmetic a, Arbitrary (i a), Arbitrary (ArithmeticCircuit a i f), Representable i) => Arbitrary (ArithmeticCircuitTest a i f) where
-    arbitrary :: Gen (ArithmeticCircuitTest a i f)
+instance (Arithmetic a, Arbitrary (i a), Arbitrary (ArithmeticCircuit a p i f), Representable i) => Arbitrary (ArithmeticCircuitTest a p i f) where
+    arbitrary :: Gen (ArithmeticCircuitTest a p i f)
     arbitrary = do
         ac <- arbitrary
         wi <- arbitrary
@@ -45,7 +45,7 @@ instance (Arithmetic a, Arbitrary (i a), Arbitrary (ArithmeticCircuit a i f), Re
             , witnessInput = wi
             }
 
-mapVarArithmeticCircuit :: (Field a, Eq a, Functor o, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuitTest a i o -> ArithmeticCircuitTest a i o
+mapVarArithmeticCircuit :: (Field a, Eq a, Functor o, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuitTest a p i o -> ArithmeticCircuitTest a p i o
 mapVarArithmeticCircuit (ArithmeticCircuitTest ac wi) =
     let vars = [v | NewVar v <- getAllVars ac]
         asc = [ toByteString @VarField (fromConstant @Natural x) | x <- [0..] ]

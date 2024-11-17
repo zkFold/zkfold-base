@@ -6,7 +6,7 @@ module Tests.Arithmetization (specArithmetization) where
 import           Control.DeepSeq                             (NFData)
 import           Data.Binary                                 (Binary)
 import           Data.Functor.Rep                            (Representable (..))
-import           GHC.Generics                                (Par1)
+import           GHC.Generics                                (Par1, U1)
 import           Prelude
 import           Test.Hspec
 import           Test.QuickCheck
@@ -21,7 +21,7 @@ import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler
 
-propCircuitInvariance :: (Arithmetic a, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuitTest a i Par1 -> Bool
+propCircuitInvariance :: (Arithmetic a, Ord (Rep i), Representable i, Foldable i) => ArithmeticCircuitTest a p i Par1 -> Bool
 propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
     let ArithmeticCircuitTest ac' wi' = mapVarArithmeticCircuit act
         v   = ac `eval` wi
@@ -29,15 +29,15 @@ propCircuitInvariance act@(ArithmeticCircuitTest ac wi) =
     in v == v'
 
 specArithmetization' ::
-  forall a i .
+  forall a p i .
   (Arithmetic a, Arbitrary a, Binary a, Arbitrary (i a)) =>
-  (Show a, Show (ArithmeticCircuitTest a i Par1)) =>
+  (Show a, Show (ArithmeticCircuitTest a p i Par1)) =>
   (Arbitrary (Rep i), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
   (Representable i, Traversable i) => IO ()
 specArithmetization' = hspec $ do
     describe "Arithmetization specification" $ do
         describe "Variable mapping" $ do
-            it "does not change the circuit" $ property $ propCircuitInvariance @a @i
+            it "does not change the circuit" $ property $ propCircuitInvariance @a @i @p
         specArithmetization1 @a
         specArithmetization2
         specArithmetization3
@@ -45,4 +45,4 @@ specArithmetization' = hspec $ do
 
 specArithmetization :: IO ()
 specArithmetization = do
-    specArithmetization' @(Zp BLS12_381_Scalar) @(Vector 2)
+    specArithmetization' @(Zp BLS12_381_Scalar) @U1 @(Vector 2)

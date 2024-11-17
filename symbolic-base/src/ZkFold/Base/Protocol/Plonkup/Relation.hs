@@ -68,12 +68,12 @@ instance
         ) => Arbitrary (PlonkupRelation i n l a) where
     arbitrary = fromJust . toPlonkupRelation <$> arbitrary
 
-toPlonkupRelation :: forall i n l a .
+toPlonkupRelation :: forall i p n l a .
        KnownNat i
     => KnownNat n
     => KnownNat l
     => Arithmetic a
-    => ArithmeticCircuit a (Vector i) (Vector l)
+    => ArithmeticCircuit a p (Vector i) (Vector l)
     -> Maybe (PlonkupRelation i n l a)
 toPlonkupRelation ac =
     let xPub                = acOutput ac

@@ -29,7 +29,7 @@ import           ZkFold.UPLC.Term
 
 areSame ::
   ( SymbolicData f, Context f ~ c, Support f ~ s, Layout f ~ l
-  , c ~ ArithmeticCircuit a i, Arbitrary (i a), Show (i a)
+  , c ~ ArithmeticCircuit a U1 i, Arbitrary (i a), Show (i a)
   , SymbolicInput s, Context s ~ c, Layout s ~ i
   , Functor l, Eq (l a), Show (l a)
   , a ~ Zp BLS12_381_Base) =>

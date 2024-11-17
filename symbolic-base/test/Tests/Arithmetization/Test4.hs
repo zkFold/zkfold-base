@@ -27,13 +27,13 @@ lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue
 
 testSameValue :: F -> Haskell.Bool
 testSameValue targetValue =
-    let Bool ac = compile @F (lockedByTxId @F targetValue) :: Bool (ArithmeticCircuit F (Par1 :*: U1))
+    let Bool ac = compile @F (lockedByTxId @F targetValue) :: Bool (ArithmeticCircuit F U1 (Par1 :*: U1))
         b       = unPar1 (eval ac (Par1 targetValue :*: U1))
     in b Haskell.== one
 
 testDifferentValue :: F -> F -> Haskell.Bool
 testDifferentValue targetValue otherValue =
-    let Bool ac = compile @F (lockedByTxId @F targetValue) :: Bool (ArithmeticCircuit F (Par1 :*: U1))
+    let Bool ac = compile @F (lockedByTxId @F targetValue) :: Bool (ArithmeticCircuit F U1 (Par1 :*: U1))
         b       = unPar1 (eval ac (Par1 otherValue :*: U1))
     in b Haskell.== zero
 
