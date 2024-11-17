@@ -5,9 +5,11 @@ import           Prelude                                hiding (Bool, Eq, length
 import           ZkFold.Symbolic.Class                  (Symbolic)
 import           ZkFold.Symbolic.Data.Bool              (Bool)
 import           ZkFold.Symbolic.Data.Class             (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Combinators       (RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.List              (List, emptyList)
-import           ZkFold.Symbolic.Data.UInt              (UInt)
+-- import           ZkFold.Symbolic.Data.Combinators       (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.List              (List
+                                                        , emptyList
+                                                        )
+-- import           ZkFold.Symbolic.Data.UInt              (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Address   (Address)
 import           ZkFold.Symbolic.Ledger.Types.Contract  (ContractData)
 import           ZkFold.Symbolic.Ledger.Types.Hash      (Hash)
@@ -15,7 +17,8 @@ import           ZkFold.Symbolic.Ledger.Types.Input     (Input)
 import           ZkFold.Symbolic.Ledger.Types.Output    (Output)
 import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 
-type AddressIndex = UInt 40 Auto
+-- type AddressIndex = UInt 40 Auto
+data AddressIndex context
 
 getAddressIndex :: Input context -> AddressIndex context
 getAddressIndex = undefined
@@ -25,6 +28,8 @@ getAddressIndex = undefined
 data Update context = Update
   { updateOnlineTxsRoot   :: Hash context
     -- ^ the Merkle tree root of the TxId list of transactions that contains online transactions.
+  , updateHashPrevious    :: Hash context
+    -- ^ hash of previous update
   , updateNewAssignments  :: List context (Address context, AddressIndex context)
     -- ^ the map from addresses into assigned indices. Only new assignments.
   , updateSpentOutputs    :: List context (AddressIndex context, Bool context)
@@ -52,15 +57,26 @@ data Update context = Update
     -- that produced this Input.
   }
 
--- emptyUpdate ::
---      Symbolic context
---   => Applicative (Layout (List context (Input context)))
---   => Applicative (Layout (List context (Output context)))
---   => Applicative (Layout (ContractData context))
---   => Applicative (Layout (Hash context))
---   => Hash context
---   -> Update context
--- emptyUpdate hsh = Update hsh emptyList emptyList emptyList emptyList emptyList emptyList emptyList
+emptyUpdate ::
+     Symbolic context
+  => Applicative (Layout (AddressIndex context))
+  => Applicative (Layout (List context (Input context)))
+  => Applicative (Layout (List context (Output context)))
+  => Applicative (Layout (ContractData context))
+  => Applicative (Layout (Hash context))
+  => Hash context
+  -> Update context
+emptyUpdate prev = Update
+  { updateOnlineTxsRoot = merkleTreeRoot emptyList
+  , updateHashPrevious = prev
+  , updateNewAssignments = emptyList
+  , updateSpentOutputs = emptyList
+  , updateTransactions = emptyList
+  , updateTransactionData = emptyList
+  , updateIndicesReleased = emptyList
+  , updateBridgedOutputs = emptyList
+  , updateBridgedInputs = emptyList
+  }
 
 type UpdateChain context = List context (Update context)
 
@@ -70,3 +86,12 @@ updateId = undefined
 
 merkleTreeRoot :: List context (AddressIndex context, TransactionId context) -> Hash context
 merkleTreeRoot = undefined
+
+merkleTreeAdd ::
+     Hash context
+  -> List context (Hash context)
+  -> (Hash context, List context (Hash context))
+merkleTreeAdd = undefined
+
+merkleTreeEmpty :: List context (Hash context)
+merkleTreeEmpty = undefined
