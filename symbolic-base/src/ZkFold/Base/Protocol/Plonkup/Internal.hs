@@ -24,7 +24,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
 
-data Plonkup (i :: Natural) p (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonkup {
+data Plonkup p (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonkup {
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
@@ -43,7 +43,7 @@ with4n6 f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)
 
 type PlonkupPolyExtended n c = PolyVec (ScalarField c) (PlonkupPolyExtendedLength n)
 
-instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonkup i p n l c1 c2 t) where
+instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonkup p i n l c1 c2 t) where
     show Plonkup {..} =
         "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac)  ++ " " ++ show ac ++ " " ++ show x
 
@@ -51,7 +51,7 @@ instance
   ( KnownNat i, KnownNat n, KnownNat l
   , Arithmetic (ScalarField c1), Arbitrary (ScalarField c1), Binary (ScalarField c1)
   , Binary (Rep p)
-  ) => Arbitrary (Plonkup i p n l c1 c2 t) where
+  ) => Arbitrary (Plonkup p i n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary
         let (omega, k1, k2) = getParams (value @n)

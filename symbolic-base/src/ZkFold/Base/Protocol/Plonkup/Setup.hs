@@ -67,7 +67,7 @@ plonkupSetup :: forall i p n l c1 c2 ts core.
     , Representable p
     , Arithmetic (ScalarField c1)
     , Pairing c1 c2
-    , CoreFunction c1 core) => Plonkup i p n l c1 c2 ts -> PlonkupSetup p i n l c1 c2
+    , CoreFunction c1 core) => Plonkup p i n l c1 c2 ts -> PlonkupSetup p i n l c1 c2
 plonkupSetup Plonkup {..} =
     let xs   = fromList $ map (x^) [0 .. (value @n + 5)]
         gs   = fmap (`mul` gen) xs

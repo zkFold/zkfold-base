@@ -36,7 +36,6 @@ import           Data.Binary                                           (Binary)
 import           Data.ByteString                                       (ByteString)
 import           Data.Foldable                                         (fold, toList)
 import           Data.Functor.Rep
-import           Data.Kind                                             (Type)
 import           Data.Map.Monoidal                                     (MonoidalMap, insertWith)
 import           Data.Map.Strict                                       hiding (drop, foldl, foldr, insertWith, map,
                                                                         null, splitAt, take, toList)
@@ -66,7 +65,7 @@ import           ZkFold.Symbolic.MonadCircuit
 type Constraint c i = Poly c (SysVar i) Natural
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
-data ArithmeticCircuit a (p :: Type -> Type) i o = ArithmeticCircuit
+data ArithmeticCircuit a p i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints

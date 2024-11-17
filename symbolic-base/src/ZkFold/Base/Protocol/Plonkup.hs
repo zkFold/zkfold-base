@@ -28,7 +28,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
-instance forall i p n l c1 c2 ts core.
+instance forall p i n l c1 c2 ts core.
         ( KnownNat i
         , KnownNat n
         , KnownNat l
@@ -42,29 +42,29 @@ instance forall i p n l c1 c2 ts core.
         , ToTranscript ts (PointCompressed c1)
         , FromTranscript ts (ScalarField c1)
         , CoreFunction c1 core
-        ) => NonInteractiveProof (Plonkup i p n l c1 c2 ts) core where
-    type Transcript (Plonkup i p n l c1 c2 ts)  = ts
-    type SetupProve (Plonkup i p n l c1 c2 ts)  = PlonkupProverSetup p i n l c1 c2
-    type SetupVerify (Plonkup i p n l c1 c2 ts) = PlonkupVerifierSetup p i n l c1 c2
-    type Witness (Plonkup i p n l c1 c2 ts)     = (PlonkupWitnessInput p i c1, PlonkupProverSecret c1)
-    type Input (Plonkup i p n l c1 c2 ts)       = PlonkupInput l c1
-    type Proof (Plonkup i p n l c1 c2 ts)       = PlonkupProof c1
+        ) => NonInteractiveProof (Plonkup p i n l c1 c2 ts) core where
+    type Transcript (Plonkup p i n l c1 c2 ts)  = ts
+    type SetupProve (Plonkup p i n l c1 c2 ts)  = PlonkupProverSetup p i n l c1 c2
+    type SetupVerify (Plonkup p i n l c1 c2 ts) = PlonkupVerifierSetup p i n l c1 c2
+    type Witness (Plonkup p i n l c1 c2 ts)     = (PlonkupWitnessInput p i c1, PlonkupProverSecret c1)
+    type Input (Plonkup p i n l c1 c2 ts)       = PlonkupInput l c1
+    type Proof (Plonkup p i n l c1 c2 ts)       = PlonkupProof c1
 
-    setupProve :: Plonkup i p n l c1 c2 ts -> SetupProve (Plonkup i p n l c1 c2 ts)
+    setupProve :: Plonkup p i n l c1 c2 ts -> SetupProve (Plonkup p i n l c1 c2 ts)
     setupProve plonk =
         let PlonkupSetup {..} = plonkupSetup @_ @_ @_ @_ @c1 @_ @_ @core plonk
         in PlonkupProverSetup {..}
 
-    setupVerify :: Plonkup i p n l c1 c2 ts -> SetupVerify (Plonkup i p n l c1 c2 ts)
+    setupVerify :: Plonkup p i n l c1 c2 ts -> SetupVerify (Plonkup p i n l c1 c2 ts)
     setupVerify plonk =
         let PlonkupSetup {..} = plonkupSetup @_ @_ @_ @_ @c1 @_ @_ @core plonk
         in PlonkupVerifierSetup {..}
 
-    prove :: SetupProve (Plonkup i p n l c1 c2 ts) -> Witness (Plonkup i p n l c1 c2 ts) -> (Input (Plonkup i p n l c1 c2 ts), Proof (Plonkup i p n l c1 c2 ts))
+    prove :: SetupProve (Plonkup p i n l c1 c2 ts) -> Witness (Plonkup p i n l c1 c2 ts) -> (Input (Plonkup p i n l c1 c2 ts), Proof (Plonkup p i n l c1 c2 ts))
     prove setup witness =
         let (input, proof, _) = with4n6 @n (plonkupProve @p @i @n @l @c1 @c2 @ts @core setup witness)
         in (input, proof)
 
-    verify :: SetupVerify (Plonkup i p n l c1 c2 ts) -> Input (Plonkup i p n l c1 c2 ts) -> Proof (Plonkup i p n l c1 c2 ts) -> Bool
+    verify :: SetupVerify (Plonkup p i n l c1 c2 ts) -> Input (Plonkup p i n l c1 c2 ts) -> Proof (Plonkup p i n l c1 c2 ts) -> Bool
     verify = with4n6 @n $ plonkupVerify @p @i @n @l @c1 @c2 @ts
 
