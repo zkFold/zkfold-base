@@ -6,6 +6,7 @@ module ZkFold.Base.Protocol.Plonkup.Internal where
 import           Data.Binary                                         (Binary)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (plusNat, timesNat)
+import           Data.Functor.Rep                                    (Rep)
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -49,6 +50,7 @@ instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownN
 instance
   ( KnownNat i, KnownNat n, KnownNat l
   , Arithmetic (ScalarField c1), Arbitrary (ScalarField c1), Binary (ScalarField c1)
+  , Binary (Rep p)
   ) => Arbitrary (Plonkup i p n l c1 c2 t) where
     arbitrary = do
         ac <- arbitrary

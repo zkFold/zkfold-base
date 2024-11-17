@@ -10,6 +10,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
         Var (..),
         SysVar (..),
+        WitVar (..),
         VarField,
         Arithmetic,
         Constraint,
@@ -71,7 +72,7 @@ data ArithmeticCircuit a (p :: Type -> Type) i o = ArithmeticCircuit
         -- ^ The system of polynomial constraints
         acRange   :: MonoidalMap a (S.Set (SysVar i)),
         -- ^ The range constraints [0, a] for the selected variables
-        acWitness :: Map ByteString (WitnessF a (SysVar i)),
+        acWitness :: Map ByteString (WitnessF a (WitVar p i)),
         -- ^ The witness generation functions
         acOutput  :: o (Var a i)
         -- ^ The output variables
@@ -108,6 +109,16 @@ imapSysVar ::
 imapSysVar f (InVar r)  = index (f (tabulate InVar)) r
 imapSysVar _ (NewVar b) = NewVar b
 
+data WitVar p i
+  = WExVar (Rep p)
+  | WSysVar (SysVar i)
+
+imapWitVar ::
+  (Representable i, Representable j) =>
+  (forall x. j x -> i x) -> WitVar p i -> WitVar p j
+imapWitVar _ (WExVar r) = WExVar r
+imapWitVar f (WSysVar v) = WSysVar (imapSysVar f v)
+
 data Var a i
   = SysVar (SysVar i)
   | ConstVar a
@@ -134,18 +145,19 @@ imapVar _ (ConstVar c) = ConstVar c
 acInput :: Representable i => i (Var a i)
 acInput = fmapRep (SysVar . InVar) (tabulate id)
 
-
 getAllVars :: forall a p i o. (Representable i, Foldable i) => ArithmeticCircuit a p i o -> [SysVar i]
 getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where
   acInput0 :: i (SysVar i)
   acInput0 = fmapRep InVar (tabulate @i id)
 
-indexW :: (Arithmetic a, Representable i) => ArithmeticCircuit a p i o -> i a -> Var a i -> a
-indexW circuit inputs = \case
+indexW ::
+  (Arithmetic a, Representable p, Representable i) =>
+  ArithmeticCircuit a p i o -> p a -> i a -> Var a i -> a
+indexW circuit payload inputs = \case
   SysVar (InVar inV) -> index inputs inV
   SysVar (NewVar newV) -> fromMaybe
     (error ("no such NewVar: " <> show newV))
-    (witnessGenerator circuit inputs !? newV)
+    (witnessGenerator circuit payload inputs !? newV)
   ConstVar cV -> cV
 
 -------------------------------- "HProfunctor" ---------------------------------
@@ -156,7 +168,7 @@ hlmap ::
 hlmap f (ArithmeticCircuit s r w o) = ArithmeticCircuit
   { acSystem = mapVars (imapSysVar f) <$> s
   , acRange = S.map (imapSysVar f) <$> r
-  , acWitness = fmap (imapSysVar f) <$> w
+  , acWitness = fmap (imapWitVar f) <$> w
   , acOutput = imapVar f <$> o
   }
 
@@ -180,10 +192,10 @@ instance (Ord (Rep i), Ord a) => Package (ArithmeticCircuit a p i) where
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
 instance
-  (Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
   Symbolic (ArithmeticCircuit a p i) where
     type BaseField (ArithmeticCircuit a p i) = a
-    type WitnessField (ArithmeticCircuit a p i) = WitnessF a (SysVar i)
+    type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
     witnessF (behead -> (c, o)) = o <&> \case
       ConstVar cv -> fromConstant cv
       SysVar (InVar iv) -> at $ SysVar (InVar iv)
@@ -192,13 +204,13 @@ instance
 
 ----------------------------- MonadCircuit instance ----------------------------
 
-instance Finite a => Witness (Var a i) (WitnessF a (SysVar i)) where
+instance Finite a => Witness (Var a i) (WitnessF a (WitVar p i)) where
   at (ConstVar cV) = fromConstant cV
-  at (SysVar sV)   = WitnessF (\x -> x sV)
+  at (SysVar sV)   = WitnessF (\x -> x (WSysVar sV))
 
 instance
-  ( Arithmetic a, Binary a, Representable i, Binary (Rep i), Ord (Rep i)
-  , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (SysVar i)) (State (ArithmeticCircuit a p i o)) where
+  ( Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)
+  , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (WitVar p i)) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = do
       let v = toVar @a wf
@@ -212,7 +224,7 @@ instance
           SysVar sysV -> var sysV
           ConstVar cV -> fromConstant cV
       in
-        zoom #acSystem . modify $ insert (toVar (p at)) (p evalConstVar)
+        zoom #acSystem . modify $ insert (toVar @_ @p (p at)) (p evalConstVar)
 
     rangeConstraint (SysVar v) upperBound =
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
@@ -241,38 +253,44 @@ instance
 -- 5. Thus the result of running the witness with 'MerkleHash' as a
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
 toVar ::
-  forall a i. (Finite a, Binary a, Binary (Rep i)) =>
-  WitnessF a (SysVar i) -> ByteString
+  forall a p i. (Finite a, Binary a, Binary (Rep p), Binary (Rep i)) =>
+  WitnessF a (WitVar p i) -> ByteString
 toVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
-  InVar inV -> merkleHash inV
-  NewVar newV -> M newV
+  WExVar exV -> merkleHash exV
+  WSysVar (InVar inV) -> merkleHash inV
+  WSysVar (NewVar newV) -> M newV
 
 ----------------------------- Evaluation functions -----------------------------
 
 witnessGenerator ::
-  (Arithmetic a, Representable i) =>
-  ArithmeticCircuit a p i o -> i a -> Map ByteString a
-witnessGenerator circuit inputs =
+  (Arithmetic a, Representable p, Representable i) =>
+  ArithmeticCircuit a p i o -> p a -> i a -> Map ByteString a
+witnessGenerator circuit payload inputs =
   let result = acWitness circuit <&> \k -> runWitnessF k $ \case
-        InVar iV -> index inputs iV
-        NewVar nV -> result ! nV
+        WExVar eV -> index payload eV
+        WSysVar (InVar iV) -> index inputs iV
+        WSysVar (NewVar nV) -> result ! nV
   in result
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
-eval1 :: (Arithmetic a, Representable i) => ArithmeticCircuit a p i Par1 -> i a -> a
-eval1 ctx i = unPar1 (eval ctx i)
+eval1 ::
+  (Arithmetic a, Representable p, Representable i) =>
+  ArithmeticCircuit a p i Par1 -> p a -> i a -> a
+eval1 ctx p i = unPar1 (eval ctx p i)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
-eval :: (Arithmetic a, Representable i, Functor o) => ArithmeticCircuit a p i o -> i a -> o a
-eval ctx i = indexW ctx i <$> acOutput ctx
+eval ::
+  (Arithmetic a, Representable p, Representable i, Functor o) =>
+  ArithmeticCircuit a p i o -> p a -> i a -> o a
+eval ctx p i = indexW ctx p i <$> acOutput ctx
 
 -- | Evaluates the arithmetic circuit with no inputs and one output.
-exec1 :: Arithmetic a => ArithmeticCircuit a p U1 Par1 -> a
-exec1 ac = eval1 ac U1
+exec1 :: Arithmetic a => ArithmeticCircuit a U1 U1 Par1 -> a
+exec1 ac = eval1 ac U1 U1
 
 -- | Evaluates the arithmetic circuit with no inputs.
-exec :: (Arithmetic a, Functor o) => ArithmeticCircuit a p U1 o -> o a
-exec ac = eval ac U1
+exec :: (Arithmetic a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a
+exec ac = eval ac U1 U1
 
 -- | Applies the values of the first couple of inputs to the arithmetic circuit.
 apply ::
@@ -289,9 +307,10 @@ apply xs ac = ac
     varF (InVar (Right v)) = var (InVar v)
     varF (NewVar v)        = var (NewVar v)
 
-    witF (InVar (Left v))  = WitnessF $ const $ fromConstant (index xs v)
-    witF (InVar (Right v)) = pure (InVar v)
-    witF (NewVar v)        = pure (NewVar v)
+    witF (WSysVar (InVar (Left v)))  = WitnessF $ const $ fromConstant (index xs v)
+    witF (WSysVar (InVar (Right v))) = pure $ WSysVar (InVar v)
+    witF (WSysVar (NewVar v))        = pure $ WSysVar (NewVar v)
+    witF (WExVar v)                  = pure (WExVar v)
 
     filterSet :: Ord (Rep j) => S.Set (SysVar (i :*: j)) ->  S.Set (Maybe (SysVar j))
     filterSet = S.map (\case

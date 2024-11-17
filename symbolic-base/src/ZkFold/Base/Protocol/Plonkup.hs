@@ -7,6 +7,7 @@ module ZkFold.Base.Protocol.Plonkup (
     Plonkup (..)
 ) where
 
+import           Data.Functor.Rep                                    (Representable)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
@@ -31,6 +32,7 @@ instance forall i p n l c1 c2 ts core.
         ( KnownNat i
         , KnownNat n
         , KnownNat l
+        , Representable p
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
@@ -42,9 +44,9 @@ instance forall i p n l c1 c2 ts core.
         , CoreFunction c1 core
         ) => NonInteractiveProof (Plonkup i p n l c1 c2 ts) core where
     type Transcript (Plonkup i p n l c1 c2 ts)  = ts
-    type SetupProve (Plonkup i p n l c1 c2 ts)  = PlonkupProverSetup i n l c1 c2
-    type SetupVerify (Plonkup i p n l c1 c2 ts) = PlonkupVerifierSetup i n l c1 c2
-    type Witness (Plonkup i p n l c1 c2 ts)     = (PlonkupWitnessInput i c1, PlonkupProverSecret c1)
+    type SetupProve (Plonkup i p n l c1 c2 ts)  = PlonkupProverSetup p i n l c1 c2
+    type SetupVerify (Plonkup i p n l c1 c2 ts) = PlonkupVerifierSetup p i n l c1 c2
+    type Witness (Plonkup i p n l c1 c2 ts)     = (PlonkupWitnessInput p i c1, PlonkupProverSecret c1)
     type Input (Plonkup i p n l c1 c2 ts)       = PlonkupInput l c1
     type Proof (Plonkup i p n l c1 c2 ts)       = PlonkupProof c1
 
@@ -60,9 +62,9 @@ instance forall i p n l c1 c2 ts core.
 
     prove :: SetupProve (Plonkup i p n l c1 c2 ts) -> Witness (Plonkup i p n l c1 c2 ts) -> (Input (Plonkup i p n l c1 c2 ts), Proof (Plonkup i p n l c1 c2 ts))
     prove setup witness =
-        let (input, proof, _) = with4n6 @n (plonkupProve @i @n @l @c1 @c2 @ts @core setup witness)
+        let (input, proof, _) = with4n6 @n (plonkupProve @p @i @n @l @c1 @c2 @ts @core setup witness)
         in (input, proof)
 
     verify :: SetupVerify (Plonkup i p n l c1 c2 ts) -> Input (Plonkup i p n l c1 c2 ts) -> Proof (Plonkup i p n l c1 c2 ts) -> Bool
-    verify = with4n6 @n $ plonkupVerify @i @n @l @c1 @c2 @ts
+    verify = with4n6 @n $ plonkupVerify @p @i @n @l @c1 @c2 @ts
 

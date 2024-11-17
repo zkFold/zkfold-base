@@ -14,7 +14,7 @@ import           Data.Aeson                                 (FromJSON, ToJSON, T
 import           Data.Binary                                (Binary)
 import           Data.Function                              (const, (.))
 import           Data.Functor                               (($>))
-import           Data.Functor.Rep                           (Rep, Representable)
+import           Data.Functor.Rep                           (Rep)
 import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Traversable                           (for)
@@ -74,7 +74,7 @@ compileForceOne ::
     , SymbolicInput s
     , Context s ~ c
     , Layout s ~ l
-    , Representable l
+    , Binary (Rep p)
     , Binary (Rep l)
     , Ord (Rep l)
     , SymbolicData y

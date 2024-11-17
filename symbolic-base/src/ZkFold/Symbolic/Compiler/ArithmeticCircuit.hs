@@ -1,6 +1,5 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
-        ArithmeticCircuitTest(..),
         Constraint,
         Var,
         witnessGenerator,
@@ -85,7 +84,7 @@ desugarRange i b
 
 -- | Desugars range constraints into polynomial constraints
 desugarRanges ::
-  (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
   let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
@@ -105,8 +104,8 @@ acSizeM = length . acWitness
 acSizeR :: ArithmeticCircuit a p i o -> Natural
 acSizeR = sum . map length . M.elems . acRange
 
-acValue :: (Arithmetic a, Functor o) => ArithmeticCircuit a p U1 o -> o a
-acValue r = eval r U1
+acValue :: (Arithmetic a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a
+acValue = exec
 
 -- | Prints the constraint system, the witness, and the output.
 --
@@ -114,10 +113,10 @@ acValue r = eval r U1
 -- TODO: Check that all arguments have been applied.
 acPrint ::
   (Arithmetic a, Show a, Show (o (Var a U1)), Show (o a), Functor o) =>
-  ArithmeticCircuit a p U1 o -> IO ()
+  ArithmeticCircuit a U1 U1 o -> IO ()
 acPrint ac = do
     let m = elems (acSystem ac)
-        w = witnessGenerator ac U1
+        w = witnessGenerator ac U1 U1
         v = acValue ac
         o = acOutput ac
     putStr "System size: "
@@ -143,15 +142,17 @@ checkClosedCircuit
     -> Property
 checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem c) ]
     where
-        w = witnessGenerator c U1
+        w = witnessGenerator c U1 U1
         testPoly p = evalPolynomial evalMonomial varF p === zero
         varF (NewVar v) = w ! v
         varF (InVar v)  = absurd v
 
 checkCircuit
-    :: Arbitrary (i a)
+    :: Arbitrary (p a)
+    => Arbitrary (i a)
     => Arithmetic a
     => Show a
+    => Representable p
     => Representable i
     => ArithmeticCircuit a p i o
     -> Property
@@ -159,7 +160,8 @@ checkCircuit c = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
     where
         testPoly p = do
             ins <- arbitrary
-            let w = witnessGenerator c ins
+            pls <- arbitrary
+            let w = witnessGenerator c pls ins
                 varF (NewVar v) = w ! v
                 varF (InVar v)  = index ins v
             return $ evalPolynomial evalMonomial varF p === zero

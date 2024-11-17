@@ -29,4 +29,4 @@ specArithmetization3 = do
     describe "Arithmetization test 3" $ do
         it "should pass" $ do
             let Bool r = compile @(Zp 97) (testFunc @R) :: Bool R
-            Bool (Interpreter (eval r (Par1 3 :*: Par1 5 :*: U1))) `shouldBe` testFunc (fromConstant (3 :: Natural)) (fromConstant (5 :: Natural))
+            Bool (Interpreter (eval r U1 (Par1 3 :*: Par1 5 :*: U1))) `shouldBe` testFunc (fromConstant (3 :: Natural)) (fromConstant (5 :: Natural))

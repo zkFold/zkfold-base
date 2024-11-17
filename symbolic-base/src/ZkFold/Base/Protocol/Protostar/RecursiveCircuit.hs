@@ -2,7 +2,7 @@
 
 module ZkFold.Base.Protocol.Protostar.RecursiveCircuit where
 
-import           Data.Functor.Rep                           (tabulate)
+import           Data.Functor.Rep                           (Rep, tabulate)
 import           Data.Typeable                              (Proxy)
 import           GHC.Generics                               (Par1 (..), U1 (..), type (:.:) (..), (:*:) (..))
 import           GHC.IsList                                 (IsList (..))
@@ -30,6 +30,7 @@ import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
 protostar :: forall a n k p i o ctx f pi m c .
     ( Binary a
     , Arithmetic a
+    , Binary (Rep p)
     , KnownNat n
     , KnownNat k
     , ctx ~ ArithmeticCircuit a p i

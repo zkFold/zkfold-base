@@ -6,6 +6,7 @@ module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
 import           Data.Map.Strict                             (elems)
 import qualified Data.Map.Strict                             as M
+import           GHC.Generics                                (U1 (..))
 import           Prelude                                     (type (~), ($))
 import qualified Prelude                                     as P
 
@@ -61,12 +62,12 @@ type BasicSpecialSoundProtocol f pi m a =
   , VerifierMessage f a ~ f
   )
 
-instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a p (Vector n) o) where
-    type Witness a (ArithmeticCircuit a p (Vector n) o) = ()
-    type Input a (ArithmeticCircuit a p (Vector n) o) = [a]
-    type ProverMessage a (ArithmeticCircuit a p (Vector n) o) = [a]
-    type VerifierMessage a (ArithmeticCircuit a p (Vector n) o) = a
-    type VerifierOutput a (ArithmeticCircuit a p (Vector n) o)  = [a]
+instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a U1 (Vector n) o) where
+    type Witness a (ArithmeticCircuit a U1 (Vector n) o) = ()
+    type Input a (ArithmeticCircuit a U1 (Vector n) o) = [a]
+    type ProverMessage a (ArithmeticCircuit a U1 (Vector n) o) = [a]
+    type VerifierMessage a (ArithmeticCircuit a U1 (Vector n) o) = a
+    type VerifierOutput a (ArithmeticCircuit a U1 (Vector n) o)  = [a]
     -- type Degree (ArithmeticCircuit a p (Vector n) o) = AM.Degree (ArithmeticCircuit a p (Vector n) o)
 
     -- One round for Plonk
@@ -77,7 +78,7 @@ instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit
     -- The transcript will be empty at this point, it is a one-round protocol.
     -- Input is arithmetised. We need to combine its witness with the circuit's witness.
     --
-    prover ac _ pi _ _ = elems $ witnessGenerator ac $ unsafeToVector pi
+    prover ac _ pi _ _ = elems $ witnessGenerator ac U1 $ unsafeToVector pi
 
     -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
     --

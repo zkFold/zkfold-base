@@ -33,6 +33,7 @@ instance
   ( Arithmetic a
   , Arbitrary a
   , Binary a
+  , Binary (Rep p)
   , Arbitrary (Rep i)
   , Binary (Rep i)
   , Haskell.Ord (Rep i)
@@ -49,6 +50,7 @@ instance
   ( Arithmetic a
   , Arbitrary a
   , Binary a
+  , Binary (Rep p)
   , Arbitrary (Rep i)
   , Binary (Rep i)
   , Haskell.Ord (Rep i)
@@ -64,7 +66,7 @@ instance
 
 arbitrary' ::
   forall a p i .
-  (Arithmetic a, Binary a, Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)) =>
   (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a p i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a p i))

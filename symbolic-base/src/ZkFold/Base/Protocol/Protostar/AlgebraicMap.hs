@@ -52,7 +52,7 @@ class
         -> [f]
 
 instance
-  (Representable i
+  ( Representable i
   , Ord (Rep i)
   , Foldable i
   , Arithmetic a

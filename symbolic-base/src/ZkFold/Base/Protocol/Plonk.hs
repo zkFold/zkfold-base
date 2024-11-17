@@ -6,6 +6,7 @@ module ZkFold.Base.Protocol.Plonk (
 ) where
 
 import           Data.Binary                                         (Binary)
+import           Data.Functor.Rep                                    (Rep)
 import           Data.Kind                                           (Type)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
@@ -43,6 +44,7 @@ fromPlonkup ::
     ( KnownNat i
     , Arithmetic (ScalarField c1)
     , Binary (ScalarField c1)
+    , Binary (Rep p)
     ) => Plonkup i p n l c1 c2 ts -> Plonk i p n l c1 c2 ts
 fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 
@@ -53,16 +55,17 @@ instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownN
     show Plonk {..} =
         "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac) ++ " " ++ show ac ++ " " ++ show x
 
-instance ( KnownNat i, Arithmetic (ScalarField c1), Binary (ScalarField c1)
+instance ( KnownNat i, Arithmetic (ScalarField c1)
+         , Binary (ScalarField c1), Binary (Rep p)
          , Arbitrary (Plonkup i p n l c1 c2 t))
         => Arbitrary (Plonk i p n l c1 c2 t) where
     arbitrary = fromPlonkup <$> arbitrary
 
 instance forall i p n l c1 c2 (ts :: Type) core .
         ( NonInteractiveProof (Plonkup i p n l c1 c2 ts) core
-        , SetupProve (Plonkup i p n l c1 c2 ts) ~ PlonkupProverSetup i n l c1 c2
-        , SetupVerify (Plonkup i p n l c1 c2 ts) ~ PlonkupVerifierSetup i n l c1 c2
-        , Witness (Plonkup i p n l c1 c2 ts) ~ (PlonkupWitnessInput i c1, PlonkupProverSecret c1)
+        , SetupProve (Plonkup i p n l c1 c2 ts) ~ PlonkupProverSetup p i n l c1 c2
+        , SetupVerify (Plonkup i p n l c1 c2 ts) ~ PlonkupVerifierSetup p i n l c1 c2
+        , Witness (Plonkup i p n l c1 c2 ts) ~ (PlonkupWitnessInput p i c1, PlonkupProverSecret c1)
         , Input (Plonkup i p n l c1 c2 ts) ~ PlonkupInput l c1
         , Proof (Plonkup i p n l c1 c2 ts) ~ PlonkupProof c1
         , KnownNat n
@@ -77,9 +80,9 @@ instance forall i p n l c1 c2 (ts :: Type) core .
         , CoreFunction c1 core
         ) => NonInteractiveProof (Plonk i p n l c1 c2 ts) core where
     type Transcript (Plonk i p n l c1 c2 ts)  = ts
-    type SetupProve (Plonk i p n l c1 c2 ts)  = PlonkupProverSetup i n l c1 c2
-    type SetupVerify (Plonk i p n l c1 c2 ts) = PlonkupVerifierSetup i n l c1 c2
-    type Witness (Plonk i p n l c1 c2 ts)     = (PlonkupWitnessInput i c1, PlonkupProverSecret c1)
+    type SetupProve (Plonk i p n l c1 c2 ts)  = PlonkupProverSetup p i n l c1 c2
+    type SetupVerify (Plonk i p n l c1 c2 ts) = PlonkupVerifierSetup p i n l c1 c2
+    type Witness (Plonk i p n l c1 c2 ts)     = (PlonkupWitnessInput p i c1, PlonkupProverSecret c1)
     type Input (Plonk i p n l c1 c2 ts)       = PlonkupInput l c1
     type Proof (Plonk i p n l c1 c2 ts)       = PlonkupProof c1
 
@@ -91,8 +94,8 @@ instance forall i p n l c1 c2 (ts :: Type) core .
 
     prove :: SetupProve (Plonk i p n l c1 c2 ts) -> Witness (Plonk i p n l c1 c2 ts) -> (Input (Plonk i p n l c1 c2 ts), Proof (Plonk i p n l c1 c2 ts))
     prove setup witness =
-        let (input, proof, _) = plonkProve @i @n @l @c1 @c2 @ts @core setup witness
+        let (input, proof, _) = plonkProve @p @i @n @l @c1 @c2 @ts @core setup witness
         in (input, proof)
 
     verify :: SetupVerify (Plonk i p n l c1 c2 ts) -> Input (Plonk i p n l c1 c2 ts) -> Proof (Plonk i p n l c1 c2 ts) -> Bool
-    verify = plonkVerify @i @n @l @c1 @c2 @ts
+    verify = plonkVerify @p @i @n @l @c1 @c2 @ts

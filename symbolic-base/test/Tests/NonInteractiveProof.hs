@@ -1,14 +1,16 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Tests.NonInteractiveProof (specNonInteractiveProof) where
 
 import           Data.ByteString                             (ByteString)
 import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
-import           GHC.Generics                                (U1)
+import           GHC.Generics                                (U1 (..))
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
-import           Test.QuickCheck                             (Arbitrary, Testable (property), withMaxSuccess)
+import           Test.QuickCheck                             (Arbitrary, Testable (property), arbitrary, withMaxSuccess)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.KZG                    (KZG)
@@ -30,6 +32,9 @@ specNonInteractiveProof' = hspec $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
             describe "All correct proofs" $ do
                 it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @a @core
+
+instance Arbitrary (U1 a) where
+  arbitrary = return U1
 
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
