@@ -115,7 +115,7 @@ data WitVar p i
 imapWitVar ::
   (Representable i, Representable j) =>
   (forall x. j x -> i x) -> WitVar p i -> WitVar p j
-imapWitVar _ (WExVar r) = WExVar r
+imapWitVar _ (WExVar r)  = WExVar r
 imapWitVar f (WSysVar v) = WSysVar (imapSysVar f v)
 
 data Var a i

@@ -37,7 +37,7 @@ import           ZkFold.Symbolic.Interpreter                 (Interpreter (Inter
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-type AC a = ArithmeticCircuit a U1 U1 
+type AC a = ArithmeticCircuit a U1 U1
 
 eval :: forall a n . Arithmetic a => ByteString n (AC a) -> ByteString n (Interpreter a)
 eval (ByteString bits) = ByteString $ Interpreter (exec bits)
