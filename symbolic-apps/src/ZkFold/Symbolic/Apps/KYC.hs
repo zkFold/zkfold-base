@@ -52,7 +52,18 @@ data User r context = User
     } deriving Generic
 
 instance (Symbolic context) => FromJSON (KYCData 256 context)
+
 instance (Symbolic (Interpreter (Zp p))) => ToJSON (KYCData 256 (Interpreter (Zp p)))
+
+instance HApplicative context => SymbolicData (KYCData n context)
+
+instance (
+  Symbolic context
+  , KnownNat n
+  , KnownNat (NumberOfRegisters (BaseField context) 256 'Auto)
+  , KnownNat (NumberOfRegisters (BaseField context) 64 'Auto)
+  ) => SymbolicInput (KYCData n context) where
+  isValid (KYCData t v h id) = isValid t && isValid v && isValid h && isValid id
 
 isCitizen :: (Symbolic c) => KYCByteString c -> Vector n (KYCByteString c) -> Bool c
 isCitizen = elem
