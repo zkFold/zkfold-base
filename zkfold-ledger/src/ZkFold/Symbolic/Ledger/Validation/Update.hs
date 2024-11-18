@@ -5,15 +5,15 @@ module ZkFold.Symbolic.Ledger.Validation.Update where
 import           Data.Functor.Rep                              (Representable)
 import           Data.Proxy                                    (Proxy)
 import           Data.Zip                                      (Zip)
-import           Prelude                                       hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
-                                                                (*), (+), (++), (==), concat)
-import           GHC.Generics                                  ((:*:), Par1)
+import           GHC.Generics                                  (Par1, (:*:))
+import           Prelude                                       hiding (Bool, Eq (..), all, concat, length, splitAt, zip,
+                                                                (&&), (*), (+), (++), (==))
 
 import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional              (bool)
 import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
-import           ZkFold.Symbolic.Data.List                     (List, (++), singleton, concat)
+import           ZkFold.Symbolic.Data.List                     (List, concat, singleton, (++))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
 
