@@ -2,13 +2,14 @@
 
 module ZkFold.Symbolic.Ledger.Validation.Update where
 
+import           Data.Functor.Rep                              (Representable)
 import           Data.Proxy                                    (Proxy)
 import           Data.Zip                                      (Zip)
 import           Prelude                                       hiding (Bool, Eq (..), all, length, splitAt, zip, (&&),
                                                                 (*), (+), (++), (==), concat)
 import           GHC.Generics                                  ((:*:), Par1)
 
-import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&), true)
+import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional              (bool)
 import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
@@ -98,6 +99,22 @@ updateIsValid ::
   => Zip (Layout (AddressIndex context, Hash context))
   => Zip  (Layout (AddressIndex context) :*: Par1)
   => SymbolicData (AddressIndex context)
+  => Support (Value context) ~ Proxy context
+  => Context (List context (Value context)) ~ context
+  => Context (Value context) ~ context
+  => Context (MultiAssetValue context) ~ context
+  => Applicative (Layout (Value context))
+  => Zip (Layout (Value context))
+  => SymbolicData (List context (Value context))
+  => SymbolicData (Value context)
+  => SymbolicData (MultiAssetValue context)
+  => Traversable (Layout (List context (Value context)))
+  => Traversable (Layout (Value context))
+  => Traversable (Layout (MultiAssetValue context))
+  => Representable (Layout (List context (Value context)))
+  => Representable (Layout (Value context))
+  => Representable (Layout (MultiAssetValue context))
+  => Eq (Bool context) (MultiAssetValue context)
   => Hash context
   -> Update context
   -> UpdateWitness context
@@ -109,5 +126,4 @@ updateIsValid uId u w =
       spentValues = txoValue . txiOutput <$> concat (txInputs <$> txs)
       prodValues = txoValue <$> concat (txOutputs <$> txs)
   in newUpdate uId w == u
-  && true
-    -- ^ check balance equation
+  && multiValueAsset (spentValues ++ mintValues) == multiValueAsset prodValues

@@ -1,11 +1,20 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Ledger.Types.Value where
 
-import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Data.Functor.Rep                      (Representable)
+import           Data.Proxy                            (Proxy)
+import           Data.Zip                              (Zip)
+import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+), null, (==), all)
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
-import           ZkFold.Symbolic.Data.Class            (SymbolicData (Layout))
+import           ZkFold.Symbolic.Data.Bool             (Bool, all)
+import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.List             (List, emptyList)
+import           ZkFold.Symbolic.Data.Conditional      (Conditional, bool)
+import           ZkFold.Symbolic.Data.Eq               (Eq ((==)))
+import           ZkFold.Symbolic.Data.List             (List, emptyList, singleton, null, uncons, (.:))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
 
@@ -28,5 +37,72 @@ data Value context = Value
   , tokenQuantity :: UInt 64 Auto context
   }
 
-newtype MultiAssetValue context = MultiAssetValue
-  {getMultiAssetValue :: List context (Value context)}
+newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (Value context))
+
+emptyMultiAssetValue ::
+     Symbolic context
+  => Applicative (Layout (Value context))
+  => MultiAssetValue context
+emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
+
+-- Add a single value to a multi-asset value
+addValue ::
+     forall context. Conditional (Bool context) (MultiAssetValue context)
+  => Symbolic context
+  => SymbolicData (Value context)
+  => Context (Value context) ~ context
+  => Support (Value context) ~ Proxy context
+  => Applicative (Layout (Value context))
+  => Traversable (Layout (Value context))
+  => Representable (Layout (Value context))
+  => Zip (Layout (Value context))
+  => Context (List context (Value context)) ~ context
+  => SymbolicData (List context (Value context))
+  => Traversable (Layout (List context (Value context)))
+  => Representable (Layout (List context (Value context)))
+  => Eq (Bool context) (CurrencySymbol context)
+  => Value context
+  -> MultiAssetValue context
+  -> MultiAssetValue context
+addValue val (UnsafeMultiAssetValue valList) =
+  let oneVal = UnsafeMultiAssetValue (singleton val)
+      (valHead, valTail) = uncons valList
+      valHeadAdded = valHead {tokenQuantity = tokenQuantity valHead + tokenQuantity val}
+      UnsafeMultiAssetValue valTailAdded = addValue val (UnsafeMultiAssetValue valTail)
+      multiVal = bool @(Bool context)
+        (UnsafeMultiAssetValue (valHeadAdded .: valTail))
+        (UnsafeMultiAssetValue (valHead .: valTailAdded))
+        (mintingPolicy val == mintingPolicy valHead)
+  in bool multiVal oneVal (null valList)
+
+multiValueAsset ::
+     Symbolic context
+  => SymbolicData (Value context)
+  => Context (Value context) ~ context
+  => Support (Value context) ~ Proxy context
+  => Applicative (Layout (Value context))
+  => Traversable (Layout (Value context))
+  => Representable (Layout (Value context))
+  => Zip (Layout (Value context))
+  => Context (List context (Value context)) ~ context
+  => SymbolicData (List context (Value context))
+  => Traversable (Layout (List context (Value context)))
+  => Representable (Layout (List context (Value context)))
+  => Eq (Bool context) (CurrencySymbol context)
+  => Context (MultiAssetValue context) ~ context
+  => SymbolicData (MultiAssetValue context)
+  => Traversable (Layout (MultiAssetValue context))
+  => Representable (Layout (MultiAssetValue context))
+  => Foldable (List context)
+  => List context (Value context)
+  -> MultiAssetValue context
+multiValueAsset = foldr addValue emptyMultiAssetValue
+
+isZeroMultiValueAsset ::
+     Symbolic context
+  => Foldable (List context)
+  => Eq (Bool context) (UInt 64 Auto context)
+  => MultiAssetValue context
+  -> Bool context
+isZeroMultiValueAsset (UnsafeMultiAssetValue valList) =
+  all ((== zero) . tokenQuantity) valList
