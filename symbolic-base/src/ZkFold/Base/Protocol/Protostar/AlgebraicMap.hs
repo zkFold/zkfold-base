@@ -52,7 +52,7 @@ class
         -> [f]
 
 instance
-  (Representable i
+  ( Representable i
   , Ord (Rep i)
   , Foldable i
   , Arithmetic a
@@ -66,8 +66,8 @@ instance
   , Scale f m
   , IsList m
   , Item m ~ f
-  ) => AlgebraicMap f pi m (ArithmeticCircuit a i o) where
-    type Degree (ArithmeticCircuit a i o) = 2
+  ) => AlgebraicMap f pi m (ArithmeticCircuit a p i o) where
+    type Degree (ArithmeticCircuit a p i o) = 2
 
     -- We can use the polynomial system from the circuit as a base for V_sps.
     --
@@ -83,7 +83,7 @@ instance
             varMap x = M.findWithDefault zero x witness
 
             f_sps :: Vector 3 [PM.Poly a (SysVar i) Natural]
-            f_sps = degreeDecomposition @(Degree (ArithmeticCircuit a i o)) $ sys
+            f_sps = degreeDecomposition @(Degree (ArithmeticCircuit a p i o)) $ sys
 
             f_sps_uni :: Vector 3 [f]
             f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
