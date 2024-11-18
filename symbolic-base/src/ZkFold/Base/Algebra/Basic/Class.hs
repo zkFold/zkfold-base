@@ -690,3 +690,77 @@ instance FromConstant b a => FromConstant b (p -> a) where
 instance Semiring a => Semiring (p -> a)
 
 instance Ring a => Ring (p -> a)
+
+---------------------------------------------------------------------------------
+
+instance Finite a => Finite (Maybe a) where
+    type Order (Maybe a) = Order a
+
+instance FromConstant Integer a => FromConstant Integer (Maybe a) where
+    fromConstant = Just . fromConstant
+
+instance FromConstant Natural a => FromConstant Natural (Maybe a) where
+    fromConstant = Just . fromConstant
+
+instance AdditiveSemigroup a => AdditiveSemigroup (Maybe a) where
+    (+) :: Maybe a -> Maybe a -> Maybe a
+    (+) = liftA2 (+)
+
+instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Maybe a) where
+    (*) :: Maybe a -> Maybe a -> Maybe a
+    (*) = liftA2 (*)
+
+instance Scale Natural a => Scale Natural (Maybe a) where
+    scale = fmap . scale
+
+instance Scale Integer a => Scale Integer (Maybe a) where
+    scale = fmap . scale
+
+instance AdditiveMonoid a => AdditiveMonoid (Maybe a) where
+    zero :: Maybe a
+    zero = Just zero
+
+instance Exponent a Natural => Exponent (Maybe a) Natural where
+    (^) :: Maybe a -> Natural -> Maybe a
+    (^) m n = liftA2 (^) m (Just n)
+
+instance Exponent a Integer => Exponent (Maybe a) Integer where
+    (^) :: Maybe a -> Integer -> Maybe a
+    (^) m n = liftA2 (^) m (Just n)
+
+instance MultiplicativeMonoid a => MultiplicativeMonoid (Maybe a) where
+    one :: Maybe a
+    one = Just one
+
+instance Semiring a => Semiring (Maybe a)
+
+instance AdditiveGroup a => AdditiveGroup (Maybe a) where
+    negate :: Maybe a -> Maybe a
+    negate = fmap negate
+
+instance Ring a => Ring (Maybe a)
+
+instance Field a => Field (Maybe a) where
+    finv :: Maybe a -> Maybe a
+    finv = fmap finv
+
+    rootOfUnity :: Natural -> Maybe (Maybe a)
+    rootOfUnity = Just . rootOfUnity @a
+
+instance ToConstant a => ToConstant (Maybe a) where
+    type Const (Maybe a) = Maybe (Const a)
+    toConstant :: Maybe a -> Maybe (Const a)
+    toConstant = fmap toConstant
+
+instance Scale a a => Scale a (Maybe a) where
+    scale s = fmap (scale s)
+
+instance FromConstant a (Maybe a) where
+    fromConstant = Just
+
+instance FromConstant Natural a => FromConstant (Maybe Natural) (Maybe a) where
+    fromConstant = fmap fromConstant
+
+instance SemiEuclidean Natural => SemiEuclidean (Maybe Natural) where
+    divMod (Just a) (Just b) = let (d, m) = divMod a b in (Just d, Just m)
+    divMod _ _               = (Nothing, Nothing)
