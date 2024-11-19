@@ -18,7 +18,6 @@ import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.Maybe
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -202,13 +201,6 @@ delete = undefined
 
 (\\) :: List context x -> List context x -> List context x
 _ \\ _ = undefined
-
--- TODO: Use the `find` from ZkFold.Symbolic.Data.Maybe
-findList :: (x -> Bool context) -> List context x -> Maybe context x
-findList = undefined
-
-findMap :: key -> List context (key, val) -> Maybe context val
-findMap = undefined
 
 (!!) :: List context x -> UInt n Auto context -> x
 (!!) = undefined

@@ -9,7 +9,7 @@ import           Prelude                               hiding (Bool, Eq, all, le
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
-import           ZkFold.Symbolic.Data.Bool             (Bool, all)
+import           ZkFold.Symbolic.Data.Bool             (Bool)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional      (Conditional, bool)
