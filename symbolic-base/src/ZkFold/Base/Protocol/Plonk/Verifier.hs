@@ -23,7 +23,7 @@ import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
-plonkVerify :: forall i n l c1 c2 ts .
+plonkVerify :: forall p i n l c1 c2 ts .
     ( KnownNat n
     , Pairing c1 c2
     , Ord (BaseField c1)
@@ -33,7 +33,7 @@ plonkVerify :: forall i n l c1 c2 ts .
     , ToTranscript ts (ScalarField c1)
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
-    ) => PlonkupVerifierSetup i n l c1 c2 -> PlonkupInput l c1 -> PlonkupProof c1 -> Bool
+    ) => PlonkupVerifierSetup p i n l c1 c2 -> PlonkupInput l c1 -> PlonkupProof c1 -> Bool
 plonkVerify
     PlonkupVerifierSetup {..}
     (PlonkupInput wPub)

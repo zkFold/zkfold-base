@@ -85,7 +85,9 @@ toPlonkConstraint p =
             return $ PlonkConstraint qm ql qr qo qc va vb vc
         getCoefs _ = Nothing
 
-    in head $ mapMaybe getCoefs perms
+    in case mapMaybe getCoefs perms of
+        [] -> toPlonkConstraint zero
+        _  -> head $ mapMaybe getCoefs perms
 
 fromPlonkConstraint :: (Ord a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var a (Vector i)) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =

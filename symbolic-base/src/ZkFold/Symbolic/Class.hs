@@ -2,6 +2,7 @@
 
 module ZkFold.Symbolic.Class where
 
+import           Control.DeepSeq                  (NFData)
 import           Control.Monad
 import           Data.Eq                          (Eq)
 import           Data.Foldable                    (Foldable)
@@ -21,7 +22,7 @@ import           ZkFold.Symbolic.MonadCircuit
 
 -- | Field of residues with decidable equality and ordering
 -- is called an ``arithmetic'' field.
-type Arithmetic a = (ResidueField Natural a, Eq a, Ord a)
+type Arithmetic a = (ResidueField Natural a, Eq a, Ord a, NFData a)
 
 -- | A type of mappings between functors inside a circuit.
 -- @fs@ are input functors, @g@ is an output functor, @c@ is context.
@@ -33,7 +34,7 @@ type Arithmetic a = (ResidueField Natural a, Eq a, Ord a)
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
 type CircuitFun (fs :: [Type -> Type]) (g :: Type -> Type) (c :: (Type -> Type) -> Type) =
-  forall i m. MonadCircuit i (BaseField c) (WitnessField c) m => FunBody fs g i m
+  forall i m. (NFData i, MonadCircuit i (BaseField c) (WitnessField c) m) => FunBody fs g i m
 
 type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m :: Type -> Type) where
   FunBody '[] g i m = m (g i)
@@ -46,6 +47,9 @@ class (HApplicative c, Package c, Arithmetic (BaseField c)) => Symbolic c where
     type BaseField c :: Type
     -- | Type of witnesses usable inside circuit construction
     type WitnessField c :: Type
+
+    -- | Computes witnesses (exact value may depend on the input to context).
+    witnessF :: Functor f => c f -> f (WitnessField c)
 
     -- | To perform computations in a generic context @c@ -- that is, to form a
     -- mapping between @c f@ and @c g@ for given @f@ and @g@ -- you need to

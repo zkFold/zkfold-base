@@ -40,6 +40,7 @@ instance Package (Interpreter a) where
 instance Arithmetic a => Symbolic (Interpreter a) where
   type BaseField (Interpreter a) = a
   type WitnessField (Interpreter a) = a
+  witnessF (Interpreter x) = x
   fromCircuitF (Interpreter x) c = Interpreter $ runWitnesses @a (c x)
   sanityF (Interpreter x) f _ = Interpreter (f x)
 

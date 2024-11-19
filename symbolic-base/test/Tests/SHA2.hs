@@ -14,7 +14,7 @@ import           Data.Proxy                                  (Proxy (..))
 import           Data.Type.Equality                          (type (~))
 import           GHC.Generics                                (U1)
 import           GHC.TypeLits                                (KnownSymbol, Symbol, symbolVal)
-import           Prelude                                     (String, fmap, otherwise, pure, read, (<>), (==))
+import           Prelude                                     (String, otherwise, pure, read, (<>), (==))
 import qualified Prelude                                     as Haskell
 import           System.Directory                            (listDirectory)
 import           System.Environment                          (lookupEnv)
@@ -32,6 +32,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2
+import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -51,7 +52,7 @@ getTestFiles = Haskell.filter isAlgoFile <$> listDirectory dataDir
         isAlgoFile s = (algorithm `isPrefixOf` s) && not ((algorithm <> "_") `isPrefixOf` s) && (".rsp" `isSuffixOf` s)
 
         algorithm :: String
-        algorithm = fmap (\c -> if c == '/' then '_' else c) $ symbolVal (Proxy @algorithm)
+        algorithm = (\c -> if c == '/' then '_' else c) <$> symbolVal (Proxy @algorithm)
 
 readRSP :: FilePath -> IO [(Natural, Natural, Natural)]
 readRSP path = do
@@ -71,7 +72,7 @@ readTestCase s = (numBits, msg, hash)
         msgShift :: Haskell.Int
         msgShift
           | numBits `mod` 8 == 0 = 0
-          | otherwise = 8 Haskell.- (Haskell.fromIntegral $ numBits `mod` 8)
+          | otherwise = 8 Haskell.- Haskell.fromIntegral (numBits `mod` 8)
 
         msg :: Natural
         msg = read ("0x" ++ msgS) `shiftR` msgShift
@@ -138,13 +139,13 @@ specSHA2Natural = do
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . ByteString n (ArithmeticCircuit a U1) -> Vector n a
+eval :: forall a n . Arithmetic a => ByteString n (ArithmeticCircuit a U1 U1) -> Vector n a
 eval (ByteString bits) = exec bits
 
 specSHA2bs
     :: forall (n :: Natural) (algorithm :: Symbol)
     .  KnownSymbol algorithm
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) n
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1) n
     => SHA2N algorithm (Interpreter (Zp BLS12_381_Scalar))
     => Spec
 specSHA2bs = do
@@ -152,7 +153,7 @@ specSHA2bs = do
         m = 2 ^ n -! 1
     it ("calculates " <> symbolVal (Proxy @algorithm) <> " of a " <> Haskell.show n <> "-bit bytestring (SLOW)") $ withMaxSuccess 2 $ do
         x <- toss m
-        let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar) U1) @n $ fromConstant x
+        let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1) @n $ fromConstant x
             ByteString (Interpreter hashZP) = sha2Natural @algorithm @(Interpreter (Zp BLS12_381_Scalar)) n x
         pure $ eval @(Zp BLS12_381_Scalar) @(ResultSize algorithm) hashAC === hashZP
 
@@ -163,10 +164,10 @@ specSHA2'
     :: forall (algorithm :: Symbol)
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter (Zp BLS12_381_Scalar))
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 1
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 63
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 64
-    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 1900
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1) 1
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1) 63
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1) 64
+    => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1) 1900
     => IO ()
 specSHA2' = hspec $ do
     specSHA2bs @1    @algorithm

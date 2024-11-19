@@ -3,6 +3,7 @@
 
 module ZkFold.Base.Protocol.Plonkup.Setup where
 
+import           Data.Functor.Rep                                    (Representable)
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
@@ -21,7 +22,7 @@ import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRel
 import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
-data PlonkupSetup i n l c1 c2 = PlonkupSetup
+data PlonkupSetup p i n l c1 c2 = PlonkupSetup
     { omega       :: ScalarField c1
     , k1          :: ScalarField c1
     , k2          :: ScalarField c1
@@ -31,7 +32,7 @@ data PlonkupSetup i n l c1 c2 = PlonkupSetup
     , sigma1s     :: PolyVec (ScalarField c1) n
     , sigma2s     :: PolyVec (ScalarField c1) n
     , sigma3s     :: PolyVec (ScalarField c1) n
-    , relation    :: PlonkupRelation i n l (ScalarField c1)
+    , relation    :: PlonkupRelation p i n l (ScalarField c1)
     , polynomials :: PlonkupCircuitPolynomials n c1
     , commitments :: PlonkupCircuitCommitments c1
     }
@@ -42,8 +43,8 @@ instance
         , Show (BaseField c1)
         , Show (BaseField c2)
         , Show (ScalarField c1)
-        , Show (PlonkupRelation i n l (ScalarField c1))
-        ) => Show (PlonkupSetup i n l c1 c2) where
+        , Show (PlonkupRelation p i n l (ScalarField c1))
+        ) => Show (PlonkupSetup p i n l c1 c2) where
     show PlonkupSetup {..} =
         "Setup: "
         ++ show omega ++ " "
@@ -59,20 +60,21 @@ instance
         ++ show polynomials ++ " "
         ++ show commitments
 
-plonkupSetup :: forall i n l c1 c2 ts core.
+plonkupSetup :: forall i p n l c1 c2 ts core.
     ( KnownNat i
     , KnownNat l
     , KnownNat n
+    , Representable p
     , Arithmetic (ScalarField c1)
     , Pairing c1 c2
-    , CoreFunction c1 core) => Plonkup i n l c1 c2 ts -> PlonkupSetup i n l c1 c2
+    , CoreFunction c1 core) => Plonkup p i n l c1 c2 ts -> PlonkupSetup p i n l c1 c2
 plonkupSetup Plonkup {..} =
     let xs   = fromList $ map (x^) [0 .. (value @n + 5)]
         gs   = fmap (`mul` gen) xs
         h0   = gen
         h1   = x `mul` gen
 
-        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation ac :: PlonkupRelation i n l (ScalarField c1)
+        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation ac :: PlonkupRelation p i n l (ScalarField c1)
 
         f i = case (i-!1) `Prelude.div` value @n of
             0 -> omega^i

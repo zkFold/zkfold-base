@@ -21,7 +21,20 @@ Flag Pedantic
     Manual: True
     Default: False
 
+common options
+    default-language:   Haskell2010
+    default-extensions:
+      NoImplicitPrelude
+    ghc-options:
+      -Wall
+      -O2
+      -threaded
+    if flag(Pedantic)
+      ghc-options:
+        -Werror
+
 library
+    import:             options
     exposed-modules:
       ZkFold.Symbolic.UPLC.Converter
       ZkFold.Symbolic.UPLC.Data
@@ -36,13 +49,16 @@ library
       symbolic-base,
       text
     hs-source-dirs:     src
-    default-language:   Haskell2010
-    default-extensions:
-      NoImplicitPrelude
-    ghc-options:
-      -Wall
-      -O2
-      -threaded
-    if flag(Pedantic)
-      ghc-options:
-        -Werror
+
+test-suite zkfold-uplc-test
+    import:             options
+    type:               exitcode-stdio-1.0
+    main-is:            Test.hs
+    build-depends:
+      adjunctions  ,
+      base         ,
+      hspec        ,
+      symbolic-base,
+      QuickCheck   ,
+      zkfold-uplc
+    hs-source-dirs:     test

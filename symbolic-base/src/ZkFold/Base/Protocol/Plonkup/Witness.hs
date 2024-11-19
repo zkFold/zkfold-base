@@ -9,10 +9,15 @@ import           ZkFold.Base.Algebra.Basic.Number        (KnownNat)
 import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
 import           ZkFold.Base.Data.Vector                 (Vector)
 
-newtype PlonkupWitnessInput i c = PlonkupWitnessInput (Vector i (ScalarField c))
+data PlonkupWitnessInput p i c = PlonkupWitnessInput
+  { payloadInput :: p (ScalarField c)
+  , witnessInput :: Vector i (ScalarField c)
+  }
 
-instance Show (ScalarField c) => Show (PlonkupWitnessInput i c) where
-    show (PlonkupWitnessInput v) = "Plonkup Witness Input: " ++ show v
+instance (Show (ScalarField c), Show (p (ScalarField c)))
+  => Show (PlonkupWitnessInput p i c) where
+    show (PlonkupWitnessInput p v) = "Plonkup Witness Input: " ++ show p ++ ", " ++ show v
 
-instance (KnownNat i, Arbitrary (ScalarField c)) => Arbitrary (PlonkupWitnessInput i c) where
-    arbitrary = PlonkupWitnessInput <$> arbitrary
+instance (KnownNat i, Arbitrary (ScalarField c), Arbitrary (p (ScalarField c)))
+  => Arbitrary (PlonkupWitnessInput p i c) where
+    arbitrary = PlonkupWitnessInput <$> arbitrary <*> arbitrary

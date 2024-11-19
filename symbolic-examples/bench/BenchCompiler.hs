@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-
 module Main where
 
 import           Control.DeepSeq                 (NFData, force)
@@ -14,11 +12,12 @@ import           Test.Tasty.Bench
 import           Test.Tasty.Golden               (goldenVsString)
 import           Text.Show                       (show)
 
-import           ZkFold.Base.Algebra.Basic.Class (AdditiveMonoid, zero)
+import           ZkFold.Base.Algebra.Basic.Class (zero)
+import           ZkFold.Symbolic.Class           (Arithmetic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Examples
 
-metrics :: String -> ArithmeticCircuit a i o -> ByteString
+metrics :: String -> ArithmeticCircuit a p i o -> ByteString
 metrics name circuit =
   fromString name
   <> "\nNumber of constraints: " <> fromString (show $ acSizeN circuit)
@@ -27,8 +26,9 @@ metrics name circuit =
 
 
 benchmark ::
-  (NFData a, AdditiveMonoid a, NFData (o (Var a i)), NFData (Rep i), Representable i) =>
-  String -> (() -> ArithmeticCircuit a i o) -> Benchmark
+  ( Arithmetic a, NFData (o (Var a i)), NFData (Rep i)
+  , Representable p, Representable i) =>
+  String -> (() -> ArithmeticCircuit a p i o) -> Benchmark
 benchmark name circuit = bgroup name
   [ bench "compilation" $ nf circuit ()
   , env (return $ force $ circuit ()) $ \c ->
