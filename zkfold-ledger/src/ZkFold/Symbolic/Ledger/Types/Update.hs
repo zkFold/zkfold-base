@@ -13,7 +13,7 @@ import           ZkFold.Symbolic.Ledger.Types.Input     (Input)
 import           ZkFold.Symbolic.Ledger.Types.Output    (Output)
 import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
 
--- type AddressIndex = UInt 40 Auto
+-- TODO: make type AddressIndex = UInt 40 Auto
 data AddressIndex context
 
 getAddressIndex :: Input context -> AddressIndex context
