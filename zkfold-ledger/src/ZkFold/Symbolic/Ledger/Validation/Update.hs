@@ -127,3 +127,4 @@ updateIsValid uId u w =
       prodValues = txoValue <$> concat (txOutputs <$> txs)
   in newUpdate uId w == u
   && multiValueAsset (spentValues ++ mintValues) == multiValueAsset prodValues
+  -- ^ TODO: make sure equality of multi-asset values is "invariant under asset reordering"

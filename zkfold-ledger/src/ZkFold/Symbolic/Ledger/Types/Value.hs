@@ -75,6 +75,7 @@ addValue val (UnsafeMultiAssetValue valList) =
         (mintingPolicy val == mintingPolicy valHead)
   in bool multiVal oneVal (null valList)
 
+-- Safe constructor for a multi-asset value
 multiValueAsset ::
      Symbolic context
   => SymbolicData (Value context)
@@ -97,12 +98,3 @@ multiValueAsset ::
   => List context (Value context)
   -> MultiAssetValue context
 multiValueAsset = foldr addValue emptyMultiAssetValue
-
-isZeroMultiValueAsset ::
-     Symbolic context
-  => Foldable (List context)
-  => Eq (Bool context) (UInt 64 Auto context)
-  => MultiAssetValue context
-  -> Bool context
-isZeroMultiValueAsset (UnsafeMultiAssetValue valList) =
-  all ((== zero) . tokenQuantity) valList
