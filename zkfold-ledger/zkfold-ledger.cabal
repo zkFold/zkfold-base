@@ -100,8 +100,6 @@ library
       ZkFold.Symbolic.Ledger.Validation.Contract
       ZkFold.Symbolic.Ledger.Validation.Common
       ZkFold.Symbolic.Ledger.Validation.Input
-      -- ZkFold.Symbolic.Ledger.Validation.PrivateInput
-      -- ZkFold.Symbolic.Ledger.Validation.PublicInput
       ZkFold.Symbolic.Ledger.Validation.Transaction
       ZkFold.Symbolic.Ledger.Validation.Update
     build-depends:
