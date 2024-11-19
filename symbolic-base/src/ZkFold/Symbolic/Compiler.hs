@@ -19,8 +19,8 @@ import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Traversable                           (for)
 import           GHC.Generics                               (Par1 (Par1))
-import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), Traversable,
-                                                             putStrLn, return, type (~), ($), (++))
+import           Prelude                                    (FilePath, IO, Show (..), Traversable, putStrLn, return,
+                                                             type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
@@ -60,7 +60,7 @@ solder f = fromCircuit2F (pieces f input) b $ \r (Par1 i) -> do
     return r
   where
     Bool b = isValid input
-    input = restore @(Support f) $ const mempty { acOutput = acInput }
+    input = restore @(Support f) $ const idCircuit
 
 -- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
