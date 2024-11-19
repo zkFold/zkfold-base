@@ -10,7 +10,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate        hiding (qr)
 import           ZkFold.Base.Protocol.Plonkup.Relation             (PlonkupRelation (..))
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 
-data PlonkupVerifierSetup i n l c1 c2 = PlonkupVerifierSetup
+data PlonkupVerifierSetup p i n l c1 c2 = PlonkupVerifierSetup
     { omega       :: ScalarField c1
     , k1          :: ScalarField c1
     , k2          :: ScalarField c1
@@ -18,7 +18,7 @@ data PlonkupVerifierSetup i n l c1 c2 = PlonkupVerifierSetup
     , sigma1s     :: PolyVec (ScalarField c1) n
     , sigma2s     :: PolyVec (ScalarField c1) n
     , sigma3s     :: PolyVec (ScalarField c1) n
-    , relation    :: PlonkupRelation i n l (ScalarField c1)
+    , relation    :: PlonkupRelation p i n l (ScalarField c1)
     , commitments :: PlonkupCircuitCommitments c1
     }
 
@@ -28,8 +28,8 @@ instance
         , Show (BaseField c1)
         , Show (BaseField c2)
         , Show (ScalarField c1)
-        , Show (PlonkupRelation i n l (ScalarField c1))
-        ) => Show (PlonkupVerifierSetup i n l c1 c2) where
+        , Show (PlonkupRelation p i n l (ScalarField c1))
+        ) => Show (PlonkupVerifierSetup p i n l c1 c2) where
     show PlonkupVerifierSetup {..} =
         "Verifier setup: "
         ++ show omega ++ " "

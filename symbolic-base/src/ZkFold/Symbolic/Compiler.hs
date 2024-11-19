@@ -14,13 +14,13 @@ import           Data.Aeson                                 (FromJSON, ToJSON, T
 import           Data.Binary                                (Binary)
 import           Data.Function                              (const, (.))
 import           Data.Functor                               (($>))
-import           Data.Functor.Rep                           (Rep, Representable)
+import           Data.Functor.Rep                           (Rep)
 import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Traversable                           (for)
 import           GHC.Generics                               (Par1 (Par1))
-import           Prelude                                    (FilePath, IO, Monoid (mempty), Show (..), Traversable,
-                                                             putStrLn, return, type (~), ($), (++))
+import           Prelude                                    (FilePath, IO, Show (..), Traversable, putStrLn, return,
+                                                             type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
@@ -46,8 +46,8 @@ forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) 
 
 -- | Arithmetizes an argument by feeding an appropriate amount of inputs.
 solder ::
-    forall a c f s .
-    ( c ~ ArithmeticCircuit a (Layout s)
+    forall a c p f s .
+    ( c ~ ArithmeticCircuit a p (Layout s)
     , SymbolicData f
     , Context f ~ c
     , Support f ~ s
@@ -60,12 +60,12 @@ solder f = fromCircuit2F (pieces f input) b $ \r (Par1 i) -> do
     return r
   where
     Bool b = isValid input
-    input = restore @(Support f) $ const mempty { acOutput = acInput }
+    input = restore @(Support f) $ const idCircuit
 
 -- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
-    forall a c f s l y .
-    ( c ~ ArithmeticCircuit a l
+    forall a c p f s l y .
+    ( c ~ ArithmeticCircuit a p l
     , Arithmetic a
     , Binary a
     , SymbolicData f
@@ -74,7 +74,7 @@ compileForceOne ::
     , SymbolicInput s
     , Context s ~ c
     , Layout s ~ l
-    , Representable l
+    , Binary (Rep p)
     , Binary (Rep l)
     , Ord (Rep l)
     , SymbolicData y
@@ -87,8 +87,8 @@ compileForceOne = restore . const . optimize . forceOne . solder @a
 
 -- | Compiles function `f` into an arithmetic circuit.
 compile ::
-    forall a c f s l y .
-    ( c ~ ArithmeticCircuit a l
+    forall a c p f s l y .
+    ( c ~ ArithmeticCircuit a p l
     , SymbolicData f
     , Context f ~ c
     , Support f ~ s
@@ -105,8 +105,8 @@ compile = restore . const . optimize . solder @a
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::
-    forall a c f s l .
-    ( c ~ ArithmeticCircuit a l
+    forall a c p f s l .
+    ( c ~ ArithmeticCircuit a p l
     , FromJSON a
     , ToJSON a
     , ToJSONKey a
