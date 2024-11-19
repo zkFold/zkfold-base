@@ -92,7 +92,7 @@ getBitsBE ::
   x -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = symbolicF (pieces x Proxy)
+getBitsBE x = symbolicF (arithmetize x Proxy)
     (concatMap (reverse . padBits n . map fromConstant . binaryExpansion . toConstant))
     (fmap (concatMap reverse) . traverse (expansion n) . toList)
   where n = numberOfBits @(BaseField c)

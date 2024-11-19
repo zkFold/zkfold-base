@@ -36,8 +36,8 @@ class SymbolicData x where
     type Layout x = GLayout (G.Rep x)
 
     -- | Returns the circuit that makes up `x`.
-    pieces :: x -> Support x -> Context x (Layout x)
-    default pieces
+    arithmetize :: x -> Support x -> Context x (Layout x)
+    default arithmetize
       :: ( G.Generic x
          , GSymbolicData (G.Rep x)
          , Context x ~ GContext (G.Rep x)
@@ -45,7 +45,7 @@ class SymbolicData x where
          , Layout x ~ GLayout (G.Rep x)
          )
       => x -> Support x -> Context x (Layout x)
-    pieces x supp = gpieces (G.from x) supp
+    arithmetize x = garithmetize (G.from x)
 
     -- | Restores `x` from the circuit's outputs.
     restore :: (Support x -> Context x (Layout x)) -> x
@@ -64,7 +64,7 @@ instance SymbolicData (c (f :: Type -> Type)) where
     type Support (c f) = Proxy c
     type Layout (c f) = f
 
-    pieces x _ = x
+    arithmetize x _ = x
     restore f = f Proxy
 
 instance HApplicative c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
@@ -72,7 +72,7 @@ instance HApplicative c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) wh
     type Support (Proxy c) = Proxy c
     type Layout (Proxy c) = U1
 
-    pieces _ _ = hpure U1
+    arithmetize _ _ = hpure U1
     restore _ = Proxy
 
 instance
@@ -135,7 +135,7 @@ instance
     type Support (Vector n x) = Support x
     type Layout (Vector n x) = Vector n :.: Layout x
 
-    pieces xs i = pack (flip pieces i <$> xs)
+    arithmetize xs i = pack (flip arithmetize i <$> xs)
     restore f = tabulate (\i -> restore (hmap (flip index i . unComp1) . f))
 
 instance SymbolicData f => SymbolicData (x -> f) where
@@ -143,7 +143,7 @@ instance SymbolicData f => SymbolicData (x -> f) where
     type Support (x -> f) = (x, Support f)
     type Layout (x -> f) = Layout f
 
-    pieces f (x, i) = pieces (f x) i
+    arithmetize f (x, i) = arithmetize (f x) i
     restore f x = restore (f . (x,))
 
 class GSymbolicData u where
@@ -151,7 +151,7 @@ class GSymbolicData u where
     type GSupport u :: Type
     type GLayout u :: Type -> Type
 
-    gpieces :: u x -> GSupport u -> GContext u (GLayout u)
+    garithmetize :: u x -> GSupport u -> GContext u (GLayout u)
     grestore :: (GSupport u -> GContext u (GLayout u)) -> u x
 
 instance
@@ -166,19 +166,19 @@ instance
     type GSupport (u :*: v) = GSupport u
     type GLayout (u :*: v) = GLayout u :*: GLayout v
 
-    gpieces (a :*: b) = hliftA2 (:*:) <$> gpieces a <*> gpieces b
+    garithmetize (a :*: b) = hliftA2 (:*:) <$> garithmetize a <*> garithmetize b
     grestore f = grestore (hmap fstP . f) :*: grestore (hmap sndP . f)
 
 instance GSymbolicData f => GSymbolicData (G.M1 i c f) where
     type GContext (G.M1 i c f) = GContext f
     type GSupport (G.M1 i c f) = GSupport f
     type GLayout (G.M1 i c f) = GLayout f
-    gpieces (G.M1 a) = gpieces a
+    garithmetize (G.M1 a) = garithmetize a
     grestore f = G.M1 (grestore f)
 
 instance SymbolicData x => GSymbolicData (G.Rec0 x) where
     type GContext (G.Rec0 x) = Context x
     type GSupport (G.Rec0 x) = Support x
     type GLayout (G.Rec0 x) = Layout x
-    gpieces (G.K1 x) = pieces x
+    garithmetize (G.K1 x) = arithmetize x
     grestore f = G.K1 (restore f)

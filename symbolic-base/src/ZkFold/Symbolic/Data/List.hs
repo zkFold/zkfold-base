@@ -3,6 +3,7 @@
 module ZkFold.Symbolic.Data.List where
 
 import           Control.Applicative              (Applicative)
+import           Data.Function                    (const)
 import           Data.Functor.Rep                 (Representable)
 import           Data.Kind                        (Type)
 import           Data.Proxy                       (Proxy (..))
@@ -65,7 +66,7 @@ infixr 5 .:
 x .: List{..} = List incSum incSize (x:lWitness)
     where
         xRepr :: context (Layout x)
-        xRepr = pieces x (Proxy @context)
+        xRepr = arithmetize x (Proxy @context)
 
         incSum :: context (Layout x)
         incSum = fromCircuit3F lHash xRepr lSize $
@@ -105,11 +106,11 @@ head
     => Context x ~ context
     => Support x ~ Proxy context
     => List context x -> x
-head xs@List{..} = bool (restore $ \_ -> unsafeHead) (restore $ \_ -> embed $ pure zero) (null xs)
+head xs@List{..} = bool (restore $ const unsafeHead) (restore $ \_ -> embed $ pure zero) (null xs)
     where
         xRepr :: context (Layout x)
         xRepr = case lWitness of
-                  (x:_) -> pieces x Proxy
+                  (x:_) -> arithmetize x Proxy
                   _     -> embed $ pure zero
 
         -- | Head is a circuit comprised of variables satisfying the equation for prepending (i.e. (.:))
@@ -145,7 +146,7 @@ tail xs@List{..} = bool unsafeTail xs (null xs)
 
         xRepr :: context (Layout x)
         xRepr = case lWitness of
-                  (x:_) -> pieces x Proxy
+                  (x:_) -> arithmetize x Proxy
                   _     -> embed $ pure zero
 
         decSum :: context (Layout x)

@@ -58,7 +58,7 @@ compileWith ::
   -- | Function to compile.
   f -> y
 compileWith opts sLayout f =
-  restore . const . optimize . opts $ fromCircuit2F (pieces f input) b $
+  restore . const . optimize . opts $ fromCircuit2F (arithmetize f input) b $
     \r (Par1 i) -> do
       constraint (\x -> one - x i)
       return r

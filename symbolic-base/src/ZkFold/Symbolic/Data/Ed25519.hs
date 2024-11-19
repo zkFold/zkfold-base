@@ -43,8 +43,8 @@ instance
     -- It will need additional checks in pointDouble because of the denominator becoming zero, though.
     -- TODO: Think of a better solution
     --
-    pieces Inf         = pieces (zero :: FFA Ed25519_Base c, zero :: FFA Ed25519_Base c)
-    pieces (Point x y) = pieces (x, y)
+    arithmetize Inf         = arithmetize (zero :: FFA Ed25519_Base c, zero :: FFA Ed25519_Base c)
+    arithmetize (Point x y) = arithmetize (x, y)
 
     restore f = Point x y
         where

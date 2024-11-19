@@ -39,7 +39,7 @@ instance ( SymbolicData x, Context x ~ c, Symbolic c
          , Representable (Layout x), Traversable (Layout x)
          ) => Conditional (Bool c) x where
     bool x y (Bool b) = restore $ \s ->
-      fromCircuit3F b (pieces x s) (pieces y s) $ \(Par1 c) ->
+      fromCircuit3F b (arithmetize x s) (arithmetize y s) $ \(Par1 c) ->
         mzipWithMRep $ \i j -> do
           i' <- newAssigned (\w -> (one - w c) * w i)
           j' <- newAssigned (\w -> w c * w j)

@@ -19,7 +19,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.Blake2b
 import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
-import           ZkFold.Symbolic.Data.Class                  (pieces)
+import           ZkFold.Symbolic.Data.Class                  (arithmetize)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
 -- TODO: We need a proper test for both numeric and symbolic blake2b hashing
@@ -34,7 +34,7 @@ blake2bSimple =
 blake2bAC :: Spec
 blake2bAC =
     let cs = compile blake2b_512 :: ByteString 512 (ArithmeticCircuit (Zp BLS12_381_Scalar) U1 (Vector 8 :*: U1))
-        ac = pieces cs Proxy
+        ac = arithmetize cs Proxy
     in it "simple test with cardano-crypto " $ acSizeN ac == 564239
 
 specBlake2b :: IO ()

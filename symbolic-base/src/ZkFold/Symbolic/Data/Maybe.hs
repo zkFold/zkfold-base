@@ -11,7 +11,7 @@ import           Data.Function                    ((.))
 import           Data.Functor.Rep                 (Representable, pureRep)
 import           Data.Proxy                       (Proxy)
 import           Data.Traversable                 (Traversable)
-import           GHC.Generics                     (Par1 (..))
+import           GHC.Generics                     (Par1 (..), Generic)
 import           Prelude                          (foldr, type (~), ($))
 import qualified Prelude                          as Haskell
 
@@ -30,6 +30,7 @@ data Maybe context x = Maybe { isJust :: Bool context, fromJust :: x }
     ( Haskell.Functor
     , Haskell.Foldable
     , Haskell.Traversable
+    , Generic
     )
 
 deriving stock instance (Haskell.Eq (context Par1), Haskell.Eq x) => Haskell.Eq (Maybe context x)
@@ -55,8 +56,8 @@ fromMaybe
     -> x
 fromMaybe a (Maybe (Bool h) t) = restore $ \i ->
   let
-    as = pieces a i
-    ts = pieces t i
+    as = arithmetize a i
+    ts = arithmetize t i
   in
     (ts - as) * hmap (V.singleton . unPar1) h + as
 
@@ -69,13 +70,6 @@ instance
     , Context x ~ c
     , Support x ~ Proxy c
     ) => SymbolicData (Maybe c x) where
-
-    type Context (Maybe c x) = Context (Bool c, x)
-    type Support (Maybe c x) = Support (Bool c, x)
-    type Layout (Maybe c x) = Layout (Bool c, x)
-
-    pieces (Maybe b t) = pieces (b, t)
-    restore f = let (b, t) = restore f in Maybe b t
 
 maybe :: forall a b c .
     (Symbolic c, SymbolicData b, Context b ~ c) =>
