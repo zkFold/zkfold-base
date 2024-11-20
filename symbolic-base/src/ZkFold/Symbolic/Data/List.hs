@@ -3,9 +3,9 @@
 module ZkFold.Symbolic.Data.List where
 
 import           Control.Applicative              (Applicative)
+import           Data.Bifunctor                   (first)
 import           Data.Function                    (const)
-import           Data.Functor.Rep                 (Representable)
-import           Data.Kind                        (Type)
+import           Data.Functor.Rep                 (Representable, pureRep)
 import           Data.Proxy                       (Proxy (..))
 import           Data.Traversable                 (Traversable)
 import           Data.Zip                         (Zip)
@@ -21,16 +21,15 @@ import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.MonadCircuit
 
-data List (context :: (Type -> Type) -> Type) x
-    = List
-        { lHash    :: context (Layout x)
-        , lSize    :: context Par1
-        , lWitness :: [x]
-        -- ^ TODO: As the name suggests, this is only needed in witness cinstruction in uncons.
-        -- This list is never used in circuit itlest.
-        -- Think of a better solution for carrying witnesses.
-        -- Besides, List is not an instance of SymbolicData while this list is present
-        }
+data List c x = List
+  { lHash    :: c (Layout x)
+  , lSize    :: c Par1
+  , lWitness :: [(Layout x (WitnessField c), Support x -> (Layout x (WitnessField c), Payload x (WitnessField c)))]
+  -- ^ TODO: As the name suggests, this is only needed in witness cinstruction in uncons.
+  -- This list is never used in circuit itlest.
+  -- Think of a better solution for carrying witnesses.
+  -- Besides, List is not an instance of SymbolicData while this list is present
+  }
 
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.
@@ -63,7 +62,7 @@ infixr 5 .:
     => x
     -> List context x
     -> List context x
-x .: List{..} = List incSum incSize (x:lWitness)
+x .: List{..} = List incSum incSize ((witnessF lHash, \s -> (witnessF (arithmetize x s), payload x s)):lWitness)
     where
         xRepr :: context (Layout x)
         xRepr = arithmetize x (Proxy @context)
@@ -98,27 +97,12 @@ uncons l = (head l, tail l)
 head
     :: forall context x
     .  Symbolic context
-    => Applicative (Layout x)
-    => Traversable (Layout x)
-    => Representable (Layout x)
-    => Zip (Layout x)
     => SymbolicData x
     => Context x ~ context
-    => Support x ~ Proxy context
     => List context x -> x
-head xs@List{..} = bool (restore $ const unsafeHead) (restore $ \_ -> embed $ pure zero) (null xs)
-    where
-        xRepr :: context (Layout x)
-        xRepr = case lWitness of
-                  (x:_) -> arithmetize x Proxy
-                  _     -> embed $ pure zero
-
-        -- | Head is a circuit comprised of variables satisfying the equation for prepending (i.e. (.:))
-        -- We have to pass witnesses to it as well.
-        --
-        unsafeHead :: context (Layout x)
-        unsafeHead = fromCircuit3F lHash xRepr lSize $
-            \vHash vRepr (Par1 s) -> zipWithM (\h r -> newConstrained (\p v -> p h + p v * (p s + one)) (at r)) vHash vRepr
+head l = case lWitness l of
+  []    -> restore $ const (embed (pureRep zero), pureRep zero)
+  (w:_) -> restore $ first _ . w
 
 tail
     :: forall context x

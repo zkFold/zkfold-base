@@ -72,6 +72,7 @@ instance
     , Support x ~ Proxy c
     , Representable (Layout x)
     , Traversable (Layout x)
+    , Representable (Payload x)
     ) => Ord (Bool c) (Lexicographical x) where
 
     x <= y = y >= x
