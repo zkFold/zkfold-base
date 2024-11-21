@@ -8,6 +8,7 @@ module ZkFold.Symbolic.Compiler (
     compileForceOne,
     compileCircuit,
     compileWithPayload,
+    solderWithPayload,
     solderWith,
     solder,
 ) where
@@ -72,6 +73,14 @@ solder ::
   ) => f -> c (Layout f)
 solder = solderWith idCircuit
 
+solderWithPayload ::
+  ( SymbolicData f, Context f ~ c, Support f ~ s
+  , SymbolicInput s, Context s ~ c, Layout s ~ l
+  , c ~ ArithmeticCircuit a l p, Arithmetic a, Binary a
+  , Traversable l, Binary (Rep p), Ord (Rep p), NFData (Rep p)
+  ) => f -> c (Layout f)
+solderWithPayload = solderWith payloadCircuit
+
 -- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
 compileForceOne ::
   forall a c p f s l y .
@@ -105,7 +114,7 @@ compileWithPayload ::
   , SymbolicData y, Context y ~ c, Support y ~ Proxy c
   , Layout f ~ Layout y
   ) => f -> y
-compileWithPayload = compileCircuit . solderWith payloadCircuit
+compileWithPayload = compileCircuit . solderWithPayload
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::

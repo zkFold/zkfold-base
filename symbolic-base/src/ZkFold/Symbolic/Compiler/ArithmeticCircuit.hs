@@ -33,7 +33,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         acOutput,
         -- Testing functions
         checkCircuit,
-        checkClosedCircuit
+        checkClosedCircuit,
+        isConstantInput
     ) where
 
 import           Control.DeepSeq                                     (NFData)
@@ -169,6 +170,12 @@ acPrint ac = do
     pPrint v
 
 ---------------------------------- Testing -------------------------------------
+
+isConstantInput ::
+  ( Arithmetic a, Show a, Representable p, Representable i
+  , Show (p a), Show (i a), Arbitrary (p a), Arbitrary (i a)
+  ) => ArithmeticCircuit a p i o -> Property
+isConstantInput c = property $ \x y p -> witnessGenerator c p x === witnessGenerator c p y
 
 checkClosedCircuit
     :: forall a o
