@@ -82,9 +82,7 @@ instance (
   ) => SymbolicInput (Vector n x) where
   isValid v = foldl (\l r -> l && isValid r) true $ fromVector v
 
-class
-    ( GSymbolicData u
-    ) => GSymbolicInput u where
+class GSymbolicData u => GSymbolicInput u where
     gisValid :: u x -> Bool (GContext u)
 
 instance
