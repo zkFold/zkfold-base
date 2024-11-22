@@ -5,18 +5,18 @@ module ZkFold.Symbolic.Data.Input (
     SymbolicInput (..)
 ) where
 
-import           Control.DeepSeq                    (NFData)
-import qualified Data.Functor.Rep              as R
-import           Data.Ord                           (Ord)
-import           Data.Type.Equality                 (type (~))
-import           Data.Typeable                      (Proxy (..))
-import qualified GHC.Generics                  as G
-import           GHC.TypeLits                       (KnownNat)
-import           Prelude                            (foldl, ($), (.))
+import           Control.DeepSeq                  (NFData)
+import qualified Data.Functor.Rep                 as R
+import           Data.Ord                         (Ord)
+import           Data.Type.Equality               (type (~))
+import           Data.Typeable                    (Proxy (..))
+import qualified GHC.Generics                     as G
+import           GHC.TypeLits                     (KnownNat)
+import           Prelude                          (foldl, ($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString        (Binary)
-import           ZkFold.Base.Data.Vector            (Vector, fromVector)
+import           ZkFold.Base.Data.ByteString      (Binary)
+import           ZkFold.Base.Data.Vector          (Vector, fromVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
