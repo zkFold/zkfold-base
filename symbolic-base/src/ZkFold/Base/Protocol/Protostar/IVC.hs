@@ -70,18 +70,18 @@ ivcInitialize :: forall f i m c (d :: Natural) k a .
     ) => FiatShamir (CommitOpen a) -> i f -> IVCResult f i m c d k
 ivcInitialize fs pi0 = IVCResult pi0 (tabulate $ const zero) (emptyAccumulator @_ @_ @_ @_ @d fs) (noIVCProof fs)
 
-ivcIterate :: forall f i m c (d :: Natural) k a .
-    ( SpecialSoundProtocol f i m c d k a
+ivcIterate :: forall f i p m c (d :: Natural) k a .
+    ( SpecialSoundProtocol f i p m c d k a
     , Ring f
     , HomomorphicCommit m c
     , RandomOracle (i f) f
     , RandomOracle c f
     , KnownNat k
     , AccumulatorScheme f i m c d k (FiatShamir (CommitOpen a))
-    ) => FiatShamir (CommitOpen a) -> IVCResult f i m c d k -> IVCResult f i m c d k
-ivcIterate fs (IVCResult pi0 _ acc0 _) =
+    ) => FiatShamir (CommitOpen a) -> IVCResult f i m c d k -> p f -> IVCResult f i m c d k
+ivcIterate fs (IVCResult pi0 _ acc0 _) witness =
     let
-        narkIP@(NARKInstanceProof pi (NARKProof cs _)) = narkInstanceProof @_ @_ @_ @_ @d fs pi0
+        narkIP@(NARKInstanceProof pi (NARKProof cs _)) = narkInstanceProof @_ @_ @_ @_ @_ @d fs pi0 witness
         (acc, pf) = Acc.prover fs acc0 narkIP
         proof = IVCProof (acc0^.x) pf
     in

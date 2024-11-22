@@ -26,27 +26,27 @@ data NARKProof m c k
         }
     deriving (Show, Generic, NFData)
 
-narkProof :: forall f i m c d k a .
-    ( SpecialSoundProtocol f i m c d k a
+narkProof :: forall f i p m c d k a .
+    ( SpecialSoundProtocol f i p m c d k a
     , Ring f
     , HomomorphicCommit m c
     , RandomOracle (i f) f
     , RandomOracle c f
     , KnownNat k
-    ) => FiatShamir (CommitOpen a) -> i f -> NARKProof m c k
-narkProof a pi0 =
-    let (ms, cs) = unzip $ prover @f @i @_ @c @d @1 a pi0 (oracle pi0) 0
+    ) => FiatShamir (CommitOpen a) -> i f -> p f -> NARKProof m c k
+narkProof a pi0 w =
+    let (ms, cs) = unzip $ prover @f @i @_ @_ @c @d @1 a pi0 w (oracle pi0) 0
     in NARKProof cs ms
 
 data NARKInstanceProof f i m c k = NARKInstanceProof (i f) (NARKProof m c k)
     deriving (Show, Generic, NFData)
 
-narkInstanceProof :: forall f i m c d k a .
-    ( SpecialSoundProtocol f i m c d k a
+narkInstanceProof :: forall f i p m c d k a .
+    ( SpecialSoundProtocol f i p m c d k a
     , Ring f
     , HomomorphicCommit m c
     , RandomOracle (i f) f
     , RandomOracle c f
     , KnownNat k
-    ) => FiatShamir (CommitOpen a) -> i f -> NARKInstanceProof f i m c k
-narkInstanceProof a pi0 = NARKInstanceProof (input @f @i @(Vector k (m, c)) @c @d @1 a pi0) (narkProof @_ @_ @_ @_ @d a pi0)
+    ) => FiatShamir (CommitOpen a) -> i f -> p f -> NARKInstanceProof f i m c k
+narkInstanceProof a pi0 w = NARKInstanceProof (input @f @i @p @(Vector k (m, c)) @c @d @1 a pi0 w) (narkProof @_ @_ @_ @_ @_ @d a pi0 w)

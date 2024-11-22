@@ -18,18 +18,18 @@ instance RandomOracle a b => RandomOracle (CommitOpen a) b where
     oracle (CommitOpen a) = oracle a
 
 instance
-    ( SpecialSoundProtocol f i m c d k a
+    ( SpecialSoundProtocol f i p m c d k a
     , HomomorphicCommit m c
-    ) => SpecialSoundProtocol f i (m, c) c d k (CommitOpen a) where
-      type VerifierOutput f i (m, c) c d k (CommitOpen a) = (Vector k c, VerifierOutput f i m c d k a)
+    ) => SpecialSoundProtocol f i p (m, c) c d k (CommitOpen a) where
+      type VerifierOutput f i p (m, c) c d k (CommitOpen a) = (Vector k c, VerifierOutput f i p m c d k a)
 
-      input (CommitOpen a) = input @_ @_ @m @c @d @k a
+      input (CommitOpen a) = input @_ @_ @_ @m @c @d @k a
 
-      prover (CommitOpen a) pi r i =
-            let m = prover @f @i @m @c @d @k a pi r i
+      prover (CommitOpen a) pi0 w r i =
+            let m = prover @f @i @_ @m @c @d @k a pi0 w r i
             in (m, hcommit m)
 
       verifier (CommitOpen a) pi pms rs =
             let ms = fmap fst pms
                 cs = fmap snd pms
-            in (zipWith (-) (fmap hcommit ms) cs, verifier @f @i @m @c @d @k a pi ms rs)
+            in (zipWith (-) (fmap hcommit ms) cs, verifier @f @_ @p @m @c @d @k a pi ms rs)
