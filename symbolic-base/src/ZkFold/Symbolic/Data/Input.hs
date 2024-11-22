@@ -15,7 +15,6 @@ import           GHC.TypeLits                       (KnownNat)
 import           Prelude                            (foldl, ($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative   (HApplicative)
 import           ZkFold.Base.Data.ByteString        (Binary)
 import           ZkFold.Base.Data.Vector            (Vector, fromVector)
 import           ZkFold.Symbolic.Class
@@ -91,7 +90,6 @@ class
 instance
     ( GContext u ~ GContext v
     , GSupport u ~ GSupport v
-    , HApplicative (GContext v)
     , Symbolic (GContext u)
     , GSymbolicInput u
     , GSymbolicInput v
