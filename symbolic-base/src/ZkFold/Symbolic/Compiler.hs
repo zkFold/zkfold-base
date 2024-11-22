@@ -5,26 +5,18 @@ module ZkFold.Symbolic.Compiler (
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
     compile,
     compileIO,
-    compileForceOne,
-    compileCircuit,
-    compileWithPayload,
-    solderWithPayload,
     solderWith,
-    solder,
+    finalRestore
 ) where
 
-import           Control.DeepSeq                            (NFData)
 import           Data.Aeson                                 (FromJSON, ToJSON, ToJSONKey)
 import           Data.Binary                                (Binary)
 import           Data.Function                              (const, (.))
-import           Data.Functor                               (($>))
 import           Data.Functor.Rep                           (Rep)
-import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
-import           Data.Traversable                           (for)
 import           GHC.Generics                               (Par1 (Par1))
-import           Prelude                                    (FilePath, IO, Show (..), Traversable, putStrLn, return,
-                                                             type (~), ($), (++))
+import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
+                                                             (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
@@ -45,9 +37,6 @@ import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
     6. ZkFold.Symbolic.Compiler
 -}
 
-forceOne :: (Symbolic c, Traversable f) => c f -> c f
-forceOne r = fromCircuitF r (\fi -> for fi $ \i -> constraint (\x -> x i - one) $> i)
-
 -- | Arithmetizes an argument by feeding the given support.
 solderWith ::
   ( SymbolicData f, Context f ~ c, Support f ~ s
@@ -60,61 +49,17 @@ solderWith sLayout f = fromCircuit2F (pieces f input) b $ \r (Par1 i) -> do
     Bool b = isValid input
     input = restore (const sLayout)
 
-compileCircuit ::
-  ( SymbolicData y, Context y ~ c, Support y ~ Proxy c, Layout y ~ l
-  , c ~ ArithmeticCircuit a p i
-  ) => c l -> y
-compileCircuit = restore . const . optimize
+finalRestore ::
+  ( SymbolicData y, Context y ~ c, Support y ~ Proxy c
+  , c ~ ArithmeticCircuit a p i) => c (Layout y) -> y
+finalRestore = restore . const . optimize
 
-solder ::
-  ( SymbolicData f, Context f ~ c, Support f ~ s
-  , SymbolicInput s, Context s ~ c, Layout s ~ l
-  , c ~ ArithmeticCircuit a p l, Arithmetic a, Binary a, Binary (Rep p)
-  ) => f -> c (Layout f)
-solder = solderWith idCircuit
-
-solderWithPayload ::
-  ( SymbolicData f, Context f ~ c, Support f ~ s
-  , SymbolicInput s, Context s ~ c, Layout s ~ l
-  , c ~ ArithmeticCircuit a l p, Arithmetic a, Binary a
-  , Traversable l, Binary (Rep p), Ord (Rep p), NFData (Rep p)
-  ) => f -> c (Layout f)
-solderWithPayload = solderWith payloadCircuit
-
--- | Compiles function `f` into an arithmetic circuit with all outputs equal to 1.
-compileForceOne ::
-  forall a c p f s l y .
-  ( c ~ ArithmeticCircuit a p l, Arithmetic a, Binary a
-  , Binary (Rep p), Binary (Rep l), Ord (Rep l)
-  , SymbolicData f, Context f ~ c, Support f ~ s
-  , SymbolicInput s, Context s ~ c, Layout s ~ l
-  , SymbolicData y, Context y ~ c, Support y ~ Proxy c
-  , Layout f ~ Layout y, Traversable (Layout y)
-  ) => f -> y
-compileForceOne = compileCircuit . forceOne . solder
-
--- | Compiles function `f` into an arithmetic circuit.
-compile ::
-  forall a p c f s l y .
-  ( c ~ ArithmeticCircuit a p l, Arithmetic a, Binary a, Binary (Rep p)
-  , SymbolicData f, Context f ~ c, Support f ~ s
-  , SymbolicInput s, Context s ~ c, Layout s ~ l
-  , SymbolicData y, Context y ~ c, Support y ~ Proxy c
-  , Layout f ~ Layout y
-  ) => f -> y
-compile = compileCircuit . solder
-
-compileWithPayload ::
-  forall a p c f s l y .
-  ( c ~ ArithmeticCircuit a l p, Arithmetic a, Binary a
-  , Binary (Rep p), Ord (Rep p), NFData (Rep p)
-  , Traversable l
-  , SymbolicData f, Context f ~ c, Support f ~ s
-  , SymbolicInput s, Context s ~ c, Layout s ~ l
-  , SymbolicData y, Context y ~ c, Support y ~ Proxy c
-  , Layout f ~ Layout y
-  ) => f -> y
-compileWithPayload = compileCircuit . solderWithPayload
+compile :: forall a y f c s p.
+  ( SymbolicData f, Context f ~ c, Support f ~ s, SymbolicInput s, Context s ~ c
+  , c ~ ArithmeticCircuit a p (Layout s), Arithmetic a, Binary a, Binary (Rep p)
+  , SymbolicData y, Context y ~ c, Support y ~ Proxy c, Layout y ~ Layout f)
+  => f -> y
+compile = finalRestore . solderWith idCircuit
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::
@@ -132,10 +77,10 @@ compileIO ::
   , Layout s ~ l
   , FromJSON (Rep l)
   , ToJSON (Rep l)
-  , Symbolic c
+  , Arithmetic a, Binary a, Binary (Rep p)
   ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
-    let ac = optimize (solderWith idCircuit f) :: c (Layout f)
+    let ac = compile f :: c (Layout f)
 
     putStrLn "\nCompiling the script...\n"
 
