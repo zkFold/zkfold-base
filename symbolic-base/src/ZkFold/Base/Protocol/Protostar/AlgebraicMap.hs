@@ -9,6 +9,7 @@ import           Data.Functor.Rep                                    (Representa
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map, keys)
 import qualified Data.Map.Strict                                     as M
+import           GHC.Generics                                        (U1)
 import           Prelude                                             (fmap, zip, ($), (.), (<$>))
 import qualified Prelude                                             as P
 
@@ -43,7 +44,7 @@ instance
   , KnownNat (d + 1)
   , Arithmetic a
   , Scale a f
-  ) => AlgebraicMap f i d (ArithmeticCircuit a i o) where
+  ) => AlgebraicMap f i d (ArithmeticCircuit a i i U1) where
     -- We can use the polynomial system from the circuit as a base for Vsps.
     --
     algebraicMap ac pi pm _ pad = padDecomposition pad f_sps_uni
@@ -69,7 +70,7 @@ padDecomposition :: forall f n .
     ( MultiplicativeMonoid f
     , AdditiveMonoid f
     , KnownNat n
-     ) => f -> V.Vector n [f] -> [f]
+    ) => f -> V.Vector n [f] -> [f]
 padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) * ) <$> p)
     where
         d = value @n -! 1

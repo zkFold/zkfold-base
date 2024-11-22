@@ -1,16 +1,24 @@
-{-# LANGUAGE DeriveAnyClass  #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.Protostar.Accumulator where
 
-import           Control.DeepSeq                  (NFData (..))
-import           Control.Lens.Combinators         (makeLenses)
+import           Control.DeepSeq                             (NFData (..))
+import           Control.Lens                                ((^.))
+import           Control.Lens.Combinators                    (makeLenses)
+import           Data.Functor.Rep                            (Representable(..))
 import           GHC.Generics
-import           Prelude                          hiding (length, pi)
+import           Prelude                                     hiding (length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Number (type (-))
-import           ZkFold.Base.Data.Vector          (Vector)
+import           ZkFold.Base.Algebra.Basic.Class             (zero)
+import           ZkFold.Base.Algebra.Basic.Number            (type (-), KnownNat, Natural)
+import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap(..))
+import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit(..))
+import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
+import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (FiatShamir))
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance f i c k
@@ -36,3 +44,31 @@ data Accumulator f i m c k
     deriving (Show, Generic, NFData)
 
 makeLenses ''Accumulator
+
+emptyAccumulator :: forall f i m c (d :: Natural) k a .
+    ( Representable i
+    , m ~ [f]
+    , HomomorphicCommit m c
+    , KnownNat (k-1)
+    , KnownNat k
+    , AlgebraicMap f i d a
+    ) => FiatShamir (CommitOpen a) -> Accumulator f i m c k
+emptyAccumulator (FiatShamir (CommitOpen sps)) =
+    let accW  = tabulate (const zero)
+        aiC   = fmap hcommit accW
+        aiR   = tabulate (const zero)
+        aiMu  = zero
+        aiPI  = tabulate (const zero)
+        aiE   = hcommit $ algebraicMap @_ @_ @d sps aiPI accW aiR aiMu
+        accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
+    in Accumulator accX accW
+
+emptyAccumulatorInstance :: forall f i m c (d :: Natural) k a .
+    ( Representable i
+    , m ~ [f]
+    , HomomorphicCommit m c
+    , KnownNat (k-1)
+    , KnownNat k
+    , AlgebraicMap f i d a
+    ) => FiatShamir (CommitOpen a) -> AccumulatorInstance f i c k
+emptyAccumulatorInstance fs = emptyAccumulator @_ @_ @_ @_ @d fs ^. x

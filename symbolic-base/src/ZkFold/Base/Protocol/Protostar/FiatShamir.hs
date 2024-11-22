@@ -33,6 +33,8 @@ instance
     ) => SpecialSoundProtocol f i (Vector k (m, c)) c d 1 (FiatShamir (CommitOpen a)) where
         type VerifierOutput f i (Vector k (m, c)) c d 1 (FiatShamir (CommitOpen a)) = VerifierOutput f i (m, c) c d k (CommitOpen a)
 
+        input (FiatShamir a) = input @_ @_ @(m, c) @c @d @k a
+
         prover (FiatShamir a) pi _ _ =
             let r0 = oracle pi
                 f (r, k) =

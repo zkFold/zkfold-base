@@ -19,17 +19,29 @@ import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtoc
 
 -- Page 18, section 3.4, The accumulation predicate
 --
-data NARKProof k m c
+data NARKProof m c k
     = NARKProof
         { narkCommits :: Vector k c -- Commits [C_i] ∈  C^k
         , narkWitness :: Vector k m -- prover messages in the special-sound protocol [m_i]
         }
     deriving (Show, Generic, NFData)
 
-data NARKInstanceProof f i m c k = NARKInstanceProof (i f) (NARKProof k m c)
+narkProof :: forall f i m c d k a .
+    ( SpecialSoundProtocol f i m c d k a
+    , Ring f
+    , HomomorphicCommit m c
+    , RandomOracle (i f) f
+    , RandomOracle c f
+    , KnownNat k
+    ) => FiatShamir (CommitOpen a) -> i f -> NARKProof m c k
+narkProof a pi0 =
+    let (ms, cs) = unzip $ prover @f @i @_ @c @d @1 a pi0 (oracle pi0) 0
+    in NARKProof cs ms
+
+data NARKInstanceProof f i m c k = NARKInstanceProof (i f) (NARKProof m c k)
     deriving (Show, Generic, NFData)
 
-instanceProof :: forall f i m c d k a .
+narkInstanceProof :: forall f i m c d k a .
     ( SpecialSoundProtocol f i m c d k a
     , Ring f
     , HomomorphicCommit m c
@@ -37,6 +49,4 @@ instanceProof :: forall f i m c d k a .
     , RandomOracle c f
     , KnownNat k
     ) => FiatShamir (CommitOpen a) -> i f -> NARKInstanceProof f i m c k
-instanceProof a pi =
-    let (ms, cs) = unzip $ prover @f @i @_ @c @d @1 a pi (oracle pi) 0
-    in NARKInstanceProof pi (NARKProof cs ms)
+narkInstanceProof a pi0 = NARKInstanceProof (input @f @i @(Vector k (m, c)) @c @d @1 a pi0) (narkProof @_ @_ @_ @_ @d a pi0)

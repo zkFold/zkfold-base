@@ -23,6 +23,8 @@ instance
     ) => SpecialSoundProtocol f i (m, c) c d k (CommitOpen a) where
       type VerifierOutput f i (m, c) c d k (CommitOpen a) = (Vector k c, VerifierOutput f i m c d k a)
 
+      input (CommitOpen a) = input @_ @_ @m @c @d @k a
+
       prover (CommitOpen a) pi r i =
             let m = prover @f @i @m @c @d @k a pi r i
             in (m, hcommit m)
