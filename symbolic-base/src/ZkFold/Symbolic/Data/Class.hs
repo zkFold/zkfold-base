@@ -3,6 +3,7 @@
 
 module ZkFold.Symbolic.Data.Class (
         SymbolicData (..),
+        GSymbolicData (..)
     ) where
 
 import           Control.Applicative              ((<*>))
