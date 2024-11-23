@@ -14,9 +14,10 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         VarField,
         Arithmetic,
         Constraint,
-        -- variable getters
+        -- variable getters and setters
         acInput,
         getAllVars,
+        crown,
         -- input mapping
         hlmap,
         -- evaluation functions
