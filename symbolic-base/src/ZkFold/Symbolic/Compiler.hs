@@ -5,13 +5,12 @@ module ZkFold.Symbolic.Compiler (
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
     compile,
     compileIO,
-    solderWith,
-    finalRestore
+    compileWith
 ) where
 
 import           Data.Aeson                                 (FromJSON, ToJSON, ToJSONKey)
 import           Data.Binary                                (Binary)
-import           Data.Function                              (const, (.))
+import           Data.Function                              (const, id, (.))
 import           Data.Functor.Rep                           (Rep)
 import           Data.Proxy                                 (Proxy (..))
 import           GHC.Generics                               (Par1 (Par1))
@@ -37,29 +36,43 @@ import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
     6. ZkFold.Symbolic.Compiler
 -}
 
--- | Arithmetizes an argument by feeding the given support.
-solderWith ::
+-- | A constraint defining what it means
+-- for function of type @f@ to be compilable.
+type CompilesWith c s f =
   ( SymbolicData f, Context f ~ c, Support f ~ s
-  , SymbolicInput s, Context s ~ c, Symbolic c
-  ) => c (Layout s) -> f -> c (Layout f)
-solderWith sLayout f = fromCircuit2F (pieces f input) b $ \r (Par1 i) -> do
-  constraint (\x -> one - x i)
-  return r
+  , SymbolicInput s, Context s ~ c, Symbolic c)
+
+-- | A constraint defining what it means
+-- for data of type @y@ to be properly restorable.
+type RestoresFrom c y = (SymbolicData y, Context y ~ c, Support y ~ Proxy c)
+
+-- | @compileWith opts sLayout f@ compiles a function @f@ into an optimized
+-- arithmetic circuit packed inside a suitable 'SymbolicData'.
+compileWith ::
+  forall a y p i s f c0 c1.
+  (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i) =>
+  -- | Circuit transformation to apply before optimization.
+  (c0 (Layout f) -> c1 (Layout y)) ->
+  -- | Basic "input" circuit used to solder @f@.
+  c0 (Layout s) ->
+  -- | Function to compile.
+  f -> y
+compileWith opts sLayout f =
+  restore . const . optimize . opts $ fromCircuit2F (pieces f input) b $
+    \r (Par1 i) -> do
+      constraint (\x -> one - x i)
+      return r
   where
     Bool b = isValid input
     input = restore (const sLayout)
 
-finalRestore ::
-  ( SymbolicData y, Context y ~ c, Support y ~ Proxy c
-  , c ~ ArithmeticCircuit a p i) => c (Layout y) -> y
-finalRestore = restore . const . optimize
-
+-- | @compile f@ compiles a function @f@ into an optimized arithmetic circuit
+-- packed inside a suitable 'SymbolicData'.
 compile :: forall a y f c s p.
-  ( SymbolicData f, Context f ~ c, Support f ~ s, SymbolicInput s, Context s ~ c
-  , c ~ ArithmeticCircuit a p (Layout s), Arithmetic a, Binary a, Binary (Rep p)
-  , SymbolicData y, Context y ~ c, Support y ~ Proxy c, Layout y ~ Layout f)
+  ( CompilesWith c s f, RestoresFrom c y, Layout y ~ Layout f
+  , c ~ ArithmeticCircuit a p (Layout s))
   => f -> y
-compile = finalRestore . solderWith idCircuit
+compile = compileWith id idCircuit
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::
