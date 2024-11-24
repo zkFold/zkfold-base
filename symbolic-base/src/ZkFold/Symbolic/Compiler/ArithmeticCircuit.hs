@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         emptyCircuit,
         idCircuit,
         payloadCircuit,
+        inputPayload,
         guessOutput,
         -- low-level functions
         eval,
@@ -72,6 +73,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
 
 --------------------------------- High-level functions --------------------------------
 
@@ -117,6 +119,9 @@ payloadCircuit ::
 payloadCircuit =
   uncurry crown $ swap $ flip runState emptyCircuit $
     for (tabulate id) $ unconstrained . pure . WExVar
+
+inputPayload :: Representable p => p (WitnessF a (WitVar p i))
+inputPayload = tabulate $ pure . WExVar
 
 guessOutput ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>

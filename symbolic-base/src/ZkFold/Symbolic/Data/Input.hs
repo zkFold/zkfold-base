@@ -32,6 +32,7 @@ class
     , Binary (R.Rep (Layout d))
     , Ord (R.Rep (Layout d))
     , NFData (R.Rep (Layout d))
+    , R.Representable (Payload d)
     ) => SymbolicInput d where
     isValid :: d -> Bool (Context d)
     default isValid ::

@@ -13,7 +13,7 @@ import           Data.Binary                                (Binary)
 import           Data.Function                              (const, id, (.))
 import           Data.Functor.Rep                           (Rep)
 import           Data.Proxy                                 (Proxy (..))
-import           GHC.Generics                               (Par1 (Par1))
+import           GHC.Generics                               (Par1 (Par1), U1 (..))
 import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
                                                              (++))
 
@@ -44,7 +44,8 @@ type CompilesWith c s f =
 
 -- | A constraint defining what it means
 -- for data of type @y@ to be properly restorable.
-type RestoresFrom c y = (SymbolicData y, Context y ~ c, Support y ~ Proxy c)
+type RestoresFrom c y =
+  (SymbolicData y, Context y ~ c, Support y ~ Proxy c, Payload y ~ U1)
 
 -- | @compileWith opts sLayout f@ compiles a function @f@ into an optimized
 -- arithmetic circuit packed inside a suitable 'SymbolicData'.
@@ -55,24 +56,27 @@ compileWith ::
   (c0 (Layout f) -> c1 (Layout y)) ->
   -- | Basic "input" circuit used to solder @f@.
   c0 (Layout s) ->
+  -- | Basic "input" payload used to solder @f@.
+  Payload s (WitnessField c0) ->
   -- | Function to compile.
   f -> y
-compileWith opts sLayout f =
-  restore . const . optimize . opts $ fromCircuit2F (arithmetize f input) b $
-    \r (Par1 i) -> do
-      constraint (\x -> one - x i)
-      return r
+compileWith opts sLayout sPayload f =
+  restore . const . (,U1) . optimize . opts $
+    fromCircuit2F (arithmetize f input) b $
+      \r (Par1 i) -> do
+        constraint (\x -> one - x i)
+        return r
   where
     Bool b = isValid input
-    input = restore (const sLayout)
+    input = restore $ const (sLayout, sPayload)
 
 -- | @compile f@ compiles a function @f@ into an optimized arithmetic circuit
 -- packed inside a suitable 'SymbolicData'.
-compile :: forall a y f c s p.
+compile :: forall a y f c s.
   ( CompilesWith c s f, RestoresFrom c y, Layout y ~ Layout f
-  , c ~ ArithmeticCircuit a p (Layout s))
+  , c ~ ArithmeticCircuit a (Payload s) (Layout s))
   => f -> y
-compile = compileWith id idCircuit
+compile = compileWith id idCircuit inputPayload
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::
@@ -88,6 +92,7 @@ compileIO ::
   , SymbolicInput s
   , Context s ~ c
   , Layout s ~ l
+  , Payload s ~ p
   , FromJSON (Rep l)
   , ToJSON (Rep l)
   , Arithmetic a, Binary a, Binary (Rep p)
