@@ -123,7 +123,7 @@ imapWitVar f (WSysVar v) = WSysVar (imapSysVar f v)
 pmapWitVar ::
   (Representable p, Representable q) =>
   (forall x. q x -> p x) -> WitVar p i -> WitVar q i
-pmapWitVar f (WExVar r) = index (f (tabulate WExVar)) r
+pmapWitVar f (WExVar r)  = index (f (tabulate WExVar)) r
 pmapWitVar _ (WSysVar v) = WSysVar v
 
 data Var a i
