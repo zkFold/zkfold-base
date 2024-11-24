@@ -1,5 +1,6 @@
 module Tests.Protostar (specProtostar) where
 
+import           Data.Functor.Rep                                 (tabulate)
 import           GHC.Generics                                     (Par1 (..), U1 (..), type (:*:) (..), type (:.:) (..))
 import           GHC.IsList                                       (IsList (..))
 import           Prelude                                          hiding (Num (..), replicate, sum, (+))
@@ -23,7 +24,8 @@ import           ZkFold.Base.Protocol.Protostar.NARK              (InstanceProof
                                                                    instanceProof)
 import           ZkFold.Prelude                                   (replicate)
 import           ZkFold.Symbolic.Class                            (Symbolic)
-import           ZkFold.Symbolic.Compiler                         (ArithmeticCircuit, acSizeM, acSizeN, compile, hlmap)
+import           ZkFold.Symbolic.Compiler                         (ArithmeticCircuit, acSizeM, acSizeN, compile, hlmap,
+                                                                   hpmap)
 import           ZkFold.Symbolic.Data.FieldElement                (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
@@ -44,6 +46,7 @@ testFunction p x =
 testCircuit :: PAR -> AC
 testCircuit p =
     hlmap (\x -> Comp1 (Par1 <$> x) :*: U1)
+    $ hpmap (\_ -> Comp1 (tabulate $ const U1) :*: U1)
     $ hmap (\(Comp1 x') -> unPar1 <$> x')
     $ compile @F $ testFunction p
 

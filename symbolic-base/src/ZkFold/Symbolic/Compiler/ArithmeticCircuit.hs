@@ -27,6 +27,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         acPrint,
         -- Variable mapping functions
         hlmap,
+        hpmap,
         mapVarArithmeticCircuit,
         -- Arithmetization type fields
         acWitness,
@@ -68,12 +69,12 @@ import           ZkFold.Symbolic.Class                               (fromCircui
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
                                                                       SysVar (..), Var (..), WitVar (WExVar), acInput,
-                                                                      crown, eval, eval1, exec, exec1, hlmap,
+                                                                      crown, eval, eval1, exec, exec1, hlmap, hpmap,
                                                                       witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness  (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
 
 --------------------------------- High-level functions --------------------------------
 
