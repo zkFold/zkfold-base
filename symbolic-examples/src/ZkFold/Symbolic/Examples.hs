@@ -22,7 +22,7 @@ import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.RSA                                (exampleRSA)
 import           Examples.UInt
-import           GHC.Generics                                (Par1, U1, (:*:), (:.:))
+import           GHC.Generics                                (Par1, (:*:), (:.:))
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -34,28 +34,30 @@ import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
 
 type A = Zp BLS12_381_Scalar
-type C = ArithmeticCircuit A U1
+type C = ArithmeticCircuit A
 
 data ExampleOutput where
   ExampleOutput ::
-    forall i o. (Representable i, NFData (Rep i), NFData (o (Var A i))) =>
-    (() -> C i o) -> ExampleOutput
+    forall p i o.
+    (Representable p, Representable i, NFData (Rep i), NFData (o (Var A i))) =>
+    (() -> C p i o) -> ExampleOutput
 
 exampleOutput ::
-  forall i o c f.
+  forall p i o c f.
   ( SymbolicData f
-  , c ~ C i
+  , c ~ C p i
   , Context f ~ c
   , Layout f ~ o
   , SymbolicInput (Support f)
   , Context (Support f) ~ c
   , Support (Support f) ~ Proxy c
   , Layout (Support f) ~ i
+  , Payload (Support f) ~ p
   , Representable i
   , NFData (Rep i)
   , NFData (o (Var A i))
   ) => f -> ExampleOutput
-exampleOutput = ExampleOutput @i @o . const . compile
+exampleOutput = ExampleOutput @p @i @o . const . compile
 
 -- | TODO: Maybe there is a better place for these orphans?
 instance NFData a => NFData (Par1 a)
@@ -82,7 +84,7 @@ examples =
   , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
   , ("UInt.StrictMul.512.Auto", exampleOutput $ exampleUIntStrictMul @512 @Auto)
   , ("UInt.DivMod.32.Auto", exampleOutput $ exampleUIntDivMod @32 @Auto)
-  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C _)))
+  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
   , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
   , ("MiMCHash", exampleOutput exampleMiMC)
   , ("SHA256.32", exampleOutput $ exampleSHA @32)

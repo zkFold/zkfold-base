@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         emptyCircuit,
         idCircuit,
         payloadCircuit,
+        inputPayload,
         guessOutput,
         -- low-level functions
         eval,
@@ -26,6 +27,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         acPrint,
         -- Variable mapping functions
         hlmap,
+        hpmap,
         mapVarArithmeticCircuit,
         -- Arithmetization type fields
         acWitness,
@@ -67,9 +69,10 @@ import           ZkFold.Symbolic.Class                               (fromCircui
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
                                                                       SysVar (..), Var (..), WitVar (WExVar), acInput,
-                                                                      crown, eval, eval1, exec, exec1, hlmap,
+                                                                      crown, eval, eval1, exec, exec1, hlmap, hpmap,
                                                                       witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness  (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                    (expansion)
 import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
 
@@ -117,6 +120,9 @@ payloadCircuit ::
 payloadCircuit =
   uncurry crown $ swap $ flip runState emptyCircuit $
     for (tabulate id) $ unconstrained . pure . WExVar
+
+inputPayload :: Representable p => p (WitnessF a (WitVar p i))
+inputPayload = tabulate $ pure . WExVar
 
 guessOutput ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>

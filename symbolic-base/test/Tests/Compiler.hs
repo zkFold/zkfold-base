@@ -36,7 +36,7 @@ instance Arbitrary (U1 a) where
 specCompilerG :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => IO ()
 specCompilerG = hspec $ describe "Compiler specification" $ do
   prop "Guessing with payload is constant in input" $ isConstantInput $
-    compileWith (guessOutput @a @_ @U1) payloadCircuit testFunction
+    compileWith (guessOutput @a @_ @U1) payloadCircuit (U1 :*: U1 :*: U1) testFunction
 
 specCompiler :: IO ()
 specCompiler = specCompilerG @(Zp BLS12_381_Scalar)

@@ -48,4 +48,4 @@ hash :: forall context x a .
     , Support x ~ Proxy context
     , Foldable (Layout x)
     ) => x -> FieldElement context
-hash = mimcHashN mimcConstants (zero :: a) . fmap FieldElement . unpacked . hmap toList . flip pieces Proxy
+hash = mimcHashN mimcConstants (zero :: a) . fmap FieldElement . unpacked . hmap toList . flip arithmetize Proxy

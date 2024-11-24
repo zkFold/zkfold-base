@@ -24,7 +24,6 @@ metrics name circuit =
   <> "\nNumber of variables: " <> fromString (show $ acSizeM circuit)
   <> "\nNumber of range lookups: " <> fromString (show $ acSizeR circuit)
 
-
 benchmark ::
   ( Arithmetic a, NFData (o (Var a i)), NFData (Rep i)
   , Representable p, Representable i) =>
