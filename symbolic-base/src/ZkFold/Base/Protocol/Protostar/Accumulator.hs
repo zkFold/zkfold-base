@@ -8,15 +8,15 @@ module ZkFold.Base.Protocol.Protostar.Accumulator where
 import           Control.DeepSeq                             (NFData (..))
 import           Control.Lens                                ((^.))
 import           Control.Lens.Combinators                    (makeLenses)
-import           Data.Functor.Rep                            (Representable(..))
+import           Data.Functor.Rep                            (Representable (..))
 import           GHC.Generics
 import           Prelude                                     hiding (length, pi)
 
 import           ZkFold.Base.Algebra.Basic.Class             (zero)
-import           ZkFold.Base.Algebra.Basic.Number            (type (-), KnownNat, Natural)
+import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural, type (-))
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap(..))
-import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit(..))
+import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
+import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (FiatShamir))
 

@@ -6,14 +6,14 @@ module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
 import           Data.Functor.Rep                                      (Representable (..))
 import           Data.Map.Strict                                       (elems)
-import           GHC.Generics                                          ((:*:)(..))
-import           Prelude                                               (($), undefined)
+import           GHC.Generics                                          ((:*:) (..))
+import           Prelude                                               (undefined, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                               (Vector)
 import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap           as AM
-import           ZkFold.Base.Protocol.Protostar.ArithmetizableFunction (ArithmetizableFunction(..))
+import           ZkFold.Base.Protocol.Protostar.ArithmetizableFunction (ArithmetizableFunction (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 

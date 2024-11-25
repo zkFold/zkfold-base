@@ -8,7 +8,7 @@ import           Control.Lens                                     ((^.))
 import           Data.Functor.Rep                                 (Representable (..))
 import           Data.Type.Equality                               (type (~))
 import           GHC.Generics                                     (Generic)
-import           Prelude                                          (($), const)
+import           Prelude                                          (const, ($))
 import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -21,7 +21,8 @@ import           ZkFold.Base.Protocol.Protostar.AlgebraicMap      (AlgebraicMap)
 import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
-import           ZkFold.Base.Protocol.Protostar.NARK              (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
+import           ZkFold.Base.Protocol.Protostar.NARK              (NARKInstanceProof (..), NARKProof (..),
+                                                                   narkInstanceProof)
 import           ZkFold.Base.Protocol.Protostar.Oracle
 import           ZkFold.Base.Protocol.Protostar.SpecialSound      (SpecialSoundProtocol (..))
 

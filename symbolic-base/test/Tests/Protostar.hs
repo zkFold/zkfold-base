@@ -3,9 +3,10 @@
 
 module Tests.Protostar (specProtostar) where
 
-import           GHC.Generics                                          (Par1 (..), U1 (..), type (:*:) (..), type (:.:) (..))
+import           GHC.Generics                                          (Par1 (..), U1 (..), type (:*:) (..),
+                                                                        type (:.:) (..))
 import           GHC.IsList                                            (IsList (..))
-import           Prelude                                               hiding (Num (..), replicate, sum, pi, (+))
+import           Prelude                                               hiding (Num (..), pi, replicate, sum, (+))
 import           Test.Hspec                                            (describe, hspec, it)
 import           Test.QuickCheck                                       (property, withMaxSuccess)
 
@@ -15,17 +16,20 @@ import           ZkFold.Base.Algebra.Basic.Number                      (Natural,
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381           (BLS12_381_G1, BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.Class               (Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate            (PolyVec, evalPolyVec)
-import           ZkFold.Base.Data.Vector                               (Vector(..), item, singleton, unsafeToVector)
-import           ZkFold.Base.Protocol.Protostar.Accumulator            (Accumulator (..), AccumulatorInstance (..), emptyAccumulator)
+import           ZkFold.Base.Data.Vector                               (Vector (..), item, singleton, unsafeToVector)
+import           ZkFold.Base.Protocol.Protostar.Accumulator            (Accumulator (..), AccumulatorInstance (..),
+                                                                        emptyAccumulator)
 import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme      as Acc
 import           ZkFold.Base.Protocol.Protostar.AlgebraicMap           (AlgebraicMap (..))
 import           ZkFold.Base.Protocol.Protostar.ArithmetizableFunction (ArithmetizableFunction (..))
 import           ZkFold.Base.Protocol.Protostar.CommitOpen             (CommitOpen (..))
 import           ZkFold.Base.Protocol.Protostar.FiatShamir             (FiatShamir (..))
-import           ZkFold.Base.Protocol.Protostar.NARK                   (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
+import           ZkFold.Base.Protocol.Protostar.NARK                   (NARKInstanceProof (..), NARKProof (..),
+                                                                        narkInstanceProof)
 import           ZkFold.Prelude                                        (replicate)
 import           ZkFold.Symbolic.Class                                 (Symbolic)
-import           ZkFold.Symbolic.Compiler                              (ArithmeticCircuit, acSizeN, hlmap, hpmap, compileWith, guessOutput, payloadCircuit)
+import           ZkFold.Symbolic.Compiler                              (ArithmeticCircuit, acSizeN, compileWith,
+                                                                        guessOutput, hlmap, hpmap, payloadCircuit)
 import           ZkFold.Symbolic.Data.FieldElement                     (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
