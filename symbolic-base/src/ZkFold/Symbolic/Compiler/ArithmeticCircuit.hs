@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
         Constraint,
@@ -6,7 +7,9 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         witnessGenerator,
         -- high-level functions
         desugarRanges,
+        emptyCircuit,
         idCircuit,
+        payloadCircuit,
         guessOutput,
         -- low-level functions
         eval,
@@ -30,6 +33,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         -- Testing functions
         checkCircuit,
         checkClosedCircuit,
+        isConstantInput,
         optimize
     ) where
 
@@ -93,6 +97,9 @@ desugarRanges c =
   let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- MM.toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
 
+emptyCircuit :: ArithmeticCircuit a p i U1
+emptyCircuit = ArithmeticCircuit empty M.empty empty U1
+
 idCircuit :: Representable i => ArithmeticCircuit a p i i
 idCircuit = ArithmeticCircuit
   { acSystem = empty
@@ -153,6 +160,12 @@ acPrint ac = do
     pPrint v
 
 ---------------------------------- Testing -------------------------------------
+
+isConstantInput ::
+  ( Arithmetic a, Show a, Representable p, Representable i
+  , Show (p a), Show (i a), Arbitrary (p a), Arbitrary (i a)
+  ) => ArithmeticCircuit a p i o -> Property
+isConstantInput c = property $ \x y p -> witnessGenerator c p x === witnessGenerator c p y
 
 checkClosedCircuit
     :: forall a o

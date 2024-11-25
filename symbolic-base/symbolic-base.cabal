@@ -247,6 +247,7 @@ test-suite symbolic-base-test
       Tests.Binary
       Tests.Blake2b
       Tests.ByteString
+      Tests.Compiler
       Tests.FFA
       Tests.Field
       Tests.GroebnerBasis

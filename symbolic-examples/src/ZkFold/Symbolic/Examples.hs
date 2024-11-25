@@ -7,7 +7,6 @@ module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 import           Control.DeepSeq                             (NFData)
 import           Data.Function                               (const, ($), (.))
 import           Data.Functor.Rep                            (Rep, Representable)
-import           Data.Ord                                    (Ord)
 import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
@@ -53,7 +52,6 @@ exampleOutput ::
   , Support (Support f) ~ Proxy c
   , Layout (Support f) ~ i
   , Representable i
-  , Ord (Rep i)
   , NFData (Rep i)
   , NFData (o (Var A i))
   ) => f -> ExampleOutput
