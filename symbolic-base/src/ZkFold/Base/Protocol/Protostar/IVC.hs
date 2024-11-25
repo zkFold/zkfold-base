@@ -16,7 +16,6 @@ import           ZkFold.Base.Algebra.Basic.Number                 (KnownNat, Nat
 import           ZkFold.Base.Data.Vector                          (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
-import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (AccumulatorScheme (..))
 import           ZkFold.Base.Protocol.Protostar.AlgebraicMap      (AlgebraicMap)
 import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
@@ -78,7 +77,7 @@ ivcIterate :: forall f i p m c (d :: Natural) k a .
     , RandomOracle (i f) f
     , RandomOracle c f
     , KnownNat k
-    , AccumulatorScheme f i m c d k (FiatShamir (CommitOpen a))
+    , Acc.AccumulatorScheme f i m c d k (FiatShamir (CommitOpen a))
     ) => FiatShamir (CommitOpen a) -> IVCResult f i m c d k -> p f -> IVCResult f i m c d k
 ivcIterate fs (IVCResult pi0 _ acc0 _) witness =
     let
@@ -89,7 +88,7 @@ ivcIterate fs (IVCResult pi0 _ acc0 _) witness =
         IVCResult pi cs acc proof
 
 ivcVerify :: forall f i m c d k a .
-    ( AccumulatorScheme f i m c d k a
+    ( Acc.AccumulatorScheme f i m c d k a
     ) => a -> IVCResult f i m c d k -> ((f, i f, Vector (k-1) f, Vector k c, c), (Vector k c, c))
 ivcVerify a IVCResult {..} =
     let
@@ -102,5 +101,5 @@ ivcVerify a IVCResult {..} =
         pf            = ivcpAccumulationProof
     in
         ( Acc.verifier @f @i @m @c @d @k @a pi cs accX0 accX pf
-        , decider @f @i @m @c @d @k @a a acc
+        , Acc.decider @f @i @m @c @d @k @a a acc
         )
