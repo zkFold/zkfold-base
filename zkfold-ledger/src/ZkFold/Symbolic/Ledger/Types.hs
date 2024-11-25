@@ -93,6 +93,7 @@ type Signature context =
     , Traversable (Layout (Input context))
     , Representable (Layout (Input context))
     , Zip (Layout (Input context))
+    , Representable (Payload (Input context))
 
     , Context (Hash context) ~ context
     , Support (Hash context) ~ Proxy context
@@ -101,6 +102,7 @@ type Signature context =
     , Traversable (Layout (Hash context))
     , Representable (Layout (Hash context))
     , Zip (Layout (Hash context))
+    , Representable (Payload (Hash context))
 
     , Context (Update context) ~ context
     , Support (Update context) ~ Proxy context
