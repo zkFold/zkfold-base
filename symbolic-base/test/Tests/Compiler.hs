@@ -20,7 +20,7 @@ import           Text.Show                                   (Show)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Class                       (Arithmetic, Symbolic)
-import           ZkFold.Symbolic.Compiler                    (compileWith, guessOutput, isConstantInput, payloadCircuit)
+import           ZkFold.Symbolic.Compiler                    (compileWith, guessOutput, isConstantInput)
 import           ZkFold.Symbolic.Data.Bool                   ((&&))
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 
@@ -36,7 +36,8 @@ instance Arbitrary (U1 a) where
 specCompilerG :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => IO ()
 specCompilerG = hspec $ describe "Compiler specification" $ do
   prop "Guessing with payload is constant in input" $ isConstantInput $
-    compileWith (guessOutput @a @_ @U1) payloadCircuit (U1 :*: U1 :*: U1) testFunction
+    compileWith @a guessOutput
+      (\(p :*: q) U1 -> (U1 :*: U1 :*: U1, p :*: q :*: U1)) testFunction
 
 specCompiler :: IO ()
 specCompiler = specCompilerG @(Zp BLS12_381_Scalar)
