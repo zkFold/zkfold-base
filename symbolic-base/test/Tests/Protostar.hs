@@ -29,7 +29,7 @@ import           ZkFold.Base.Protocol.Protostar.NARK                   (NARKInst
 import           ZkFold.Prelude                                        (replicate)
 import           ZkFold.Symbolic.Class                                 (Symbolic)
 import           ZkFold.Symbolic.Compiler                              (ArithmeticCircuit, acSizeN, compileWith,
-                                                                        guessOutput, hlmap, hpmap, payloadCircuit)
+                                                                        guessOutput, hlmap, hpmap)
 import           ZkFold.Symbolic.Data.FieldElement                     (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
@@ -59,7 +59,7 @@ testCircuit :: PAR -> AC
 testCircuit p =
     hpmap (\(x :*: U1) -> Comp1 (Par1 <$> x) :*: U1) $
     hlmap (\x -> U1 :*: Comp1 (Par1 <$> x)) $
-    compileWith @F guessOutput payloadCircuit (Comp1 (singleton U1) :*: U1) $ testFunction p
+    compileWith @F guessOutput (\x U1 -> (Comp1 (singleton U1) :*: U1, x)) $ testFunction p
 
 testArithmetizableFunction :: PAR -> ArithmetizableFunction F I U1
 testArithmetizableFunction p = ArithmetizableFunction (\x _ -> testFunction' p x) (testCircuit p)
