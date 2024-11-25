@@ -22,6 +22,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler
+import Tests.Arithmetization.Optimization (specOptimization)
 
 propCircuitInvariance ::
   ( Arithmetic a, Show a, Ord (Rep i)
@@ -51,3 +52,4 @@ instance Arbitrary (U1 a) where
 specArithmetization :: IO ()
 specArithmetization = do
     specArithmetization' @(Zp BLS12_381_Scalar) @U1 @(Vector 2)
+    specOptimization @(Zp BLS12_381_Scalar)
