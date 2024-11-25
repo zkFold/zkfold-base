@@ -6,6 +6,7 @@ module ZkFold.Base.Protocol.Plonk (
 ) where
 
 import           Data.Binary                                         (Binary)
+import           Data.Functor.Rep                                    (Rep)
 import           Data.Kind                                           (Type)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
@@ -31,11 +32,11 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
 
-data Plonk (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
+data Plonk p (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
-        ac    :: ArithmeticCircuit (ScalarField curve1) (Vector i) (Vector l),
+        ac    :: ArithmeticCircuit (ScalarField curve1) p (Vector i) (Vector l),
         x     :: ScalarField curve1
     }
 
@@ -43,28 +44,30 @@ fromPlonkup ::
     ( KnownNat i
     , Arithmetic (ScalarField c1)
     , Binary (ScalarField c1)
-    ) => Plonkup i n l c1 c2 ts -> Plonk i n l c1 c2 ts
+    , Binary (Rep p)
+    ) => Plonkup p i n l c1 c2 ts -> Plonk p i n l c1 c2 ts
 fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 
-toPlonkup :: Plonk i n l c1 c2 ts -> Plonkup i n l c1 c2 ts
+toPlonkup :: Plonk p i n l c1 c2 ts -> Plonkup p i n l c1 c2 ts
 toPlonkup Plonk {..} = Plonkup {..}
 
-instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonk i n l c1 c2 t) where
+instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonk p i n l c1 c2 t) where
     show Plonk {..} =
         "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac) ++ " " ++ show ac ++ " " ++ show x
 
-instance ( KnownNat i, Arithmetic (ScalarField c1), Binary (ScalarField c1)
-         , Arbitrary (Plonkup i n l c1 c2 t))
-        => Arbitrary (Plonk i n l c1 c2 t) where
+instance ( KnownNat i, Arithmetic (ScalarField c1)
+         , Binary (ScalarField c1), Binary (Rep p)
+         , Arbitrary (Plonkup p i n l c1 c2 t))
+        => Arbitrary (Plonk p i n l c1 c2 t) where
     arbitrary = fromPlonkup <$> arbitrary
 
-instance forall i n l c1 c2 (ts :: Type) core .
-        ( NonInteractiveProof (Plonkup i n l c1 c2 ts) core
-        , SetupProve (Plonkup i n l c1 c2 ts) ~ PlonkupProverSetup i n l c1 c2
-        , SetupVerify (Plonkup i n l c1 c2 ts) ~ PlonkupVerifierSetup i n l c1 c2
-        , Witness (Plonkup i n l c1 c2 ts) ~ (PlonkupWitnessInput i c1, PlonkupProverSecret c1)
-        , Input (Plonkup i n l c1 c2 ts) ~ PlonkupInput l c1
-        , Proof (Plonkup i n l c1 c2 ts) ~ PlonkupProof c1
+instance forall p i n l c1 c2 (ts :: Type) core .
+        ( NonInteractiveProof (Plonkup p i n l c1 c2 ts) core
+        , SetupProve (Plonkup p i n l c1 c2 ts) ~ PlonkupProverSetup p i n l c1 c2
+        , SetupVerify (Plonkup p i n l c1 c2 ts) ~ PlonkupVerifierSetup p i n l c1 c2
+        , Witness (Plonkup p i n l c1 c2 ts) ~ (PlonkupWitnessInput p i c1, PlonkupProverSecret c1)
+        , Input (Plonkup p i n l c1 c2 ts) ~ PlonkupInput l c1
+        , Proof (Plonkup p i n l c1 c2 ts) ~ PlonkupProof c1
         , KnownNat n
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
@@ -75,24 +78,24 @@ instance forall i n l c1 c2 (ts :: Type) core .
         , ToTranscript ts (PointCompressed c1)
         , FromTranscript ts (ScalarField c1)
         , CoreFunction c1 core
-        ) => NonInteractiveProof (Plonk i n l c1 c2 ts) core where
-    type Transcript (Plonk i n l c1 c2 ts)  = ts
-    type SetupProve (Plonk i n l c1 c2 ts)  = PlonkupProverSetup i n l c1 c2
-    type SetupVerify (Plonk i n l c1 c2 ts) = PlonkupVerifierSetup i n l c1 c2
-    type Witness (Plonk i n l c1 c2 ts)     = (PlonkupWitnessInput i c1, PlonkupProverSecret c1)
-    type Input (Plonk i n l c1 c2 ts)       = PlonkupInput l c1
-    type Proof (Plonk i n l c1 c2 ts)       = PlonkupProof c1
+        ) => NonInteractiveProof (Plonk p i n l c1 c2 ts) core where
+    type Transcript (Plonk p i n l c1 c2 ts)  = ts
+    type SetupProve (Plonk p i n l c1 c2 ts)  = PlonkupProverSetup p i n l c1 c2
+    type SetupVerify (Plonk p i n l c1 c2 ts) = PlonkupVerifierSetup p i n l c1 c2
+    type Witness (Plonk p i n l c1 c2 ts)     = (PlonkupWitnessInput p i c1, PlonkupProverSecret c1)
+    type Input (Plonk p i n l c1 c2 ts)       = PlonkupInput l c1
+    type Proof (Plonk p i n l c1 c2 ts)       = PlonkupProof c1
 
-    setupProve :: Plonk i n l c1 c2 ts -> SetupProve (Plonk i n l c1 c2 ts)
-    setupProve = setupProve @(Plonkup i n l c1 c2 ts) @core . toPlonkup
+    setupProve :: Plonk p i n l c1 c2 ts -> SetupProve (Plonk p i n l c1 c2 ts)
+    setupProve = setupProve @(Plonkup p i n l c1 c2 ts) @core . toPlonkup
 
-    setupVerify :: Plonk i n l c1 c2 ts -> SetupVerify (Plonk i n l c1 c2 ts)
-    setupVerify = setupVerify @(Plonkup i n l c1 c2 ts) @core . toPlonkup
+    setupVerify :: Plonk p i n l c1 c2 ts -> SetupVerify (Plonk p i n l c1 c2 ts)
+    setupVerify = setupVerify @(Plonkup p i n l c1 c2 ts) @core . toPlonkup
 
-    prove :: SetupProve (Plonk i n l c1 c2 ts) -> Witness (Plonk i n l c1 c2 ts) -> (Input (Plonk i n l c1 c2 ts), Proof (Plonk i n l c1 c2 ts))
+    prove :: SetupProve (Plonk p i n l c1 c2 ts) -> Witness (Plonk p i n l c1 c2 ts) -> (Input (Plonk p i n l c1 c2 ts), Proof (Plonk p i n l c1 c2 ts))
     prove setup witness =
-        let (input, proof, _) = plonkProve @i @n @l @c1 @c2 @ts @core setup witness
+        let (input, proof, _) = plonkProve @p @i @n @l @c1 @c2 @ts @core setup witness
         in (input, proof)
 
-    verify :: SetupVerify (Plonk i n l c1 c2 ts) -> Input (Plonk i n l c1 c2 ts) -> Proof (Plonk i n l c1 c2 ts) -> Bool
-    verify = plonkVerify @i @n @l @c1 @c2 @ts
+    verify :: SetupVerify (Plonk p i n l c1 c2 ts) -> Input (Plonk p i n l c1 c2 ts) -> Proof (Plonk p i n l c1 c2 ts) -> Bool
+    verify = plonkVerify @p @i @n @l @c1 @c2 @ts

@@ -1,14 +1,17 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds   #-}
+{-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE TypeOperators    #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE TypeApplications #-}
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
 import           Data.Eq                                     (Eq)
 import           Data.Function                               (const, ($))
 import           Data.Functor                                (Functor, (<$>))
+import           Data.Functor.Rep                            (Rep, Representable)
 import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (describe, hspec)
@@ -18,6 +21,7 @@ import           Text.Show                                   (Show)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base)
+import           ZkFold.Base.Data.ByteString                 (Binary)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (eval)
 import           ZkFold.Symbolic.Data.Bool                   (false, true)
@@ -27,9 +31,10 @@ import           ZkFold.Symbolic.UPLC.Converter              (contractV3)
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.Term
 
-areSame ::
+areSame :: forall p f c s l a i .
   ( SymbolicData f, Context f ~ c, Support f ~ s, Layout f ~ l
-  , c ~ ArithmeticCircuit a i, Arbitrary (i a), Show (i a)
+  , c ~ ArithmeticCircuit a p i, Arbitrary (i a), Show (i a)
+  , Representable p, Binary (Rep p), Arbitrary (p a), Show (p a)
   , SymbolicInput s, Context s ~ c, Layout s ~ i
   , Functor l, Eq (l a), Show (l a)
   , a ~ Zp BLS12_381_Base) =>
@@ -37,7 +42,7 @@ areSame ::
 areSame v t f =
   let acT = compile (v t)
       acF = compile f
-   in property $ \i -> eval acT i === eval acF i
+   in property $ \p i -> eval acT p i === eval acF p i
 
 instance (Arbitrary (f a), Arbitrary (g a)) => Arbitrary ((f :*: g) a) where
   arbitrary = (:*:) <$> arbitrary <*> arbitrary
@@ -59,24 +64,24 @@ infixl 1 $$
 
 main :: IO ()
 main = hspec $ describe "UPLC tests" $ do
-  prop "false is ok" $ areSame contractV3 (TLam tFalse) (const true)
-  prop "error is not ok" $ areSame contractV3 (TLam TError) (const false)
+  prop "false is ok" $ areSame @U1 contractV3 (TLam tFalse) (const true)
+  prop "error is not ok" $ areSame @U1 contractV3 (TLam TError) (const false)
   prop "substitution is ok" $
-    areSame contractV3 (TLam $ TLam (TVariable 0) $$ tTrue) (const true)
-  prop "pair is ok" $ areSame contractV3
+    areSame @U1 contractV3 (TLam $ TLam (TVariable 0) $$ tTrue) (const true)
+  prop "pair is ok" $ areSame @U1 contractV3
     (TLam $ TBuiltin (BFPoly FstPair) $$ TConstant (CPair (CUnit ()) (CBool false)))
     (const true)
   prop "bool is not a pair" $
-    areSame contractV3 (TLam $ TBuiltin (BFPoly SndPair) $$ tTrue) (const false)
-  prop "trivial if if ok" $ areSame contractV3
+    areSame @U1 contractV3 (TLam $ TBuiltin (BFPoly SndPair) $$ tTrue) (const false)
+  prop "trivial if if ok" $ areSame @U1 contractV3
     (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tTrue $$ tFalse)
     (const true)
-  prop "lazy error in if is ok" $ areSame contractV3
+  prop "lazy error in if is ok" $ areSame @U1 contractV3
     (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tUnit $$ TError)
     (const true)
-  prop "error propagation in if" $ areSame contractV3
+  prop "error propagation in if" $ areSame @U1 contractV3
     (TLam $ TBuiltin (BFPoly IfThenElse) $$ tFalse $$ tUnit $$ TError)
     (const false)
-  prop "if as an argument is ok" $ areSame contractV3
+  prop "if as an argument is ok" $ areSame @U1 contractV3
     (TLam $ TLam (TVariable 0 $$ tTrue $$ tUnit $$ TError) $$ TBuiltin (BFPoly IfThenElse))
     (const true)

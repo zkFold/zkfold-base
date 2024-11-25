@@ -37,22 +37,24 @@ import           ZkFold.Symbolic.Interpreter                 (Interpreter (Inter
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . Arithmetic a => ByteString n (ArithmeticCircuit a U1) -> ByteString n (Interpreter a)
+type AC a = ArithmeticCircuit a U1 U1
+
+eval :: forall a n . Arithmetic a => ByteString n (AC a) -> ByteString n (Interpreter a)
 eval (ByteString bits) = ByteString $ Interpreter (exec bits)
 
 type Binary a = a -> a -> a
 
 type UBinary n b = Binary (ByteString n b)
 
-isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n (Interpreter (Zp p)) -> UBinary n (ArithmeticCircuit (Zp p) U1) -> Natural -> Natural -> Property
+isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n (Interpreter (Zp p)) -> UBinary n (AC (Zp p)) -> Natural -> Natural -> Property
 isHom f g x y = eval (fromConstant x `g` fromConstant y) === fromConstant x `f` fromConstant y
 
 isRightNeutral
     :: (KnownNat n, PrimeField (Zp p))
     => UBinary n (Interpreter (Zp p))
-    -> UBinary n (ArithmeticCircuit (Zp p) U1)
+    -> UBinary n (AC (Zp p))
     -> ByteString n (Interpreter (Zp p))
-    -> ByteString n (ArithmeticCircuit (Zp p) U1)
+    -> ByteString n (AC (Zp p))
     -> Natural
     -> Property
 isRightNeutral f g n1 n2 x = eval (fromConstant x `g` n2) === fromConstant x `f` n1
@@ -60,9 +62,9 @@ isRightNeutral f g n1 n2 x = eval (fromConstant x `g` n2) === fromConstant x `f`
 isLeftNeutral
     :: (KnownNat n, PrimeField (Zp p))
     => UBinary n (Interpreter (Zp p))
-    -> UBinary n (ArithmeticCircuit (Zp p) U1)
+    -> UBinary n (AC (Zp p))
     -> ByteString n (Interpreter (Zp p))
-    -> ByteString n (ArithmeticCircuit (Zp p) U1)
+    -> ByteString n (AC (Zp p))
     -> Natural
     -> Property
 isLeftNeutral f g n1 n2 x = eval (n2 `g` fromConstant x) === n1 `f` fromConstant x
@@ -77,9 +79,9 @@ testWords
     => Spec
 testWords = it ("divides a bytestring of length " <> show (value @n) <> " into words of length " <> show (value @wordSize)) $ do
     x <- toss m
-    let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
+    let arithBS = fromConstant x :: ByteString n (AC (Zp p))
         zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (Haskell.fmap eval (toWords @(Div n wordSize) @wordSize arithBS :: Vector (Div n wordSize) (ByteString wordSize (ArithmeticCircuit (Zp p) U1))) === toWords @(Div n wordSize) @wordSize zpBS)
+    return (Haskell.fmap eval (toWords @(Div n wordSize) @wordSize arithBS :: Vector (Div n wordSize) (ByteString wordSize (AC (Zp p)))) === toWords @(Div n wordSize) @wordSize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -92,9 +94,9 @@ testTruncate
     => Spec
 testTruncate = it ("truncates a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do
     x <- toss m
-    let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
+    let arithBS = fromConstant x :: ByteString n (AC (Zp p))
         zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (eval (resize arithBS :: ByteString m (ArithmeticCircuit (Zp p) U1)) === resize zpBS)
+    return (eval (resize arithBS :: ByteString m (AC (Zp p))) === resize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -104,14 +106,14 @@ testGrow
     .  KnownNat n
     => PrimeField (Zp p)
     => KnownNat m
-    => Resize (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString m (ArithmeticCircuit (Zp p) U1))
+    => Resize (ByteString n (ArithmeticCircuit (Zp p) U1 U1)) (ByteString m (ArithmeticCircuit (Zp p) U1 U1))
     => Resize (ByteString n (Interpreter (Zp p))) (ByteString m (Interpreter (Zp p)))
     => Spec
 testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do
     x <- toss m
-    let arithBS = fromConstant x :: ByteString n (ArithmeticCircuit (Zp p) U1)
+    let arithBS = fromConstant x :: ByteString n (AC (Zp p))
         zpBS    = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (eval (resize arithBS :: ByteString m (ArithmeticCircuit (Zp p) U1)) === resize zpBS)
+    return (eval (resize arithBS :: ByteString m (AC (Zp p))) === resize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -153,10 +155,10 @@ specByteString' = hspec $ do
             x <- toss m
             y <- toss m
 
-            let acX :: ByteString n (ArithmeticCircuit (Zp p) U1) = fromConstant x
-                acY :: ByteString n (ArithmeticCircuit (Zp p) U1) = fromConstant y
+            let acX :: ByteString n (AC (Zp p)) = fromConstant x
+                acY :: ByteString n (AC (Zp p)) = fromConstant y
 
-                acSum :: ByteString n (ArithmeticCircuit (Zp p) U1) = from $ from acX + (from acY :: UInt n Auto (ArithmeticCircuit (Zp p) U1))
+                acSum :: ByteString n (AC (Zp p)) = from $ from acX + (from acY :: UInt n Auto (AC (Zp p)))
 
                 zpSum :: ByteString n (Interpreter (Zp p)) = fromConstant $ x + y
 
@@ -192,9 +194,9 @@ specByteString' = hspec $ do
             x <- toss m
             y <- toss m
             z <- toss m
-            let acs = fromConstant @Natural @(ByteString n (ArithmeticCircuit (Zp p) U1)) <$> [x, y, z]
+            let acs = fromConstant @Natural @(ByteString n (AC (Zp p))) <$> [x, y, z]
                 zps = fromConstant @Natural @(ByteString n (Interpreter (Zp p))) <$> [x, y, z]
-            let ac = concat @3 @n $ V.unsafeToVector @3 acs :: ByteString (3 * n) (ArithmeticCircuit (Zp p) U1)
+            let ac = concat @3 @n $ V.unsafeToVector @3 acs :: ByteString (3 * n) (AC (Zp p))
                 zp = concat @3 @n $ V.unsafeToVector @3 zps
             return $ eval @(Zp p) @(3 * n) ac === zp
         testTruncate @n @1 @p

@@ -1,13 +1,16 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Tests.NonInteractiveProof (specNonInteractiveProof) where
 
 import           Data.ByteString                             (ByteString)
 import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
+import           GHC.Generics                                (U1 (..))
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
-import           Test.QuickCheck                             (Arbitrary, Testable (property), withMaxSuccess)
+import           Test.QuickCheck                             (Arbitrary, Testable (property), arbitrary, withMaxSuccess)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Protocol.KZG                    (KZG)
@@ -30,8 +33,11 @@ specNonInteractiveProof' = hspec $ do
             describe "All correct proofs" $ do
                 it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @a @core
 
+instance Arbitrary (U1 a) where
+  arbitrary = return U1
+
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
-    specNonInteractiveProof' @(Plonk 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
-    specNonInteractiveProof' @(Plonkup 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
+    specNonInteractiveProof' @(Plonk U1 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
+    specNonInteractiveProof' @(Plonkup U1 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore

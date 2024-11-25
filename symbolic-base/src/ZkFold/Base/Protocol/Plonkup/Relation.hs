@@ -8,6 +8,7 @@ import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (bool)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
+import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
 import           Data.Maybe                                          (fromJust)
@@ -32,7 +33,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
-data PlonkupRelation i n l a = PlonkupRelation
+data PlonkupRelation p i n l a = PlonkupRelation
     { qM       :: PolyVec a n
     , qL       :: PolyVec a n
     , qR       :: PolyVec a n
@@ -41,11 +42,11 @@ data PlonkupRelation i n l a = PlonkupRelation
     , qK       :: PolyVec a n
     , t        :: PolyVec a n
     , sigma    :: Permutation (3 * n)
-    , witness  :: Vector i a -> (PolyVec a n, PolyVec a n, PolyVec a n)
-    , pubInput :: Vector i a -> Vector l a
+    , witness  :: p a -> Vector i a -> (PolyVec a n, PolyVec a n, PolyVec a n)
+    , pubInput :: p a -> Vector i a -> Vector l a
     }
 
-instance Show a => Show (PlonkupRelation i n l a) where
+instance Show a => Show (PlonkupRelation p i n l a) where
     show PlonkupRelation {..} =
         "Plonkup Relation: "
         ++ show qM ++ " "
@@ -62,19 +63,22 @@ instance
         , KnownNat n
         , KnownNat (PlonkupPermutationSize n)
         , KnownNat l
+        , Representable p
         , Arbitrary a
         , Arithmetic a
         , Binary a
-        ) => Arbitrary (PlonkupRelation i n l a) where
+        , Binary (Rep p)
+        ) => Arbitrary (PlonkupRelation p i n l a) where
     arbitrary = fromJust . toPlonkupRelation <$> arbitrary
 
-toPlonkupRelation :: forall i n l a .
+toPlonkupRelation :: forall i p n l a .
        KnownNat i
     => KnownNat n
     => KnownNat l
+    => Representable p
     => Arithmetic a
-    => ArithmeticCircuit a (Vector i) (Vector l)
-    -> Maybe (PlonkupRelation i n l a)
+    => ArithmeticCircuit a p (Vector i) (Vector l)
+    -> Maybe (PlonkupRelation p i n l a)
 toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (fromVector xPub)
@@ -109,11 +113,11 @@ toPlonkupRelation ac =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c)
 
-        w1 i   = toPolyVec $ fromList $ fmap (indexW ac i) a
-        w2 i   = toPolyVec $ fromList $ fmap (indexW ac i) b
-        w3 i   = toPolyVec $ fromList $ fmap (indexW ac i) c
-        witness i  = (w1 i, w2 i, w3 i)
-        pubInput i = fmap (indexW ac i) xPub
+        w1 e i = toPolyVec $ fromList $ fmap (indexW ac e i) a
+        w2 e i = toPolyVec $ fromList $ fmap (indexW ac e i) b
+        w3 e i = toPolyVec $ fromList $ fmap (indexW ac e i) c
+        witness e i  = (w1 e i, w2 e i, w3 e i)
+        pubInput e i = fmap (indexW ac e i) xPub
 
     in if max n' nLookup <= value @n
         then Just $ PlonkupRelation {..}

@@ -7,7 +7,6 @@ module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 import           Control.DeepSeq                             (NFData)
 import           Data.Function                               (const, ($), (.))
 import           Data.Functor.Rep                            (Rep, Representable)
-import           Data.Ord                                    (Ord)
 import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
@@ -23,7 +22,7 @@ import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.RSA                                (exampleRSA)
 import           Examples.UInt
-import           GHC.Generics                                (Par1, (:*:), (:.:))
+import           GHC.Generics                                (Par1, U1, (:*:), (:.:))
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -35,7 +34,7 @@ import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
 
 type A = Zp BLS12_381_Scalar
-type C = ArithmeticCircuit A
+type C = ArithmeticCircuit A U1
 
 data ExampleOutput where
   ExampleOutput ::
@@ -53,7 +52,6 @@ exampleOutput ::
   , Support (Support f) ~ Proxy c
   , Layout (Support f) ~ i
   , Representable i
-  , Ord (Rep i)
   , NFData (Rep i)
   , NFData (o (Var A i))
   ) => f -> ExampleOutput
