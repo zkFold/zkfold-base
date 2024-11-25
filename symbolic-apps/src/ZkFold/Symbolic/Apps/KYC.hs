@@ -18,7 +18,7 @@ import           ZkFold.Symbolic.Data.Bool        (Bool, not, (&&))
 import           ZkFold.Symbolic.Data.ByteString  (ByteString, Resize (resize), concat, toWords)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
-                                                   NumberOfRegisters, RegisterSize (..))
+                                                   NumberOfRegisters)
 import           ZkFold.Symbolic.Data.Eq          (Eq ((==)), elem)
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Data.Ord         (Ord ((>=)))
@@ -52,7 +52,7 @@ data User r context = User
     , userCountry :: ByteString 10 context
     } deriving Generic
 
-instance (Symbolic context, KnownNat n, KnownNat k) => FromJSON (KYCData n k Auto context)
+instance (Symbolic context, KnownNat n, KnownNat k, KnownRegisterSize r) => FromJSON (KYCData n k r context)
 
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownNat k, KnownRegisterSize r) => ToJSON (KYCData n k r (Interpreter (Zp p)))
 

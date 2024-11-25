@@ -6,6 +6,7 @@
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
 import           Control.DeepSeq                  (NFData)
+import           Data.Aeson                       (ToJSON)
 import           Data.Functor                     ((<&>))
 import           Data.Kind                        (Type)
 import           GHC.Generics                     (Generic)
@@ -20,6 +21,7 @@ data Point curve = Point { _x :: BaseField curve, _y :: BaseField curve } | Inf
     deriving (Generic)
 
 deriving instance NFData (BaseField curve) => NFData (Point curve)
+deriving instance ToJSON (BaseField curve) => ToJSON (Point curve)
 
 class EllipticCurve curve where
 
