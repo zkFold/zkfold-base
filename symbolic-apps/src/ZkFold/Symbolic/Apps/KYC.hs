@@ -6,13 +6,13 @@ import           Data.Aeson
 import           Data.Functor                     ((<$>))
 import           Data.Maybe                       (fromJust)
 import           GHC.Generics                     (Generic)
-import           Prelude                          (String, error, ($), (.))
+import           Prelude                          (String, error, fst, snd, ($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (fromConstant))
 import           ZkFold.Base.Algebra.Basic.Field  (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Control.HApplicative (HApplicative)
-import           ZkFold.Base.Data.Vector          (Vector, head, tail, toVector)
+import           ZkFold.Base.Data.Vector          (Vector, splitAt, toVector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool        (Bool, not, (&&))
 import           ZkFold.Symbolic.Data.ByteString  (ByteString, Resize (resize), concat, toWords)
@@ -20,14 +20,12 @@ import           ZkFold.Symbolic.Data.Class       (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
                                                    NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq          (Eq ((==)), elem)
-import           ZkFold.Symbolic.Data.Input       (SymbolicInput (isValid))
+import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Data.Ord         (Ord ((>=)))
 import           ZkFold.Symbolic.Data.UInt        (OrdWord, UInt)
 import           ZkFold.Symbolic.Interpreter      (Interpreter)
 
 type KYCByteString context = ByteString 256 context
-
-type KYCHash context = UInt 256 Auto context
 
 {-
 >>> type Prime256_1 = 28948022309329048855892746252171976963363056481941560715954676764349967630337
@@ -42,54 +40,54 @@ exKYC = KYCData
 >>> encode exKYC
 "{\"kycHash\":\"bb8\",\"kycID\":4000,\"kycType\":\"3e8\",\"kycValue\":\"7d0\"}"
 -}
-data KYCData n context = KYCData
-    { kycType  :: KYCByteString context
+data KYCData n k r context = KYCData
+    { kycType  :: ByteString k context
+    , kycID    :: UInt k r context
+    , kycHash  :: UInt k r context
     , kycValue :: ByteString n context
-    , kycHash  :: KYCHash context
-    , kycID    :: UInt 64 Auto context
     } deriving Generic
 
 data User r context = User
-    { userAge     :: UInt 64 r context
-    , userCountry :: ByteString 128 context
+    { userAge     :: UInt 8 r context
+    , userCountry :: ByteString 10 context
     } deriving Generic
 
-instance (Symbolic context) => FromJSON (KYCData 256 context)
+instance (Symbolic context, KnownNat n, KnownNat k) => FromJSON (KYCData n k Auto context)
 
-instance (Symbolic (Interpreter (Zp p))) => ToJSON (KYCData 256 (Interpreter (Zp p)))
+instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownNat k, KnownRegisterSize r) => ToJSON (KYCData n k r (Interpreter (Zp p)))
 
-instance HApplicative context => SymbolicData (KYCData n context)
+instance HApplicative context => SymbolicData (KYCData n k r context)
 
 instance (
   Symbolic context
   , KnownNat n
-  , KnownNat (NumberOfRegisters (BaseField context) 256 'Auto)
-  , KnownNat (NumberOfRegisters (BaseField context) 64 'Auto)
-  ) => SymbolicInput (KYCData n context) where
-  isValid (KYCData t v h id) = isValid t && isValid v && isValid h && isValid id
+  , KnownNat k
+  , KnownRegisterSize r
+  , KnownNat (NumberOfRegisters (BaseField context) k r)
+  ) => SymbolicInput (KYCData n k r context)
 
 isCitizen :: (Symbolic c) => KYCByteString c -> Vector n (KYCByteString c) -> Bool c
 isCitizen = elem
 
-kycExample :: forall n r rsc context . (
+kycExample :: forall n k r rsc context . (
   Symbolic context
   , KnownNat n
   , KnownNat rsc
-  , Eq (Bool context) (KYCHash context)
   , KnownRegisterSize r
-  , KnownNat (NumberOfRegisters (BaseField context) 64 r)
-  , KnownNat (Ceil (GetRegisterSize (BaseField context) 64 r) OrdWord)
-  ) => KYCData n context -> KYCHash context -> Bool context
+  , KnownNat (NumberOfRegisters (BaseField context) 8 r)
+  , KnownNat (Ceil (GetRegisterSize (BaseField context) 8 r) OrdWord)
+  , KnownNat (NumberOfRegisters (BaseField context) k r)
+  ) => KYCData n k r context -> UInt k r context -> Bool context
 kycExample kycData hash =
   let
-    v :: Vector 3 (ByteString 64 context)
-    v = toWords $ resize $ kycValue kycData
+    v :: (Vector 8 (ByteString 1 context), Vector 10 (ByteString 1 context))
+    v = splitAt @8 @10 $ toWords $ resize $ kycValue kycData
 
     correctHash :: Bool context
     correctHash = hash == kycHash kycData
 
     user :: User r context
-    user = User (from $ head v) (concat $ tail v)
+    user = User (from $ concat $ fst v) (concat $ snd v)
 
     validAge :: Bool context
     validAge = userAge user >= fromConstant (18 :: Natural)
@@ -119,7 +117,7 @@ iso3166 = \case
 restrictedCountries :: forall m context . (
   Symbolic context
   , KnownNat m
-  ) => Vector m (ByteString 128 context)
+  ) => Vector m (ByteString 10 context)
 restrictedCountries =
   fromJust $ toVector $ fromConstant . iso3166 <$>
   [ "FRA"
