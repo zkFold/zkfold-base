@@ -146,6 +146,7 @@ library
       ZkFold.Base.Protocol.Protostar.Accumulator
       ZkFold.Base.Protocol.Protostar.AccumulatorScheme
       ZkFold.Base.Protocol.Protostar.AlgebraicMap
+      ZkFold.Base.Protocol.Protostar.ArithmetizableFunction
       ZkFold.Base.Protocol.Protostar.CommitOpen
       ZkFold.Base.Protocol.Protostar.Commit
       ZkFold.Base.Protocol.Protostar.FiatShamir

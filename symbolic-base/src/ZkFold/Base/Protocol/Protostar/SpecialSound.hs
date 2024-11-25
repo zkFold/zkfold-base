@@ -4,15 +4,16 @@
 
 module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
-import           Data.Functor.Rep                            (Representable (..))
-import           Data.Map.Strict                             (elems)
-import           GHC.Generics                                (U1(..), (:*:)(..))
-import           Prelude                                     (($), undefined)
+import           Data.Functor.Rep                                      (Representable (..))
+import           Data.Map.Strict                                       (elems)
+import           GHC.Generics                                          ((:*:)(..))
+import           Prelude                                               (($), undefined)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                     (Vector)
-import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap as AM
+import           ZkFold.Base.Data.Vector                               (Vector)
+import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap           as AM
+import           ZkFold.Base.Protocol.Protostar.ArithmetizableFunction (ArithmetizableFunction(..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 
@@ -48,11 +49,6 @@ class SpecialSoundProtocol f i p m c d k a where
     -> Vector (k-1) f               -- ^ random challenges
     -> VerifierOutput f i p m c d k a -- ^ verifier output
 
-data ArithmetizableFunction a i p = ArithmetizableFunction 
-  { afEval    :: i a -> p a -> i a
-  , afCircuit :: ArithmeticCircuit a (i :*: p) i U1
-  }
-
 instance (Arithmetic a, Representable i, Representable p, KnownNat (d + 1))
     => SpecialSoundProtocol a i p [a] c d 1 (ArithmetizableFunction a i p) where
   type VerifierOutput a i p [a] c d 1 (ArithmetizableFunction a i p) = [a]
@@ -64,4 +60,4 @@ instance (Arithmetic a, Representable i, Representable p, KnownNat (d + 1))
 
   -- | Evaluate the algebraic map on public inputs and prover messages
   --
-  verifier ArithmetizableFunction {..} pi pm ts = AM.algebraicMap @_ @_ @d afCircuit pi pm ts one
+  verifier af pi pm ts = AM.algebraicMap @_ @_ @d af pi pm ts one

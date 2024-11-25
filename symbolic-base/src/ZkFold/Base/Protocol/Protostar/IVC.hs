@@ -43,7 +43,7 @@ noIVCProof :: forall f i m c d k a .
     , KnownNat k
     , AlgebraicMap f i d a
     ) => FiatShamir (CommitOpen a) -> IVCProof f i m c d k
-noIVCProof fs = IVCProof (emptyAccumulatorInstance @_ @_ @_ @_ @d fs) (tabulate $ const zero)
+noIVCProof ac = IVCProof (emptyAccumulatorInstance @_ @_ @_ @_ @d ac) (tabulate $ const zero)
 
 -- | The final result of recursion and the final accumulator.
 -- Accumulation decider is an arithmetizable function which can be called on the final accumulator.
@@ -68,7 +68,7 @@ ivcInitialize :: forall f i m c (d :: Natural) k a .
     , KnownNat k
     , AlgebraicMap f i d a
     ) => FiatShamir (CommitOpen a) -> i f -> IVCResult f i m c d k
-ivcInitialize fs pi0 = IVCResult pi0 (tabulate $ const zero) (emptyAccumulator @_ @_ @_ @_ @d fs) (noIVCProof fs)
+ivcInitialize ac pi0 = IVCResult pi0 (tabulate $ const zero) (emptyAccumulator @_ @_ @_ @_ @d ac) (noIVCProof ac)
 
 ivcIterate :: forall f i p m c (d :: Natural) k a .
     ( SpecialSoundProtocol f i p m c d k a
