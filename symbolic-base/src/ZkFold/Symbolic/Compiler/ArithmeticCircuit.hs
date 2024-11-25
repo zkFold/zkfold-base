@@ -10,7 +10,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         desugarRanges,
         emptyCircuit,
         idCircuit,
-        payloadCircuit,
+        naturalCircuit,
         inputPayload,
         guessOutput,
         -- low-level functions
@@ -68,7 +68,7 @@ import           ZkFold.Prelude                                      (length)
 import           ZkFold.Symbolic.Class                               (fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
-                                                                      SysVar (..), Var (..), WitVar (WExVar), acInput,
+                                                                      SysVar (..), Var (..), WitVar (..), acInput,
                                                                       crown, eval, eval1, exec, exec1, hlmap, hpmap,
                                                                       witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
@@ -111,18 +111,29 @@ desugarRanges c =
 emptyCircuit :: ArithmeticCircuit a p i U1
 emptyCircuit = ArithmeticCircuit empty M.empty empty U1
 
+-- | Given a natural transformation
+-- from payload @p@ and input @i@ to output @o@,
+-- returns a corresponding arithmetic circuit
+-- where outputs computing the payload are unconstrained.
+naturalCircuit ::
+  ( Arithmetic a, Representable p, Representable i, Traversable o
+  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
+  (forall x. p x -> i x -> o x) -> ArithmeticCircuit a p i o
+naturalCircuit f = uncurry crown $ swap $ flip runState emptyCircuit $
+  for (f (tabulate Left) (tabulate Right)) $
+    either (unconstrained . pure . WExVar) (return . SysVar . InVar)
+
+-- | Identity circuit which returns its input @i@ and doesn't use the payload.
 idCircuit :: Representable i => ArithmeticCircuit a p i i
 idCircuit = emptyCircuit { acOutput = acInput }
 
-payloadCircuit ::
-  ( Representable p, Traversable p, Arithmetic a, Binary a
-  , Binary (Rep p), Binary (Rep l), Ord (Rep l)) => ArithmeticCircuit a p l p
-payloadCircuit =
-  uncurry crown $ swap $ flip runState emptyCircuit $
-    for (tabulate id) $ unconstrained . pure . WExVar
-
-inputPayload :: Representable p => p (WitnessF a (WitVar p i))
-inputPayload = tabulate $ pure . WExVar
+-- | Payload of an input to arithmetic circuit.
+-- To be used as an argument to 'compileWith'.
+inputPayload ::
+  (Representable p, Representable i) =>
+  (forall x. p x -> i x -> o x) -> o (WitnessF a (WitVar p i))
+inputPayload f =
+  f (tabulate $ pure . WExVar) (tabulate $ pure . WSysVar . InVar)
 
 guessOutput ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>

@@ -11,11 +11,13 @@ module ZkFold.Symbolic.Compiler (
 import           Data.Aeson                                 (FromJSON, ToJSON, ToJSONKey)
 import           Data.Binary                                (Binary)
 import           Data.Function                              (const, id, (.))
-import           Data.Functor.Rep                           (Rep)
+import           Data.Functor.Rep                           (Rep, Representable)
+import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
+import           Data.Tuple                                 (fst, snd)
 import           GHC.Generics                               (Par1 (Par1), U1 (..))
-import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
-                                                             (++))
+import           Prelude                                    (FilePath, IO, Show (..), Traversable, putStrLn, return,
+                                                             type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
@@ -47,20 +49,11 @@ type CompilesWith c s f =
 type RestoresFrom c y =
   (SymbolicData y, Context y ~ c, Support y ~ Proxy c, Payload y ~ U1)
 
--- | @compileWith opts sLayout f@ compiles a function @f@ into an optimized
--- arithmetic circuit packed inside a suitable 'SymbolicData'.
-compileWith ::
-  forall a y p i s f c0 c1.
+compileInternal ::
   (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i) =>
-  -- | Circuit transformation to apply before optimization.
   (c0 (Layout f) -> c1 (Layout y)) ->
-  -- | Basic "input" circuit used to solder @f@.
-  c0 (Layout s) ->
-  -- | Basic "input" payload used to solder @f@.
-  Payload s (WitnessField c0) ->
-  -- | Function to compile.
-  f -> y
-compileWith opts sLayout sPayload f =
+  c0 (Layout s) -> Payload s (WitnessField c0) -> f -> y
+compileInternal opts sLayout sPayload f =
   restore . const . (,U1) . optimize . opts $
     fromCircuit2F (arithmetize f input) b $
       \r (Par1 i) -> do
@@ -70,13 +63,32 @@ compileWith opts sLayout sPayload f =
     Bool b = isValid input
     input = restore $ const (sLayout, sPayload)
 
+-- | @compileWith opts inputT@ compiles a function @f@ into an optimized
+-- arithmetic circuit packed inside a suitable 'SymbolicData'.
+compileWith ::
+  forall a y p i q j s f c0 c1.
+  ( CompilesWith c0 s f, c0 ~ ArithmeticCircuit a p i
+  , Representable p, Representable i, Traversable (Layout s)
+  , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j
+  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
+  -- | Circuit transformation to apply before optimization.
+  (c0 (Layout f) -> c1 (Layout y)) ->
+  -- | An algorithm to prepare support argument from the circuit input.
+  (forall x. p x -> i x -> (Payload s x, Layout s x)) ->
+  -- | Function to compile.
+  f -> y
+compileWith outputTransform inputTransform =
+  compileInternal outputTransform
+    (naturalCircuit $ \p i -> snd (inputTransform p i))
+    (inputPayload $ \p i -> fst (inputTransform p i))
+
 -- | @compile f@ compiles a function @f@ into an optimized arithmetic circuit
 -- packed inside a suitable 'SymbolicData'.
 compile :: forall a y f c s.
   ( CompilesWith c s f, RestoresFrom c y, Layout y ~ Layout f
   , c ~ ArithmeticCircuit a (Payload s) (Layout s))
   => f -> y
-compile = compileWith id idCircuit inputPayload
+compile = compileInternal id idCircuit (inputPayload const)
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::
