@@ -6,6 +6,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         Var,
         witnessGenerator,
         -- high-level functions
+        optimize,
         desugarRanges,
         emptyCircuit,
         idCircuit,
@@ -33,43 +34,45 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         -- Testing functions
         checkCircuit,
         checkClosedCircuit,
-        isConstantInput,
-        optimize
+        isConstantInput
     ) where
 
-import           Control.DeepSeq                                         (NFData)
-import           Control.Monad                                           (foldM)
-import           Control.Monad.State                                     (execState)
-import           Data.Binary                                             (Binary)
-import           Data.Foldable                                           (for_)
-import           Data.Functor.Rep                                        (Representable (..), mzipRep)
-import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                          take)
-import qualified Data.Map.Monoidal                                       as MM
-import qualified Data.Set                                                as S
-import           Data.Void                                               (absurd)
-import           GHC.Generics                                            (U1 (..), (:*:))
-import           Numeric.Natural                                         (Natural)
-import           Prelude                                                 hiding (Num (..), drop, length, product,
-                                                                          splitAt, sum, take, (!!), (^))
-import           Test.QuickCheck                                         (Arbitrary, Property, arbitrary, conjoin,
-                                                                          property, withMaxSuccess, (===))
-import           Text.Pretty.Simple                                      (pPrint)
+import           Control.DeepSeq                                     (NFData)
+import           Control.Monad                                       (foldM)
+import           Control.Monad.State                                 (execState, runState)
+import           Data.Binary                                         (Binary)
+import           Data.Foldable                                       (for_)
+import           Data.Functor.Rep                                    (Representable (..), mzipRep)
+import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                      take)
+import qualified Data.Map.Monoidal                                   as M
+import qualified Data.Set                                            as S
+import           Data.Traversable                                    (for)
+import           Data.Tuple                                          (swap)
+import           Data.Void                                           (absurd)
+import           GHC.Generics                                        (U1 (..), (:*:))
+import           Numeric.Natural                                     (Natural)
+import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
+                                                                      sum, take, (!!), (^))
+import           Test.QuickCheck                                     (Arbitrary, Property, arbitrary, conjoin, property,
+                                                                      withMaxSuccess, (===))
+import           Text.Pretty.Simple                                  (pPrint)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate            (evalMonomial, evalPolynomial)
-import           ZkFold.Base.Data.HFunctor                               (hmap)
-import           ZkFold.Base.Data.Product                                (fstP, sndP)
-import           ZkFold.Prelude                                          (length)
-import           ZkFold.Symbolic.Class                                   (fromCircuit2F)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal     (Arithmetic, ArithmeticCircuit (..),
-                                                                          Constraint, SysVar (..), Var (..), acInput, eval, eval1, exec,
-                                                                          exec1, hlmap, witnessGenerator)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial)
+import           ZkFold.Base.Data.HFunctor                           (hmap)
+import           ZkFold.Base.Data.Product                            (fstP, sndP)
+import           ZkFold.Prelude                                      (length)
+import           ZkFold.Symbolic.Class                               (fromCircuit2F)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..), Constraint,
+                                                                      SysVar (..), Var (..), WitVar (WExVar), acInput,
+                                                                      crown, eval, eval1, exec, exec1, hlmap,
+                                                                      witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
-import           ZkFold.Symbolic.Data.Combinators                        (expansion)
-import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))
+import           ZkFold.Symbolic.Data.Combinators                    (expansion)
+import           ZkFold.Symbolic.MonadCircuit                        (MonadCircuit (..))
 
 --------------------------------- High-level functions --------------------------------
 
@@ -94,19 +97,21 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- MM.toList (acRange c), v <- S.toList s]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
 
 emptyCircuit :: ArithmeticCircuit a p i U1
 emptyCircuit = ArithmeticCircuit empty M.empty empty U1
 
 idCircuit :: Representable i => ArithmeticCircuit a p i i
-idCircuit = ArithmeticCircuit
-  { acSystem = empty
-  , acRange = MM.empty
-  , acWitness = empty
-  , acOutput = acInput
-  }
+idCircuit = emptyCircuit { acOutput = acInput }
+
+payloadCircuit ::
+  ( Representable p, Traversable p, Arithmetic a, Binary a
+  , Binary (Rep p), Binary (Rep l), Ord (Rep l)) => ArithmeticCircuit a p l p
+payloadCircuit =
+  uncurry crown $ swap $ flip runState emptyCircuit $
+    for (tabulate id) $ unconstrained . pure . WExVar
 
 guessOutput ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>
@@ -129,7 +134,7 @@ acSizeM = length . acWitness
 
 -- | Calculates the number of range lookups in the system.
 acSizeR :: ArithmeticCircuit a p i o -> Natural
-acSizeR = sum . map length . MM.elems . acRange
+acSizeR = sum . map length . M.elems . acRange
 
 acValue :: (Arithmetic a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a
 acValue = exec

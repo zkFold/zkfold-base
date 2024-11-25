@@ -25,6 +25,7 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
+import Data.Ord (Ord)
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -50,7 +51,7 @@ type RestoresFrom c y = (SymbolicData y, Context y ~ c, Support y ~ Proxy c)
 -- arithmetic circuit packed inside a suitable 'SymbolicData'.
 compileWith ::
   forall a y p i s f c0 c1.
-  (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i) =>
+  (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i, Symbolic c1, Ord (Rep i)) =>
   -- | Circuit transformation to apply before optimization.
   (c0 (Layout f) -> c1 (Layout y)) ->
   -- | Basic "input" circuit used to solder @f@.
