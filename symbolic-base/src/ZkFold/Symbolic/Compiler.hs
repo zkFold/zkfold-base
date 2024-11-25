@@ -12,6 +12,7 @@ import           Data.Aeson                                 (FromJSON, ToJSON, T
 import           Data.Binary                                (Binary)
 import           Data.Function                              (const, id, (.))
 import           Data.Functor.Rep                           (Rep)
+import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
 import           GHC.Generics                               (Par1 (Par1))
 import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
@@ -25,7 +26,6 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
-import Data.Ord (Ord)
 
 {-
     ZkFold Symbolic compiler module dependency order:

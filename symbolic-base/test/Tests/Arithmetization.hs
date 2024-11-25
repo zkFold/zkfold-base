@@ -12,6 +12,7 @@ import           GHC.Generics                                (Par1, U1 (..))
 import           Prelude
 import           Test.Hspec
 import           Test.QuickCheck
+import           Tests.Arithmetization.Optimization          (specOptimization)
 import           Tests.Arithmetization.Test1                 (specArithmetization1)
 import           Tests.Arithmetization.Test2                 (specArithmetization2)
 import           Tests.Arithmetization.Test3                 (specArithmetization3)
@@ -22,7 +23,6 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler
-import Tests.Arithmetization.Optimization (specOptimization)
 
 propCircuitInvariance ::
   ( Arithmetic a, Show a, Ord (Rep i)

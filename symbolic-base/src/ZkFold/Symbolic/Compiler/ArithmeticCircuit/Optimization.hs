@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization (
         toConstVar
     ) where
 
+import           Data.Bool                                               (bool)
 import           Data.Functor.Rep                                        (Representable (..))
 import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
                                                                           take)
@@ -20,7 +21,6 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
-import Data.Bool (bool)
 
 --------------------------------- High-level functions --------------------------------
 

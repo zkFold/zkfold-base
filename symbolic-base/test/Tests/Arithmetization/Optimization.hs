@@ -3,16 +3,17 @@
 
 module Tests.Arithmetization.Optimization (specOptimization) where
 
-import Test.Hspec
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.MonadCircuit
-import Prelude ( ($), return, IO, Show )
-import GHC.Generics (U1 (..), Par1 (..))
-import Data.Binary (Binary)
-import Test.QuickCheck.Property ((===))
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import ZkFold.Base.Algebra.Basic.Number (Natural)
+import           Data.Binary                                (Binary)
+import           GHC.Generics                               (Par1 (..), U1 (..))
+import           Prelude                                    (IO, Show, return, ($))
+import           Test.Hspec
+import           Test.QuickCheck.Property                   ((===))
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number           (Natural)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import           ZkFold.Symbolic.MonadCircuit
 
 
 testFunc :: forall a . (Arithmetic a, Binary a) => ArithmeticCircuit a U1 Par1 Par1
