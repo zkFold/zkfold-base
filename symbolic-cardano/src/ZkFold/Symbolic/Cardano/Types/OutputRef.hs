@@ -4,6 +4,7 @@
 
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
+import           GHC.Generics                        (Generic)
 import           GHC.TypeNats                        (KnownNat)
 import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                             as Haskell
@@ -22,20 +23,14 @@ data OutputRef context = OutputRef {
         outputRefId    :: TxRefId context,
         outputRefIndex :: TxRefIndex context
     }
+    deriving (Generic)
 
 deriving instance
     ( Haskell.Eq (TxRefId context)
     , Haskell.Eq (TxRefIndex context)
     ) => Haskell.Eq (OutputRef context)
 
-instance HApplicative context => SymbolicData (OutputRef context) where
-  type Context (OutputRef context) = Context (TxRefId context, TxRefIndex context)
-  type Support (OutputRef context) = Support (TxRefId context, TxRefIndex context)
-  type Layout (OutputRef context) = Layout (TxRefId context, TxRefIndex context)
-
-  pieces (OutputRef a b) = pieces (a, b)
-  restore f = let (a, b) = restore f in OutputRef a b
-
+instance HApplicative context => SymbolicData (OutputRef context)
 instance
     ( HApplicative context
     , Symbolic context
