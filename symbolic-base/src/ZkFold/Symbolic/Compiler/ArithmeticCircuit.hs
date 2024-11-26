@@ -73,7 +73,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal     (Arithm
                                                                           exec, exec1, hlmap, hpmap, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness  (WitnessF)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                        (expansion)
 import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))
 
