@@ -5,7 +5,6 @@ module ZkFold.Symbolic.Ledger.Validation.Update where
 import           Data.Functor.Rep                              (Representable)
 import           Data.Proxy                                    (Proxy)
 import           Data.Zip                                      (Zip)
-import           GHC.Generics                                  (Par1, (:*:))
 import           Prelude                                       hiding (Bool, Eq (..), all, concat, length, splitAt, zip,
                                                                 (&&), (*), (+), (++), (==))
 
@@ -27,9 +26,8 @@ applyOnlineTransaction ::
   => Hashable context (AddressIndex context, Transaction context)
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context) ~ Proxy context
-  => Applicative (Layout (AddressIndex context))
+  => Representable (Layout (AddressIndex context))
   => Traversable (Layout (AddressIndex context))
-  => Zip  (Layout (AddressIndex context) :*: Par1)
   => SymbolicData (AddressIndex context)
   => AddressIndex context
   -> Transaction context
@@ -50,9 +48,8 @@ applyOfflineTransaction ::
      Signature context
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
-  => Applicative (Layout (AddressIndex context))
+  => Representable (Layout (AddressIndex context))
   => Traversable (Layout (AddressIndex context))
-  => Zip (Layout (AddressIndex context, Hash context))
   => SymbolicData (AddressIndex context)
   => AddressIndex context
   -> Transaction context
@@ -67,15 +64,13 @@ applyOfflineTransaction ix tx w u =
 newUpdate ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
-  => Applicative (Layout (List context (Input context)))
-  => Applicative (Layout (List context (Output context)))
-  => Applicative (Layout (ContractData context))
+  => Representable (Layout (List context (Input context)))
+  => Representable (Layout (List context (Output context)))
+  => Representable (Layout (ContractData context))
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
-  => Applicative (Layout (AddressIndex context))
+  => Representable (Layout (AddressIndex context))
   => Traversable (Layout (AddressIndex context))
-  => Zip (Layout (AddressIndex context, Hash context))
-  => Zip  (Layout (AddressIndex context) :*: Par1)
   => SymbolicData (AddressIndex context)
   => Hash context
   -> UpdateWitness context
@@ -89,21 +84,19 @@ newUpdate hsh updWitness =
 updateIsValid ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
-  => Applicative (Layout (List context (Input context)))
-  => Applicative (Layout (List context (Output context)))
-  => Applicative (Layout (ContractData context))
+  => Representable (Layout (List context (Input context)))
+  => Representable (Layout (List context (Output context)))
+  => Representable (Layout (ContractData context))
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
-  => Applicative (Layout (AddressIndex context))
+  => Representable (Layout (AddressIndex context))
   => Traversable (Layout (AddressIndex context))
-  => Zip (Layout (AddressIndex context, Hash context))
-  => Zip  (Layout (AddressIndex context) :*: Par1)
   => SymbolicData (AddressIndex context)
   => Support (Value context) ~ Proxy context
   => Context (List context (Value context)) ~ context
   => Context (Value context) ~ context
   => Context (MultiAssetValue context) ~ context
-  => Applicative (Layout (Value context))
+  => Representable (Payload (Value context))
   => Zip (Layout (Value context))
   => SymbolicData (List context (Value context))
   => SymbolicData (Value context)
@@ -114,6 +107,7 @@ updateIsValid ::
   => Representable (Layout (List context (Value context)))
   => Representable (Layout (Value context))
   => Representable (Layout (MultiAssetValue context))
+  => Representable (Payload (MultiAssetValue context))
   => Eq (Bool context) (MultiAssetValue context)
   => Hash context
   -> Update context

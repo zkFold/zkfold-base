@@ -1,5 +1,6 @@
 module ZkFold.Symbolic.Ledger.Types.Update where
 
+import           Data.Functor.Rep                       (Representable)
 import           Prelude                                hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Class                  (Symbolic)
@@ -55,11 +56,11 @@ data Update context = Update
 
 emptyUpdate ::
      Symbolic context
-  => Applicative (Layout (AddressIndex context))
-  => Applicative (Layout (List context (Input context)))
-  => Applicative (Layout (List context (Output context)))
-  => Applicative (Layout (ContractData context))
-  => Applicative (Layout (Hash context))
+  => Representable (Layout (AddressIndex context))
+  => Representable (Layout (List context (Input context)))
+  => Representable (Layout (List context (Output context)))
+  => Representable (Layout (ContractData context))
+  => Representable (Layout (Hash context))
   => Hash context
   -> Update context
 emptyUpdate prev = Update

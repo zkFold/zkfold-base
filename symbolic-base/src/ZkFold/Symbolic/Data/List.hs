@@ -9,7 +9,7 @@ import           Data.Proxy                       (Proxy (..))
 import           Data.Traversable                 (Traversable, traverse)
 import           Data.Tuple                       (snd)
 import           GHC.Generics                     (Par1 (..), (:*:) (..))
-import           Prelude                          (Applicative, fmap, fst, type (~), undefined, ($), (.), (<$>))
+import           Prelude                          (fmap, fst, type (~), undefined, ($), (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.HFunctor        (hmap)
@@ -18,8 +18,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Data.UInt        (UInt)
 import           ZkFold.Symbolic.MonadCircuit
 
 data List c x = List
@@ -50,19 +49,6 @@ null
     => List context x
     -> Bool context
 null List{..} = Bool (fromCircuitF lSize (fmap fst . runInvert))
-
-singleton
-    :: forall context x
-    .  Symbolic context
-    => Applicative (Layout x)
-    => Traversable (Layout x)
-    => Zip (Layout x)
-    => SymbolicData x
-    => Context x ~ context
-    => Support x ~ Proxy context
-    => x
-    -> List context x
-singleton x = x .: emptyList
 
 infixr 5 .:
 (.:)
@@ -147,9 +133,6 @@ last = undefined
 (++) :: List context x -> List context x -> List context x
 _ ++ _ = undefined
 
-concat :: List context (List context x) -> List context x
-concat = undefined
-
 filter ::
        (x -> Bool context)
     -> List context x
@@ -162,5 +145,20 @@ delete = undefined
 (\\) :: List context x -> List context x -> List context x
 _ \\ _ = undefined
 
+singleton
+    :: forall context x
+    .  Symbolic context
+    => Traversable (Layout x)
+    => Representable (Layout x)
+    => SymbolicData x
+    => Context x ~ context
+    => Support x ~ Proxy context
+    => x
+    -> List context x
+singleton x = x .: emptyList
+
 (!!) :: List context x -> UInt n Auto context -> x
 (!!) = undefined
+
+concat :: List context (List context x) -> List context x
+concat = undefined

@@ -41,7 +41,7 @@ newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (Value con
 
 emptyMultiAssetValue ::
      Symbolic context
-  => Applicative (Layout (Value context))
+  => Representable (Layout (Value context))
   => MultiAssetValue context
 emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 
@@ -52,14 +52,14 @@ addValue ::
   => SymbolicData (Value context)
   => Context (Value context) ~ context
   => Support (Value context) ~ Proxy context
-  => Applicative (Layout (Value context))
-  => Traversable (Layout (Value context))
   => Representable (Layout (Value context))
+  => Traversable (Layout (Value context))
   => Zip (Layout (Value context))
   => Context (List context (Value context)) ~ context
   => SymbolicData (List context (Value context))
   => Traversable (Layout (List context (Value context)))
   => Representable (Layout (List context (Value context)))
+  => Representable (Payload (Value context))
   => Eq (Bool context) (CurrencySymbol context)
   => Value context
   -> MultiAssetValue context
@@ -81,9 +81,9 @@ multiValueAsset ::
   => SymbolicData (Value context)
   => Context (Value context) ~ context
   => Support (Value context) ~ Proxy context
-  => Applicative (Layout (Value context))
   => Traversable (Layout (Value context))
   => Representable (Layout (Value context))
+  => Representable (Payload (Value context))
   => Zip (Layout (Value context))
   => Context (List context (Value context)) ~ context
   => SymbolicData (List context (Value context))
@@ -94,6 +94,7 @@ multiValueAsset ::
   => SymbolicData (MultiAssetValue context)
   => Traversable (Layout (MultiAssetValue context))
   => Representable (Layout (MultiAssetValue context))
+  => Representable (Payload (MultiAssetValue context))
   => Foldable (List context)
   => List context (Value context)
   -> MultiAssetValue context
