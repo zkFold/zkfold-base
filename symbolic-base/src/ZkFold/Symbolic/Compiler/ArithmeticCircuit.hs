@@ -69,8 +69,8 @@ import           ZkFold.Symbolic.Class                                   (fromCi
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal     (Arithmetic, ArithmeticCircuit (..),
                                                                           Constraint, SysVar (..), Var (..),
-                                                                          WitVar (WExVar), acInput, crown, eval, eval1,
-                                                                          exec, exec1, hlmap, witnessGenerator)
+                                                                          WitVar (..), acInput, crown, eval, eval1,
+                                                                          exec, exec1, hlmap, hpmap, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness  (WitnessF)
