@@ -2,7 +2,8 @@
 
 module ZkFold.Symbolic.Data.Eq (
     Eq(..),
-    elem
+    elem,
+    GEq (..)
 ) where
 
 import           Data.Bool                        (bool)
