@@ -26,11 +26,11 @@ instance
     ) => Eq (Bool c) (Structural x) where
 
     Structural x == Structural y =
-        let x' = pieces x Proxy
-            y' = pieces y Proxy
+        let x' = arithmetize x Proxy
+            y' = arithmetize y Proxy
          in x' == y'
 
     Structural x /= Structural y =
-        let x' = pieces x Proxy
-            y' = pieces y Proxy
+        let x' = arithmetize x Proxy
+            y' = arithmetize y Proxy
          in x' /= y'
