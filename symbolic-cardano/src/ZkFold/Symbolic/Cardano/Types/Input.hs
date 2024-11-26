@@ -4,6 +4,7 @@
 
 module ZkFold.Symbolic.Cardano.Types.Input where
 
+import           GHC.Generics                            (Generic)
 import           Prelude                                 hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                                 as Haskell
 
@@ -21,20 +22,14 @@ data Input tokens datum context = Input  {
         txiOutputRef :: OutputRef context,
         txiOutput    :: Output tokens datum context
     }
+    deriving (Generic)
 
 deriving instance
     ( Haskell.Eq (OutputRef context)
     , Haskell.Eq (Output tokens datum context)
     ) => Haskell.Eq (Input tokens datum context)
 
-instance (Symbolic context, KnownNat tokens) => SymbolicData (Input tokens datum context) where
-  type Context (Input tokens datum context) = Context (OutputRef context, Output tokens datum context)
-  type Support (Input tokens datum context) = Support (OutputRef context, Output tokens datum context)
-  type Layout (Input tokens datum context) = Layout (OutputRef context, Output tokens datum context)
-
-  pieces (Input a b) = pieces (a, b)
-  restore f = let (a, b) = restore f in Input a b
-
+instance (Symbolic context, KnownNat tokens) => SymbolicData (Input tokens datum context)
 instance
   ( Symbolic context
   , KnownNat tokens

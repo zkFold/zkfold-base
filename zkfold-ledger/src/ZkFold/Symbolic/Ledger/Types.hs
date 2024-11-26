@@ -82,6 +82,7 @@ type Signature context =
     , Support (List context (TransactionId context)) ~ Proxy context
     , Applicative (Layout (List context (TransactionId context)))
     , Traversable (Layout (List context (TransactionId context)))
+    , Representable (Layout (List context (TransactionId context)))
     , SymbolicData (List context (TransactionId context))
     , Zip (Layout (List context (TransactionId context)))
 
@@ -90,6 +91,7 @@ type Signature context =
     , SymbolicData (Input context)
     , Applicative (Layout (Input context))
     , Traversable (Layout (Input context))
+    , Representable (Layout (Input context))
     , Zip (Layout (Input context))
 
     , Context (Hash context) ~ context
@@ -97,6 +99,7 @@ type Signature context =
     , SymbolicData (Hash context)
     , Applicative (Layout (Hash context))
     , Traversable (Layout (Hash context))
+    , Representable (Layout (Hash context))
     , Zip (Layout (Hash context))
 
     , Context (Update context) ~ context
@@ -106,4 +109,5 @@ type Signature context =
     , Traversable (Layout (Update context))
     , Representable (Layout (Update context)) -- TODO: Remove after implementing @instance SymbolicData List@
     , SymbolicData (Update context)           -- TODO: Remove after implementing @instance SymbolicData List@
+    , Representable (Payload (Update context))
     )

@@ -45,6 +45,7 @@ protostar :: forall a n k p i o ctx f pi m c .
     , Support [f] ~ Proxy ctx
     , Ring (PolyVec f 3)
     , HomomorphicCommit m c
+    , p ~ Payload (IVCInstanceProof pi f c m) :*: U1
     , i ~ Layout (IVCInstanceProof pi f c m) :*: U1
     , o ~ (((Par1 :*: Layout [FieldElement ctx]) :*: (Par1 :*: (Par1 :*: Par1))) :*: (Par1 :*: Par1))
     ) => (forall ctx' . Symbolic ctx' => Vector n (FieldElement ctx') -> Vector k (FieldElement ctx') -> Vector n (FieldElement ctx'))
@@ -62,6 +63,7 @@ protostar func =
         stepCircuit' =
             hlmap (\(x :*: u :*: y) -> Comp1 (Par1 <$> x) :*: Comp1 (Par1 <$> u) :*: Comp1 (Par1 <$> y) :*: U1)
             $ hmap (\(Comp1 x') -> unPar1 <$> x')
+            $ hpmap (\_ -> Comp1 (tabulate $ const U1) :*: Comp1 (tabulate $ const U1) :*: Comp1 (tabulate $ const U1) :*: U1)
             $ compile @a stepFunction
 
         -- The circuit for one step of the recursion with extra witness

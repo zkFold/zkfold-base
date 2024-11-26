@@ -6,16 +6,17 @@
 
 module ZkFold.Symbolic.Data.Combinators where
 
+import           Control.Applicative              (Applicative)
 import           Control.Monad                    (mapM)
 import           Data.Foldable                    (foldlM)
-import           Data.Functor.Rep                 (Representable, mzipRep)
+import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
 import           Data.Kind                        (Type)
 import           Data.List                        (find, splitAt)
 import           Data.List.Split                  (chunksOf)
 import           Data.Maybe                       (fromMaybe)
 import           Data.Proxy                       (Proxy (..))
 import           Data.Ratio                       ((%))
-import           Data.Traversable                 (Traversable, for)
+import           Data.Traversable                 (Traversable, for, sequenceA)
 import           Data.Type.Bool                   (If)
 import           Data.Type.Ord
 import           GHC.Base                         (const, return)
@@ -29,6 +30,13 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
 import           ZkFold.Symbolic.Class            (Arithmetic)
 import           ZkFold.Symbolic.MonadCircuit
+
+mzipWithMRep ::
+  (Representable f, Traversable f, Applicative m) =>
+  (a -> b -> m c) -> f a -> f b -> m (f c)
+mzipWithMRep f x y = sequenceA (mzipWithRep f x y)
+
+--------------------------------------------------------------------------------------------------
 
 -- | A class for isomorphic types.
 -- The @Iso b a@ context ensures that transformations in both directions are defined

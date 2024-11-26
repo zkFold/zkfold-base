@@ -4,7 +4,6 @@
 {-# LANGUAGE TypeOperators    #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE TypeApplications #-}
 
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
@@ -31,11 +30,11 @@ import           ZkFold.Symbolic.UPLC.Converter              (contractV3)
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.Term
 
-areSame :: forall p f c s l a i .
+areSame ::
   ( SymbolicData f, Context f ~ c, Support f ~ s, Layout f ~ l
   , c ~ ArithmeticCircuit a p i, Arbitrary (i a), Show (i a)
   , Representable p, Binary (Rep p), Arbitrary (p a), Show (p a)
-  , SymbolicInput s, Context s ~ c, Layout s ~ i
+  , SymbolicInput s, Context s ~ c, Layout s ~ i, Payload s ~ p
   , Functor l, Eq (l a), Show (l a)
   , a ~ Zp BLS12_381_Base) =>
   (Term -> f) -> Term -> f -> Property
@@ -64,24 +63,24 @@ infixl 1 $$
 
 main :: IO ()
 main = hspec $ describe "UPLC tests" $ do
-  prop "false is ok" $ areSame @U1 contractV3 (TLam tFalse) (const true)
-  prop "error is not ok" $ areSame @U1 contractV3 (TLam TError) (const false)
+  prop "false is ok" $ areSame contractV3 (TLam tFalse) (const true)
+  prop "error is not ok" $ areSame contractV3 (TLam TError) (const false)
   prop "substitution is ok" $
-    areSame @U1 contractV3 (TLam $ TLam (TVariable 0) $$ tTrue) (const true)
-  prop "pair is ok" $ areSame @U1 contractV3
+    areSame contractV3 (TLam $ TLam (TVariable 0) $$ tTrue) (const true)
+  prop "pair is ok" $ areSame contractV3
     (TLam $ TBuiltin (BFPoly FstPair) $$ TConstant (CPair (CUnit ()) (CBool false)))
     (const true)
   prop "bool is not a pair" $
-    areSame @U1 contractV3 (TLam $ TBuiltin (BFPoly SndPair) $$ tTrue) (const false)
-  prop "trivial if if ok" $ areSame @U1 contractV3
+    areSame contractV3 (TLam $ TBuiltin (BFPoly SndPair) $$ tTrue) (const false)
+  prop "trivial if if ok" $ areSame contractV3
     (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tTrue $$ tFalse)
     (const true)
-  prop "lazy error in if is ok" $ areSame @U1 contractV3
+  prop "lazy error in if is ok" $ areSame contractV3
     (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tUnit $$ TError)
     (const true)
-  prop "error propagation in if" $ areSame @U1 contractV3
+  prop "error propagation in if" $ areSame contractV3
     (TLam $ TBuiltin (BFPoly IfThenElse) $$ tFalse $$ tUnit $$ TError)
     (const false)
-  prop "if as an argument is ok" $ areSame @U1 contractV3
+  prop "if as an argument is ok" $ areSame contractV3
     (TLam $ TLam (TVariable 0 $$ tTrue $$ tUnit $$ TError) $$ TBuiltin (BFPoly IfThenElse))
     (const true)

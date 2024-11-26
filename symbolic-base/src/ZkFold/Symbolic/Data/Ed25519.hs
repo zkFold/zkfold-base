@@ -35,6 +35,7 @@ instance
     type Context (Point (Ed25519 c)) = c
     type Support (Point (Ed25519 c)) = Support (FFA Ed25519_Base c)
     type Layout (Point (Ed25519 c)) = Layout (FFA Ed25519_Base c, FFA Ed25519_Base c)
+    type Payload (Point (Ed25519 c)) = Payload (FFA Ed25519_Base c, FFA Ed25519_Base c)
 
     -- (0, 0) is never on a Twisted Edwards curve for any curve parameters.
     -- We can encode the point at infinity as (0, 0), therefore.
@@ -43,9 +44,10 @@ instance
     -- It will need additional checks in pointDouble because of the denominator becoming zero, though.
     -- TODO: Think of a better solution
     --
-    pieces Inf         = pieces (zero :: FFA Ed25519_Base c, zero :: FFA Ed25519_Base c)
-    pieces (Point x y) = pieces (x, y)
-
+    arithmetize Inf         = arithmetize (zero :: FFA Ed25519_Base c, zero :: FFA Ed25519_Base c)
+    arithmetize (Point x y) = arithmetize (x, y)
+    payload Inf         = payload (zero :: FFA Ed25519_Base c, zero :: FFA Ed25519_Base c)
+    payload (Point x y) = payload (x, y)
     restore f = Point x y
         where
             (x, y) = restore f
@@ -90,6 +92,7 @@ instance
     , l ~ Layout (Point c)
     , Representable l
     , Traversable l
+    , Representable (Payload (Point c))
     , ctx ~ Context (Point c)
     , Symbolic ctx
     , a ~ S.BaseField ctx

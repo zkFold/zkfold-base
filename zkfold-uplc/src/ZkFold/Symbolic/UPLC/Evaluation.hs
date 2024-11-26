@@ -52,6 +52,7 @@ class
     -- TODO: Remove after Conditional becomes part of SymbolicData
     , Representable (Layout v)
     , Traversable (Layout v)
+    , Representable (Payload v)
     ) => IsData (t :: BuiltinType) v c | t c -> v, v -> t, v -> c where
   asPair :: v -> Maybe (ExValue c, ExValue c)
 
