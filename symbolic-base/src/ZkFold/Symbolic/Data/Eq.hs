@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeOperators, UndecidableInstances #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Eq (
     Eq(..),
@@ -10,7 +11,7 @@ import           Data.Bool                        (bool)
 import           Data.Foldable                    (Foldable)
 import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
 import           Data.Traversable                 (Traversable, for)
-import qualified GHC.Generics                  as G
+import qualified GHC.Generics                     as G
 import           Prelude                          (return, ($))
 import qualified Prelude                          as Haskell
 
