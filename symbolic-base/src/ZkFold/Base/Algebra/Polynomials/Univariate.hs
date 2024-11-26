@@ -282,7 +282,6 @@ eea a b = go (a, one) (b, zero)
 
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
--- TODO (Issue #17): hide constructor
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
     deriving (Eq, Show, Generic, NFData)
 
