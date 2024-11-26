@@ -1,52 +1,49 @@
-{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Protostar.FiatShamir where
 
-import           GHC.Generics
-import           Prelude                                     hiding (Bool (..), Eq (..), length, pi)
+import           Data.Constraint                             (withDict)
+import           Data.Constraint.Nat                         (plusMinusInverse1)
+import           GHC.Generics                                (Generic)
+import           Prelude                                     hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
+import           ZkFold.Base.Algebra.Basic.Class             (Ring)
+import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, type (-))
+import           ZkFold.Base.Data.Vector                     (Vector, init, item, scanl, unfold)
 import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (BasicSpecialSoundProtocol, SpecialSoundProtocol (..))
-import           ZkFold.Prelude                              (length)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
 
-newtype FiatShamir f a = FiatShamir a
+newtype FiatShamir a = FiatShamir a
     deriving Generic
 
+-- The transcript of the Fiat-Shamired protocol (ignoring the last round)
+transcriptFiatShamir :: forall f c k . (Ring f, RandomOracle f f, RandomOracle c f) => f -> Vector k c -> Vector (k-1) f
+transcriptFiatShamir r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle @(f, c))) r0 cs
+
 instance
-    ( BasicSpecialSoundProtocol f (Input f a) m a
-    , RandomOracle (Input f a) f
-    , RandomOracle (f, c) f
+    ( SpecialSoundProtocol f i p m c d k a
+    , Ring f
     , HomomorphicCommit m c
-    ) => SpecialSoundProtocol f (FiatShamir f (CommitOpen m c a)) where
-        type Witness f (FiatShamir f (CommitOpen m c a))         = Witness f a
-        type Input f (FiatShamir f (CommitOpen m c a))           = Input f a
-        type ProverMessage f (FiatShamir f (CommitOpen m c a))   = [(c, m)]
-        type VerifierMessage f (FiatShamir f (CommitOpen m c a)) = ()
-        type VerifierOutput f (FiatShamir f (CommitOpen m c a))  = VerifierOutput f (CommitOpen m c a)
+    , RandomOracle (i f) f
+    , RandomOracle c f
+    , KnownNat k
+    ) => SpecialSoundProtocol f i p (Vector k (m, c)) c d 1 (FiatShamir (CommitOpen a)) where
+        type VerifierOutput f i p (Vector k (m, c)) c d 1 (FiatShamir (CommitOpen a)) = VerifierOutput f i p (m, c) c d k (CommitOpen a)
 
-        outputLength (FiatShamir a) = outputLength @f a
+        input (FiatShamir a) = input @_ @_ @_ @(m, c) @c @d @k a
 
-        rounds _ = 1
+        prover (FiatShamir a) pi0 w _ _ =
+            let r0 = oracle pi0
+                f (r, k) =
+                    let (m', c') = prover @f @i @_ @(m, c) @c @d @k a pi0 w r k
+                    in ((m', c'), (oracle (r, c'), k + 1))
+            in unfold f (r0, 1)
 
-        prover (FiatShamir a'@(CommitOpen a)) w pi _ _ =
-            let r0 = oracle pi
-                f (ms, cs, rs) _ =
-                  let r   = last rs
-                      m   = prover @f a w pi r (length ms)
-                      c   = case prover @f a' (w, ms) pi r (length ms) of
-                                Commit c' -> c'
-                                _         -> error "Invalid message"
-                  in (ms ++ [m], cs ++ [c], rs ++ [oracle @(f, c) (r, c)])
-
-                (ms', cs', _) = foldl f ([], [], [r0]) [1 .. rounds @f a]
-            in zip cs' ms'
-
-        verifier (FiatShamir a) pi [ms'] _ =
-            let (cs, ms) = unzip ms'
-                r0 = oracle pi
-                rs = foldl (\acc c -> acc ++ [oracle @(f, c) (last acc, c)]) [r0] cs
-            in verifier @f a pi (Open ms : map Commit cs) rs
-        verifier _ _ _ _ = error "Invalid message"
+        verifier (FiatShamir a) pi pms' _ =
+            let pms = item pms'
+                r0 = oracle pi :: f
+                rs = transcriptFiatShamir r0 $ fmap snd pms
+            in verifier @f @i @p @(m, c) @c @d @k a pi pms rs

@@ -14,11 +14,11 @@ import           Data.These                       (These (..))
 import qualified Data.Vector                      as V
 import           Data.Vector.Binary               ()
 import qualified Data.Vector.Split                as V
-import           Data.Zip                         (Semialign (..), Zip (..))
+import           Data.Zip                         (Semialign (..), Unzip (..), Zip (..))
 import           GHC.Generics                     (Generic)
 import           GHC.IsList                       (IsList (..))
-import           Prelude                          hiding (concat, drop, head, length, mod, replicate, sum, tail, take,
-                                                   zip, zipWith, (*))
+import           Prelude                          hiding (concat, drop, head, length, mod, negate, replicate, sum, tail,
+                                                   take, unzip, zip, zipWith, (*), (+), (-))
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..))
 
@@ -37,7 +37,7 @@ knownNat = fromIntegral (value @size)
 
 instance KnownNat size => Representable (Vector size) where
   type Rep (Vector size) = Zp size
-  index (Vector v) ix = v V.! (fromIntegral (fromZp ix))
+  index (Vector v) ix = v V.! fromIntegral (fromZp ix)
   tabulate f = Vector (V.generate (knownNat @size) (f . fromIntegral))
 
 instance KnownNat size => Distributive (Vector size) where
@@ -83,6 +83,12 @@ head (Vector as) = V.head as
 
 tail :: Vector size a -> Vector (size - 1) a
 tail (Vector as) = Vector $ V.tail as
+
+init :: Vector size a -> Vector (size - 1) a
+init (Vector as) = Vector $ V.init as
+
+scanl :: forall size a b . (b -> a -> b) -> b -> Vector size a -> Vector (size + 1) b
+scanl f z (Vector as) = Vector $ V.scanl f z as
 
 singleton :: a -> Vector 1 a
 singleton = Vector . pure
@@ -163,6 +169,9 @@ instance Zip (Vector size) where
 
     zipWith f (Vector as) (Vector bs) = Vector $ V.zipWith f as bs
 
+instance Unzip (Vector size) where
+    unzip v = (fst <$> v, snd <$> v)
+
 instance (Arbitrary a, KnownNat size) => Arbitrary (Vector size a) where
     arbitrary = sequenceA (pureRep arbitrary)
 
@@ -172,3 +181,19 @@ instance (Random a, KnownNat size) => Random (Vector size a) where
 
 instance ToJSON a => ToJSON (Vector n a) where
     toJSON (Vector xs) = toJSON xs
+
+-------------------------------------------------- Algebraic instances --------------------------------------------------
+
+instance (AdditiveSemigroup a) => AdditiveSemigroup (Vector n a) where
+    (+) = zipWith (+)
+
+instance (Scale b a) => Scale b (Vector n a) where
+    scale = fmap . scale
+
+instance (AdditiveMonoid a, KnownNat n) => AdditiveMonoid (Vector n a) where
+    zero = tabulate (const zero)
+
+instance (AdditiveGroup a, KnownNat n) => AdditiveGroup (Vector n a) where
+    negate = fmap negate
+
+    (-) = zipWith (-)
