@@ -1,77 +1,105 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TypeOperators  #-}
 
 module ZkFold.Base.Protocol.Protostar.IVC where
 
 import           Control.DeepSeq                                  (NFData)
 import           Control.Lens                                     ((^.))
+import           Data.Functor.Rep                                 (Representable (..))
+import           Data.Type.Equality                               (type (~))
 import           GHC.Generics                                     (Generic)
+import           Prelude                                          (const, ($))
 import qualified Prelude                                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number                 (KnownNat, Natural, type (-))
+import           ZkFold.Base.Data.Vector                          (Vector)
 import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
-import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme (AccumulatorScheme (..))
+import           ZkFold.Base.Protocol.Protostar.AlgebraicMap      (AlgebraicMap)
 import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.Protostar.CommitOpen
 import           ZkFold.Base.Protocol.Protostar.FiatShamir
-import           ZkFold.Base.Protocol.Protostar.NARK              (InstanceProofPair (..), NARKProof (..),
-                                                                   instanceProof)
+import           ZkFold.Base.Protocol.Protostar.NARK              (NARKInstanceProof (..), NARKProof (..),
+                                                                   narkInstanceProof)
 import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Base.Protocol.Protostar.SpecialSound      (BasicSpecialSoundProtocol)
+import           ZkFold.Base.Protocol.Protostar.SpecialSound      (SpecialSoundProtocol (..))
+
+data IVCProof f i m c d k
+    = IVCProof
+    { ivcpAccumulatorInstance :: AccumulatorInstance f i c k
+    , ivcpAccumulationProof   :: Vector (d-1) c
+    } deriving (GHC.Generics.Generic)
+
+deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCProof f i m c d k)
+deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCProof f i m c d k)
+
+noIVCProof :: forall f i m c d k a .
+    ( Representable i
+    , m ~ [f]
+    , HomomorphicCommit m c
+    , KnownNat (d-1)
+    , KnownNat (k-1)
+    , KnownNat k
+    , AlgebraicMap f i d a
+    ) => FiatShamir (CommitOpen a) -> IVCProof f i m c d k
+noIVCProof ac = IVCProof (emptyAccumulatorInstance @_ @_ @_ @_ @d ac) (tabulate $ const zero)
 
 -- | The final result of recursion and the final accumulator.
 -- Accumulation decider is an arithmetizable function which can be called on the final accumulator.
 --
-data IVCInstanceProof pi f c m
-    = IVCInstanceProof
-    { ivcInstance :: pi
-    , ivcCommits  :: [c] -- NARK proof π.x
-    , ivcAcc      :: Accumulator pi f c m
-    , ivcAcc'     :: Accumulator pi f c m
-    , ivcAccProof :: [c]
+data IVCResult f i m c d k
+    = IVCResult
+    { ivcInstance    :: i f
+    , ivcCommits     :: Vector k c
+    , ivcAccumulator :: Accumulator f i m c k
+    , ivcProof       :: IVCProof f i m c d k
     } deriving (GHC.Generics.Generic)
 
-deriving instance (P.Show pi, P.Show f, P.Show c, P.Show m) => P.Show (IVCInstanceProof pi f c m)
-deriving instance (NFData pi, NFData f, NFData c, NFData m) => NFData (IVCInstanceProof pi f c m)
+deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCResult f i m c d k)
+deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCResult f i m c d k)
 
-ivcInitialize ::
-    ( AdditiveMonoid f
-    , AdditiveMonoid pi
-    , AdditiveMonoid c
-    ) => IVCInstanceProof pi f c m
-ivcInitialize =
-    let acc = Accumulator (AccumulatorInstance zero [zero] [] zero zero) []
-    -- TODO: we need the proper number of commits and accumulation proof elements
-    in IVCInstanceProof zero [zero] acc acc []
-
-ivcIterate :: forall f pi c m a .
-    ( BasicSpecialSoundProtocol f pi m a
-    , Ring f
-    , RandomOracle f f
-    , RandomOracle pi f
-    , RandomOracle c f
+ivcInitialize :: forall f i m c (d :: Natural) k a .
+    ( Representable i
+    , m ~ [f]
     , HomomorphicCommit m c
-    , AccumulatorScheme pi f c m (FiatShamir f (CommitOpen m c a))
-    ) => FiatShamir f (CommitOpen m c a) -> IVCInstanceProof pi f c m -> pi -> IVCInstanceProof pi f c m
-ivcIterate fs (IVCInstanceProof _ _ _ acc' _) pi' =
-    let narkIP@(InstanceProofPair _ (NARKProof cs _)) = instanceProof fs pi'
-        (acc'', accProof') = Acc.prover fs acc' narkIP
-    in IVCInstanceProof pi' cs acc' acc'' accProof'
+    , KnownNat (d-1)
+    , KnownNat (k-1)
+    , KnownNat k
+    , AlgebraicMap f i d a
+    ) => FiatShamir (CommitOpen a) -> i f -> IVCResult f i m c d k
+ivcInitialize ac pi0 = IVCResult pi0 (tabulate $ const zero) (emptyAccumulator @_ @_ @_ @_ @d ac) (noIVCProof ac)
 
-ivcVerify :: forall pi f c m a .
-    ( AccumulatorScheme pi f c m a
-    ) => a -> IVCInstanceProof pi f c m -> ((f, pi, [f], [c], c), ([c], c))
-ivcVerify a (IVCInstanceProof {..}) =
-    let accX  = ivcAcc^.x
-        accX' = ivcAcc'^.x
+ivcIterate :: forall f i p m c (d :: Natural) k a .
+    ( SpecialSoundProtocol f i p m c d k a
+    , Ring f
+    , HomomorphicCommit m c
+    , RandomOracle (i f) f
+    , RandomOracle c f
+    , KnownNat k
+    , Acc.AccumulatorScheme f i m c d k (FiatShamir (CommitOpen a))
+    ) => FiatShamir (CommitOpen a) -> IVCResult f i m c d k -> p f -> IVCResult f i m c d k
+ivcIterate fs (IVCResult pi0 _ acc0 _) witness =
+    let
+        narkIP@(NARKInstanceProof pi (NARKProof cs _)) = narkInstanceProof @_ @_ @_ @_ @_ @d fs pi0 witness
+        (acc, pf) = Acc.prover fs acc0 narkIP
+        proof = IVCProof (acc0^.x) pf
     in
-        ( Acc.verifier @pi @f @c @m @a ivcInstance ivcCommits accX accX' ivcAccProof
-        , decider @pi @f @c @m @a a ivcAcc')
+        IVCResult pi cs acc proof
 
-ivcVerify':: forall pi f c m a .
-    ( AccumulatorScheme pi f c m a
-    ) => a -> IVCInstanceProof pi f c m -> ((f, pi, f, c, c), (c, c))
-ivcVerify' a ip =
-    let ((x1, x2, x3, x4, x5), (x6, x7)) = ivcVerify @pi @f @c @m @a a ip
-    in ((x1, x2, P.head x3, P.head x4, x5), (P.head x6, x7))
+ivcVerify :: forall f i m c d k a .
+    ( Acc.AccumulatorScheme f i m c d k a
+    ) => a -> IVCResult f i m c d k -> ((f, i f, Vector (k-1) f, Vector k c, c), (Vector k c, c))
+ivcVerify a IVCResult {..} =
+    let
+        pi            = ivcInstance
+        cs            = ivcCommits
+        acc           = ivcAccumulator
+        IVCProof {..} = ivcProof
+        accX          = acc^.x
+        accX0         = ivcpAccumulatorInstance
+        pf            = ivcpAccumulationProof
+    in
+        ( Acc.verifier @f @i @m @c @d @k @a pi cs accX0 accX pf
+        , Acc.decider @f @i @m @c @d @k @a a acc
+        )

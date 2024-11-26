@@ -1,106 +1,83 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Protostar.AlgebraicMap where
 
-import           Data.Functor.Rep                                    (Representable (..), tabulate)
-import           Data.List                                           (foldl')
-import           Data.Map.Strict                                     (Map)
-import qualified Data.Map.Strict                                     as M
-import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             (Foldable, Ord, fmap, type (~), zip, ($), (++),
-                                                                      (.), (<$>))
-import qualified Prelude                                             as P
+import           Data.ByteString                                       (ByteString)
+import           Data.Functor.Rep                                      (Representable (..))
+import           Data.List                                             (foldl')
+import           Data.Map.Strict                                       (Map, keys)
+import qualified Data.Map.Strict                                       as M
+import           Prelude                                               (fmap, zip, ($), (.), (<$>))
+import qualified Prelude                                               as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate          as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import qualified ZkFold.Base.Data.Vector                             as V
-import           ZkFold.Base.Data.Vector                             (Vector)
+import qualified ZkFold.Base.Data.Vector                               as V
+import           ZkFold.Base.Data.Vector                               (Vector)
+import           ZkFold.Base.Protocol.Protostar.ArithmetizableFunction (ArithmetizableFunction (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
 
--- | Algebraic map is a much more versatile and powerful tool when used separatey from SpecialSoundProtocol.
--- It calculates a system of equations @[f]@ defining @a@ in some way.
--- If @f@ is a number or a field element, then the result is a vector of polynomial values.
--- However, @f@ can be a polynomial, in which case the result will be a system of polynomials.
--- This polymorphism is exploited in the AccumulatorScheme prover.
+-- | Algebraic map of @a@.
+-- It calculates a system of equations defining @a@ in some way.
+-- The inputs are polymorphic in a ring element @f@.
+-- The main application is to define the verifier's algebraic map in the NARK protocol.
 --
-class
-  ( Ring f
-  , AdditiveGroup pi
-  , Scale f pi
-  , IsList pi
-  , Item pi ~ f
-  , AdditiveSemigroup m
-  , Scale f m
-  , IsList m
-  , Item m ~ f
-  ) => AlgebraicMap f pi m a where
-    type Degree a :: Natural
-    -- ^ d in the paper, the verifier degree
-
-    -- | the algebraic map V_sps computed by the verifier.
+class (Ring f) => AlgebraicMap f i (d :: Natural) a where
+    -- | the algebraic map Vsps computed by the NARK verifier.
     algebraicMap :: a
-        -> pi     -- ^ public input
-        -> [m]    -- ^ NARK proof witness (the list of prover messages)
-        -> [f]    -- ^ Verifier random challenges
-        -> f      -- ^ Slack variable for padding
+        -> i f            -- ^ public input
+        -> Vector k [f]   -- ^ NARK proof witness (the list of prover messages)
+        -> Vector (k-1) f -- ^ Verifier random challenges
+        -> f              -- ^ Slack variable for padding
         -> [f]
 
 instance
-  ( Representable i
-  , Ord (Rep i)
-  , Foldable i
+  ( Ring f
+  , Representable i
+  , KnownNat (d + 1)
   , Arithmetic a
   , Scale a f
-  , Ring f
-  , AdditiveGroup pi
-  , Scale f pi
-  , IsList pi
-  , Item pi ~ f
-  , AdditiveSemigroup m
-  , Scale f m
-  , IsList m
-  , Item m ~ f
-  ) => AlgebraicMap f pi m (ArithmeticCircuit a p i o) where
-    type Degree (ArithmeticCircuit a p i o) = 2
-
-    -- We can use the polynomial system from the circuit as a base for V_sps.
+  ) => AlgebraicMap f i d (ArithmetizableFunction a i p) where
+    -- We can use the polynomial system from the circuit as a base for Vsps.
     --
-    algebraicMap ac pi pm _ pad = padDecomposition pad f_sps_uni
+    algebraicMap ArithmetizableFunction {..} pi pm _ pad = padDecomposition pad f_sps_uni
         where
             sys :: [PM.Poly a (SysVar i) Natural]
-            sys = M.elems (acSystem ac)
+            sys = M.elems (acSystem afCircuit)
 
-            witness :: Map (SysVar i) f
-            witness = M.fromList $ zip (getAllVars ac) (toList pi ++ toList (P.head pm))
+            witness :: Map ByteString f
+            witness = M.fromList $ zip (keys $ acWitness afCircuit) (V.head pm)
 
             varMap :: SysVar i -> f
-            varMap x = M.findWithDefault zero x witness
+            varMap (InVar inV)   = index pi inV
+            varMap (NewVar newV) = M.findWithDefault zero newV witness
 
-            f_sps :: Vector 3 [PM.Poly a (SysVar i) Natural]
-            f_sps = degreeDecomposition @(Degree (ArithmeticCircuit a p i o)) $ sys
+            f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
+            f_sps = degreeDecomposition @_ @d $ sys
 
-            f_sps_uni :: Vector 3 [f]
+            f_sps_uni :: Vector (d+1) [f]
             f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
 
 
-padDecomposition :: forall f d .
-    ( KnownNat d
-    , MultiplicativeMonoid f
+padDecomposition :: forall f n .
+    ( MultiplicativeMonoid f
     , AdditiveMonoid f
-     ) => f -> V.Vector d [f] -> [f]
+    , KnownNat n
+    ) => f -> V.Vector n [f] -> [f]
 padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) * ) <$> p)
     where
-        d = value @d -! 1
+        d = value @n -! 1
 
--- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @n@
+-- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @d@
 --
-degreeDecomposition :: forall n f v . KnownNat (n + 1) => [Poly f v Natural] -> V.Vector (n + 1) [Poly f v Natural]
+degreeDecomposition :: forall f d v . KnownNat (d + 1) => [Poly f v Natural] -> V.Vector (d + 1) [Poly f v Natural]
 degreeDecomposition lmap = tabulate (degree_j . toConstant)
     where
         degree_j :: Natural -> [Poly f v Natural]

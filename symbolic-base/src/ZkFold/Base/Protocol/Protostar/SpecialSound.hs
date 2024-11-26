@@ -4,16 +4,16 @@
 
 module ZkFold.Base.Protocol.Protostar.SpecialSound where
 
-import           Data.Map.Strict                             (elems)
-import qualified Data.Map.Strict                             as M
-import           GHC.Generics                                (U1 (..))
-import           Prelude                                     (type (~), ($))
-import qualified Prelude                                     as P
+import           Data.Functor.Rep                                      (Representable (..))
+import           Data.Map.Strict                                       (elems)
+import           GHC.Generics                                          ((:*:) (..))
+import           Prelude                                               (($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector)
-import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap as AM
+import           ZkFold.Base.Data.Vector                               (Vector)
+import qualified ZkFold.Base.Protocol.Protostar.AlgebraicMap           as AM
+import           ZkFold.Base.Protocol.Protostar.ArithmetizableFunction (ArithmetizableFunction (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 
@@ -28,58 +28,36 @@ challenge ri ∈ F. After the final message mk, the verifier computes the algebr
 and checks that the output is a zero vector of length l.
 
 --}
-class SpecialSoundProtocol f a where
-      type Witness f a
-      type Input f a
-      type ProverMessage f a
-      type VerifierMessage f a
-      type VerifierOutput f a
+class SpecialSoundProtocol f i p m c d k a where
+  type VerifierOutput f i p m c d k a
 
-      outputLength :: a -> Natural
-      -- ^ l in the paper, the number of algebraic equations checked by the verifier
+  input :: a
+    -> i f                          -- ^ previous public input
+    -> p f                          -- ^ witness
+    -> i f                          -- ^ public input
 
-      rounds :: a -> Natural
-      -- ^ k in the paper
+  prover :: a
+    -> i f                          -- ^ previous public input
+    -> p f                          -- ^ witness
+    -> f                            -- ^ current random challenge
+    -> Natural                      -- ^ round number (starting from 1)
+    -> m                            -- ^ prover message
 
-      prover :: a
-        -> Witness f a         -- ^ witness
-        -> Input f a           -- ^ public input
-        -> VerifierMessage f a -- ^ current random challenge
-        -> Natural             -- ^ round number (starting from 0)
-        -> ProverMessage f a
+  verifier :: a
+    -> i f                          -- ^ public input
+    -> Vector k m                   -- ^ prover messages
+    -> Vector (k-1) f               -- ^ random challenges
+    -> VerifierOutput f i p m c d k a -- ^ verifier output
 
-      verifier :: a
-        -> Input f a             -- ^ public input
-        -> [ProverMessage f a]   -- ^ prover messages
-        -> [VerifierMessage f a] -- ^ random challenges
-        -> VerifierOutput f a    -- ^ verifier output
+instance (Arithmetic a, Representable i, Representable p, KnownNat (d + 1))
+    => SpecialSoundProtocol a i p [a] c d 1 (ArithmetizableFunction a i p) where
+  type VerifierOutput a i p [a] c d 1 (ArithmetizableFunction a i p) = [a]
 
-type BasicSpecialSoundProtocol f pi m a =
-  ( SpecialSoundProtocol f a
-  , Witness f a ~ ()
-  , Input f a ~ pi
-  , ProverMessage f a ~ m
-  , VerifierMessage f a ~ f
-  )
+  input ArithmetizableFunction {..} = afEval
 
-instance (Arithmetic a, KnownNat n) => SpecialSoundProtocol a (ArithmeticCircuit a U1 (Vector n) o) where
-    type Witness a (ArithmeticCircuit a U1 (Vector n) o) = ()
-    type Input a (ArithmeticCircuit a U1 (Vector n) o) = [a]
-    type ProverMessage a (ArithmeticCircuit a U1 (Vector n) o) = [a]
-    type VerifierMessage a (ArithmeticCircuit a U1 (Vector n) o) = a
-    type VerifierOutput a (ArithmeticCircuit a U1 (Vector n) o)  = [a]
-    -- type Degree (ArithmeticCircuit a p (Vector n) o) = AM.Degree (ArithmeticCircuit a p (Vector n) o)
+  -- | Just return the witness values on the previous public input
+  prover ArithmetizableFunction {..} pi0 w _ _ = elems $ witnessGenerator afCircuit (pi0 :*: w) (afEval pi0 w)
 
-    -- One round for Plonk
-    rounds = P.const 1
-
-    outputLength ac = P.fromIntegral $ M.size (acSystem ac)
-
-    -- The transcript will be empty at this point, it is a one-round protocol.
-    -- Input is arithmetised. We need to combine its witness with the circuit's witness.
-    --
-    prover ac _ pi _ _ = elems $ witnessGenerator ac U1 $ unsafeToVector pi
-
-    -- | Evaluate the algebraic map on public inputs and prover messages and compare it to a list of zeros
-    --
-    verifier ac pi pm ts = AM.algebraicMap ac pi pm ts one
+  -- | Evaluate the algebraic map on public inputs and prover messages
+  --
+  verifier af pi pm ts = AM.algebraicMap @_ @_ @d af pi pm ts one
