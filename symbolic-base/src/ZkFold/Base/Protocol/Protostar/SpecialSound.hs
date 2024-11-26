@@ -7,7 +7,7 @@ module ZkFold.Base.Protocol.Protostar.SpecialSound where
 import           Data.Functor.Rep                                      (Representable (..))
 import           Data.Map.Strict                                       (elems)
 import           GHC.Generics                                          ((:*:) (..))
-import           Prelude                                               (undefined, ($))
+import           Prelude                                               (($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -56,7 +56,7 @@ instance (Arithmetic a, Representable i, Representable p, KnownNat (d + 1))
   input ArithmetizableFunction {..} = afEval
 
   -- | Just return the witness values on the previous public input
-  prover ArithmetizableFunction {..} pi0 w _ _ = elems $ witnessGenerator afCircuit (pi0 :*: w) undefined
+  prover ArithmetizableFunction {..} pi0 w _ _ = elems $ witnessGenerator afCircuit (pi0 :*: w) (afEval pi0 w)
 
   -- | Evaluate the algebraic map on public inputs and prover messages
   --

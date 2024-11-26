@@ -20,7 +20,7 @@ newtype FiatShamir a = FiatShamir a
     deriving Generic
 
 -- The transcript of the Fiat-Shamired protocol (ignoring the last round)
-transcriptFiatShamir :: forall k c f . (Ring f, RandomOracle f f, RandomOracle c f) => f -> Vector k c -> Vector (k-1) f
+transcriptFiatShamir :: forall f c k . (Ring f, RandomOracle f f, RandomOracle c f) => f -> Vector k c -> Vector (k-1) f
 transcriptFiatShamir r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle @(f, c))) r0 cs
 
 instance
