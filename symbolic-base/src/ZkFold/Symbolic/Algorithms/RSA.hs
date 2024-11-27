@@ -24,8 +24,8 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), NumberOfRegisters,
-                                                       RegisterSize (..), Resize (..), KnownRegisters)
+import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
+                                                       NumberOfRegisters, RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
