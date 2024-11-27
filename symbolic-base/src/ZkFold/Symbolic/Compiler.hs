@@ -16,7 +16,7 @@ import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Tuple                                 (fst, snd)
 import           GHC.Generics                               (Par1 (Par1), U1 (..))
-import           Prelude                                    (FilePath, IO, Show (..), Traversable, putStrLn, return,
+import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return,
                                                              type (~), ($), (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -68,7 +68,7 @@ compileInternal opts sLayout sPayload f =
 compileWith ::
   forall a y p i q j s f c0 c1.
   ( CompilesWith c0 s f, c0 ~ ArithmeticCircuit a p i
-  , Representable p, Representable i, Traversable (Layout s)
+  , Representable p, Representable i
   , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j
   , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   -- | Circuit transformation to apply before optimization.

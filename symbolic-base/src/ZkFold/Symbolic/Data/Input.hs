@@ -12,7 +12,7 @@ import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..))
 import qualified GHC.Generics                     as G
 import           GHC.TypeLits                     (KnownNat)
-import           Prelude                          (foldl, ($), (.))
+import           Prelude                          (foldl, ($), (.), Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString      (Binary)
@@ -54,7 +54,8 @@ instance
   , Binary (R.Rep f)
   , Ord (R.Rep f)
   , NFData (R.Rep f)
-  , R.Representable f) => SymbolicInput (c f) where
+  , R.Representable f
+  , Traversable f) => SymbolicInput (c f) where
   isValid _ = true
 
 

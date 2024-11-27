@@ -25,7 +25,7 @@ import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), NumberOfRegisters,
-                                                       RegisterSize (..), Resize (..))
+                                                       RegisterSize (..), Resize (..), KnownRegisters)
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
@@ -48,11 +48,11 @@ deriving instance
     , P.Show (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
     ) => P.Show (PrivateKey context)
 
-deriving instance Symbolic ctx => SymbolicData (PrivateKey ctx)
+deriving instance (Symbolic ctx, KnownRegisters ctx KeyLength 'Auto) => SymbolicData (PrivateKey ctx)
 
 instance
   ( Symbolic ctx
-  , KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
+  , KnownRegisters ctx KeyLength 'Auto
   ) => SymbolicInput (PrivateKey ctx) where
     isValid PrivateKey{..} = isValid prvD && isValid prvN
 
@@ -77,7 +77,11 @@ deriving instance
     , P.Show (BaseField context)
     ) =>  P.Show  (PublicKey context)
 
-deriving instance Symbolic ctx => SymbolicData (PublicKey ctx)
+deriving instance
+    ( Symbolic ctx
+    , KnownRegisters ctx 32 'Auto
+    , KnownRegisters ctx KeyLength 'Auto
+    ) => SymbolicData (PublicKey ctx)
 
 instance
   ( Symbolic ctx

@@ -12,6 +12,7 @@ import           Data.Function                    (flip, (.))
 import           Data.Functor                     ((<$>))
 import           Data.Functor.Rep                 (Representable (..))
 import           Data.Kind                        (Type)
+import           Data.Traversable                 (Traversable)
 import           Data.Tuple                       (fst)
 import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..))
@@ -27,7 +28,10 @@ import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (WitnessField))
 
 -- | A class for Symbolic data types.
-class SymbolicData x where
+class
+    ( Representable (Layout x)
+    , Traversable (Layout x)
+    ) => SymbolicData x where
 
     type Context x :: (Type -> Type) -> Type
     type Context x = GContext (G.Rep x)
@@ -77,7 +81,11 @@ class SymbolicData x where
       (Support x -> (c (Layout x), Payload x (WitnessField c))) -> x
     restore f = G.to (grestore f)
 
-instance SymbolicData (c (f :: Type -> Type)) where
+instance
+    ( Representable f
+    , Traversable f
+    ) => SymbolicData (c (f :: Type -> Type)) where
+
     type Context (c f) = c
     type Support (c f) = Proxy c
     type Layout (c f) = f

@@ -6,7 +6,7 @@ import           Control.Monad                    (return)
 import           Data.Function                    (const)
 import           Data.Functor.Rep                 (Representable, pureRep, tabulate)
 import           Data.Proxy                       (Proxy (..))
-import           Data.Traversable                 (Traversable, traverse)
+import           Data.Traversable                 (traverse)
 import           Data.Tuple                       (snd)
 import           GHC.Generics                     (Par1 (..), (:*:) (..))
 import           Prelude                          (fmap, fst, type (~), undefined, ($), (.), (<$>))
@@ -53,8 +53,6 @@ infixr 5 .:
 (.:)
     :: forall context x
     .  Symbolic context
-    => Traversable (Layout x)
-    => Representable (Layout x)
     => SymbolicData x
     => Context x ~ context
     => Support x ~ Proxy context
@@ -80,7 +78,6 @@ uncons ::
   forall c x.
   (Symbolic c, SymbolicData x) =>
   (Context x ~ c, Support x ~ Proxy c, Representable (Payload x)) =>
-  (Representable (Layout x), Traversable (Layout x)) =>
   List c x -> (x, List c x)
 uncons l@List{..} = case lWitness of
   [] -> (restore $ const (lHash, tabulate (const zero)), l)
@@ -103,14 +100,12 @@ uncons l@List{..} = case lWitness of
 head ::
   (Symbolic c, SymbolicData x) =>
   (Context x ~ c, Support x ~ Proxy c, Representable (Payload x)) =>
-  (Representable (Layout x), Traversable (Layout x)) =>
   List c x -> x
 head = fst . uncons
 
 tail ::
   (Symbolic c, SymbolicData x) =>
   (Context x ~ c, Support x ~ Proxy c, Representable (Payload x)) =>
-  (Representable (Layout x), Traversable (Layout x)) =>
   List c x -> List c x
 tail = snd . uncons
 
