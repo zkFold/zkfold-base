@@ -12,7 +12,7 @@ import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..))
 import qualified GHC.Generics                     as G
 import           GHC.TypeLits                     (KnownNat)
-import           Prelude                          (foldl, ($), (.), Traversable)
+import           Prelude                          (Traversable, foldl, ($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString      (Binary)

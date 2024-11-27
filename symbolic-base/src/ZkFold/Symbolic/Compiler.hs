@@ -16,8 +16,8 @@ import           Data.Ord                                   (Ord)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Tuple                                 (fst, snd)
 import           GHC.Generics                               (Par1 (Par1), U1 (..))
-import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return,
-                                                             type (~), ($), (++))
+import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
+                                                             (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)

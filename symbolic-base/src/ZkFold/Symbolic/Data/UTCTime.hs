@@ -7,10 +7,10 @@ module ZkFold.Symbolic.Data.UTCTime where
 import           GHC.Natural                      (Natural)
 import           Prelude
 
-import           ZkFold.Symbolic.Class
 import           ZkFold.Base.Algebra.Basic.Class  (FromConstant)
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (RegisterSize (..), KnownRegisters)
+import           ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 
 newtype UTCTime c = UTCTime (UInt 11 Auto c)
