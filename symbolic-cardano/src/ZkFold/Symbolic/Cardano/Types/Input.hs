@@ -15,7 +15,7 @@ import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
 import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators        (NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators        (KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Input              (SymbolicInput, isValid)
 
 data Input tokens datum context = Input  {
@@ -29,12 +29,16 @@ deriving instance
     , Haskell.Eq (Output tokens datum context)
     ) => Haskell.Eq (Input tokens datum context)
 
-instance (Symbolic context, KnownNat tokens) => SymbolicData (Input tokens datum context)
+instance
+  ( Symbolic context, KnownNat tokens
+  , KnownRegisters context 32 Auto
+  , KnownRegisters context 64 Auto
+  ) => SymbolicData (Input tokens datum context)
 instance
   ( Symbolic context
   , KnownNat tokens
-  , KnownNat (NumberOfRegisters (BaseField context) 32 Auto)
-  , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+  , KnownRegisters context 32 Auto
+  , KnownRegisters context 64 Auto
   ) => SymbolicInput (Input tokens datum context) where
   isValid (Input ior io) = isValid (ior, io)
 

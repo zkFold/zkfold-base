@@ -30,7 +30,7 @@ verifySignature ::
     forall context .
     ( Symbolic context
     , SymbolicData (TxOut context)
-    , KnownNat (NumberOfRegisters (BaseField context) 256 'Auto)
+    , KnownRegisters context 256 'Auto
     ) => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (resize pub :: ByteString 256 context))
     where
@@ -44,8 +44,8 @@ batchTransfer ::
     forall context.
     ( Symbolic context
     , SymbolicInput (TxOut context)
-    , KnownNat (NumberOfRegisters (BaseField context) 256 'Auto)
-    , KnownNat (NumberOfRegisters (BaseField context) 64 'Auto)
+    , KnownRegisters context 256 'Auto
+    , KnownRegisters context 64 'Auto
     ) => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)-> Bool context
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures

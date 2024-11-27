@@ -63,7 +63,7 @@ kycExample :: forall n r rsc context . (
   , KnownNat rsc
   , Eq (Bool context) (KYCHash context)
   , KnownRegisterSize r
-  , KnownNat (NumberOfRegisters (BaseField context) 64 r)
+  , KnownRegisters context 64 r
   , KnownNat (Ceil (GetRegisterSize (BaseField context) 64 r) OrdWord)
   ) => KYCData n context -> KYCHash context -> Bool context
 kycExample kycData hash =

@@ -85,15 +85,15 @@ deriving instance
 
 instance
   ( Symbolic ctx
-  , KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
-  , KnownNat (NumberOfRegisters (BaseField ctx) 32 'Auto)
+  , KnownRegisters ctx 32 'Auto
+  , KnownRegisters ctx KeyLength 'Auto
   ) => SymbolicInput (PublicKey ctx) where
     isValid PublicKey{..} = isValid pubE && isValid pubN
 
 type RSA ctx msgLen =
    ( SHA2 "SHA256" ctx msgLen
-   , KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
-   , KnownNat (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)
+   , KnownRegisters ctx KeyLength 'Auto
+   , KnownRegisters ctx (2 * KeyLength) 'Auto
    , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * KeyLength) 'Auto) OrdWord)
    , NFData (ctx (Vector KeyLength))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)))
