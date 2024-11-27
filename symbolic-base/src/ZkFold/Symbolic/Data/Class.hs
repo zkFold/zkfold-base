@@ -181,7 +181,10 @@ instance SymbolicData f => SymbolicData (x -> f) where
     payload f (x, i) = payload (f x) i
     restore f x = restore (f . (x,))
 
-class GSymbolicData u where
+class
+    ( Representable (GLayout u)
+    , Traversable (GLayout u) 
+    ) => GSymbolicData u where
     type GContext u :: (Type -> Type) -> Type
     type GSupport u :: Type
     type GLayout u :: Type -> Type
