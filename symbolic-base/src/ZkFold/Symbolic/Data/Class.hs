@@ -183,7 +183,7 @@ instance SymbolicData f => SymbolicData (x -> f) where
 
 class
     ( Representable (GLayout u)
-    , Traversable (GLayout u) 
+    , Traversable (GLayout u)
     ) => GSymbolicData u where
     type GContext u :: (Type -> Type) -> Type
     type GSupport u :: Type
