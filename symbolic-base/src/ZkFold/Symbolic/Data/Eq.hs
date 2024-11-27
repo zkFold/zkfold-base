@@ -1,4 +1,3 @@
-{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -70,7 +69,7 @@ instance (Symbolic c, Haskell.Eq (BaseField c), Representable f, Traversable f)
         in
             any Bool (unpacked result)
 
-deriving newtype instance Symbolic c => Eq (Bool c) (Bool c)
+instance Symbolic c => Eq (Bool c) (Bool c)
 
 instance (BoolType b, Eq b x0, Eq b x1) => Eq b (x0,x1)
 instance (BoolType b, Eq b x0, Eq b x1, Eq b x2) => Eq b (x0,x1,x2)
