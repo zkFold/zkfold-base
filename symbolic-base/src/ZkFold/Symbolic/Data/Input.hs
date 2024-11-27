@@ -28,7 +28,6 @@ import           ZkFold.Symbolic.MonadCircuit
 class
     ( SymbolicData d
     , Support d ~ Proxy (Context d)
-    , R.Representable (Layout d)
     , Binary (R.Rep (Layout d))
     , Ord (R.Rep (Layout d))
     , NFData (R.Rep (Layout d))
