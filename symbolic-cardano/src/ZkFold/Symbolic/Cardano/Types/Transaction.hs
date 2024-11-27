@@ -13,7 +13,7 @@ import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
 import           ZkFold.Symbolic.Cardano.Types.Output (Liability (..), Output)
 import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
-import           ZkFold.Symbolic.Class                (BaseField, Symbolic)
+import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)

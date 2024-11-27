@@ -8,11 +8,10 @@ import           Numeric.Natural                      (Natural)
 import           Prelude                              hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number     (KnownNat)
 import           ZkFold.Base.Data.Vector              (Vector, fromVector, toVector)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Cardano.Types
-import           ZkFold.Symbolic.Class                (Symbolic (BaseField))
+import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..), all)
 import           ZkFold.Symbolic.Data.Class           (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators

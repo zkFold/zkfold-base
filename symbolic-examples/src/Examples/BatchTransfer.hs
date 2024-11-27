@@ -6,7 +6,7 @@ import           ZkFold.Base.Data.Vector                         (Vector)
 import           ZkFold.Symbolic.Cardano.Contracts.BatchTransfer (Tx, TxOut, batchTransfer)
 import           ZkFold.Symbolic.Cardano.Types                   (Bool, ByteString)
 import           ZkFold.Symbolic.Class                           (Symbolic (..))
-import           ZkFold.Symbolic.Data.Combinators                (NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators                (KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Input                      (SymbolicInput)
 
 exampleBatchTransfer ::
