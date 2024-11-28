@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module ZkFold.Base.Protocol.Protostar.ArithmetizableFunction where
+module ZkFold.Base.Protocol.IVC.ArithmetizableFunction where
 
 import           GHC.Generics             (U1 (..), (:*:) (..))
 

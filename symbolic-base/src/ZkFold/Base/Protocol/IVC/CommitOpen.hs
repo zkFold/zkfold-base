@@ -1,16 +1,16 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.Protostar.CommitOpen where
+module ZkFold.Base.Protocol.IVC.CommitOpen where
 
-import           Data.Zip                                    (zipWith)
-import           Prelude                                     hiding (Num (..), length, pi, tail, zipWith, (&&))
+import           Data.Zip                              (zipWith)
+import           Prelude                               hiding (Num (..), length, pi, tail, zipWith, (&&))
 
-import           ZkFold.Base.Algebra.Basic.Class             (AdditiveGroup (..))
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (hcommit))
-import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
+import           ZkFold.Base.Algebra.Basic.Class       (AdditiveGroup (..))
+import           ZkFold.Base.Data.Vector               (Vector)
+import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (hcommit))
+import           ZkFold.Base.Protocol.IVC.Oracle
+import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
 newtype CommitOpen a = CommitOpen a
 

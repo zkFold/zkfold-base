@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant ^." #-}
 
-module ZkFold.Base.Protocol.Protostar.AccumulatorScheme where
+module ZkFold.Base.Protocol.IVC.AccumulatorScheme where
 
 import           Control.Lens                                ((^.))
 import           Data.Constraint                             (withDict)
@@ -20,13 +20,13 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
 import           ZkFold.Base.Data.Vector                     (Vector, init, mapWithIx, tail, unsafeToVector)
-import           ZkFold.Base.Protocol.Protostar.Accumulator
-import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
-import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
-import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (..), transcriptFiatShamir)
-import           ZkFold.Base.Protocol.Protostar.NARK         (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
+import           ZkFold.Base.Protocol.IVC.Accumulator
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (AlgebraicMap (..))
+import           ZkFold.Base.Protocol.IVC.Commit             (HomomorphicCommit (..))
+import           ZkFold.Base.Protocol.IVC.CommitOpen         (CommitOpen (..))
+import           ZkFold.Base.Protocol.IVC.FiatShamir         (FiatShamir (..), transcriptFiatShamir)
+import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..))
+import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..))
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --

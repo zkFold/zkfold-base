@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.Protostar.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
+module ZkFold.Base.Protocol.IVC.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
 import           Control.DeepSeq                             (NFData)
 import           Data.Void                                   (Void)
@@ -16,7 +16,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar.Oracle
+import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Prelude                              (take)
 import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Data.Ed25519                ()

@@ -1,29 +1,29 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TypeOperators  #-}
 
-module ZkFold.Base.Protocol.Protostar.IVC where
+module ZkFold.Base.Protocol.IVC.Internal where
 
-import           Control.DeepSeq                                  (NFData)
-import           Control.Lens                                     ((^.))
-import           Data.Functor.Rep                                 (Representable (..))
-import           Data.Type.Equality                               (type (~))
-import           GHC.Generics                                     (Generic)
-import           Prelude                                          (const, ($))
-import qualified Prelude                                          as P
+import           Control.DeepSeq                            (NFData)
+import           Control.Lens                               ((^.))
+import           Data.Functor.Rep                           (Representable (..))
+import           Data.Type.Equality                         (type (~))
+import           GHC.Generics                               (Generic)
+import           Prelude                                    (const, ($))
+import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                 (KnownNat, Natural, type (-))
-import           ZkFold.Base.Data.Vector                          (Vector)
-import           ZkFold.Base.Protocol.Protostar.Accumulator       hiding (pi)
-import qualified ZkFold.Base.Protocol.Protostar.AccumulatorScheme as Acc
-import           ZkFold.Base.Protocol.Protostar.AlgebraicMap      (AlgebraicMap)
-import           ZkFold.Base.Protocol.Protostar.Commit            (HomomorphicCommit)
-import           ZkFold.Base.Protocol.Protostar.CommitOpen
-import           ZkFold.Base.Protocol.Protostar.FiatShamir
-import           ZkFold.Base.Protocol.Protostar.NARK              (NARKInstanceProof (..), NARKProof (..),
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, Natural, type (-))
+import           ZkFold.Base.Data.Vector                    (Vector)
+import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
+import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (AlgebraicMap)
+import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit)
+import           ZkFold.Base.Protocol.IVC.CommitOpen
+import           ZkFold.Base.Protocol.IVC.FiatShamir
+import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..),
                                                                    narkInstanceProof)
-import           ZkFold.Base.Protocol.Protostar.Oracle
-import           ZkFold.Base.Protocol.Protostar.SpecialSound      (SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.IVC.Oracle
+import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..))
 
 data IVCProof f i m c d k
     = IVCProof

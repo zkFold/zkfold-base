@@ -2,23 +2,23 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.Protostar.AlgebraicMap where
+module ZkFold.Base.Protocol.IVC.AlgebraicMap where
 
-import           Data.ByteString                                       (ByteString)
-import           Data.Functor.Rep                                      (Representable (..))
-import           Data.List                                             (foldl')
-import           Data.Map.Strict                                       (Map, keys)
-import qualified Data.Map.Strict                                       as M
-import           Prelude                                               (fmap, zip, ($), (.), (<$>))
-import qualified Prelude                                               as P
+import           Data.ByteString                                     (ByteString)
+import           Data.Functor.Rep                                    (Representable (..))
+import           Data.List                                           (foldl')
+import           Data.Map.Strict                                     (Map, keys)
+import qualified Data.Map.Strict                                     as M
+import           Prelude                                             (fmap, zip, ($), (.), (<$>))
+import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Algebra.Polynomials.Multivariate          as PM
+import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import qualified ZkFold.Base.Data.Vector                               as V
-import           ZkFold.Base.Data.Vector                               (Vector)
-import           ZkFold.Base.Protocol.Protostar.ArithmetizableFunction (ArithmetizableFunction (..))
+import qualified ZkFold.Base.Data.Vector                             as V
+import           ZkFold.Base.Data.Vector                             (Vector)
+import           ZkFold.Base.Protocol.IVC.ArithmetizableFunction     (ArithmetizableFunction (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal

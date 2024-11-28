@@ -1,21 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 
-module ZkFold.Base.Protocol.Protostar.NARK where
+module ZkFold.Base.Protocol.IVC.NARK where
 
-import           Control.DeepSeq                             (NFData (..))
-import           Data.Zip                                    (unzip)
+import           Control.DeepSeq                       (NFData (..))
+import           Data.Zip                              (unzip)
 import           GHC.Generics
-import           Prelude                                     hiding (head, length, pi, unzip)
+import           Prelude                               hiding (head, length, pi, unzip)
 
-import           ZkFold.Base.Algebra.Basic.Class             (Ring)
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat)
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
-import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir)
-import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
+import           ZkFold.Base.Algebra.Basic.Class       (Ring)
+import           ZkFold.Base.Algebra.Basic.Number      (KnownNat)
+import           ZkFold.Base.Data.Vector               (Vector)
+import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit)
+import           ZkFold.Base.Protocol.IVC.CommitOpen   (CommitOpen (..))
+import           ZkFold.Base.Protocol.IVC.FiatShamir   (FiatShamir)
+import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle (..))
+import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
 -- Page 18, section 3.4, The accumulation predicate
 --

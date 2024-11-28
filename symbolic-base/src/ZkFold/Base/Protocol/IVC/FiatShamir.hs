@@ -1,20 +1,20 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.Protostar.FiatShamir where
+module ZkFold.Base.Protocol.IVC.FiatShamir where
 
-import           Data.Constraint                             (withDict)
-import           Data.Constraint.Nat                         (plusMinusInverse1)
-import           GHC.Generics                                (Generic)
-import           Prelude                                     hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
+import           Data.Constraint                       (withDict)
+import           Data.Constraint.Nat                   (plusMinusInverse1)
+import           GHC.Generics                          (Generic)
+import           Prelude                               hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
-import           ZkFold.Base.Algebra.Basic.Class             (Ring)
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, type (-))
-import           ZkFold.Base.Data.Vector                     (Vector, init, item, scanl, unfold)
-import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit)
-import           ZkFold.Base.Protocol.Protostar.CommitOpen
-import           ZkFold.Base.Protocol.Protostar.Oracle       (RandomOracle (..))
-import           ZkFold.Base.Protocol.Protostar.SpecialSound (SpecialSoundProtocol (..))
+import           ZkFold.Base.Algebra.Basic.Class       (Ring)
+import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-))
+import           ZkFold.Base.Data.Vector               (Vector, init, item, scanl, unfold)
+import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit)
+import           ZkFold.Base.Protocol.IVC.CommitOpen
+import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle (..))
+import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
 newtype FiatShamir a = FiatShamir a
     deriving Generic

@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.Protostar.Oracle where
+module ZkFold.Base.Protocol.IVC.Oracle where
 
 import           Data.Char                                      (ord)
 import           Data.Proxy                                     (Proxy (..))

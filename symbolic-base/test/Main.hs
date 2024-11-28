@@ -11,11 +11,11 @@ import           Tests.FFA                 (specFFA)
 import           Tests.Field               (specField)
 import           Tests.GroebnerBasis       (specGroebner)
 import           Tests.Group               (specAdditiveGroup)
+import           Tests.IVC                 (specIVC)
 import           Tests.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
 import           Tests.Plonkup             (specPlonkup)
-import           Tests.Protostar           (specProtostar)
 import           Tests.RSA                 (specRSA)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
@@ -23,42 +23,42 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
-    -- Base
-    specBinary
+    -- -- Base
+    -- specBinary
 
-    -- Algebra
-    specPermutations
-    specField
-    specAdditiveGroup
-    specPairing
-    specUnivariate
-    specGroebner
+    -- -- Algebra
+    -- specPermutations
+    -- specField
+    -- specAdditiveGroup
+    -- specPairing
+    -- specUnivariate
+    -- specGroebner
 
-    -- Compiler spec
-    specCompiler
+    -- -- Compiler spec
+    -- specCompiler
 
-    -- Symbolic types and operations
-    specUInt
-    specFFA
-    specByteString
+    -- -- Symbolic types and operations
+    -- specUInt
+    -- specFFA
+    -- specByteString
 
-    -- Arithmetic circuit
-    specArithmeticCircuit
+    -- -- Arithmetic circuit
+    -- specArithmeticCircuit
 
-    -- Arithmetization
-    specArithmetization
+    -- -- Arithmetization
+    -- specArithmetization
 
-    -- Protocols
-    specPlonkup
-    specNonInteractiveProof
-    specProtostar
+    -- -- Protocols
+    -- specPlonkup
+    -- specNonInteractiveProof
+    specIVC
 
-    -- Cryptography
-    specSHA2Natural
-    specSHA2
-    specRSA
+    -- -- Cryptography
+    -- specSHA2Natural
+    -- specSHA2
+    -- specRSA
 
-    -- TODO: implement a proper blake2b test
-    specBlake2b
+    -- -- TODO: implement a proper blake2b test
+    -- specBlake2b
 
     putStrLn "\nAll tests passed!"

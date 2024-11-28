@@ -3,22 +3,22 @@
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module ZkFold.Base.Protocol.Protostar.Accumulator where
+module ZkFold.Base.Protocol.IVC.Accumulator where
 
-import           Control.DeepSeq                             (NFData (..))
-import           Control.Lens                                ((^.))
-import           Control.Lens.Combinators                    (makeLenses)
-import           Data.Functor.Rep                            (Representable (..))
+import           Control.DeepSeq                       (NFData (..))
+import           Control.Lens                          ((^.))
+import           Control.Lens.Combinators              (makeLenses)
+import           Data.Functor.Rep                      (Representable (..))
 import           GHC.Generics
-import           Prelude                                     hiding (length, pi)
+import           Prelude                               hiding (length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Class             (zero)
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural, type (-))
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.Protostar.AlgebraicMap (AlgebraicMap (..))
-import           ZkFold.Base.Protocol.Protostar.Commit       (HomomorphicCommit (..))
-import           ZkFold.Base.Protocol.Protostar.CommitOpen   (CommitOpen (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir   (FiatShamir (FiatShamir))
+import           ZkFold.Base.Algebra.Basic.Class       (zero)
+import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, Natural, type (-))
+import           ZkFold.Base.Data.Vector               (Vector)
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap (AlgebraicMap (..))
+import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
+import           ZkFold.Base.Protocol.IVC.CommitOpen   (CommitOpen (..))
+import           ZkFold.Base.Protocol.IVC.FiatShamir   (FiatShamir (FiatShamir))
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance f i c k

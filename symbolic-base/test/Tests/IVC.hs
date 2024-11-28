@@ -1,36 +1,32 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Tests.Protostar (specProtostar) where
+module Tests.IVC (specIVC) where
 
-import           GHC.Generics                                          (Par1 (..), U1 (..), type (:*:) (..),
-                                                                        type (:.:) (..))
-import           GHC.IsList                                            (IsList (..))
-import           Prelude                                               hiding (Num (..), pi, replicate, sum, (+))
-import           Test.Hspec                                            (describe, hspec, it)
-import           Test.QuickCheck                                       (property, withMaxSuccess)
+import           GHC.Generics                                    (Par1 (..), U1 (..), type (:*:) (..), type (:.:) (..))
+import           GHC.IsList                                      (IsList (..))
+import           Prelude                                         hiding (Num (..), pi, replicate, sum, (+))
+import           Test.Hspec                                      (describe, hspec, it)
+import           Test.QuickCheck                                 (property, withMaxSuccess)
 
-import           ZkFold.Base.Algebra.Basic.Class                       (FromConstant (..), one, zero)
-import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                      (Natural, type (-))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381           (BLS12_381_G1, BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.EllipticCurve.Class               (Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate            (PolyVec, evalPolyVec)
-import           ZkFold.Base.Data.Vector                               (Vector (..), item, singleton, unsafeToVector)
-import           ZkFold.Base.Protocol.Protostar.Accumulator            (Accumulator (..), AccumulatorInstance (..),
-                                                                        emptyAccumulator)
-import           ZkFold.Base.Protocol.Protostar.AccumulatorScheme      as Acc
-import           ZkFold.Base.Protocol.Protostar.AlgebraicMap           (AlgebraicMap (..))
-import           ZkFold.Base.Protocol.Protostar.ArithmetizableFunction (ArithmetizableFunction (..))
-import           ZkFold.Base.Protocol.Protostar.CommitOpen             (CommitOpen (..))
-import           ZkFold.Base.Protocol.Protostar.FiatShamir             (FiatShamir (..))
-import           ZkFold.Base.Protocol.Protostar.NARK                   (NARKInstanceProof (..), NARKProof (..),
-                                                                        narkInstanceProof)
-import           ZkFold.Prelude                                        (replicate)
-import           ZkFold.Symbolic.Class                                 (Symbolic)
-import           ZkFold.Symbolic.Compiler                              (ArithmeticCircuit, acSizeN, compileWith,
-                                                                        guessOutput, hlmap, hpmap)
-import           ZkFold.Symbolic.Data.FieldElement                     (FieldElement (..))
+import           ZkFold.Base.Algebra.Basic.Class                 (FromConstant (..), one, zero)
+import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
+import           ZkFold.Base.Algebra.Basic.Number                (Natural, type (-))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381     (BLS12_381_G1, BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.Class         (Point)
+import           ZkFold.Base.Algebra.Polynomials.Univariate      (PolyVec, evalPolyVec)
+import           ZkFold.Base.Data.Vector                         (Vector (..), item, singleton, unsafeToVector)
+import           ZkFold.Base.Protocol.IVC.Accumulator            (Accumulator (..), AccumulatorInstance (..), emptyAccumulator)
+import           ZkFold.Base.Protocol.IVC.AccumulatorScheme      as Acc
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap           (AlgebraicMap (..))
+import           ZkFold.Base.Protocol.IVC.ArithmetizableFunction (ArithmetizableFunction (..))
+import           ZkFold.Base.Protocol.IVC.CommitOpen             (CommitOpen (..))
+import           ZkFold.Base.Protocol.IVC.FiatShamir             (FiatShamir (..))
+import           ZkFold.Base.Protocol.IVC.NARK                   (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
+import           ZkFold.Prelude                                  (replicate)
+import           ZkFold.Symbolic.Class                           (Symbolic)
+import           ZkFold.Symbolic.Compiler                        (ArithmeticCircuit, acSizeN, compileWith, guessOutput, hlmap, hpmap)
+import           ZkFold.Symbolic.Data.FieldElement               (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
 type G = Point BLS12_381_G1
@@ -133,7 +129,7 @@ specAccumulatorScheme = hspec $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testSPS p) == (zero, singleton zero, unsafeToVector [], singleton zero, zero)
 
-specProtostar :: IO ()
-specProtostar = do
+specIVC :: IO ()
+specIVC = do
     specAlgebraicMap
     specAccumulatorScheme
