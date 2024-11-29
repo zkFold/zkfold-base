@@ -26,7 +26,7 @@ import           ZkFold.Base.Protocol.IVC.Commit             (HomomorphicCommit 
 import           ZkFold.Base.Protocol.IVC.CommitOpen         (CommitOpen (..))
 import           ZkFold.Base.Protocol.IVC.FiatShamir         (FiatShamir (..), transcriptFiatShamir)
 import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..))
+import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..), HashAlgorithm)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 --
@@ -58,19 +58,20 @@ instance
     , KnownNat (d + 1)
     , Scale f c
     , HomomorphicCommit [f] c
-    , RandomOracle (i f) f    -- Random oracle for compressing public input
-    , RandomOracle c f        -- Random oracle ρ_NARK
+    , HashAlgorithm algo f
+    , RandomOracle algo (i f) f    -- Random oracle for compressing public input
+    , RandomOracle algo c f        -- Random oracle ρ_NARK
     , KnownNat k
-    ) => AccumulatorScheme f i [f] c d k (FiatShamir (CommitOpen a)) where
+    ) => AccumulatorScheme f i [f] c d k (FiatShamir algo (CommitOpen a)) where
   prover (FiatShamir (CommitOpen sps)) acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
         (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
       where
           r_0 :: f
-          r_0 = oracle pubi
+          r_0 = oracle @algo pubi
 
           -- Fig. 3, step 1
           r_i :: Vector (k-1) f
-          r_i = transcriptFiatShamir r_0 pi_x
+          r_i = transcriptFiatShamir @algo r_0 pi_x
 
           -- Fig. 3, step 2
 
@@ -108,7 +109,7 @@ instance
 
           -- Fig. 3, step 4
           alpha :: f
-          alpha = oracle (acc^.x, pubi, pi_x, pf)
+          alpha = oracle @algo (acc^.x, pubi, pi_x, pf)
 
           -- Fig. 3, steps 5, 6
           mu'   = alpha + acc^.x^.mu
@@ -125,11 +126,11 @@ instance
       where
           -- Fig. 4, step 1
           r_i :: Vector (k-1) f
-          r_i = unsafeToVector $ P.tail $ P.tail $ P.scanl (P.curry oracle) (oracle pubi) $ toList c_i
+          r_i = unsafeToVector $ P.tail $ P.tail $ P.scanl (P.curry (oracle @algo)) (oracle @algo pubi) $ toList c_i
 
           -- Fig. 4, step 2
           alpha :: f
-          alpha = oracle (acc, pubi, c_i, pf)
+          alpha = oracle @algo (acc, pubi, c_i, pf)
 
           -- Fig. 4, step 3
           mu'  = alpha + acc^.mu

@@ -14,8 +14,8 @@ import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..
 
 newtype CommitOpen a = CommitOpen a
 
-instance RandomOracle a b => RandomOracle (CommitOpen a) b where
-    oracle (CommitOpen a) = oracle a
+instance RandomOracle algo a b => RandomOracle algo (CommitOpen a) b where
+    oracle (CommitOpen a) = oracle @algo a
 
 instance
     ( SpecialSoundProtocol f i p m c d k a

@@ -45,14 +45,14 @@ data Accumulator f i m c k
 
 makeLenses ''Accumulator
 
-emptyAccumulator :: forall f i m c (d :: Natural) k a .
+emptyAccumulator :: forall f i m c (d :: Natural) k a algo.
     ( Representable i
     , m ~ [f]
     , HomomorphicCommit m c
     , KnownNat (k-1)
     , KnownNat k
     , AlgebraicMap f i d a
-    ) => FiatShamir (CommitOpen a) -> Accumulator f i m c k
+    ) => FiatShamir algo (CommitOpen a) -> Accumulator f i m c k
 emptyAccumulator (FiatShamir (CommitOpen sps)) =
     let accW  = tabulate (const zero)
         aiC   = fmap hcommit accW
@@ -63,12 +63,12 @@ emptyAccumulator (FiatShamir (CommitOpen sps)) =
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 
-emptyAccumulatorInstance :: forall f i m c (d :: Natural) k a .
+emptyAccumulatorInstance :: forall f i m c (d :: Natural) k a algo .
     ( Representable i
     , m ~ [f]
     , HomomorphicCommit m c
     , KnownNat (k-1)
     , KnownNat k
     , AlgebraicMap f i d a
-    ) => FiatShamir (CommitOpen a) -> AccumulatorInstance f i c k
+    ) => FiatShamir algo (CommitOpen a) -> AccumulatorInstance f i c k
 emptyAccumulatorInstance fs = emptyAccumulator @_ @_ @_ @_ @d fs ^. x

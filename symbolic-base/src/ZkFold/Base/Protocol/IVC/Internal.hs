@@ -34,7 +34,7 @@ data IVCProof f i m c d k
 deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCProof f i m c d k)
 deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCProof f i m c d k)
 
-noIVCProof :: forall f i m c d k a .
+noIVCProof :: forall f i m c d k a algo .
     ( Representable i
     , m ~ [f]
     , HomomorphicCommit m c
@@ -42,7 +42,7 @@ noIVCProof :: forall f i m c d k a .
     , KnownNat (k-1)
     , KnownNat k
     , AlgebraicMap f i d a
-    ) => FiatShamir (CommitOpen a) -> IVCProof f i m c d k
+    ) => FiatShamir algo (CommitOpen a) -> IVCProof f i m c d k
 noIVCProof ac = IVCProof (emptyAccumulatorInstance @_ @_ @_ @_ @d ac) (tabulate $ const zero)
 
 -- | The final result of recursion and the final accumulator.
@@ -59,7 +59,7 @@ data IVCResult f i m c d k
 deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCResult f i m c d k)
 deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCResult f i m c d k)
 
-ivcInitialize :: forall f i m c (d :: Natural) k a .
+ivcInitialize :: forall f i m c (d :: Natural) k a algo .
     ( Representable i
     , m ~ [f]
     , HomomorphicCommit m c
@@ -67,18 +67,18 @@ ivcInitialize :: forall f i m c (d :: Natural) k a .
     , KnownNat (k-1)
     , KnownNat k
     , AlgebraicMap f i d a
-    ) => FiatShamir (CommitOpen a) -> i f -> IVCResult f i m c d k
+    ) => FiatShamir algo (CommitOpen a) -> i f -> IVCResult f i m c d k
 ivcInitialize ac pi0 = IVCResult pi0 (tabulate $ const zero) (emptyAccumulator @_ @_ @_ @_ @d ac) (noIVCProof ac)
 
-ivcIterate :: forall f i p m c (d :: Natural) k a .
+ivcIterate :: forall f i p m c (d :: Natural) k a algo .
     ( SpecialSoundProtocol f i p m c d k a
-    , Ring f
     , HomomorphicCommit m c
-    , RandomOracle (i f) f
-    , RandomOracle c f
+    , HashAlgorithm algo f
+    , RandomOracle algo (i f) f
+    , RandomOracle algo c f
     , KnownNat k
-    , Acc.AccumulatorScheme f i m c d k (FiatShamir (CommitOpen a))
-    ) => FiatShamir (CommitOpen a) -> IVCResult f i m c d k -> p f -> IVCResult f i m c d k
+    , Acc.AccumulatorScheme f i m c d k (FiatShamir algo (CommitOpen a))
+    ) => FiatShamir algo (CommitOpen a) -> IVCResult f i m c d k -> p f -> IVCResult f i m c d k
 ivcIterate fs (IVCResult pi0 _ acc0 _) witness =
     let
         narkIP@(NARKInstanceProof pi (NARKProof cs _)) = narkInstanceProof @_ @_ @_ @_ @_ @d fs pi0 witness

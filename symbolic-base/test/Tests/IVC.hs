@@ -23,6 +23,7 @@ import           ZkFold.Base.Protocol.IVC.ArithmetizableFunction (Arithmetizable
 import           ZkFold.Base.Protocol.IVC.CommitOpen             (CommitOpen (..))
 import           ZkFold.Base.Protocol.IVC.FiatShamir             (FiatShamir (..))
 import           ZkFold.Base.Protocol.IVC.NARK                   (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
+import           ZkFold.Base.Protocol.IVC.Oracle                 (MiMCHash)
 import           ZkFold.Prelude                                  (replicate)
 import           ZkFold.Symbolic.Class                           (Symbolic)
 import           ZkFold.Symbolic.Compiler                        (ArithmeticCircuit, acSizeN, compileWith, guessOutput, hlmap, hpmap)
@@ -35,7 +36,7 @@ type M = [F]
 type K = 1
 type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) U1
 type AF = ArithmetizableFunction F I U1
-type SPS = FiatShamir (CommitOpen AF)
+type SPS = FiatShamir MiMCHash (CommitOpen AF)
 type D = 2
 type PARDEG = 5
 type PAR = PolyVec F PARDEG

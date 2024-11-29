@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.IVC.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
@@ -24,11 +25,11 @@ import           ZkFold.Symbolic.Data.FFA                    (Size)
 
 -- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
 --
-class Commit a f where
+class Commit algo a f where
     commit :: a -> f
 
-instance RandomOracle a x => Commit a x where
-    commit = oracle
+instance RandomOracle algo a x => Commit algo a x where
+    commit = oracle @algo
 
 -- | Homomorphic commitment scheme, i.e. (hcommit x) * (hcommit y) == hcommit (x + y)
 --

@@ -15,6 +15,7 @@ import           ZkFold.Base.Protocol.IVC.Commit                 (HomomorphicCom
 import           ZkFold.Base.Protocol.IVC.CommitOpen             (CommitOpen (..))
 import           ZkFold.Base.Protocol.IVC.FiatShamir             (FiatShamir (..))
 import           ZkFold.Base.Protocol.IVC.Internal               (IVCResult, ivcVerify)
+import           ZkFold.Base.Protocol.IVC.Oracle                 (HashAlgorithm)
 import           ZkFold.Prelude                                  (replicate)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
@@ -26,11 +27,12 @@ import           ZkFold.Symbolic.Interpreter                     (Interpreter (.
 -- | Takes a function `f` and returns a circuit `C` with input `y` and witness `w`.
 -- The circuit is such that `C(y, w) = 0` implies that `y = x(n)` for some positive `n` where
 -- `x(k+1) = f(x(k), u(k))` for all `k` and some `u`.
-protostar :: forall f i m c d k a payload input output nx nu ctx .
+protostar :: forall f i m c d k a payload input output nx nu ctx algo .
     ( f ~ FieldElement ctx
     , i ~ Vector nx
     , m ~ [f]
     , c ~ f
+    , HashAlgorithm algo f
     , HomomorphicCommit m c
     , KnownNat (d - 1)
     , KnownNat (d + 1)
@@ -73,7 +75,7 @@ protostar func =
         af = ArithmetizableFunction stepFunction stepCircuit
 
         -- The Fiat-Shamired commit-open special-sound protocol for the arithmetizable function
-        fs :: FiatShamir (CommitOpen (ArithmetizableFunction a (Vector nx) (Vector nu)))
+        fs :: FiatShamir algo (CommitOpen (ArithmetizableFunction a (Vector nx) (Vector nu)))
         fs = FiatShamir (CommitOpen af)
 
         -- The verification function for the IVC result object
