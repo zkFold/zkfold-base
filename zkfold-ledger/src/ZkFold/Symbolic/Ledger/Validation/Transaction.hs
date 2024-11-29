@@ -1,21 +1,18 @@
 module ZkFold.Symbolic.Ledger.Validation.Transaction where
 
-import           Prelude                                        hiding (Bool, Eq, all, length, splitAt, sum, (&&), (*),
-                                                                 (+), (++), (==))
+import           Prelude                                    hiding (Bool, Eq, all, length, splitAt, sum, (&&), (*), (+),
+                                                             (++), (==))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Data.Bool                      (BoolType (..), all)
-import           ZkFold.Symbolic.Data.Eq                        (Eq (..))
+import           ZkFold.Symbolic.Data.Bool                  (Bool, BoolType (..), all)
+import           ZkFold.Symbolic.Data.Eq                    (Eq (..))
+import           ZkFold.Symbolic.Data.List                  (List)
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Contract
-import           ZkFold.Symbolic.Ledger.Validation.PrivateInput
-import           ZkFold.Symbolic.Ledger.Validation.PublicInput
+import           ZkFold.Symbolic.Ledger.Validation.Input
 
 -- | Witness data for the inputs of a transaction.
 type TransactionInputsWitness context =
-      ( List context (Input context, PrivateInputWitness context)
-      , List context (Input context, PublicInputWitness context)
-      )
+      List context (Input context, InputWitness context)
 
 -- | Witness data for a transaction satisfies the included contracts.
 type TransactionContractsWitness context =
@@ -29,33 +26,18 @@ type TransactionWitness context = (TransactionInputsWitness context, Transaction
 -- | Checks if the inputs of a transaction are valid.
 transactionInputsAreValid ::
       Signature context
-   => UpdateId context
+   => Hash context
    -- ^ The id of the current block.
    -> Transaction context
    -- ^ The transaction to check.
    -> TransactionInputsWitness context
    -- ^ The witness data for the inputs of the transaction.
    -> Bool context
-transactionInputsAreValid bId tx (wPrv, wPub) =
-   let privateInputs = txInputs tx
-       publicInputs = txPublicInputs tx
+transactionInputsAreValid bId tx w =
+   let inputs = txInputs tx
 
-   in all (uncurry $ privateInputIsValid bId) wPrv
-   && privateInputs == fmap fst wPrv
-   && all (uncurry $ publicInputIsValid bId) wPub
-   && publicInputs == fmap fst wPub
-
--- | Checks if the balance of a transaction is correct.
-transactionBalanceIsCorrect ::
-      Signature context
-   => Transaction context
-   -> Bool context
-transactionBalanceIsCorrect tx =
-   let spending  = sum (txoValue . txiOutput <$> txInputs tx)
-       minting   = sum $ txMint tx
-       producing = sum $ txoValue <$> txOutputs tx
-
-   in producing == spending + minting
+   in all (uncurry $ inputIsValid bId) w
+   && inputs == fmap fst w
 
 -- | Checks if a transaction satisfies the included contracts.
 transactionContractsAreSatisfied ::
@@ -75,7 +57,7 @@ transactionContractsAreSatisfied tx (wSpend, wMint) =
 -- | Checks if a transaction is valid.
 transactionIsValid ::
       Signature context
-   => UpdateId context
+   => Hash context
    -- ^ The id of the current block.
    -> Transaction context
    -- ^ The transaction to check.
@@ -84,5 +66,4 @@ transactionIsValid ::
    -> Bool context
 transactionIsValid bId tx (wInputs, wContracts) =
        transactionInputsAreValid bId tx wInputs
-    && transactionBalanceIsCorrect tx
     && transactionContractsAreSatisfied tx wContracts

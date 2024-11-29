@@ -175,3 +175,21 @@ delete = undefined
 
 (\\) :: List context x -> List context x -> List context x
 _ \\ _ = undefined
+
+singleton
+    :: forall context x
+    .  Symbolic context
+    => Traversable (Layout x)
+    => Representable (Layout x)
+    => SymbolicData x
+    => Context x ~ context
+    => Support x ~ Proxy context
+    => x
+    -> List context x
+singleton x = x .: emptyList
+
+(!!) :: List context x -> UInt n Auto context -> x
+(!!) = undefined
+
+concat :: List context (List context x) -> List context x
+concat = undefined
