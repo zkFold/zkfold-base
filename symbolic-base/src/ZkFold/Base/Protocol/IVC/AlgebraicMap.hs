@@ -18,7 +18,7 @@ import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Base.Protocol.IVC.ArithmetizableFunction     (ArithmetizableFunction (..))
+import            ZkFold.Base.Protocol.IVC.Predicate                 (Predicate(..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -44,16 +44,16 @@ instance
   , KnownNat (d + 1)
   , Arithmetic a
   , Scale a f
-  ) => AlgebraicMap f i d (ArithmetizableFunction a i p) where
+  ) => AlgebraicMap f i d (Predicate a i p) where
     -- We can use the polynomial system from the circuit as a base for Vsps.
     --
-    algebraicMap ArithmetizableFunction {..} pi pm _ pad = padDecomposition pad f_sps_uni
+    algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
         where
             sys :: [PM.Poly a (SysVar i) Natural]
-            sys = M.elems (acSystem afCircuit)
+            sys = M.elems (acSystem predicateCircuit)
 
             witness :: Map ByteString f
-            witness = M.fromList $ zip (keys $ acWitness afCircuit) (V.head pm)
+            witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
 
             varMap :: SysVar i -> f
             varMap (InVar inV)   = index pi inV

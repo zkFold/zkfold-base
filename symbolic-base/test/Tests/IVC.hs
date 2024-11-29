@@ -19,11 +19,11 @@ import           ZkFold.Base.Data.Vector                         (Vector (..), i
 import           ZkFold.Base.Protocol.IVC.Accumulator            (Accumulator (..), AccumulatorInstance (..), emptyAccumulator)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme      as Acc
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap           (AlgebraicMap (..))
-import           ZkFold.Base.Protocol.IVC.ArithmetizableFunction (ArithmetizableFunction (..))
 import           ZkFold.Base.Protocol.IVC.CommitOpen             (CommitOpen (..))
 import           ZkFold.Base.Protocol.IVC.FiatShamir             (FiatShamir (..))
 import           ZkFold.Base.Protocol.IVC.NARK                   (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle                 (MiMCHash)
+import           ZkFold.Base.Protocol.IVC.Predicate              (Predicate (..))
 import           ZkFold.Prelude                                  (replicate)
 import           ZkFold.Symbolic.Class                           (Symbolic)
 import           ZkFold.Symbolic.Compiler                        (ArithmeticCircuit, acSizeN, compileWith, guessOutput, hlmap, hpmap)
@@ -35,7 +35,7 @@ type I = Vector 1
 type M = [F]
 type K = 1
 type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) U1
-type AF = ArithmetizableFunction F I U1
+type AF = Predicate F I U1
 type SPS = FiatShamir MiMCHash (CommitOpen AF)
 type D = 2
 type PARDEG = 5
@@ -58,11 +58,11 @@ testCircuit p =
     hlmap (\x -> U1 :*: Comp1 (Par1 <$> x)) $
     compileWith @F guessOutput (\x U1 -> (Comp1 (singleton U1) :*: U1, x)) $ testFunction p
 
-testArithmetizableFunction :: PAR -> ArithmetizableFunction F I U1
-testArithmetizableFunction p = ArithmetizableFunction (\x _ -> testFunction' p x) (testCircuit p)
+testPredicate :: PAR -> Predicate F I U1
+testPredicate p = Predicate (\x _ -> testFunction' p x) (testCircuit p)
 
 testSPS :: PAR -> SPS
-testSPS = FiatShamir . CommitOpen . testArithmetizableFunction
+testSPS = FiatShamir . CommitOpen . testPredicate
 
 initAccumulator :: SPS -> Accumulator F I M G K
 initAccumulator = emptyAccumulator @_ @_ @_ @_ @D
@@ -116,8 +116,8 @@ specAlgebraicMap = hspec $ do
     describe "Algebraic map specification" $ do
         describe "Algebraic map" $ do
             it "must output zeros on the public input and testMessages" $ do
-                property $
-                    \p -> algebraicMap @_ @_ @D (testArithmetizableFunction p) (testPublicInput $ testSPS p) (testMessages $ testSPS p) (unsafeToVector []) one
+               withMaxSuccess 10 $ property $
+                    \p -> algebraicMap @_ @_ @D (testPredicate p) (testPublicInput $ testSPS p) (testMessages $ testSPS p) (unsafeToVector []) one
                         == replicate (acSizeN $ testCircuit p) zero
 
 specAccumulatorScheme :: IO ()

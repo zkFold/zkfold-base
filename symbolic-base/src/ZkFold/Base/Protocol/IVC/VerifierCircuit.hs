@@ -3,26 +3,26 @@
 
 module ZkFold.Base.Protocol.IVC.VerifierCircuit where
 
-import           GHC.Generics                                    (Par1 (..), U1 (..), type (:.:) (..), (:*:) (..))
-import           Prelude                                         hiding (Num (..), drop, head, replicate, take, zipWith)
+import           GHC.Generics                        (Par1 (..), U1 (..), type (:.:) (..), (:*:) (..))
+import           Prelude                             hiding (Num (..), drop, head, replicate, take, zipWith)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                (KnownNat, type (+), type (-), value)
-import           ZkFold.Base.Data.ByteString                     (Binary)
-import           ZkFold.Base.Data.Vector                         (Vector, unsafeToVector)
-import           ZkFold.Base.Protocol.IVC.ArithmetizableFunction (ArithmetizableFunction (ArithmetizableFunction))
-import           ZkFold.Base.Protocol.IVC.Commit                 (HomomorphicCommit)
-import           ZkFold.Base.Protocol.IVC.CommitOpen             (CommitOpen (..))
-import           ZkFold.Base.Protocol.IVC.FiatShamir             (FiatShamir (..))
-import           ZkFold.Base.Protocol.IVC.Internal               (IVCResult, ivcVerify)
-import           ZkFold.Base.Protocol.IVC.Oracle                 (HashAlgorithm)
-import           ZkFold.Prelude                                  (replicate)
+import           ZkFold.Base.Algebra.Basic.Number    (KnownNat, type (+), type (-), value)
+import           ZkFold.Base.Data.ByteString         (Binary)
+import           ZkFold.Base.Data.Vector             (Vector, unsafeToVector)
+import           ZkFold.Base.Protocol.IVC.Commit     (HomomorphicCommit)
+import           ZkFold.Base.Protocol.IVC.CommitOpen (CommitOpen (..))
+import           ZkFold.Base.Protocol.IVC.FiatShamir (FiatShamir (..))
+import           ZkFold.Base.Protocol.IVC.Internal   (IVCResult, ivcVerify)
+import           ZkFold.Base.Protocol.IVC.Oracle     (HashAlgorithm)
+import           ZkFold.Base.Protocol.IVC.Predicate  (Predicate (..))
+import           ZkFold.Prelude                      (replicate)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.Class                      (SymbolicData (..))
-import           ZkFold.Symbolic.Data.FieldElement               (FieldElement (..))
-import           ZkFold.Symbolic.Data.Input                      (SymbolicInput)
-import           ZkFold.Symbolic.Interpreter                     (Interpreter (..))
+import           ZkFold.Symbolic.Data.Class          (SymbolicData (..))
+import           ZkFold.Symbolic.Data.FieldElement   (FieldElement (..))
+import           ZkFold.Symbolic.Data.Input          (SymbolicInput)
+import           ZkFold.Symbolic.Interpreter         (Interpreter (..))
 
 -- | Takes a function `f` and returns a circuit `C` with input `y` and witness `w`.
 -- The circuit is such that `C(y, w) = 0` implies that `y = x(n)` for some positive `n` where
@@ -71,12 +71,12 @@ ivcVerifierCircuit func =
                 ) func
 
         -- Protostar IVC takes an arithmetizable function as input.
-        af :: ArithmetizableFunction a (Vector nx) (Vector nu)
-        af = ArithmetizableFunction stepFunction stepCircuit
+        p :: Predicate a (Vector nx) (Vector nu)
+        p = Predicate stepFunction stepCircuit
 
         -- The Fiat-Shamired commit-open special-sound protocol for the arithmetizable function
-        fs :: FiatShamir algo (CommitOpen (ArithmetizableFunction a (Vector nx) (Vector nu)))
-        fs = FiatShamir (CommitOpen af)
+        fs :: FiatShamir algo (CommitOpen (Predicate a (Vector nx) (Vector nu)))
+        fs = FiatShamir (CommitOpen p)
 
         -- The verification function for the IVC result object
         vf :: IVCResult f i m c d k -> ((f, i f, Vector (k-1) f, Vector k c, c), (Vector k c, c))

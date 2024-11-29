@@ -4,16 +4,16 @@
 
 module ZkFold.Base.Protocol.IVC.SpecialSound where
 
-import           Data.Functor.Rep                                (Representable (..))
-import           Data.Map.Strict                                 (elems)
-import           GHC.Generics                                    ((:*:) (..))
-import           Prelude                                         (($))
+import           Data.Functor.Rep                      (Representable (..))
+import           Data.Map.Strict                       (elems)
+import           GHC.Generics                          ((:*:) (..))
+import           Prelude                               (($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                         (Vector)
-import qualified ZkFold.Base.Protocol.IVC.AlgebraicMap           as AM
-import           ZkFold.Base.Protocol.IVC.ArithmetizableFunction (ArithmetizableFunction (..))
+import           ZkFold.Base.Data.Vector               (Vector)
+import qualified ZkFold.Base.Protocol.IVC.AlgebraicMap as AM
+import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 
@@ -50,13 +50,13 @@ class SpecialSoundProtocol f i p m c d k a where
     -> VerifierOutput f i p m c d k a -- ^ verifier output
 
 instance (Arithmetic a, Representable i, Representable p, KnownNat (d + 1))
-    => SpecialSoundProtocol a i p [a] c d 1 (ArithmetizableFunction a i p) where
-  type VerifierOutput a i p [a] c d 1 (ArithmetizableFunction a i p) = [a]
+    => SpecialSoundProtocol a i p [a] c d 1 (Predicate a i p) where
+  type VerifierOutput a i p [a] c d 1 (Predicate a i p) = [a]
 
-  input ArithmetizableFunction {..} = afEval
+  input Predicate {..} = predicateEval
 
   -- | Just return the witness values on the previous public input
-  prover ArithmetizableFunction {..} pi0 w _ _ = elems $ witnessGenerator afCircuit (pi0 :*: w) (afEval pi0 w)
+  prover Predicate {..} pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)
 
   -- | Evaluate the algebraic map on public inputs and prover messages
   --
