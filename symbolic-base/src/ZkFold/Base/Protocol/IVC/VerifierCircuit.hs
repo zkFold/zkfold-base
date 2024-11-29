@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module ZkFold.Base.Protocol.IVC.RecursiveCircuit where
+module ZkFold.Base.Protocol.IVC.VerifierCircuit where
 
 import           GHC.Generics                                    (Par1 (..), U1 (..), type (:.:) (..), (:*:) (..))
 import           Prelude                                         hiding (Num (..), drop, head, replicate, take, zipWith)
@@ -27,7 +27,7 @@ import           ZkFold.Symbolic.Interpreter                     (Interpreter (.
 -- | Takes a function `f` and returns a circuit `C` with input `y` and witness `w`.
 -- The circuit is such that `C(y, w) = 0` implies that `y = x(n)` for some positive `n` where
 -- `x(k+1) = f(x(k), u(k))` for all `k` and some `u`.
-protostar :: forall f i m c d k a payload input output nx nu ctx algo .
+ivcVerifierCircuit :: forall f i m c d k a payload input output nx nu ctx algo .
     ( f ~ FieldElement ctx
     , i ~ Vector nx
     , m ~ [f]
@@ -50,7 +50,7 @@ protostar :: forall f i m c d k a payload input output nx nu ctx algo .
     , output ~ (((Par1 :*: (Vector nx :.: Par1)) :*: ((Vector (k - 1) :.: Par1) :*: ((Vector k :.: Par1) :*: Par1))) :*: ((Vector k :.: Par1) :*: Par1))
     ) => (forall ctx' . Symbolic ctx' => Vector nx (FieldElement ctx') -> Vector nu (FieldElement ctx') -> Vector nx (FieldElement ctx'))
     -> ArithmeticCircuit a payload input output
-protostar func =
+ivcVerifierCircuit func =
     let
         -- The numeric interpretation of the function `f`.
         stepFunction :: Vector nx a -> Vector nu a -> Vector nx a

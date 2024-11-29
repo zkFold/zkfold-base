@@ -43,7 +43,7 @@ noIVCProof :: forall f i m c d k a algo .
     , KnownNat k
     , AlgebraicMap f i d a
     ) => FiatShamir algo (CommitOpen a) -> IVCProof f i m c d k
-noIVCProof ac = IVCProof (emptyAccumulatorInstance @_ @_ @_ @_ @d ac) (tabulate $ const zero)
+noIVCProof fs = IVCProof (emptyAccumulatorInstance @_ @_ @_ @_ @d fs) (tabulate $ const zero)
 
 -- | The final result of recursion and the final accumulator.
 -- Accumulation decider is an arithmetizable function which can be called on the final accumulator.
@@ -59,7 +59,7 @@ data IVCResult f i m c d k
 deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCResult f i m c d k)
 deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCResult f i m c d k)
 
-ivcInitialize :: forall f i m c (d :: Natural) k a algo .
+ivcSetup :: forall f i m c (d :: Natural) k a algo .
     ( Representable i
     , m ~ [f]
     , HomomorphicCommit m c
@@ -68,9 +68,9 @@ ivcInitialize :: forall f i m c (d :: Natural) k a algo .
     , KnownNat k
     , AlgebraicMap f i d a
     ) => FiatShamir algo (CommitOpen a) -> i f -> IVCResult f i m c d k
-ivcInitialize ac pi0 = IVCResult pi0 (tabulate $ const zero) (emptyAccumulator @_ @_ @_ @_ @d ac) (noIVCProof ac)
+ivcSetup fs pi0 = IVCResult pi0 (tabulate $ const zero) (emptyAccumulator @_ @_ @_ @_ @d fs) (noIVCProof fs)
 
-ivcIterate :: forall f i p m c (d :: Natural) k a algo .
+ivcProve :: forall f i p m c (d :: Natural) k a algo .
     ( SpecialSoundProtocol f i p m c d k a
     , HomomorphicCommit m c
     , HashAlgorithm algo f
@@ -79,7 +79,7 @@ ivcIterate :: forall f i p m c (d :: Natural) k a algo .
     , KnownNat k
     , Acc.AccumulatorScheme f i m c d k (FiatShamir algo (CommitOpen a))
     ) => FiatShamir algo (CommitOpen a) -> IVCResult f i m c d k -> p f -> IVCResult f i m c d k
-ivcIterate fs (IVCResult pi0 _ acc0 _) witness =
+ivcProve fs (IVCResult pi0 _ acc0 _) witness =
     let
         narkIP@(NARKInstanceProof pi (NARKProof cs _)) = narkInstanceProof @_ @_ @_ @_ @_ @d fs pi0 witness
         (acc, pf) = Acc.prover fs acc0 narkIP
