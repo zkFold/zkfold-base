@@ -6,23 +6,20 @@ module ZkFold.Base.Protocol.IVC.VerifierCircuit where
 import           GHC.Generics                        (Par1 (..), U1 (..), type (:.:) (..), (:*:) (..))
 import           Prelude                             hiding (Num (..), drop, head, replicate, take, zipWith)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number    (KnownNat, type (+), type (-), value)
+import           ZkFold.Base.Algebra.Basic.Number    (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.ByteString         (Binary)
-import           ZkFold.Base.Data.Vector             (Vector, unsafeToVector)
+import           ZkFold.Base.Data.Vector             (Vector)
 import           ZkFold.Base.Protocol.IVC.Commit     (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.CommitOpen (CommitOpen (..))
 import           ZkFold.Base.Protocol.IVC.FiatShamir (FiatShamir (..))
 import           ZkFold.Base.Protocol.IVC.Internal   (IVCResult, ivcVerify)
 import           ZkFold.Base.Protocol.IVC.Oracle     (HashAlgorithm)
-import           ZkFold.Base.Protocol.IVC.Predicate  (Predicate (..))
-import           ZkFold.Prelude                      (replicate)
+import           ZkFold.Base.Protocol.IVC.Predicate  (Predicate (..), predicate)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Class          (SymbolicData (..))
 import           ZkFold.Symbolic.Data.FieldElement   (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input          (SymbolicInput)
-import           ZkFold.Symbolic.Interpreter         (Interpreter (..))
 
 -- | Takes a function `f` and returns a circuit `C` with input `y` and witness `w`.
 -- The circuit is such that `C(y, w) = 0` implies that `y = x(n)` for some positive `n` where
@@ -52,27 +49,9 @@ ivcVerifierCircuit :: forall f i m c d k a payload input output nx nu ctx algo .
     -> ArithmeticCircuit a payload input output
 ivcVerifierCircuit func =
     let
-        -- The numeric interpretation of the function `f`.
-        stepFunction :: Vector nx a -> Vector nu a -> Vector nx a
-        stepFunction x' u' =
-            let x = fromConstant <$> x' :: Vector nx (FieldElement (Interpreter a))
-                u = fromConstant <$> u' :: Vector nu (FieldElement (Interpreter a))
-            in unPar1 . runInterpreter . fromFieldElement <$> func x u
-
-        -- The step circuit for the recursion implements the function `F(x, u, y) = f(x, u) - y`.
-        -- Here `x` and `u` are the private inputs and `y` is the public input.
-        stepCircuit :: ArithmeticCircuit a (Vector nx :*: Vector nu) (Vector nx) U1
-        stepCircuit =
-            hpmap (\(x :*: u) -> Comp1 (Par1 <$> x) :*: Comp1 (Par1 <$> u)) $
-            hlmap (\x -> U1 :*: Comp1 (Par1 <$> x)) $
-            compileWith @a guessOutput (\(x :*: u) U1 ->
-                    ( Comp1 (unsafeToVector $ replicate (value @nx) U1) :*: Comp1 (unsafeToVector $ replicate (value @nx) U1) :*: U1
-                    , x :*: u :*: U1)
-                ) func
-
         -- Protostar IVC takes an arithmetizable function as input.
         p :: Predicate a (Vector nx) (Vector nu)
-        p = Predicate stepFunction stepCircuit
+        p = predicate func
 
         -- The Fiat-Shamired commit-open special-sound protocol for the arithmetizable function
         fs :: FiatShamir algo (CommitOpen (Predicate a (Vector nx) (Vector nu)))
