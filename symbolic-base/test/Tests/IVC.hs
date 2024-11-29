@@ -7,7 +7,7 @@ import           GHC.Generics                                    (Par1 (..), U1 
 import           GHC.IsList                                      (IsList (..))
 import           Prelude                                         hiding (Num (..), pi, replicate, sum, (+))
 import           Test.Hspec                                      (describe, hspec, it)
-import           Test.QuickCheck                                 (property, withMaxSuccess)
+import           Test.QuickCheck                                 (property, withMaxSuccess, generate, arbitrary)
 
 import           ZkFold.Base.Algebra.Basic.Class                 (FromConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
@@ -132,5 +132,7 @@ specAccumulatorScheme = hspec $ do
 
 specIVC :: IO ()
 specIVC = do
+    p <- generate arbitrary :: IO (PolyVec F PARDEG)
+    print $ "Recursion circuit size: " ++ show (acSizeN $ testCircuit p)
     specAlgebraicMap
     specAccumulatorScheme
