@@ -27,6 +27,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (Payloaded))
+import           ZkFold.Symbolic.Data.UInt        (UInt)
 import           ZkFold.Symbolic.MonadCircuit
 
 data ListItem x a = ListItem
@@ -181,6 +182,7 @@ singleton
     .  Symbolic context
     => Traversable (Layout x)
     => Representable (Layout x)
+    => Representable (Payload x)
     => SymbolicData x
     => Context x ~ context
     => Support x ~ Proxy context
