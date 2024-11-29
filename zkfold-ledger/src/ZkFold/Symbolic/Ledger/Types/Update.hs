@@ -1,33 +1,94 @@
 module ZkFold.Symbolic.Ledger.Types.Update where
 
+import           Data.Functor.Rep                       (Representable)
 import           Prelude                                hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Ledger.Types.Basic
-import           ZkFold.Symbolic.Ledger.Types.Contract  (ContractId)
+import           ZkFold.Symbolic.Class                  (Symbolic)
+import           ZkFold.Symbolic.Data.Bool              (Bool)
+import           ZkFold.Symbolic.Data.Class             (SymbolicData (..))
+import           ZkFold.Symbolic.Data.List              (List, emptyList)
+import           ZkFold.Symbolic.Ledger.Types.Address   (Address)
+import           ZkFold.Symbolic.Ledger.Types.Contract  (ContractData)
 import           ZkFold.Symbolic.Ledger.Types.Hash      (Hash)
 import           ZkFold.Symbolic.Ledger.Types.Input     (Input)
+import           ZkFold.Symbolic.Ledger.Types.Output    (Output)
 import           ZkFold.Symbolic.Ledger.Types.OutputRef (TransactionId)
+
+-- TODO: make type AddressIndex = UInt 40 Auto
+data AddressIndex context
+
+getAddressIndex :: Input context -> AddressIndex context
+getAddressIndex = undefined
 
 -- TODO: Add contract public data to the update.
 
--- | Block hash of the corresponding block.
-type UpdateId context = Hash context
-
--- | Update is a public data contained in a block.
--- TODO: This has been significantly redesigned. See the internal PDF docs.
--- Instead of "public inputs and outputs", we now have "online and offline transactions".
 data Update context = Update
-    { updateTransactionData      :: List context (ContractId context, TransactionId context)
-    -- ^ List of contract-transaction pairs in the update
-    , updatePublicInputsProduced :: List context (Input context)
-    -- ^ List of public inputs produced by the update
-    , updatePublicInputsSpent    :: List context (Input context)
-    -- ^ List of public inputs spent by the update
-    , updateReference            :: UpdateId context
-    -- ^ Reference to the previous update
-    }
+  { updateOnlineTxsRoot   :: Hash context
+    -- ^ the Merkle tree root of the TxId list of transactions that contains online transactions.
+  , updateHashPrevious    :: Hash context
+    -- ^ hash of previous update
+  , updateNewAssignments  :: List context (Address context, AddressIndex context)
+    -- ^ the map from addresses into assigned indices. Only new assignments.
+  , updateSpentOutputs    :: List context (AddressIndex context, Bool context)
+    -- ^ the map from address indices into boolean values.
+    -- The keys are all indices of addresses from which an output was spent in the update.
+    -- The boolean values indicate whether the transactions
+    -- that spent outputs from a particular address should be included in the Update.
+  , updateTransactions    :: List context (AddressIndex context, TransactionId context)
+    -- ^ the map from address indices into transaction id lists.
+    -- Contains offline transactions.
+  , updateTransactionData :: List context (AddressIndex context, ContractData context)
+    -- ^ the map from address indices into the accumulated public data items.
+    -- Only non-empty public data.
+  , updateIndicesReleased :: List context (AddressIndex context)
+    -- ^ the list of indices that are being released after the update.
+  , updateBridgedOutputs  :: List context (Address context, List context (Output context))
+    -- ^ outputs that were bridged into the ledger.
+    -- Note that there are two ways to create transaction inputs in the ledger:
+    -- as transaction outputs of ledger transactions and as bridged outputs.
+    -- We will need to associate some `InputRef` with the latter, too.
+  , updateBridgedInputs   :: List context (AddressIndex context, List context (Input context))
+    -- ^ inputs that were bridged out of the ledger.
+    -- In order to bridge out of the ledger,
+    -- a user proves that there is a transaction in this update
+    -- that produced this Input.
+  }
 
-updateId :: Update context -> UpdateId context
-updateId = undefined
+emptyUpdate ::
+     Symbolic context
+  => Representable (Layout (AddressIndex context))
+  => Representable (Layout (List context (Input context)))
+  => Representable (Layout (List context (Output context)))
+  => Representable (Layout (ContractData context))
+  => Representable (Layout (Hash context))
+  => Hash context
+  -> Update context
+emptyUpdate prev = Update
+  { updateOnlineTxsRoot = merkleTreeRoot emptyList
+  , updateHashPrevious = prev
+  , updateNewAssignments = emptyList
+  , updateSpentOutputs = emptyList
+  , updateTransactions = emptyList
+  , updateTransactionData = emptyList
+  , updateIndicesReleased = emptyList
+  , updateBridgedOutputs = emptyList
+  , updateBridgedInputs = emptyList
+  }
 
 type UpdateChain context = List context (Update context)
+
+-- | Get the block of the `Update`
+updateId :: Update context -> Hash context
+updateId = undefined
+
+merkleTreeRoot :: List context (AddressIndex context, TransactionId context) -> Hash context
+merkleTreeRoot = undefined
+
+merkleTreeAdd ::
+     Hash context
+  -> List context (Hash context)
+  -> (Hash context, List context (Hash context))
+merkleTreeAdd = undefined
+
+merkleTreeEmpty :: List context (Hash context)
+merkleTreeEmpty = undefined
