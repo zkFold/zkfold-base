@@ -21,7 +21,7 @@ import           Prelude                                    (FilePath, IO, Show 
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
-import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..), fromCircuit2F)
+import           ZkFold.Symbolic.Class                      (Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
@@ -107,7 +107,6 @@ compileIO ::
   , Payload s ~ p
   , FromJSON (Rep l)
   , ToJSON (Rep l)
-  , Arithmetic a, Binary a, Binary (Rep p)
   ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = compile f :: c (Layout f)

@@ -2,7 +2,6 @@
 
 module ZkFold.Symbolic.Ledger.Validation.Update where
 
-import           Data.Functor.Rep                              (Representable)
 import           Data.Proxy                                    (Proxy)
 import           Prelude                                       hiding (Bool, Eq (..), all, concat, length, splitAt, zip,
                                                                 (&&), (*), (+), (++), (==))
@@ -60,11 +59,9 @@ newUpdate ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
   => SymbolicOutput (AddressIndex context)
-  => SymbolicData (Input context)
   => SymbolicOutput (Output context)
   => SymbolicOutput (ContractData context)
   => Context (AddressIndex context) ~ context
-  => Context (Input context) ~ context
   => Context (Output context) ~ context
   => Context (ContractData context) ~ context
   => Hash context
@@ -80,13 +77,11 @@ updateIsValid ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
   => SymbolicOutput (AddressIndex context)
-  => SymbolicData (Input context)
   => SymbolicOutput (Output context)
   => SymbolicOutput (ContractData context)
   => SymbolicOutput (Value context)
   => SymbolicData (MultiAssetValue context)
   => Context (AddressIndex context) ~ context
-  => Context (Input context) ~ context
   => Context (Output context) ~ context
   => Context (ContractData context) ~ context
   => Context (Value context) ~ context
