@@ -7,7 +7,6 @@ import           GHC.Generics                        (Generic)
 import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                             as Haskell
 
-import           ZkFold.Base.Control.HApplicative    (HApplicative)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic)
 import           ZkFold.Symbolic.Data.Class
@@ -32,6 +31,6 @@ deriving instance (Haskell.Eq (ByteString 4 context), Haskell.Eq (ByteString 224
 deriving via (Structural (Address context))
          instance (Symbolic context) => Eq (Bool context) (Address context)
 
-instance HApplicative context => SymbolicData (Address context)
+instance Symbolic context => SymbolicData (Address context)
 instance Symbolic context => SymbolicInput (Address context) where
     isValid (Address a p s) = isValid (a, p, s)

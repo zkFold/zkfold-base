@@ -65,7 +65,7 @@ deriving instance Show (c Par1) => Show (Bool c)
 instance {-# OVERLAPPING #-} (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
     show (fromBool -> x) = if x == one then "True" else "False"
 
-deriving newtype instance SymbolicData (Bool c)
+deriving newtype instance Symbolic c => SymbolicData (Bool c)
 
 instance Symbolic c => BoolType (Bool c) where
     true = Bool $ embed (Par1 one)

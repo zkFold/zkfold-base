@@ -29,7 +29,7 @@ deriving instance
     , Haskell.Eq (TxRefIndex context)
     ) => Haskell.Eq (OutputRef context)
 
-instance (HApplicative context, KnownRegisters context 32 Auto)
+instance (Symbolic context, KnownRegisters context 32 Auto)
     => SymbolicData (OutputRef context)
 
 instance

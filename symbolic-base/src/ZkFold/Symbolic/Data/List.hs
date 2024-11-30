@@ -77,8 +77,8 @@ hashF s h t = newAssigned (($ h) + ($ t) * ($ s))
 
 uncons ::
   forall c x.
-  (Symbolic c, SymbolicData x) =>
-  (Context x ~ c, Support x ~ Proxy c, Representable (Payload x)) =>
+  SymbolicData x =>
+  (Context x ~ c, Support x ~ Proxy c) =>
   List c x -> (x, List c x)
 uncons l@List{..} = case lWitness of
   [] -> (restore $ const (lHash, tabulate (const zero)), l)
@@ -99,14 +99,14 @@ uncons l@List{..} = case lWitness of
 -- | TODO: Is there really a nicer way to handle empty lists?
 --
 head ::
-  (Symbolic c, SymbolicData x) =>
-  (Context x ~ c, Support x ~ Proxy c, Representable (Payload x)) =>
+  SymbolicData x =>
+  (Context x ~ c, Support x ~ Proxy c) =>
   List c x -> x
 head = fst . uncons
 
 tail ::
-  (Symbolic c, SymbolicData x) =>
-  (Context x ~ c, Support x ~ Proxy c, Representable (Payload x)) =>
+  SymbolicData x =>
+  (Context x ~ c, Support x ~ Proxy c) =>
   List c x -> List c x
 tail = snd . uncons
 

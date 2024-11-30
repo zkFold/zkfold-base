@@ -71,7 +71,7 @@ newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteStri
 deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString n c)
 deriving stock instance Haskell.Eq (c (Vector n)) => Haskell.Eq (ByteString n c)
 deriving anyclass instance NFData (c (Vector n)) => NFData (ByteString n c)
-deriving newtype instance KnownNat n => SymbolicData (ByteString n c)
+deriving newtype instance (KnownNat n, Symbolic c) => SymbolicData (ByteString n c)
 
 
 deriving via (Structural (ByteString n c))

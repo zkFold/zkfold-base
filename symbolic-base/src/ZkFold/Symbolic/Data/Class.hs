@@ -29,8 +29,10 @@ import           ZkFold.Symbolic.Class            (Symbolic (WitnessField))
 
 -- | A class for Symbolic data types.
 class
-    ( Representable (Layout x)
+    ( Symbolic (Context x)
     , Traversable (Layout x)
+    , Representable (Layout x)
+    , Representable (Payload x)
     ) => SymbolicData x where
 
     type Context x :: (Type -> Type) -> Type
@@ -82,7 +84,8 @@ class
     restore f = G.to (grestore f)
 
 instance
-    ( Representable f
+    ( Symbolic c
+    , Representable f
     , Traversable f
     ) => SymbolicData (c (f :: Type -> Type)) where
 
@@ -95,7 +98,7 @@ instance
     payload _ _ = U1
     restore f = fst (f Proxy)
 
-instance HApplicative c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
+instance Symbolic c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
     type Context (Proxy c) = c
     type Support (Proxy c) = Proxy c
     type Layout (Proxy c) = U1
@@ -182,8 +185,10 @@ instance SymbolicData f => SymbolicData (x -> f) where
     restore f x = restore (f . (x,))
 
 class
-    ( Representable (GLayout u)
+    ( Symbolic (GContext u)
     , Traversable (GLayout u)
+    , Representable (GLayout u)
+    , Representable (GPayload u)
     ) => GSymbolicData u where
     type GContext u :: (Type -> Type) -> Type
     type GSupport u :: Type
