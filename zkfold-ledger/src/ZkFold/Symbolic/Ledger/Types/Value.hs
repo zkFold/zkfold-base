@@ -42,6 +42,7 @@ newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (Value con
 emptyMultiAssetValue ::
      Symbolic context
   => Representable (Layout (Value context))
+  => Representable (Payload (Value context))
   => MultiAssetValue context
 emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 
@@ -53,7 +54,6 @@ addValue ::
   => Context (Value context) ~ context
   => Support (Value context) ~ Proxy context
   => Zip (Layout (Value context))
-  => Context (List context (Value context)) ~ context
   => SymbolicData (List context (Value context))
   => Representable (Payload (Value context))
   => Eq (Bool context) (CurrencySymbol context)
@@ -79,7 +79,6 @@ multiValueAsset ::
   => Support (Value context) ~ Proxy context
   => Representable (Payload (Value context))
   => Zip (Layout (Value context))
-  => Context (List context (Value context)) ~ context
   => SymbolicData (List context (Value context))
   => Eq (Bool context) (CurrencySymbol context)
   => Context (MultiAssetValue context) ~ context

@@ -61,8 +61,11 @@ newUpdate ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
   => Representable (Layout (List context (Input context)))
+  => Representable (Layout (Output context))
+  => Representable (Payload (Output context))
   => Representable (Layout (List context (Output context)))
   => Representable (Layout (ContractData context))
+  => Representable (Payload (ContractData context))
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
   => SymbolicData (AddressIndex context)
@@ -81,10 +84,8 @@ updateIsValid ::
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
   => Support (Value context) ~ Proxy context
-  => Context (List context (Value context)) ~ context
   => Context (Value context) ~ context
   => Context (MultiAssetValue context) ~ context
-  => Representable (Payload (Value context))
   => Zip (Layout (Value context))
   => SymbolicData (AddressIndex context)
   => SymbolicData (List context (Value context))
@@ -93,7 +94,7 @@ updateIsValid ::
   => SymbolicData (Value context)
   => SymbolicData (MultiAssetValue context)
   => SymbolicData (ContractData context)
-  => Representable (Payload (MultiAssetValue context))
+  => SymbolicData (Output context)
   => Eq (Bool context) (MultiAssetValue context)
   => Hash context
   -> Update context
