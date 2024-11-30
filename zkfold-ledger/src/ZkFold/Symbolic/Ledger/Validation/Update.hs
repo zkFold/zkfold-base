@@ -26,8 +26,6 @@ applyOnlineTransaction ::
   => Hashable context (AddressIndex context, Transaction context)
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context) ~ Proxy context
-  => Representable (Layout (AddressIndex context))
-  => Traversable (Layout (AddressIndex context))
   => SymbolicData (AddressIndex context)
   => AddressIndex context
   -> Transaction context
@@ -48,8 +46,6 @@ applyOfflineTransaction ::
      Signature context
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
-  => Representable (Layout (AddressIndex context))
-  => Traversable (Layout (AddressIndex context))
   => SymbolicData (AddressIndex context)
   => AddressIndex context
   -> Transaction context
@@ -69,8 +65,6 @@ newUpdate ::
   => Representable (Layout (ContractData context))
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
-  => Representable (Layout (AddressIndex context))
-  => Traversable (Layout (AddressIndex context))
   => SymbolicData (AddressIndex context)
   => Hash context
   -> UpdateWitness context
@@ -84,29 +78,21 @@ newUpdate hsh updWitness =
 updateIsValid ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
-  => Representable (Layout (List context (Input context)))
-  => Representable (Layout (List context (Output context)))
-  => Representable (Layout (ContractData context))
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
-  => Representable (Layout (AddressIndex context))
-  => Traversable (Layout (AddressIndex context))
-  => SymbolicData (AddressIndex context)
   => Support (Value context) ~ Proxy context
   => Context (List context (Value context)) ~ context
   => Context (Value context) ~ context
   => Context (MultiAssetValue context) ~ context
   => Representable (Payload (Value context))
   => Zip (Layout (Value context))
+  => SymbolicData (AddressIndex context)
   => SymbolicData (List context (Value context))
+  => SymbolicData (List context (Input context))
+  => SymbolicData (List context (Output context))
   => SymbolicData (Value context)
   => SymbolicData (MultiAssetValue context)
-  => Traversable (Layout (List context (Value context)))
-  => Traversable (Layout (Value context))
-  => Traversable (Layout (MultiAssetValue context))
-  => Representable (Layout (List context (Value context)))
-  => Representable (Layout (Value context))
-  => Representable (Layout (MultiAssetValue context))
+  => SymbolicData (ContractData context)
   => Representable (Payload (MultiAssetValue context))
   => Eq (Bool context) (MultiAssetValue context)
   => Hash context
