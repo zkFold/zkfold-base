@@ -65,9 +65,8 @@ instance (SymbolicInput x, c ~ Context x) => SymbolicInput (List c x)
 --
 emptyList
     :: forall context x
-    .  Symbolic context
-    => Representable (Layout x)
-    => Representable (Payload x)
+    .  SymbolicData x
+    => Context x ~ context
     => List context x
 emptyList = List (embed $ pureRep zero) (embed $ Par1 zero) $ Payloaded $ tabulate (const zero)
 
@@ -83,10 +82,8 @@ null List{..} = Bool (fromCircuitF lSize (fmap fst . runInvert))
 infixr 5 .:
 (.:)
     :: forall context x
-    .  Symbolic context
-    => SymbolicData x
+    .  SymbolicOutput x
     => Context x ~ context
-    => Support x ~ Proxy context
     => x
     -> List context x
     -> List context x
@@ -109,8 +106,8 @@ hashFun s h t = newAssigned (($ h) + ($ t) * ($ s))
 
 uncons ::
   forall c x.
-  SymbolicData x =>
-  (Context x ~ c, Support x ~ Proxy c) =>
+  SymbolicOutput x =>
+  Context x ~ c =>
   List c x -> (x, List c x)
 uncons List{..} = case lWitness of
   Payloaded (Comp1 (ListItem {..} :< tWitness)) ->
@@ -130,14 +127,14 @@ uncons List{..} = case lWitness of
 -- | TODO: Is there really a nicer way to handle empty lists?
 --
 head ::
-  SymbolicData x =>
-  (Context x ~ c, Support x ~ Proxy c) =>
+  SymbolicOutput x =>
+  Support x ~ Proxy c =>
   List c x -> x
 head = fst . uncons
 
 tail ::
-  SymbolicData x =>
-  (Context x ~ c, Support x ~ Proxy c) =>
+  SymbolicOutput x =>
+  Context x ~ c =>
   List c x -> List c x
 tail = snd . uncons
 
@@ -173,10 +170,8 @@ _ \\ _ = undefined
 
 singleton
     :: forall context x
-    .  Symbolic context
-    => SymbolicData x
+    .  SymbolicOutput x
     => Context x ~ context
-    => Support x ~ Proxy context
     => x
     -> List context x
 singleton x = x .: emptyList

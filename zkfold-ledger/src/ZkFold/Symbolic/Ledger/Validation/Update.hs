@@ -4,12 +4,11 @@ module ZkFold.Symbolic.Ledger.Validation.Update where
 
 import           Data.Functor.Rep                              (Representable)
 import           Data.Proxy                                    (Proxy)
-import           Data.Zip                                      (Zip)
 import           Prelude                                       hiding (Bool, Eq (..), all, concat, length, splitAt, zip,
                                                                 (&&), (*), (+), (++), (==))
 
 import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
-import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Conditional              (bool)
 import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
 import           ZkFold.Symbolic.Data.List                     (List, concat, singleton, (++))
@@ -60,15 +59,14 @@ applyOfflineTransaction ix tx w u =
 newUpdate ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
-  => Representable (Layout (List context (Input context)))
-  => Representable (Layout (Output context))
-  => Representable (Payload (Output context))
-  => Representable (Layout (List context (Output context)))
-  => Representable (Layout (ContractData context))
-  => Representable (Payload (ContractData context))
+  => SymbolicOutput (AddressIndex context)
+  => SymbolicData (Input context)
+  => SymbolicOutput (Output context)
+  => SymbolicOutput (ContractData context)
   => Context (AddressIndex context) ~ context
-  => Support (AddressIndex context)  ~ Proxy context
-  => SymbolicData (AddressIndex context)
+  => Context (Input context) ~ context
+  => Context (Output context) ~ context
+  => Context (ContractData context) ~ context
   => Hash context
   -> UpdateWitness context
   -> Update context
@@ -81,20 +79,18 @@ newUpdate hsh updWitness =
 updateIsValid ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
+  => SymbolicOutput (AddressIndex context)
+  => SymbolicData (Input context)
+  => SymbolicOutput (Output context)
+  => SymbolicOutput (ContractData context)
+  => SymbolicOutput (Value context)
+  => SymbolicData (MultiAssetValue context)
   => Context (AddressIndex context) ~ context
-  => Support (AddressIndex context)  ~ Proxy context
-  => Support (Value context) ~ Proxy context
+  => Context (Input context) ~ context
+  => Context (Output context) ~ context
+  => Context (ContractData context) ~ context
   => Context (Value context) ~ context
   => Context (MultiAssetValue context) ~ context
-  => Zip (Layout (Value context))
-  => SymbolicData (AddressIndex context)
-  => SymbolicData (List context (Value context))
-  => SymbolicData (List context (Input context))
-  => SymbolicData (List context (Output context))
-  => SymbolicData (Value context)
-  => SymbolicData (MultiAssetValue context)
-  => SymbolicData (ContractData context)
-  => SymbolicData (Output context)
   => Eq (Bool context) (MultiAssetValue context)
   => Hash context
   -> Update context

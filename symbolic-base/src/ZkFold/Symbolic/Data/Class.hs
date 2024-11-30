@@ -3,7 +3,8 @@
 
 module ZkFold.Symbolic.Data.Class (
         SymbolicData (..),
-        GSymbolicData (..)
+        SymbolicOutput,
+        GSymbolicData (..),
     ) where
 
 import           Control.Applicative              ((<*>))
@@ -82,6 +83,8 @@ class
       , Payload x ~ GPayload (G.Rep x)) =>
       (Support x -> (c (Layout x), Payload x (WitnessField c))) -> x
     restore f = G.to (grestore f)
+
+type SymbolicOutput x = (SymbolicData x, Support x ~ Proxy (Context x))
 
 instance
     ( Symbolic c

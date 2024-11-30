@@ -8,14 +8,12 @@ module ZkFold.Symbolic.Data.Maybe (
 ) where
 
 import           Data.Functor                     ((<$>))
-import           Data.Functor.Rep                 (Representable, pureRep)
-import           Data.Proxy                       (Proxy)
+import           Data.Functor.Rep                 (pureRep)
 import           GHC.Generics                     (Generic, Par1 (..))
 import           Prelude                          (foldr, type (~), ($))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative (HApplicative)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
@@ -36,36 +34,29 @@ just = Maybe true
 
 nothing ::
   forall x c .
-  ( SymbolicData x
-  , Representable (Payload x), Context x ~ c, Symbolic c) =>
+  (SymbolicData x, Context x ~ c) =>
   Maybe c x
 nothing =
   Maybe false $ restore $ Haskell.const (embed (pureRep zero), pureRep zero)
 
 fromMaybe ::
   forall c x .
-  (Symbolic c, SymbolicData x, Context x ~ c, Representable (Payload x)) =>
+  (SymbolicData x, Context x ~ c) =>
   x -> Maybe c x -> x
 fromMaybe a (Maybe j t) = bool a t j
 
 isNothing :: Symbolic c => Maybe c x -> Bool c
 isNothing (Maybe h _) = not h
 
-instance
-    ( HApplicative c
-    , SymbolicData x
-    , Context x ~ c
-    , Support x ~ Proxy c
-    ) => SymbolicData (Maybe c x) where
+instance (SymbolicOutput x, Context x ~ c) => SymbolicData (Maybe c x) where
 
 maybe :: forall a b c .
-    (Symbolic c, SymbolicData b, Context b ~ c, Representable (Payload b)) =>
+    (SymbolicData b, Context b ~ c) =>
     b -> (a -> b) -> Maybe c a -> b
 maybe d h m = fromMaybe d (h <$> m)
 
 find :: forall a c t .
-    ( Symbolic c, SymbolicData a, Context a ~ c, Support a ~ Proxy c
-    , Representable (Payload a), Haskell.Foldable t) =>
+    ( SymbolicOutput a, Context a ~ c, Haskell.Foldable t) =>
     (a -> Bool c) -> t a -> Maybe c a
 find p = let n = nothing in
     foldr (\i r -> maybe @a @_ @c (bool @(Bool c) n (just i) $ p i) (Haskell.const r) r) n
