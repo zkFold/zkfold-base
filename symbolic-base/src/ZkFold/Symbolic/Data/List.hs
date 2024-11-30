@@ -143,8 +143,6 @@ _ \\ _ = undefined
 singleton
     :: forall context x
     .  Symbolic context
-    => Traversable (Layout x)
-    => Representable (Layout x)
     => SymbolicData x
     => Context x ~ context
     => Support x ~ Proxy context
