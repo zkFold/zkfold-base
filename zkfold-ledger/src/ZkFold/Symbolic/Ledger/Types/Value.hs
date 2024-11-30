@@ -55,7 +55,6 @@ addValue ::
   => Support (Value context) ~ Proxy context
   => Zip (Layout (Value context))
   => SymbolicData (List context (Value context))
-  => Representable (Payload (Value context))
   => Eq (Bool context) (CurrencySymbol context)
   => Value context
   -> MultiAssetValue context
@@ -77,13 +76,11 @@ multiValueAsset ::
   => SymbolicData (Value context)
   => Context (Value context) ~ context
   => Support (Value context) ~ Proxy context
-  => Representable (Payload (Value context))
   => Zip (Layout (Value context))
   => SymbolicData (List context (Value context))
   => Eq (Bool context) (CurrencySymbol context)
   => Context (MultiAssetValue context) ~ context
   => SymbolicData (MultiAssetValue context)
-  => Representable (Payload (MultiAssetValue context))
   => Foldable (List context)
   => List context (Value context)
   -> MultiAssetValue context
