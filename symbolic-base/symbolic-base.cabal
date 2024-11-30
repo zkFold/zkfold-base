@@ -188,6 +188,7 @@ library
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.Eq.Structural
       ZkFold.Symbolic.Data.FFA
+      ZkFold.Symbolic.Data.Hash
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
