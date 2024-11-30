@@ -20,6 +20,7 @@ import           Tests.RSA                 (specRSA)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
 import           Tests.Univariate          (specUnivariate)
+import Tests.List (specList)
 
 main :: IO ()
 main = do
@@ -38,6 +39,7 @@ main = do
     specCompiler
 
     -- Symbolic types and operations
+    specList
     specUInt
     specFFA
     specByteString
