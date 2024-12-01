@@ -23,43 +23,43 @@ module ZkFold.Symbolic.Data.ByteString
     , toBsBits
     ) where
 
-import           Control.DeepSeq                    (NFData)
-import           Control.Monad                      (replicateM)
-import           Data.Aeson                         (FromJSON (..), ToJSON (..))
-import qualified Data.Bits                          as B
-import qualified Data.ByteString                    as Bytes
-import           Data.Foldable                      (foldlM)
-import           Data.Kind                          (Type)
-import           Data.List                          (reverse, unfoldr)
-import           Data.Maybe                         (Maybe (..))
-import           Data.String                        (IsString (..))
-import           Data.Traversable                   (for, mapM)
-import           GHC.Generics                       (Generic, Par1 (..))
-import           GHC.Natural                        (naturalFromInteger)
-import           Numeric                            (readHex, showHex)
-import           Prelude                            (Integer, const, drop, fmap, otherwise, pure, return, take,
-                                                     type (~), ($), (.), (<$>), (<), (<>), (==), (>=))
-import qualified Prelude                            as Haskell
-import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
+import           Control.DeepSeq                   (NFData)
+import           Control.Monad                     (replicateM)
+import           Data.Aeson                        (FromJSON (..), ToJSON (..))
+import qualified Data.Bits                         as B
+import qualified Data.ByteString                   as Bytes
+import           Data.Foldable                     (foldlM)
+import           Data.Kind                         (Type)
+import           Data.List                         (reverse, unfoldr)
+import           Data.Maybe                        (Maybe (..))
+import           Data.String                       (IsString (..))
+import           Data.Traversable                  (for, mapM)
+import           GHC.Generics                      (Generic, Par1 (..))
+import           GHC.Natural                       (naturalFromInteger)
+import           Numeric                           (readHex, showHex)
+import           Prelude                           (Integer, const, drop, fmap, otherwise, pure, return, take, type (~),
+                                                    ($), (.), (<$>), (<), (<>), (==), (>=))
+import qualified Prelude                           as Haskell
+import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field    (Zp)
+import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor          (HFunctor (..))
-import           ZkFold.Base.Data.Package           (packWith, unpackWith)
-import           ZkFold.Base.Data.Utils             (zipWithM)
-import qualified ZkFold.Base.Data.Vector            as V
-import           ZkFold.Base.Data.Vector            (Vector (..))
-import           ZkFold.Prelude                     (replicateA, (!!))
+import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
+import           ZkFold.Base.Data.Package          (packWith, unpackWith)
+import           ZkFold.Base.Data.Utils            (zipWithM)
+import qualified ZkFold.Base.Data.Vector           as V
+import           ZkFold.Base.Data.Vector           (Vector (..))
+import           ZkFold.Prelude                    (replicateA, (!!))
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool          (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Class         (SymbolicData)
+import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Eq            (Eq)
-import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
-import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
-import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit       (ClosedPoly, newAssigned)
+import           ZkFold.Symbolic.Data.Eq           (Eq)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
+import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.

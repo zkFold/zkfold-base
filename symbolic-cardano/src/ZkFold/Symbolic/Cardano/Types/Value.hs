@@ -1,4 +1,4 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -16,8 +16,8 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Combinators    (NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input
 
 type PolicyId context    = ByteString 224 context
