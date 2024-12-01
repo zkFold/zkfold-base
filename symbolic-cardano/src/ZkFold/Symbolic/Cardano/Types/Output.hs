@@ -22,7 +22,6 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators           (NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq                    (Eq)
-import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput (..))
 
 data Liability context
@@ -64,8 +63,7 @@ instance
     ) => SymbolicInput (Output tokens datum context) where
     isValid (Output a t d) = isValid (a, t,  d)
 
-deriving via (Structural (Output tokens datum context))
-         instance
+instance
             ( Symbolic context
             , KnownNat tokens
             , KnownNat (NumberOfRegisters (BaseField context) 64 'Auto)

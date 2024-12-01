@@ -19,42 +19,41 @@ module ZkFold.Symbolic.Data.UInt (
 ) where
 
 import           Control.DeepSeq
-import           Control.Monad.State                (StateT (..))
-import           Data.Aeson                         hiding (Bool)
-import           Data.Foldable                      (foldlM, foldr, foldrM, for_)
-import           Data.Functor                       ((<$>))
-import           Data.Kind                          (Type)
-import           Data.List                          (unfoldr, zip)
-import           Data.Map                           (fromList, (!))
-import           Data.Traversable                   (for, traverse)
-import           Data.Tuple                         (swap)
-import qualified Data.Zip                           as Z
-import           GHC.Generics                       (Generic, Par1 (..))
-import           GHC.Natural                        (naturalFromInteger)
-import           Prelude                            (Integer, const, error, flip, otherwise, return, type (~), ($),
-                                                     (++), (.), (<>), (>>=))
-import qualified Prelude                            as Haskell
-import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
+import           Control.Monad.State               (StateT (..))
+import           Data.Aeson                        hiding (Bool)
+import           Data.Foldable                     (foldlM, foldr, foldrM, for_)
+import           Data.Functor                      ((<$>))
+import           Data.Kind                         (Type)
+import           Data.List                         (unfoldr, zip)
+import           Data.Map                          (fromList, (!))
+import           Data.Traversable                  (for, traverse)
+import           Data.Tuple                        (swap)
+import qualified Data.Zip                          as Z
+import           GHC.Generics                      (Generic, Par1 (..))
+import           GHC.Natural                       (naturalFromInteger)
+import           Prelude                           (Integer, const, error, flip, otherwise, return, type (~), ($), (++),
+                                                    (.), (<>), (>>=))
+import qualified Prelude                           as Haskell
+import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field    (Zp)
+import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector            as V
-import           ZkFold.Base.Data.Vector            (Vector (..))
-import           ZkFold.Prelude                     (length, replicate, replicateA)
+import qualified ZkFold.Base.Data.Vector           as V
+import           ZkFold.Base.Data.Vector           (Vector (..))
+import           ZkFold.Prelude                    (length, replicate, replicateA)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Class         (SymbolicData)
+import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Eq.Structural
-import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
-import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
+import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, constraint, newAssigned)
 
 
 -- TODO (Issue #18): hide this constructor
@@ -461,7 +460,7 @@ instance
     , KnownRegisterSize r
     ) => Ring (UInt n r c)
 
-deriving via (Structural (UInt n rs c))
+deriving newtype
          instance (Symbolic c, KnownNat (NumberOfRegisters (BaseField c) n rs)) =>
          Eq (Bool c) (UInt n rs c)
 
