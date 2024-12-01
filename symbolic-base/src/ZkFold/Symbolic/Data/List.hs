@@ -1,35 +1,65 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.List where
 
 import           Control.Monad                    (return)
+import           Data.Distributive                (Distributive (..))
 import           Data.Function                    (const)
-import           Data.Functor.Rep                 (Representable, pureRep, tabulate)
+import           Data.Functor                     (Functor)
+import           Data.Functor.Rep                 (Representable, distributeRep, pureRep, tabulate)
+import           Data.List.Infinite               (Infinite (..))
 import           Data.Proxy                       (Proxy (..))
 import           Data.Traversable                 (Traversable, traverse)
 import           Data.Tuple                       (snd)
-import           GHC.Generics                     (Par1 (..), (:*:) (..))
+import           GHC.Generics                     (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
 import           Prelude                          (fmap, fst, type (~), undefined, ($), (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Control.HApplicative (HApplicative)
+import           ZkFold.Base.Data.Functor.Rep     ()
 import           ZkFold.Base.Data.HFunctor        (hmap)
+import           ZkFold.Base.Data.List.Infinite   ()
 import           ZkFold.Base.Data.Product         (fstP, sndP)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
+import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (Payloaded))
 import           ZkFold.Symbolic.Data.UInt        (UInt)
 import           ZkFold.Symbolic.MonadCircuit
+
+data ListItem x a = ListItem
+  { tailHash    :: Layout x a
+  , headLayout  :: Layout x a
+  , headPayload :: Payload x a
+  }
+  deriving (Generic1)
+
+deriving instance
+  (Functor (Layout x), Functor (Payload x)) =>
+  Functor (ListItem x)
+
+instance
+    (Representable (Layout x), Representable (Payload x)) =>
+    Distributive (ListItem x) where
+  distribute = distributeRep
+
+instance
+  (Representable (Layout x), Representable (Payload x)) =>
+  Representable (ListItem x)
 
 data List c x = List
   { lHash    :: c (Layout x)
   , lSize    :: c Par1
-  , lWitness :: [(Layout x (WitnessField c), Layout x (WitnessField c), Payload x (WitnessField c))]
-  -- ^ TODO: As the name suggests, this is only needed in witness cinstruction in uncons.
-  -- This list is never used in circuit itlest.
-  -- Think of a better solution for carrying witnesses.
-  -- Besides, List is not an instance of SymbolicData while this list is present
+  , lWitness :: Payloaded (Infinite :.: ListItem x) c
   }
+  deriving (Generic)
+
+instance HApplicative c => SymbolicData (List c x)
+-- | TODO: Maybe some 'isValid' check for Lists?..
+instance (Symbolic c, SymbolicInput x) => SymbolicInput (List c x)
 
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.
@@ -38,8 +68,9 @@ emptyList
     :: forall context x
     .  Symbolic context
     => Representable (Layout x)
+    => Representable (Payload x)
     => List context x
-emptyList = List (embed $ pureRep zero) (embed $ Par1 zero) []
+emptyList = List (embed $ pureRep zero) (embed $ Par1 zero) $ Payloaded $ tabulate (const zero)
 
 -- | A list is empty if it's size is 0, in which case the first element of @runInvert@ is @one@.
 --
@@ -62,8 +93,10 @@ infixr 5 .:
     => x
     -> List context x
     -> List context x
-x .: List{..} = List incSum incSize ((witnessF lHash, witnessF (arithmetize x Proxy), payload x Proxy):lWitness)
+x .: List{..} = List incSum incSize ((witnessF lHash, witnessF (arithmetize x Proxy), payload x Proxy)<:<lWitness)
     where
+        (a, b, c) <:< Payloaded (Comp1 l) = Payloaded $ Comp1 (ListItem a b c :< l)
+
         xRepr :: context (Layout x)
         xRepr = arithmetize x (Proxy @context)
 
@@ -72,30 +105,29 @@ x .: List{..} = List incSum incSize ((witnessF lHash, witnessF (arithmetize x Pr
 
         incSum :: context (Layout x)
         incSum = fromCircuit3F lHash xRepr incSize $
-            \vHash vRepr (Par1 s) -> mzipWithMRep (hashF s) vHash vRepr
+            \vHash vRepr (Par1 s) -> mzipWithMRep (hashFun s) vHash vRepr
 
-hashF :: MonadCircuit i a w m => i -> i -> i -> m i
-hashF s h t = newAssigned (($ h) + ($ t) * ($ s))
+hashFun :: MonadCircuit i a w m => i -> i -> i -> m i
+hashFun s h t = newAssigned (($ h) + ($ t) * ($ s))
 
 uncons ::
   forall c x.
   (Symbolic c, SymbolicData x) =>
-  (Context x ~ c, Support x ~ Proxy c, Representable (Payload x)) =>
+  (Context x ~ c, Support x ~ Proxy c) =>
   (Representable (Layout x), Traversable (Layout x)) =>
   List c x -> (x, List c x)
-uncons l@List{..} = case lWitness of
-  [] -> (restore $ const (lHash, tabulate (const zero)), l)
-  ((tHash, hdL, hdP):tWitness) ->
-    ( restore $ const (hmap fstP preimage, hdP)
-    , List (hmap sndP preimage) decSize tWitness)
+uncons List{..} = case lWitness of
+  Payloaded (Comp1 (ListItem {..} :< tWitness)) ->
+    ( restore $ const (hmap fstP preimage, headPayload)
+    , List (hmap sndP preimage) decSize $ Payloaded (Comp1 tWitness))
     where
       decSize = fromCircuitF lSize $ \(Par1 i) ->
         Par1 <$> newAssigned (($ i) - one)
 
       preimage :: c (Layout x :*: Layout x)
       preimage = fromCircuit2F lSize lHash $ \(Par1 s) y -> do
-        tH :*: hH <- traverse unconstrained (tHash :*: hdL)
-        hash <- mzipWithMRep (hashF s) hH tH
+        tH :*: hH <- traverse unconstrained (tailHash :*: headLayout)
+        hash <- mzipWithMRep (hashFun s) hH tH
         _ <- mzipWithMRep (\i j -> constraint (($ i) - ($ j))) hash y
         return (hH :*: tH)
 
@@ -103,14 +135,14 @@ uncons l@List{..} = case lWitness of
 --
 head ::
   (Symbolic c, SymbolicData x) =>
-  (Context x ~ c, Support x ~ Proxy c, Representable (Payload x)) =>
+  (Context x ~ c, Support x ~ Proxy c) =>
   (Representable (Layout x), Traversable (Layout x)) =>
   List c x -> x
 head = fst . uncons
 
 tail ::
   (Symbolic c, SymbolicData x) =>
-  (Context x ~ c, Support x ~ Proxy c, Representable (Payload x)) =>
+  (Context x ~ c, Support x ~ Proxy c) =>
   (Representable (Layout x), Traversable (Layout x)) =>
   List c x -> List c x
 tail = snd . uncons
@@ -150,6 +182,7 @@ singleton
     .  Symbolic context
     => Traversable (Layout x)
     => Representable (Layout x)
+    => Representable (Payload x)
     => SymbolicData x
     => Context x ~ context
     => Support x ~ Proxy context

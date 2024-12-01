@@ -57,10 +57,17 @@ data Update context = Update
 emptyUpdate ::
      Symbolic context
   => Representable (Layout (AddressIndex context))
+  => Representable (Payload (AddressIndex context))
+  => Representable (Layout (Input context))
+  => Representable (Payload (Input context))
   => Representable (Layout (List context (Input context)))
+  => Representable (Layout (Output context))
+  => Representable (Payload (Output context))
   => Representable (Layout (List context (Output context)))
   => Representable (Layout (ContractData context))
+  => Representable (Payload (ContractData context))
   => Representable (Layout (Hash context))
+  => Representable (Payload (Hash context))
   => Hash context
   -> Update context
 emptyUpdate prev = Update
