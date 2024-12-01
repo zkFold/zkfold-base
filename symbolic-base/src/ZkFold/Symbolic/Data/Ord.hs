@@ -84,7 +84,7 @@ instance
 
 getBitsBE ::
   forall c x .
-  (Symbolic c, SymbolicData x, Context x ~ c, Support x ~ Proxy c) =>
+  (SymbolicOutput x, Context x ~ c) =>
   x -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.

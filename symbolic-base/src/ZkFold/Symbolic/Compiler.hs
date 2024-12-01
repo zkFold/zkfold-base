@@ -13,7 +13,6 @@ import           Data.Binary                                (Binary)
 import           Data.Function                              (const, id, (.))
 import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
-import           Data.Proxy                                 (Proxy (..))
 import           Data.Tuple                                 (fst, snd)
 import           GHC.Generics                               (Par1 (Par1), U1 (..))
 import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
@@ -47,7 +46,7 @@ type CompilesWith c s f =
 -- | A constraint defining what it means
 -- for data of type @y@ to be properly restorable.
 type RestoresFrom c y =
-  (SymbolicData y, Context y ~ c, Support y ~ Proxy c, Payload y ~ U1)
+  (SymbolicOutput y, Context y ~ c, Payload y ~ U1)
 
 compileInternal ::
   (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i) =>
