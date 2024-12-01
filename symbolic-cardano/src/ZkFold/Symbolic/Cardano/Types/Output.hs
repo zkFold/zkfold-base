@@ -20,7 +20,7 @@ import           ZkFold.Symbolic.Cardano.Types.Output.Datum
 import           ZkFold.Symbolic.Cardano.Types.Value        (SingleAsset, Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators           (NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators           (KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq                    (Eq)
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput (..))
 
@@ -32,12 +32,12 @@ data Liability context
 
 deriving instance Generic (Liability context)
 deriving instance (Haskell.Eq (SingleAsset context)) => Haskell.Eq (Liability context)
-deriving instance Symbolic context => SymbolicData (Liability context)
+deriving instance (Symbolic context, KnownRegisters context 64 Auto) => SymbolicData (Liability context)
 
 -- TODO: derive this automatically
 instance
     ( Symbolic context
-    , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+    , KnownRegisters context 64 Auto
     ) => SymbolicInput (Liability context) where
     isValid Liability{..} = isValid (lLiability, lBabel)
 
@@ -54,18 +54,18 @@ deriving instance
     ) => Haskell.Eq (Output tokens datum context)
 
 deriving instance Generic (Output tokens datum context)
-deriving instance (KnownNat tokens, Symbolic context) => SymbolicData (Output tokens datum context)
+deriving instance (KnownNat tokens, Symbolic context, KnownRegisters context 64 Auto) => SymbolicData (Output tokens datum context)
 
 instance
     ( Symbolic context
     , KnownNat tokens
-    , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+    , KnownRegisters context 64 Auto
     ) => SymbolicInput (Output tokens datum context) where
     isValid (Output a t d) = isValid (a, t,  d)
 
 instance
             ( Symbolic context
             , KnownNat tokens
-            , KnownNat (NumberOfRegisters (BaseField context) 64 'Auto)
+            , KnownRegisters context 64 Auto
             ) => Eq (Bool context) (Output tokens datum context)
 

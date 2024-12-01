@@ -19,8 +19,9 @@ import           ZkFold.Symbolic.Data.Maybe
 sponsoredTx
     :: forall context i1 ri1 i2 ri2
     .  Symbolic context
-    => KnownNat (NumberOfRegisters (BaseField context) 32 'Auto)
-    => KnownNat (NumberOfRegisters (BaseField context) 64 'Auto)
+    => KnownRegisters context 32 'Auto
+    => KnownRegisters context 64 'Auto
+    => KnownRegisters context 11 'Auto
     => KnownNat ri1
     => KnownNat i1
     => Transaction i1 ri1 2 1 0 () context

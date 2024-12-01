@@ -63,7 +63,7 @@ deriving instance Generic (UInt n r context)
 deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) n r)))) => NFData (UInt n r context)
 deriving instance (Haskell.Eq (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Eq (UInt n r context)
 deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Show (UInt n r context)
-deriving newtype instance SymbolicData (UInt n r c)
+deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (UInt n r c) where
     fromConstant c = UInt . embed @c $ naturalToVector @c @n @r c
@@ -88,7 +88,7 @@ expMod
     => KnownNat n
     => KnownNat m
     => KnownNat (2 * m)
-    => KnownNat (NumberOfRegisters (BaseField c) (2 * m) r)
+    => KnownRegisters c (2 * m) r
     => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
     => UInt n r c
@@ -115,7 +115,7 @@ bitsPow
     => KnownRegisterSize r
     => KnownNat n
     => KnownNat p
-    => KnownNat (NumberOfRegisters (BaseField c) n r)
+    => KnownRegisters c n r
     => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))
     => Natural
@@ -165,7 +165,7 @@ eea
     .  Symbolic c
     => SemiEuclidean (UInt n r c)
     => KnownNat n
-    => KnownNat (NumberOfRegisters (BaseField c) n r)
+    => KnownRegisters c n r
     => AdditiveGroup (UInt n r c)
     => Eq (Bool c) (UInt n r c)
     => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c, UInt n r c)
@@ -309,7 +309,7 @@ asWords v = fromCircuitF v $ \regs -> do
 type OrdWord = 16
 
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
-         , KnownNat (NumberOfRegisters (BaseField c) n r)
+         , KnownRegisters c n r
          , regSize ~ GetRegisterSize (BaseField c) n r
          , KnownNat (Ceil regSize OrdWord)
          ) => Ord (Bool c) (UInt n r c) where
@@ -461,7 +461,7 @@ instance
     ) => Ring (UInt n r c)
 
 deriving newtype
-         instance (Symbolic c, KnownNat (NumberOfRegisters (BaseField c) n rs)) =>
+         instance (Symbolic c, KnownRegisters c n rs) =>
          Eq (Bool c) (UInt n rs c)
 
 --------------------------------------------------------------------------------
@@ -588,7 +588,7 @@ instance
   ( Symbolic c
   , KnownNat n
   , KnownRegisterSize r
-  , KnownNat (NumberOfRegisters (BaseField c) n r)
+  , KnownRegisters c n r
   ) => SymbolicInput (UInt n r c) where
 
     isValid (UInt bits) = Bool $ fromCircuitF bits $ \v -> do

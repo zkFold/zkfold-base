@@ -12,7 +12,7 @@ import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..))
 import qualified GHC.Generics                     as G
 import           GHC.TypeLits                     (KnownNat)
-import           Prelude                          (foldl, ($), (.))
+import           Prelude                          (Traversable, foldl, ($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString      (Binary)
@@ -26,13 +26,10 @@ import           ZkFold.Symbolic.MonadCircuit
 
 -- | A class for Symbolic input.
 class
-    ( SymbolicData d
-    , Support d ~ Proxy (Context d)
-    , R.Representable (Layout d)
+    ( SymbolicOutput d
     , Binary (R.Rep (Layout d))
     , Ord (R.Rep (Layout d))
     , NFData (R.Rep (Layout d))
-    , R.Representable (Payload d)
     , Binary (R.Rep (Payload d))
     ) => SymbolicInput d where
     isValid :: d -> Bool (Context d)
@@ -54,7 +51,8 @@ instance
   , Binary (R.Rep f)
   , Ord (R.Rep f)
   , NFData (R.Rep f)
-  , R.Representable f) => SymbolicInput (c f) where
+  , R.Representable f
+  , Traversable f) => SymbolicInput (c f) where
   isValid _ = true
 
 

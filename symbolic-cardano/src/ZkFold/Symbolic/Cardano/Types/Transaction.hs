@@ -13,7 +13,7 @@ import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
 import           ZkFold.Symbolic.Cardano.Types.Output (Liability (..), Output)
 import           ZkFold.Symbolic.Cardano.Types.Value  (Value)
-import           ZkFold.Symbolic.Class                (BaseField, Symbolic)
+import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
@@ -40,6 +40,9 @@ deriving instance
 -- TODO: Think how to prettify this abomination
 deriving instance
     ( Symbolic context
+    , KnownRegisters context 32 Auto
+    , KnownRegisters context  64 Auto
+    , KnownRegisters context  11 Auto
     , KnownNat tokens
     , KnownNat rinputs
     , KnownNat inputs
@@ -50,9 +53,9 @@ deriving instance
 
 instance
     ( Symbolic context
-    , KnownNat (NumberOfRegisters (BaseField context) 32 Auto)
-    , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
-    , KnownNat (NumberOfRegisters (BaseField context) 11 Auto)
+    , KnownRegisters context 32 Auto
+    , KnownRegisters context  64 Auto
+    , KnownRegisters context  11 Auto
     , KnownNat tokens
     , KnownNat rinputs
     , KnownNat outputs

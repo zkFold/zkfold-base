@@ -12,9 +12,8 @@ import           Data.Data                        (Proxy (..))
 import           Data.Foldable                    (Foldable, concatMap, toList)
 import           Data.Function                    ((.))
 import           Data.Functor                     (fmap, (<$>))
-import           Data.Functor.Rep                 (Representable)
 import           Data.List                        (map, reverse)
-import           Data.Traversable                 (Traversable, traverse)
+import           Data.Traversable                 (traverse)
 import qualified Data.Zip                         as Z
 import           GHC.Generics                     (Par1 (..))
 import           Prelude                          (type (~), ($))
@@ -67,12 +66,8 @@ deriving newtype instance SymbolicData a => SymbolicData (Lexicographical a)
 -- | Every @SymbolicData@ type can be compared lexicographically.
 instance
     ( Symbolic c
-    , SymbolicData x
+    , SymbolicOutput x
     , Context x ~ c
-    , Support x ~ Proxy c
-    , Representable (Layout x)
-    , Traversable (Layout x)
-    , Representable (Payload x)
     ) => Ord (Bool c) (Lexicographical x) where
 
     x <= y = y >= x
@@ -89,7 +84,7 @@ instance
 
 getBitsBE ::
   forall c x .
-  (Symbolic c, SymbolicData x, Context x ~ c, Support x ~ Proxy c, Foldable (Layout x)) =>
+  (SymbolicOutput x, Context x ~ c) =>
   x -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
