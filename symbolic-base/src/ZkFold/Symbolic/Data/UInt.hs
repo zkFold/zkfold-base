@@ -373,23 +373,23 @@ instance
         )
         where
             t :: BaseField c
-            t = (one + one) ^ registerSize @(BaseField c) @n @r - one
+            t = (one + one) ^ registerSize @(BaseField c) @n @r
 
             solve1 :: MonadCircuit i (BaseField c) w m => i -> i -> m [i]
             solve1 i j = do
-                z0 <- newAssigned (\v -> v i - v j + fromConstant (2 ^ registerSize @(BaseField c) @n @r :: Natural))
+                z0 <- newAssigned (\v -> v i - v j + fromConstant t)
                 (z, _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 z0
                 return [z]
 
             solveN :: MonadCircuit i (BaseField c) w m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
             solveN (i, j) (is, js) (i', j') = do
-                s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
+                s <- newAssigned (\v -> v i - v j + fromConstant t)
                 let r = registerSize @(BaseField c) @n @r
                 (k, b0) <- splitExpansion r 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (Haskell.zipWith (fullSub r) is js)
                 d <- newAssigned (\v -> v i' - v j')
-                s'0 <- newAssigned (\v -> v d + v b + fromConstant t)
-                (s', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) (r + 1 -! highRegisterSize @(BaseField c) @n @r) s'0
+                s'0 <- newAssigned (\v -> v d + v b + fromConstant (2 ^ highRegisterSize @(BaseField c) @n @r -! 1 :: Natural))
+                (s', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 s'0
                 return (k : zs <> [s'])
 
     negate :: UInt n r c -> UInt n r c
