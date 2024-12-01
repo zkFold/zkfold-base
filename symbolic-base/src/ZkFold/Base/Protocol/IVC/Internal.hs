@@ -31,22 +31,8 @@ import           ZkFold.Base.Protocol.IVC.CommitOpen
 import           ZkFold.Base.Protocol.IVC.FiatShamir
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction)
+import           ZkFold.Base.Protocol.IVC.RecursiveFunction (RecursiveI (..), RecursiveP (..))
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..))
-
--- | Public input for the recursive function
-data RecursiveI i c k f = RecursiveI (i f) (AccumulatorInstance i c k f)
-    deriving (GHC.Generics.Generic)
-
-deriving instance (HashAlgorithm algo f, RandomOracle algo (i f) f, RandomOracle algo c f) => RandomOracle algo (RecursiveI i c k f) f
-
--- | Payload for the recursive function
-data RecursiveP i p c d k f = RecursiveP (i f) (p f) f (AccumulatorInstance i c k f) (Vector k c) (Vector (d-1) c)
-    deriving (GHC.Generics.Generic)
-
--- TODO: Implement the recursive function.
-recursiveFunction :: StepFunction nx nu -> StepFunction nx nu
-recursiveFunction f = f
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof m c k
