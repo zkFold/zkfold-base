@@ -253,6 +253,7 @@ test-suite symbolic-base-test
       Tests.Field
       Tests.GroebnerBasis
       Tests.Group
+      Tests.List
       Tests.NonInteractiveProof
       Tests.Pairing
       Tests.Permutations

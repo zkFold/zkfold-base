@@ -11,6 +11,7 @@ import           Tests.FFA                 (specFFA)
 import           Tests.Field               (specField)
 import           Tests.GroebnerBasis       (specGroebner)
 import           Tests.Group               (specAdditiveGroup)
+import           Tests.List                (specList)
 import           Tests.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
@@ -38,6 +39,7 @@ main = do
     specCompiler
 
     -- Symbolic types and operations
+    specList
     specUInt
     specFFA
     specByteString
