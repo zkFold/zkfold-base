@@ -34,19 +34,19 @@ import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..),
 --
 class AccumulatorScheme f i m c d k a where
   prover   :: a
-           -> Accumulator f i m c k                      -- accumulator
+           -> Accumulator i m c k f                      -- accumulator
            -> NARKInstanceProof f i m c k                -- instance-proof pair (pi, π)
-           -> (Accumulator f i m c k, Vector (d - 1) c)  -- updated accumulator and accumulation proof
+           -> (Accumulator i m c k f, Vector (d - 1) c)  -- updated accumulator and accumulation proof
 
   verifier :: i f                                        -- Public input
            -> Vector k c                                 -- NARK proof π.x
-           -> AccumulatorInstance f i c k                -- accumulator instance acc.x
-           -> AccumulatorInstance f i c k                -- updated accumulator instance acc'.x
+           -> AccumulatorInstance i c k f                -- accumulator instance acc.x
+           -> AccumulatorInstance i c k f                -- updated accumulator instance acc'.x
            -> Vector (d - 1) c                           -- accumulation proof E_j
            -> (f, i f, Vector (k-1) f, Vector k c, c)    -- returns zeros if the accumulation proof is correct
 
   decider  :: a
-           -> Accumulator f i m c k                      -- final accumulator
+           -> Accumulator i m c k f                      -- final accumulator
            -> (Vector k c, c)                            -- returns zeros if the final accumulator is valid
 
 instance

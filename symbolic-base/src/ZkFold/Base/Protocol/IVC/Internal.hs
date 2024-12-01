@@ -1,105 +1,145 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeOperators       #-}
+
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Redundant ^." #-}
 
 module ZkFold.Base.Protocol.IVC.Internal where
 
 import           Control.DeepSeq                            (NFData)
 import           Control.Lens                               ((^.))
+import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
+import           Data.Kind                                  (Type)
 import           Data.Type.Equality                         (type (~))
+import           Data.Zip                                   (Zip (..), unzip)
 import           GHC.Generics                               (Generic)
 import           Prelude                                    (const, ($))
 import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, Natural, type (-))
-import           ZkFold.Base.Data.Vector                    (Vector)
+import           ZkFold.Base.Data.Vector                    (Vector, empty, singleton)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (AlgebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.CommitOpen
 import           ZkFold.Base.Protocol.IVC.FiatShamir
-import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..),
-                                                                   narkInstanceProof)
+import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.IVC.Oracle
+import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction)
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..))
 
-data IVCProof f i m c d k
+-- | Public input for the recursive function
+data RecursiveI i c k f = RecursiveI (i f) (AccumulatorInstance i c k f)
+    deriving (GHC.Generics.Generic)
+
+deriving instance (HashAlgorithm algo f, RandomOracle algo (i f) f, RandomOracle algo c f) => RandomOracle algo (RecursiveI i c k f) f
+
+-- | Payload for the recursive function
+data RecursiveP i p c d k f = RecursiveP (i f) (p f) f (AccumulatorInstance i c k f) (Vector k c) (Vector (d-1) c)
+    deriving (GHC.Generics.Generic)
+
+-- TODO: Implement the recursive function.
+recursiveFunction :: StepFunction nx nu -> StepFunction nx nu
+recursiveFunction f = f
+
+-- | The recursion circuit satisfiability proof.
+data IVCProof m c k
     = IVCProof
-    { ivcpAccumulatorInstance :: AccumulatorInstance f i c k
-    , ivcpAccumulationProof   :: Vector (d-1) c
+    { _proofX :: Vector k c
+    -- ^ The commitment to the witness of the recursion circuit satisfiability proof.
+    , _proofW :: Vector k m
+    -- ^ The witness of the recursion circuit satisfiability proof.
     } deriving (GHC.Generics.Generic)
 
-deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCProof f i m c d k)
-deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCProof f i m c d k)
+deriving instance (P.Show m, P.Show c) => P.Show (IVCProof m c k)
+deriving instance (NFData m, NFData c) => NFData (IVCProof m c k)
 
-noIVCProof :: forall f i m c d k a algo .
-    ( Representable i
-    , m ~ [f]
-    , HomomorphicCommit m c
-    , KnownNat (d-1)
-    , KnownNat (k-1)
+noIVCProof :: forall m c k f .
+    ( m ~ [f]
+    , AdditiveMonoid f
+    , AdditiveMonoid c
     , KnownNat k
-    , AlgebraicMap f i d a
-    ) => FiatShamir algo (CommitOpen a) -> IVCProof f i m c d k
-noIVCProof fs = IVCProof (emptyAccumulatorInstance @_ @_ @_ @_ @d fs) (tabulate $ const zero)
+    ) => IVCProof m c k
+noIVCProof = IVCProof (tabulate $ const zero) (tabulate $ const zero)
 
--- | The final result of recursion and the final accumulator.
--- Accumulation decider is an arithmetizable function which can be called on the final accumulator.
---
-data IVCResult f i m c d k
+-- | The current result of recursion together with the first iteration flag,
+-- the corresponding accumulator, and the recursion circuit satisfiability proof.
+data IVCResult f i m c k
     = IVCResult
-    { ivcInstance    :: i f
-    , ivcCommits     :: Vector k c
-    , ivcAccumulator :: Accumulator f i m c k
-    , ivcProof       :: IVCProof f i m c d k
+    { _z     :: i f
+    , _acc   :: Accumulator i m c k f
+    , _proof :: IVCProof m c k
+    , _flag  :: f
     } deriving (GHC.Generics.Generic)
 
-deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCResult f i m c d k)
-deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCResult f i m c d k)
+makeLenses ''IVCResult
 
-ivcSetup :: forall f i m c (d :: Natural) k a algo .
-    ( Representable i
+deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCResult f i m c k)
+deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCResult f i m c k)
+
+type IVCAssumptions f i p m c d k a algo =
+    ( SpecialSoundProtocol f i p m c d k a
+    , SpecialSoundProtocol f (RecursiveI i c k) (RecursiveP i p c d k) m c d k a
+    , Representable i
+    , HashAlgorithm algo f
     , m ~ [f]
     , HomomorphicCommit m c
-    , KnownNat (d-1)
-    , KnownNat (k-1)
-    , KnownNat k
-    , AlgebraicMap f i d a
-    ) => FiatShamir algo (CommitOpen a) -> i f -> IVCResult f i m c d k
-ivcSetup fs pi0 = IVCResult pi0 (tabulate $ const zero) (emptyAccumulator @_ @_ @_ @_ @d fs) (noIVCProof fs)
-
-ivcProve :: forall f i p m c (d :: Natural) k a algo .
-    ( SpecialSoundProtocol f i p m c d k a
-    , HomomorphicCommit m c
-    , HashAlgorithm algo f
     , RandomOracle algo (i f) f
     , RandomOracle algo c f
+    , KnownNat (k-1)
     , KnownNat k
+    , AlgebraicMap f i d a
     , Acc.AccumulatorScheme f i m c d k (FiatShamir algo (CommitOpen a))
-    ) => FiatShamir algo (CommitOpen a) -> IVCResult f i m c d k -> p f -> IVCResult f i m c d k
-ivcProve fs (IVCResult pi0 _ acc0 _) witness =
-    let
-        narkIP@(NARKInstanceProof pi (NARKProof cs _)) = narkInstanceProof @_ @_ @_ @_ @_ @d fs pi0 witness
-        (acc, pf) = Acc.prover fs acc0 narkIP
-        proof = IVCProof (acc0^.x) pf
-    in
-        IVCResult pi cs acc proof
+    )
 
-ivcVerify :: forall f i m c d k a .
-    ( Acc.AccumulatorScheme f i m c d k a
-    ) => a -> IVCResult f i m c d k -> ((f, i f, Vector (k-1) f, Vector k c, c), (Vector k c, c))
-ivcVerify a IVCResult {..} =
+-- | Create the first IVC result
+-- 
+-- It differs from the rest of the iterations as we don't have anything accumulated just yet.
+ivcSetup :: forall f i p m c d k a algo . IVCAssumptions f i p m c d k a algo
+    => FiatShamir algo (CommitOpen a)
+    -> i f
+    -> p f
+    -> IVCResult f i m c k
+ivcSetup fs x0 witness =
     let
-        pi            = ivcInstance
-        cs            = ivcCommits
-        acc           = ivcAccumulator
-        IVCProof {..} = ivcProof
-        accX          = acc^.x
-        accX0         = ivcpAccumulatorInstance
-        pf            = ivcpAccumulationProof
+        x1 = input @_ @_ @_ @(Vector k (m, c)) @c @d @1 fs x0 witness
     in
-        ( Acc.verifier @f @i @m @c @d @k @a pi cs accX0 accX pf
-        , Acc.decider @f @i @m @c @d @k @a a acc
+        IVCResult x1 (emptyAccumulator @f @i @m @c @d @k fs) (noIVCProof @m @c @k) zero
+
+ivcProve :: forall f i p m c (d :: Natural) k a algo . IVCAssumptions f i p m c d k a algo
+    => FiatShamir algo (CommitOpen a)
+    -> IVCResult f i m c k
+    -> p f
+    -> IVCResult f i m c k
+ivcProve fs res@(IVCResult _ _ (IVCProof cs ms) _) witness =
+    let
+        narkIP = NARKInstanceProof (res^.z) (NARKProof cs ms)
+        (acc', pf) = Acc.prover @_ @_ @_ @_ @d fs (res^.acc) narkIP
+
+        payload = RecursiveP (res^.z) witness one (res^.acc^.x) cs pf
+        -- TODO: change to the original protocol's input
+        RecursiveI pi _ = input @f @_ @_ @(Vector k (m, c)) @c @d @1 fs (RecursiveI (res^.z) (acc'^.x)) payload
+        -- TODO: change Fiat-Shamired protocol for a one-round protocol
+        (ms', cs') = unzip $ prover @f @(RecursiveI i c k) @_ @_ @c @d @1 fs (RecursiveI (res^.z) (res^.acc^.x)) payload (oracle @algo (res^.z)) 0
+        ivcProof = IVCProof cs' ms'
+    in
+        IVCResult pi acc' ivcProof one
+
+ivcVerify :: forall f i (p :: Type -> Type) m c d k a algo . IVCAssumptions f i p m c d k a algo
+    => FiatShamir algo (CommitOpen a)
+    -> IVCResult f i m c k
+    -> (VerifierOutput f (RecursiveI i c k) (RecursiveP i p c d k) (Vector k (m, c)) c d 1 (FiatShamir algo (CommitOpen a)), (Vector k c, c))
+ivcVerify fs res@(IVCResult _ _ (IVCProof cs ms) _) =
+    let
+    in
+        -- TODO: change Fiat-Shamired protocol for a one-round protocol
+        ( verifier @f @(RecursiveI i c k) @(RecursiveP i p c d k) @(Vector k (m, c)) @c @d @1
+            fs (RecursiveI (res^.z) (res^.acc^.x)) (singleton $ zip ms cs) empty
+        , Acc.decider @f @i @m @c @d @k fs (res^.acc)
         )

@@ -21,7 +21,7 @@ import           ZkFold.Base.Protocol.IVC.CommitOpen   (CommitOpen (..))
 import           ZkFold.Base.Protocol.IVC.FiatShamir   (FiatShamir (FiatShamir))
 
 -- Page 19, Accumulator instance
-data AccumulatorInstance f i c k
+data AccumulatorInstance i c k f
     = AccumulatorInstance
         { _pi :: i f            -- pi ∈ M^{l_in} in the paper
         , _c  :: Vector k c     -- [C_i] ∈ C^k in the paper
@@ -36,9 +36,9 @@ makeLenses ''AccumulatorInstance
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
-data Accumulator f i m c k
+data Accumulator i m c k f
     = Accumulator
-        { _x :: AccumulatorInstance f i c k
+        { _x :: AccumulatorInstance i c k f
         , _w :: Vector k m
         }
     deriving (Show, Generic, NFData)
@@ -52,7 +52,7 @@ emptyAccumulator :: forall f i m c (d :: Natural) k a algo.
     , KnownNat (k-1)
     , KnownNat k
     , AlgebraicMap f i d a
-    ) => FiatShamir algo (CommitOpen a) -> Accumulator f i m c k
+    ) => FiatShamir algo (CommitOpen a) -> Accumulator i m c k f
 emptyAccumulator (FiatShamir (CommitOpen sps)) =
     let accW  = tabulate (const zero)
         aiC   = fmap hcommit accW
@@ -70,5 +70,5 @@ emptyAccumulatorInstance :: forall f i m c (d :: Natural) k a algo .
     , KnownNat (k-1)
     , KnownNat k
     , AlgebraicMap f i d a
-    ) => FiatShamir algo (CommitOpen a) -> AccumulatorInstance f i c k
+    ) => FiatShamir algo (CommitOpen a) -> AccumulatorInstance i c k f
 emptyAccumulatorInstance fs = emptyAccumulator @_ @_ @_ @_ @d fs ^. x

@@ -64,10 +64,10 @@ testPredicate p = Predicate (\x _ -> testFunction' p x) (testCircuit p)
 testSPS :: PAR -> SPS
 testSPS = FiatShamir . CommitOpen . testPredicate
 
-initAccumulator :: SPS -> Accumulator F I M G K
+initAccumulator :: SPS -> Accumulator I M G K F
 initAccumulator = emptyAccumulator @_ @_ @_ @_ @D
 
-initAccumulatorInstance :: SPS -> AccumulatorInstance F I G K
+initAccumulatorInstance :: SPS -> AccumulatorInstance I G K F
 initAccumulatorInstance sps =
     let Accumulator ai _ = initAccumulator sps
     in ai
@@ -93,10 +93,10 @@ testPublicInput sps =
     let NARKInstanceProof pi _ = testInstanceProofPair sps
     in pi
 
-testAccumulator :: SPS -> Accumulator F I M G K
+testAccumulator :: SPS -> Accumulator I M G K F
 testAccumulator sps = fst $ Acc.prover @F @I @M @G @D @K sps (initAccumulator sps) $ testInstanceProofPair sps
 
-testAccumulatorInstance :: SPS -> AccumulatorInstance F I G K
+testAccumulatorInstance :: SPS -> AccumulatorInstance I G K F
 testAccumulatorInstance sps =
     let Accumulator ai _ = testAccumulator sps
     in ai

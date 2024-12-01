@@ -130,7 +130,6 @@ library
       ZkFold.Base.Protocol.IVC.NARK
       ZkFold.Base.Protocol.IVC.Oracle
       ZkFold.Base.Protocol.IVC.Predicate
-      ZkFold.Base.Protocol.IVC.RecursionCircuit
       ZkFold.Base.Protocol.IVC.SpecialSound
       ZkFold.Base.Protocol.IVC.VerifierCircuit
       ZkFold.Base.Protocol.KZG
