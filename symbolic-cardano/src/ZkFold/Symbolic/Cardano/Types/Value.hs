@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -16,6 +17,7 @@ import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators    (KnownRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input
 
 type PolicyId context    = ByteString 224 context
@@ -31,6 +33,11 @@ deriving instance (Haskell.Ord (ByteString 224 context), Haskell.Ord (ByteString
     => Haskell.Ord (Value n context)
 
 deriving instance (Symbolic context, KnownNat n, KnownRegisters context 64 Auto) => SymbolicData (Value n context)
+
+deriving newtype instance
+  ( Symbolic context
+  , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+  ) => Eq (Bool context) (Value n context)
 
 instance
     ( Symbolic context
