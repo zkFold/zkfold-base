@@ -11,7 +11,6 @@ import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Eq             (Eq)
-import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.Input
 
 type AddressType context = ByteString 4 context
@@ -28,8 +27,7 @@ data Address context = Address {
 deriving instance (Haskell.Eq (ByteString 4 context), Haskell.Eq (ByteString 224 context))
     => Haskell.Eq (Address context)
 
-deriving via (Structural (Address context))
-         instance (Symbolic context) => Eq (Bool context) (Address context)
+instance Symbolic context => Eq (Bool context) (Address context)
 
 instance Symbolic context => SymbolicData (Address context)
 instance Symbolic context => SymbolicInput (Address context) where

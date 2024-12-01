@@ -128,7 +128,7 @@ uncons List{..} = case lWitness of
 --
 head ::
   SymbolicOutput x =>
-  Support x ~ Proxy c =>
+  Context x ~ c =>
   List c x -> x
 head = fst . uncons
 
