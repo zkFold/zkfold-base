@@ -28,6 +28,7 @@ applyOnlineTransaction ::
   => Support (AddressIndex context) ~ Proxy context
   => Representable (Layout (AddressIndex context))
   => Traversable (Layout (AddressIndex context))
+  => Representable (Payload (AddressIndex context))
   => SymbolicData (AddressIndex context)
   => AddressIndex context
   -> Transaction context
@@ -50,6 +51,7 @@ applyOfflineTransaction ::
   => Support (AddressIndex context)  ~ Proxy context
   => Representable (Layout (AddressIndex context))
   => Traversable (Layout (AddressIndex context))
+  => Representable (Payload (AddressIndex context))
   => SymbolicData (AddressIndex context)
   => AddressIndex context
   -> Transaction context
@@ -65,12 +67,16 @@ newUpdate ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
   => Representable (Layout (List context (Input context)))
+  => Representable (Layout (Output context))
+  => Representable (Payload (Output context))
   => Representable (Layout (List context (Output context)))
   => Representable (Layout (ContractData context))
+  => Representable (Payload (ContractData context))
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
   => Representable (Layout (AddressIndex context))
   => Traversable (Layout (AddressIndex context))
+  => Representable (Payload (AddressIndex context))
   => SymbolicData (AddressIndex context)
   => Hash context
   -> UpdateWitness context
@@ -85,15 +91,18 @@ updateIsValid ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
   => Representable (Layout (List context (Input context)))
+  => Representable (Layout (Output context))
+  => Representable (Payload (Output context))
   => Representable (Layout (List context (Output context)))
   => Representable (Layout (ContractData context))
+  => Representable (Payload (ContractData context))
   => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
   => Representable (Layout (AddressIndex context))
   => Traversable (Layout (AddressIndex context))
+  => Representable (Payload (AddressIndex context))
   => SymbolicData (AddressIndex context)
   => Support (Value context) ~ Proxy context
-  => Context (List context (Value context)) ~ context
   => Context (Value context) ~ context
   => Context (MultiAssetValue context) ~ context
   => Representable (Payload (Value context))

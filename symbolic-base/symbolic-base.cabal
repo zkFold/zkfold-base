@@ -110,7 +110,9 @@ library
       ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
+      ZkFold.Base.Data.Functor.Rep
       ZkFold.Base.Data.HFunctor
+      ZkFold.Base.Data.List.Infinite
       ZkFold.Base.Data.Matrix
       ZkFold.Base.Data.Package
       ZkFold.Base.Data.Product
@@ -185,12 +187,12 @@ library
       ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Ed25519
       ZkFold.Symbolic.Data.Eq
-      ZkFold.Symbolic.Data.Eq.Structural
       ZkFold.Symbolic.Data.FFA
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Ord
+      ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.FieldElement
@@ -210,6 +212,7 @@ library
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
       distributive                               ,
+      infinite-list                              ,
       lens                                       ,
       monoidal-containers                        ,
       mtl                                   < 2.4,
@@ -252,6 +255,7 @@ test-suite symbolic-base-test
       Tests.Field
       Tests.GroebnerBasis
       Tests.Group
+      Tests.List
       Tests.NonInteractiveProof
       Tests.Pairing
       Tests.Permutations
