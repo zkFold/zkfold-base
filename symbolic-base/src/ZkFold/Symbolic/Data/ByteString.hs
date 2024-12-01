@@ -56,7 +56,6 @@ import           ZkFold.Symbolic.Data.Bool          (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class         (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq            (Eq)
-import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
@@ -74,7 +73,7 @@ deriving anyclass instance NFData (c (Vector n)) => NFData (ByteString n c)
 deriving newtype instance SymbolicData (ByteString n c)
 
 
-deriving via (Structural (ByteString n c))
+deriving newtype
          instance (Symbolic c, KnownNat n) => Eq (Bool c) (ByteString n c)
 
 instance

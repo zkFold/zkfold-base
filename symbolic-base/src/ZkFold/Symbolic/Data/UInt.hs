@@ -49,7 +49,6 @@ import           ZkFold.Symbolic.Data.Class         (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Eq.Structural
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
@@ -461,7 +460,7 @@ instance
     , KnownRegisterSize r
     ) => Ring (UInt n r c)
 
-deriving via (Structural (UInt n rs c))
+deriving newtype
          instance (Symbolic c, KnownNat (NumberOfRegisters (BaseField c) n rs)) =>
          Eq (Bool c) (UInt n rs c)
 
