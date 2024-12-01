@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -11,12 +12,14 @@ import           Data.Bool                        (bool)
 import           Data.Foldable                    (Foldable)
 import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
 import           Data.Traversable                 (Traversable, for)
+import qualified Data.Vector                      as V
 import qualified GHC.Generics                     as G
 import           Prelude                          (return, ($))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Package
+import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool (Bool), BoolType (..), all, any)
 import           ZkFold.Symbolic.Data.Combinators (runInvert)
@@ -69,7 +72,11 @@ instance (Symbolic c, Haskell.Eq (BaseField c), Representable f, Traversable f)
         in
             any Bool (unpacked result)
 
-instance Symbolic c => Eq (Bool c) (Bool c)
+instance (BoolType b, Eq b x) => Eq b (Vector n x) where
+    u == v = V.foldl (&&) true (V.zipWith (==) (toV u) (toV v))
+    u /= v = V.foldl (||) false (V.zipWith (/=) (toV u) (toV v))
+
+deriving newtype instance Symbolic c => Eq (Bool c) (Bool c)
 
 instance (BoolType b, Eq b x0, Eq b x1) => Eq b (x0,x1)
 instance (BoolType b, Eq b x0, Eq b x1, Eq b x2) => Eq b (x0,x1,x2)
