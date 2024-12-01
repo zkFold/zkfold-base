@@ -34,7 +34,7 @@ import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit,
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..),
-                                                              KnownRegisterSize (regSize), NumberOfRegisters,
+                                                              KnownRegisterSize, NumberOfRegisters,
                                                               RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
@@ -116,8 +116,8 @@ specUInt' = hspec $ do
         it "negates correctly" $ do
             x <- toss m
             return $ execAcUint @(Zp p) @n @rs (negate (fromConstant x)) === execZpUint @_ @n @rs (negate (fromConstant x))
-        when (regSize @rs == Auto) $ it "subtracts correctly" $ isHom @n @p @rs (-) (-) (overflowSub @n) <$> toss m <*> toss m
-        when (regSize @rs == Auto) $ it "multiplies correctly" $ isHom @n @p @rs (*) (*) (*) <$> toss m <*> toss m
+        it "multiplies correctly" $ isHom @n @p @rs (*) (*) (*) <$> toss m <*> toss m
+        it "subtracts correctly" $ isHom @n @p @rs (-) (-) (overflowSub @n) <$> toss m <*> toss m
         it "iso uint correctly" $ do
             x <- toss m
             let bx = fromConstant x :: ByteString n (AC (Zp p))
@@ -129,7 +129,7 @@ specUInt' = hspec $ do
                 bx = fromConstant x :: ByteString n (AC (Zp p))
             return $ evalBS (from ux :: ByteString n (AC (Zp p))) === evalBS bx
 
-        when (n <= 128 && regSize @rs == Auto) $ it "performs divMod correctly" $ withMaxSuccess 10 $ do
+        when (n <= 128) $ it "performs divMod correctly" $ withMaxSuccess 10 $ do
             num <- toss m
             d <- toss m
             let (acQ, acR) = (fromConstant num :: UInt n rs (AC (Zp p))) `divMod` fromConstant d

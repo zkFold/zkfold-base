@@ -389,7 +389,7 @@ instance
                 (zs, b) <- flip runStateT b0 $ traverse StateT (Haskell.zipWith (fullSub r) is js)
                 d <- newAssigned (\v -> v i' - v j')
                 s'0 <- newAssigned (\v -> v d + v b + fromConstant t)
-                (s', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 s'0
+                (s', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) (r + 1 -! highRegisterSize @(BaseField c) @n @r) s'0
                 return (k : zs <> [s'])
 
     negate :: UInt n r c -> UInt n r c
@@ -452,7 +452,8 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize rs) => MultiplicativeSemigro
                 p'0 <- foldrM (\k l -> do
                     k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
                     newAssigned (\v -> v k' + v l)) c' [0 .. r -! 1]
-                (p', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs) p'0
+                let highOverflow = registerSize @(BaseField c) @n @rs + maxOverflow @(BaseField c) @n @rs -! highRegisterSize @(BaseField c) @n @rs
+                (p', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @rs) highOverflow p'0
                 return (p : ps <> [p'])
 
 instance
