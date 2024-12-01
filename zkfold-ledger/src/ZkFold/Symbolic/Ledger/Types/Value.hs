@@ -2,15 +2,12 @@
 
 module ZkFold.Symbolic.Ledger.Types.Value where
 
-import           Data.Functor.Rep                      (Representable)
-import           Data.Proxy                            (Proxy)
-import           Data.Zip                              (Zip)
 import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
 import           ZkFold.Symbolic.Data.Bool             (Bool)
-import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional      (Conditional, bool)
 import           ZkFold.Symbolic.Data.Eq               (Eq ((==)))
@@ -40,9 +37,8 @@ data Value context = Value
 newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (Value context))
 
 emptyMultiAssetValue ::
-     Symbolic context
-  => Representable (Layout (Value context))
-  => Representable (Payload (Value context))
+     SymbolicData (Value context)
+  => Context (Value context) ~ context
   => MultiAssetValue context
 emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 
@@ -50,16 +46,8 @@ emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 addValue ::
      forall context. Conditional (Bool context) (MultiAssetValue context)
   => Symbolic context
-  => SymbolicData (Value context)
+  => SymbolicOutput (Value context)
   => Context (Value context) ~ context
-  => Support (Value context) ~ Proxy context
-  => Representable (Layout (Value context))
-  => Traversable (Layout (Value context))
-  => Zip (Layout (Value context))
-  => SymbolicData (List context (Value context))
-  => Traversable (Layout (List context (Value context)))
-  => Representable (Layout (List context (Value context)))
-  => Representable (Payload (Value context))
   => Eq (Bool context) (CurrencySymbol context)
   => Value context
   -> MultiAssetValue context
@@ -78,22 +66,11 @@ addValue val (UnsafeMultiAssetValue valList) =
 -- Safe constructor for a multi-asset value
 multiValueAsset ::
      Symbolic context
-  => SymbolicData (Value context)
-  => Context (Value context) ~ context
-  => Support (Value context) ~ Proxy context
-  => Traversable (Layout (Value context))
-  => Representable (Layout (Value context))
-  => Representable (Payload (Value context))
-  => Zip (Layout (Value context))
-  => SymbolicData (List context (Value context))
-  => Traversable (Layout (List context (Value context)))
-  => Representable (Layout (List context (Value context)))
-  => Eq (Bool context) (CurrencySymbol context)
-  => Context (MultiAssetValue context) ~ context
+  => SymbolicOutput (Value context)
   => SymbolicData (MultiAssetValue context)
-  => Traversable (Layout (MultiAssetValue context))
-  => Representable (Layout (MultiAssetValue context))
-  => Representable (Payload (MultiAssetValue context))
+  => Context (Value context) ~ context
+  => Context (MultiAssetValue context) ~ context
+  => Eq (Bool context) (CurrencySymbol context)
   => Foldable (List context)
   => List context (Value context)
   -> MultiAssetValue context

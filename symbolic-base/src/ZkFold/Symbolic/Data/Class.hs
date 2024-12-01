@@ -3,7 +3,8 @@
 
 module ZkFold.Symbolic.Data.Class (
         SymbolicData (..),
-        GSymbolicData (..)
+        SymbolicOutput,
+        GSymbolicData (..),
     ) where
 
 import           Control.Applicative              ((<*>))
@@ -12,6 +13,7 @@ import           Data.Function                    (flip, (.))
 import           Data.Functor                     ((<$>))
 import           Data.Functor.Rep                 (Representable (..))
 import           Data.Kind                        (Type)
+import           Data.Traversable                 (Traversable)
 import           Data.Tuple                       (fst)
 import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..))
@@ -27,7 +29,12 @@ import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (WitnessField))
 
 -- | A class for Symbolic data types.
-class SymbolicData x where
+class
+    ( Symbolic (Context x)
+    , Traversable (Layout x)
+    , Representable (Layout x)
+    , Representable (Payload x)
+    ) => SymbolicData x where
 
     type Context x :: (Type -> Type) -> Type
     type Context x = GContext (G.Rep x)
@@ -77,7 +84,14 @@ class SymbolicData x where
       (Support x -> (c (Layout x), Payload x (WitnessField c))) -> x
     restore f = G.to (grestore f)
 
-instance SymbolicData (c (f :: Type -> Type)) where
+type SymbolicOutput x = (SymbolicData x, Support x ~ Proxy (Context x))
+
+instance
+    ( Symbolic c
+    , Representable f
+    , Traversable f
+    ) => SymbolicData (c (f :: Type -> Type)) where
+
     type Context (c f) = c
     type Support (c f) = Proxy c
     type Layout (c f) = f
@@ -87,7 +101,7 @@ instance SymbolicData (c (f :: Type -> Type)) where
     payload _ _ = U1
     restore f = fst (f Proxy)
 
-instance HApplicative c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
+instance Symbolic c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
     type Context (Proxy c) = c
     type Support (Proxy c) = Proxy c
     type Layout (Proxy c) = U1
@@ -173,7 +187,12 @@ instance SymbolicData f => SymbolicData (x -> f) where
     payload f (x, i) = payload (f x) i
     restore f x = restore (f . (x,))
 
-class GSymbolicData u where
+class
+    ( Symbolic (GContext u)
+    , Traversable (GLayout u)
+    , Representable (GLayout u)
+    , Representable (GPayload u)
+    ) => GSymbolicData u where
     type GContext u :: (Type -> Type) -> Type
     type GSupport u :: Type
     type GLayout u :: Type -> Type

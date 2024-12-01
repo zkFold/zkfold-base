@@ -24,8 +24,8 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), NumberOfRegisters,
-                                                       RegisterSize (..), Resize (..))
+import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
+                                                       NumberOfRegisters, RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
@@ -48,11 +48,11 @@ deriving instance
     , P.Show (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
     ) => P.Show (PrivateKey context)
 
-deriving instance Symbolic ctx => SymbolicData (PrivateKey ctx)
+deriving instance (Symbolic ctx, KnownRegisters ctx KeyLength 'Auto) => SymbolicData (PrivateKey ctx)
 
 instance
   ( Symbolic ctx
-  , KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
+  , KnownRegisters ctx KeyLength 'Auto
   ) => SymbolicInput (PrivateKey ctx) where
     isValid PrivateKey{..} = isValid prvD && isValid prvN
 
@@ -77,19 +77,23 @@ deriving instance
     , P.Show (BaseField context)
     ) =>  P.Show  (PublicKey context)
 
-deriving instance Symbolic ctx => SymbolicData (PublicKey ctx)
+deriving instance
+    ( Symbolic ctx
+    , KnownRegisters ctx 32 'Auto
+    , KnownRegisters ctx KeyLength 'Auto
+    ) => SymbolicData (PublicKey ctx)
 
 instance
   ( Symbolic ctx
-  , KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
-  , KnownNat (NumberOfRegisters (BaseField ctx) 32 'Auto)
+  , KnownRegisters ctx 32 'Auto
+  , KnownRegisters ctx KeyLength 'Auto
   ) => SymbolicInput (PublicKey ctx) where
     isValid PublicKey{..} = isValid pubE && isValid pubN
 
 type RSA ctx msgLen =
    ( SHA2 "SHA256" ctx msgLen
-   , KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
-   , KnownNat (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)
+   , KnownRegisters ctx KeyLength 'Auto
+   , KnownRegisters ctx (2 * KeyLength) 'Auto
    , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * KeyLength) 'Auto) OrdWord)
    , NFData (ctx (Vector KeyLength))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)))

@@ -16,7 +16,7 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators    (NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators    (KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input
 
@@ -32,17 +32,17 @@ deriving instance (Haskell.Eq (ByteString 224 context), Haskell.Eq (ByteString 2
 deriving instance (Haskell.Ord (ByteString 224 context), Haskell.Ord (ByteString 256 context), Haskell.Ord (UInt 64 Auto context))
     => Haskell.Ord (Value n context)
 
-deriving instance (Symbolic context, KnownNat n) => SymbolicData (Value n context)
+deriving instance (Symbolic context, KnownNat n, KnownRegisters context 64 Auto) => SymbolicData (Value n context)
 
 deriving newtype instance
   ( Symbolic context
-  , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+  , KnownRegisters context 64 Auto
   ) => Eq (Bool context) (Value n context)
 
 instance
     ( Symbolic context
     , KnownNat n
-    , KnownNat (NumberOfRegisters (BaseField context) 64 Auto)
+    , KnownRegisters context 64 Auto
     ) => SymbolicInput (Value n context) where
     isValid (Value v) = isValid v
 

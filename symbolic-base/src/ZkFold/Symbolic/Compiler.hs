@@ -13,15 +13,14 @@ import           Data.Binary                                (Binary)
 import           Data.Function                              (const, id, (.))
 import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
-import           Data.Proxy                                 (Proxy (..))
 import           Data.Tuple                                 (fst, snd)
 import           GHC.Generics                               (Par1 (Par1), U1 (..))
-import           Prelude                                    (FilePath, IO, Show (..), Traversable, putStrLn, return,
-                                                             type (~), ($), (++))
+import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
+                                                             (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Prelude                             (writeFileJSON)
-import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..), fromCircuit2F)
+import           ZkFold.Symbolic.Class                      (Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
@@ -47,7 +46,7 @@ type CompilesWith c s f =
 -- | A constraint defining what it means
 -- for data of type @y@ to be properly restorable.
 type RestoresFrom c y =
-  (SymbolicData y, Context y ~ c, Support y ~ Proxy c, Payload y ~ U1)
+  (SymbolicOutput y, Context y ~ c, Payload y ~ U1)
 
 compileInternal ::
   (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i) =>
@@ -68,7 +67,7 @@ compileInternal opts sLayout sPayload f =
 compileWith ::
   forall a y p i q j s f c0 c1.
   ( CompilesWith c0 s f, c0 ~ ArithmeticCircuit a p i
-  , Representable p, Representable i, Traversable (Layout s)
+  , Representable p, Representable i
   , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j
   , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   -- | Circuit transformation to apply before optimization.
@@ -107,7 +106,6 @@ compileIO ::
   , Payload s ~ p
   , FromJSON (Rep l)
   , ToJSON (Rep l)
-  , Arithmetic a, Binary a, Binary (Rep p)
   ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = compile f :: c (Layout f)

@@ -10,13 +10,12 @@ import           Data.Functor                     (Functor)
 import           Data.Functor.Rep                 (Representable, distributeRep, pureRep, tabulate)
 import           Data.List.Infinite               (Infinite (..))
 import           Data.Proxy                       (Proxy (..))
-import           Data.Traversable                 (Traversable, traverse)
+import           Data.Traversable                 (traverse)
 import           Data.Tuple                       (snd)
 import           GHC.Generics                     (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
 import           Prelude                          (fmap, fst, type (~), undefined, ($), (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative (HApplicative)
 import           ZkFold.Base.Data.Functor.Rep     ()
 import           ZkFold.Base.Data.HFunctor        (hmap)
 import           ZkFold.Base.Data.List.Infinite   ()
@@ -57,18 +56,17 @@ data List c x = List
   }
   deriving (Generic)
 
-instance HApplicative c => SymbolicData (List c x)
+instance (SymbolicData x, c ~ Context x) => SymbolicData (List c x)
 -- | TODO: Maybe some 'isValid' check for Lists?..
-instance (Symbolic c, SymbolicInput x) => SymbolicInput (List c x)
+instance (SymbolicInput x, c ~ Context x) => SymbolicInput (List c x)
 
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.
 --
 emptyList
     :: forall context x
-    .  Symbolic context
-    => Representable (Layout x)
-    => Representable (Payload x)
+    .  SymbolicData x
+    => Context x ~ context
     => List context x
 emptyList = List (embed $ pureRep zero) (embed $ Par1 zero) $ Payloaded $ tabulate (const zero)
 
@@ -84,12 +82,8 @@ null List{..} = Bool (fromCircuitF lSize (fmap fst . runInvert))
 infixr 5 .:
 (.:)
     :: forall context x
-    .  Symbolic context
-    => Traversable (Layout x)
-    => Representable (Layout x)
-    => SymbolicData x
+    .  SymbolicOutput x
     => Context x ~ context
-    => Support x ~ Proxy context
     => x
     -> List context x
     -> List context x
@@ -112,9 +106,8 @@ hashFun s h t = newAssigned (($ h) + ($ t) * ($ s))
 
 uncons ::
   forall c x.
-  (Symbolic c, SymbolicData x) =>
-  (Context x ~ c, Support x ~ Proxy c) =>
-  (Representable (Layout x), Traversable (Layout x)) =>
+  SymbolicOutput x =>
+  Context x ~ c =>
   List c x -> (x, List c x)
 uncons List{..} = case lWitness of
   Payloaded (Comp1 (ListItem {..} :< tWitness)) ->
@@ -134,16 +127,14 @@ uncons List{..} = case lWitness of
 -- | TODO: Is there really a nicer way to handle empty lists?
 --
 head ::
-  (Symbolic c, SymbolicData x) =>
-  (Context x ~ c, Support x ~ Proxy c) =>
-  (Representable (Layout x), Traversable (Layout x)) =>
+  SymbolicOutput x =>
+  Context x ~ c =>
   List c x -> x
 head = fst . uncons
 
 tail ::
-  (Symbolic c, SymbolicData x) =>
-  (Context x ~ c, Support x ~ Proxy c) =>
-  (Representable (Layout x), Traversable (Layout x)) =>
+  SymbolicOutput x =>
+  Context x ~ c =>
   List c x -> List c x
 tail = snd . uncons
 
@@ -179,13 +170,8 @@ _ \\ _ = undefined
 
 singleton
     :: forall context x
-    .  Symbolic context
-    => Traversable (Layout x)
-    => Representable (Layout x)
-    => Representable (Payload x)
-    => SymbolicData x
+    .  SymbolicOutput x
     => Context x ~ context
-    => Support x ~ Proxy context
     => x
     -> List context x
 singleton x = x .: emptyList
