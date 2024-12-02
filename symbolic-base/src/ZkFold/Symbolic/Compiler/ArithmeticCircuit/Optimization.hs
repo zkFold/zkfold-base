@@ -4,11 +4,13 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization (
     ) where
 
 import           Data.Bool                                               (bool)
+import           Data.Functor                                            ((<&>))
 import           Data.Functor.Rep                                        (Representable (..))
 import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
                                                                           take)
 import qualified Data.Map.Internal                                       as M
 import qualified Data.Map.Monoidal                                       as MM
+import           Data.Maybe                                              (catMaybes)
 import qualified Data.Set                                                as S
 import           Numeric.Natural                                         (Natural)
 import           Prelude                                                 hiding (Num (..), drop, length, product,
@@ -20,8 +22,6 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
-import Data.Maybe (catMaybes)
-import Data.Functor ((<&>))
 
 --------------------------------- High-level functions --------------------------------
 
