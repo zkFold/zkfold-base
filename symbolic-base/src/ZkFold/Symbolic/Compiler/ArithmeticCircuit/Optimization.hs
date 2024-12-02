@@ -31,23 +31,21 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (Witnes
 -- and replaces variable with a constant in witness
 --
 optimize ::
-  ( Arithmetic a, Ord (Rep i), Functor o) =>
+  (Arithmetic a, Ord (Rep i), Functor o) =>
   ArithmeticCircuit a p i o  -> ArithmeticCircuit a p i o
-optimize ac = case catMaybes [toConstVar p | (_, p) <- toList (acSystem ac)] of
-    [] -> ac
-    vs -> optimize $ foldr optimize1 ac vs
+optimize ac = let (ac', vs) = varsToReplace (ac, []) in foldr optimizeAc ac' vs
 
-optimize1 :: forall a p i o. (Arithmetic a, Ord (Rep i), Functor o)
-  => (SysVar i , a )-> ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
-optimize1 (v, k) ac = case v of
-  NewVar nv -> ac {
-      acSystem = M.filter (/= zero) (M.map optPoly $ acSystem ac),
-      acRange =  MM.filter (/= S.empty) $ optRanges $ acRange ac,
-      acWitness = (>>= optWitVar) <$> M.delete nv (acWitness ac),
-      acOutput = acOutput ac <&> \case
-        SysVar nV@(NewVar _) -> if nV == v then ConstVar k else SysVar nV
-        o -> o
-      }
+varsToReplace ::
+  (Arithmetic a, Ord (Rep i), Functor o) =>
+  (ArithmeticCircuit a p i o , [(SysVar i, a)]) -> (ArithmeticCircuit a p i o , [(SysVar i, a)])
+varsToReplace (ac, l) = case catMaybes [toConstVar p | (_, p) <- toList (acSystem ac)] of
+    [] -> (ac, l)
+    vs -> varsToReplace (ac {acSystem = acSystem $ foldr optimizeSystems ac vs}, l ++ vs)
+
+optimizeSystems :: forall a p i o. (Arithmetic a, Ord (Rep i)) =>
+  (SysVar i , a ) -> ArithmeticCircuit a p i o  -> ArithmeticCircuit a p i o
+optimizeSystems (v, k) ac = case v of
+  NewVar _ -> ac {acSystem = M.filter (/= zero) (M.map optPoly $ acSystem ac)}
   _ -> ac
   where
     optMono :: (a, Mono (SysVar i) Natural) -> (a, Mono (SysVar i) Natural)
@@ -59,6 +57,18 @@ optimize1 (v, k) ac = case v of
     optPoly :: Poly a (SysVar i) Natural -> Poly a (SysVar i) Natural
     optPoly (P (p :: [(a, Mono (SysVar i) Natural)])) = polynomial $ map optMono p
 
+optimizeAc :: forall a p i o. (Arithmetic a, Ord (Rep i), Functor o)
+  => (SysVar i , a ) -> ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
+optimizeAc (v, k) ac = case v of
+  NewVar nv -> ac {
+      acRange =  MM.filter (/= S.empty) $ optRanges $ acRange ac,
+      acWitness = (>>= optWitVar) <$> M.delete nv (acWitness ac),
+      acOutput = acOutput ac <&> \case
+        SysVar nV@(NewVar _) -> if nV == v then ConstVar k else SysVar nV
+        o -> o
+      }
+  _ -> ac
+  where
     optRanges :: MM.MonoidalMap a (S.Set (SysVar i)) -> MM.MonoidalMap a (S.Set (SysVar i))
     optRanges = MM.mapWithKey (\r s -> bool s (newS r s) (S.member v s) )
       where
