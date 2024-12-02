@@ -61,8 +61,7 @@ import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
-import           ZkFold.Symbolic.MonadCircuit                          (MonadCircuit (constraint, rangeConstraint, unconstrained),
-                                                                        Witness (..))
+import           ZkFold.Symbolic.MonadCircuit
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural

@@ -26,7 +26,6 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
-import Data.Functor (Functor)
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -50,8 +49,7 @@ type RestoresFrom c y =
   (SymbolicOutput y, Context y ~ c, Payload y ~ U1)
 
 compileInternal ::
-  ( CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i
-  , Symbolic c1, Ord (Rep i), Functor (Layout y)) =>
+  (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i, Ord (Rep i)) =>
   (c0 (Layout f) -> c1 (Layout y)) ->
   c0 (Layout s) -> Payload s (WitnessField c0) -> f -> y
 compileInternal opts sLayout sPayload f =
@@ -71,8 +69,7 @@ compileWith ::
   ( CompilesWith c0 s f, c0 ~ ArithmeticCircuit a p i
   , Representable p, Representable i
   , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j
-  , Ord (Rep j), Symbolic c1, Functor (Layout y)
-  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
+  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), Ord (Rep j)) =>
   -- | Circuit transformation to apply before optimization.
   (c0 (Layout f) -> c1 (Layout y)) ->
   -- | An algorithm to prepare support argument from the circuit input.
@@ -88,7 +85,7 @@ compileWith outputTransform inputTransform =
 -- packed inside a suitable 'SymbolicData'.
 compile :: forall a y f c s.
   ( CompilesWith c s f, RestoresFrom c y, Layout y ~ Layout f
-  , c ~ ArithmeticCircuit a (Payload s) (Layout s), Functor (Layout y))
+  , c ~ ArithmeticCircuit a (Payload s) (Layout s))
   => f -> y
 compile = compileInternal id idCircuit (inputPayload const)
 
@@ -109,8 +106,6 @@ compileIO ::
   , Payload s ~ p
   , FromJSON (Rep l)
   , ToJSON (Rep l)
-  , Arithmetic a, Binary a
-  , Binary (Rep p), Functor (Layout f)
   ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = compile f :: c (Layout f)
