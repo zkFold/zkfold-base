@@ -1,6 +1,5 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization (
         optimize,
-        isLinear,
         toConstVar
     ) where
 
@@ -21,6 +20,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
+import Data.Maybe (catMaybes)
+import Data.Functor ((<&>))
 
 --------------------------------- High-level functions --------------------------------
 
@@ -30,21 +31,24 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (Witnes
 -- and replaces variable with a constant in witness
 --
 optimize ::
-  ( Arithmetic a, Ord (Rep i)) =>
+  ( Arithmetic a, Ord (Rep i), Functor o) =>
   ArithmeticCircuit a p i o  -> ArithmeticCircuit a p i o
-optimize ac = case [toConstVar p | (_, p) <- toList (acSystem ac), isLinear p] of
+optimize ac = case catMaybes [toConstVar p | (_, p) <- toList (acSystem ac)] of
     [] -> ac
     vs -> optimize $ foldr optimize1 ac vs
 
-optimize1 :: forall a p i o. ( Arithmetic a, Ord (Rep i))
+optimize1 :: forall a p i o. (Arithmetic a, Ord (Rep i), Functor o)
   => (SysVar i , a )-> ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 optimize1 (v, k) ac = case v of
-  NewVar nv ->  ac {
+  NewVar nv -> ac {
       acSystem = M.filter (/= zero) (M.map optPoly $ acSystem ac),
       acRange =  MM.filter (/= S.empty) $ optRanges $ acRange ac,
-      acWitness = (>>= optWitVar) <$> M.delete nv (acWitness ac)
+      acWitness = (>>= optWitVar) <$> M.delete nv (acWitness ac),
+      acOutput = acOutput ac <&> \case
+        SysVar nV@(NewVar _) -> if nV == v then ConstVar k else SysVar nV
+        o -> o
       }
-  _ -> error "This shouldn't happen"
+  _ -> ac
   where
     optMono :: (a, Mono (SysVar i) Natural) -> (a, Mono (SysVar i) Natural)
     optMono mono@(c, M m) =
@@ -60,7 +64,6 @@ optimize1 (v, k) ac = case v of
       where
         newS r s = bool (error "range constraint less then value") (S.filter (/= v) s) (k <= r)
 
-
     optWitVar :: WitVar p i -> WitnessF a (WitVar p i)
     optWitVar = \case
       (WSysVar (NewVar nV)) ->
@@ -70,24 +73,17 @@ optimize1 (v, k) ac = case v of
       w  -> pure w
 
 
-toConstVar :: (Arithmetic a, Ord (Rep i)) => Constraint a i -> (SysVar i, a)
+toConstVar :: (Arithmetic a, Ord (Rep i)) => Constraint a i -> Maybe (SysVar i, a)
 toConstVar = \case
-  P [(c, M m1), (k, M m2)] -> if m1 == empty
-    then case toList m2 of
-      [(m2var, 1)] -> ( m2var, negate c // k)
-      _            -> error "this shouldn't happen because isLinear"
-    else case toList m1 of
-      [(m1var, 1)] -> ( m1var, negate k // c)
-      _            -> error "this shouldn't happen because isLinear"
-  _ -> error "this shouldn't happen because isLinear"
+  P [(c, M m1), (k, M m2)] ->
+    if m1 == empty
+      then case toList m2 of
+        [(m2var, 1)] -> Just ( m2var, negate c // k)
+        _            -> Nothing
+      else if m2 == empty
+        then case toList m1 of
+          [(m1var, 1)] -> Just ( m1var, negate k // c)
+          _            -> Nothing
+        else Nothing
+  _ -> Nothing
 
-isLinear :: (Ord (Rep i)) => Constraint a i -> Bool
-isLinear = \case
-  P [(_, M m1) , (_, M m2)] ->
-    m1 == empty && (case toList m2 of
-      [( NewVar _ , 1)] -> True
-      _                 -> False) ||
-    m2 == empty && (case toList m1 of
-      [( NewVar _ , 1)] -> True
-      _                 -> False)
-  _ -> False

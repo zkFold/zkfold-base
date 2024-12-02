@@ -32,6 +32,7 @@ import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
+import Data.Functor (Functor)
 
 type A = Zp BLS12_381_Scalar
 type C = ArithmeticCircuit A
@@ -56,6 +57,7 @@ exampleOutput ::
   , Representable i
   , NFData (Rep i)
   , NFData (o (Var A i))
+  , Functor o
   ) => f -> ExampleOutput
 exampleOutput = ExampleOutput @p @i @o . const . compile
 

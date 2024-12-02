@@ -27,6 +27,7 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
+import Data.Functor (Functor)
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -50,7 +51,8 @@ type RestoresFrom c y =
   (SymbolicData y, Context y ~ c, Support y ~ Proxy c, Payload y ~ U1)
 
 compileInternal ::
-  (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i, Symbolic c1, Ord (Rep i)) =>
+  ( CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i
+  , Symbolic c1, Ord (Rep i), Functor (Layout y)) =>
   (c0 (Layout f) -> c1 (Layout y)) ->
   c0 (Layout s) -> Payload s (WitnessField c0) -> f -> y
 compileInternal opts sLayout sPayload f =
@@ -69,7 +71,8 @@ compileWith ::
   forall a y p i q j s f c0 c1.
   ( CompilesWith c0 s f, c0 ~ ArithmeticCircuit a p i
   , Representable p, Representable i, Traversable (Layout s)
-  , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j, Ord (Rep j), Symbolic c1
+  , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j
+  , Ord (Rep j), Symbolic c1, Functor (Layout y)
   , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   -- | Circuit transformation to apply before optimization.
   (c0 (Layout f) -> c1 (Layout y)) ->
@@ -86,7 +89,7 @@ compileWith outputTransform inputTransform =
 -- packed inside a suitable 'SymbolicData'.
 compile :: forall a y f c s.
   ( CompilesWith c s f, RestoresFrom c y, Layout y ~ Layout f
-  , c ~ ArithmeticCircuit a (Payload s) (Layout s))
+  , c ~ ArithmeticCircuit a (Payload s) (Layout s), Functor (Layout y))
   => f -> y
 compile = compileInternal id idCircuit (inputPayload const)
 
@@ -107,7 +110,8 @@ compileIO ::
   , Payload s ~ p
   , FromJSON (Rep l)
   , ToJSON (Rep l)
-  , Arithmetic a, Binary a, Binary (Rep p)
+  , Arithmetic a, Binary a
+  , Binary (Rep p), Functor (Layout f)
   ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = compile f :: c (Layout f)
