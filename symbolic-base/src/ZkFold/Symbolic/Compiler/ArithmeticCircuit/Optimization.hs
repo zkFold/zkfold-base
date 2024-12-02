@@ -46,7 +46,7 @@ optimizeSystems :: forall a p i o. (Arithmetic a, Ord (Rep i)) =>
   (SysVar i , a ) -> ArithmeticCircuit a p i o  -> ArithmeticCircuit a p i o
 optimizeSystems (v, k) ac = case v of
   NewVar _ -> ac {acSystem = M.filter (/= zero) (M.map optPoly $ acSystem ac)}
-  _ -> ac
+  _        -> ac
   where
     optMono :: (a, Mono (SysVar i) Natural) -> (a, Mono (SysVar i) Natural)
     optMono mono@(c, M m) =
