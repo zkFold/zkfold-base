@@ -39,7 +39,7 @@ type Size = 7
 -- | Foreign-field arithmetic based on https://cr.yp.to/papers/mmecrt.pdf
 newtype FFA (p :: Natural) c = FFA (c (Vector Size))
 
-deriving newtype instance SymbolicData (FFA p c)
+deriving newtype instance Symbolic c => SymbolicData (FFA p c)
 deriving newtype instance NFData (c (Vector Size)) => NFData (FFA p c)
 deriving newtype instance Haskell.Show (c (Vector Size)) => Haskell.Show (FFA p c)
 

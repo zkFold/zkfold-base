@@ -37,7 +37,7 @@ deriving stock instance Haskell.Ord (c Par1) => Haskell.Ord (FieldElement c)
 
 deriving newtype instance NFData (c Par1) => NFData (FieldElement c)
 
-deriving newtype instance SymbolicData (FieldElement c)
+deriving newtype instance Symbolic c => SymbolicData (FieldElement c)
 
 deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
 
