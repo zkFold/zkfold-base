@@ -188,6 +188,7 @@ library
       ZkFold.Symbolic.Data.Ed25519
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.FFA
+      ZkFold.Symbolic.Data.Hash
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
@@ -255,6 +256,7 @@ test-suite symbolic-base-test
       Tests.Field
       Tests.GroebnerBasis
       Tests.Group
+      Tests.Hash
       Tests.List
       Tests.NonInteractiveProof
       Tests.Pairing
