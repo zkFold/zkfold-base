@@ -10,18 +10,23 @@ import           Data.Map                                                hiding 
                                                                           take)
 import qualified Data.Map.Internal                                       as M
 import qualified Data.Map.Monoidal                                       as MM
-import           Data.Maybe                                              (catMaybes)
+import           Data.Maybe                                              (isJust, fromJust)
 import qualified Data.Set                                                as S
-import           Numeric.Natural                                         (Natural)
 import           Prelude                                                 hiding (Num (..), drop, length, product,
                                                                           splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial   (Mono (..))
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (..), polynomial)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial   (Mono (..), oneM)
+import ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
+    ( Poly(..), evalPolynomial, var, Polynomial )
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
+import ZkFold.Base.Algebra.Polynomials.Multivariate (evalMonomial)
+import Data.ByteString (ByteString)
+import ZkFold.Base.Algebra.Basic.Number
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash (merkleHash, runHash)
+import Data.Binary (Binary)
 
 --------------------------------- High-level functions --------------------------------
 
@@ -31,68 +36,68 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (Witnes
 -- and replaces variable with a constant in witness
 --
 optimize ::
-  (Arithmetic a, Ord (Rep i), Functor o) =>
+   (Arithmetic a, Ord (Rep i), Functor o, Binary (Rep i)) =>
   ArithmeticCircuit a p i o  -> ArithmeticCircuit a p i o
-optimize ac = let (ac', vs) = varsToReplace (ac, []) in foldr optimizeAc ac' vs
+optimize ac = let (newAcSystem, vs) = varsToReplace (acSystem ac, M.empty) in optimizeAc vs ac {acSystem = newAcSystem}
 
 varsToReplace ::
-  (Arithmetic a, Ord (Rep i), Functor o) =>
-  (ArithmeticCircuit a p i o , [(SysVar i, a)]) -> (ArithmeticCircuit a p i o , [(SysVar i, a)])
-varsToReplace (ac, l) = case catMaybes [toConstVar p | (_, p) <- toList (acSystem ac)] of
-    [] -> (ac, l)
-    vs -> varsToReplace (ac {acSystem = acSystem $ foldr optimizeSystems ac vs}, l ++ vs)
+  (Arithmetic a, Ord (Rep i)) =>
+  (Map ByteString (Constraint a i) , Map (SysVar i) a) -> (Map ByteString (Constraint a i) , Map (SysVar i) a)
+varsToReplace (s, l) = let newVars = M.fromList . map fromJust . M.elems $ M.filter isJust $ M.map toConstVar s in
+  if newVars == M.empty
+  then (s, l)
+  else varsToReplace (optimizeSystems newVars s, M.union newVars l)
 
-optimizeSystems :: forall a p i o. (Arithmetic a, Ord (Rep i)) =>
-  (SysVar i , a ) -> ArithmeticCircuit a p i o  -> ArithmeticCircuit a p i o
-optimizeSystems (v, k) ac = case v of
-  NewVar _ -> ac {acSystem = M.filter (/= zero) (M.map optPoly $ acSystem ac)}
-  _        -> ac
+optimizeSystems :: (Arithmetic a, Ord (Rep i)) =>
+  Map (SysVar i) a -> Map ByteString (Constraint a i) -> Map ByteString (Constraint a i)
+optimizeSystems m as = M.filter (/= zero) (M.map deleteZeroM $ evalPolynomial evalMonomial varF <$> as)
   where
-    optMono :: (a, Mono (SysVar i) Natural) -> (a, Mono (SysVar i) Natural)
-    optMono mono@(c, M m) =
-      case M.lookup v m of
-        Just y -> (c * (k ^ y), M $ delete v m)
-        _      -> mono
+    varF p = maybe (var p) fromConstant (M.lookup p m)
 
-    optPoly :: Poly a (SysVar i) Natural -> Poly a (SysVar i) Natural
-    optPoly (P (p :: [(a, Mono (SysVar i) Natural)])) = polynomial $ map optMono p
+    deleteZeroM :: (Polynomial c (SysVar i) Natural) => Poly c (SysVar i) Natural -> Poly c (SysVar i) Natural
+    deleteZeroM (P p) = P $ Prelude.filter ((/= zero) . fst) p
 
-optimizeAc :: forall a p i o. (Arithmetic a, Ord (Rep i), Functor o)
-  => (SysVar i , a ) -> ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
-optimizeAc (v, k) ac = case v of
-  NewVar nv -> ac {
-      acRange =  MM.filter (/= S.empty) $ optRanges $ acRange ac,
-      acWitness = (>>= optWitVar) <$> M.delete nv (acWitness ac),
+optimizeAc :: forall a p i o. (Arithmetic a, Ord (Rep i), Functor o, Binary (Rep i))
+  => Map (SysVar i) a-> ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
+optimizeAc vs ac =
+    ac {
+      acSystem = addInVarConstraints $ acSystem ac,
+      acRange =  MM.filter (/= S.empty) $ optRanges vs (acRange ac),
+      acWitness = (>>= optWitVar vs) <$> M.filterWithKey (\k _ -> notMember (NewVar k) vs) (acWitness ac),
       acOutput = acOutput ac <&> \case
-        SysVar nV@(NewVar _) -> if nV == v then ConstVar k else SysVar nV
+        SysVar sV -> maybe (SysVar sV) ConstVar (M.lookup sV vs)
         o -> o
       }
-  _ -> ac
   where
-    optRanges :: MM.MonoidalMap a (S.Set (SysVar i)) -> MM.MonoidalMap a (S.Set (SysVar i))
-    optRanges = MM.mapWithKey (\r s -> bool s (newS r s) (S.member v s) )
-      where
-        newS r s = bool (error "range constraint less then value") (S.filter (/= v) s) (k <= r)
+    addInVarConstraints :: Map ByteString (Poly a (SysVar i) Natural) -> Map ByteString (Poly a (SysVar i) Natural)
+    addInVarConstraints p = foldrWithKey (\k a as -> case k of
+      inVar@(InVar inV) -> M.insert (runHash @(Just (Order a)) $ merkleHash inV) (var inVar - fromConstant a) as
+      _       -> as) p vs
 
-    optWitVar :: WitVar p i -> WitnessF a (WitVar p i)
-    optWitVar = \case
-      (WSysVar (NewVar nV)) ->
-        if NewVar nV == v
-          then WitnessF $ const $ fromConstant k
-          else pure $ WSysVar (NewVar nV)
+    optRanges :: Map (SysVar i) a -> MM.MonoidalMap a (S.Set (SysVar i)) -> MM.MonoidalMap a (S.Set (SysVar i))
+    optRanges m = MM.mapWithKey (\r s -> bool (error "range constraint less then value") (S.difference s $ keysSet m) (all (<= r) $ restrictKeys m s))
+
+    optWitVar :: Map (SysVar i) a -> WitVar p i -> WitnessF a (WitVar p i)
+    optWitVar m = \case
+      (WSysVar sv) ->
+        case M.lookup sv m of
+          Just k -> WitnessF $ const $ fromConstant k
+          Nothing -> pure $ WSysVar sv
       w  -> pure w
 
-
-toConstVar :: (Arithmetic a, Ord (Rep i)) => Constraint a i -> Maybe (SysVar i, a)
+toConstVar :: (Arithmetic a) => Constraint a i -> Maybe (SysVar i, a)
 toConstVar = \case
+  P [(_, M m1)] -> case toList m1 of
+    [(m1var, 1)] -> Just (m1var, zero)
+    _            -> Nothing
   P [(c, M m1), (k, M m2)] ->
-    if m1 == empty
+    if oneM (M m1)
       then case toList m2 of
-        [(m2var, 1)] -> Just ( m2var, negate c // k)
+        [(m2var, 1)] -> Just (m2var, negate c // k)
         _            -> Nothing
-      else if m2 == empty
+      else if oneM (M m2)
         then case toList m1 of
-          [(m1var, 1)] -> Just ( m1var, negate k // c)
+          [(m1var, 1)] -> Just (m1var, negate k // c)
           _            -> Nothing
         else Nothing
   _ -> Nothing

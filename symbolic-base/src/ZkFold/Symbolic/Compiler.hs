@@ -49,7 +49,8 @@ type RestoresFrom c y =
   (SymbolicOutput y, Context y ~ c, Payload y ~ U1)
 
 compileInternal ::
-  (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i, Ord (Rep i)) =>
+  (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i
+  , Ord (Rep i), Binary (Rep i)) =>
   (c0 (Layout f) -> c1 (Layout y)) ->
   c0 (Layout s) -> Payload s (WitnessField c0) -> f -> y
 compileInternal opts sLayout sPayload f =
@@ -69,7 +70,8 @@ compileWith ::
   ( CompilesWith c0 s f, c0 ~ ArithmeticCircuit a p i
   , Representable p, Representable i
   , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j
-  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), Ord (Rep j)) =>
+  , Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep j)
+  , Ord (Rep i), Ord (Rep j)) =>
   -- | Circuit transformation to apply before optimization.
   (c0 (Layout f) -> c1 (Layout y)) ->
   -- | An algorithm to prepare support argument from the circuit input.
