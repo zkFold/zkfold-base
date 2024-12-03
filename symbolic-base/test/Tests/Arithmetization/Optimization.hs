@@ -5,18 +5,18 @@
 module Tests.Arithmetization.Optimization (specOptimization) where
 
 import           Data.Binary                                (Binary)
-import           GHC.Generics                               (Par1 (..), U1 (..), type (:*:) )
+import           GHC.Generics                               (Par1 (..), U1 (..), type (:*:))
 import           Prelude                                    (IO, Show, return, ($))
 import           Test.Hspec
-import           Test.QuickCheck.Property                   ((===), (.&.))
+import           Test.QuickCheck.Property                   ((.&.), (===))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (Natural)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler                   (compile)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Data.Bool ( Bool(..) )
-import ZkFold.Symbolic.Compiler (compile)
 
 
 testFunc :: forall a . (Arithmetic a, Binary a) => ArithmeticCircuit a U1 Par1 Par1

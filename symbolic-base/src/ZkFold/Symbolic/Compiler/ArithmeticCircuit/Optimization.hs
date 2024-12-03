@@ -3,30 +3,29 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization (
         toConstVar
     ) where
 
+import           Data.Binary                                             (Binary)
 import           Data.Bool                                               (bool)
+import           Data.ByteString                                         (ByteString)
 import           Data.Functor                                            ((<&>))
 import           Data.Functor.Rep                                        (Representable (..))
 import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
                                                                           take)
 import qualified Data.Map.Internal                                       as M
 import qualified Data.Map.Monoidal                                       as MM
-import           Data.Maybe                                              (isJust, fromJust)
+import           Data.Maybe                                              (fromJust, isJust)
 import qualified Data.Set                                                as S
 import           Prelude                                                 hiding (Num (..), drop, length, product,
                                                                           splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Polynomials.Multivariate            (evalMonomial)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial   (Mono (..), oneM)
-import ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
-    ( Poly(..), evalPolynomial, var, Polynomial )
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (..), Polynomial, evalPolynomial, var)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash   (merkleHash, runHash)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
-import ZkFold.Base.Algebra.Polynomials.Multivariate (evalMonomial)
-import Data.ByteString (ByteString)
-import ZkFold.Base.Algebra.Basic.Number
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash (merkleHash, runHash)
-import Data.Binary (Binary)
 
 --------------------------------- High-level functions --------------------------------
 
@@ -72,7 +71,7 @@ optimizeAc vs ac =
     addInVarConstraints :: Map ByteString (Poly a (SysVar i) Natural) -> Map ByteString (Poly a (SysVar i) Natural)
     addInVarConstraints p = foldrWithKey (\k a as -> case k of
       inVar@(InVar inV) -> M.insert (runHash @(Just (Order a)) $ merkleHash inV) (var inVar - fromConstant a) as
-      _       -> as) p vs
+      _                 -> as) p vs
 
     optRanges :: Map (SysVar i) a -> MM.MonoidalMap a (S.Set (SysVar i)) -> MM.MonoidalMap a (S.Set (SysVar i))
     optRanges m = MM.mapWithKey (\r s -> bool (error "range constraint less then value") (S.difference s $ keysSet m) (all (<= r) $ restrictKeys m s))
@@ -81,7 +80,7 @@ optimizeAc vs ac =
     optWitVar m = \case
       (WSysVar sv) ->
         case M.lookup sv m of
-          Just k -> WitnessF $ const $ fromConstant k
+          Just k  -> WitnessF $ const $ fromConstant k
           Nothing -> pure $ WSysVar sv
       w  -> pure w
 
