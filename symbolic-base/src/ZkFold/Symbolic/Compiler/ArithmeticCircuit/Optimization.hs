@@ -12,7 +12,6 @@ import           Data.Map                                                hiding 
                                                                           take)
 import qualified Data.Map.Internal                                       as M
 import qualified Data.Map.Monoidal                                       as MM
-import           Data.Maybe                                              (fromJust, isJust)
 import qualified Data.Set                                                as S
 import           Prelude                                                 hiding (Num (..), drop, length, product,
                                                                           splitAt, sum, take, (!!), (^))
@@ -21,7 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate            (evalMonomial)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial   (Mono (..), oneM)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (..), Polynomial, evalPolynomial, var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (..), evalPolynomial, var)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash   (merkleHash, runHash)
@@ -42,19 +41,16 @@ optimize ac = let (newAcSystem, vs) = varsToReplace (acSystem ac, M.empty) in op
 varsToReplace ::
   (Arithmetic a, Ord (Rep i)) =>
   (Map ByteString (Constraint a i) , Map (SysVar i) a) -> (Map ByteString (Constraint a i) , Map (SysVar i) a)
-varsToReplace (s, l) = let newVars = M.fromList . map fromJust . M.elems $ M.filter isJust $ M.map toConstVar s in
+varsToReplace (s, l) = let newVars = M.fromList . M.elems $ mapMaybe toConstVar s in
   if newVars == M.empty
   then (s, l)
   else varsToReplace (optimizeSystems newVars s, M.union newVars l)
 
 optimizeSystems :: (Arithmetic a, Ord (Rep i)) =>
   Map (SysVar i) a -> Map ByteString (Constraint a i) -> Map ByteString (Constraint a i)
-optimizeSystems m as = M.filter (/= zero) (M.map deleteZeroM $ evalPolynomial evalMonomial varF <$> as)
+optimizeSystems m as = M.filter (/= zero) $ evalPolynomial evalMonomial varF <$> as
   where
     varF p = maybe (var p) fromConstant (M.lookup p m)
-
-    deleteZeroM :: (Polynomial c (SysVar i) Natural) => Poly c (SysVar i) Natural -> Poly c (SysVar i) Natural
-    deleteZeroM (P p) = P $ Prelude.filter ((/= zero) . fst) p
 
 optimizeAc :: forall a p i o. (Arithmetic a, Ord (Rep i), Functor o, Binary (Rep i))
   => Map (SysVar i) a-> ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
