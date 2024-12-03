@@ -100,4 +100,3 @@ toConstVar = \case
           _            -> Nothing
         else Nothing
   _ -> Nothing
-
