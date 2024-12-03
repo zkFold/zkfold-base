@@ -3,7 +3,7 @@
 
 module ZkFold.Base.Protocol.Plonkup.Setup where
 
-import           Data.Functor.Rep                                    (Representable)
+import           Data.Functor.Rep                                    (Representable, Rep)
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))
@@ -61,10 +61,12 @@ instance
         ++ show commitments
 
 plonkupSetup :: forall i p n l c1 c2 ts core.
-    ( KnownNat i
-    , KnownNat l
-    , KnownNat n
+    ( KnownNat n
     , Representable p
+    , Representable i
+    , Representable l
+    , Foldable l
+    , Ord (Rep i)
     , Arithmetic (ScalarField c1)
     , Pairing c1 c2
     , CoreFunction c1 core) => Plonkup p i n l c1 c2 ts -> PlonkupSetup p i n l c1 c2

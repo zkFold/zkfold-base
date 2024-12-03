@@ -6,13 +6,16 @@
 module Tests.NonInteractiveProof (specNonInteractiveProof) where
 
 import           Data.ByteString                             (ByteString)
+import           Data.Functor.Classes                        (Show1 (..))
 import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
 import           GHC.Generics                                (U1 (..))
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                                  (describe, hspec, it)
-import           Test.QuickCheck                             (Arbitrary, Testable (property), arbitrary, withMaxSuccess)
+import           Test.QuickCheck                             (Arbitrary (..), Arbitrary1 (..), Testable (property),
+                                                              withMaxSuccess)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.KZG                    (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..))
 import           ZkFold.Base.Protocol.Plonk                  (Plonk)
@@ -35,9 +38,13 @@ specNonInteractiveProof' = hspec $ do
 
 instance Arbitrary (U1 a) where
   arbitrary = return U1
+instance Show1 U1 where
+  liftShowsPrec _ _ = showsPrec
+instance Arbitrary1 U1 where
+  liftArbitrary _ = return U1
 
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
-    specNonInteractiveProof' @(Plonk U1 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
-    specNonInteractiveProof' @(Plonkup U1 1 32 2 BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
+    specNonInteractiveProof' @(Plonk U1 (Vector 1) 32 (Vector 2) BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
+    specNonInteractiveProof' @(Plonkup U1 (Vector 1) 32 (Vector 2) BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore

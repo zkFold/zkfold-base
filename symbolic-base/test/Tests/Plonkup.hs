@@ -10,12 +10,12 @@ import           Data.Bool                                           (Bool)
 import           Data.ByteString                                     (ByteString)
 import           Data.Eq                                             (Eq (..))
 import           Data.Function                                       (($))
-import           Data.Functor.Rep                                    (Representable)
+import           Data.Functor.Rep                                    (Representable, Rep)
 import           Data.Int                                            (Int)
 import           Data.List                                           (head, sort)
 import           Data.Ord                                            (Ord)
 import           GHC.Generics                                        (U1 (..))
-import           GHC.IsList                                          (IsList (..))
+import           GHC.IsList                                          (IsList (fromList))
 import           System.IO                                           (IO)
 import           Test.Hspec
 import           Test.QuickCheck
@@ -27,7 +27,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
+import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (HaskellCore, setupProve)
 import           ZkFold.Base.Protocol.Plonkup                        hiding (omega)
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint
@@ -38,6 +38,9 @@ import           ZkFold.Base.Protocol.Plonkup.Testing
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import Data.Functor.Classes (Show1 (..))
+import Data.Foldable (toList, Foldable)
+import Text.Show (showsPrec)
 
 -- | Polynomial types and specific polynomials that were causing exceptions
 --
@@ -53,21 +56,23 @@ problematicPolynomials =
     , polynomial [(one, M $ fromList [(SysVar (NewVar "v1"), 1), (ConstVar one, 1)])]
     ]
 
-propPlonkConstraintConversion :: (Ord a, FiniteField a) => PlonkConstraint 1 a -> Bool
+propPlonkConstraintConversion :: (Ord a, FiniteField a) => PlonkConstraint (Vector 1) a -> Bool
 propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
-propPlonkupRelationHolds :: forall p i n l a . (KnownNat n, Arithmetic a) => PlonkupRelation p i n l a -> p a -> Vector i a -> Bool
+propPlonkupRelationHolds ::
+  forall p i n l a . (Foldable l, KnownNat n, Arithmetic a) =>
+  PlonkupRelation p i n l a -> p a -> i a -> Bool
 propPlonkupRelationHolds PlonkupRelation {..} p w =
     let (w1, w2, w3) = witness p w
-        pub          = negate $ toPolyVec $ fromList $ fromVector $ pubInput p w
+        pub          = negate $ toPolyVec $ fromList $ toList $ pubInput p w
     in qL .*. w1 + qR .*. w2 + qO .*. w3 + qM .*. w1 .*. w2 + qC + pub == zero
 
 propSortByListIsCorrect :: Ord a => [a] -> Bool
 propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs
 
 propPlonkPolyEquality :: forall p i n l
-    . (Representable p, KnownNat i, KnownNat n, KnownNat l)
+    . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
     => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput p i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -80,7 +85,7 @@ propPlonkPolyEquality plonk witness secret pow =
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
 propPlonkGrandProductIsCorrect :: forall p i n l
-    . (Representable p, KnownNat i, KnownNat n, KnownNat l)
+    . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
     => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput p i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -91,7 +96,7 @@ propPlonkGrandProductIsCorrect plonk witness secret =
     in head (toList $ fromPolyVec grandProduct1) == one
 
 propPlonkGrandProductEquality :: forall p i n l
-    . (Representable p, KnownNat i, KnownNat n, KnownNat l)
+    . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
     => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput p i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -113,7 +118,7 @@ propPlonkGrandProductEquality plonk witness secret pow =
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
 propLookupPolyEquality :: forall p i n l
-    . (Representable p, KnownNat i, KnownNat n, KnownNat l)
+    . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
     => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput p i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -127,7 +132,7 @@ propLookupPolyEquality plonk witness secret pow =
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
 propLookupGrandProductIsCorrect :: forall p i n l
-    . (Representable p, KnownNat i, KnownNat n, KnownNat l)
+    . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
     => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput p i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -138,7 +143,7 @@ propLookupGrandProductIsCorrect plonk witness secret =
     in z2X `evalPolyVec` omega == one
 
 propLookupGrandProductEquality :: forall p i n l
-    . (Representable p, KnownNat i, KnownNat n, KnownNat l)
+    . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
     => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput p i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -155,7 +160,7 @@ propLookupGrandProductEquality plonk witness secret pow =
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
 propLinearizationPolyEvaluation :: forall p i n l
-    . (Representable p, KnownNat i, KnownNat n, KnownNat l)
+    . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
     => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
     -> PlonkupWitnessInput p i BLS12_381_G1
     -> PlonkupProverSecret BLS12_381_G1
@@ -167,6 +172,10 @@ propLinearizationPolyEvaluation plonk witness secret =
 
 instance Arbitrary (U1 a) where
   arbitrary = return U1
+instance Arbitrary1 U1 where 
+  liftArbitrary _ = return U1
+instance Show1 U1 where
+  liftShowsPrec _ _ = showsPrec
 
 specPlonkup :: IO ()
 specPlonkup = hspec $ do
@@ -176,22 +185,22 @@ specPlonkup = hspec $ do
             it "handcrafted polynomials do not cause exceptions " $
                 forM_ problematicPolynomials $ \p -> fromPlonkConstraint (toPlonkConstraint @(ScalarField BLS12_381_G1) p) `shouldBe` p
             it "'ConstVar a' does not cause exceptions " $
-                property $ \v -> fromPlonkConstraint (toPlonkConstraint @(ScalarField BLS12_381_G1) @1 (var $ ConstVar v)) == var (ConstVar v)
+                property $ \v -> fromPlonkConstraint (toPlonkConstraint @(ScalarField BLS12_381_G1) @(Vector 1) (var $ ConstVar v)) == var (ConstVar v)
         describe "Sort by list is correct" $ do
             it "should hold" $ property $ propSortByListIsCorrect @Int
         describe "Plonkup relation" $ do
-            it "should hold" $ property $ propPlonkupRelationHolds @U1 @2 @32 @3 @(ScalarField BLS12_381_G1)
+            it "should hold" $ property $ propPlonkupRelationHolds @U1 @(Vector 2) @32 @(Vector 3) @(ScalarField BLS12_381_G1)
         describe "Plonk polynomials equality" $ do
-            it "should hold" $ property $ propPlonkPolyEquality @U1 @1 @32 @2
+            it "should hold" $ property $ propPlonkPolyEquality @U1 @(Vector 1) @32 @(Vector 2)
         describe "Plonk grand product correctness" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductIsCorrect @U1 @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductIsCorrect @U1 @(Vector 1) @32 @(Vector 2)
         describe "Plonkup grand product equality" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductEquality @U1 @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductEquality @U1 @(Vector 1) @32 @(Vector 2)
         describe "Lookup polynomials equality" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propLookupPolyEquality @U1 @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propLookupPolyEquality @U1 @(Vector 1) @32 @(Vector 2)
         describe "Lookup grand product correctness" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propLookupGrandProductIsCorrect @U1 @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propLookupGrandProductIsCorrect @U1 @(Vector 1) @32 @(Vector 2)
         describe "Lookup grand product equality" $ do
-            it "should hold" $ property $ withMaxSuccess 10 $ propLookupGrandProductEquality @U1 @1 @32 @2
+            it "should hold" $ property $ withMaxSuccess 10 $ propLookupGrandProductEquality @U1 @(Vector 1) @32 @(Vector 2)
         describe "Linearization polynomial in the challenge point" $ do
-            it "evaluates to zero" $ property $ withMaxSuccess 10 $ propLinearizationPolyEvaluation @U1 @1 @32 @2
+            it "evaluates to zero" $ property $ withMaxSuccess 10 $ propLinearizationPolyEvaluation @U1 @(Vector 1) @32 @(Vector 2)
