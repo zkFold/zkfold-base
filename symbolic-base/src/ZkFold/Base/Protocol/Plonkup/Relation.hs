@@ -7,11 +7,13 @@ module ZkFold.Base.Protocol.Plonkup.Relation where
 import           Data.Bool                                           (bool)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
+import           Data.Foldable                                       (toList)
 import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
 import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Set                                            as S
+import           GHC.IsList                                          (fromList)
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -28,8 +30,6 @@ import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
 import           ZkFold.Prelude                                      (length, replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import GHC.IsList (fromList)
-import Data.Foldable (toList)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation p i n l a = PlonkupRelation

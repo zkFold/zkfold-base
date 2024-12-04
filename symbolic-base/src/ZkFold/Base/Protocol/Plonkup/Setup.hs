@@ -3,7 +3,7 @@
 
 module ZkFold.Base.Protocol.Plonkup.Setup where
 
-import           Data.Functor.Rep                                    (Representable, Rep)
+import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (..))

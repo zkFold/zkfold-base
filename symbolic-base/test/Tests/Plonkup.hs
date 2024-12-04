@@ -9,8 +9,10 @@ import           Control.Monad                                       (forM_, ret
 import           Data.Bool                                           (Bool)
 import           Data.ByteString                                     (ByteString)
 import           Data.Eq                                             (Eq (..))
+import           Data.Foldable                                       (Foldable, toList)
 import           Data.Function                                       (($))
-import           Data.Functor.Rep                                    (Representable, Rep)
+import           Data.Functor.Classes                                (Show1 (..))
+import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Int                                            (Int)
 import           Data.List                                           (head, sort)
 import           Data.Ord                                            (Ord)
@@ -19,6 +21,7 @@ import           GHC.IsList                                          (IsList (fr
 import           System.IO                                           (IO)
 import           Test.Hspec
 import           Test.QuickCheck
+import           Text.Show                                           (showsPrec)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (fromZp)
@@ -38,9 +41,6 @@ import           ZkFold.Base.Protocol.Plonkup.Testing
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import Data.Functor.Classes (Show1 (..))
-import Data.Foldable (toList, Foldable)
-import Text.Show (showsPrec)
 
 -- | Polynomial types and specific polynomials that were causing exceptions
 --
@@ -172,7 +172,7 @@ propLinearizationPolyEvaluation plonk witness secret =
 
 instance Arbitrary (U1 a) where
   arbitrary = return U1
-instance Arbitrary1 U1 where 
+instance Arbitrary1 U1 where
   liftArbitrary _ = return U1
 instance Show1 U1 where
   liftShowsPrec _ _ = showsPrec
