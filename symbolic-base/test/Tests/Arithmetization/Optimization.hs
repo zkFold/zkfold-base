@@ -30,12 +30,10 @@ testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
     return (Par1 i5)
 
 testBool :: forall a . (Arithmetic a, Binary a) => ArithmeticCircuit a (U1 :*: U1) (Par1 :*: U1) Par1
-testBool = ac
+testBool = compile @a identBool
     where
         identBool :: Bool c -> Bool c
         identBool x = x
-
-        Bool ac = compile @a identBool
 
 testConst :: forall a . (Arithmetic a, Binary a) => ArithmeticCircuit a U1 Par1 Par1
 testConst = fromCircuitF idCircuit $ \(Par1 i0) -> do

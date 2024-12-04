@@ -28,7 +28,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec,
         exec1,
         apply,
-        indexW
+        indexW,
+        toVar
     ) where
 
 import           Control.DeepSeq                                       (NFData)
