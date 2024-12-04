@@ -4,16 +4,16 @@
 
 module ZkFold.Base.Protocol.Plonkup.Relation where
 
-import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (bool)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
-import           Data.Functor.Rep                                    (Rep, Representable)
+import           Data.Foldable                                       (toList)
+import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
 import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Set                                            as S
-import           GHC.IsList                                          (IsList (..))
+import           GHC.IsList                                          (fromList)
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -23,7 +23,6 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations              (Permutation, fromCycles, mkIndexPartition)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial, var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec, toPolyVec)
-import           ZkFold.Base.Data.Vector                             (Vector, fromVector)
 import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPermutationSize)
 import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint (..))
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint        (PlonkConstraint (..), toPlonkConstraint)
@@ -42,8 +41,8 @@ data PlonkupRelation p i n l a = PlonkupRelation
     , qK       :: PolyVec a n
     , t        :: PolyVec a n
     , sigma    :: Permutation (3 * n)
-    , witness  :: p a -> Vector i a -> (PolyVec a n, PolyVec a n, PolyVec a n)
-    , pubInput :: p a -> Vector i a -> Vector l a
+    , witness  :: p a -> i a -> (PolyVec a n, PolyVec a n, PolyVec a n)
+    , pubInput :: p a -> i a -> l a
     }
 
 instance Show a => Show (PlonkupRelation p i n l a) where
@@ -59,29 +58,26 @@ instance Show a => Show (PlonkupRelation p i n l a) where
         ++ show sigma
 
 instance
-        ( KnownNat i
-        , KnownNat n
+        ( KnownNat n
         , KnownNat (PlonkupPermutationSize n)
-        , KnownNat l
         , Representable p
-        , Arbitrary a
+        , Representable i
+        , Representable l
+        , Foldable l
+        , Ord (Rep i)
         , Arithmetic a
-        , Binary a
-        , Binary (Rep p)
+        , Arbitrary (ArithmeticCircuit a p i l)
         ) => Arbitrary (PlonkupRelation p i n l a) where
     arbitrary = fromJust . toPlonkupRelation <$> arbitrary
 
-toPlonkupRelation :: forall i p n l a .
-       KnownNat i
-    => KnownNat n
-    => KnownNat l
-    => Representable p
-    => Arithmetic a
-    => ArithmeticCircuit a p (Vector i) (Vector l)
-    -> Maybe (PlonkupRelation p i n l a)
+toPlonkupRelation ::
+  forall i p n l a .
+  ( KnownNat n, Arithmetic a, Ord (Rep i)
+  , Representable p, Representable i, Representable l, Foldable l
+  ) => ArithmeticCircuit a p i l -> Maybe (PlonkupRelation p i n l a)
 toPlonkupRelation ac =
     let xPub                = acOutput ac
-        pubInputConstraints = map var (fromVector xPub)
+        pubInputConstraints = map var (toList xPub)
         plonkConstraints    = map (evalPolynomial evalMonomial (var . SysVar)) (elems (acSystem ac))
         rs = map toConstant $ M.keys $ acRange ac
         -- TODO: We are expecting at most one range.
@@ -92,7 +88,7 @@ toPlonkupRelation ac =
         xLookup = concatMap S.toList $ M.elems (acRange ac)
 
         -- The total number of constraints in the relation.
-        n'      = acSizeN ac + value @l + length xLookup
+        n'      = acSizeN ac + length (tabulate @l id) + length xLookup
 
         plonkupSystem = concat
             [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)

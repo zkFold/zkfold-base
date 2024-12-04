@@ -15,7 +15,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), PointCompressed, compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
-import           ZkFold.Base.Data.Vector                             (fromVector, (!!))
+import           ZkFold.Base.Data.Vector                             ((!!))
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup                        (with4n6)
 import           ZkFold.Base.Protocol.Plonkup.Input
@@ -32,6 +32,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 plonkProve :: forall p i n l c1 c2 ts core .
     ( KnownNat n
+    , Foldable l
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
     , Arithmetic (ScalarField c1)
@@ -61,7 +62,7 @@ plonkProve PlonkupProverSetup {..}
         w2X = with4n6 @n $ polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n c1
         w3X = with4n6 @n $ polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n c1
 
-        pi  = toPolyVec @_ @n $ fromList $ fromVector (negate <$> wPub)
+        pi  = toPolyVec @_ @n $ fromList $ foldMap (\x -> [negate x]) wPub
         piX = with4n6 @n $ polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n c1
 
         -- Round 1

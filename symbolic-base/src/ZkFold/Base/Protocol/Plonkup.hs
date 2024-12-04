@@ -7,7 +7,7 @@ module ZkFold.Base.Protocol.Plonkup (
     Plonkup (..)
 ) where
 
-import           Data.Functor.Rep                                    (Representable)
+import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
@@ -29,10 +29,12 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
 instance forall p i n l c1 c2 ts core.
-        ( KnownNat i
-        , KnownNat n
-        , KnownNat l
+        ( KnownNat n
         , Representable p
+        , Representable i
+        , Representable l
+        , Foldable l
+        , Ord (Rep i)
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2

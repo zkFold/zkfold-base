@@ -9,6 +9,7 @@ import           Control.Monad.State.Strict       (runState, state)
 import           Data.Aeson                       (ToJSON (..))
 import           Data.Distributive                (Distributive (..))
 import           Data.Foldable                    (fold)
+import           Data.Functor.Classes             (Show1)
 import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import           Data.These                       (These (..))
 import qualified Data.Vector                      as V
@@ -20,7 +21,7 @@ import           GHC.IsList                       (IsList (..))
 import           Prelude                          hiding (concat, drop, head, length, mod, negate, replicate, sum, tail,
                                                    take, unzip, zip, zipWith, (*), (+), (-))
 import           System.Random                    (Random (..))
-import           Test.QuickCheck                  (Arbitrary (..))
+import           Test.QuickCheck                  (Arbitrary (..), Arbitrary1 (..), arbitrary1)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
@@ -29,7 +30,7 @@ import           ZkFold.Base.Data.ByteString      (Binary (..))
 import           ZkFold.Prelude                   (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
-    deriving (Show, Eq, Functor, Foldable, Traversable, Generic, NFData, Ord)
+    deriving (Show, Show1, Eq, Functor, Foldable, Traversable, Generic, NFData, Ord)
 
 -- helper
 knownNat :: forall size n . (KnownNat size, Integral n) => n
@@ -173,7 +174,10 @@ instance Unzip (Vector size) where
     unzip v = (fst <$> v, snd <$> v)
 
 instance (Arbitrary a, KnownNat size) => Arbitrary (Vector size a) where
-    arbitrary = sequenceA (pureRep arbitrary)
+    arbitrary = arbitrary1
+
+instance KnownNat size => Arbitrary1 (Vector size) where
+    liftArbitrary = sequenceA . pureRep
 
 instance (Random a, KnownNat size) => Random (Vector size a) where
     random = runState (sequenceA (pureRep (state random)))

@@ -6,6 +6,7 @@ module ZkFold.Base.Protocol.Plonk (
 ) where
 
 import           Data.Binary                                         (Binary)
+import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
 import           Data.Kind                                           (Type)
 import           Data.Word                                           (Word8)
@@ -17,7 +18,6 @@ import           Test.QuickCheck                                     (Arbitrary 
 import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGroup)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing, PointCompressed)
-import           ZkFold.Base.Data.Vector                             (Vector (..))
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonk.Prover                   (plonkProve)
 import           ZkFold.Base.Protocol.Plonk.Verifier                 (plonkVerify)
@@ -32,31 +32,32 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
 
-data Plonk p (i :: Natural) (n :: Natural) (l :: Natural) curve1 curve2 transcript = Plonk {
+data Plonk p i (n :: Natural) l curve1 curve2 transcript = Plonk {
         omega :: ScalarField curve1,
         k1    :: ScalarField curve1,
         k2    :: ScalarField curve1,
-        ac    :: ArithmeticCircuit (ScalarField curve1) p (Vector i) (Vector l),
+        ac    :: ArithmeticCircuit (ScalarField curve1) p i l,
         x     :: ScalarField curve1
     }
 
 fromPlonkup ::
-    ( KnownNat i
-    , Arithmetic (ScalarField c1)
+    ( Arithmetic (ScalarField c1)
     , Binary (ScalarField c1)
     , Binary (Rep p)
+    , Binary (Rep i)
+    , Ord (Rep i)
     ) => Plonkup p i n l c1 c2 ts -> Plonk p i n l c1 c2 ts
 fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 
 toPlonkup :: Plonk p i n l c1 c2 ts -> Plonkup p i n l c1 c2 ts
 toPlonkup Plonk {..} = Plonkup {..}
 
-instance (Show (ScalarField c1), Arithmetic (ScalarField c1), KnownNat l, KnownNat i) => Show (Plonk p i n l c1 c2 t) where
+instance (Show1 l, Show (Rep i), Show (ScalarField c1), Ord (Rep i)) => Show (Plonk p i n l c1 c2 t) where
     show Plonk {..} =
         "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac) ++ " " ++ show ac ++ " " ++ show x
 
-instance ( KnownNat i, Arithmetic (ScalarField c1)
-         , Binary (ScalarField c1), Binary (Rep p)
+instance ( Arithmetic (ScalarField c1), Binary (ScalarField c1)
+         , Binary (Rep p), Binary (Rep i), Ord (Rep i)
          , Arbitrary (Plonkup p i n l c1 c2 t))
         => Arbitrary (Plonk p i n l c1 c2 t) where
     arbitrary = fromPlonkup <$> arbitrary
@@ -69,6 +70,7 @@ instance forall p i n l c1 c2 (ts :: Type) core .
         , Input (Plonkup p i n l c1 c2 ts) ~ PlonkupInput l c1
         , Proof (Plonkup p i n l c1 c2 ts) ~ PlonkupProof c1
         , KnownNat n
+        , Foldable l
         , Ord (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2

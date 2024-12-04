@@ -16,7 +16,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
-import           ZkFold.Base.Data.Vector                             (fromVector)
 import           ZkFold.Base.Protocol.NonInteractiveProof            hiding (verify)
 import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal
@@ -28,6 +27,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 plonkupVerify :: forall p i n l c1 c2 ts .
     ( KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
+    , Foldable l
     , Pairing c1 c2
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
@@ -106,7 +106,7 @@ plonkupVerify
 
         -- Step 7: Compute public polynomial evaluation
         pi_xi = polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega
-            (toPolyVec $ fromList $ fromVector (negate <$> wPub))
+            (toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub)
             `evalPolyVec` xi
 
         -- Step 8: Compute the public table commitment
