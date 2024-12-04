@@ -99,7 +99,7 @@ createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par
       return v
 
 -- TODO: make it more readable
-instance (FiniteField a, Haskell.Eq a, Show a, Show (o (Var a i)), Haskell.Ord (Rep i), Show (Var a i), Show (Rep i)) => Show (ArithmeticCircuit a p i o) where
+instance (Show a, Show (o (Var a i)), Show (Var a i), Show (Rep i), Haskell.Ord (Rep i)) => Show (ArithmeticCircuit a p i o) where
     show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r)
                           ++ "\n, acRange = " ++ show (acRange r)
                           ++ "\n, acOutput = " ++ show (acOutput r)
