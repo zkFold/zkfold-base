@@ -66,10 +66,12 @@ varsToReplace (s, l) = if newVars == M.empty then (s, l) else varsToReplace (M.f
     newVars = M.fromList . M.elems $ mapMaybe toConstVar s
 
     optimizeSystems :: (Arithmetic a, Ord (Rep i)) => Map (SysVar i) a -> Map ByteString (Constraint a i) -> Map ByteString (Constraint a i)
-    optimizeSystems m as = bool (error "unsatisfiable constraint") ns (all ((== zero) . evalPolynomial evalMonomial varF) (unionWith (-) ns as))
+    optimizeSystems m as = bool (error "unsatisfiable constraint") ns (all checkZero ns)
       where
         ns = evalPolynomial evalMonomial varF <$> as
         varF p = maybe (var p) fromConstant (M.lookup p m)
+        checkZero (P [(c, mx)]) = (c == zero) && oneM mx || not (oneM mx)
+        checkZero _ = True
 
     toConstVar :: Arithmetic a => Constraint a i -> Maybe (SysVar i, a)
     toConstVar = \case
