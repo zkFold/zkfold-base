@@ -43,10 +43,13 @@ optimize (ArithmeticCircuit s r w o) = ArithmeticCircuit {
   where
     (newS, vs) = varsToReplace (s, M.empty)
 
+    isInVar (InVar _) = True
+    isInVar _         = False
+
     addInVarConstraints :: Map ByteString (Poly a (SysVar i) Natural) -> Map ByteString (Poly a (SysVar i) Natural)
-    addInVarConstraints p = p <> fromList [(polyId, poly) | (InVar i, v) <- assocs vs,
-                                                            let poly = var (InVar i) - fromConstant v,
-                                                            let polyId = toVar @a @p @i (pure $ WSysVar (InVar i))]
+    addInVarConstraints p = p <> fromList [(polyId, poly) | (inVar, v) <- assocs $ filterWithKey (const . isInVar) vs,
+                                                            let poly = var inVar - fromConstant v,
+                                                            let polyId = toVar @a @p @i (pure (WSysVar inVar) - fromConstant v)]
 
     optRanges :: Map (SysVar i) a -> MM.MonoidalMap a (S.Set (SysVar i)) -> MM.MonoidalMap a (S.Set (SysVar i))
     optRanges m = MM.mapMaybeWithKey (\k v -> bool (error "range constraint less then value")
