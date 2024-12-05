@@ -71,7 +71,7 @@ varsToReplace (s, l) = if newVars == M.empty then (s, l) else varsToReplace (M.f
         ns = evalPolynomial evalMonomial varF <$> as
         varF p = maybe (var p) fromConstant (M.lookup p m)
         checkZero (P [(c, mx)]) = (c == zero) && oneM mx || not (oneM mx)
-        checkZero _ = True
+        checkZero _             = True
 
     toConstVar :: Arithmetic a => Constraint a i -> Maybe (SysVar i, a)
     toConstVar = \case
