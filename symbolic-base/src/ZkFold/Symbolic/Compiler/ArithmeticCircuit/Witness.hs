@@ -33,7 +33,7 @@ instance Monad (WitnessF a) where
 
 instance FromConstant Natural (WitnessF a v) where fromConstant x = WitnessF (fromConstant x)
 instance FromConstant Integer (WitnessF a v) where fromConstant x = WitnessF (fromConstant x)
-instance FromConstant a (WitnessF a v) where fromConstant x = WitnessF (fromConstant x)
+instance {-# INCOHERENT #-} FromConstant a (WitnessF a v) where fromConstant x = WitnessF (fromConstant x)
 instance Scale Natural (WitnessF a v) where scale k (WitnessF f) = WitnessF (scale k f)
 instance Scale Integer (WitnessF a v) where scale k (WitnessF f) = WitnessF (scale k f)
 instance Scale a (WitnessF a v) where scale k (WitnessF f) = WitnessF (scale k . f)

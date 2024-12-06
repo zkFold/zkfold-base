@@ -12,6 +12,7 @@ import           GHC.Generics                                (Par1, U1 (..))
 import           Prelude
 import           Test.Hspec
 import           Test.QuickCheck
+import           Tests.Arithmetization.Optimization          (specOptimization)
 import           Tests.Arithmetization.Test1                 (specArithmetization1)
 import           Tests.Arithmetization.Test2                 (specArithmetization2)
 import           Tests.Arithmetization.Test3                 (specArithmetization3)
@@ -51,3 +52,4 @@ instance Arbitrary (U1 a) where
 specArithmetization :: IO ()
 specArithmetization = do
     specArithmetization' @(Zp BLS12_381_Scalar) @U1 @(Vector 2)
+    specOptimization @(Zp BLS12_381_Scalar)

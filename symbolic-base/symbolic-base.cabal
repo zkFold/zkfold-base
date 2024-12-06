@@ -177,6 +177,7 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
@@ -246,6 +247,7 @@ test-suite symbolic-base-test
       Tests.Arithmetization.Test2
       Tests.Arithmetization.Test3
       Tests.Arithmetization.Test4
+      Tests.Arithmetization.Optimization
       Tests.Binary
       Tests.Blake2b
       Tests.ByteString
