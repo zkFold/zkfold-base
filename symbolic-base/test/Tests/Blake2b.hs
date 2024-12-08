@@ -9,15 +9,15 @@ import           Data.Data                                   (Proxy (Proxy))
 import           GHC.Generics                                (U1, (:*:))
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (Eq (..), IO, ($))
-import           Test.Hspec
+import           Test.Hspec                                  (Spec, describe, hspec, it)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Symbolic.Algorithms.Hash.Blake2b
+import           ZkFold.Symbolic.Algorithms.Hash.Blake2b     (blake2b_512)
 import           ZkFold.Symbolic.Class                       (Symbolic)
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN, compile)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (arithmetize)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
@@ -40,5 +40,4 @@ blake2bAC =
 specBlake2b :: IO ()
 specBlake2b = hspec $ describe "BLAKE2b self-test validation" $ do
         blake2bSimple @(Interpreter (Zp BLS12_381_Scalar))
-        -- TODO: make a proper arithmetic circuit test
-        -- blake2bAC
+        blake2bAC
