@@ -4,18 +4,26 @@ module Tests.Blake2b where
 
 import           Crypto.Hash.BLAKE2.BLAKE2b                  (hash)
 import qualified Data.ByteString.Internal                    as BI
+import           Data.Maybe                                  (fromJust)
 import           GHC.Exts                                    (IsString (fromString))
+import           GHC.Generics                                hiding (from)
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (Eq (..), IO, ($))
 import           Test.Hspec                                  (Spec, describe, hspec, it)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
+import           ZkFold.Base.Data.ByteString                 (fromByteString)
 import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Symbolic.Algorithms.Hash.Blake2b     (blake2b_512)
+import           ZkFold.Symbolic.Algorithms.Hash.Blake2b     (blake2b_224, blake2b_512)
 import           ZkFold.Symbolic.Class                       (Symbolic)
-import           ZkFold.Symbolic.Data.ByteString             (ByteString)
+import           ZkFold.Symbolic.Compiler                    (compile, eval1)
+import           ZkFold.Symbolic.Data.Bool                   (Bool)
+import           ZkFold.Symbolic.Data.ByteString             (ByteString, Resize (..))
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..))
+import qualified ZkFold.Symbolic.Data.Eq                     as ZK
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
 blake2bNumeric :: forall c . (Symbolic c, Eq (c (Vector 512))) => Spec
@@ -42,7 +50,25 @@ blake2bExampleRfc =
         abc  = fromConstant @_ @(ByteString 512 _) $ hash 64 BI.empty "abc"
     in it "example test from rfc7693 " $ abc' == abc
 
+equalityBlake ::
+  forall a c .
+   ( Symbolic c
+   , Iso (FieldElement c) (ByteString 255 c)
+   , FromConstant a (ByteString 24 c)
+   ) => a -> FieldElement c -> Bool c
+equalityBlake input target =
+    let hash'   = resize $ blake2b_224 @3 @c $ fromConstant input
+        target' = from @_ @(ByteString 255 c) target
+    in target' ZK.== hash'
+
+blake2bSymbolic :: Spec
+blake2bSymbolic =
+    let ac    = compile @Fr $ equalityBlake $ fromString @BI.ByteString "abc"
+        hash' = fromJust $ fromByteString @Fr $ {- BI.reverse -} hash 28 BI.empty "abc"
+    in it "simple test with cardano-crypto " $ eval1 ac (U1 :*: U1) (Par1 hash' :*: U1) == 1
+
 specBlake2b :: IO ()
 specBlake2b = hspec $ describe "BLAKE2b self-test validation" $ do
     blake2bNumeric @(Interpreter (Zp BLS12_381_Scalar))
     blake2bExampleRfc @(Interpreter (Zp BLS12_381_Scalar))
+    blake2bSymbolic
