@@ -35,7 +35,7 @@ import           ZkFold.Base.Protocol.IVC.RecursiveFunction (RecursiveI (..), Re
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..))
 
 -- | The recursion circuit satisfiability proof.
-data IVCProof m c k
+data IVCProof k m c
     = IVCProof
     { _proofX :: Vector k c
     -- ^ The commitment to the witness of the recursion circuit satisfiability proof.
@@ -43,33 +43,33 @@ data IVCProof m c k
     -- ^ The witness of the recursion circuit satisfiability proof.
     } deriving (GHC.Generics.Generic)
 
-deriving instance (P.Show m, P.Show c) => P.Show (IVCProof m c k)
-deriving instance (NFData m, NFData c) => NFData (IVCProof m c k)
+deriving instance (P.Show m, P.Show c) => P.Show (IVCProof k m c)
+deriving instance (NFData m, NFData c) => NFData (IVCProof k m c)
 
-noIVCProof :: forall m c k f .
+noIVCProof :: forall k m c f .
     ( m ~ [f]
     , AdditiveMonoid f
     , AdditiveMonoid c
     , KnownNat k
-    ) => IVCProof m c k
+    ) => IVCProof k m c
 noIVCProof = IVCProof (tabulate $ const zero) (tabulate $ const zero)
 
 -- | The current result of recursion together with the first iteration flag,
 -- the corresponding accumulator, and the recursion circuit satisfiability proof.
-data IVCResult f i m c k
+data IVCResult k i m c f
     = IVCResult
     { _z     :: i f
-    , _acc   :: Accumulator i m c k f
-    , _proof :: IVCProof m c k
+    , _acc   :: Accumulator k i m c f
+    , _proof :: IVCProof k m c
     , _flag  :: f
     } deriving (GHC.Generics.Generic)
 
 makeLenses ''IVCResult
 
-deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCResult f i m c k)
-deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCResult f i m c k)
+deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCResult k i m c f)
+deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCResult k i m c f)
 
-type IVCAssumptions f i p o m c d k a algo =
+type IVCAssumptions algo d k a i p o m c f =
     ( --SpecialSoundProtocol f i p m c d k a
     -- , SpecialSoundProtocol f (RecursiveI i c k) (RecursiveP i p c d k) m c d k a
     Representable i

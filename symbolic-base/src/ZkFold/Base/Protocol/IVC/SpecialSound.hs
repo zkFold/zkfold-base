@@ -27,7 +27,7 @@ and checks that the output is a zero vector of length l.
 
 --}
 
-data SpecialSoundProtocol f i p o m c d k = SpecialSoundProtocol
+data SpecialSoundProtocol d k i p o m c f = SpecialSoundProtocol
   {
     input ::
          i f                            -- ^ previous public input
@@ -48,12 +48,12 @@ data SpecialSoundProtocol f i p o m c d k = SpecialSoundProtocol
       -> o                              -- ^ verifier output
   }
 
-specialSoundProtocol :: forall a i p c d.
+specialSoundProtocol :: forall d a i p c .
     ( Arithmetic a
     , Representable i
     , Representable p
     , KnownNat (d + 1)
-    ) => Predicate a i p -> SpecialSoundProtocol a i p [a] [a] c d 1
+    ) => Predicate a i p -> SpecialSoundProtocol d 1 i p [a] [a] c a
 specialSoundProtocol phi@Predicate {..} =
   let
       prover pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)

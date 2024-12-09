@@ -20,7 +20,7 @@ import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
 
 -- Page 19, Accumulator instance
-data AccumulatorInstance i c k f
+data AccumulatorInstance k i c f
     = AccumulatorInstance
         { _pi :: i f            -- pi ∈ M^{l_in} in the paper
         , _c  :: Vector k c     -- [C_i] ∈ C^k in the paper
@@ -35,9 +35,9 @@ makeLenses ''AccumulatorInstance
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
-data Accumulator i m c k f
+data Accumulator k i m c f
     = Accumulator
-        { _x :: AccumulatorInstance i c k f
+        { _x :: AccumulatorInstance k i c f
         , _w :: Vector k m
         }
     deriving (Show, Generic, NFData)
@@ -53,7 +53,7 @@ emptyAccumulator :: forall d k m c a i p f .
     , KnownNat k
     , KnownNat (d+1)
     , Scale a f
-    ) => Predicate a i p -> Accumulator i m c k f
+    ) => Predicate a i p -> Accumulator k i m c f
 emptyAccumulator phi =
     let accW  = tabulate (const zero)
         aiC   = fmap hcommit accW
@@ -73,5 +73,5 @@ emptyAccumulatorInstance :: forall d k m c a i p f .
     , KnownNat k
     , KnownNat (d+1)
     , Scale a f
-    ) => Predicate a i p -> AccumulatorInstance i c k f
+    ) => Predicate a i p -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x

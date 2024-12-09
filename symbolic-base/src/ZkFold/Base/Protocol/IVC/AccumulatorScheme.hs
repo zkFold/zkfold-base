@@ -30,26 +30,26 @@ import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..),
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
-data AccumulatorScheme f i o m c d k = AccumulatorScheme
+data AccumulatorScheme d k i o m c f = AccumulatorScheme
   {
     prover   ::
-               Accumulator i m c k f                      -- accumulator
-            -> NARKInstanceProof f i m c k                -- instance-proof pair (pi, π)
-            -> (Accumulator i m c k f, Vector (d - 1) c)  -- updated accumulator and accumulation proof
+               Accumulator k i m c f                      -- accumulator
+            -> NARKInstanceProof k i m c f                -- instance-proof pair (pi, π)
+            -> (Accumulator k i m c f, Vector (d - 1) c)  -- updated accumulator and accumulation proof
 
   , verifier :: i f                                        -- Public input
             -> Vector k c                                 -- NARK proof π.x
-            -> AccumulatorInstance i c k f                -- accumulator instance acc.x
-            -> AccumulatorInstance i c k f                -- updated accumulator instance acc'.x
+            -> AccumulatorInstance k i c f                -- accumulator instance acc.x
+            -> AccumulatorInstance k i c f                -- updated accumulator instance acc'.x
             -> Vector (d - 1) c                           -- accumulation proof E_j
             -> (f, i f, Vector (k-1) f, Vector k c, c)    -- returns zeros if the accumulation proof is correct
 
   , decider  ::
-               Accumulator i m c k f                      -- final accumulator
+               Accumulator k i m c f                      -- final accumulator
             -> (Vector k c, c)                            -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo f i (p :: Type -> Type) o m c d k a .
+accumulatorScheme :: forall algo d k a i (p :: Type -> Type) o m c f .
     ( Field f
     , Representable i
     , Zip i
@@ -72,7 +72,7 @@ accumulatorScheme :: forall algo f i (p :: Type -> Type) o m c d k a .
     , KnownNat k
     )
     => Predicate a i p
-    -> AccumulatorScheme f i o m c d k
+    -> AccumulatorScheme d k i o m c f
 accumulatorScheme phi =
   let
       prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
