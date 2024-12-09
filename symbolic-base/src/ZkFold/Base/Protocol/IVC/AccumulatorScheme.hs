@@ -35,13 +35,13 @@ data AccumulatorScheme d k i o m c f = AccumulatorScheme
     prover   ::
                Accumulator k i m c f                      -- accumulator
             -> NARKInstanceProof k i m c f                -- instance-proof pair (pi, π)
-            -> (Accumulator k i m c f, Vector (d - 1) c)  -- updated accumulator and accumulation proof
+            -> (Accumulator k i m c f, Vector (d-1) c)  -- updated accumulator and accumulation proof
 
   , verifier :: i f                                        -- Public input
             -> Vector k c                                 -- NARK proof π.x
             -> AccumulatorInstance k i c f                -- accumulator instance acc.x
             -> AccumulatorInstance k i c f                -- updated accumulator instance acc'.x
-            -> Vector (d - 1) c                           -- accumulation proof E_j
+            -> Vector (d-1) c                           -- accumulation proof E_j
             -> (f, i f, Vector (k-1) f, Vector k c, c)    -- returns zeros if the accumulation proof is correct
 
   , decider  ::
@@ -50,15 +50,10 @@ data AccumulatorScheme d k i o m c f = AccumulatorScheme
   }
 
 accumulatorScheme :: forall algo d k a i (p :: Type -> Type) o m c f .
-    ( Field f
+    ( KnownNat (d-1)
+    , KnownNat (d+1)
     , Representable i
     , Zip i
-    , KnownNat (d - 1)
-    , KnownNat (d + 1)
-    , Scale f c
-    , Scale f (Vector k c)
-    , Scale a f
-    , Scale a (PolyVec f (d + 1))
     , m ~ [f]
     , HomomorphicCommit m c
     , HashAlgorithm algo f
@@ -68,8 +63,13 @@ accumulatorScheme :: forall algo d k a i (p :: Type -> Type) o m c f .
     , RandomOracle algo (f, c) f
     , RandomOracle algo (Vector k c) f
     , RandomOracle algo (Vector (k-1) f) f
-    , RandomOracle algo (Vector (d - 1) c) f
+    , RandomOracle algo (Vector (d-1) c) f
     , KnownNat k
+    , Field f
+    , Scale a f
+    , Scale a (PolyVec f (d+1))
+    , Scale f c
+    , Scale f (Vector k c)
     )
     => Predicate a i p
     -> AccumulatorScheme d k i o m c f
@@ -87,24 +87,24 @@ accumulatorScheme phi =
             -- Fig. 3, step 2
 
             -- X + mu as a univariate polynomial
-            polyMu :: PU.PolyVec f (d + 1)
+            polyMu :: PU.PolyVec f (d+1)
             polyMu = PU.polyVecLinear one (acc^.x^.mu)
 
             -- X * pi + pi' as a list of univariate polynomials
-            polyPi :: i (PU.PolyVec f (d + 1))
+            polyPi :: i (PU.PolyVec f (d+1))
             polyPi = zipWith (PU.polyVecLinear @f) pubi (acc^.x^.pi)
 
             -- X * mi + mi'
-            polyW :: Vector k [PU.PolyVec f (d + 1)]
+            polyW :: Vector k [PU.PolyVec f (d+1)]
             polyW = zipWith (zipWith (PU.polyVecLinear @f)) pi_w (acc^.w)
 
             -- X * ri + ri'
-            polyR :: Vector (k-1) (PU.PolyVec f (d + 1))
+            polyR :: Vector (k-1) (PU.PolyVec f (d+1))
             polyR = zipWith (P.flip PU.polyVecLinear) (acc^.x^.r) r_i
 
             -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
             --
-            e_uni :: [Vector (d + 1) f]
+            e_uni :: [Vector (d+1) f]
             e_uni = unsafeToVector . toList <$> algebraicMap @d phi polyPi polyW polyR polyMu
 
             -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]

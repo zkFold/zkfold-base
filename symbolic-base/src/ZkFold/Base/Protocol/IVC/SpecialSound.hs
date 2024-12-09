@@ -49,10 +49,10 @@ data SpecialSoundProtocol d k i p o m c f = SpecialSoundProtocol
   }
 
 specialSoundProtocol :: forall d a i p c .
-    ( Arithmetic a
+    ( KnownNat (d+1)
+    , Arithmetic a
     , Representable i
     , Representable p
-    , KnownNat (d + 1)
     ) => Predicate a i p -> SpecialSoundProtocol d 1 i p [a] [a] c a
 specialSoundProtocol phi@Predicate {..} =
   let

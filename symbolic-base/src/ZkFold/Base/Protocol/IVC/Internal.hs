@@ -47,10 +47,10 @@ deriving instance (P.Show m, P.Show c) => P.Show (IVCProof k m c)
 deriving instance (NFData m, NFData c) => NFData (IVCProof k m c)
 
 noIVCProof :: forall k m c f .
-    ( m ~ [f]
-    , AdditiveMonoid f
+    ( KnownNat k
+    , m ~ [f]
     , AdditiveMonoid c
-    , KnownNat k
+    , AdditiveMonoid f
     ) => IVCProof k m c
 noIVCProof = IVCProof (tabulate $ const zero) (tabulate $ const zero)
 
@@ -86,16 +86,16 @@ type IVCAssumptions algo d k a i p o m c f =
 -- -- | Create the first IVC result
 -- -- 
 -- -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
--- ivcSetup :: forall f i p m c d k a algo . IVCAssumptions f i p m c d k a algo
---     => FiatShamir algo (CommitOpen a)
+-- ivcSetup :: forall algo d k a i p o m c f . IVCAssumptions algo d k a i p o m c f
+--     => FiatShamir d k i p o m c f
 --     -> i f
 --     -> p f
---     -> IVCResult f i m c k
+--     -> IVCResult k i m c f
 -- ivcSetup fs x0 witness =
 --     let
---         x1 = input @_ @_ @_ @(Vector k (m, c)) @c @d @1 fs x0 witness
+--         x1 = input fs x0 witness
 --     in
---         IVCResult x1 (emptyAccumulator @f @i @m @c @d @k fs) (noIVCProof @m @c @k) zero
+--         IVCResult x1 (emptyAccumulator fs) (noIVCProof) zero
 
 -- ivcProve :: forall f i p m c (d :: Natural) k a algo . IVCAssumptions f i p m c d k a algo
 --     => FiatShamir algo (CommitOpen a)

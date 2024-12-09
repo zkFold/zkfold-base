@@ -45,13 +45,13 @@ data Accumulator k i m c f
 makeLenses ''Accumulator
 
 emptyAccumulator :: forall d k m c a i p f .
-    ( Ring f
+    ( KnownNat (d+1)
+    , KnownNat (k-1)
+    , KnownNat k
     , Representable i
     , m ~ [f]
     , HomomorphicCommit m c
-    , KnownNat (k-1)
-    , KnownNat k
-    , KnownNat (d+1)
+    , Ring f
     , Scale a f
     ) => Predicate a i p -> Accumulator k i m c f
 emptyAccumulator phi =
@@ -65,13 +65,13 @@ emptyAccumulator phi =
     in Accumulator accX accW
 
 emptyAccumulatorInstance :: forall d k m c a i p f .
-    ( Ring f
+    ( KnownNat (d+1)
+    , KnownNat (k-1)
+    , KnownNat k
     , Representable i
     , m ~ [f]
     , HomomorphicCommit m c
-    , KnownNat (k-1)
-    , KnownNat k
-    , KnownNat (d+1)
+    , Ring f
     , Scale a f
     ) => Predicate a i p -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x
