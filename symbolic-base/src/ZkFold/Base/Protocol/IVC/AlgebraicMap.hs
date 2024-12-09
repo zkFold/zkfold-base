@@ -1,8 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Protocol.IVC.AlgebraicMap where
+module ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap) where
 
 import           Data.ByteString                                     (ByteString)
 import           Data.Functor.Rep                                    (Representable (..))
@@ -18,62 +17,55 @@ import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
-import            ZkFold.Base.Protocol.IVC.Predicate                 (Predicate(..))
-import           ZkFold.Symbolic.Class
+import           ZkFold.Base.Protocol.IVC.Predicate                  (Predicate (..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
+
 
 -- | Algebraic map of @a@.
 -- It calculates a system of equations defining @a@ in some way.
 -- The inputs are polymorphic in a ring element @f@.
 -- The main application is to define the verifier's algebraic map in the NARK protocol.
 --
-class (Ring f) => AlgebraicMap f i (d :: Natural) a where
-    -- | the algebraic map Vsps computed by the NARK verifier.
-    algebraicMap :: a
-        -> i f            -- ^ public input
-        -> Vector k [f]   -- ^ NARK proof witness (the list of prover messages)
-        -> Vector (k-1) f -- ^ Verifier random challenges
-        -> f              -- ^ Slack variable for padding
-        -> [f]
+algebraicMap :: forall d f i p k a .
+    ( Ring f
+    , Representable i
+    , KnownNat (d+1)
+    , Scale a f
+    )
+    => Predicate a i p
+    -> i f
+    -> Vector k [f]
+    -> Vector (k-1) f
+    -> f
+    -> [f]
+algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
+    where
+        sys :: [PM.Poly a (SysVar i) Natural]
+        sys = M.elems (acSystem predicateCircuit)
 
-instance
-  ( Ring f
-  , Representable i
-  , KnownNat (d + 1)
-  , Arithmetic a
-  , Scale a f
-  ) => AlgebraicMap f i d (Predicate a i p) where
-    -- We can use the polynomial system from the circuit as a base for Vsps.
-    --
-    algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
-        where
-            sys :: [PM.Poly a (SysVar i) Natural]
-            sys = M.elems (acSystem predicateCircuit)
+        witness :: Map ByteString f
+        witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
 
-            witness :: Map ByteString f
-            witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
+        varMap :: SysVar i -> f
+        varMap (InVar inV)   = index pi inV
+        varMap (NewVar newV) = M.findWithDefault zero newV witness
 
-            varMap :: SysVar i -> f
-            varMap (InVar inV)   = index pi inV
-            varMap (NewVar newV) = M.findWithDefault zero newV witness
+        f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
+        f_sps = degreeDecomposition @_ @d $ sys
 
-            f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
-            f_sps = degreeDecomposition @_ @d $ sys
+        f_sps_uni :: Vector (d+1) [f]
+        f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
 
-            f_sps_uni :: Vector (d+1) [f]
-            f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
-
-
-padDecomposition :: forall f n .
+padDecomposition :: forall f d .
     ( MultiplicativeMonoid f
     , AdditiveMonoid f
-    , KnownNat n
-    ) => f -> V.Vector n [f] -> [f]
+    , KnownNat (d+1)
+    ) => f -> V.Vector (d+1) [f] -> [f]
 padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) * ) <$> p)
     where
-        d = value @n -! 1
+        d = value @(d+1) -! 1
 
 -- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @d@
 --

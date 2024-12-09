@@ -12,13 +12,12 @@ import           Data.Functor.Rep                      (Representable (..))
 import           GHC.Generics
 import           Prelude                               hiding (length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Class       (zero)
-import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, Natural, type (-))
+import           ZkFold.Base.Algebra.Basic.Class       (zero, Ring, Scale)
+import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-), type (+))
 import           ZkFold.Base.Data.Vector               (Vector)
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap (AlgebraicMap (..))
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
-import           ZkFold.Base.Protocol.IVC.CommitOpen   (CommitOpen (..))
-import           ZkFold.Base.Protocol.IVC.FiatShamir   (FiatShamir (FiatShamir))
+import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance i c k f
@@ -45,30 +44,34 @@ data Accumulator i m c k f
 
 makeLenses ''Accumulator
 
-emptyAccumulator :: forall f i m c (d :: Natural) k a algo.
-    ( Representable i
+emptyAccumulator :: forall d k m c a i p f .
+    ( Ring f
+    , Representable i
     , m ~ [f]
     , HomomorphicCommit m c
     , KnownNat (k-1)
     , KnownNat k
-    , AlgebraicMap f i d a
-    ) => FiatShamir algo (CommitOpen a) -> Accumulator i m c k f
-emptyAccumulator (FiatShamir (CommitOpen sps)) =
+    , KnownNat (d+1)
+    , Scale a f
+    ) => Predicate a i p -> Accumulator i m c k f
+emptyAccumulator phi =
     let accW  = tabulate (const zero)
         aiC   = fmap hcommit accW
         aiR   = tabulate (const zero)
         aiMu  = zero
         aiPI  = tabulate (const zero)
-        aiE   = hcommit $ algebraicMap @_ @_ @d sps aiPI accW aiR aiMu
+        aiE   = hcommit $ algebraicMap @d phi aiPI accW aiR aiMu
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 
-emptyAccumulatorInstance :: forall f i m c (d :: Natural) k a algo .
-    ( Representable i
+emptyAccumulatorInstance :: forall d k m c a i p f .
+    ( Ring f
+    , Representable i
     , m ~ [f]
     , HomomorphicCommit m c
     , KnownNat (k-1)
     , KnownNat k
-    , AlgebraicMap f i d a
-    ) => FiatShamir algo (CommitOpen a) -> AccumulatorInstance i c k f
-emptyAccumulatorInstance fs = emptyAccumulator @_ @_ @_ @_ @d fs ^. x
+    , KnownNat (d+1)
+    , Scale a f
+    ) => Predicate a i p -> AccumulatorInstance i c k f
+emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x

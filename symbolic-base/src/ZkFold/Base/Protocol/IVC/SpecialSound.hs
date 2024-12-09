@@ -1,6 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.IVC.SpecialSound where
 
@@ -28,36 +26,38 @@ challenge ri ∈ F. After the final message mk, the verifier computes the algebr
 and checks that the output is a zero vector of length l.
 
 --}
-class SpecialSoundProtocol f i p m c d k a where
-  type VerifierOutput f i p m c d k a
 
-  input :: a
-    -> i f                          -- ^ previous public input
-    -> p f                          -- ^ witness
-    -> i f                          -- ^ public input
+data SpecialSoundProtocol f i p o m c d k = SpecialSoundProtocol
+  {
+    input ::
+         i f                            -- ^ previous public input
+      -> p f                            -- ^ witness
+      -> i f                            -- ^ public input
 
-  prover :: a
-    -> i f                          -- ^ previous public input
-    -> p f                          -- ^ witness
-    -> f                            -- ^ current random challenge
-    -> Natural                      -- ^ round number (starting from 1)
-    -> m                            -- ^ prover message
+  , prover ::
+         i f                            -- ^ previous public input
+      -> p f                            -- ^ witness
+      -> f                              -- ^ current random challenge
+      -> Natural                        -- ^ round number (starting from 1)
+      -> m                              -- ^ prover message
 
-  verifier :: a
-    -> i f                          -- ^ public input
-    -> Vector k m                   -- ^ prover messages
-    -> Vector (k-1) f               -- ^ random challenges
-    -> VerifierOutput f i p m c d k a -- ^ verifier output
+  , verifier ::
+         i f                            -- ^ public input
+      -> Vector k m                     -- ^ prover messages
+      -> Vector (k-1) f                 -- ^ random challenges
+      -> o                              -- ^ verifier output
+  }
 
-instance (Arithmetic a, Representable i, Representable p, KnownNat (d + 1))
-    => SpecialSoundProtocol a i p [a] c d 1 (Predicate a i p) where
-  type VerifierOutput a i p [a] c d 1 (Predicate a i p) = [a]
+specialSoundProtocol :: forall a i p c d.
+    ( Arithmetic a
+    , Representable i
+    , Representable p
+    , KnownNat (d + 1)
+    ) => Predicate a i p -> SpecialSoundProtocol a i p [a] [a] c d 1
+specialSoundProtocol phi@Predicate {..} =
+  let
+      prover pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)
 
-  input Predicate {..} = predicateEval
-
-  -- | Just return the witness values on the previous public input
-  prover Predicate {..} pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)
-
-  -- | Evaluate the algebraic map on public inputs and prover messages
-  --
-  verifier af pi pm ts = AM.algebraicMap @_ @_ @d af pi pm ts one
+      verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
+  in
+      SpecialSoundProtocol predicateEval prover verifier

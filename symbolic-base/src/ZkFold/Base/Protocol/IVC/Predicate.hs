@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.IVC.Predicate where
@@ -16,9 +15,11 @@ import           ZkFold.Symbolic.Compiler          (ArithmeticCircuit, compileWi
 import           ZkFold.Symbolic.Interpreter       (Interpreter(..))
 import           ZkFold.Prelude                    (replicate)
 
+type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p) i U1
+
 data Predicate a i p = Predicate
   { predicateEval    :: i a -> p a -> i a
-  , predicateCircuit :: ArithmeticCircuit a (i :*: p) i U1
+  , predicateCircuit :: PredicateCircuit a i p
   }
 
 type StepFunction nx nu = forall ctx . Symbolic ctx => Vector nx (FieldElement ctx) -> Vector nu (FieldElement ctx) -> Vector nx (FieldElement ctx)
