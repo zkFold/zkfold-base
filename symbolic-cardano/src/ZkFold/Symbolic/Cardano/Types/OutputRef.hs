@@ -11,9 +11,9 @@ import qualified Prelude                             as Haskell
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Combinators    (KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Combinators    (KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Input          (SymbolicInput)
 
 type TxRefId context = ByteString 256 context

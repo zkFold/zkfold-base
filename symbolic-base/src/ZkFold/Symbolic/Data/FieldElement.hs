@@ -21,8 +21,8 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (true))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
-import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Conditional (Conditional)
+import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)

@@ -4,10 +4,10 @@
 
 module ZkFold.Symbolic.Data.Conditional where
 
-import           Data.Functor.Rep                   (Representable, mzipWithRep)
-import qualified Data.Bool                          as H
-import           Data.Function                      (($))
-import           Data.Traversable                   (Traversable)
+import qualified Data.Bool                        as H
+import           Data.Function                    (($))
+import           Data.Functor.Rep                 (Representable, mzipWithRep)
+import           Data.Traversable                 (Traversable)
 import           GHC.Generics
 import qualified Prelude
 
@@ -16,10 +16,10 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool          (Bool (Bool), BoolType)
+import           ZkFold.Symbolic.Data.Bool        (Bool (Bool), BoolType)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators   (mzipWithMRep)
-import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
+import           ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
+import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
 class BoolType b => Conditional b a where
     -- | Properties:

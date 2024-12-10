@@ -8,7 +8,7 @@ import           Prelude                                       hiding (Bool, Eq 
 
 import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Conditional              (bool, Conditional)
+import           ZkFold.Symbolic.Data.Conditional              (Conditional, bool)
 import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
 import           ZkFold.Symbolic.Data.List                     (List, concat, singleton, (++))
 import           ZkFold.Symbolic.Ledger.Types

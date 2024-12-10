@@ -3,8 +3,8 @@ module Examples.Commitment (
   ) where
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Data.Vector                   (Vector)
-import           ZkFold.Base.Protocol.Protostar.Commit     (HomomorphicCommit (..))
+import           ZkFold.Base.Data.Vector                 (Vector)
+import           ZkFold.Base.Protocol.Protostar.Commit   (HomomorphicCommit (..))
 import           ZkFold.Symbolic.Data.Ed25519
 
 exampleCommitment
