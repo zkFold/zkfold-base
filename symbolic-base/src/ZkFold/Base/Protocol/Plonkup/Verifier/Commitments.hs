@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Verifier.Commitments where
@@ -18,7 +19,7 @@ data PlonkupCircuitCommitments c = PlonkupCircuitCommitments {
         cmS3 :: Point c,
         cmT1 :: Point c
     }
-instance (Show (BaseField c), EllipticCurve c) => Show (PlonkupCircuitCommitments c) where
+instance (Show (BaseField c), EllipticCurve c, BooleanOf c ~ Bool) => Show (PlonkupCircuitCommitments c) where
     show PlonkupCircuitCommitments {..} =
         "Plonkup Circuit Commitments: "
         ++ show cmQl ++ " "

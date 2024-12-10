@@ -25,6 +25,7 @@ import           ZkFold.Base.Protocol.Plonkup.Setup
 import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import qualified ZkFold.Symbolic.Data.Ord                            as Sym
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
@@ -35,7 +36,7 @@ instance forall p i n l c1 c2 ts core.
         , Representable l
         , Foldable l
         , Ord (Rep i)
-        , Ord (BaseField c1)
+        , Sym.Ord (BooleanOf c1) (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
         , Arithmetic (ScalarField c1)
@@ -44,6 +45,7 @@ instance forall p i n l c1 c2 ts core.
         , ToTranscript ts (PointCompressed c1)
         , FromTranscript ts (ScalarField c1)
         , CoreFunction c1 core
+        , Eq (TargetGroup c1 c2)
         ) => NonInteractiveProof (Plonkup p i n l c1 c2 ts) core where
     type Transcript (Plonkup p i n l c1 c2 ts)  = ts
     type SetupProve (Plonkup p i n l c1 c2 ts)  = PlonkupProverSetup p i n l c1 c2

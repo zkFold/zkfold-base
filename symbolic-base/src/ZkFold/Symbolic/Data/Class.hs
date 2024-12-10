@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -27,6 +28,7 @@ import           ZkFold.Base.Data.Package         (Package, pack)
 import           ZkFold.Base.Data.Product         (fstP, sndP)
 import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (WitnessField))
+import           ZkFold.Symbolic.Data.Bool        (Bool (Bool))
 
 -- | A class for Symbolic data types.
 class
@@ -100,6 +102,8 @@ instance
     arithmetize x _ = x
     payload _ _ = U1
     restore f = fst (f Proxy)
+
+deriving newtype instance Symbolic c => SymbolicData (Bool c)
 
 instance Symbolic c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
     type Context (Proxy c) = c

@@ -54,6 +54,7 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
     , Binary (Point c1)
     , Pairing c1 c2
     , CoreFunction c1 core
+    , Eq (TargetGroup c1 c2)
     ) => NonInteractiveProof (KZG c1 c2 d) core where
     type Transcript (KZG c1 c2 d)  = ByteString
     type SetupProve (KZG c1 c2 d)  = V.Vector (Point c1)

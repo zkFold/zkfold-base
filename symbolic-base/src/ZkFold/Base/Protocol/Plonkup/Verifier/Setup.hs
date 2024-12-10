@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Verifier.Setup where
@@ -29,6 +30,8 @@ instance
         , Show (BaseField c2)
         , Show (ScalarField c1)
         , Show (PlonkupRelation p i n l (ScalarField c1))
+        , BooleanOf c1 ~ Bool
+        , BooleanOf c2 ~ Bool
         ) => Show (PlonkupVerifierSetup p i n l c1 c2) where
     show PlonkupVerifierSetup {..} =
         "Verifier setup: "

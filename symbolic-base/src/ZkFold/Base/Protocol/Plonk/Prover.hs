@@ -9,7 +9,7 @@ import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), drop, length, pi, sum, take,
-                                                                      (!!), (/), (^))
+                                                                      (!!), (/), (^), Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
@@ -29,11 +29,12 @@ import           ZkFold.Base.Protocol.Plonkup.Testing                (PlonkupPro
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Data.Ord
 
 plonkProve :: forall p i n l c1 c2 ts core .
     ( KnownNat n
     , Foldable l
-    , Ord (BaseField c1)
+    , Ord (BooleanOf c1) (BaseField c1)
     , AdditiveGroup (BaseField c1)
     , Arithmetic (ScalarField c1)
     , ToTranscript ts Word8
