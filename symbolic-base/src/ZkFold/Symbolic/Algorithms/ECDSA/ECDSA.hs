@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE TypeOperators       #-}
 module ZkFold.Symbolic.Algorithms.ECDSA.ECDSA where
 import           Data.Type.Equality

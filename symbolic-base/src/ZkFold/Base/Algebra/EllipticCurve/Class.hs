@@ -1,9 +1,9 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE RebindableSyntax     #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RebindableSyntax      #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
@@ -11,7 +11,7 @@ import           Data.Functor                     ((<&>))
 import           Data.Kind                        (Type)
 import           Data.String                      (fromString)
 import           GHC.Generics                     (Generic)
-import           Prelude                          (fromInteger, Integer, Show (..), (++), (.), (<$>), type (~))
+import           Prelude                          (Integer, Show (..), fromInteger, type (~), (++), (.), (<$>))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  hiding (scale)
 
@@ -25,8 +25,8 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 
 data Point (curve :: Type) = Point
-  { _x :: BaseField curve
-  , _y :: BaseField curve
+  { _x     :: BaseField curve
+  , _y     :: BaseField curve
   , _isInf :: BooleanOf curve
   } deriving (Generic)
 
@@ -194,9 +194,9 @@ class EllipticCurve curve => StandardEllipticCurve curve where
     bParameter :: BaseField curve
 
 data PointCompressed curve = PointCompressed
-  { _x :: BaseField curve
+  { _x    :: BaseField curve
   , _bigY :: BooleanOf curve
-  , _inf :: BooleanOf curve
+  , _inf  :: BooleanOf curve
   } deriving Generic
 
 pointCompressed :: BoolType (BooleanOf curve) => BaseField curve -> BooleanOf curve -> PointCompressed curve

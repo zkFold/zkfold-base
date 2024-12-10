@@ -8,8 +8,8 @@ import           Control.Monad.Representable.Reader (Representable, mzipWithRep)
 import qualified Data.Bool                          as H
 import           Data.Function                      (($))
 import           Data.Traversable                   (Traversable)
-import qualified Prelude
 import           GHC.Generics
+import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field

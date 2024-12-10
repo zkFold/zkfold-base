@@ -9,15 +9,14 @@ module ZkFold.Base.Algebra.EllipticCurve.Pairing
   ) where
 
 import qualified Data.Bool                               as H
--- import           Data.Eq                                 (Eq (..))
 import           Data.Function                           (($), (.))
 import           Data.Functor                            ((<$>))
 import           Data.Int                                (Int8)
 import           Data.Tuple                              (snd)
 import           Data.Type.Equality                      (type (~))
 import           Numeric.Natural                         (Natural)
-import qualified Prelude
 import           Prelude                                 (fromInteger)
+import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field

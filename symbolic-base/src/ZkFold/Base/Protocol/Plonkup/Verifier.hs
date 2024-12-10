@@ -9,8 +9,8 @@ module ZkFold.Base.Protocol.Plonkup.Verifier
 
 import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^), Ord (..))
+import           Prelude                                             hiding (Num (..), Ord (..), drop, length, sum,
+                                                                      take, (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)

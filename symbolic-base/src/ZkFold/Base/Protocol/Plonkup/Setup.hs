@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Setup where

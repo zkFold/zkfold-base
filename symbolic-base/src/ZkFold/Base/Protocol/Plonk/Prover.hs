@@ -8,8 +8,8 @@ import           Data.Bool                                           (bool)
 import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             hiding (Num (..), drop, length, pi, sum, take,
-                                                                      (!!), (/), (^), Ord)
+import           Prelude                                             hiding (Num (..), Ord, drop, length, pi, sum, take,
+                                                                      (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)

@@ -1,9 +1,9 @@
-{-# LANGUAGE RebindableSyntax     #-}
+{-# LANGUAGE RebindableSyntax #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Ed25519  where
 
-import           Prelude                                 (($), fromInteger)
+import           Prelude                                 (fromInteger, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field

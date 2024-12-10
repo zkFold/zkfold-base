@@ -1,4 +1,4 @@
-{-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE RebindableSyntax     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -7,7 +7,7 @@
 module ZkFold.Symbolic.Data.Ed25519 (AcEd25519) where
 
 import           Control.DeepSeq                           (NFData, force)
-import           Prelude                                   (type (~), ($), fromInteger)
+import           Prelude                                   (fromInteger, type (~), ($))
 import qualified Prelude                                   as P
 
 import           ZkFold.Base.Algebra.Basic.Class
