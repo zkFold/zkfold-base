@@ -4,7 +4,7 @@
 
 module ZkFold.Symbolic.Data.Conditional where
 
-import           Control.Monad.Representable.Reader (Representable, mzipWithRep)
+import           Data.Functor.Rep                   (Representable, mzipWithRep)
 import qualified Data.Bool                          as H
 import           Data.Function                      (($))
 import           Data.Traversable                   (Traversable)
@@ -13,6 +13,8 @@ import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool          (Bool (Bool), BoolType)
 import           ZkFold.Symbolic.Data.Class
@@ -57,6 +59,10 @@ deriving newtype instance Symbolic c => Conditional (Bool c) (Bool c)
 instance Conditional Prelude.Bool Prelude.Bool where bool = H.bool
 instance Conditional Prelude.Bool Prelude.String where bool = H.bool
 instance Conditional Prelude.Bool (Zp n) where bool = H.bool
+
+instance (KnownNat n, Conditional bool x) => Conditional bool (Vector n x) where
+  bool fv tv b = mzipWithRep (\f t -> bool f t b) fv tv
+
 instance Conditional bool field => Conditional bool (Ext2 field i)
 instance Conditional bool field => Conditional bool (Ext3 field i)
 

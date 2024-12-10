@@ -22,6 +22,7 @@ import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (true))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
 import           ZkFold.Symbolic.Data.Eq          (Eq)
+import           ZkFold.Symbolic.Data.Conditional (Conditional)
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
@@ -38,6 +39,8 @@ deriving stock instance Haskell.Ord (c Par1) => Haskell.Ord (FieldElement c)
 deriving newtype instance NFData (c Par1) => NFData (FieldElement c)
 
 deriving newtype instance Symbolic c => SymbolicData (FieldElement c)
+
+deriving newtype instance Symbolic c => Conditional (Bool c) (FieldElement c)
 
 deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
 

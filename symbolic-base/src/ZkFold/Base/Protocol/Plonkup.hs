@@ -45,7 +45,6 @@ instance forall p i n l c1 c2 ts core.
         , ToTranscript ts (PointCompressed c1)
         , FromTranscript ts (ScalarField c1)
         , CoreFunction c1 core
-        , Eq (TargetGroup c1 c2)
         ) => NonInteractiveProof (Plonkup p i n l c1 c2 ts) core where
     type Transcript (Plonkup p i n l c1 c2 ts)  = ts
     type SetupProve (Plonkup p i n l c1 c2 ts)  = PlonkupProverSetup p i n l c1 c2

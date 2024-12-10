@@ -37,7 +37,6 @@ plonkupVerify :: forall p i n l c1 c2 ts .
     , ToTranscript ts (ScalarField c1)
     , ToTranscript ts (PointCompressed c1)
     , FromTranscript ts (ScalarField c1)
-    , Eq (TargetGroup c1 c2)
     ) => PlonkupVerifierSetup p i n l c1 c2 -> PlonkupInput l c1 -> PlonkupProof c1 -> Bool
 plonkupVerify
     PlonkupVerifierSetup {..}
