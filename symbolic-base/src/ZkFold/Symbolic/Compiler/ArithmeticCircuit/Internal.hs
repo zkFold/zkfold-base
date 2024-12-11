@@ -60,10 +60,10 @@ import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
@@ -120,7 +120,7 @@ imapVar ::
   (Representable i, Representable j) =>
   (forall x. j x -> i x) -> Var a i -> Var a j
 imapVar f (LinVar k x b) = LinVar k (imapSysVar f x) b
-imapVar _ (ConstVar c) = ConstVar c
+imapVar _ (ConstVar c)   = ConstVar c
 
 ---------------------------------- Variables -----------------------------------
 
@@ -192,8 +192,8 @@ instance
 ----------------------------- MonadCircuit instance ----------------------------
 
 instance Finite a => Witness (Var a i) (WitnessF a (WitVar p i)) where
-  at (ConstVar cV) = fromConstant cV
-  at (LinVar k sV b)   = WitnessF (\x -> x (WSysVar sV))
+  at (ConstVar cV)   = fromConstant cV
+  at (LinVar k sV b) = WitnessF (\x -> x (WSysVar sV))
 
 instance
   ( Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)

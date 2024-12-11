@@ -23,10 +23,10 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
 import           ZkFold.Prelude                                      (genSubset)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
 
 ------------------------------------- Instances -------------------------------------
 

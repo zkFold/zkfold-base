@@ -25,8 +25,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, eval
                                                                       var, variables)
 import           ZkFold.Base.Data.ByteString                         (toByteString)
 import           ZkFold.Prelude                                      (length, take)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class    (toLinVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class (toLinVar)
 
 data PlonkConstraint i a = PlonkConstraint
     { qm :: a
