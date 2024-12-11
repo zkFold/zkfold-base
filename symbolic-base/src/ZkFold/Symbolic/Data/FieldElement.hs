@@ -21,6 +21,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (true))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
+import           ZkFold.Symbolic.Data.Conditional (Conditional)
 import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord
@@ -39,10 +40,11 @@ deriving newtype instance NFData (c Par1) => NFData (FieldElement c)
 
 deriving newtype instance Symbolic c => SymbolicData (FieldElement c)
 
+deriving newtype instance Symbolic c => Conditional (Bool c) (FieldElement c)
+
 deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
 
-deriving via (Lexicographical (FieldElement c))
-  instance Symbolic c => Ord (Bool c) (FieldElement c)
+deriving newtype instance Symbolic c => Ord (Bool c) (FieldElement c)
 
 instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
   fromConstant = FieldElement . embed . Par1 . fromConstant

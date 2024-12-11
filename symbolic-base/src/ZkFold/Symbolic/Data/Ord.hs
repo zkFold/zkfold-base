@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.Ord (Ord (..), Lexicographical (..), blueprintGE, bitwiseGE, bitwiseGT, getBitsBE) where
+module ZkFold.Symbolic.Data.Ord (Ord (..), blueprintGE, bitwiseGE, bitwiseGT, getBitsBE) where
 
 import           Control.Monad                    (foldM)
 import qualified Data.Bool                        as Haskell
@@ -12,8 +12,9 @@ import           Data.Data                        (Proxy (..))
 import           Data.Foldable                    (Foldable, concatMap, toList)
 import           Data.Function                    ((.))
 import           Data.Functor                     (fmap, (<$>))
+import           Data.Functor.Rep                 (Representable)
 import           Data.List                        (map, reverse)
-import           Data.Traversable                 (traverse)
+import           Data.Traversable                 (Traversable (traverse))
 import qualified Data.Zip                         as Z
 import           GHC.Generics                     (Par1 (..))
 import           Prelude                          (type (~), ($))
@@ -57,18 +58,12 @@ instance Haskell.Ord a => Ord Haskell.Bool a where
 
     min = Haskell.min
 
-newtype Lexicographical a = Lexicographical a
--- ^ A newtype wrapper for easy definition of Ord instances
--- (though not necessarily a most effective one)
-
-deriving newtype instance SymbolicData a => SymbolicData (Lexicographical a)
-
 -- | Every @SymbolicData@ type can be compared lexicographically.
 instance
     ( Symbolic c
-    , SymbolicOutput x
-    , Context x ~ c
-    ) => Ord (Bool c) (Lexicographical x) where
+    , Representable f
+    , Traversable f
+    ) => Ord (Bool c) (c f) where
 
     x <= y = y >= x
 

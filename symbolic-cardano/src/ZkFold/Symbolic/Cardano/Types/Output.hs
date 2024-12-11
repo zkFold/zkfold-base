@@ -21,6 +21,7 @@ import           ZkFold.Symbolic.Cardano.Types.Value        (SingleAsset, Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators           (KnownRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Conditional           (Conditional)
 import           ZkFold.Symbolic.Data.Eq                    (Eq)
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput (..))
 
@@ -64,8 +65,14 @@ instance
     isValid (Output a t d) = isValid (a, t,  d)
 
 instance
-            ( Symbolic context
-            , KnownNat tokens
-            , KnownRegisters context 64 Auto
-            ) => Eq (Bool context) (Output tokens datum context)
+    ( Symbolic context
+    , KnownNat tokens
+    , KnownRegisters context 64 Auto
+    ) => Conditional (Bool context) (Output tokens datum context)
+
+instance
+    ( Symbolic context
+    , KnownNat tokens
+    , KnownRegisters context 64 Auto
+    ) => Eq (Bool context) (Output tokens datum context)
 

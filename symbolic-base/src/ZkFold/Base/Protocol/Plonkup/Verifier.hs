@@ -9,8 +9,8 @@ module ZkFold.Base.Protocol.Plonkup.Verifier
 
 import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
+import           Prelude                                             hiding (Num (..), Ord (..), drop, length, sum,
+                                                                      take, (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
@@ -23,13 +23,14 @@ import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Data.Ord
 
 plonkupVerify :: forall p i n l c1 c2 ts .
     ( KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , Foldable l
     , Pairing c1 c2
-    , Ord (BaseField c1)
+    , Ord (BooleanOf c1) (BaseField c1)
     , AdditiveGroup (BaseField c1)
     , Arithmetic (ScalarField c1)
     , ToTranscript ts Word8

@@ -67,9 +67,8 @@ addValue val (UnsafeMultiAssetValue valList) =
 multiValueAsset ::
      Symbolic context
   => SymbolicOutput (Value context)
-  => SymbolicData (MultiAssetValue context)
   => Context (Value context) ~ context
-  => Context (MultiAssetValue context) ~ context
+  => Conditional (Bool context) (MultiAssetValue context)
   => Eq (Bool context) (CurrencySymbol context)
   => Foldable (List context)
   => List context (Value context)

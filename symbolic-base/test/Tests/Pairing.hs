@@ -62,11 +62,11 @@ specPairing'
     => Eq f
     => Show f
     => Arbitrary f
-    => Eq (BaseField c2)
     => Show (BaseField c2)
     => AdditiveGroup (BaseField c1)
-    => Eq (BaseField c1)
     => Show (BaseField c1)
+    => BooleanOf c1 ~ Bool
+    => BooleanOf c2 ~ Bool
     => IO ()
 specPairing' = hspec $ do
     describe "Elliptic curve pairing specification (SLOW)" $ do

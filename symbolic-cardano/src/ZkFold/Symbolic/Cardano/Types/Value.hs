@@ -17,6 +17,7 @@ import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators    (KnownRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input
 
@@ -38,6 +39,12 @@ deriving newtype instance
   ( Symbolic context
   , KnownRegisters context 64 Auto
   ) => Eq (Bool context) (Value n context)
+
+deriving newtype instance
+  ( Symbolic context
+  , KnownRegisters context 64 Auto
+  , KnownNat n
+  ) => Conditional (Bool context) (Value n context)
 
 instance
     ( Symbolic context
