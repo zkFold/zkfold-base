@@ -157,8 +157,7 @@ instance Binary (Point BLS12_381_G1) where
 
 instance Binary (PointCompressed BLS12_381_G1) where
     put (PointCompressed x bigY isInf) =
-        if isInf then foldMap putWord8 (bitReverse8 (bit 0 .|. bit 1) : replicate 47 0)
-        else
+        if isInf then foldMap putWord8 (bitReverse8 (bit 0 .|. bit 1) : replicate 47 0) else
         let
             flags = bitReverse8 $ if bigY then bit 0 .|. bit 2 else bit 0
             bytes = bytesOf 48 x
@@ -184,8 +183,7 @@ instance Binary (PointCompressed BLS12_381_G1) where
 
 instance Binary (Point BLS12_381_G2) where
     put (Point (Ext2 x0 x1) (Ext2 y0 y1) isInf) =
-        if isInf then foldMap putWord8 (bitReverse8 (bit 1) : replicate 191  0)
-        else
+        if isInf then foldMap putWord8 (bitReverse8 (bit 1) : replicate 191  0) else
         let
             bytes = bytesOf 48 x1
               <> bytesOf 48 x0
@@ -217,8 +215,7 @@ instance Binary (Point BLS12_381_G2) where
 
 instance Binary (PointCompressed BLS12_381_G2) where
     put (PointCompressed (Ext2 x0 x1) bigY isInf) =
-        if isInf then foldMap putWord8 (bitReverse8 (bit 0 .|. bit 1) : replicate 95 0)
-        else
+        if isInf then foldMap putWord8 (bitReverse8 (bit 0 .|. bit 1) : replicate 95 0) else
         let
             flags = bitReverse8 $ if bigY then bit 0 .|. bit 2 else bit 0
             bytes = bytesOf 48 x1 <> bytesOf 48 x0
