@@ -259,8 +259,7 @@ decompress
      )
   => PointCompressed curve -> Point curve
 decompress (PointCompressed x bigY isInf) =
-  if isInf then inf
-  else
+  if isInf then inf else
     let a = aParameter @curve
         b = bParameter @curve
         p = order @(BaseField curve)
