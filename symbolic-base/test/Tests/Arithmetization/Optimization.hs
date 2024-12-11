@@ -53,7 +53,7 @@ specOptimization' = do
         it "number of constraint decreases" $ do
             acSizeN ac === 1
         it "number of variables decreases" $ do
-            acSizeM ac === 1
+            acSizeM ac === 0
         it "bool should pass" $ do
             acSizeN (testBool @a :: ArithmeticCircuit a (U1 :*: U1) (Par1 :*: U1) Par1) === 1
         let constAc = optimize @a testConst

@@ -34,7 +34,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
 
 import           Control.DeepSeq                                       (NFData)
 import           Control.Monad.State                                   (State, modify, runState)
-import           Data.Aeson
 import           Data.Binary                                           (Binary)
 import           Data.ByteString                                       (ByteString)
 import           Data.Foldable                                         (fold, toList)
@@ -60,10 +59,10 @@ import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
@@ -120,12 +119,12 @@ imapVar ::
   (Representable i, Representable j) =>
   (forall x. j x -> i x) -> Var a i -> Var a j
 imapVar f (LinVar k x b) = LinVar k (imapSysVar f x) b
-imapVar _ (ConstVar c)   = ConstVar c
+imapVar _ (ConstVar c) = ConstVar c
 
 ---------------------------------- Variables -----------------------------------
 
 acInput :: (Representable i, Arithmetic a) => i (Var a i)
-acInput = fmapRep ((\x -> LinVar one x zero) . InVar) (tabulate id)
+acInput = fmapRep (toLinVar . InVar) (tabulate id)
 
 getAllVars :: forall a p i o. (Representable i, Foldable i) => ArithmeticCircuit a p i o -> [SysVar i]
 getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where
@@ -186,32 +185,30 @@ instance
     witnessF (behead -> (c, o)) = o <&> \case
       ConstVar cv -> fromConstant cv
       LinVar k (NewVar nv) b -> fromConstant k * (acWitness c ! nv) + fromConstant b
-      linNewV -> at linNewV
+      linInV -> at linInV
     fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
 
 ----------------------------- MonadCircuit instance ----------------------------
 
 instance Finite a => Witness (Var a i) (WitnessF a (WitVar p i)) where
-  at (ConstVar cV)   = fromConstant cV
-  at (LinVar k sV b) = WitnessF (\x -> x (WSysVar sV))
+  at (ConstVar cV)    = fromConstant cV
+  at (LinVar k sV b)  = fromConstant k * WitnessF (\x -> x (WSysVar sV)) + fromConstant b
 
 instance
   ( Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)
   , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (WitVar p i)) (State (ArithmeticCircuit a p i o)) where
 
-    unconstrained wf = case runWitnessF wf $ const Nothing of
-      Just cV -> return (ConstVar cV)
-      Nothing ->
-        case runWitnessF wf $ \case
-              WExVar _ -> More
-              WSysVar sV -> LinUVar one sV zero
-        of
-          ConstUVar c -> return $ ConstVar c
-          LinUVar k x b -> return $ LinVar k x b
-          More ->  do
-            let v = toVar @a wf
-            zoom #acWitness $ modify (insert v wf)
-            return $ LinVar one (NewVar v) zero
+    unconstrained wf =
+      case runWitnessF wf $ \case
+        WExVar _ -> More
+        WSysVar sV -> LinUVar one sV zero
+      of
+        ConstUVar c -> return $ ConstVar c
+        LinUVar k x b -> return $ LinVar k x b
+        More ->  do
+          let v = toVar @a wf
+          zoom #acWitness $ modify (insert v wf)
+          return $ toLinVar (NewVar v)
 
     constraint p =
       let evalConstVar = \case
@@ -227,7 +224,7 @@ instance
         Nothing -> zoom #acSystem . modify $ insert (toVar @_ @p (p at)) (p evalConstVar)
 
     rangeConstraint (LinVar k x b) upperBound =
-      zoom #acRange . modify $ insertWith S.union (upperBound - b // k) (S.singleton x)
+      zoom #acRange . modify $ insertWith S.union ((upperBound - b) // k) (S.singleton x)
     rangeConstraint (ConstVar c) upperBound =
       if c <= upperBound
         then return ()
