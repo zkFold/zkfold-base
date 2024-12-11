@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Data.Conditional where
 import qualified Data.Bool                        as H
 import           Data.Function                    (($))
 import           Data.Functor.Rep                 (Representable, mzipWithRep)
+import           Data.Proxy
 import           Data.Traversable                 (Traversable)
 import           GHC.Generics
 import qualified Prelude
@@ -56,8 +57,13 @@ instance ( Symbolic c
 
 deriving newtype instance Symbolic c => Conditional (Bool c) (Bool c)
 
+instance Symbolic c => Conditional (Bool c) (Proxy c) where
+  bool _ _ _ = Proxy
+
 instance Conditional Prelude.Bool Prelude.Bool where bool = H.bool
+
 instance Conditional Prelude.Bool Prelude.String where bool = H.bool
+
 instance Conditional Prelude.Bool (Zp n) where bool = H.bool
 
 instance (KnownNat n, Conditional bool x) => Conditional bool (Vector n x) where
