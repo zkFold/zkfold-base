@@ -1,21 +1,22 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveAnyClass #-}
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class where
 
-import Data.Functor.Rep (Rep)
-import Data.ByteString (ByteString)
-import GHC.Generics (Generic)
-import Data.Aeson (FromJSON, FromJSONKey, ToJSONKey, ToJSON)
-import GHC.Show (Show)
-import Prelude (Eq, Ord, ($), (.), (==))
-import Control.DeepSeq (NFData)
-import ZkFold.Base.Data.ByteString ()
-import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Base.Algebra.Basic.Class
-import GHC.Natural (Natural)
-import GHC.Integer (Integer)
-import Control.Applicative ()
+import           Control.Applicative             ()
+import           Control.DeepSeq                 (NFData)
+import           Data.Aeson                      (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
+import           Data.ByteString                 (ByteString)
+import           Data.Functor.Rep                (Rep)
+import           GHC.Generics                    (Generic)
+import           GHC.Integer                     (Integer)
+import           GHC.Natural                     (Natural)
+import           GHC.Show                        (Show)
+import           Prelude                         (Eq, Ord, ($), (.), (==))
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.ByteString     ()
+import           ZkFold.Symbolic.Class           (Arithmetic)
 
 
 data SysVar i
@@ -84,16 +85,16 @@ instance Scale Natural (UVar a i) where scale k = scale k . fromConstant
 instance Scale Integer (UVar a i) where scale k = scale k . fromConstant
 
 instance (Exponent a Natural, MultiplicativeMonoid a) => Exponent (UVar a i) Natural where
-  (ConstUVar c) ^ n = ConstUVar $ c ^ n
+  (ConstUVar c) ^ n   = ConstUVar $ c ^ n
   (LinUVar k x b) ^ 1 = LinUVar k x b
-  (LinUVar {}) ^ 0 = ConstUVar one
-  _ ^ _ = More
+  (LinUVar {}) ^ 0    = ConstUVar one
+  _ ^ _               = More
 
 instance (Exponent a Integer, MultiplicativeMonoid a) => Exponent (UVar a i) Integer where
-  (ConstUVar c) ^ n = ConstUVar $ c ^ n
+  (ConstUVar c) ^ n   = ConstUVar $ c ^ n
   (LinUVar k x b) ^ 1 = LinUVar k x b
-  (LinUVar {}) ^ 0 = ConstUVar one
-  _ ^ _ = More
+  (LinUVar {}) ^ 0    = ConstUVar one
+  _ ^ _               = More
 
 instance (AdditiveSemigroup a, AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveSemigroup (UVar a i) where
   ConstUVar c1 + ConstUVar c2 = ConstUVar $ c1 + c2
@@ -109,9 +110,9 @@ instance (AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveMonoid (UVar a i) where
   zero = ConstUVar zero
 
 instance (Eq a, AdditiveMonoid a, Eq (Rep i), AdditiveGroup a) => AdditiveGroup (UVar a i) where
-  negate (ConstUVar c) = ConstUVar (negate c)
+  negate (ConstUVar c)   = ConstUVar (negate c)
   negate (LinUVar k x b) = LinUVar (negate k) x (negate b)
-  negate More = More
+  negate More            = More
 
 instance (MultiplicativeSemigroup a, Eq a, AdditiveMonoid a, Eq (Rep i)) => MultiplicativeSemigroup (UVar a i) where
   ConstUVar c1 * ConstUVar c2 = ConstUVar $ c1 * c2
@@ -129,11 +130,11 @@ instance (AdditiveMonoid a, Eq a, Eq (Rep i), AdditiveGroup a, FromConstant Natu
 
 instance (AdditiveMonoid a, Eq a, Eq (Rep i), AdditiveGroup a, FromConstant Natural a, FromConstant Integer a, MultiplicativeMonoid a, Field a) => Field (UVar a i) where
   finv (ConstUVar c) = ConstUVar $ finv c
-  finv _ = More
+  finv _             = More
 
 instance (AdditiveMonoid (Const a), ToConstant a) => ToConstant (UVar a i) where
   type Const (UVar a i) = Const a
   toConstant (ConstUVar c) = toConstant c
-  toConstant _ = zero
+  toConstant _             = zero
 
 instance Finite a => Finite (UVar a i) where type Order (UVar a i) = Order a
