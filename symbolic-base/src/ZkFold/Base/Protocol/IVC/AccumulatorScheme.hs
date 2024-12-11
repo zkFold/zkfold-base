@@ -48,7 +48,7 @@ data AccumulatorScheme d k i o m c f = AccumulatorScheme
             -> (Vector k c, c)                            -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k i (p :: Type -> Type) o m c f .
+accumulatorScheme :: forall algo d k a i (p :: Type -> Type) o m c f .
     ( KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
@@ -65,10 +65,12 @@ accumulatorScheme :: forall algo d k i (p :: Type -> Type) o m c f .
     , RandomOracle algo (Vector (d-1) c) f
     , KnownNat k
     , Field f
+    , Scale a f
+    , Scale a (PU.PolyVec f (d+1))
     , Scale f c
     , Scale f (Vector k c)
     )
-    => Predicate i p f
+    => Predicate a i p
     -> AccumulatorScheme d k i o m c f
 accumulatorScheme phi =
   let

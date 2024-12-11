@@ -12,7 +12,7 @@ import           Data.Functor.Rep                      (Representable (..))
 import           GHC.Generics
 import           Prelude                               hiding (length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Class       (Ring, zero)
+import           ZkFold.Base.Algebra.Basic.Class       (Ring, Scale, zero)
 import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-), type (+))
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
@@ -44,7 +44,7 @@ data Accumulator k i m c f
 
 makeLenses ''Accumulator
 
-emptyAccumulator :: forall d k i p m c f .
+emptyAccumulator :: forall d k a i p m c f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
@@ -52,7 +52,8 @@ emptyAccumulator :: forall d k i p m c f .
     , m ~ [f]
     , HomomorphicCommit m c
     , Ring f
-    ) => Predicate i p f -> Accumulator k i m c f
+    , Scale a f
+    ) => Predicate a i p -> Accumulator k i m c f
 emptyAccumulator phi =
     let accW  = tabulate (const zero)
         aiC   = fmap hcommit accW
@@ -63,7 +64,7 @@ emptyAccumulator phi =
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 
-emptyAccumulatorInstance :: forall d k i p m c f .
+emptyAccumulatorInstance :: forall d k a i p m c f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
@@ -71,5 +72,6 @@ emptyAccumulatorInstance :: forall d k i p m c f .
     , m ~ [f]
     , HomomorphicCommit m c
     , Ring f
-    ) => Predicate i p f -> AccumulatorInstance k i c f
+    , Scale a f
+    ) => Predicate a i p -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x

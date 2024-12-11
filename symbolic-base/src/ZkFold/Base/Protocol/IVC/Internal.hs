@@ -35,6 +35,7 @@ import           ZkFold.Base.Protocol.IVC.RecursiveFunction (RecursiveI (..), Re
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol)
 import ZkFold.Base.Protocol.IVC.Predicate (Predicate (predicateEval))
 import ZkFold.Base.Protocol.IVC.AccumulatorScheme (accumulatorScheme)
+import ZkFold.Symbolic.Class (Arithmetic)
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k m c
@@ -83,6 +84,7 @@ type IVCAssumptions algo d k a i p o m c f =
     , KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
+    , Arithmetic a
     , Ring f
     -- , Acc.AccumulatorScheme f i o m c d k
     )
@@ -90,11 +92,11 @@ type IVCAssumptions algo d k a i p o m c f =
 -- | Create the first IVC result
 -- 
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall algo d k a i p o m c f . IVCAssumptions algo d k a i p o m c f
-    => Predicate i p f
-    -> i f
-    -> p f
-    -> IVCResult k i m c f
+ivcSetup :: forall algo d k a i p o m c . IVCAssumptions algo d k a i p o m c a
+    => Predicate a i p
+    -> i a
+    -> p a
+    -> IVCResult k i m c a
 ivcSetup p x0 witness =
     let
         x1 = predicateEval p x0 witness
