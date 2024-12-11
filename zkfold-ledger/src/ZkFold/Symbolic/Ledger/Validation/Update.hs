@@ -80,12 +80,10 @@ updateIsValid ::
   => SymbolicOutput (Output context)
   => SymbolicOutput (ContractData context)
   => SymbolicOutput (Value context)
-  => SymbolicData (MultiAssetValue context)
   => Context (AddressIndex context) ~ context
   => Context (Output context) ~ context
   => Context (ContractData context) ~ context
   => Context (Value context) ~ context
-  => Context (MultiAssetValue context) ~ context
   => Eq (Bool context) (MultiAssetValue context)
   => Conditional (Bool context) (MultiAssetValue context)
   => Hash context
