@@ -48,12 +48,12 @@ data SpecialSoundProtocol d k i p o m c f = SpecialSoundProtocol
       -> o                              -- ^ verifier output
   }
 
-specialSoundProtocol :: forall d a i p c .
+specialSoundProtocol :: forall d i p c f .
     ( KnownNat (d+1)
-    , Arithmetic a
     , Representable i
     , Representable p
-    ) => Predicate a i p -> SpecialSoundProtocol d 1 i p [a] [a] c a
+    , Arithmetic f
+    ) => Predicate i p f -> SpecialSoundProtocol d 1 i p [f] [f] c f
 specialSoundProtocol phi@Predicate {..} =
   let
       prover pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)

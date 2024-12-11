@@ -18,7 +18,6 @@ import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec)
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
 import           ZkFold.Base.Data.Vector                     (Vector, init, mapWithIx, tail, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC.Accumulator
@@ -35,13 +34,13 @@ data AccumulatorScheme d k i o m c f = AccumulatorScheme
     prover   ::
                Accumulator k i m c f                      -- accumulator
             -> NARKInstanceProof k i m c f                -- instance-proof pair (pi, π)
-            -> (Accumulator k i m c f, Vector (d-1) c)  -- updated accumulator and accumulation proof
+            -> (Accumulator k i m c f, Vector (d-1) c)    -- updated accumulator and accumulation proof
 
-  , verifier :: i f                                        -- Public input
+  , verifier :: i f                                       -- Public input
             -> Vector k c                                 -- NARK proof π.x
             -> AccumulatorInstance k i c f                -- accumulator instance acc.x
             -> AccumulatorInstance k i c f                -- updated accumulator instance acc'.x
-            -> Vector (d-1) c                           -- accumulation proof E_j
+            -> Vector (d-1) c                             -- accumulation proof E_j
             -> (f, i f, Vector (k-1) f, Vector k c, c)    -- returns zeros if the accumulation proof is correct
 
   , decider  ::
@@ -49,7 +48,7 @@ data AccumulatorScheme d k i o m c f = AccumulatorScheme
             -> (Vector k c, c)                            -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k a i (p :: Type -> Type) o m c f .
+accumulatorScheme :: forall algo d k i (p :: Type -> Type) o m c f .
     ( KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
@@ -66,12 +65,10 @@ accumulatorScheme :: forall algo d k a i (p :: Type -> Type) o m c f .
     , RandomOracle algo (Vector (d-1) c) f
     , KnownNat k
     , Field f
-    , Scale a f
-    , Scale a (PolyVec f (d+1))
     , Scale f c
     , Scale f (Vector k c)
     )
-    => Predicate a i p
+    => Predicate i p f
     -> AccumulatorScheme d k i o m c f
 accumulatorScheme phi =
   let

@@ -21,7 +21,7 @@ import           Prelude                                    (const, ($))
 import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, Natural, type (-))
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, Natural, type (-), type (+))
 import           ZkFold.Base.Data.Vector                    (Vector, empty, singleton)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
@@ -32,7 +32,9 @@ import           ZkFold.Base.Protocol.IVC.FiatShamir
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction (RecursiveI (..), RecursiveP (..))
-import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..))
+import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol)
+import ZkFold.Base.Protocol.IVC.Predicate (Predicate (predicateEval))
+import ZkFold.Base.Protocol.IVC.AccumulatorScheme (accumulatorScheme)
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k m c
@@ -78,40 +80,46 @@ type IVCAssumptions algo d k a i p o m c f =
     , HomomorphicCommit m c
     , RandomOracle algo (i f) f
     , RandomOracle algo c f
+    , KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
+    , Ring f
     -- , Acc.AccumulatorScheme f i o m c d k
     )
 
--- -- | Create the first IVC result
--- -- 
--- -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
--- ivcSetup :: forall algo d k a i p o m c f . IVCAssumptions algo d k a i p o m c f
---     => FiatShamir d k i p o m c f
---     -> i f
+-- | Create the first IVC result
+-- 
+-- It differs from the rest of the iterations as we don't have anything accumulated just yet.
+ivcSetup :: forall algo d k a i p o m c f . IVCAssumptions algo d k a i p o m c f
+    => Predicate i p f
+    -> i f
+    -> p f
+    -> IVCResult k i m c f
+ivcSetup p x0 witness =
+    let
+        x1 = predicateEval p x0 witness
+    in
+        IVCResult x1 (emptyAccumulator @d p) noIVCProof zero
+
+-- ivcProve :: forall algo d k a i p o m c f . IVCAssumptions algo d k a i p o m c f
+--     => Predicate i p f
+--     -> IVCResult k i m c f
 --     -> p f
 --     -> IVCResult k i m c f
--- ivcSetup fs x0 witness =
---     let
---         x1 = input fs x0 witness
---     in
---         IVCResult x1 (emptyAccumulator fs) (noIVCProof) zero
-
--- ivcProve :: forall f i p m c (d :: Natural) k a algo . IVCAssumptions f i p m c d k a algo
---     => FiatShamir algo (CommitOpen a)
---     -> IVCResult f i m c k
---     -> p f
---     -> IVCResult f i m c k
--- ivcProve fs res@(IVCResult _ _ (IVCProof cs ms) _) witness =
+-- ivcProve p res@(IVCResult _ _ (IVCProof cs ms) _) witness =
 --     let
 --         narkIP = NARKInstanceProof (res^.z) (NARKProof cs ms)
---         (acc', pf) = Acc.prover @_ @_ @_ @_ @d fs (res^.acc) narkIP
-
---         payload = RecursiveP (res^.z) witness one (res^.acc^.x) cs pf
+--         -- TODO: this must be an accumulator scheme for the recursive function
+--         as = accumulatorScheme p
+--         (acc', pf) = Acc.prover as (res^.acc) narkIP
+--         -- TODO: this must be a protocol for the recursive function
+--         sps = specialSoundProtocol p
+--         -- payload = RecursiveP (res^.z) witness one (res^.acc^.x) cs pf
 --         -- TODO: change to the original protocol's input
---         RecursiveI pi _ = input @f @_ @_ @(Vector k (m, c)) @c @d @1 fs (RecursiveI (res^.z) (acc'^.x)) payload
+--         -- RecursiveI pi _ = predicateEval p (RecursiveI (res^.z) (acc'^.x)) payload
+--         -- pi = predicateEval p (res^.z) witness
 --         -- TODO: change Fiat-Shamired protocol for a one-round protocol
---         (ms', cs') = unzip $ prover @f @(RecursiveI i c k) @_ @_ @c @d @1 fs (RecursiveI (res^.z) (res^.acc^.x)) payload (oracle @algo (res^.z)) 0
+--         (ms', cs') = unzip $ prover p (RecursiveI (res^.z) (res^.acc^.x)) payload (oracle @algo (res^.z)) 0
 --         ivcProof = IVCProof cs' ms'
 --     in
 --         IVCResult pi acc' ivcProof one
