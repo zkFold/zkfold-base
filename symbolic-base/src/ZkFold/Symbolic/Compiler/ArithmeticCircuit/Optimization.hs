@@ -38,7 +38,7 @@ optimize (ArithmeticCircuit s r w o) = ArithmeticCircuit {
     acRange = optRanges vs r,
     acWitness = (>>= optWitVar vs) <$>  M.filterWithKey (\k _ -> notMember (NewVar k) vs) w,
     acOutput = o <&> \case
-      SysVar sV -> maybe (SysVar sV) ConstVar (M.lookup sV vs)
+      lv@(LinVar k sV b) -> maybe lv (ConstVar . (\t -> k * t + b)) (M.lookup sV vs)
       so -> so}
   where
     (newS, vs) = varsToReplace (s, M.empty)

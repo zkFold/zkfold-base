@@ -41,19 +41,20 @@ import           ZkFold.Base.Protocol.Plonkup.Testing
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
 
 -- | Polynomial types and specific polynomials that were causing exceptions
 --
-problematicPolynomials :: (Ord a, FiniteField a) => [PM.Poly a (Var a (Vector 1)) Natural]
+problematicPolynomials :: ( Arithmetic a) =>[PM.Poly a (Var a (Vector 1)) Natural]
 problematicPolynomials =
     [ var (ConstVar one)
     , var (ConstVar zero)
     , var (ConstVar $ one + one)
-    , let v1 = SysVar (NewVar "y\ETX^\246\226\195\154S\130M\tL\146y\248\201\162\220 \237n6p\bC\151\186\241\US\136\225\139")
-          v2 = SysVar (NewVar "~\180\185\222\SOH!\t\254\155\v\SI\187\&9\227\163|^\168Z\184Q\129\rN\218\SYN\GSp\189\139~^")
+    , let v1 = toLinVar (NewVar "y\ETX^\246\226\195\154S\130M\tL\146y\248\201\162\220 \237n6p\bC\151\186\241\US\136\225\139")
+          v2 = toLinVar (NewVar "~\180\185\222\SOH!\t\254\155\v\SI\187\&9\227\163|^\168Z\184Q\129\rN\218\SYN\GSp\189\139~^")
        in polynomial [(one, M $ fromList [(v1, 1), (v2, 1)])]
-    , polynomial [(one, M $ fromList [(SysVar (NewVar "v1"), 1), (SysVar (NewVar "v2"), 1)])]
-    , polynomial [(one, M $ fromList [(SysVar (NewVar "v1"), 1), (ConstVar one, 1)])]
+    , polynomial [(one, M $ fromList [(toLinVar (NewVar "v1"), 1), (toLinVar (NewVar "v2"), 1)])]
+    , polynomial [(one, M $ fromList [(toLinVar (NewVar "v1"), 1), (ConstVar one, 1)])]
     ]
 
 propPlonkConstraintConversion :: (Ord a, FiniteField a) => PlonkConstraint (Vector 1) a -> Bool

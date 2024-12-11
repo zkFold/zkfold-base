@@ -63,6 +63,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
@@ -92,18 +93,6 @@ instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
 -- | Variables are SHA256 digests (32 bytes)
 type VarField = Zp (2 ^ (32 * 8))
 
-data SysVar i
-  = InVar (Rep i)
-  | NewVar ByteString
-  deriving Generic
-deriving anyclass instance FromJSON (Rep i) => FromJSON (SysVar i)
-deriving anyclass instance FromJSON (Rep i) => FromJSONKey (SysVar i)
-deriving anyclass instance ToJSON (Rep i) => ToJSONKey (SysVar i)
-deriving anyclass instance ToJSON (Rep i) => ToJSON (SysVar i)
-deriving stock instance Show (Rep i) => Show (SysVar i)
-deriving stock instance Eq (Rep i) => Eq (SysVar i)
-deriving stock instance Ord (Rep i) => Ord (SysVar i)
-deriving instance NFData (Rep i) => NFData (SysVar i)
 
 imapSysVar ::
   (Representable i, Representable j) =>
@@ -127,31 +116,16 @@ pmapWitVar ::
 pmapWitVar f (WExVar r)  = index (f (tabulate WExVar)) r
 pmapWitVar _ (WSysVar v) = WSysVar v
 
-data Var a i
-  = SysVar (SysVar i)
-  | ConstVar a
-  deriving Generic
-deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSON (Var a i)
-deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSONKey (Var a i)
-deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSONKey (Var a i)
-deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSON (Var a i)
-deriving stock instance (Show (Rep i), Show a) => Show (Var a i)
-deriving stock instance (Eq (Rep i), Eq a) => Eq (Var a i)
-deriving stock instance (Ord (Rep i), Ord a) => Ord (Var a i)
-deriving instance (NFData (Rep i), NFData a) => NFData (Var a i)
-instance FromConstant a (Var a i) where
-    fromConstant = ConstVar
-
 imapVar ::
   (Representable i, Representable j) =>
   (forall x. j x -> i x) -> Var a i -> Var a j
-imapVar f (SysVar s)   = SysVar (imapSysVar f s)
+imapVar f (LinVar k x b) = LinVar k (imapSysVar f x) b
 imapVar _ (ConstVar c) = ConstVar c
 
 ---------------------------------- Variables -----------------------------------
 
-acInput :: Representable i => i (Var a i)
-acInput = fmapRep (SysVar . InVar) (tabulate id)
+acInput :: (Representable i, Arithmetic a) => i (Var a i)
+acInput = fmapRep ((\x -> LinVar one x zero) . InVar) (tabulate id)
 
 getAllVars :: forall a p i o. (Representable i, Foldable i) => ArithmeticCircuit a p i o -> [SysVar i]
 getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where
@@ -162,8 +136,8 @@ indexW ::
   (Arithmetic a, Representable p, Representable i) =>
   ArithmeticCircuit a p i o -> p a -> i a -> Var a i -> a
 indexW circuit payload inputs = \case
-  SysVar (InVar inV) -> index inputs inV
-  SysVar (NewVar newV) -> fromMaybe
+  LinVar k (InVar inV) b -> (\t -> k * t + b) $ index inputs inV
+  LinVar k (NewVar newV) b -> (\t -> k * t + b) $ fromMaybe
     (error ("no such NewVar: " <> show newV))
     (witnessGenerator circuit payload inputs !? newV)
   ConstVar cV -> cV
@@ -211,15 +185,15 @@ instance
     type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
     witnessF (behead -> (c, o)) = o <&> \case
       ConstVar cv -> fromConstant cv
-      SysVar (InVar iv) -> at $ SysVar (InVar iv)
-      SysVar (NewVar nv) -> acWitness c ! nv
+      LinVar k (NewVar nv) b -> fromConstant k * (acWitness c ! nv) + fromConstant b
+      linNewV -> at linNewV
     fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
 
 ----------------------------- MonadCircuit instance ----------------------------
 
 instance Finite a => Witness (Var a i) (WitnessF a (WitVar p i)) where
   at (ConstVar cV) = fromConstant cV
-  at (SysVar sV)   = WitnessF (\x -> x (WSysVar sV))
+  at (LinVar k sV b)   = WitnessF (\x -> x (WSysVar sV))
 
 instance
   ( Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)
@@ -227,27 +201,33 @@ instance
 
     unconstrained wf = case runWitnessF wf $ const Nothing of
       Just cV -> return (ConstVar cV)
-      Nothing -> do
-        let v = toVar @a wf
-        -- TODO: forbid reassignment of variables
-        zoom #acWitness $ modify (insert v wf)
-        return $ SysVar (NewVar v)
+      Nothing ->
+        case runWitnessF wf $ \case
+              WExVar _ -> More
+              WSysVar sV -> LinUVar one sV zero
+        of
+          ConstUVar c -> return $ ConstVar c
+          LinUVar k x b -> return $ LinVar k x b
+          More ->  do
+            let v = toVar @a wf
+            zoom #acWitness $ modify (insert v wf)
+            return $ LinVar one (NewVar v) zero
 
     constraint p =
       let evalConstVar = \case
-            SysVar sysV -> var sysV
+            LinVar k sysV b -> fromConstant k * (var sysV) + fromConstant b
             ConstVar cV -> fromConstant cV
           evalMaybe = \case
-            SysVar _ -> Nothing
+            LinVar {} -> Nothing
             ConstVar cV -> Just cV
       in case p evalMaybe of
-        Just c -> if c ==zero
+        Just c -> if c == zero
                     then return ()
                     else error "The constraint is non-zero"
         Nothing -> zoom #acSystem . modify $ insert (toVar @_ @p (p at)) (p evalConstVar)
 
-    rangeConstraint (SysVar v) upperBound =
-      zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
+    rangeConstraint (LinVar k x b) upperBound =
+      zoom #acRange . modify $ insertWith S.union (upperBound - b // k) (S.singleton x)
     rangeConstraint (ConstVar c) upperBound =
       if c <= upperBound
         then return ()

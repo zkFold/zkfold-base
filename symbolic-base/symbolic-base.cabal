@@ -173,6 +173,7 @@ library
       ZkFold.Symbolic.Class
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Compiler.ArithmeticCircuit
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
