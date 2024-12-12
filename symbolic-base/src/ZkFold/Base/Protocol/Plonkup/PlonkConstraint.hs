@@ -9,13 +9,13 @@ import           Data.Containers.ListUtils                           (nubOrd)
 import           Data.Eq                                             (Eq (..))
 import           Data.Function                                       (($), (.))
 import           Data.Functor                                        ((<$>))
+import           Data.Functor.Rep                                    (Rep)
 import           Data.List                                           (find, head, map, permutations, sort, (!!), (++))
 import           Data.Map                                            (Map)
 import qualified Data.Map                                            as Map
 import           Data.Maybe                                          (Maybe (..), fromMaybe, mapMaybe)
 import           Data.Ord                                            (Ord)
 import           GHC.IsList                                          (IsList (..))
-import           GHC.TypeNats                                        (KnownNat)
 import           Numeric.Natural                                     (Natural)
 import           Test.QuickCheck                                     (Arbitrary (..))
 import           Text.Show                                           (Show)
@@ -24,7 +24,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, evalMonomial, evalPolynomial, polynomial,
                                                                       var, variables)
 import           ZkFold.Base.Data.ByteString                         (toByteString)
-import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Prelude                                      (length, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
@@ -34,13 +33,15 @@ data PlonkConstraint i a = PlonkConstraint
     , qr :: a
     , qo :: a
     , qc :: a
-    , x1 :: Var a (Vector i)
-    , x2 :: Var a (Vector i)
-    , x3 :: Var a (Vector i)
+    , x1 :: Var a i
+    , x2 :: Var a i
+    , x3 :: Var a i
     }
-    deriving (Show, Eq)
 
-instance (Ord a, Arbitrary a, Binary a, KnownNat i) => Arbitrary (PlonkConstraint i a) where
+deriving instance (Show a, Show (Rep i)) => Show (PlonkConstraint i a)
+deriving instance (Eq a, Eq (Rep i)) => Eq (PlonkConstraint i a)
+
+instance (Ord a, Arbitrary a, Binary a, Ord (Rep i)) => Arbitrary (PlonkConstraint i a) where
     arbitrary = do
         qm <- arbitrary
         ql <- arbitrary
@@ -49,10 +50,10 @@ instance (Ord a, Arbitrary a, Binary a, KnownNat i) => Arbitrary (PlonkConstrain
         qc <- arbitrary
         let arbitraryNewVar = SysVar . NewVar . toByteString @a <$> arbitrary
         xs <- sort <$> replicateM 3 arbitraryNewVar
-        let x1 = xs !! 0; x2 = xs !! 1; x3 = xs !! 2
+        let x1 = head xs; x2 = xs !! 1; x3 = xs !! 2
         return $ PlonkConstraint qm ql qr qo qc x1 x2 x3
 
-toPlonkConstraint :: forall a i . (Ord a, FiniteField a, KnownNat i) => Poly a (Var a (Vector i)) Natural -> PlonkConstraint i a
+toPlonkConstraint :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => Poly a (Var a i) Natural -> PlonkConstraint i a
 toPlonkConstraint p =
     let xs    = Just <$> toList (variables p)
         perms = nubOrd $ map (take 3) $ permutations $ case length xs of
@@ -61,12 +62,12 @@ toPlonkConstraint p =
             2 -> [Nothing] ++ xs ++ xs
             _ -> xs ++ xs
 
-        getCoef :: Map (Maybe (Var a (Vector i))) Natural -> a
+        getCoef :: Map (Maybe (Var a i)) Natural -> a
         getCoef m = case find (\(_, as) -> m == Map.mapKeys Just as) (toList p) of
             Just (c, _) -> c
             _           -> zero
 
-        getCoefs :: [Maybe (Var a (Vector i))] -> Maybe (PlonkConstraint i a)
+        getCoefs :: [Maybe (Var a i)] -> Maybe (PlonkConstraint i a)
         getCoefs [a, b, c] = do
             let xa = [(a, 1)]
                 xb = [(b, 1)]
@@ -89,7 +90,7 @@ toPlonkConstraint p =
         [] -> toPlonkConstraint zero
         _  -> head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (Ord a, Field a, KnownNat i) => PlonkConstraint i a -> Poly a (Var a (Vector i)) Natural
+fromPlonkConstraint :: (Ord a, Field a, Ord (Rep i)) => PlonkConstraint i a -> Poly a (Var a i) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
     let xa = var a
         xb = var b

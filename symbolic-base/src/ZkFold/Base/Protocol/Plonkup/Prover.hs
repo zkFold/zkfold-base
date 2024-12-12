@@ -18,7 +18,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), PointCompressed, compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
-import           ZkFold.Base.Data.Vector                             (fromVector, (!!))
+import           ZkFold.Base.Data.Vector                             ((!!))
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPolyExtended, PlonkupPolyExtendedLength)
@@ -35,6 +35,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 plonkupProve :: forall p i n l c1 c2 ts core .
     ( KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
+    , Foldable l
     , Ord (BaseField c1)
     , AdditiveGroup (BaseField c1)
     , Arithmetic (ScalarField c1)
@@ -64,7 +65,9 @@ plonkupProve PlonkupProverSetup {..}
         w2X = polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n c1
         w3X = polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n c1
 
-        pi  = toPolyVec @_ @n $ fromList $ fromVector (negate <$> wPub)
+        -- Is this really correct?
+        -- How is \(n\) related to the length of public input?
+        pi  = toPolyVec @_ @n $ fromList $ foldMap (\x -> [negate x]) wPub
         piX = polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n c1
 
         -- Round 1

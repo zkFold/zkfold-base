@@ -15,8 +15,8 @@ import           ZkFold.Base.Data.Vector          (Vector, head, tail, toVector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool        (Bool, not, (&&))
 import           ZkFold.Symbolic.Data.ByteString  (ByteString, Resize (resize), concat, toWords)
-import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
-                                                   NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize, KnownRegisters,
+                                                   RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq          (Eq ((==)), elem)
 import           ZkFold.Symbolic.Data.Ord         (Ord ((>=)))
 import           ZkFold.Symbolic.Data.UInt        (OrdWord, UInt)
@@ -63,7 +63,7 @@ kycExample :: forall n r rsc context . (
   , KnownNat rsc
   , Eq (Bool context) (KYCHash context)
   , KnownRegisterSize r
-  , KnownNat (NumberOfRegisters (BaseField context) 64 r)
+  , KnownRegisters context 64 r
   , KnownNat (Ceil (GetRegisterSize (BaseField context) 64 r) OrdWord)
   ) => KYCData n context -> KYCHash context -> Bool context
 kycExample kycData hash =

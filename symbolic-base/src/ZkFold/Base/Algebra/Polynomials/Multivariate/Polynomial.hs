@@ -86,7 +86,7 @@ instance (Arbitrary c, Arbitrary (Mono i j)) => Arbitrary (Poly c i j) where
 instance {-# OVERLAPPING #-} FromConstant (Poly c i j) (Poly c i j)
 
 instance Polynomial c i j => AdditiveSemigroup (Poly c i j) where
-    P l + P r = P $ go l r
+    P l + P r = P $ filter ((/= zero) . fst) $ go l r
         where
             go [] [] = []
             go ls [] = ls

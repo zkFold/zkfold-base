@@ -40,7 +40,7 @@ tokenBits UserToken{..} = from validUntil `append` aud
 zkLogin
     :: forall ctx
     .  RSA ctx 320
-    => KnownNat (NumberOfRegisters (BaseField ctx) 64 'Auto)
+    => KnownRegisters ctx 64 'Auto
     => KnownNat (Ceil (GetRegisterSize (BaseField ctx) 64 'Auto) OrdWord)
     => Certificate ctx
     -> UserToken ctx

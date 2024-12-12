@@ -19,42 +19,41 @@ module ZkFold.Symbolic.Data.UInt (
 ) where
 
 import           Control.DeepSeq
-import           Control.Monad.State                (StateT (..))
-import           Data.Aeson                         hiding (Bool)
-import           Data.Foldable                      (foldlM, foldr, foldrM, for_)
-import           Data.Functor                       ((<$>))
-import           Data.Kind                          (Type)
-import           Data.List                          (unfoldr, zip)
-import           Data.Map                           (fromList, (!))
-import           Data.Traversable                   (for, traverse)
-import           Data.Tuple                         (swap)
-import qualified Data.Zip                           as Z
-import           GHC.Generics                       (Generic, Par1 (..))
-import           GHC.Natural                        (naturalFromInteger)
-import           Prelude                            (Integer, const, error, flip, otherwise, return, type (~), ($),
-                                                     (++), (.), (<>), (>>=))
-import qualified Prelude                            as Haskell
-import           Test.QuickCheck                    (Arbitrary (..), chooseInteger)
+import           Control.Monad.State               (StateT (..))
+import           Data.Aeson                        hiding (Bool)
+import           Data.Foldable                     (foldlM, foldr, foldrM, for_)
+import           Data.Functor                      ((<$>))
+import           Data.Kind                         (Type)
+import           Data.List                         (unfoldr, zip)
+import           Data.Map                          (fromList, (!))
+import           Data.Traversable                  (for, traverse)
+import           Data.Tuple                        (swap)
+import qualified Data.Zip                          as Z
+import           GHC.Generics                      (Generic, Par1 (..))
+import           GHC.Natural                       (naturalFromInteger)
+import           Prelude                           (Integer, const, error, flip, otherwise, return, type (~), ($), (++),
+                                                    (.), (<>), (>>=))
+import qualified Prelude                           as Haskell
+import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field    (Zp)
+import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector            as V
-import           ZkFold.Base.Data.Vector            (Vector (..))
-import           ZkFold.Prelude                     (length, replicate, replicateA)
+import qualified ZkFold.Base.Data.Vector           as V
+import           ZkFold.Base.Data.Vector           (Vector (..))
+import           ZkFold.Prelude                    (length, replicate, replicateA)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Class         (SymbolicData)
+import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Eq.Structural
-import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
-import           ZkFold.Symbolic.Data.Input         (SymbolicInput, isValid)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.Interpreter        (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, constraint, newAssigned)
+import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, constraint, newAssigned)
 
 
 -- TODO (Issue #18): hide this constructor
@@ -64,7 +63,7 @@ deriving instance Generic (UInt n r context)
 deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) n r)))) => NFData (UInt n r context)
 deriving instance (Haskell.Eq (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Eq (UInt n r context)
 deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Show (UInt n r context)
-deriving newtype instance SymbolicData (UInt n r c)
+deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (UInt n r c) where
     fromConstant c = UInt . embed @c $ naturalToVector @c @n @r c
@@ -89,7 +88,7 @@ expMod
     => KnownNat n
     => KnownNat m
     => KnownNat (2 * m)
-    => KnownNat (NumberOfRegisters (BaseField c) (2 * m) r)
+    => KnownRegisters c (2 * m) r
     => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
     => UInt n r c
@@ -116,7 +115,7 @@ bitsPow
     => KnownRegisterSize r
     => KnownNat n
     => KnownNat p
-    => KnownNat (NumberOfRegisters (BaseField c) n r)
+    => KnownRegisters c n r
     => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))
     => Natural
@@ -166,7 +165,7 @@ eea
     .  Symbolic c
     => SemiEuclidean (UInt n r c)
     => KnownNat n
-    => KnownNat (NumberOfRegisters (BaseField c) n r)
+    => KnownRegisters c n r
     => AdditiveGroup (UInt n r c)
     => Eq (Bool c) (UInt n r c)
     => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c, UInt n r c)
@@ -310,7 +309,7 @@ asWords v = fromCircuitF v $ \regs -> do
 type OrdWord = 16
 
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
-         , KnownNat (NumberOfRegisters (BaseField c) n r)
+         , KnownRegisters c n r
          , regSize ~ GetRegisterSize (BaseField c) n r
          , KnownNat (Ceil regSize OrdWord)
          ) => Ord (Bool c) (UInt n r c) where
@@ -373,22 +372,22 @@ instance
         )
         where
             t :: BaseField c
-            t = (one + one) ^ registerSize @(BaseField c) @n @r - one
+            t = (one + one) ^ registerSize @(BaseField c) @n @r
 
             solve1 :: MonadCircuit i (BaseField c) w m => i -> i -> m [i]
             solve1 i j = do
-                z0 <- newAssigned (\v -> v i - v j + fromConstant (2 ^ registerSize @(BaseField c) @n @r :: Natural))
+                z0 <- newAssigned (\v -> v i - v j + fromConstant t)
                 (z, _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 z0
                 return [z]
 
             solveN :: MonadCircuit i (BaseField c) w m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
             solveN (i, j) (is, js) (i', j') = do
-                s <- newAssigned (\v -> v i - v j + fromConstant (t + one))
+                s <- newAssigned (\v -> v i - v j + fromConstant t)
                 let r = registerSize @(BaseField c) @n @r
                 (k, b0) <- splitExpansion r 1 s
                 (zs, b) <- flip runStateT b0 $ traverse StateT (Haskell.zipWith (fullSub r) is js)
                 d <- newAssigned (\v -> v i' - v j')
-                s'0 <- newAssigned (\v -> v d + v b + fromConstant t)
+                s'0 <- newAssigned (\v -> v d + v b + fromConstant (2 ^ highRegisterSize @(BaseField c) @n @r -! 1 :: Natural))
                 (s', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 s'0
                 return (k : zs <> [s'])
 
@@ -452,7 +451,8 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize rs) => MultiplicativeSemigro
                 p'0 <- foldrM (\k l -> do
                     k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
                     newAssigned (\v -> v k' + v l)) c' [0 .. r -! 1]
-                (p', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs) p'0
+                let highOverflow = registerSize @(BaseField c) @n @rs + maxOverflow @(BaseField c) @n @rs -! highRegisterSize @(BaseField c) @n @rs
+                (p', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @rs) highOverflow p'0
                 return (p : ps <> [p'])
 
 instance
@@ -461,8 +461,8 @@ instance
     , KnownRegisterSize r
     ) => Ring (UInt n r c)
 
-deriving via (Structural (UInt n rs c))
-         instance (Symbolic c, KnownNat (NumberOfRegisters (BaseField c) n rs)) =>
+deriving newtype
+         instance (Symbolic c, KnownRegisters c n rs) =>
          Eq (Bool c) (UInt n rs c)
 
 --------------------------------------------------------------------------------
@@ -589,7 +589,7 @@ instance
   ( Symbolic c
   , KnownNat n
   , KnownRegisterSize r
-  , KnownNat (NumberOfRegisters (BaseField c) n r)
+  , KnownRegisters c n r
   ) => SymbolicInput (UInt n r c) where
 
     isValid (UInt bits) = Bool $ fromCircuitF bits $ \v -> do

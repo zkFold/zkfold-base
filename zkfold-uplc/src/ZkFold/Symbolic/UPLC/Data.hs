@@ -16,5 +16,5 @@ import           ZkFold.Symbolic.Data.Input (SymbolicInput)
 -- TODO: Proper symbolic Data type
 newtype Data c = Data (c Par1)
 
-deriving newtype instance SymbolicData (Data c)
+deriving newtype instance Symbolic c => SymbolicData (Data c)
 deriving newtype instance Symbolic c => SymbolicInput (Data c)

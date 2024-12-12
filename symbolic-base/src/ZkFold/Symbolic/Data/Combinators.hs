@@ -28,7 +28,7 @@ import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
-import           ZkFold.Symbolic.Class            (Arithmetic)
+import           ZkFold.Symbolic.Class            (Arithmetic, BaseField)
 import           ZkFold.Symbolic.MonadCircuit
 
 mzipWithMRep ::
@@ -105,6 +105,8 @@ type Ceil a b = Div (a + b - 1) b
 type family GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) :: Natural where
     GetRegisterSize a bits (Fixed rs) = rs
     GetRegisterSize a bits Auto       = Ceil bits (NumberOfRegisters a bits Auto)
+
+type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
 
 type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize ) :: Natural where
   NumberOfRegisters a bits (Fixed rs) = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)

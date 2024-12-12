@@ -1,11 +1,11 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Ledger.Types.Update where
 
-import           Data.Functor.Rep                       (Representable)
 import           Prelude                                hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Class                  (Symbolic)
 import           ZkFold.Symbolic.Data.Bool              (Bool)
-import           ZkFold.Symbolic.Data.Class             (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class             (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.List              (List, emptyList)
 import           ZkFold.Symbolic.Ledger.Types.Address   (Address)
 import           ZkFold.Symbolic.Ledger.Types.Contract  (ContractData)
@@ -55,12 +55,16 @@ data Update context = Update
   }
 
 emptyUpdate ::
-     Symbolic context
-  => Representable (Layout (AddressIndex context))
-  => Representable (Layout (List context (Input context)))
-  => Representable (Layout (List context (Output context)))
-  => Representable (Layout (ContractData context))
-  => Representable (Layout (Hash context))
+     SymbolicOutput (Hash context)
+  => SymbolicOutput (AddressIndex context)
+  => SymbolicOutput (ContractData context)
+  => SymbolicData (Input context)
+  => SymbolicOutput (Output context)
+  => Context (Hash context) ~ context
+  => Context (AddressIndex context) ~ context
+  => Context (ContractData context) ~ context
+  => Context (Input context) ~ context
+  => Context (Output context) ~ context
   => Hash context
   -> Update context
 emptyUpdate prev = Update

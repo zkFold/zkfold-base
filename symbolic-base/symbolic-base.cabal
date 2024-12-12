@@ -110,7 +110,9 @@ library
       ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
+      ZkFold.Base.Data.Functor.Rep
       ZkFold.Base.Data.HFunctor
+      ZkFold.Base.Data.List.Infinite
       ZkFold.Base.Data.Matrix
       ZkFold.Base.Data.Package
       ZkFold.Base.Data.Product
@@ -176,6 +178,7 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
@@ -185,12 +188,13 @@ library
       ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Ed25519
       ZkFold.Symbolic.Data.Eq
-      ZkFold.Symbolic.Data.Eq.Structural
       ZkFold.Symbolic.Data.FFA
+      ZkFold.Symbolic.Data.Hash
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Ord
+      ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.FieldElement
@@ -210,6 +214,7 @@ library
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
       distributive                               ,
+      infinite-list                              ,
       lens                                       ,
       monoidal-containers                        ,
       mtl                                   < 2.4,
@@ -243,6 +248,7 @@ test-suite symbolic-base-test
       Tests.Arithmetization.Test2
       Tests.Arithmetization.Test3
       Tests.Arithmetization.Test4
+      Tests.Arithmetization.Optimization
       Tests.Binary
       Tests.Blake2b
       Tests.ByteString
@@ -251,7 +257,9 @@ test-suite symbolic-base-test
       Tests.Field
       Tests.GroebnerBasis
       Tests.Group
+      Tests.Hash
       Tests.IVC
+      Tests.List
       Tests.NonInteractiveProof
       Tests.Pairing
       Tests.Permutations
