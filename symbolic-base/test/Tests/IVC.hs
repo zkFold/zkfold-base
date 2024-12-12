@@ -3,7 +3,7 @@
 module Tests.IVC (specIVC) where
 
 import           Data.Functor.Constant                           (Constant)
-import           GHC.Generics                                    (Par1 (..), U1 (..), type (:*:) (..), type (:.:) (..))
+import           GHC.Generics                                    (U1 (..), type (:*:) (..))
 import           GHC.IsList                                      (IsList (..))
 import           Prelude                                         hiding (Num (..), pi, replicate, sum, (+))
 import           Test.Hspec                                      (describe, hspec, it)
@@ -23,11 +23,11 @@ import           ZkFold.Base.Protocol.IVC.CommitOpen             (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir             (FiatShamir, fiatShamir)
 import           ZkFold.Base.Protocol.IVC.NARK                   (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle                 (MiMCHash)
-import           ZkFold.Base.Protocol.IVC.Predicate              (Predicate (..))
+import           ZkFold.Base.Protocol.IVC.Predicate              (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.SpecialSound           (specialSoundProtocol)
 import           ZkFold.Prelude                                  (replicate)
-import           ZkFold.Symbolic.Class                           (Symbolic)
-import           ZkFold.Symbolic.Compiler                        (ArithmeticCircuit, acSizeN, compileWith, guessOutput, hlmap, hpmap)
+import           ZkFold.Symbolic.Class                           (Symbolic, BaseField)
+import           ZkFold.Symbolic.Compiler                        (ArithmeticCircuit, acSizeN)
 import           ZkFold.Symbolic.Data.FieldElement               (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
@@ -43,25 +43,23 @@ type D = 2
 type PARDEG = 5
 type PAR = PolyVec F PARDEG
 
-testFunction :: forall ctx . (Symbolic ctx, FromConstant F (FieldElement ctx))
-    => PAR -> Vector 1 (FieldElement ctx) -> Vector 1 (FieldElement ctx)
-testFunction p x =
+testFunction :: forall ctx . (Symbolic ctx, FromConstant F (BaseField ctx))
+    => PAR -> Vector 1 (FieldElement ctx) -> U1 (FieldElement ctx) -> Vector 1 (FieldElement ctx)
+testFunction p x _ =
     let p' = fromList $ map fromConstant $ toList p :: PolyVec (FieldElement ctx) PARDEG
     in singleton $ evalPolyVec p' $ item x
 
-testFunction' :: PAR -> Vector 1 F -> Vector 1 F
-testFunction' p x =
-    let p' = fromList $ toList p :: PolyVec F PARDEG
-    in singleton $ evalPolyVec p' $ item x
+-- testPredicateEval :: PAR -> I F -> P F -> I F
+-- testPredicateEval = predicateEval @F @I @P . testPredicate
 
-testCircuit :: PAR -> AC
-testCircuit p =
-    hpmap (\(x :*: U1) -> Comp1 (Par1 <$> x) :*: U1) $
-    hlmap (\x -> U1 :*: Comp1 (Par1 <$> x)) $
-    compileWith @F guessOutput (\x U1 -> (Comp1 (singleton U1) :*: U1, x)) $ testFunction p
+testPredicateCircuit :: PAR -> AC
+testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
+    -- hpmap (\(x :*: U1) -> Comp1 (Par1 <$> x) :*: U1) $
+    -- hlmap (\x -> U1 :*: Comp1 (Par1 <$> x)) $
+    -- compileWith @F guessOutput (\x U1 -> (Comp1 (singleton U1) :*: U1, x)) $ testFunction p
 
 testPredicate :: PAR -> PHI
-testPredicate p = Predicate (\x _ -> testFunction' p x) (testCircuit p)
+testPredicate p = predicate @F @I @P $ testFunction p
 
 testSPS :: PAR -> SPS
 testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D . testPredicate
@@ -130,7 +128,7 @@ specAlgebraicMap = hspec $ do
             it "must output zeros on the public input and testMessages" $ do
                withMaxSuccess 10 $ property $
                     \p -> algebraicMap @D (testPredicate p) (testPublicInput $ testSPS p) (testMessages $ testSPS p) (unsafeToVector []) one
-                        == replicate (acSizeN $ testCircuit p) zero
+                        == replicate (acSizeN $ testPredicateCircuit p) zero
 
 specAccumulatorScheme :: IO ()
 specAccumulatorScheme = hspec $ do
@@ -146,6 +144,6 @@ specAccumulatorScheme = hspec $ do
 specIVC :: IO ()
 specIVC = do
     p <- generate arbitrary :: IO PAR
-    print $ "Recursion circuit size: " ++ show (acSizeN $ testCircuit p)
+    print $ "Recursion circuit size: " ++ show (acSizeN $ testPredicateCircuit p)
     specAlgebraicMap
     specAccumulatorScheme

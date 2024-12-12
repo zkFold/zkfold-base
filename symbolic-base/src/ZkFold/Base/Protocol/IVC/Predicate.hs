@@ -2,18 +2,17 @@
 
 module ZkFold.Base.Protocol.IVC.Predicate where
 
+import           Control.DeepSeq                   (NFData)
 import           Data.Binary                       (Binary)
-import           GHC.Generics                      ((:*:) (..), U1 (..), type (:.:) (..), Par1 (..))
+import           Data.Functor.Rep                  (Representable (..))
+import           GHC.Generics                      ((:*:) (..), U1 (..))
 import           Prelude                           hiding (Num (..), drop, head, replicate, take, zipWith)
 
-import           ZkFold.Base.Data.Vector           (Vector, unsafeToVector)
-import           ZkFold.Base.Algebra.Basic.Class   (fromConstant)
-import           ZkFold.Base.Algebra.Basic.Number  (KnownNat, value)
+import           ZkFold.Base.Data.Package          (packed, unpacked)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import           ZkFold.Symbolic.Compiler          (ArithmeticCircuit, compileWith, hlmap, hpmap, guessOutput)
+import           ZkFold.Symbolic.Compiler          (ArithmeticCircuit, compileWith, hlmap, guessOutput)
 import           ZkFold.Symbolic.Interpreter       (Interpreter(..))
-import           ZkFold.Prelude                    (replicate)
 
 type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p) i U1
 
@@ -22,28 +21,37 @@ data Predicate a i p = Predicate
   , predicateCircuit :: PredicateCircuit a i p
   }
 
-type StepFunction nx nu = forall ctx . Symbolic ctx => Vector nx (FieldElement ctx) -> Vector nu (FieldElement ctx) -> Vector nx (FieldElement ctx)
+type StepFunction a i p = forall ctx . (Symbolic ctx, BaseField ctx ~ a) => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)
 
-predicate :: forall a nx nu .
-    ( KnownNat nx
-    , KnownNat nu
+predicate :: forall a i p .
+    ( Representable i
+    , Traversable i
+    , NFData (Rep i)
+    , Binary (Rep i)
+    , Ord (Rep i)
+    , Representable p
+    , Traversable p
+    , NFData (Rep p)
+    , Binary (Rep p)
+    , Ord (Rep p)
     , Arithmetic a
     , Binary a
-    ) => StepFunction nx nu -> Predicate a (Vector nx) (Vector nu)
+    ) => StepFunction a i p -> Predicate a i p
 predicate func =
     let
-        predicateEval :: Vector nx a -> Vector nu a -> Vector nx a
-        predicateEval x u =
-            let x' = fromConstant <$> x :: Vector nx (FieldElement (Interpreter a))
-                u' = fromConstant <$> u :: Vector nu (FieldElement (Interpreter a))
-            in unPar1 . runInterpreter . fromFieldElement <$> func x' u'
+        func' :: forall ctx . (Symbolic ctx, BaseField ctx ~ a) => ctx i -> ctx p -> ctx i
+        func' x' u' =
+            let
+                x = FieldElement <$> unpacked x'
+                u = FieldElement <$> unpacked u'
+            in
+                packed . fmap fromFieldElement $ func x u
 
-        predicateCircuit :: ArithmeticCircuit a (Vector nx :*: Vector nu) (Vector nx) U1
+        predicateEval :: i a -> p a -> i a
+        predicateEval x u = runInterpreter $ func' (Interpreter x) (Interpreter u)
+
+        predicateCircuit :: PredicateCircuit a i p
         predicateCircuit =
-            hpmap (\(x :*: u) -> Comp1 (Par1 <$> x) :*: Comp1 (Par1 <$> u)) $
-            hlmap (\x -> U1 :*: Comp1 (Par1 <$> x)) $
-            compileWith @a guessOutput (\(x :*: u) U1 ->
-                    ( Comp1 (unsafeToVector $ replicate (value @nx) U1) :*: Comp1 (unsafeToVector $ replicate (value @nx) U1) :*: U1
-                    , x :*: u :*: U1)
-                ) func
+            hlmap (U1 :*:) $
+            compileWith @a guessOutput (\(i :*: p) U1 -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
     in Predicate {..}

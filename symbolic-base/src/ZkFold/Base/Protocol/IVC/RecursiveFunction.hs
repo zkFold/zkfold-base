@@ -26,5 +26,5 @@ data RecursiveP d k i p c f = RecursiveP (i f) (p f) f (AccumulatorInstance k i 
     deriving (GHC.Generics.Generic)
 
 -- TODO: Implement the recursive function.
-recursiveFunction :: StepFunction nx nu -> StepFunction nx nu
+recursiveFunction :: StepFunction a i p -> StepFunction a i p
 recursiveFunction f = f
