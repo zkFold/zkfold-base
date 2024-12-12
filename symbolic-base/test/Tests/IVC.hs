@@ -2,6 +2,7 @@
 
 module Tests.IVC (specIVC) where
 
+import           Data.Functor.Constant                           (Constant)
 import           GHC.Generics                                    (Par1 (..), U1 (..), type (:*:) (..), type (:.:) (..))
 import           GHC.IsList                                      (IsList (..))
 import           Prelude                                         hiding (Num (..), pi, replicate, sum, (+))
@@ -30,14 +31,14 @@ import           ZkFold.Symbolic.Compiler                        (ArithmeticCirc
 import           ZkFold.Symbolic.Data.FieldElement               (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
-type G = Point BLS12_381_G1
+type C = Constant (Point BLS12_381_G1)
 type I = Vector 1
 type P = U1
 type M = [F]
 type K = 1
 type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) U1
 type PHI = Predicate F I P
-type SPS = FiatShamir 1 I P G [F] [F] F
+type SPS = FiatShamir 1 I P C [F] [F] F
 type D = 2
 type PARDEG = 5
 type PAR = PolyVec F PARDEG
@@ -65,10 +66,10 @@ testPredicate p = Predicate (\x _ -> testFunction' p x) (testCircuit p)
 testSPS :: PAR -> SPS
 testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D . testPredicate
 
-initAccumulator :: PHI -> Accumulator K I G M F
+initAccumulator :: PHI -> Accumulator K I C M F
 initAccumulator = emptyAccumulator @D
 
-initAccumulatorInstance :: PHI -> AccumulatorInstance K I G F
+initAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
 initAccumulatorInstance sps =
     let Accumulator ai _ = initAccumulator sps
     in ai
@@ -76,7 +77,7 @@ initAccumulatorInstance sps =
 testPublicInput0 :: I F
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
-testInstanceProofPair :: SPS -> NARKInstanceProof K I G M F
+testInstanceProofPair :: SPS -> NARKInstanceProof K I C M F
 testInstanceProofPair sps = narkInstanceProof sps testPublicInput0 U1
 
 testMessages :: SPS -> Vector K M
@@ -84,7 +85,7 @@ testMessages sps =
     let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair sps
     in ms
 
-testNarkProof :: SPS -> Vector K G
+testNarkProof :: SPS -> Vector K (C F)
 testNarkProof sps =
     let NARKInstanceProof _ (NARKProof cs _) = testInstanceProofPair sps
     in cs
@@ -94,31 +95,31 @@ testPublicInput sps =
     let NARKInstanceProof pi _ = testInstanceProofPair sps
     in pi
 
-testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I G [F] [F] F
+testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C [F] [F] F
 testAccumulatorScheme = accumulatorScheme @MiMCHash
 
-testAccumulator :: SPS -> PHI -> Accumulator K I G M F
-testAccumulator sps phi = 
+testAccumulator :: SPS -> PHI -> Accumulator K I C M F
+testAccumulator sps phi =
     let s = testAccumulatorScheme phi
     in fst $ prover s (initAccumulator phi) $ testInstanceProofPair sps
 
-testAccumulatorInstance :: SPS -> PHI -> AccumulatorInstance K I G F
+testAccumulatorInstance :: SPS -> PHI -> AccumulatorInstance K I C F
 testAccumulatorInstance sps phi =
     let Accumulator ai _ = testAccumulator sps phi
     in ai
 
-testAccumulationProof :: SPS -> PHI -> Vector (D - 1) G
+testAccumulationProof :: SPS -> PHI -> Vector (D - 1) (C F)
 testAccumulationProof sps phi =
     let s = testAccumulatorScheme phi
     in snd $ prover s (initAccumulator phi) $ testInstanceProofPair sps
 
-testDeciderResult :: SPS -> PHI -> (Vector K G, G)
+testDeciderResult :: SPS -> PHI -> (Vector K (C F), C F)
 testDeciderResult sps phi =
     let s = testAccumulatorScheme phi
     in decider s $ testAccumulator sps phi
 
-testVerifierResult :: SPS -> PHI -> (F, I F, Vector (K-1) F, Vector K G, G)
-testVerifierResult sps phi = 
+testVerifierResult :: SPS -> PHI -> (F, I F, Vector (K-1) F, Vector K (C F), C F)
+testVerifierResult sps phi =
     let s = testAccumulatorScheme phi
     in verifier s (testPublicInput sps) (testNarkProof sps) (initAccumulatorInstance phi) (testAccumulatorInstance sps phi) (testAccumulationProof sps phi)
 
@@ -144,7 +145,7 @@ specAccumulatorScheme = hspec $ do
 
 specIVC :: IO ()
 specIVC = do
-    p <- generate arbitrary :: IO (PolyVec F PARDEG)
+    p <- generate arbitrary :: IO PAR
     print $ "Recursion circuit size: " ++ show (acSizeN $ testCircuit p)
     specAlgebraicMap
     specAccumulatorScheme

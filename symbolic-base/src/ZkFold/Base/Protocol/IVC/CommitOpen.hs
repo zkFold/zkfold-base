@@ -8,9 +8,9 @@ import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (hcommit))
 import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
-type CommitOpen k i p c m o f = SpecialSoundProtocol k i p (m, c) (Vector k c, o) f
+type CommitOpen k i p c m o f = SpecialSoundProtocol k i p (m, c f) (Vector k (c f), o) f
 
-commitOpen :: HomomorphicCommit m c => SpecialSoundProtocol k i p m o f -> CommitOpen k i p c m o f
+commitOpen :: HomomorphicCommit m (c f) => SpecialSoundProtocol k i p m o f -> CommitOpen k i p c m o f
 commitOpen SpecialSoundProtocol {..} =
     let
         prover' pi0 w r i =

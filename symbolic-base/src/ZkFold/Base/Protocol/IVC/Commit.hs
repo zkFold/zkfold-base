@@ -4,6 +4,7 @@
 
 module ZkFold.Base.Protocol.IVC.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
+import           Data.Functor.Constant                       (Constant (..))
 import           Data.Zip                                    (Zip (..))
 import           Prelude                                     hiding (Num (..), sum, take, zipWith)
 import           System.Random                               (Random (..), mkStdGen)
@@ -43,6 +44,9 @@ instance (KnownNat n, EllipticCurve curve, Random (ScalarField curve), n <= Pede
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
         unsafeToVector $ take (value @n) $ groupElements @[]
+
+instance (PedersonSetup s (Point curve), Functor s) => PedersonSetup s (Constant (Point curve) a) where
+    groupElements = Constant <$> groupElements @s
 
 instance (PedersonSetup s c, Zip s, Foldable s, Scale f c, AdditiveGroup c) => HomomorphicCommit (s f) c where
     hcommit v = sum $ zipWith scale v groupElements

@@ -19,10 +19,10 @@ import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction)
 data RecursiveI k i c f = RecursiveI (i f) (AccumulatorInstance k i c f)
     deriving (GHC.Generics.Generic)
 
-deriving instance (HashAlgorithm algo f, RandomOracle algo (i f) f, RandomOracle algo c f) => RandomOracle algo (RecursiveI k i c f) f
+deriving instance (HashAlgorithm algo f, RandomOracle algo (i f) f, RandomOracle algo (c f) f) => RandomOracle algo (RecursiveI k i c f) f
 
 -- | Payload for the recursive function
-data RecursiveP d k i p c f = RecursiveP (i f) (p f) f (AccumulatorInstance k i c f) (Vector k c) (Vector (d-1) c)
+data RecursiveP d k i p c f = RecursiveP (i f) (p f) f (AccumulatorInstance k i c f) (Vector k (c f)) (Vector (d-1) (c f))
     deriving (GHC.Generics.Generic)
 
 -- TODO: Implement the recursive function.

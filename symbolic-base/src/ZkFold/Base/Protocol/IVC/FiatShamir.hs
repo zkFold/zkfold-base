@@ -10,20 +10,25 @@ import           Prelude                               hiding (Bool (..), Eq (..
 import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-))
 import           ZkFold.Base.Data.Vector               (Vector, init, item, scanl, unfold)
 import           ZkFold.Base.Protocol.IVC.CommitOpen
-import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle (..))
+import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle (..), HashAlgorithm)
 import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
-type FiatShamir k i p c m o f = SpecialSoundProtocol 1 i p (Vector k (m, c)) (Vector k c, o) f
+type FiatShamir k i p c m o f = SpecialSoundProtocol 1 i p (Vector k (m, c f)) (Vector k (c f), o) f
 
 -- The transcript of the Fiat-Shamired protocol (ignoring the last round)
-transcript :: forall algo k c f . RandomOracle algo (f, c) f
-    => f -> Vector k c -> Vector (k-1) f
-transcript r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle @algo @(f, c))) r0 cs
+transcript :: forall algo k c f .
+    ( HashAlgorithm algo f
+    , RandomOracle algo f f
+    , RandomOracle algo (c f) f
+    ) => f -> Vector k (c f) -> Vector (k-1) f
+transcript r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle @algo)) r0 cs
 
-fiatShamir :: forall algo k i p c m o f.
+fiatShamir :: forall algo k i p c m o f .
     ( KnownNat k
+    , HashAlgorithm algo f
+    , RandomOracle algo f f
     , RandomOracle algo (i f) f
-    , RandomOracle algo (f, c) f
+    , RandomOracle algo (c f) f
     ) => CommitOpen k i p c m o f -> FiatShamir k i p c m o f
 fiatShamir SpecialSoundProtocol {..} =
     let

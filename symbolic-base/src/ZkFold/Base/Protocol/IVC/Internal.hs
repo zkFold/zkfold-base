@@ -38,23 +38,23 @@ import ZkFold.Base.Protocol.IVC.AccumulatorScheme (accumulatorScheme)
 import ZkFold.Symbolic.Class (Arithmetic)
 
 -- | The recursion circuit satisfiability proof.
-data IVCProof k c m
+data IVCProof k c m f
     = IVCProof
-    { _proofX :: Vector k c
+    { _proofX :: Vector k (c f)
     -- ^ The commitment to the witness of the recursion circuit satisfiability proof.
     , _proofW :: Vector k m
     -- ^ The witness of the recursion circuit satisfiability proof.
     } deriving (GHC.Generics.Generic)
 
-deriving instance (P.Show c, P.Show m) => P.Show (IVCProof k c m)
-deriving instance (NFData c, NFData m) => NFData (IVCProof k c m)
+deriving instance (P.Show (c f), P.Show m) => P.Show (IVCProof k c m f)
+deriving instance (NFData (c f), NFData m) => NFData (IVCProof k c m f)
 
 noIVCProof :: forall k c m f .
     ( KnownNat k
-    , AdditiveMonoid c
+    , AdditiveMonoid (c f)
     , m ~ [f]    
     , AdditiveMonoid f
-    ) => IVCProof k c m
+    ) => IVCProof k c m f
 noIVCProof = IVCProof (tabulate $ const zero) (tabulate $ const zero)
 
 -- | The current result of recursion together with the first iteration flag,
@@ -63,30 +63,27 @@ data IVCResult k i c m f
     = IVCResult
     { _z     :: i f
     , _acc   :: Accumulator k i c m f
-    , _proof :: IVCProof k c m
+    , _proof :: IVCProof k c m f
     , _flag  :: f
     } deriving (GHC.Generics.Generic)
 
 makeLenses ''IVCResult
 
-deriving instance (P.Show f, P.Show (i f), P.Show c, P.Show m) => P.Show (IVCResult k i c m f)
-deriving instance (NFData f, NFData (i f), NFData c, NFData m) => NFData (IVCResult k i c m f)
+deriving instance (P.Show f, P.Show (i f), P.Show (c f), P.Show m) => P.Show (IVCResult k i c m f)
+deriving instance (NFData f, NFData (i f), NFData (c f), NFData m) => NFData (IVCResult k i c m f)
 
 type IVCAssumptions algo d k a i p c m o f =
-    ( --SpecialSoundProtocol f i p m c d k a
-    -- , SpecialSoundProtocol f (RecursiveI i c k) (RecursiveP i p c d k) m c d k a
-    Representable i
+    ( Representable i
     , HashAlgorithm algo f
     , m ~ [f]
-    , HomomorphicCommit m c
+    , HomomorphicCommit m (c f)
     , RandomOracle algo (i f) f
-    , RandomOracle algo c f
+    , RandomOracle algo (c f) f
     , KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
     , Arithmetic a
     , Ring f
-    -- , Acc.AccumulatorScheme f i o m c d k
     )
 
 -- | Create the first IVC result

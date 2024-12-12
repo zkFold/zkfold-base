@@ -8,6 +8,7 @@ module ZkFold.Base.Algebra.Basic.Class where
 
 import           Data.Bool                        (bool)
 import           Data.Foldable                    (foldl')
+import           Data.Functor.Constant            (Constant (..))
 import           Data.Kind                        (Type)
 import           GHC.Natural                      (naturalFromInteger)
 import           Prelude                          hiding (Num (..), div, divMod, length, mod, negate, product,
@@ -37,6 +38,11 @@ class FromConstant a b where
     fromConstant = id
 
 instance FromConstant a a
+
+instance {-# OVERLAPPING #-} FromConstant (Constant a f) (Constant a f)
+
+instance FromConstant a b => FromConstant a (Constant b f) where
+    fromConstant = Constant . fromConstant
 
 -- | A class of algebraic structures which can be converted to "constant type"
 -- related with it: natural numbers, integers, rationals etc. Subject to the
@@ -86,6 +92,9 @@ class Scale b a where
 
 instance MultiplicativeSemigroup a => Scale a a
 
+instance Scale b a => Scale b (Constant a f) where
+    scale c (Constant x) = Constant (scale c x)
+
 -- | A class of types with a binary associative operation with a multiplicative
 -- feel to it. Not necessarily commutative.
 class (FromConstant a a, Scale a a) => MultiplicativeSemigroup a where
@@ -93,6 +102,9 @@ class (FromConstant a a, Scale a a) => MultiplicativeSemigroup a where
     --
     -- [Associativity] @x * (y * z) == (x * y) * z@
     (*) :: a -> a -> a
+
+instance (MultiplicativeSemigroup a, Scale (Constant a f) (Constant a f)) => MultiplicativeSemigroup (Constant a f) where
+    Constant x * Constant y = Constant (x * y)
 
 product1 :: (Foldable t, MultiplicativeSemigroup a) => t a -> a
 product1 = foldl1 (*)
@@ -115,6 +127,9 @@ class Exponent a b where
     -- not required: otherwise instance for Bool as exponent could not be made
     -- lawful.
     (^) :: a -> b -> a
+
+instance Exponent a b => Exponent (Constant a f) b where
+    Constant x ^ y = Constant (x ^ y)
 
 {- | A class of types with a binary associative operation with a multiplicative
 feel to it and an identity element. Not necessarily commutative.
@@ -139,6 +154,9 @@ class (MultiplicativeSemigroup a, Exponent a Natural) => MultiplicativeMonoid a 
     -- [Left identity] @one * x == x@
     -- [Right identity] @x * one == x@
     one :: a
+
+instance (MultiplicativeMonoid a, Scale (Constant a f) (Constant a f)) => MultiplicativeMonoid (Constant a f) where
+    one = Constant one
 
 {-# INLINE natPow #-}
 natPow :: MultiplicativeMonoid a => a -> Natural -> a
@@ -182,6 +200,11 @@ class (MultiplicativeMonoid a, Exponent a Integer) => MultiplicativeGroup a wher
     invert :: a -> a
     invert x = one / x
 
+instance (MultiplicativeGroup a, Scale (Constant a f) (Constant a f)) => MultiplicativeGroup (Constant a f) where
+    Constant x / Constant y = Constant (x / y)
+
+    invert (Constant x) = Constant (invert x)
+
 intPow :: MultiplicativeGroup a => a -> Integer -> a
 -- | A default implementation for integer exponentiation. Uses only natural
 -- exponentiation and @'invert'@ so doesn't loop via an @'Exponent' Integer a@
@@ -199,6 +222,9 @@ class FromConstant a a => AdditiveSemigroup a where
     -- [Commutativity] @x + y == y + x@
     (+) :: a -> a -> a
 
+instance AdditiveSemigroup a => AdditiveSemigroup (Constant a f) where
+    Constant x + Constant y = Constant (x + y)
+
 {- | A class of types with a binary associative, commutative operation and with
 an identity element.
 
@@ -210,6 +236,9 @@ class (AdditiveSemigroup a, Scale Natural a) => AdditiveMonoid a where
     --
     -- [Identity] @x + zero == x@
     zero :: a
+
+instance AdditiveMonoid a => AdditiveMonoid (Constant a f) where
+    zero = Constant zero
 
 natScale :: AdditiveMonoid a => Natural -> a -> a
 -- | A default implementation for natural scaling. Uses only @('+')@ and
@@ -245,6 +274,11 @@ class (AdditiveMonoid a, Scale Integer a) => AdditiveGroup a where
     negate :: a -> a
     negate x = zero - x
 
+instance AdditiveGroup a => AdditiveGroup (Constant a f) where
+    Constant x - Constant y = Constant (x - y)
+
+    negate (Constant x) = Constant (negate x)
+
 intScale :: AdditiveGroup a => Integer -> a -> a
 -- | A default implementation for integer scaling. Uses only natural scaling and
 -- @'negate'@ so doesn't loop via a @'Scale' Integer a@ instance.
@@ -259,6 +293,8 @@ intScale n a | n < 0     = naturalFromInteger (-n) `scale` negate a
 [Right distributivity] @(a + b) * c == a * c + b * c@
 -}
 class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semiring a
+
+instance (Semiring a, Scale (Constant a f) (Constant a f)) => Semiring (Constant a f)
 
 {- | A semi-Euclidean-domain @a@ is a semiring without zero divisors which can
 be endowed with at least one function @f : a\{0} -> R+@ s.t. if @x@ and @y@ are
@@ -286,12 +322,23 @@ class Semiring a => SemiEuclidean a where
     mod n d = Haskell.snd $ divMod n d
 
 
+instance (SemiEuclidean a, Scale (Constant a f) (Constant a f)) => SemiEuclidean (Constant a f) where
+    divMod (Constant x) (Constant y) = (Constant q, Constant r)
+      where
+        (q, r) = divMod x y
+
+    div (Constant x) (Constant y) = Constant (div x y)
+
+    mod (Constant x) (Constant y) = Constant (mod x y)
+
 {- | Class of rings with both 0, 1 and additive inverses. The following should hold:
 
 [Left distributivity] @a * (b - c) == a * b - a * c@
 [Right distributivity] @(a - b) * c == a * c - b * c@
 -}
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
+
+instance (Ring a, Scale (Constant a f) (Constant a f)) => Ring (Constant a f)
 
 {- | Type of modules/algebras over the base type of constants @b@. As all the
 required laws are implied by the constraints, this is simply an alias rather

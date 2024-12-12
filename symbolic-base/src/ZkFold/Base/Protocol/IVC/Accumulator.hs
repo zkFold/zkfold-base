@@ -1,14 +1,16 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.IVC.Accumulator where
 
 import           Control.DeepSeq                       (NFData (..))
 import           Control.Lens                          ((^.))
 import           Control.Lens.Combinators              (makeLenses)
-import           Data.Functor.Rep                      (Representable (..))
+import           Data.Distributive                     (Distributive (..))
+import           Data.Functor.Rep                      (Representable (..), distributeRep, collectRep)
 import           GHC.Generics
 import           Prelude                               hiding (length, pi)
 
@@ -22,13 +24,22 @@ import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f
     = AccumulatorInstance
-        { _pi :: i f            -- pi ∈ M^{l_in} in the paper
-        , _c  :: Vector k c     -- [C_i] ∈ C^k in the paper
-        , _r  :: Vector (k-1) f -- [r_i] ∈ F^{k-1} in the paper
-        , _e  :: c              -- E ∈ C in the paper
-        , _mu :: f              -- μ ∈ F in the paper
+        { _pi :: i f             -- pi ∈ M^{l_in} in the paper
+        , _c  :: Vector k (c f)  -- [C_i] ∈ C^k in the paper
+        , _r  :: Vector (k-1) f  -- [r_i] ∈ F^{k-1} in the paper
+        , _e  :: c f             -- E ∈ C in the paper
+        , _mu :: f               -- μ ∈ F in the paper
         }
-    deriving (Show, Generic, NFData)
+    deriving (Show, Generic, NFData, Functor)
+
+deriving instance Generic1 (AccumulatorInstance k i c)
+
+instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Distributive (AccumulatorInstance k i c) where
+    distribute = distributeRep
+
+    collect = collectRep
+
+deriving instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Representable (AccumulatorInstance k i c)
 
 makeLenses ''AccumulatorInstance
 
@@ -49,7 +60,7 @@ emptyAccumulator :: forall d k a i p c m f .
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , HomomorphicCommit m c
+    , HomomorphicCommit m (c f)
     , m ~ [f]    
     , Ring f
     , Scale a f
@@ -69,7 +80,7 @@ emptyAccumulatorInstance :: forall d k a i p c m f .
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , HomomorphicCommit m c
+    , HomomorphicCommit m (c f)
     , m ~ [f]    
     , Ring f
     , Scale a f

@@ -32,20 +32,20 @@ import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate)
 data AccumulatorScheme d k i c m o f = AccumulatorScheme
   {
     prover   ::
-               Accumulator k i c m f                      -- accumulator
-            -> NARKInstanceProof k i c m f                -- instance-proof pair (pi, π)
-            -> (Accumulator k i c m f, Vector (d-1) c)    -- updated accumulator and accumulation proof
+               Accumulator k i c m f                          -- accumulator
+            -> NARKInstanceProof k i c m f                    -- instance-proof pair (pi, π)
+            -> (Accumulator k i c m f, Vector (d-1) (c f))    -- updated accumulator and accumulation proof
 
-  , verifier :: i f                                       -- Public input
-            -> Vector k c                                 -- NARK proof π.x
-            -> AccumulatorInstance k i c f                -- accumulator instance acc.x
-            -> AccumulatorInstance k i c f                -- updated accumulator instance acc'.x
-            -> Vector (d-1) c                             -- accumulation proof E_j
-            -> (f, i f, Vector (k-1) f, Vector k c, c)    -- returns zeros if the accumulation proof is correct
+  , verifier :: i f                                           -- Public input
+            -> Vector k (c f)                                 -- NARK proof π.x
+            -> AccumulatorInstance k i c f                    -- accumulator instance acc.x
+            -> AccumulatorInstance k i c f                    -- updated accumulator instance acc'.x
+            -> Vector (d-1) (c f)                             -- accumulation proof E_j
+            -> (f, i f, Vector (k-1) f, Vector k (c f), c f)  -- returns zeros if the accumulation proof is correct
 
   , decider  ::
-               Accumulator k i c m f                      -- final accumulator
-            -> (Vector k c, c)                            -- returns zeros if the final accumulator is valid
+               Accumulator k i c m f                          -- final accumulator
+            -> (Vector k (c f), c f)                          -- returns zeros if the final accumulator is valid
   }
 
 accumulatorScheme :: forall algo d k a i (p :: Type -> Type) c m o f .
@@ -56,19 +56,18 @@ accumulatorScheme :: forall algo d k a i (p :: Type -> Type) c m o f .
     , Zip i
     , HashAlgorithm algo f
     , RandomOracle algo f f
-    , RandomOracle algo (i f) f    -- Random oracle for compressing public input
-    , RandomOracle algo c f        -- Random oracle ρ_NARK
-    , RandomOracle algo (f, c) f
-    , RandomOracle algo (Vector k c) f
+    , RandomOracle algo (i f) f        -- Random oracle for compressing public input
+    , RandomOracle algo (c f) f        -- Random oracle ρ_NARK
+    , RandomOracle algo (Vector k (c f)) f
     , RandomOracle algo (Vector (k-1) f) f
-    , RandomOracle algo (Vector (d-1) c) f
-    , HomomorphicCommit m c
+    , RandomOracle algo (Vector (d-1) (c f)) f
+    , HomomorphicCommit m (c f)
     , m ~ [f]
     , Field f
     , Scale a f
     , Scale a (PU.PolyVec f (d+1))
-    , Scale f c
-    , Scale f (Vector k c)
+    , Scale f (c f)
+    , Scale f (Vector k (c f))
     )
     => Predicate a i p
     -> AccumulatorScheme d k i c m o f
@@ -132,7 +131,7 @@ accumulatorScheme phi =
             eCapital' = acc^.x^.e + sum (mapWithIx (\i a -> scale (alpha ^ (i+1)) a) pf)
         in
             (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
-        
+
       verifier pubi pi_x acc acc' pf =
         let
             r_0 :: f
@@ -177,6 +176,6 @@ accumulatorScheme phi =
             eDiff = (acc^.x^.e) - hcommit err
         in
             (commitsDiff, eDiff)
-          
+
   in
       AccumulatorScheme prover verifier decider
