@@ -16,12 +16,13 @@ import           Data.Functor.Rep                           (Representable (..))
 import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
 import           GHC.Generics                               (Generic)
-import           Prelude                                    (const, ($))
+import           Prelude                                    (Ord, Traversable, const, ($))
 import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (-), type (+))
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
+import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Data.Vector                    (Vector, empty)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
@@ -32,7 +33,7 @@ import           ZkFold.Base.Protocol.IVC.CommitOpen
 import           ZkFold.Base.Protocol.IVC.FiatShamir
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..))
+import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), StepFunction, predicate)
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol)
 import           ZkFold.Symbolic.Class                      (Arithmetic)
 
@@ -73,8 +74,16 @@ deriving instance (NFData f, NFData (i f), NFData (c f), NFData m) => NFData (IV
 
 type IVCAssumptions algo d k a i p c m o f =
     ( Representable i
+    , Traversable i
     , Zip i
+    , NFData (Rep i)
+    , Binary (Rep i)
+    , Ord (Rep i)
     , Representable p
+    , Traversable p
+    , NFData (Rep p)
+    , Binary (Rep p)
+    , Ord (Rep p)
     , HashAlgorithm algo f
     , m ~ [f]
     , HomomorphicCommit m (c f)
@@ -87,6 +96,7 @@ type IVCAssumptions algo d k a i p c m o f =
     , KnownNat (k-1)
     , KnownNat k
     , Arithmetic a
+    , Binary a
     , Field f
     , Scale a f
     , Scale a (c f)
@@ -98,23 +108,27 @@ type IVCAssumptions algo d k a i p c m o f =
 -- 
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
 ivcSetup :: forall algo d k a i p o m c . IVCAssumptions algo d k a i p c m o a
-    => Predicate a i p
+    => StepFunction a i p
     -> i a
     -> p a
     -> IVCResult k i c m a
-ivcSetup p x0 witness =
+ivcSetup f x0 witness =
     let
+        p = predicate f :: Predicate a i p
+
         x1 = predicateEval p x0 witness
     in
         IVCResult x1 (emptyAccumulator @d p) noIVCProof zero
 
 ivcProve :: forall algo d k a i p c m o . IVCAssumptions algo d k a i p c m o a
-    => Predicate a i p
+    => StepFunction a i p
     -> IVCResult k i c m a
     -> p a
     -> IVCResult k i c m a
-ivcProve p res@(IVCResult _ _ (IVCProof cs ms) _) witness =
+ivcProve f res@(IVCResult _ _ (IVCProof cs ms) _) witness =
     let
+        p = predicate f :: Predicate a i p
+
         narkIP = NARKInstanceProof (res^.z) (NARKProof cs ms)
 
         -- TODO: this must be an accumulator scheme for the recursive function
@@ -136,11 +150,13 @@ ivcProve p res@(IVCResult _ _ (IVCProof cs ms) _) witness =
         IVCResult pi acc' ivcProof one
 
 ivcVerify :: forall algo d k a i p c m o f . IVCAssumptions algo d k a i p c m o f
-    => Predicate a i p
+    => StepFunction a i p
     -> IVCResult k i c m f
     -> ([f], (Vector k (c f), c f))
-ivcVerify p res@(IVCResult _ _ (IVCProof _ ms) _) =
+ivcVerify f res@(IVCResult _ _ (IVCProof _ ms) _) =
     let
+        p = predicate f :: Predicate a i p
+
         as = accumulatorScheme @algo @d p
     in
         -- TODO: this must be an algebraic map for the recursive function
