@@ -29,12 +29,12 @@ import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..),
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
-data AccumulatorScheme d k i o m c f = AccumulatorScheme
+data AccumulatorScheme d k i c m o f = AccumulatorScheme
   {
     prover   ::
-               Accumulator k i m c f                      -- accumulator
-            -> NARKInstanceProof k i m c f                -- instance-proof pair (pi, π)
-            -> (Accumulator k i m c f, Vector (d-1) c)    -- updated accumulator and accumulation proof
+               Accumulator k i c m f                      -- accumulator
+            -> NARKInstanceProof k i c m f                -- instance-proof pair (pi, π)
+            -> (Accumulator k i c m f, Vector (d-1) c)    -- updated accumulator and accumulation proof
 
   , verifier :: i f                                       -- Public input
             -> Vector k c                                 -- NARK proof π.x
@@ -44,17 +44,16 @@ data AccumulatorScheme d k i o m c f = AccumulatorScheme
             -> (f, i f, Vector (k-1) f, Vector k c, c)    -- returns zeros if the accumulation proof is correct
 
   , decider  ::
-               Accumulator k i m c f                      -- final accumulator
+               Accumulator k i c m f                      -- final accumulator
             -> (Vector k c, c)                            -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k a i (p :: Type -> Type) o m c f .
+accumulatorScheme :: forall algo d k a i (p :: Type -> Type) c m o f .
     ( KnownNat (d-1)
     , KnownNat (d+1)
+    , KnownNat k
     , Representable i
     , Zip i
-    , m ~ [f]
-    , HomomorphicCommit m c
     , HashAlgorithm algo f
     , RandomOracle algo f f
     , RandomOracle algo (i f) f    -- Random oracle for compressing public input
@@ -63,7 +62,8 @@ accumulatorScheme :: forall algo d k a i (p :: Type -> Type) o m c f .
     , RandomOracle algo (Vector k c) f
     , RandomOracle algo (Vector (k-1) f) f
     , RandomOracle algo (Vector (d-1) c) f
-    , KnownNat k
+    , HomomorphicCommit m c
+    , m ~ [f]
     , Field f
     , Scale a f
     , Scale a (PU.PolyVec f (d+1))
@@ -71,7 +71,7 @@ accumulatorScheme :: forall algo d k a i (p :: Type -> Type) o m c f .
     , Scale f (Vector k c)
     )
     => Predicate a i p
-    -> AccumulatorScheme d k i o m c f
+    -> AccumulatorScheme d k i c m o f
 accumulatorScheme phi =
   let
       prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =

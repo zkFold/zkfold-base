@@ -28,7 +28,7 @@ and checks that the output is a zero vector of length l.
 
 --}
 
-data SpecialSoundProtocol k i p o m f = SpecialSoundProtocol
+data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
   {
     input ::
          i f                            -- ^ previous public input

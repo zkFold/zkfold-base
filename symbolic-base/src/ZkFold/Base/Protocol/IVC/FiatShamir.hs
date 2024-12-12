@@ -13,18 +13,18 @@ import           ZkFold.Base.Protocol.IVC.CommitOpen
 import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
-type FiatShamir k i p o m c f = SpecialSoundProtocol 1 i p (Vector k c, o) (Vector k (m, c)) f
+type FiatShamir k i p c m o f = SpecialSoundProtocol 1 i p (Vector k (m, c)) (Vector k c, o) f
 
 -- The transcript of the Fiat-Shamired protocol (ignoring the last round)
 transcript :: forall algo k c f . RandomOracle algo (f, c) f
     => f -> Vector k c -> Vector (k-1) f
 transcript r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle @algo @(f, c))) r0 cs
 
-fiatShamir :: forall algo k i p o m c f.
+fiatShamir :: forall algo k i p c m o f.
     ( KnownNat k
     , RandomOracle algo (i f) f
     , RandomOracle algo (f, c) f
-    ) => CommitOpen k i p o m c f -> FiatShamir k i p o m c f
+    ) => CommitOpen k i p c m o f -> FiatShamir k i p c m o f
 fiatShamir SpecialSoundProtocol {..} =
     let
         prover' pi0 w _ _ =

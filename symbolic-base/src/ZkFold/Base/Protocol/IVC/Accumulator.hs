@@ -35,7 +35,7 @@ makeLenses ''AccumulatorInstance
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
-data Accumulator k i m c f
+data Accumulator k i c m f
     = Accumulator
         { _x :: AccumulatorInstance k i c f
         , _w :: Vector k m
@@ -44,16 +44,16 @@ data Accumulator k i m c f
 
 makeLenses ''Accumulator
 
-emptyAccumulator :: forall d k a i p m c f .
+emptyAccumulator :: forall d k a i p c m f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , m ~ [f]
     , HomomorphicCommit m c
+    , m ~ [f]    
     , Ring f
     , Scale a f
-    ) => Predicate a i p -> Accumulator k i m c f
+    ) => Predicate a i p -> Accumulator k i c m f
 emptyAccumulator phi =
     let accW  = tabulate (const zero)
         aiC   = fmap hcommit accW
@@ -64,13 +64,13 @@ emptyAccumulator phi =
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 
-emptyAccumulatorInstance :: forall d k a i p m c f .
+emptyAccumulatorInstance :: forall d k a i p c m f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , m ~ [f]
     , HomomorphicCommit m c
+    , m ~ [f]    
     , Ring f
     , Scale a f
     ) => Predicate a i p -> AccumulatorInstance k i c f

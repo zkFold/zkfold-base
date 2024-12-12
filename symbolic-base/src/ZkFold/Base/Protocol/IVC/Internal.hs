@@ -38,7 +38,7 @@ import ZkFold.Base.Protocol.IVC.AccumulatorScheme (accumulatorScheme)
 import ZkFold.Symbolic.Class (Arithmetic)
 
 -- | The recursion circuit satisfiability proof.
-data IVCProof k m c
+data IVCProof k c m
     = IVCProof
     { _proofX :: Vector k c
     -- ^ The commitment to the witness of the recursion circuit satisfiability proof.
@@ -46,33 +46,33 @@ data IVCProof k m c
     -- ^ The witness of the recursion circuit satisfiability proof.
     } deriving (GHC.Generics.Generic)
 
-deriving instance (P.Show m, P.Show c) => P.Show (IVCProof k m c)
-deriving instance (NFData m, NFData c) => NFData (IVCProof k m c)
+deriving instance (P.Show c, P.Show m) => P.Show (IVCProof k c m)
+deriving instance (NFData c, NFData m) => NFData (IVCProof k c m)
 
-noIVCProof :: forall k m c f .
+noIVCProof :: forall k c m f .
     ( KnownNat k
-    , m ~ [f]
     , AdditiveMonoid c
+    , m ~ [f]    
     , AdditiveMonoid f
-    ) => IVCProof k m c
+    ) => IVCProof k c m
 noIVCProof = IVCProof (tabulate $ const zero) (tabulate $ const zero)
 
 -- | The current result of recursion together with the first iteration flag,
 -- the corresponding accumulator, and the recursion circuit satisfiability proof.
-data IVCResult k i m c f
+data IVCResult k i c m f
     = IVCResult
     { _z     :: i f
-    , _acc   :: Accumulator k i m c f
-    , _proof :: IVCProof k m c
+    , _acc   :: Accumulator k i c m f
+    , _proof :: IVCProof k c m
     , _flag  :: f
     } deriving (GHC.Generics.Generic)
 
 makeLenses ''IVCResult
 
-deriving instance (P.Show f, P.Show (i f), P.Show m, P.Show c) => P.Show (IVCResult k i m c f)
-deriving instance (NFData f, NFData (i f), NFData m, NFData c) => NFData (IVCResult k i m c f)
+deriving instance (P.Show f, P.Show (i f), P.Show c, P.Show m) => P.Show (IVCResult k i c m f)
+deriving instance (NFData f, NFData (i f), NFData c, NFData m) => NFData (IVCResult k i c m f)
 
-type IVCAssumptions algo d k a i p o m c f =
+type IVCAssumptions algo d k a i p c m o f =
     ( --SpecialSoundProtocol f i p m c d k a
     -- , SpecialSoundProtocol f (RecursiveI i c k) (RecursiveP i p c d k) m c d k a
     Representable i
@@ -92,11 +92,11 @@ type IVCAssumptions algo d k a i p o m c f =
 -- | Create the first IVC result
 -- 
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall algo d k a i p o m c . IVCAssumptions algo d k a i p o m c a
+ivcSetup :: forall algo d k a i p o m c . IVCAssumptions algo d k a i p c m o a
     => Predicate a i p
     -> i a
     -> p a
-    -> IVCResult k i m c a
+    -> IVCResult k i c m a
 ivcSetup p x0 witness =
     let
         x1 = predicateEval p x0 witness
