@@ -66,7 +66,7 @@ import           ZkFold.Base.Data.HFunctor                               (hmap)
 import           ZkFold.Base.Data.Product                                (fstP, sndP)
 import           ZkFold.Prelude                                          (length)
 import           ZkFold.Symbolic.Class                                   (fromCircuit2F)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class        (toLinVar)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toLinVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal     (Arithmetic, ArithmeticCircuit (..),
                                                                           Constraint, SysVar (..), Var (..),

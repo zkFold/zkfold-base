@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -59,9 +58,10 @@ import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | The type that represents a constraint in the arithmetic circuit.
@@ -92,13 +92,6 @@ instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
 -- | Variables are SHA256 digests (32 bytes)
 type VarField = Zp (2 ^ (32 * 8))
 
-
-imapSysVar ::
-  (Representable i, Representable j) =>
-  (forall x. j x -> i x) -> SysVar i -> SysVar j
-imapSysVar f (InVar r)  = index (f (tabulate InVar)) r
-imapSysVar _ (NewVar b) = NewVar b
-
 data WitVar p i
   = WExVar (Rep p)
   | WSysVar (SysVar i)
@@ -114,12 +107,6 @@ pmapWitVar ::
   (forall x. q x -> p x) -> WitVar p i -> WitVar q i
 pmapWitVar f (WExVar r)  = index (f (tabulate WExVar)) r
 pmapWitVar _ (WSysVar v) = WSysVar v
-
-imapVar ::
-  (Representable i, Representable j) =>
-  (forall x. j x -> i x) -> Var a i -> Var a j
-imapVar f (LinVar k x b) = LinVar k (imapSysVar f x) b
-imapVar _ (ConstVar c)   = ConstVar c
 
 ---------------------------------- Variables -----------------------------------
 
@@ -184,39 +171,39 @@ instance
     type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
     witnessF (behead -> (c, o)) = o <&> \case
       ConstVar cv -> fromConstant cv
-      LinVar k (NewVar nv) b -> fromConstant k * (acWitness c ! nv) + fromConstant b
-      linInV -> at linInV
+      LinVar k (InVar iv) b -> at $ LinVar k (InVar iv) b
+      LinVar k (NewVar nv) b -> fromConstant k * acWitness c ! nv + fromConstant b
     fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
 
 ----------------------------- MonadCircuit instance ----------------------------
 
 instance Finite a => Witness (Var a i) (WitnessF a (WitVar p i)) where
   at (ConstVar cV)   = fromConstant cV
-  at (LinVar k sV b) = fromConstant k * WitnessF (\x -> x (WSysVar sV)) + fromConstant b
+  at (LinVar k sV b) = fromConstant k * pure (WSysVar sV) + fromConstant b
 
 instance
   ( Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)
   , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (WitVar p i)) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf =
-      case runWitnessF wf $ \case
-        WExVar _ -> More
-        WSysVar sV -> LinUVar one sV zero
-      of
-        ConstUVar c -> return $ ConstVar c
-        LinUVar k x b -> return $ LinVar k x b
-        More ->  do
-          let v = toVar @a wf
-          zoom #acWitness $ modify (insert v wf)
-          return $ toLinVar (NewVar v)
+        case runWitnessF wf $ \case
+          WSysVar sV -> LinUVar one sV zero
+          _ -> More
+        of
+          LinUVar k x b -> return (LinVar k x b)
+          _ -> do
+            let v = toVar @a wf
+            -- TODO: forbid reassignment of variables
+            zoom #acWitness $ modify (insert v wf)
+            return $ toLinVar (NewVar v)
 
     constraint p =
       let evalConstVar = \case
-            LinVar k sysV b -> fromConstant k * (var sysV) + fromConstant b
+            LinVar k sysV b -> fromConstant k * var sysV + fromConstant b
             ConstVar cV -> fromConstant cV
           evalMaybe = \case
-            LinVar {} -> Nothing
             ConstVar cV -> Just cV
+            _ -> Nothing
       in case p evalMaybe of
         Just c -> if c == zero
                     then return ()

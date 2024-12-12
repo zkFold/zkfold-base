@@ -40,7 +40,7 @@ import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRel
 import           ZkFold.Base.Protocol.Plonkup.Testing
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 -- | Polynomial types and specific polynomials that were causing exceptions

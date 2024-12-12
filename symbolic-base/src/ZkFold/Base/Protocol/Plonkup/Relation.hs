@@ -29,7 +29,7 @@ import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint        (PlonkConst
 import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
 import           ZkFold.Prelude                                      (length, replicate)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Class    (toLinVar)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toLinVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
