@@ -308,7 +308,7 @@ benchmark bench-poly-mul
       tasty-bench,
       vector,
 
-benchmark in-circuit-ec-benchmark 
+benchmark bench-in-circuit-ec 
     import:           options-exe
     main-is:          BenchEC.hs
     hs-source-dirs:   bench
@@ -321,3 +321,19 @@ benchmark in-circuit-ec-benchmark
       tasty-bench,
       random,
       symbolic-base,
+
+benchmark bench-blake2b
+    import:           options-exe
+    main-is:          Blake2b.hs
+    hs-source-dirs:   bench/algorithms
+    type:             exitcode-stdio-1.0
+    ghc-options:
+      -O3
+    build-depends:
+      base,
+      deepseq,
+      random,
+      symbolic-base,
+      tasty-bench,
+      vector,
+      bytestring,
