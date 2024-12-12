@@ -24,9 +24,9 @@ import           ZkFold.Base.Data.Vector                             (Vector, un
 import           ZkFold.Prelude                                      (genSubset)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 ------------------------------------- Instances -------------------------------------
 

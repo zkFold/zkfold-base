@@ -5,16 +5,16 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation where
 
 
 
-import           Control.Applicative             ()
-import           Data.Functor.Rep                (Rep)
-import           GHC.Generics                    (Generic)
-import           GHC.Integer                     (Integer)
-import           GHC.Natural                     (Natural)
-import           Prelude                         (Eq, ($), (.), (==), error)
+import           Control.Applicative                            ()
+import           Data.Functor.Rep                               (Rep)
+import           GHC.Generics                                   (Generic)
+import           GHC.Integer                                    (Integer)
+import           GHC.Natural                                    (Natural)
+import           Prelude                                        (Eq, error, ($), (.), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString     ()
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
+import           ZkFold.Base.Data.ByteString                    ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 
 
@@ -50,7 +50,7 @@ instance (Exponent a Natural, MultiplicativeMonoid a) => Exponent (UVar a i) Nat
 instance (Exponent a Integer, MultiplicativeMonoid a) => Exponent (UVar a i) Integer where
   (ConstUVar c) ^ n   = ConstUVar $ c ^ n
   (LinUVar k x b) ^ 1 = LinUVar k x b
-  _ ^ 0    = ConstUVar one
+  _ ^ 0               = ConstUVar one
   _ ^ _               = More
 
 instance (AdditiveSemigroup a, AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveSemigroup (UVar a i) where
