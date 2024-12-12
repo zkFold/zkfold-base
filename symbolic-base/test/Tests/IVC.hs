@@ -93,7 +93,7 @@ testPublicInput sps =
     let NARKInstanceProof pi _ = testInstanceProofPair sps
     in pi
 
-testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C [F] [F] F
+testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C [F] F
 testAccumulatorScheme = accumulatorScheme @MiMCHash
 
 testAccumulator :: SPS -> PHI -> Accumulator K I C M F
@@ -116,10 +116,10 @@ testDeciderResult sps phi =
     let s = testAccumulatorScheme phi
     in decider s $ testAccumulator sps phi
 
-testVerifierResult :: SPS -> PHI -> (F, I F, Vector (K-1) F, Vector K (C F), C F)
+testVerifierResult :: SPS -> PHI -> AccumulatorInstance K I C F
 testVerifierResult sps phi =
     let s = testAccumulatorScheme phi
-    in verifier s (testPublicInput sps) (testNarkProof sps) (initAccumulatorInstance phi) (testAccumulatorInstance sps phi) (testAccumulationProof sps phi)
+    in verifier s (testPublicInput sps) (testNarkProof sps) (initAccumulatorInstance phi) (testAccumulationProof sps phi)
 
 specAlgebraicMap :: IO ()
 specAlgebraicMap = hspec $ do
@@ -139,7 +139,7 @@ specAccumulatorScheme = hspec $ do
         describe "verifier" $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testSPS p) (testPredicate p)
-                    == (zero, singleton zero, unsafeToVector [], singleton zero, zero)
+                    == testAccumulatorInstance (testSPS p) (testPredicate p)
 
 specIVC :: IO ()
 specIVC = do

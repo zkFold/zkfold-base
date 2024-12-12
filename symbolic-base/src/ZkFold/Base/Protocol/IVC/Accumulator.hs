@@ -30,9 +30,7 @@ data AccumulatorInstance k i c f
         , _e  :: c f             -- E ∈ C in the paper
         , _mu :: f               -- μ ∈ F in the paper
         }
-    deriving (Show, Generic, NFData, Functor)
-
-deriving instance Generic1 (AccumulatorInstance k i c)
+    deriving (Show, Eq, Generic, Generic1, NFData, Functor)
 
 instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Distributive (AccumulatorInstance k i c) where
     distribute = distributeRep

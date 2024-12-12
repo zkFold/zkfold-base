@@ -29,7 +29,7 @@ import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..),
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
-data AccumulatorScheme d k i c m o f = AccumulatorScheme
+data AccumulatorScheme d k i c m f = AccumulatorScheme
   {
     prover   ::
                Accumulator k i c m f                          -- accumulator
@@ -39,19 +39,17 @@ data AccumulatorScheme d k i c m o f = AccumulatorScheme
   , verifier :: i f                                           -- Public input
             -> Vector k (c f)                                 -- NARK proof π.x
             -> AccumulatorInstance k i c f                    -- accumulator instance acc.x
-            -> AccumulatorInstance k i c f                    -- updated accumulator instance acc'.x
             -> Vector (d-1) (c f)                             -- accumulation proof E_j
-            -> (f, i f, Vector (k-1) f, Vector k (c f), c f)  -- returns zeros if the accumulation proof is correct
+            -> AccumulatorInstance k i c f                    -- updated accumulator instance acc'.x
 
   , decider  ::
                Accumulator k i c m f                          -- final accumulator
             -> (Vector k (c f), c f)                          -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k a i (p :: Type -> Type) c m o f .
+accumulatorScheme :: forall algo d k a i (p :: Type -> Type) c m f .
     ( KnownNat (d-1)
     , KnownNat (d+1)
-    , KnownNat k
     , Representable i
     , Zip i
     , HashAlgorithm algo f
@@ -70,7 +68,7 @@ accumulatorScheme :: forall algo d k a i (p :: Type -> Type) c m o f .
     , Scale f (Vector k (c f))
     )
     => Predicate a i p
-    -> AccumulatorScheme d k i c m o f
+    -> AccumulatorScheme d k i c m f
 accumulatorScheme phi =
   let
       prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
@@ -132,7 +130,7 @@ accumulatorScheme phi =
         in
             (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
 
-      verifier pubi pi_x acc acc' pf =
+      verifier pubi pi_x acc pf =
         let
             r_0 :: f
             r_0 = oracle @algo pubi
@@ -145,22 +143,16 @@ accumulatorScheme phi =
             alpha :: f
             alpha = oracle @algo (acc, pubi, pi_x, pf)
 
-            -- Fig. 4, step 3
+            -- Fig. 4, steps 3-4
             mu'  = alpha + acc^.mu
             pi'' = zipWith (+) (fmap (* alpha) pubi) (acc^.pi)
             ri'' = zipWith (+) (scale alpha r_i)     (acc^.r)
             ci'' = zipWith (+) (scale alpha pi_x)    (acc^.c)
 
-            -- Fig 4, step 4
-            muDiff = acc'^.mu - mu'
-            piDiff = zipWith (-) (acc'^.pi) pi''
-            riDiff = zipWith (-) (acc'^.r)  ri''
-            ciDiff = acc'^.c  - ci''
-
             -- Fig 4, step 5
-            eDiff = acc'^.e - (acc^.e + sum (mapWithIx (\i a -> scale (alpha ^ (i+1)) a) pf))
+            e' = acc^.e + sum (mapWithIx (\i a -> scale (alpha ^ (i+1)) a) pf)
         in
-            (muDiff, piDiff, riDiff, ciDiff, eDiff)
+            AccumulatorInstance { _pi = pi'', _c = ci'', _r = ri'', _e = e', _mu = mu' }
 
       decider acc =
         let
