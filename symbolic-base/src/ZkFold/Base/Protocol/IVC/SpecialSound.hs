@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.IVC.SpecialSound where
 
@@ -27,7 +28,7 @@ and checks that the output is a zero vector of length l.
 
 --}
 
-data SpecialSoundProtocol d k i p o m c f = SpecialSoundProtocol
+data SpecialSoundProtocol k i p o m f = SpecialSoundProtocol
   {
     input ::
          i f                            -- ^ previous public input
@@ -48,12 +49,12 @@ data SpecialSoundProtocol d k i p o m c f = SpecialSoundProtocol
       -> o                              -- ^ verifier output
   }
 
-specialSoundProtocol :: forall d a i p c .
+specialSoundProtocol :: forall d a i p .
     ( KnownNat (d+1)
     , Arithmetic a
     , Representable i
     , Representable p
-    ) => Predicate a i p -> SpecialSoundProtocol d 1 i p [a] [a] c a
+    ) => Predicate a i p -> SpecialSoundProtocol 1 i p [a] [a] a
 specialSoundProtocol phi@Predicate {..} =
   let
       prover pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)

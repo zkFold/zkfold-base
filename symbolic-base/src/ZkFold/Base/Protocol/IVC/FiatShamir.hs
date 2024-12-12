@@ -13,19 +13,19 @@ import           ZkFold.Base.Protocol.IVC.CommitOpen
 import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle (..))
 import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
-type FiatShamir d k i p o m c f = SpecialSoundProtocol d 1 i p (Vector k c, o) (Vector k (m, c)) c f
+type FiatShamir k i p o m c f = SpecialSoundProtocol 1 i p (Vector k c, o) (Vector k (m, c)) f
 
 -- The transcript of the Fiat-Shamired protocol (ignoring the last round)
-transcriptFiatShamir :: forall algo k c f . RandomOracle algo (f, c) f
+transcript :: forall algo k c f . RandomOracle algo (f, c) f
     => f -> Vector k c -> Vector (k-1) f
-transcriptFiatShamir r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle @algo @(f, c))) r0 cs
+transcript r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle @algo @(f, c))) r0 cs
 
-fiatShamirTransform :: forall algo d k i p o m c f.
+fiatShamir :: forall algo k i p o m c f.
     ( KnownNat k
     , RandomOracle algo (i f) f
     , RandomOracle algo (f, c) f
-    ) => CommitOpen d k i p o m c f -> FiatShamir d k i p o m c f
-fiatShamirTransform SpecialSoundProtocol {..} =
+    ) => CommitOpen k i p o m c f -> FiatShamir k i p o m c f
+fiatShamir SpecialSoundProtocol {..} =
     let
         prover' pi0 w _ _ =
             let r0 = oracle @algo pi0
@@ -37,7 +37,7 @@ fiatShamirTransform SpecialSoundProtocol {..} =
         verifier' pi pms' _ =
             let pms = item pms'
                 r0 = oracle @algo pi :: f
-                rs = transcriptFiatShamir @algo r0 $ fmap snd pms
+                rs = transcript @algo r0 $ fmap snd pms
             in verifier pi pms rs
     in
         SpecialSoundProtocol input prover' verifier'

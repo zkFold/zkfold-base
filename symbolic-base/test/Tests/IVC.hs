@@ -19,7 +19,7 @@ import           ZkFold.Base.Protocol.IVC.Accumulator            (Accumulator (.
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme      as Acc
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap           (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.CommitOpen             (commitOpen)
-import           ZkFold.Base.Protocol.IVC.FiatShamir             (FiatShamir, fiatShamirTransform)
+import           ZkFold.Base.Protocol.IVC.FiatShamir             (FiatShamir, fiatShamir)
 import           ZkFold.Base.Protocol.IVC.NARK                   (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle                 (MiMCHash)
 import           ZkFold.Base.Protocol.IVC.Predicate              (Predicate (..))
@@ -37,7 +37,7 @@ type M = [F]
 type K = 1
 type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) U1
 type PHI = Predicate F I P
-type SPS = FiatShamir D 1 I P [F] [F] G F
+type SPS = FiatShamir 1 I P [F] [F] G F
 type D = 2
 type PARDEG = 5
 type PAR = PolyVec F PARDEG
@@ -63,7 +63,7 @@ testPredicate :: PAR -> PHI
 testPredicate p = Predicate (\x _ -> testFunction' p x) (testCircuit p)
 
 testSPS :: PAR -> SPS
-testSPS = fiatShamirTransform @MiMCHash . commitOpen . specialSoundProtocol . testPredicate
+testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D . testPredicate
 
 initAccumulator :: PHI -> Accumulator K I M G F
 initAccumulator = emptyAccumulator @D

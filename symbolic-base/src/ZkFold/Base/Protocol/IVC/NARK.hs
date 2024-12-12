@@ -22,7 +22,7 @@ data NARKProof k m c
     deriving (Show, Generic, NFData)
 
 narkProof :: Ring f
-    => FiatShamir d k i p o m c f
+    => FiatShamir k i p o m c f
     -> i f
     -> p f
     -> NARKProof k m c
@@ -34,7 +34,7 @@ data NARKInstanceProof k i m c f = NARKInstanceProof (i f) (NARKProof k m c)
     deriving (Show, Generic, NFData)
 
 narkInstanceProof :: Ring f
-    => FiatShamir d k i p o m c f
+    => FiatShamir k i p o m c f
     -> i f
     -> p f
     -> NARKInstanceProof k i m c f

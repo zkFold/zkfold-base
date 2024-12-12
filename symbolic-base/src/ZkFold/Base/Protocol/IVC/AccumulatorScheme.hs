@@ -23,7 +23,7 @@ import           ZkFold.Base.Data.Vector                     (Vector, init, mapW
 import           ZkFold.Base.Protocol.IVC.Accumulator
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit             (HomomorphicCommit (..))
-import           ZkFold.Base.Protocol.IVC.FiatShamir         (transcriptFiatShamir)
+import           ZkFold.Base.Protocol.IVC.FiatShamir         (transcript)
 import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..), HashAlgorithm)
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate)
@@ -81,7 +81,7 @@ accumulatorScheme phi =
 
             -- Fig. 3, step 1
             r_i :: Vector (k-1) f
-            r_i = transcriptFiatShamir @algo r_0 pi_x
+            r_i = transcript @algo r_0 pi_x
 
             -- Fig. 3, step 2
 
@@ -133,21 +133,24 @@ accumulatorScheme phi =
         in
             (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
         
-      verifier pubi c_i acc acc' pf =
+      verifier pubi pi_x acc acc' pf =
         let
+            r_0 :: f
+            r_0 = oracle @algo pubi
+
             -- Fig. 4, step 1
             r_i :: Vector (k-1) f
-            r_i = unsafeToVector $ P.tail $ P.tail $ P.scanl (P.curry (oracle @algo)) (oracle @algo pubi) $ toList c_i
+            r_i = transcript @algo r_0 pi_x
 
             -- Fig. 4, step 2
             alpha :: f
-            alpha = oracle @algo (acc, pubi, c_i, pf)
+            alpha = oracle @algo (acc, pubi, pi_x, pf)
 
             -- Fig. 4, step 3
             mu'  = alpha + acc^.mu
             pi'' = zipWith (+) (fmap (* alpha) pubi) (acc^.pi)
-            ri'' = zipWith (+) (scale alpha r_i)  (acc^.r)
-            ci'' = zipWith (+) (scale alpha c_i)  (acc^.c)
+            ri'' = zipWith (+) (scale alpha r_i)     (acc^.r)
+            ci'' = zipWith (+) (scale alpha pi_x)    (acc^.c)
 
             -- Fig 4, step 4
             muDiff = acc'^.mu - mu'
