@@ -55,6 +55,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.Conditional  (Conditional)
 import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
@@ -71,10 +72,8 @@ deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString 
 deriving stock instance Haskell.Eq (c (Vector n)) => Haskell.Eq (ByteString n c)
 deriving anyclass instance NFData (c (Vector n)) => NFData (ByteString n c)
 deriving newtype instance (KnownNat n, Symbolic c) => SymbolicData (ByteString n c)
-
-
-deriving newtype
-         instance (Symbolic c, KnownNat n) => Eq (Bool c) (ByteString n c)
+deriving newtype instance (Symbolic c, KnownNat n) => Eq (Bool c) (ByteString n c)
+deriving newtype instance (Symbolic c, KnownNat n) => Conditional (Bool c) (ByteString n c)
 
 instance
     ( Symbolic c

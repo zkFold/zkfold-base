@@ -18,6 +18,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.Eq
 
 data Maybe context x = Maybe { isJust :: Bool context, fromJust :: x }
   deriving stock
@@ -28,6 +29,10 @@ data Maybe context x = Maybe { isJust :: Bool context, fromJust :: x }
     )
 
 deriving stock instance (Haskell.Eq (context Par1), Haskell.Eq x) => Haskell.Eq (Maybe context x)
+
+instance (SymbolicOutput x, Context x ~ c) => SymbolicData (Maybe c x) where
+instance (SymbolicOutput x, Context x ~ c, Conditional (Bool c) x) => Conditional (Bool c) (Maybe c x)
+instance (SymbolicOutput x, Context x ~ c, Eq (Bool c) x) => Eq (Bool c) (Maybe c x)
 
 just :: Symbolic c => x -> Maybe c x
 just = Maybe true
@@ -41,22 +46,20 @@ nothing =
 
 fromMaybe ::
   forall c x .
-  (SymbolicData x, Context x ~ c) =>
+  Conditional (Bool c) x =>
   x -> Maybe c x -> x
 fromMaybe a (Maybe j t) = bool a t j
 
 isNothing :: Symbolic c => Maybe c x -> Bool c
 isNothing (Maybe h _) = not h
 
-instance (SymbolicOutput x, Context x ~ c) => SymbolicData (Maybe c x) where
-
 maybe :: forall a b c .
-    (SymbolicData b, Context b ~ c) =>
+    Conditional (Bool c) b =>
     b -> (a -> b) -> Maybe c a -> b
 maybe d h m = fromMaybe d (h <$> m)
 
 find :: forall a c t .
-    ( SymbolicOutput a, Context a ~ c, Haskell.Foldable t) =>
+    (SymbolicOutput a, Context a ~ c, Haskell.Foldable t, Conditional (Bool c) a) =>
     (a -> Bool c) -> t a -> Maybe c a
 find p = let n = nothing in
     foldr (\i r -> maybe @a @_ @c (bool @(Bool c) n (just i) $ p i) (Haskell.const r) r) n
