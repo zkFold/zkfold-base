@@ -114,6 +114,7 @@ library
       ZkFold.Base.Data.HFunctor
       ZkFold.Base.Data.List.Infinite
       ZkFold.Base.Data.Matrix
+      ZkFold.Base.Data.Orphans
       ZkFold.Base.Data.Package
       ZkFold.Base.Data.Product
       ZkFold.Base.Data.Sparse.Matrix
@@ -134,6 +135,7 @@ library
       ZkFold.Base.Protocol.IVC.Predicate
       ZkFold.Base.Protocol.IVC.RecursiveFunction
       ZkFold.Base.Protocol.IVC.SpecialSound
+      ZkFold.Base.Protocol.IVC.StepFunction
       ZkFold.Base.Protocol.IVC.VerifierCircuit
       ZkFold.Base.Protocol.KZG
       ZkFold.Base.Protocol.Plonk

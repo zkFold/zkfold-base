@@ -49,14 +49,8 @@ testFunction p x _ =
     let p' = fromList $ map fromConstant $ toList p :: PolyVec (FieldElement ctx) PARDEG
     in singleton $ evalPolyVec p' $ item x
 
--- testPredicateEval :: PAR -> I F -> P F -> I F
--- testPredicateEval = predicateEval @F @I @P . testPredicate
-
 testPredicateCircuit :: PAR -> AC
 testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
-    -- hpmap (\(x :*: U1) -> Comp1 (Par1 <$> x) :*: U1) $
-    -- hlmap (\x -> U1 :*: Comp1 (Par1 <$> x)) $
-    -- compileWith @F guessOutput (\x U1 -> (Comp1 (singleton U1) :*: U1, x)) $ testFunction p
 
 testPredicate :: PAR -> PHI
 testPredicate p = predicate @F @I @P $ testFunction p

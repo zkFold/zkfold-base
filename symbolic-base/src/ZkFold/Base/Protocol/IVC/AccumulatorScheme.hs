@@ -54,11 +54,8 @@ accumulatorScheme :: forall algo d k a i (p :: Type -> Type) c m f .
     , Zip i
     , HashAlgorithm algo f
     , RandomOracle algo f f
-    , RandomOracle algo (i f) f        -- Random oracle for compressing public input
-    , RandomOracle algo (c f) f        -- Random oracle ρ_NARK
-    , RandomOracle algo (Vector k (c f)) f
-    , RandomOracle algo (Vector (k-1) f) f
-    , RandomOracle algo (Vector (d-1) (c f)) f
+    , RandomOracle algo (i f) f
+    , RandomOracle algo (c f) f
     , HomomorphicCommit m (c f)
     , m ~ [f]
     , Field f

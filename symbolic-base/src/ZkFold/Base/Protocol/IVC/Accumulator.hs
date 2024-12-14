@@ -19,7 +19,9 @@ import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-), type
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
+import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle, HashAlgorithm)
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
+import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f
@@ -30,14 +32,29 @@ data AccumulatorInstance k i c f
         , _e  :: c f             -- E ∈ C in the paper
         , _mu :: f               -- μ ∈ F in the paper
         }
-    deriving (Show, Eq, Generic, Generic1, NFData, Functor)
+    deriving (Show, Eq, Generic, Generic1, NFData, Functor, Foldable, Traversable)
 
 instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Distributive (AccumulatorInstance k i c) where
     distribute = distributeRep
-
     collect = collectRep
 
-deriving instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Representable (AccumulatorInstance k i c)
+instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Representable (AccumulatorInstance k i c)
+
+instance (HashAlgorithm algo f, RandomOracle algo f f, RandomOracle algo (i f) f, RandomOracle algo (c f) f)
+    => RandomOracle algo (AccumulatorInstance k i c f) f
+
+instance
+    ( KnownNat (k-1)
+    , KnownNat k
+    , SymbolicData f
+    , SymbolicData (i f)
+    , SymbolicData (c f)
+    , Context f ~ Context (c f)
+    , Context f ~ Context (i f)
+    , Support f ~ Support (c f)
+    , Support f ~ Support (i f)
+    , Support f ~ Support (c f)
+    ) => SymbolicData (AccumulatorInstance k i c f)
 
 makeLenses ''AccumulatorInstance
 

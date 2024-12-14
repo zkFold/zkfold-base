@@ -2,44 +2,41 @@
 
 module ZkFold.Base.Protocol.IVC.Predicate where
 
-import           Control.DeepSeq                   (NFData)
-import           Data.Binary                       (Binary)
-import           Data.Functor.Rep                  (Representable (..))
-import           GHC.Generics                      ((:*:) (..), U1 (..))
-import           Prelude                           hiding (Num (..), drop, head, replicate, take, zipWith)
+import           Data.Binary                           (Binary)
+import           GHC.Generics                          ((:*:) (..), U1 (..))
+import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
 
-import           ZkFold.Base.Data.Package          (packed, unpacked)
+import           ZkFold.Base.Data.Package              (packed, unpacked)
+import           ZkFold.Base.Protocol.IVC.StepFunction (FunctorAssumptions, StepFunctionAssumptions, StepFunction)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import           ZkFold.Symbolic.Compiler          (ArithmeticCircuit, compileWith, hlmap, guessOutput)
-import           ZkFold.Symbolic.Interpreter       (Interpreter(..))
+import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
+import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, hlmap, guessOutput)
+import           ZkFold.Symbolic.Interpreter           (Interpreter(..))
 
 type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p) i U1
 
 data Predicate a i p = Predicate
-  { predicateEval    :: i a -> p a -> i a
-  , predicateCircuit :: PredicateCircuit a i p
-  }
+    { predicateEval    :: i a -> p a -> i a
+    , predicateCircuit :: PredicateCircuit a i p
+    }
 
-type StepFunction a i p = forall ctx . (Symbolic ctx, BaseField ctx ~ a) => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)
-
-predicate :: forall a i p .
-    ( Representable i
-    , Traversable i
-    , NFData (Rep i)
-    , Binary (Rep i)
-    , Ord (Rep i)
-    , Representable p
-    , Traversable p
-    , NFData (Rep p)
-    , Binary (Rep p)
-    , Ord (Rep p)
-    , Arithmetic a
+type PredicateAssumptions a i p =
+    ( Arithmetic a
     , Binary a
+    , FunctorAssumptions i
+    , FunctorAssumptions p
+    )
+
+predicate :: forall a i p ctx0 ctx1 .
+    ( PredicateAssumptions a i p
+    , ctx0 ~ Interpreter a
+    , StepFunctionAssumptions a (FieldElement ctx0) ctx0
+    , ctx1 ~ ArithmeticCircuit a (i :*: p) U1
+    , StepFunctionAssumptions a (FieldElement ctx1) ctx1
     ) => StepFunction a i p -> Predicate a i p
 predicate func =
     let
-        func' :: forall ctx . (Symbolic ctx, BaseField ctx ~ a) => ctx i -> ctx p -> ctx i
+        func' :: forall ctx f . StepFunctionAssumptions a f ctx => ctx i -> ctx p -> ctx i
         func' x' u' =
             let
                 x = FieldElement <$> unpacked x'
