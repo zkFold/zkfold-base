@@ -32,6 +32,7 @@ import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
+import Examples.Blake2b
 
 type A = Zp BLS12_381_Scalar
 type C = ArithmeticCircuit A
@@ -67,6 +68,8 @@ instance NFData (f (g a)) => NFData ((f :.: g) a)
 examples :: [(String, ExampleOutput)]
 examples =
   [ ("Eq", exampleOutput exampleEq)
+  , ("Blake2b_224", exampleOutput $ exampleBlake2b_224 @32)
+  , ("Blake2b_256", exampleOutput $ exampleBlake2b_256 @64)
   , ("Conditional", exampleOutput exampleConditional)
   , ("Constant.5", exampleOutput exampleConst5)
   , ("Eq.Constant.5", exampleOutput exampleEq5)
