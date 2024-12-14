@@ -11,6 +11,3 @@ cradle:
 
     - path: "bench/BenchEC.hs"
       component: "symbolic-base:bench:bench-in-circuit-ec"
-
-    - path: "bench/algorithms/Blake2b.hs"
-      component: "symbolic-base:bench:bench-blake2b"

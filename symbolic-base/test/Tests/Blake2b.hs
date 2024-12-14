@@ -57,8 +57,8 @@ equalityBlake ::
    , FromConstant a (ByteString 24 c)
    ) => a -> FieldElement c -> Bool c
 equalityBlake input target =
-    let hash'   = resize $ blake2b_224 @3 @c $ fromConstant input
-        target' = from @_ @(ByteString 255 c) target
+    let hash'   = from @(ByteString 255 c) $ resize $ blake2b_224 @3 @c $ fromConstant input
+        target' = {- resize $ from @_ @(ByteString 255 c) -} target
     in target' ZK.== hash'
 
 blake2bSymbolic :: Spec

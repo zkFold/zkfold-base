@@ -18,9 +18,6 @@ cradle:
     - path: "symbolic-base/bench/BenchEC.hs"
       component: "symbolic-base:bench:bench-in-circuit-ec"
 
-    - path: "symbolic-base/bench/algorithms/Blake2b.hs"
-      component: "symbolic-base:bench:bench-blake2b"
-
     - path: "symbolic-cardano/src"
       component: "lib:symbolic-cardano"
 
