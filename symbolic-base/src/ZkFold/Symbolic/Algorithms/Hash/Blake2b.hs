@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeOperators       #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
-module ZkFold.Symbolic.Algorithms.Hash.Blake2b where
+module ZkFold.Symbolic.Algorithms.Hash.Blake2b (blake2b_224, blake2b_256, blake2b_512) where
 
 import           Data.Bool                                         (bool)
 import           Data.Constraint                                   (Dict, withDict)
@@ -292,7 +292,6 @@ withConstraints :: forall n {r}. KnownNat n => (
     , 8 * n <= 8 * n + ExtensionBits n
     , Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n) => r) -> r
 withConstraints = with8nLessExt @n $ withExtendedInputByteString @n $ withExtensionBits @n $ with8n @n $ withBlake2bDivConstraint @n
-
 
 blake2b :: forall keyLen inputLen outputLen c n.
     ( Symbolic c
