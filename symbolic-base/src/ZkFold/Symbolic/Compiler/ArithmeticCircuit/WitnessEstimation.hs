@@ -10,7 +10,7 @@ import           Data.Functor.Rep                               (Rep)
 import           GHC.Generics                                   (Generic)
 import           GHC.Integer                                    (Integer)
 import           GHC.Natural                                    (Natural)
-import           Prelude                                        (Eq, ($), (.), (==))
+import           Prelude                                        (Eq, ($), (.), (==), Maybe (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString                    ()
@@ -97,10 +97,9 @@ instance (Field a, Eq a, Eq (Rep i)) => Field (UVar a i) where
   finv _             = More
 
 instance ToConstant a => ToConstant (UVar a i) where
-  type Const (UVar a i) = UVar (Const a) i
-  toConstant (ConstUVar c)   = ConstUVar $ toConstant c
-  toConstant (LinUVar k x b) = LinUVar (toConstant k) x (toConstant b)
-  toConstant More            = More
+  type Const (UVar a i) = Maybe (Const a)
+  toConstant (ConstUVar c) = Just $ toConstant c
+  toConstant _ = Nothing
 
 instance Finite a => Finite (UVar a i) where type Order (UVar a i) = Order a
 
@@ -109,21 +108,15 @@ instance (SemiEuclidean a, Eq a, Eq (Rep i)) => SemiEuclidean (UVar a i) where
   div (ConstUVar _) (LinUVar {})    = ConstUVar zero
   div (LinUVar k x b) (ConstUVar c) = LinUVar (div k c) x (div b c)
   div (LinUVar {}) (LinUVar {})     = More
-    -- if x1 == x2 then ConstUVar $ div k1 k2 else More
   div More _                        = More
   div _ More                        = ConstUVar zero
   mod (ConstUVar c1) (ConstUVar c2) = ConstUVar $ mod c1 c2
   mod (ConstUVar c) _               = ConstUVar c
   mod (LinUVar _ _ b) (ConstUVar c) = ConstUVar $ mod b c
   mod (LinUVar {}) (LinUVar {})     = More
-    -- if x1 == x2
-    -- then ConstUVar $ b1 - (b2 * div k1 k2) -- need (AdditiveGroup Natural) for this
-    -- else More
   mod (LinUVar k x b) More          = LinUVar k x b
   mod More _                        = More
 
-instance (FromConstant Natural a) => FromConstant (UVar Natural i) (UVar a i) where
-    fromConstant (ConstUVar c)   = ConstUVar $ fromConstant c
-    fromConstant (LinUVar k x b) = LinUVar (fromConstant k) x (fromConstant b)
-    fromConstant More            = More
-
+instance (FromConstant Natural a) => FromConstant (Maybe Natural) (UVar a i) where
+    fromConstant (Just c) = ConstUVar $ fromConstant c
+    fromConstant Nothing = More
