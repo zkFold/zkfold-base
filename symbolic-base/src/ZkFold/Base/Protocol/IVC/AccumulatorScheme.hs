@@ -10,7 +10,6 @@ import           Control.Lens                                ((^.))
 import           Data.Constraint                             (withDict)
 import           Data.Constraint.Nat                         (plusMinusInverse1)
 import           Data.Functor.Rep                            (Representable (..))
-import           Data.Kind                                   (Type)
 import           Data.Zip                                    (Zip (..))
 import           GHC.IsList                                  (IsList (..))
 import           Prelude                                     (type (~), fmap, ($), (.), (<$>))
@@ -47,7 +46,7 @@ data AccumulatorScheme d k i c m f = AccumulatorScheme
             -> (Vector k (c f), c f)                          -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k a i (p :: Type -> Type) c m f .
+accumulatorScheme :: forall algo d k a i p c m f .
     ( KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i

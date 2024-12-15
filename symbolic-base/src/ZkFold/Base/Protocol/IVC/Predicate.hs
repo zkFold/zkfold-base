@@ -27,7 +27,7 @@ type PredicateAssumptions a i p =
     , FunctorAssumptions p
     )
 
-predicate :: forall a i p ctx0 ctx1 .
+predicate :: forall ctx0 ctx1 a i p .
     ( PredicateAssumptions a i p
     , ctx0 ~ Interpreter a
     , StepFunctionAssumptions a (FieldElement ctx0) ctx0

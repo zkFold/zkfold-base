@@ -24,5 +24,5 @@ type StepFunctionAssumptions a f ctx =
     , FieldElement ctx ~ f
     )
 
-type StepFunction a i p = forall f ctx . StepFunctionAssumptions a f ctx
+type StepFunction a i p = forall ctx f  . StepFunctionAssumptions a f ctx
     => i f -> p f -> i f
