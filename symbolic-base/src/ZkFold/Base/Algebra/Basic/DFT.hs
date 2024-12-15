@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use even" #-}
 module ZkFold.Base.Algebra.Basic.DFT (genericDft) where
 
 import           Control.Monad                   (forM_)

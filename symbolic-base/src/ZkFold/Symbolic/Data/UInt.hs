@@ -10,12 +10,14 @@
 module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
     StrictNum(..),
-    UInt(..),
+    UInt,
     OrdWord,
     toConstant,
     asWords,
     expMod,
-    eea
+    eea,
+    testOnlyUInt,
+    testOnlyUIntInterpreter
 ) where
 
 import           Control.DeepSeq
@@ -56,8 +58,13 @@ import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, constraint, newAssigned)
 
 
--- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
+
+testOnlyUInt :: UInt n r context -> context (Vector (NumberOfRegisters (BaseField context) n r))
+testOnlyUInt (UInt v) = v
+
+testOnlyUIntInterpreter :: UInt n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
+testOnlyUIntInterpreter (UInt (Interpreter v)) = v
 
 deriving instance Generic (UInt n r context)
 deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) n r)))) => NFData (UInt n r context)

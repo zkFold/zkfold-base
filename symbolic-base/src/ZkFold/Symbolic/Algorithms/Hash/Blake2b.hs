@@ -30,7 +30,7 @@ import           ZkFold.Symbolic.Data.Bool                         (BoolType (..
 import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Resize (..), ShiftBits (..),
                                                                     concat, reverseEndianness, toWords)
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..))
-import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
+import           ZkFold.Symbolic.Data.UInt                         (UInt)
 
 
 -- TODO: This module is not finished yet. The hash computation is not correct.

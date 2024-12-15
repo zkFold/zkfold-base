@@ -9,14 +9,14 @@ module Tests.UInt (specUInt) where
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return, when)
 import           Data.Aeson                                  (decode, encode)
-import           Data.Constraint
+import           Data.Constraint                             (Dict, withDict)
 import           Data.Constraint.Nat                         (timesNat)
-import           Data.Constraint.Unsafe
+import           Data.Constraint.Unsafe                      (unsafeAxiom)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1), U1)
-import           Prelude                                     (show, type (~))
+import           Prelude                                     (show, type (~), (.))
 import qualified Prelude                                     as P
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (describe, hspec)
@@ -55,10 +55,10 @@ evalBS :: forall a n . Arithmetic a => ByteString n (AC a) -> ByteString n (Inte
 evalBS (ByteString bits) = ByteString $ Interpreter (exec bits)
 
 execAcUint :: forall a n r . Arithmetic a => UInt n r (AC a) -> Vector (NumberOfRegisters a n r) a
-execAcUint (UInt v) = exec v
+execAcUint = exec . testOnlyUInt
 
 execZpUint :: forall a n r . UInt n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
-execZpUint (UInt (Interpreter v)) = v
+execZpUint = testOnlyUIntInterpreter
 
 overflowSub :: forall n . KnownNat n => Binary Natural
 overflowSub x y
