@@ -15,7 +15,6 @@ import           Prelude                         (Eq, Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString     ()
-import           ZkFold.Symbolic.Class           (Arithmetic)
 
 
 data SysVar i
@@ -44,8 +43,8 @@ data Var a i
   | ConstVar a
   deriving Generic
 
-toLinVar :: (Arithmetic a) => SysVar i -> Var a i
-toLinVar x = LinVar one x zero
+toVar :: Semiring a => SysVar i -> Var a i
+toVar x = LinVar one x zero
 
 imapVar ::
   (Representable i, Representable j) =>

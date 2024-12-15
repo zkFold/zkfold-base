@@ -43,7 +43,7 @@ instance
   , Haskell.Foldable i
   ) => Arbitrary (ArithmeticCircuit a p i Par1) where
     arbitrary = do
-        outVar <- toLinVar . InVar <$> arbitrary
+        outVar <- toVar . InVar <$> arbitrary
         let ac = mempty {acOutput = Par1 outVar}
         fromFieldElement <$> arbitrary' (FieldElement ac) 10
 
@@ -63,7 +63,7 @@ instance
     arbitrary = do
         ac <- arbitrary @(ArithmeticCircuit a p i Par1)
         o  <- unsafeToVector <$> genSubset (value @l) (getAllVars ac)
-        return ac {acOutput = toLinVar <$> o}
+        return ac {acOutput = toVar <$> o}
 
 arbitrary' ::
   forall a p i .
@@ -76,9 +76,9 @@ arbitrary' ac iter = do
     let vars = getAllVars (fromFieldElement ac)
     li <- elements vars
     ri <- elements vars
-    let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (toLinVar li)}
-                 , FieldElement (fromFieldElement ac) { acOutput = pure (toLinVar ri)})
-    let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural 10)) { acOutput = pure (toLinVar li)}
+    let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (toVar li)}
+                 , FieldElement (fromFieldElement ac) { acOutput = pure (toVar ri)})
+    let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural 10)) { acOutput = pure (toVar li)}
 
     ac' <- elements [
         l + r

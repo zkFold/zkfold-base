@@ -61,7 +61,6 @@ instance (AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveSemigroup (UVar a i) wh
       else LinUVar (k1 + k2) x1 (b1 + b2)
     else More
   LinUVar k x b + ConstUVar c = LinUVar k x (b + c)
-  ConstUVar c + LinUVar k x b = LinUVar k x (b + c)
   _ + _ = More
 
 instance (Semiring a, Eq a, Eq (Rep i)) => AdditiveMonoid (UVar a i) where

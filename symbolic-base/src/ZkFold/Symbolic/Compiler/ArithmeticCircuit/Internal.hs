@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -28,7 +29,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec1,
         apply,
         indexW,
-        toVar
+        witToVar
     ) where
 
 import           Control.DeepSeq                                              (NFData)
@@ -111,7 +112,7 @@ pmapWitVar _ (WSysVar v) = WSysVar v
 ---------------------------------- Variables -----------------------------------
 
 acInput :: (Representable i, Arithmetic a) => i (Var a i)
-acInput = fmapRep (toLinVar . InVar) (tabulate id)
+acInput = fmapRep (toVar . InVar) (tabulate id)
 
 getAllVars :: forall a p i o. (Representable i, Foldable i) => ArithmeticCircuit a p i o -> [SysVar i]
 getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where
@@ -188,14 +189,14 @@ instance
     unconstrained wf =
         case runWitnessF wf $ \case
           WSysVar sV -> LinUVar one sV zero
-          _ -> More
+          _          -> More
         of
           LinUVar k x b -> return (LinVar k x b)
           _ -> do
-            let v = toVar @a wf
+            let v = witToVar @a wf
             -- TODO: forbid reassignment of variables
             zoom #acWitness $ modify (insert v wf)
-            return $ toLinVar (NewVar v)
+            return $ toVar (NewVar v)
 
     constraint p =
       let evalConstVar = \case
@@ -208,7 +209,7 @@ instance
         Just c -> if c == zero
                     then return ()
                     else error "The constraint is non-zero"
-        Nothing -> zoom #acSystem . modify $ insert (toVar @_ @p (p at)) (p evalConstVar)
+        Nothing -> zoom #acSystem . modify $ insert (witToVar @_ @p (p at)) (p evalConstVar)
 
     rangeConstraint (LinVar k x b) upperBound = if k == one && b == zero
       then
@@ -216,7 +217,7 @@ instance
       else do
         let
           wf = at $ LinVar k x b
-          v = toVar @a wf
+          v = witToVar @a wf
               -- TODO: forbid reassignment of variables
         zoom #acWitness $ modify (insert v wf)
         zoom #acRange . modify $ insertWith S.union upperBound (S.singleton (NewVar v))
@@ -246,10 +247,10 @@ instance
 --
 -- 5. Thus the result of running the witness with 'MerkleHash' as a
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
-toVar ::
+witToVar ::
   forall a p i. (Finite a, Binary a, Binary (Rep p), Binary (Rep i)) =>
   WitnessF a (WitVar p i) -> ByteString
-toVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
+witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   WExVar exV -> merkleHash exV
   WSysVar (InVar inV) -> merkleHash inV
   WSysVar (NewVar newV) -> M newV

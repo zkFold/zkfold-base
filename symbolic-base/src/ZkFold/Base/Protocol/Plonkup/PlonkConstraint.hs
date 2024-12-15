@@ -26,7 +26,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate        (Poly, eval
 import           ZkFold.Base.Data.ByteString                         (toByteString)
 import           ZkFold.Prelude                                      (length, take)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toLinVar)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (toVar)
 
 data PlonkConstraint i a = PlonkConstraint
     { qm :: a
@@ -42,14 +42,14 @@ data PlonkConstraint i a = PlonkConstraint
 deriving instance (Show a, Show (Rep i)) => Show (PlonkConstraint i a)
 deriving instance (Eq a, Eq (Rep i)) => Eq (PlonkConstraint i a)
 
-instance (Ord a, Arbitrary a, Binary a, Ord (Rep i), Arithmetic a) => Arbitrary (PlonkConstraint i a) where
+instance (Ord a, Arbitrary a, Binary a, Ord (Rep i), Semiring a) => Arbitrary (PlonkConstraint i a) where
     arbitrary = do
         qm <- arbitrary
         ql <- arbitrary
         qr <- arbitrary
         qo <- arbitrary
         qc <- arbitrary
-        let arbitraryNewVar = toLinVar . NewVar . toByteString @a <$> arbitrary
+        let arbitraryNewVar = toVar . NewVar . toByteString @a <$> arbitrary
         xs <- sort <$> replicateM 3 arbitraryNewVar
         let x1 = head xs; x2 = xs !! 1; x3 = xs !! 2
         return $ PlonkConstraint qm ql qr qo qc x1 x2 x3
