@@ -5,16 +5,16 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation where
 
 
 
-import           Control.Applicative                            ()
-import           Data.Functor.Rep                               (Rep)
-import           GHC.Generics                                   (Generic)
-import           GHC.Integer                                    (Integer)
-import           GHC.Natural                                    (Natural)
-import           Prelude                                        (Eq, error, ($), (.), (==))
+import           Control.Applicative             ()
+import           Data.Functor.Rep                (Rep)
+import           GHC.Generics                    (Generic)
+import           GHC.Integer                     (Integer)
+import           GHC.Natural                     (Natural)
+import           Prelude                         (Eq, ($), (.), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString                    ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
+import           ZkFold.Base.Data.ByteString     ()
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 
 
@@ -29,7 +29,7 @@ instance FromConstant a (UVar a i) where
 instance FromConstant Natural a => FromConstant Natural (UVar a i) where fromConstant = ConstUVar . fromConstant
 instance FromConstant Integer a => FromConstant Integer (UVar a i) where fromConstant = ConstUVar . fromConstant
 
-instance (MultiplicativeSemigroup a, Eq a, AdditiveMonoid a) => Scale a (UVar a i) where
+instance (Semiring a, Eq a) => Scale a (UVar a i) where
   scale k (ConstUVar c) = ConstUVar $ k * c
   scale k (LinUVar a x b) = if k == zero
     then ConstUVar zero
@@ -38,10 +38,10 @@ instance (MultiplicativeSemigroup a, Eq a, AdditiveMonoid a) => Scale a (UVar a 
     then ConstUVar zero
     else More
 
-instance Scale Natural (UVar a i) where scale k = scale k . fromConstant
-instance Scale Integer (UVar a i) where scale k = scale k . fromConstant
+instance (Semiring a, Eq a) => Scale Natural (UVar a i) where scale k = scale (fromConstant k :: a)
+instance Eq a => Scale Integer (UVar a i) where scale k = scale k . fromConstant
 
-instance (Exponent a Natural, MultiplicativeMonoid a) => Exponent (UVar a i) Natural where
+instance MultiplicativeMonoid a => Exponent (UVar a i) Natural where
   (ConstUVar c) ^ n   = ConstUVar $ c ^ n
   (LinUVar k x b) ^ 1 = LinUVar k x b
   (LinUVar {}) ^ 0    = ConstUVar one
@@ -50,10 +50,10 @@ instance (Exponent a Natural, MultiplicativeMonoid a) => Exponent (UVar a i) Nat
 instance (Exponent a Integer, MultiplicativeMonoid a) => Exponent (UVar a i) Integer where
   (ConstUVar c) ^ n   = ConstUVar $ c ^ n
   (LinUVar k x b) ^ 1 = LinUVar k x b
-  _ ^ 0               = ConstUVar one
+  _ ^ 0    = ConstUVar one
   _ ^ _               = More
 
-instance (AdditiveSemigroup a, AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveSemigroup (UVar a i) where
+instance (AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveSemigroup (UVar a i) where
   ConstUVar c1 + ConstUVar c2 = ConstUVar $ c1 + c2
   LinUVar k1 x1 b1 + (LinUVar k2 x2 b2) = if x1 == x2
     then if k1 + k2 == zero
@@ -64,38 +64,66 @@ instance (AdditiveSemigroup a, AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveSe
   ConstUVar c + LinUVar k x b = LinUVar k x (b + c)
   _ + _ = More
 
-instance (AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveMonoid (UVar a i) where
+instance (Semiring a, Eq a, Eq (Rep i)) => AdditiveMonoid (UVar a i) where
   zero = ConstUVar zero
 
-instance (Eq a, AdditiveMonoid a, Eq (Rep i), AdditiveGroup a) => AdditiveGroup (UVar a i) where
+instance (AdditiveGroup a, Semiring a, Eq a, Eq (Rep i)) => AdditiveGroup (UVar a i) where
   negate (ConstUVar c)   = ConstUVar (negate c)
   negate (LinUVar k x b) = LinUVar (negate k) x (negate b)
   negate More            = More
 
-instance (MultiplicativeSemigroup a, Eq a, AdditiveMonoid a, Eq (Rep i)) => MultiplicativeSemigroup (UVar a i) where
+instance (Semiring a, Eq a) => MultiplicativeSemigroup (UVar a i) where
   ConstUVar c1 * ConstUVar c2 = ConstUVar $ c1 * c2
   ConstUVar c * (LinUVar k x b) = if c == zero
-    then zero
+    then ConstUVar zero
     else LinUVar (c * k) x (c * b)
+  ConstUVar c * More = if c == zero
+    then ConstUVar zero
+    else More
   (LinUVar k x b) * (ConstUVar c) = if c == zero
-    then zero
+    then ConstUVar zero
     else LinUVar (c * k) x (c * b)
   _ * _ = More
 
-instance (MultiplicativeMonoid a, AdditiveMonoid a, Eq a, Eq (Rep i)) => MultiplicativeMonoid (UVar a i) where
+instance (MultiplicativeMonoid a, Eq a, Semiring a) => MultiplicativeMonoid (UVar a i) where
   one = ConstUVar one
 
-instance (AdditiveMonoid a, Eq a, Eq (Rep i), FromConstant Natural a, MultiplicativeMonoid a) => Semiring (UVar a i)
+instance (Semiring a, Eq a, Eq (Rep i), MultiplicativeMonoid a) => Semiring (UVar a i)
 
-instance (AdditiveMonoid a, Eq a, Eq (Rep i), AdditiveGroup a, FromConstant Natural a, FromConstant Integer a, MultiplicativeMonoid a) => Ring (UVar a i)
+instance (Ring a, Eq a, Eq (Rep i)) => Ring (UVar a i)
 
-instance (AdditiveMonoid a, Eq a, Eq (Rep i), AdditiveGroup a, FromConstant Natural a, FromConstant Integer a, MultiplicativeMonoid a, Field a) => Field (UVar a i) where
+instance (Field a, Eq a, Eq (Rep i)) => Field (UVar a i) where
   finv (ConstUVar c) = ConstUVar $ finv c
   finv _             = More
 
-instance (ToConstant a) => ToConstant (UVar a i) where
-  type Const (UVar a i) = Const a
-  toConstant (ConstUVar c) = toConstant c
-  toConstant _             = error "WitnessEstimation: this should`t happen"
+instance ToConstant a => ToConstant (UVar a i) where
+  type Const (UVar a i) = UVar (Const a) i
+  toConstant (ConstUVar c) = ConstUVar $ toConstant c
+  toConstant (LinUVar k x b) = LinUVar (toConstant k) x (toConstant b)
+  toConstant More            = More
 
 instance Finite a => Finite (UVar a i) where type Order (UVar a i) = Order a
+
+instance (SemiEuclidean a, Eq a, Eq (Rep i)) => SemiEuclidean (UVar a i) where
+  div (ConstUVar c1) (ConstUVar c2) = ConstUVar $ div c1 c2
+  div (ConstUVar _) (LinUVar {}) = ConstUVar zero
+  div (LinUVar k x b) (ConstUVar c) = LinUVar (div k c) x (div b c)
+  div (LinUVar {}) (LinUVar {}) = More
+    -- if x1 == x2 then ConstUVar $ div k1 k2 else More
+  div More _ = More
+  div _ More = ConstUVar zero
+  mod (ConstUVar c1) (ConstUVar c2) = ConstUVar $ mod c1 c2
+  mod (ConstUVar c) _ = ConstUVar c
+  mod (LinUVar _ _ b) (ConstUVar c) = ConstUVar $ mod b c
+  mod (LinUVar {}) (LinUVar {}) = More
+    -- if x1 == x2
+    -- then ConstUVar $ b1 - (b2 * div k1 k2) -- need (AdditiveGroup Natural) for this
+    -- else More
+  mod (LinUVar k x b) More = LinUVar k x b
+  mod More _ = More
+
+instance (FromConstant Natural a) => FromConstant (UVar Natural i) (UVar a i) where
+    fromConstant (ConstUVar c) = ConstUVar $ fromConstant c
+    fromConstant (LinUVar k x b) = LinUVar (fromConstant k) x (fromConstant b)
+    fromConstant More = More
+

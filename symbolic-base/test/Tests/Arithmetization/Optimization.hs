@@ -44,6 +44,12 @@ testConst = fromCircuitF idCircuit $ \(Par1 i0) -> do
     constraint (($ i4) - fromConstant (5 :: Natural))
     return (Par1 i0)
 
+testLinVar :: forall a . (Arithmetic a, Binary a) => ArithmeticCircuit a U1 Par1 Par1
+testLinVar = fromCircuitF idCircuit $ \(Par1 i0) -> do
+    i1 <- newAssigned (($ i0) + one)
+    i2 <- newAssigned (($ i1) * ($ i0))
+    return (Par1 i2)
+
 specOptimization' :: forall a . (Arithmetic a, Binary a, Show a) => Spec
 specOptimization' = do
     describe "Arithmetization optimization test" $ do
@@ -61,6 +67,11 @@ specOptimization' = do
             eval constAc U1 (Par1 one) === (eval $ testConst @a) U1 (Par1 one)
         it "number of constraint and variables decreases" $ do
             acSizeM constAc === 0 .&. acSizeM constAc === 0
+        let linVarAc = optimize @a testLinVar
+        it "linVar ac evaluated" $ do
+            eval linVarAc U1 (Par1 $ one + one) === (eval $ testLinVar @a) U1 (Par1 $ one + one)
+        it "number of constraint and variables decreases" $ do
+            acSizeM linVarAc === 1 .&. acSizeM linVarAc === 1
 
 
 specOptimization :: forall a . (Arithmetic a, Binary a, Show a) => IO ()
