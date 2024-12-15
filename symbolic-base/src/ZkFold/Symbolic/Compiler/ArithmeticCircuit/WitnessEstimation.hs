@@ -10,7 +10,7 @@ import           Data.Functor.Rep                               (Rep)
 import           GHC.Generics                                   (Generic)
 import           GHC.Integer                                    (Integer)
 import           GHC.Natural                                    (Natural)
-import           Prelude                                        (Eq, ($), (.), (==), Maybe (..))
+import           Prelude                                        (Eq, Maybe (..), ($), (.), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString                    ()
@@ -99,7 +99,7 @@ instance (Field a, Eq a, Eq (Rep i)) => Field (UVar a i) where
 instance ToConstant a => ToConstant (UVar a i) where
   type Const (UVar a i) = Maybe (Const a)
   toConstant (ConstUVar c) = Just $ toConstant c
-  toConstant _ = Nothing
+  toConstant _             = Nothing
 
 instance Finite a => Finite (UVar a i) where type Order (UVar a i) = Order a
 
@@ -119,4 +119,4 @@ instance (SemiEuclidean a, Eq a, Eq (Rep i)) => SemiEuclidean (UVar a i) where
 
 instance (FromConstant Natural a) => FromConstant (Maybe Natural) (UVar a i) where
     fromConstant (Just c) = ConstUVar $ fromConstant c
-    fromConstant Nothing = More
+    fromConstant Nothing  = More
