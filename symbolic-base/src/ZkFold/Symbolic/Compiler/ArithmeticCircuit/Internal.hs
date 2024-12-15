@@ -31,35 +31,35 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         toVar
     ) where
 
-import           Control.DeepSeq                                       (NFData)
-import           Control.Monad.State                                   (State, modify, runState)
-import           Data.Binary                                           (Binary)
-import           Data.ByteString                                       (ByteString)
-import           Data.Foldable                                         (fold, toList)
+import           Control.DeepSeq                                              (NFData)
+import           Control.Monad.State                                          (State, modify, runState)
+import           Data.Binary                                                  (Binary)
+import           Data.ByteString                                              (ByteString)
+import           Data.Foldable                                                (fold, toList)
 import           Data.Functor.Rep
-import           Data.Map.Monoidal                                     (MonoidalMap, insertWith)
-import           Data.Map.Strict                                       hiding (drop, foldl, foldr, insertWith, map,
-                                                                        null, splitAt, take, toList)
-import           Data.Maybe                                            (catMaybes, fromMaybe)
-import           Data.Semialign                                        (unzipDefault)
-import           Data.Semigroup.Generic                                (GenericSemigroupMonoid (..))
-import qualified Data.Set                                              as S
-import           GHC.Generics                                          (Generic, Par1 (..), U1 (..), (:*:) (..))
-import           Optics                                                hiding (at)
-import           Prelude                                               hiding (Num (..), drop, length, product, splitAt,
-                                                                        sum, take, (!!), (^))
+import           Data.Map.Monoidal                                            (MonoidalMap, insertWith)
+import           Data.Map.Strict                                              hiding (drop, foldl, foldr, insertWith,
+                                                                               map, null, splitAt, take, toList)
+import           Data.Maybe                                                   (catMaybes, fromMaybe)
+import           Data.Semialign                                               (unzipDefault)
+import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
+import qualified Data.Set                                                     as S
+import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
+import           Optics                                                       hiding (at)
+import           Prelude                                                      hiding (Num (..), drop, length, product,
+                                                                               splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
+import           ZkFold.Base.Algebra.Basic.Field                              (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, mapVars,
-                                                                        var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate                 (Poly, evalMonomial, evalPolynomial,
+                                                                               mapVars, var)
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.MonadCircuit

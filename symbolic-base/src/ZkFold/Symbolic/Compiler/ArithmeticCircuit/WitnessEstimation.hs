@@ -5,16 +5,16 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation where
 
 
 
-import           Control.Applicative             ()
-import           Data.Functor.Rep                (Rep)
-import           GHC.Generics                    (Generic)
-import           GHC.Integer                     (Integer)
-import           GHC.Natural                     (Natural)
-import           Prelude                         (Eq, ($), (.), (==))
+import           Control.Applicative                            ()
+import           Data.Functor.Rep                               (Rep)
+import           GHC.Generics                                   (Generic)
+import           GHC.Integer                                    (Integer)
+import           GHC.Natural                                    (Natural)
+import           Prelude                                        (Eq, ($), (.), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString     ()
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
+import           ZkFold.Base.Data.ByteString                    ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 
 
@@ -50,7 +50,7 @@ instance MultiplicativeMonoid a => Exponent (UVar a i) Natural where
 instance (Exponent a Integer, MultiplicativeMonoid a) => Exponent (UVar a i) Integer where
   (ConstUVar c) ^ n   = ConstUVar $ c ^ n
   (LinUVar k x b) ^ 1 = LinUVar k x b
-  _ ^ 0    = ConstUVar one
+  _ ^ 0               = ConstUVar one
   _ ^ _               = More
 
 instance (AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveSemigroup (UVar a i) where
@@ -98,7 +98,7 @@ instance (Field a, Eq a, Eq (Rep i)) => Field (UVar a i) where
 
 instance ToConstant a => ToConstant (UVar a i) where
   type Const (UVar a i) = UVar (Const a) i
-  toConstant (ConstUVar c) = ConstUVar $ toConstant c
+  toConstant (ConstUVar c)   = ConstUVar $ toConstant c
   toConstant (LinUVar k x b) = LinUVar (toConstant k) x (toConstant b)
   toConstant More            = More
 
@@ -106,24 +106,24 @@ instance Finite a => Finite (UVar a i) where type Order (UVar a i) = Order a
 
 instance (SemiEuclidean a, Eq a, Eq (Rep i)) => SemiEuclidean (UVar a i) where
   div (ConstUVar c1) (ConstUVar c2) = ConstUVar $ div c1 c2
-  div (ConstUVar _) (LinUVar {}) = ConstUVar zero
+  div (ConstUVar _) (LinUVar {})    = ConstUVar zero
   div (LinUVar k x b) (ConstUVar c) = LinUVar (div k c) x (div b c)
-  div (LinUVar {}) (LinUVar {}) = More
+  div (LinUVar {}) (LinUVar {})     = More
     -- if x1 == x2 then ConstUVar $ div k1 k2 else More
-  div More _ = More
-  div _ More = ConstUVar zero
+  div More _                        = More
+  div _ More                        = ConstUVar zero
   mod (ConstUVar c1) (ConstUVar c2) = ConstUVar $ mod c1 c2
-  mod (ConstUVar c) _ = ConstUVar c
+  mod (ConstUVar c) _               = ConstUVar c
   mod (LinUVar _ _ b) (ConstUVar c) = ConstUVar $ mod b c
-  mod (LinUVar {}) (LinUVar {}) = More
+  mod (LinUVar {}) (LinUVar {})     = More
     -- if x1 == x2
     -- then ConstUVar $ b1 - (b2 * div k1 k2) -- need (AdditiveGroup Natural) for this
     -- else More
-  mod (LinUVar k x b) More = LinUVar k x b
-  mod More _ = More
+  mod (LinUVar k x b) More          = LinUVar k x b
+  mod More _                        = More
 
 instance (FromConstant Natural a) => FromConstant (UVar Natural i) (UVar a i) where
-    fromConstant (ConstUVar c) = ConstUVar $ fromConstant c
+    fromConstant (ConstUVar c)   = ConstUVar $ fromConstant c
     fromConstant (LinUVar k x b) = LinUVar (fromConstant k) x (fromConstant b)
-    fromConstant More = More
+    fromConstant More            = More
 
