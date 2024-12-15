@@ -18,6 +18,8 @@ import           Prelude                          (return, ($))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Class
@@ -39,7 +41,16 @@ class Eq b a where
 elem :: (BoolType b, Eq b a, Foldable t) => a -> t a -> b
 elem x = any (== x)
 
-instance Haskell.Eq a => Eq Haskell.Bool a where
+instance Eq Haskell.Bool Natural where
+    (==) = (Haskell.==)
+    (/=) = (Haskell./=)
+instance Eq Haskell.Bool Haskell.Bool where
+    (==) = (Haskell.==)
+    (/=) = (Haskell./=)
+instance Eq Haskell.Bool Haskell.String where
+    (==) = (Haskell.==)
+    (/=) = (Haskell./=)
+instance KnownNat n => Eq Haskell.Bool (Zp n) where
     (==) = (Haskell.==)
     (/=) = (Haskell./=)
 
@@ -81,6 +92,9 @@ deriving newtype instance Symbolic c => Eq (Bool c) (Bool c)
 instance (BoolType b, Eq b x0, Eq b x1) => Eq b (x0,x1)
 instance (BoolType b, Eq b x0, Eq b x1, Eq b x2) => Eq b (x0,x1,x2)
 instance (BoolType b, Eq b x0, Eq b x1, Eq b x2, Eq b x3) => Eq b (x0,x1,x2,x3)
+
+instance (BoolType bool, Eq bool field) => Eq bool (Ext2 field i)
+instance (BoolType bool, Eq bool field) => Eq bool (Ext3 field i)
 
 class GEq b u where
     geq :: u x -> u x -> b

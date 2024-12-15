@@ -70,8 +70,7 @@ data BN254_G1
 instance EllipticCurve BN254_G1 where
   type ScalarField BN254_G1 = Fr
   type BaseField BN254_G1 = Fp
-  inf = Inf
-  gen = Point 1 2
+  gen = point 1 2
   add = addPoints
   mul = pointMul
 
@@ -86,8 +85,7 @@ data BN254_G2
 instance EllipticCurve BN254_G2 where
   type ScalarField BN254_G2 = Fr
   type BaseField BN254_G2 = Fp2
-  inf = Inf
-  gen = Point
+  gen = point
     (Ext2 0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed
           0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2)
     (Ext2 0x12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa
@@ -134,23 +132,23 @@ instance Pairing BN254_G1 BN254_G2 where
 ------------------------------ Encoding ----------------------------------------
 
 instance Binary (Point BN254_G1) where
-  put Inf           = put (Point @BN254_G1 zero zero)
-  put (Point xp yp) = put xp >> put yp
+  put (Point xp yp isInf) =
+    if isInf then put @(Point BN254_G1) (point zero zero) else put xp >> put yp
   get = do
     xp <- get
     yp <- get
     return $
       if xp == zero && yp == zero
-      then Inf
-      else Point xp yp
+      then inf
+      else point xp yp
 
 instance Binary (Point BN254_G2) where
-  put Inf           = put (Point @BN254_G2 zero zero)
-  put (Point xp yp) = put xp >> put yp
+  put (Point xp yp isInf) =
+    if isInf then put @(Point BN254_G2) (point zero zero) else put xp >> put yp
   get = do
     xp <- get
     yp <- get
     return $
       if xp == zero && yp == zero
-      then Inf
-      else Point xp yp
+      then inf
+      else point xp yp

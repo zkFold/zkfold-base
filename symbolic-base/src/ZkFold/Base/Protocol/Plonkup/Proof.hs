@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Proof where
@@ -35,7 +36,7 @@ data PlonkupProof c = PlonkupProof {
         l1_xi   :: ScalarField c
         -- ^ The denominator in the L_1 polynomial evaluation
     }
-instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c) => Show (PlonkupProof c) where
+instance (Show (ScalarField c), Show (BaseField c), EllipticCurve c, BooleanOf c ~ Bool) => Show (PlonkupProof c) where
     show PlonkupProof {..} =
         "Plonkup Proof: "
         ++ show cmA ++ " "

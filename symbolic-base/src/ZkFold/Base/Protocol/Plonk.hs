@@ -17,7 +17,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGroup)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing, PointCompressed)
+import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonk.Prover                   (plonkProve)
 import           ZkFold.Base.Protocol.Plonk.Verifier                 (plonkVerify)
@@ -29,6 +29,7 @@ import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import qualified ZkFold.Symbolic.Data.Ord                            as Sym
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
 
@@ -71,7 +72,7 @@ instance forall p i n l c1 c2 (ts :: Type) core .
         , Proof (Plonkup p i n l c1 c2 ts) ~ PlonkupProof c1
         , KnownNat n
         , Foldable l
-        , Ord (BaseField c1)
+        , Sym.Ord (BooleanOf c1) (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
         , Arithmetic (ScalarField c1)

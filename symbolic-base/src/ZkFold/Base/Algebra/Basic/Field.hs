@@ -203,7 +203,7 @@ class IrreduciblePoly f (e :: Symbol) | e -> f where
     irreduciblePoly :: Poly f
 
 data Ext2 f (e :: Symbol) = Ext2 f f
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic)
 
 instance Ord f => Ord (Ext2 f e) where
     Ext2 a b <= Ext2 c d = [b, a] <= ([d, c] :: [f])
@@ -271,7 +271,7 @@ instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext2 f 
     arbitrary = Ext2 <$> arbitrary <*> arbitrary
 
 data Ext3 f (e :: Symbol) = Ext3 f f f
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic)
 
 instance Ord f => Ord (Ext3 f e) where
     Ext3 a b c <= Ext3 d e f = [c, b, a] <= ([f, e, d] :: [f])
