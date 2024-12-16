@@ -53,7 +53,7 @@ testPredicateCircuit :: PAR -> AC
 testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
 
 testPredicate :: PAR -> PHI
-testPredicate p = predicate @F @I @P $ testFunction p
+testPredicate p = predicate $ testFunction p
 
 testSPS :: PAR -> SPS
 testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D . testPredicate
