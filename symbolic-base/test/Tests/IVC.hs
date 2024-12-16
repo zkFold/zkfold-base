@@ -55,65 +55,65 @@ testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
 testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
-testSPS :: PAR -> SPS
-testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D . testPredicate
+testSPS :: PHI -> SPS
+testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D 
 
 initAccumulator :: PHI -> Accumulator K I C M F
 initAccumulator = emptyAccumulator @D
 
 initAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
-initAccumulatorInstance sps =
-    let Accumulator ai _ = initAccumulator sps
+initAccumulatorInstance phi =
+    let Accumulator ai _ = initAccumulator phi
     in ai
 
 testPublicInput0 :: I F
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
-testInstanceProofPair :: SPS -> NARKInstanceProof K I C M F
-testInstanceProofPair sps = narkInstanceProof sps testPublicInput0 U1
+testInstanceProofPair :: PHI -> NARKInstanceProof K I C M F
+testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 
-testMessages :: SPS -> Vector K M
-testMessages sps =
-    let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair sps
+testMessages :: PHI -> Vector K M
+testMessages phi =
+    let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair phi
     in ms
 
-testNarkProof :: SPS -> Vector K (C F)
-testNarkProof sps =
-    let NARKInstanceProof _ (NARKProof cs _) = testInstanceProofPair sps
+testNarkProof :: PHI -> Vector K (C F)
+testNarkProof phi =
+    let NARKInstanceProof _ (NARKProof cs _) = testInstanceProofPair phi
     in cs
 
-testPublicInput :: SPS -> I F
-testPublicInput sps =
-    let NARKInstanceProof pi _ = testInstanceProofPair sps
+testPublicInput :: PHI -> I F
+testPublicInput phi =
+    let NARKInstanceProof pi _ = testInstanceProofPair phi
     in pi
 
 testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C [F] F
 testAccumulatorScheme = accumulatorScheme @MiMCHash
 
-testAccumulator :: SPS -> PHI -> Accumulator K I C M F
-testAccumulator sps phi =
+testAccumulator :: PHI -> Accumulator K I C M F
+testAccumulator phi =
     let s = testAccumulatorScheme phi
-    in fst $ prover s (initAccumulator phi) $ testInstanceProofPair sps
+    in fst $ prover s (initAccumulator phi) $ testInstanceProofPair phi
 
-testAccumulatorInstance :: SPS -> PHI -> AccumulatorInstance K I C F
-testAccumulatorInstance sps phi =
-    let Accumulator ai _ = testAccumulator sps phi
+testAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
+testAccumulatorInstance phi =
+    let Accumulator ai _ = testAccumulator phi
     in ai
 
-testAccumulationProof :: SPS -> PHI -> Vector (D - 1) (C F)
-testAccumulationProof sps phi =
+testAccumulationProof :: PHI -> Vector (D - 1) (C F)
+testAccumulationProof phi =
     let s = testAccumulatorScheme phi
-    in snd $ prover s (initAccumulator phi) $ testInstanceProofPair sps
+    in snd $ prover s (initAccumulator phi) $ testInstanceProofPair phi
 
-testDeciderResult :: SPS -> PHI -> (Vector K (C F), C F)
-testDeciderResult sps phi =
+testDeciderResult :: PHI -> (Vector K (C F), C F)
+testDeciderResult phi =
     let s = testAccumulatorScheme phi
-    in decider s $ testAccumulator sps phi
+    in decider s $ testAccumulator phi
 
-testVerifierResult :: SPS -> PHI -> AccumulatorInstance K I C F
-testVerifierResult sps phi =
+testVerifierResult :: PHI -> AccumulatorInstance K I C F
+testVerifierResult phi =
     let s = testAccumulatorScheme phi
-    in verifier s (testPublicInput sps) (testNarkProof sps) (initAccumulatorInstance phi) (testAccumulationProof sps phi)
+    in verifier s (testPublicInput phi) (testNarkProof phi) (initAccumulatorInstance phi) (testAccumulationProof phi)
 
 specAlgebraicMap :: IO ()
 specAlgebraicMap = hspec $ do
@@ -121,7 +121,7 @@ specAlgebraicMap = hspec $ do
         describe "Algebraic map" $ do
             it "must output zeros on the public input and testMessages" $ do
                withMaxSuccess 10 $ property $
-                    \p -> algebraicMap @D (testPredicate p) (testPublicInput $ testSPS p) (testMessages $ testSPS p) (unsafeToVector []) one
+                    \p -> algebraicMap @D (testPredicate p) (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
                         == replicate (acSizeN $ testPredicateCircuit p) zero
 
 specAccumulatorScheme :: IO ()
@@ -129,11 +129,10 @@ specAccumulatorScheme = hspec $ do
     describe "Accumulator scheme specification" $ do
         describe "decider" $ do
             it  "must output zeros" $ do
-                withMaxSuccess 10 $ property $ \p -> testDeciderResult (testSPS p) (testPredicate p) == (singleton zero, zero)
+                withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
         describe "verifier" $ do
             it "must output zeros" $ do
-                withMaxSuccess 10 $ property $ \p -> testVerifierResult (testSPS p) (testPredicate p)
-                    == testAccumulatorInstance (testSPS p) (testPredicate p)
+                withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)
 
 specIVC :: IO ()
 specIVC = do
