@@ -1,6 +1,7 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization where
 
+import           Data.Bifunctor                                          (bimap)
 import           Data.Binary                                             (Binary)
 import           Data.Bool                                               (bool)
 import           Data.ByteString                                         (ByteString)
@@ -21,7 +22,6 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
-import Data.Bifunctor (bimap)
 
 --------------------------------- High-level functions --------------------------------
 
@@ -66,7 +66,7 @@ optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
     optimizeFold CircuitFold {..} =
       CircuitFold { foldStep = optimize foldStep, .. }
 
-    varF (SysVar sV) = maybe (SysVar sV) ConstVar (M.lookup sV vs)
+    varF (SysVar sV)  = maybe (SysVar sV) ConstVar (M.lookup sV vs)
     varF (ConstVar c) = ConstVar c
 
 
