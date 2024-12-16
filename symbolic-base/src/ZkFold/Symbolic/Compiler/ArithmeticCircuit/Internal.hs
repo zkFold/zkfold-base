@@ -111,7 +111,7 @@ pmapWitVar _ (WSysVar v) = WSysVar v
 
 ---------------------------------- Variables -----------------------------------
 
-acInput :: (Representable i, Arithmetic a) => i (Var a i)
+acInput :: (Representable i, Semiring a) => i (Var a i)
 acInput = fmapRep (toVar . InVar) (tabulate id)
 
 getAllVars :: forall a p i o. (Representable i, Foldable i) => ArithmeticCircuit a p i o -> [SysVar i]
@@ -214,7 +214,7 @@ instance
       v <- preparedVar
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
       where
-        preparedVar = if (k == one && b == zero) || (k == negate one && b == upperBound)
+        preparedVar = if k == one && b == zero || k == negate one && b == upperBound
           then return x
           else do
             let

@@ -120,7 +120,7 @@ naturalCircuit f = uncurry crown $ swap $ flip runState emptyCircuit $
     either (unconstrained . pure . WExVar) (return . toVar . InVar)
 
 -- | Identity circuit which returns its input @i@ and doesn't use the payload.
-idCircuit :: (Representable i, Arithmetic a) => ArithmeticCircuit a p i i
+idCircuit :: (Representable i, Semiring a) => ArithmeticCircuit a p i i
 idCircuit = emptyCircuit { acOutput = acInput }
 
 -- | Payload of an input to arithmetic circuit.
