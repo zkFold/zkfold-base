@@ -182,13 +182,8 @@ ivcVerify f res@(IVCResult _ _ (IVCProof _ ms) _) =
         input :: RecursiveI i f
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
 
-        -- payload :: RecursiveP d k i p c f
-        -- payload = RecursiveP witness cs (res^.acc^.x) one pf
-
-        -- sps :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c m [f] f
-        -- sps = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
+        -- TODO: when k > 1, we must generate challenges here
     in
-        -- TODO: the algebraic map must be replaced with a Fiat-Shamired special sound protocol
         ( algebraicMap @d pRec input ms empty one
         , Acc.decider as (res^.acc)
         )
