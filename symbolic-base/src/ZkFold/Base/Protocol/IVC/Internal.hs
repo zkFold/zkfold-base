@@ -22,11 +22,10 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (-), type (+))
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
 import           ZkFold.Base.Data.ByteString                (Binary)
-import           ZkFold.Base.Data.Vector                    (Vector, empty)
+import           ZkFold.Base.Data.Vector                    (Vector, singleton)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme)
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.CommitOpen
 import           ZkFold.Base.Protocol.IVC.FiatShamir
@@ -34,7 +33,7 @@ import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction
-import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol)
+import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol, specialSoundProtocol')
 import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction, FunctorAssumptions)
 import           ZkFold.Symbolic.Class                      (Arithmetic)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
@@ -68,7 +67,6 @@ data IVCResult k i c m f
     { _z     :: i f
     , _acc   :: Accumulator k (RecursiveI i) c m f
     , _proof :: IVCProof k c m f
-    , _flag  :: f
     } deriving (GHC.Generics.Generic)
 
 makeLenses ''IVCResult
@@ -125,14 +123,14 @@ ivcSetup f z0 witness =
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
         pRec = recursivePredicate @ctx0 @ctx1 @algo $ recursiveFunction @_ @_ @algo f
     in
-        IVCResult z1 (emptyAccumulator @d pRec) noIVCProof zero
+        IVCResult z1 (emptyAccumulator @d pRec) noIVCProof
 
 ivcProve :: forall ctx0 ctx1 algo d k a i p c m o . IVCAssumptions ctx0 ctx1 algo d k a i p c m o a
     => StepFunction a i p
     -> IVCResult k i c m a
     -> p a
     -> IVCResult k i c m a
-ivcProve f res@(IVCResult _ _ (IVCProof cs ms) _) witness =
+ivcProve f res@(IVCResult _ _ (IVCProof cs ms)) witness =
     let
         p :: Predicate a i p
         p = predicate f
@@ -165,25 +163,26 @@ ivcProve f res@(IVCResult _ _ (IVCProof cs ms) _) witness =
         ivcProof :: IVCProof k c m a
         ivcProof = IVCProof cs' ms'        
     in
-        IVCResult z' acc' ivcProof one
+        IVCResult z' acc' ivcProof
 
 ivcVerify :: forall ctx0 ctx1 algo d k a i p c m o f . IVCAssumptions ctx0 ctx1 algo d k a i p c m o f
     => StepFunction a i p
     -> IVCResult k i c m f
-    -> ([f], (Vector k (c f), c f))
-ivcVerify f res@(IVCResult _ _ (IVCProof _ ms) _) =
+    -> ((Vector k (c f), [f]), (Vector k (c f), c f))
+ivcVerify f res@(IVCResult _ _ (IVCProof cs ms)) =
     let
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
         pRec = recursivePredicate @ctx0 @ctx1 @algo $ recursiveFunction @_ @_ @algo f
 
-        as :: AccumulatorScheme d k (RecursiveI i) c m f
-        as = accumulatorScheme @algo @d pRec
-
         input :: RecursiveI i f
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
 
-        -- TODO: when k > 1, we must generate challenges here
+        as :: AccumulatorScheme d k (RecursiveI i) c m f
+        as = accumulatorScheme @algo @d pRec
+
+        sps :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c m [f] f
+        sps = fiatShamir @algo $ commitOpen $ specialSoundProtocol' @d pRec
     in
-        ( algebraicMap @d pRec input ms empty one
+        ( verifier sps input (singleton $ zip ms cs) zero
         , Acc.decider as (res^.acc)
         )

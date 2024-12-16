@@ -6,7 +6,7 @@ module ZkFold.Base.Protocol.IVC.SpecialSound where
 import           Data.Functor.Rep                      (Representable (..))
 import           Data.Map.Strict                       (elems)
 import           GHC.Generics                          ((:*:) (..))
-import           Prelude                               (($))
+import           Prelude                               (($), undefined)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -62,3 +62,15 @@ specialSoundProtocol phi@Predicate {..} =
       verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
   in
       SpecialSoundProtocol predicateEval prover verifier
+
+specialSoundProtocol' :: forall d a i p f .
+    ( KnownNat (d+1)
+    , Representable i
+    , Ring f
+    , Scale a f
+    ) => Predicate a i p -> SpecialSoundProtocol 1 i p [f] [f] f
+specialSoundProtocol' phi =
+  let
+      verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
+  in
+      SpecialSoundProtocol undefined undefined verifier
