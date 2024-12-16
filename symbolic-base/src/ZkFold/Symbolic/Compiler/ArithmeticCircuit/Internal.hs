@@ -8,6 +8,7 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
+        CircuitFold (..),
         Var (..),
         SysVar (..),
         WitVar (..),
@@ -73,12 +74,14 @@ type CircuitWitness a p i = WitnessF a (WitVar p i)
 
 data CircuitFold a v w =
   forall s j.
-  (Functor s, NFData1 s, NFData (Rep s), Functor j, NFData (Rep j)) =>
+  ( Functor s, NFData1 s, Binary (Rep s), NFData (Rep s), Ord (Rep s)
+  , Functor j, Binary (Rep j), NFData (Rep j), Ord (Rep j)) =>
     CircuitFold
       { foldStep   :: ArithmeticCircuit a U1 (j :*: s) s
       , foldSeed   :: s v
       , foldStream :: Infinite (j w)
       , foldCount  :: v
+      , foldResult :: s v
       }
 
 instance Functor (CircuitFold a v) where
@@ -90,10 +93,14 @@ instance Bifunctor (CircuitFold a) where
     , foldSeed = f <$> foldSeed
     , foldStream = fmap g <$> foldStream
     , foldCount = f foldCount
+    , foldResult = f <$> foldResult
     }
 
 instance (NFData a, NFData v) => NFData (CircuitFold a v w) where
-  rnf CircuitFold {..} = rnf (foldStep, foldCount) `seq` liftRnf rnf foldSeed
+  rnf CircuitFold {..} =
+    rnf (foldStep, foldCount)
+      `seq` liftRnf rnf foldSeed
+      `seq` liftRnf rnf foldResult
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a p i o = ArithmeticCircuit
@@ -361,10 +368,10 @@ apply xs ac = ac
   , acOutput = outF <$> acOutput ac
   }
   where
-    outF (SysVar (InVar (Left v))) = ConstVar (index xs v)
+    outF (SysVar (InVar (Left v)))  = ConstVar (index xs v)
     outF (SysVar (InVar (Right v))) = SysVar (InVar v)
-    outF (SysVar (NewVar v)) = SysVar (NewVar v)
-    outF (ConstVar a) = ConstVar a
+    outF (SysVar (NewVar v))        = SysVar (NewVar v)
+    outF (ConstVar a)               = ConstVar a
 
     varF (InVar (Left v))  = fromConstant (index xs v)
     varF (InVar (Right v)) = var (InVar v)
