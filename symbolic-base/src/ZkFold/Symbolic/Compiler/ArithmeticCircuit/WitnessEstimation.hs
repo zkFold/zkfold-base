@@ -65,8 +65,8 @@ instance (AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveSemigroup (UVar a i) wh
 
 (.+) :: AdditiveSemigroup a => a -> UVar a i -> UVar a i
 c1 .+ ConstUVar c2 = ConstUVar $ c1 + c2
-c .+ LinUVar k x b  = LinUVar k x (b + c)
-_ .+ More = More
+c .+ LinUVar k x b = LinUVar k x (b + c)
+_ .+ More          = More
 
 instance (Semiring a, Eq a, Eq (Rep i)) => AdditiveMonoid (UVar a i) where
   zero = ConstUVar zero
@@ -79,7 +79,7 @@ instance (Ring a, Eq a, Eq (Rep i)) => AdditiveGroup (UVar a i) where
 instance (Semiring a, Eq a) => MultiplicativeSemigroup (UVar a i) where
   ConstUVar c * x = scale c x
   x * ConstUVar c = scale c x
-  _ * _ = More
+  _ * _           = More
 
 instance (Semiring a, Eq a) => MultiplicativeMonoid (UVar a i) where
   one = ConstUVar one
