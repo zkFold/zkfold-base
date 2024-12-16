@@ -171,9 +171,8 @@ instance
     type BaseField (ArithmeticCircuit a p i) = a
     type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
     witnessF (behead -> (c, o)) = o <&> \case
-      ConstVar cv -> fromConstant cv
-      LinVar k (InVar iv) b -> at $ LinVar k (InVar iv) b
       LinVar k (NewVar nv) b -> fromConstant k * acWitness c ! nv + fromConstant b
+      v -> at v
     fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
 
 ----------------------------- MonadCircuit instance ----------------------------
@@ -211,16 +210,20 @@ instance
                     else error "The constraint is non-zero"
         Nothing -> zoom #acSystem . modify $ insert (witToVar @_ @p (p at)) (p evalConstVar)
 
-    rangeConstraint (LinVar k x b) upperBound = if k == one && b == zero
-      then
-        zoom #acRange . modify $ insertWith S.union upperBound (S.singleton x)
-      else do
-        let
-          wf = at $ LinVar k x b
-          v = witToVar @a wf
-              -- TODO: forbid reassignment of variables
-        zoom #acWitness $ modify (insert v wf)
-        zoom #acRange . modify $ insertWith S.union upperBound (S.singleton (NewVar v))
+    rangeConstraint (LinVar k x b) upperBound = do
+      v <- preparedVar
+      zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
+      where
+        preparedVar = if (k == one && b == zero) || (k == negate one && b == upperBound)
+          then return x
+          else do
+            let
+              wf = at $ LinVar k x b
+              v = witToVar @a wf
+            -- TODO: forbid reassignment of variables
+            zoom #acWitness $ modify (insert v wf)
+            return (NewVar v)
+
     rangeConstraint (ConstVar c) upperBound =
       if c <= upperBound
         then return ()
