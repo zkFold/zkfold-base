@@ -1,13 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DerivingStrategies  #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Base.Data.Vector where
 
 import           Control.DeepSeq                  (NFData)
 import           Control.Monad.State.Strict       (runState, state)
-import           Data.Aeson                       (ToJSON (..), FromJSON(..))
+import           Data.Aeson                       (FromJSON (..), ToJSON (..))
 import           Data.Distributive                (Distributive (..))
 import           Data.Foldable                    (fold)
 import           Data.Functor.Classes             (Show1)
