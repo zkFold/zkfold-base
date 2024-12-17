@@ -6,7 +6,7 @@ module ZkFold.Base.Protocol.IVC.Oracle where
 
 import qualified Data.Vector                                    as V
 import           GHC.Generics
-import           Prelude                                        ((.), map)
+import           Prelude                                        (map, (.))
 import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
