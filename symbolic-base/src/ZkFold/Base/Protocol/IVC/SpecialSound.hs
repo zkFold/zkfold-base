@@ -6,7 +6,7 @@ module ZkFold.Base.Protocol.IVC.SpecialSound where
 import           Data.Functor.Rep                      (Representable (..))
 import           Data.Map.Strict                       (elems)
 import           GHC.Generics                          ((:*:) (..))
-import           Prelude                               (($), undefined)
+import           Prelude                               (undefined, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -74,4 +74,4 @@ specialSoundProtocol' phi =
       verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
   in
       SpecialSoundProtocol undefined undefined verifier
-      
+

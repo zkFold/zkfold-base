@@ -1,31 +1,31 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant ^." #-}
 
 module ZkFold.Base.Protocol.IVC.AccumulatorScheme where
 
-import           Control.Lens                                ((^.))
-import           Data.Constraint                             (withDict)
-import           Data.Constraint.Nat                         (plusMinusInverse1)
-import           Data.Functor.Rep                            (Representable (..))
-import           Data.Zip                                    (Zip (..))
-import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     (fmap, ($), (.), (<$>))
-import qualified Prelude                                     as P
+import           Control.Lens                               ((^.))
+import           Data.Constraint                            (withDict)
+import           Data.Constraint.Nat                        (plusMinusInverse1)
+import           Data.Functor.Rep                           (Representable (..))
+import           Data.Zip                                   (Zip (..))
+import           GHC.IsList                                 (IsList (..))
+import           Prelude                                    (fmap, ($), (.), (<$>))
+import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Algebra.Polynomials.Univariate  as PU
-import           ZkFold.Base.Data.Vector                     (Vector, init, mapWithIx, tail, unsafeToVector)
+import qualified ZkFold.Base.Algebra.Polynomials.Univariate as PU
+import           ZkFold.Base.Data.Vector                    (Vector, init, mapWithIx, tail, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC.Accumulator
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (algebraicMap)
-import           ZkFold.Base.Protocol.IVC.Commit             (HomomorphicCommit (..))
-import           ZkFold.Base.Protocol.IVC.FiatShamir         (transcript)
-import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..), HashAlgorithm)
-import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate)
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (algebraicMap)
+import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit (..))
+import           ZkFold.Base.Protocol.IVC.FiatShamir        (transcript)
+import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
+import           ZkFold.Base.Protocol.IVC.Oracle            (HashAlgorithm, RandomOracle (..))
+import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k i c f = AccumulatorScheme

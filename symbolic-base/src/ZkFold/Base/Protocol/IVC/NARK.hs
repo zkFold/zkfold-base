@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.Base.Protocol.IVC.NARK where
 

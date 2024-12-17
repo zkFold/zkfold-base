@@ -1,34 +1,35 @@
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Tests.IVC (specIVC) where
 
-import           Data.Functor.Constant                           (Constant)
-import           GHC.Generics                                    (U1 (..), type (:*:) (..))
-import           GHC.IsList                                      (IsList (..))
-import           Prelude                                         hiding (Num (..), pi, replicate, sum, (+))
-import           Test.Hspec                                      (describe, hspec, it)
-import           Test.QuickCheck                                 (property, withMaxSuccess, generate, arbitrary)
+import           Data.Functor.Constant                       (Constant)
+import           GHC.Generics                                (U1 (..), type (:*:) (..))
+import           GHC.IsList                                  (IsList (..))
+import           Prelude                                     hiding (Num (..), pi, replicate, sum, (+))
+import           Test.Hspec                                  (describe, hspec, it)
+import           Test.QuickCheck                             (arbitrary, generate, property, withMaxSuccess)
 
-import           ZkFold.Base.Algebra.Basic.Class                 (FromConstant (..), one, zero)
-import           ZkFold.Base.Algebra.Basic.Field                 (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                (Natural, type (-))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381     (BLS12_381_G1, BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.EllipticCurve.Class         (Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate      (PolyVec, evalPolyVec)
-import           ZkFold.Base.Data.Vector                         (Vector (..), item, singleton, unsafeToVector)
-import           ZkFold.Base.Protocol.IVC.Accumulator            (Accumulator (..), AccumulatorInstance (..), emptyAccumulator)
-import           ZkFold.Base.Protocol.IVC.AccumulatorScheme      as Acc
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap           (algebraicMap)
-import           ZkFold.Base.Protocol.IVC.CommitOpen             (commitOpen)
-import           ZkFold.Base.Protocol.IVC.FiatShamir             (FiatShamir, fiatShamir)
-import           ZkFold.Base.Protocol.IVC.NARK                   (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
-import           ZkFold.Base.Protocol.IVC.Oracle                 (MiMCHash)
-import           ZkFold.Base.Protocol.IVC.Predicate              (Predicate (..), predicate)
-import           ZkFold.Base.Protocol.IVC.SpecialSound           (specialSoundProtocol)
-import           ZkFold.Prelude                                  (replicate)
-import           ZkFold.Symbolic.Class                           (Symbolic, BaseField)
-import           ZkFold.Symbolic.Compiler                        (ArithmeticCircuit, acSizeN)
-import           ZkFold.Symbolic.Data.FieldElement               (FieldElement (..))
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (Point)
+import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyVec)
+import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
+import           ZkFold.Base.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..),
+                                                              emptyAccumulator)
+import           ZkFold.Base.Protocol.IVC.AccumulatorScheme  as Acc
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (algebraicMap)
+import           ZkFold.Base.Protocol.IVC.CommitOpen         (commitOpen)
+import           ZkFold.Base.Protocol.IVC.FiatShamir         (FiatShamir, fiatShamir)
+import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
+import           ZkFold.Base.Protocol.IVC.Oracle             (MiMCHash)
+import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate (..), predicate)
+import           ZkFold.Base.Protocol.IVC.SpecialSound       (specialSoundProtocol)
+import           ZkFold.Prelude                              (replicate)
+import           ZkFold.Symbolic.Class                       (BaseField, Symbolic)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
 type C = Constant (Point BLS12_381_G1)
@@ -55,7 +56,7 @@ testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
 testSPS :: PHI -> SPS
-testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D 
+testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D
 
 initAccumulator :: PHI -> Accumulator K I C F
 initAccumulator = emptyAccumulator @D

@@ -4,17 +4,17 @@
 
 module ZkFold.Base.Protocol.IVC.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
-import           Data.Functor.Constant                       (Constant (..))
-import           Data.Zip                                    (Zip (..))
-import           Prelude                                     hiding (Num (..), sum, take, zipWith)
-import           System.Random                               (Random (..), mkStdGen)
+import           Data.Functor.Constant                   (Constant (..))
+import           Data.Zip                                (Zip (..))
+import           Prelude                                 hiding (Num (..), sum, take, zipWith)
+import           System.Random                           (Random (..), mkStdGen)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector)
+import           ZkFold.Base.Data.Vector                 (Vector, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Prelude                              (take)
+import           ZkFold.Prelude                          (take)
 
 -- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
 --

@@ -1,5 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.IVC.FiatShamir where
 
@@ -10,7 +10,7 @@ import           Prelude                               hiding (Bool (..), Eq (..
 import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-))
 import           ZkFold.Base.Data.Vector               (Vector, init, item, scanl, unfold)
 import           ZkFold.Base.Protocol.IVC.CommitOpen
-import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle (..), HashAlgorithm)
+import           ZkFold.Base.Protocol.IVC.Oracle       (HashAlgorithm, RandomOracle (..))
 import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
 type FiatShamir k i p c m o f = SpecialSoundProtocol 1 i p (Vector k (m, c f)) (Vector k (c f), o) f

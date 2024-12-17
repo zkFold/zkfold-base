@@ -15,7 +15,7 @@ import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
-import           GHC.Generics                               (Generic, (:*:), U1)
+import           GHC.Generics                               (Generic, U1, (:*:))
 import           Prelude                                    (Show, const, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -32,7 +32,8 @@ import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction
-import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol, specialSoundProtocol')
+import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol,
+                                                             specialSoundProtocol')
 import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement)
@@ -88,7 +89,7 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
     )
 
 -- | Create the first IVC result
--- 
+--
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
 ivcSetup :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
     => StepFunction a i p
@@ -150,7 +151,7 @@ ivcProve f res witness =
         (messages', commits') = unzip $ prover protocol input payload zero 0
 
         ivcProof :: IVCProof k c a
-        ivcProof = IVCProof commits' messages'        
+        ivcProof = IVCProof commits' messages'
     in
         IVCResult z' acc' ivcProof
 
