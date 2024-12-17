@@ -1,12 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Base.Data.Vector where
 
 import           Control.DeepSeq                  (NFData)
 import           Control.Monad.State.Strict       (runState, state)
-import           Data.Aeson                       (ToJSON (..))
+import           Data.Aeson                       (ToJSON (..), FromJSON(..))
 import           Data.Distributive                (Distributive (..))
 import           Data.Foldable                    (fold)
 import           Data.Functor.Classes             (Show1)
@@ -31,6 +32,7 @@ import           ZkFold.Prelude                   (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
     deriving (Show, Show1, Eq, Functor, Foldable, Traversable, Generic, NFData, Ord)
+    deriving newtype (FromJSON, ToJSON)
 
 -- helper
 knownNat :: forall size n . (KnownNat size, Integral n) => n
@@ -182,9 +184,6 @@ instance KnownNat size => Arbitrary1 (Vector size) where
 instance (Random a, KnownNat size) => Random (Vector size a) where
     random = runState (sequenceA (pureRep (state random)))
     randomR = runState . traverse (state . randomR) . uncurry mzipRep
-
-instance ToJSON a => ToJSON (Vector n a) where
-    toJSON (Vector xs) = toJSON xs
 
 -------------------------------------------------- Algebraic instances --------------------------------------------------
 
