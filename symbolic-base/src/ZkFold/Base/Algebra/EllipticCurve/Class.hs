@@ -133,7 +133,7 @@ instance (EllipticCurve curve, AdditiveGroup (BaseField curve)) => Scale Integer
     scale = intScale
 
 instance (EllipticCurve curve, AdditiveGroup (BaseField curve)) => AdditiveGroup (Point curve) where
-    negate = pointXYNegate
+    negate = pointNegate
 
 instance (EllipticCurve curve, Arbitrary (ScalarField curve)) => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)
@@ -144,13 +144,13 @@ class (EllipticCurve curve1, EllipticCurve curve2, ScalarField curve1 ~ ScalarFi
     type TargetGroup curve1 curve2 :: Type
     pairing :: Point curve1 -> Point curve2 -> TargetGroup curve1 curve2
 
-pointXYAdd
+pointAdd
     :: EllipticCurve curve
     => Field (BaseField curve)
     => Point curve
     -> Point curve
     -> Point curve
-pointXYAdd p@(Point x1 y1 isInf1) q@(Point x2 y2 isInf2) =
+pointAdd p@(Point x1 y1 isInf1) q@(Point x2 y2 isInf2) =
   if isInf2 then p
   else if isInf1 then q
   else if x1 == x2 then pointInf
@@ -160,11 +160,11 @@ pointXYAdd p@(Point x1 y1 isInf1) q@(Point x2 y2 isInf2) =
     x3 = slope * slope - x1 - x2
     y3 = slope * (x1 - x3) - y1
 
-pointXYDouble
+pointDouble
     :: EllipticCurve curve
     => Field (BaseField curve)
     => Point curve -> Point curve
-pointXYDouble (Point x y isInf) = if isInf then pointInf else pointXY x' y'
+pointDouble (Point x y isInf) = if isInf then pointInf else pointXY x' y'
   where
     slope = (x * x + x * x + x * x) // (y + y)
     x' = slope * slope - x - x
@@ -176,13 +176,13 @@ addPoints
     => Point curve
     -> Point curve
     -> Point curve
-addPoints p1 p2 = if p1 == p2 then pointXYDouble p1 else pointXYAdd p1 p2
+addPoints p1 p2 = if p1 == p2 then pointDouble p1 else pointAdd p1 p2
 
-pointXYNegate
+pointNegate
     :: EllipticCurve curve
     => AdditiveGroup (BaseField curve)
     => Point curve -> Point curve
-pointXYNegate (Point x y isInf) = if isInf then pointInf else pointXY x (negate y)
+pointNegate (Point x y isInf) = if isInf then pointInf else pointXY x (negate y)
 
 pointMul
     :: forall curve s
