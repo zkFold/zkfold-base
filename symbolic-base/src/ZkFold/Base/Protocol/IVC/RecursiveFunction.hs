@@ -89,13 +89,9 @@ type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssump
     => RecursiveI i f -> RecursiveP d k i p c f -> RecursiveI i f
 
 -- | Transform a step function into a recursive function
-recursiveFunction :: forall algo d k a i p c ctx0 ctx1 .
+recursiveFunction :: forall algo d k a i p c .
     ( PredicateAssumptions a i p
     , FunctorAssumptions c
-    , ctx0 ~ Interpreter a
-    , StepFunctionAssumptions a (FieldElement ctx0) ctx0
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , StepFunctionAssumptions a (FieldElement ctx1) ctx1
     ) => StepFunction a i p -> RecursiveFunction algo d k a i p c
 recursiveFunction func =
     let

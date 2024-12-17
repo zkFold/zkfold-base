@@ -27,13 +27,8 @@ type PredicateAssumptions a i p =
     , FunctorAssumptions p
     )
 
-predicate :: forall a i p ctx0 ctx1 .
-    ( PredicateAssumptions a i p
-    , ctx0 ~ Interpreter a
-    , StepFunctionAssumptions a (FieldElement ctx0) ctx0
-    , ctx1 ~ ArithmeticCircuit a (i :*: p) U1
-    , StepFunctionAssumptions a (FieldElement ctx1) ctx1
-    ) => StepFunction a i p -> Predicate a i p
+predicate :: forall a i p . PredicateAssumptions a i p
+    => StepFunction a i p -> Predicate a i p
 predicate func =
     let
         func' :: forall f ctx . StepFunctionAssumptions a f ctx => ctx i -> ctx p -> ctx i
