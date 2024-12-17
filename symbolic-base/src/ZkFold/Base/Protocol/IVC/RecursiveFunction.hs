@@ -89,7 +89,7 @@ type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssump
     => RecursiveI i f -> RecursiveP d k i p c f -> RecursiveI i f
 
 -- | Transform a step function into a recursive function
-recursiveFunction :: forall ctx0 ctx1 algo d k a i p c .
+recursiveFunction :: forall algo d k a i p c ctx0 ctx1 .
     ( PredicateAssumptions a i p
     , FunctorAssumptions c
     , ctx0 ~ Interpreter a
@@ -138,7 +138,7 @@ type RecursivePredicateAssumptions algo d k a i p c =
     , FunctorAssumptions c
     )
 
-recursivePredicate :: forall ctx0 ctx1 algo d k a i p c .
+recursivePredicate :: forall algo d k a i p c ctx0 ctx1 .
     ( RecursivePredicateAssumptions algo d k a i p c
     , ctx0 ~ Interpreter a
     , RecursiveFunctionAssumptions algo d k a i c (FieldElement ctx0) ctx0
@@ -147,7 +147,7 @@ recursivePredicate :: forall ctx0 ctx1 algo d k a i p c .
     ) => RecursiveFunction algo d k a i p c -> Predicate a (RecursiveI i) (RecursiveP d k i p c)
 recursivePredicate func =
     let
-        func' :: forall ctx f . RecursiveFunctionAssumptions algo d k a i c f ctx
+        func' :: forall f ctx . RecursiveFunctionAssumptions algo d k a i c f ctx
             => ctx (RecursiveI i) -> ctx (RecursiveP d k i p c) -> ctx (RecursiveI i)
         func' x' u' =
             let

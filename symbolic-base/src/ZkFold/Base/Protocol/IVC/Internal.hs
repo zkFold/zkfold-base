@@ -123,7 +123,7 @@ ivcSetup f z0 witness =
         z1 = predicateEval p z0 witness
 
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @ctx0 @ctx1 @algo $ recursiveFunction @_ @_ @algo f
+        pRec = recursivePredicate @algo $ recursiveFunction @algo f
     in
         IVCResult z1 (emptyAccumulator @d pRec) noIVCProof
 
@@ -141,7 +141,7 @@ ivcProve f res witness =
         z' = predicateEval p (res^.z) witness
 
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @ctx0 @ctx1 @algo $ recursiveFunction @_ @_ @algo f
+        pRec = recursivePredicate @algo $ recursiveFunction @algo f
 
         input :: RecursiveI i a
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
@@ -180,7 +180,7 @@ ivcVerify :: forall ctx0 ctx1 algo d k a i p c m o f . IVCAssumptions ctx0 ctx1 
 ivcVerify f res =
     let
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @ctx0 @ctx1 @algo $ recursiveFunction @_ @_ @algo f
+        pRec = recursivePredicate @algo $ recursiveFunction @algo f
 
         input :: RecursiveI i f
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
