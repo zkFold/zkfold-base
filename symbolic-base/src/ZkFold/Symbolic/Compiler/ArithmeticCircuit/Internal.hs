@@ -170,9 +170,7 @@ instance
   Symbolic (ArithmeticCircuit a p i) where
     type BaseField (ArithmeticCircuit a p i) = a
     type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
-    witnessF (behead -> (c, o)) = o <&> \case
-      LinVar k (NewVar nv) b -> fromConstant k * acWitness c ! nv + fromConstant b
-      v -> at v
+    witnessF (behead -> (_, o)) = at <$> o
     fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
 
 ----------------------------- MonadCircuit instance ----------------------------
@@ -185,17 +183,16 @@ instance
   ( Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)
   , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (WitVar p i)) (State (ArithmeticCircuit a p i o)) where
 
-    unconstrained wf =
-        case runWitnessF wf $ \case
-          WSysVar sV -> LinUVar one sV zero
-          _          -> More
-        of
-          LinUVar k x b -> return (LinVar k x b)
-          _ -> do
-            let v = witToVar @a wf
-            -- TODO: forbid reassignment of variables
-            zoom #acWitness $ modify (insert v wf)
-            return $ toVar (NewVar v)
+    unconstrained wf = case runWitnessF wf $ \case
+        WSysVar sV -> LinUVar one sV zero
+        _          -> More of
+      ConstUVar c -> return (ConstVar c)
+      LinUVar k x b -> return (LinVar k x b)
+      _ -> do
+        let v = witToVar @a wf
+        -- TODO: forbid reassignment of variables
+        zoom #acWitness $ modify (insert v wf)
+        return $ toVar (NewVar v)
 
     constraint p =
       let evalConstVar = \case
