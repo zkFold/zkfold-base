@@ -184,15 +184,15 @@ instance
   , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (WitVar p i)) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = case runWitnessF wf $ \case
-        WSysVar sV -> LinUVar one sV zero
-        _          -> More of
-      ConstUVar c -> return (ConstVar c)
-      LinUVar k x b -> return (LinVar k x b)
-      _ -> do
-        let v = witToVar @a wf
-        -- TODO: forbid reassignment of variables
-        zoom #acWitness $ modify (insert v wf)
-        return $ toVar (NewVar v)
+      WSysVar sV -> LinUVar one sV zero
+      _          -> More of
+        ConstUVar c -> return (ConstVar c)
+        LinUVar k x b -> return (LinVar k x b)
+        _ -> do
+          let v = witToVar @a wf
+          -- TODO: forbid reassignment of variables
+          zoom #acWitness $ modify (insert v wf)
+          return $ toVar (NewVar v)
 
     constraint p =
       let evalConstVar = \case

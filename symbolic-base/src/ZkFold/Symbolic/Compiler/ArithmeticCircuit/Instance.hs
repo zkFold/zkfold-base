@@ -14,19 +14,20 @@ import           Data.Map                                            hiding (dro
                                                                       splitAt, take, toList)
 import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (Show, mempty, pure, return, show, ($), (++), (.),
-                                                                      (<$>))
+                                                                      (<$>), (<), head)
 import qualified Prelude                                             as Haskell
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
-import           ZkFold.Prelude                                      (genSubset)
+import           ZkFold.Prelude                                      (genSubset, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 import           ZkFold.Symbolic.MonadCircuit
+import Data.Bool (bool)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -71,7 +72,11 @@ arbitrary' ::
   (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a p i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a p i))
-arbitrary' ac 0 = return ac
+arbitrary' ac 0 = return $ bool ac (newF * newF) (numOfVars < 2)
+  where
+    vars = getAllVars $ fromFieldElement ac
+    numOfVars = length vars
+    newF = FieldElement (fromFieldElement ac) { acOutput = pure (toVar $ head vars)}
 arbitrary' ac iter = do
     let vars = getAllVars (fromFieldElement ac)
     li <- elements vars
