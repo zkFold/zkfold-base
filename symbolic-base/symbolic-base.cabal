@@ -108,6 +108,7 @@ library
       ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
       ZkFold.Base.Algebra.Polynomials.Univariate
+      ZkFold.Base.Algorithm.ReedSolomon
       ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
       ZkFold.Base.Data.Functor.Rep
@@ -263,6 +264,7 @@ test-suite symbolic-base-test
       Tests.Permutations
       Tests.Plonkup
       Tests.Protostar
+      Tests.ReedSolomon
       Tests.RSA
       Tests.SHA2
       Tests.UInt

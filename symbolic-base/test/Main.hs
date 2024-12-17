@@ -35,6 +35,7 @@ main = do
     specPairing
     specUnivariate
     specGroebner
+    -- specReedSolomon
 
     -- Compiler spec
     specCompiler
