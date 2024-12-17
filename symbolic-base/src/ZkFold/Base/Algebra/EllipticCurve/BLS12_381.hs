@@ -75,10 +75,10 @@ instance EllipticCurve BLS12_381_G1 where
 
     mul = pointMul
 
-instance StandardEllipticCurve BLS12_381_G1 where
-    aParameter = zero
+instance WeierstrassCurve BLS12_381_G1 where
+    weierstrassA = zero
 
-    bParameter = fromConstant (4 :: Natural)
+    weierstrassB = fromConstant (4 :: Natural)
 
 ------------------------------------ BLS12-381 G2 ------------------------------------
 
@@ -103,10 +103,10 @@ instance EllipticCurve BLS12_381_G2 where
 
     mul = pointMul
 
-instance StandardEllipticCurve BLS12_381_G2 where
-    aParameter = zero
+instance WeierstrassCurve BLS12_381_G2 where
+    weierstrassA = zero
 
-    bParameter = fromConstant (4 :: Natural)
+    weierstrassB = fromConstant (4 :: Natural)
 
 ------------------------------------ Encoding ------------------------------------
 

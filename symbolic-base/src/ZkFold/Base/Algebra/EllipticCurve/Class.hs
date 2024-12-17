@@ -196,9 +196,9 @@ pointMul
 pointMul = natScale . fromBinary . castBits . binaryExpansion
 
 -- An elliptic curve in standard form, y^2 = x^3 + a * x + b
-class EllipticCurve curve => StandardEllipticCurve curve where
-    aParameter :: BaseField curve
-    bParameter :: BaseField curve
+class EllipticCurve curve => WeierstrassCurve curve where
+  weierstrassA :: BaseField curve
+  weierstrassB :: BaseField curve
 
 data CompressedPoint curve = CompressedPoint
   { _x    :: BaseField curve
@@ -253,15 +253,15 @@ compress = \case
 
 decompress
   :: forall curve .
-     ( StandardEllipticCurve curve
+     ( WeierstrassCurve curve
      , FiniteField (BaseField curve)
      , Ord (BooleanOf curve) (BaseField curve)
      )
   => CompressedPoint curve -> Point curve
 decompress (CompressedPoint x bigY isInf) =
   if isInf then pointInf else
-    let a = aParameter @curve
-        b = bParameter @curve
+    let a = weierstrassA @curve
+        b = weierstrassB @curve
         p = order @(BaseField curve)
         sqrt_ z = z ^ ((p + 1) `P.div` 2)
         y' = sqrt_ (x * x * x + a * x + b)

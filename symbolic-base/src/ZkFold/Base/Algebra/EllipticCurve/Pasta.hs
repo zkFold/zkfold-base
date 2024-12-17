@@ -39,10 +39,10 @@ instance EllipticCurve Pallas where
 
     mul = pointMul
 
-instance StandardEllipticCurve Pallas where
-    aParameter = zero
+instance WeierstrassCurve Pallas where
+    weierstrassA = zero
 
-    bParameter = fromConstant (5 :: Natural)
+    weierstrassB = fromConstant (5 :: Natural)
 
 ------------------------------------ Vesta ------------------------------------
 
@@ -62,10 +62,10 @@ instance EllipticCurve Vesta where
 
     mul = pointMul
 
-instance StandardEllipticCurve Vesta where
-    aParameter = zero
+instance WeierstrassCurve Vesta where
+    weierstrassA = zero
 
-    bParameter = fromConstant (5 :: Natural)
+    weierstrassB = fromConstant (5 :: Natural)
 
 ------------------------------------ Encoding ------------------------------------
 

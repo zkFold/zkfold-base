@@ -74,9 +74,9 @@ instance EllipticCurve BN254_G1 where
   add = addPoints
   mul = pointMul
 
-instance StandardEllipticCurve BN254_G1 where
-  aParameter = 0
-  bParameter = 3
+instance WeierstrassCurve BN254_G1 where
+  weierstrassA = 0
+  weierstrassB = 3
 
 ------------------------------- bn254 G2 ---------------------------------------
 
@@ -93,9 +93,9 @@ instance EllipticCurve BN254_G2 where
   add = addPoints
   mul = pointMul
 
-instance StandardEllipticCurve BN254_G2 where
-  aParameter = zero
-  bParameter =
+instance WeierstrassCurve BN254_G2 where
+  weierstrassA = zero
+  weierstrassB =
     Ext2 0x2b149d40ceb8aaae81be18991be06ac3b5b4c5e559dbefa33267e6dc24a138e5
          0x9713b03af0fed4cd2cafadeed8fdf4a74fa084e52d1852e4a2bd0685c315d2
 
