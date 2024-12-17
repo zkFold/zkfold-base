@@ -68,13 +68,8 @@ instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Represent
 
 instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Representable p, Representable c) => Representable (RecursiveP d k i p c)
 
-type RecursiveFunctionAssumptions algo d k a i c f ctx =
+type RecursiveFunctionAssumptions algo d a i c f ctx =
     ( StepFunctionAssumptions a f ctx
-    , KnownNat (d-1)
-    , KnownNat (d+1)
-    , KnownNat (k-1)
-    , KnownNat k
-    , Zip i
     , HashAlgorithm algo f
     , RandomOracle algo f f
     , RandomOracle algo (i f) f
@@ -85,13 +80,18 @@ type RecursiveFunctionAssumptions algo d k a i c f ctx =
     , Scale f (c f)
     )
 
-type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssumptions algo d k a i c f ctx
+type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssumptions algo d a i c f ctx
     => RecursiveI i f -> RecursiveP d k i p c f -> RecursiveI i f
 
 -- | Transform a step function into a recursive function
 recursiveFunction :: forall algo d k a i p c .
     ( PredicateAssumptions a i p
     , FunctorAssumptions c
+    , KnownNat (d-1)
+    , KnownNat (d+1)
+    , KnownNat (k-1)
+    , KnownNat k
+    , Zip i
     ) => StepFunction a i p -> RecursiveFunction algo d k a i p c
 recursiveFunction func =
     let
@@ -103,7 +103,7 @@ recursiveFunction func =
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
         pRec = predicate func'
 
-        funcRecursive :: forall ctx f . RecursiveFunctionAssumptions algo d k a i c f ctx
+        funcRecursive :: forall ctx f . RecursiveFunctionAssumptions algo d a i c f ctx
             => RecursiveI i f
             -> RecursiveP d k i p c f
             -> RecursiveI i f
@@ -137,13 +137,13 @@ type RecursivePredicateAssumptions algo d k a i p c =
 recursivePredicate :: forall algo d k a i p c ctx0 ctx1 .
     ( RecursivePredicateAssumptions algo d k a i p c
     , ctx0 ~ Interpreter a
-    , RecursiveFunctionAssumptions algo d k a i c (FieldElement ctx0) ctx0
+    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo d k a i c (FieldElement ctx1) ctx1
+    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
     ) => RecursiveFunction algo d k a i p c -> Predicate a (RecursiveI i) (RecursiveP d k i p c)
 recursivePredicate func =
     let
-        func' :: forall f ctx . RecursiveFunctionAssumptions algo d k a i c f ctx
+        func' :: forall f ctx . RecursiveFunctionAssumptions algo d a i c f ctx
             => ctx (RecursiveI i) -> ctx (RecursiveP d k i p c) -> ctx (RecursiveI i)
         func' x' u' =
             let

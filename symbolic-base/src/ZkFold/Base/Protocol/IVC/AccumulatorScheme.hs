@@ -60,7 +60,6 @@ accumulatorScheme :: forall algo d k a i p c f .
     , Scale a f
     , Scale a (PU.PolyVec f (d+1))
     , Scale f (c f)
-    -- , Scale f (Vector k (c f))
     )
     => Predicate a i p
     -> AccumulatorScheme d k i c f

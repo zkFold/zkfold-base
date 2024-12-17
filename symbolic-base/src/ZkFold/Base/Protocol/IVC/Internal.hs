@@ -19,9 +19,8 @@ import           GHC.Generics                               (Generic, (:*:), U1)
 import           Prelude                                    (Show, const, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (-), type (+))
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+))
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
-import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Data.Vector                    (Vector, singleton)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
@@ -34,8 +33,7 @@ import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol, specialSoundProtocol')
-import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction, FunctorAssumptions)
-import           ZkFold.Symbolic.Class                      (Arithmetic)
+import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement)
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
@@ -70,32 +68,23 @@ data IVCResult k i c f
 makeLenses ''IVCResult
 
 type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
-    ( FunctorAssumptions i
+    ( RecursivePredicateAssumptions algo d k a i p c
+    , KnownNat (d+1)
+    , k ~ 1
     , Zip i
-    , FunctorAssumptions p
-    , FunctorAssumptions c
+    , Field f
     , HashAlgorithm algo f
-    , HomomorphicCommit [f] (c f)
     , RandomOracle algo f f
     , RandomOracle algo (i f) f
     , RandomOracle algo (c f) f
-    , KnownNat (d-1)
-    , KnownNat (d+1)
-    , k ~ 1
-    , KnownNat (k-1)
-    , KnownNat k
-    , Arithmetic a
-    , Binary a
-    , Field f
+    , HomomorphicCommit [f] (c f)
     , Scale a f
-    , Scale a (c f)
-    , Scale f (c f)
     , Scale a (PolyVec f (d+1))
-    , RecursivePredicateAssumptions algo d k a i p c
+    , Scale f (c f)
     , ctx0 ~ Interpreter a
-    , RecursiveFunctionAssumptions algo d k a i c (FieldElement ctx0) ctx0
+    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo d k a i c (FieldElement ctx1) ctx1
+    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
     )
 
 -- | Create the first IVC result
