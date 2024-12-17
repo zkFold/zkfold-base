@@ -118,7 +118,7 @@ recursiveFunction func =
                 x' = func x u
 
                 accX' :: AccumulatorInstance k (RecursiveI i) c f
-                accX' = verifier as z piX accX pf
+                accX' = verifier accScheme z piX accX pf
 
                 h :: f
                 h = bool zero (oracle @algo accX') $ Bool $ fromFieldElement flag
