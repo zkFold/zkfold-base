@@ -98,7 +98,7 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
 
     verify :: SetupVerify kzg -> Input kzg -> Proof kzg -> Bool
     verify (gs, h0, h1) input proof =
-            let (e0, e1) = snd $ foldl (prepareVerifyOne (input, proof)) (empty, (inf, inf)) $ keys input
+            let (e0, e1) = snd $ foldl (prepareVerifyOne (input, proof)) (empty, (pointInf, pointInf)) $ keys input
                 p1 = pairing e0 h0
                 p2 = pairing e1 h1
             in p1 == p2

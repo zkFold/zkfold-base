@@ -15,7 +15,7 @@ import qualified Prelude                                             as P hiding
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), PointCompressed)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), CompressedPoint)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal
@@ -42,7 +42,7 @@ instance forall p i n l c1 c2 ts core.
         , Arithmetic (ScalarField c1)
         , ToTranscript ts Word8
         , ToTranscript ts (ScalarField c1)
-        , ToTranscript ts (PointCompressed c1)
+        , ToTranscript ts (CompressedPoint c1)
         , FromTranscript ts (ScalarField c1)
         , CoreFunction c1 core
         ) => NonInteractiveProof (Plonkup p i n l c1 c2 ts) core where

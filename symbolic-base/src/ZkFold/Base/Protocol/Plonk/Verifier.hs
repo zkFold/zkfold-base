@@ -32,7 +32,7 @@ plonkVerify :: forall p i n l c1 c2 ts .
     , Arithmetic (ScalarField c1)
     , ToTranscript ts Word8
     , ToTranscript ts (ScalarField c1)
-    , ToTranscript ts (PointCompressed c1)
+    , ToTranscript ts (CompressedPoint c1)
     , FromTranscript ts (ScalarField c1)
     ) => PlonkupVerifierSetup p i n l c1 c2 -> PlonkupInput l c1 -> PlonkupProof c1 -> Bool
 plonkVerify

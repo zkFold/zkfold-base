@@ -16,7 +16,7 @@ import           Prelude                                             hiding (Num
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), PointCompressed, compress)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), CompressedPoint, compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             ((!!))
 import           ZkFold.Base.Protocol.NonInteractiveProof
@@ -42,7 +42,7 @@ plonkupProve :: forall p i n l c1 c2 ts core .
     , Arithmetic (ScalarField c1)
     , ToTranscript ts Word8
     , ToTranscript ts (ScalarField c1)
-    , ToTranscript ts (PointCompressed c1)
+    , ToTranscript ts (CompressedPoint c1)
     , FromTranscript ts (ScalarField c1)
     , CoreFunction c1 core
     ) => PlonkupProverSetup p i n l c1 c2 -> (PlonkupWitnessInput p i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1, PlonkupProverTestInfo n c1)

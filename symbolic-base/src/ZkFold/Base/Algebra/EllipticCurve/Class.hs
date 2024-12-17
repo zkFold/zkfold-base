@@ -58,31 +58,31 @@ instance
   ) => SymbolicData (Point curve)
 
 class Planar field plane where
-  point :: field -> field -> plane
+  pointXY :: field -> field -> plane
 
 instance
   ( field ~ BaseField curve
   , bool ~ BooleanOf curve
   , BoolType bool
   ) => Planar field (Point curve) where
-  point x y = Point x y false
+  pointXY x y = Point x y false
 
 class ProjectivePlanar plane where
-  inf :: plane
+  pointInf :: plane
 
 instance
   ( field ~ BaseField curve
   , BoolType (BooleanOf curve)
   , AdditiveMonoid field
   ) => ProjectivePlanar (Point curve) where
-  inf = Point zero zero true
+  pointInf = Point zero zero true
 
 instance
   ( field ~ BaseField curve
   , BoolType (BooleanOf curve)
   , AdditiveMonoid field
-  ) => ProjectivePlanar (PointCompressed curve) where
-  inf = PointCompressed zero false true
+  ) => ProjectivePlanar (CompressedPoint curve) where
+  pointInf = CompressedPoint zero false true
 
 class
     ( BoolType (BooleanOf curve)
@@ -127,13 +127,13 @@ instance EllipticCurve curve => Scale Natural (Point curve) where
     scale = natScale
 
 instance EllipticCurve curve => AdditiveMonoid (Point curve) where
-    zero = inf
+    zero = pointInf
 
 instance (EllipticCurve curve, AdditiveGroup (BaseField curve)) => Scale Integer (Point curve) where
     scale = intScale
 
 instance (EllipticCurve curve, AdditiveGroup (BaseField curve)) => AdditiveGroup (Point curve) where
-    negate = pointNegate
+    negate = pointXYNegate
 
 instance (EllipticCurve curve, Arbitrary (ScalarField curve)) => Arbitrary (Point curve) where
     arbitrary = arbitrary <&> (`mul` gen)
@@ -144,27 +144,27 @@ class (EllipticCurve curve1, EllipticCurve curve2, ScalarField curve1 ~ ScalarFi
     type TargetGroup curve1 curve2 :: Type
     pairing :: Point curve1 -> Point curve2 -> TargetGroup curve1 curve2
 
-pointAdd
+pointXYAdd
     :: EllipticCurve curve
     => Field (BaseField curve)
     => Point curve
     -> Point curve
     -> Point curve
-pointAdd p@(Point x1 y1 isInf1) q@(Point x2 y2 isInf2) =
+pointXYAdd p@(Point x1 y1 isInf1) q@(Point x2 y2 isInf2) =
   if isInf2 then p
   else if isInf1 then q
-  else if x1 == x2 then inf
-  else point x3 y3
+  else if x1 == x2 then pointInf
+  else pointXY x3 y3
   where
     slope  = (y1 - y2) // (x1 - x2)
     x3 = slope * slope - x1 - x2
     y3 = slope * (x1 - x3) - y1
 
-pointDouble
+pointXYDouble
     :: EllipticCurve curve
     => Field (BaseField curve)
     => Point curve -> Point curve
-pointDouble (Point x y isInf) = if isInf then inf else point x' y'
+pointXYDouble (Point x y isInf) = if isInf then pointInf else pointXY x' y'
   where
     slope = (x * x + x * x + x * x) // (y + y)
     x' = slope * slope - x - x
@@ -176,13 +176,13 @@ addPoints
     => Point curve
     -> Point curve
     -> Point curve
-addPoints p1 p2 = if p1 == p2 then pointDouble p1 else pointAdd p1 p2
+addPoints p1 p2 = if p1 == p2 then pointXYDouble p1 else pointXYAdd p1 p2
 
-pointNegate
+pointXYNegate
     :: EllipticCurve curve
     => AdditiveGroup (BaseField curve)
     => Point curve -> Point curve
-pointNegate (Point x y isInf) = if isInf then inf else point x (negate y)
+pointXYNegate (Point x y isInf) = if isInf then pointInf else pointXY x (negate y)
 
 pointMul
     :: forall curve s
@@ -200,29 +200,29 @@ class EllipticCurve curve => StandardEllipticCurve curve where
     aParameter :: BaseField curve
     bParameter :: BaseField curve
 
-data PointCompressed curve = PointCompressed
+data CompressedPoint curve = CompressedPoint
   { _x    :: BaseField curve
   , _bigY :: BooleanOf curve
-  , _inf  :: BooleanOf curve
+  , _isInf  :: BooleanOf curve
   } deriving Generic
 
-pointCompressed :: BoolType (BooleanOf curve) => BaseField curve -> BooleanOf curve -> PointCompressed curve
-pointCompressed x bigY = PointCompressed x bigY false
+pointCompressed :: BoolType (BooleanOf curve) => BaseField curve -> BooleanOf curve -> CompressedPoint curve
+pointCompressed x bigY = CompressedPoint x bigY false
 
 instance
   ( EllipticCurve curve
   , bool ~ BooleanOf curve
-  ) => Conditional bool (PointCompressed curve)
+  ) => Conditional bool (CompressedPoint curve)
 
 instance
   ( EllipticCurve curve
   , bool ~ BooleanOf curve
-  ) => Eq bool (PointCompressed curve)
+  ) => Eq bool (CompressedPoint curve)
 
 instance
   ( EllipticCurve curve
   , BooleanOf curve ~ P.Bool
-  ) => P.Eq (PointCompressed curve) where
+  ) => P.Eq (CompressedPoint curve) where
   (==) = (==)
   (/=) = (/=)
 
@@ -230,8 +230,8 @@ instance
   ( Show (BaseField curve)
   , Conditional (BooleanOf curve) P.String
   , Show (BooleanOf curve)
-  ) => Show (PointCompressed curve) where
-    show (PointCompressed x bigY isInf) =
+  ) => Show (CompressedPoint curve) where
+    show (CompressedPoint x bigY isInf) =
       if isInf then "InfCompressed" else "(" ++ show x ++ ", " ++ show bigY ++ ")"
 
 instance
@@ -239,7 +239,7 @@ instance
   , AdditiveGroup (BaseField curve)
   , Ord (BooleanOf curve) (BaseField curve)
   , Arbitrary (ScalarField curve)
-  ) => Arbitrary (PointCompressed curve) where
+  ) => Arbitrary (CompressedPoint curve) where
     arbitrary = compress <$> arbitrary
 
 compress
@@ -247,9 +247,9 @@ compress
      , EllipticCurve curve
      , Ord (BooleanOf curve) (BaseField curve)
      )
-  => Point curve -> PointCompressed curve
+  => Point curve -> CompressedPoint curve
 compress = \case
-  Point x y isInf -> if isInf then inf else PointCompressed x (y > negate y) false
+  Point x y isInf -> if isInf then pointInf else CompressedPoint x (y > negate y) false
 
 decompress
   :: forall curve .
@@ -257,9 +257,9 @@ decompress
      , FiniteField (BaseField curve)
      , Ord (BooleanOf curve) (BaseField curve)
      )
-  => PointCompressed curve -> Point curve
-decompress (PointCompressed x bigY isInf) =
-  if isInf then inf else
+  => CompressedPoint curve -> Point curve
+decompress (CompressedPoint x bigY isInf) =
+  if isInf then pointInf else
     let a = aParameter @curve
         b = bParameter @curve
         p = order @(BaseField curve)
@@ -268,4 +268,4 @@ decompress (PointCompressed x bigY isInf) =
         y'' = negate y'
         y = if bigY then max @(BooleanOf curve) y' y'' else min @(BooleanOf curve) y' y''
     in
-        point x y
+        pointXY x y

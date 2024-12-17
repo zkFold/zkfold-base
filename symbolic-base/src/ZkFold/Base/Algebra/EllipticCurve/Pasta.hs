@@ -31,7 +31,7 @@ instance EllipticCurve Pallas where
 
     type BaseField Pallas = Fp
 
-    gen = point
+    gen = pointXY
         0x40000000000000000000000000000000224698fc094cf91b992d30ed00000000
         0x02
 
@@ -54,7 +54,7 @@ instance EllipticCurve Vesta where
 
     type BaseField Vesta = Fq
 
-    gen = point
+    gen = pointXY
         0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000000
         0x02
 
@@ -71,22 +71,22 @@ instance StandardEllipticCurve Vesta where
 
 instance Binary (Point Pallas) where
   put (Point xp yp isInf) =
-    if isInf then put @(Point Pallas) (point zero zero) else put xp >> put yp
+    if isInf then put @(Point Pallas) (pointXY zero zero) else put xp >> put yp
   get = do
     xp <- get
     yp <- get
     return $
       if xp == zero && yp == zero
-      then inf
-      else point xp yp
+      then pointInf
+      else pointXY xp yp
 
 instance Binary (Point Vesta) where
   put (Point xp yp isInf) =
-    if isInf then put @(Point Vesta) (point zero zero) else put xp >> put yp
+    if isInf then put @(Point Vesta) (pointXY zero zero) else put xp >> put yp
   get = do
     xp <- get
     yp <- get
     return $
       if xp == zero && yp == zero
-      then inf
-      else point xp yp
+      then pointInf
+      else pointXY xp yp
