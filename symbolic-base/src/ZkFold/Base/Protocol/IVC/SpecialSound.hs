@@ -74,3 +74,4 @@ specialSoundProtocol' phi =
       verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
   in
       SpecialSoundProtocol undefined undefined verifier
+      

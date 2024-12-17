@@ -49,6 +49,8 @@ data IVCProof k c m f
     -- ^ The witness of the recursion circuit satisfiability proof.
     } deriving (GHC.Generics.Generic)
 
+makeLenses ''IVCProof
+
 deriving instance (Show (c f), Show m) => Show (IVCProof k c m f)
 deriving instance (NFData (c f), NFData m) => NFData (IVCProof k c m f)
 
@@ -130,7 +132,7 @@ ivcProve :: forall ctx0 ctx1 algo d k a i p c m o . IVCAssumptions ctx0 ctx1 alg
     -> IVCResult k i c m a
     -> p a
     -> IVCResult k i c m a
-ivcProve f res@(IVCResult _ _ (IVCProof cs ms)) witness =
+ivcProve f res witness =
     let
         p :: Predicate a i p
         p = predicate f
@@ -144,24 +146,30 @@ ivcProve f res@(IVCResult _ _ (IVCProof cs ms)) witness =
         input :: RecursiveI i a
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
 
+        messages :: Vector k m
+        messages = res^.proof^.proofW
+
+        commits :: Vector k (c a)
+        commits = res^.proof^.proofX
+
         narkIP :: NARKInstanceProof k (RecursiveI i) c m a
-        narkIP = NARKInstanceProof input (NARKProof cs ms)
+        narkIP = NARKInstanceProof input (NARKProof commits messages)
 
-        as :: AccumulatorScheme d k (RecursiveI i) c m a
-        as = accumulatorScheme @algo @d pRec
+        accScheme :: AccumulatorScheme d k (RecursiveI i) c m a
+        accScheme = accumulatorScheme @algo @d pRec
 
-        (acc', pf) = Acc.prover as (res^.acc) narkIP
+        (acc', pf) = Acc.prover accScheme (res^.acc) narkIP
 
         payload :: RecursiveP d k i p c a
-        payload = RecursiveP witness cs (res^.acc^.x) one pf
+        payload = RecursiveP witness commits (res^.acc^.x) one pf
 
-        sps :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c m [a] a
-        sps = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c m [a] a
+        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
 
-        (ms', cs') = unzip $ prover sps input payload zero 0
+        (messages', commits') = unzip $ prover protocol input payload zero 0
 
         ivcProof :: IVCProof k c m a
-        ivcProof = IVCProof cs' ms'        
+        ivcProof = IVCProof commits' messages'        
     in
         IVCResult z' acc' ivcProof
 
@@ -169,7 +177,7 @@ ivcVerify :: forall ctx0 ctx1 algo d k a i p c m o f . IVCAssumptions ctx0 ctx1 
     => StepFunction a i p
     -> IVCResult k i c m f
     -> ((Vector k (c f), [f]), (Vector k (c f), c f))
-ivcVerify f res@(IVCResult _ _ (IVCProof cs ms)) =
+ivcVerify f res =
     let
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
         pRec = recursivePredicate @ctx0 @ctx1 @algo $ recursiveFunction @_ @_ @algo f
@@ -177,12 +185,18 @@ ivcVerify f res@(IVCResult _ _ (IVCProof cs ms)) =
         input :: RecursiveI i f
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
 
-        as :: AccumulatorScheme d k (RecursiveI i) c m f
-        as = accumulatorScheme @algo @d pRec
+        messages :: Vector k m
+        messages = res^.proof^.proofW
 
-        sps :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c m [f] f
-        sps = fiatShamir @algo $ commitOpen $ specialSoundProtocol' @d pRec
+        commits :: Vector k (c f)
+        commits = res^.proof^.proofX
+
+        accScheme :: AccumulatorScheme d k (RecursiveI i) c m f
+        accScheme = accumulatorScheme @algo @d pRec
+
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c m [f] f
+        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol' @d pRec
     in
-        ( verifier sps input (singleton $ zip ms cs) zero
-        , Acc.decider as (res^.acc)
+        ( verifier protocol input (singleton $ zip messages commits) zero
+        , Acc.decider accScheme (res^.acc)
         )

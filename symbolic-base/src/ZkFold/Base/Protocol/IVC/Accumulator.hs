@@ -34,6 +34,8 @@ data AccumulatorInstance k i c f
         }
     deriving (Show, Eq, Generic, Generic1, NFData, Functor, Foldable, Traversable)
 
+makeLenses ''AccumulatorInstance
+
 instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Distributive (AccumulatorInstance k i c) where
     distribute = distributeRep
     collect = collectRep
@@ -55,8 +57,6 @@ instance
     , Support f ~ Support (i f)
     , Support f ~ Support (c f)
     ) => SymbolicData (AccumulatorInstance k i c f)
-
-makeLenses ''AccumulatorInstance
 
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x

@@ -27,8 +27,8 @@ narkProof :: Ring f
     -> p f
     -> NARKProof k c m f
 narkProof a pi0 w =
-    let (ms, cs) = unzip $ prover a pi0 w zero 0
-    in NARKProof cs ms
+    let (narkWitness, narkCommits) = unzip $ prover a pi0 w zero 0
+    in NARKProof {..}
 
 data NARKInstanceProof k i c m f = NARKInstanceProof (i f) (NARKProof k c m f)
     deriving (Show, Generic, NFData)
