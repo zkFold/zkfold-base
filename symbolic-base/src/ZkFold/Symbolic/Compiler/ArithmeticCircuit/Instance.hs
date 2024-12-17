@@ -9,12 +9,13 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 import           Control.DeepSeq                                     (NFData)
 import           Data.Aeson                                          hiding (Bool)
 import           Data.Binary                                         (Binary)
+import           Data.Bool                                           (bool)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
 import           GHC.Generics                                        (Par1 (..))
-import           Prelude                                             (Show, mempty, pure, return, show, ($), (++), (.),
-                                                                      (<$>), (<), head)
+import           Prelude                                             (Show, head, mempty, pure, return, show, ($), (++),
+                                                                      (.), (<$>), (<))
 import qualified Prelude                                             as Haskell
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
@@ -27,7 +28,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 import           ZkFold.Symbolic.MonadCircuit
-import Data.Bool (bool)
 
 ------------------------------------- Instances -------------------------------------
 
