@@ -34,7 +34,6 @@ type F = Zp BLS12_381_Scalar
 type C = Constant (Point BLS12_381_G1)
 type I = Vector 1
 type P = U1
-type M = [F]
 type K = 1
 type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) U1
 type PHI = Predicate F I P
@@ -58,7 +57,7 @@ testPredicate p = predicate $ testFunction p
 testSPS :: PHI -> SPS
 testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D 
 
-initAccumulator :: PHI -> Accumulator K I C M F
+initAccumulator :: PHI -> Accumulator K I C F
 initAccumulator = emptyAccumulator @D
 
 initAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
@@ -69,10 +68,10 @@ initAccumulatorInstance phi =
 testPublicInput0 :: I F
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
-testInstanceProofPair :: PHI -> NARKInstanceProof K I C M F
+testInstanceProofPair :: PHI -> NARKInstanceProof K I C F
 testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 
-testMessages :: PHI -> Vector K M
+testMessages :: PHI -> Vector K [F]
 testMessages phi =
     let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair phi
     in ms
@@ -87,10 +86,10 @@ testPublicInput phi =
     let NARKInstanceProof pi _ = testInstanceProofPair phi
     in pi
 
-testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C [F] F
+testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
 testAccumulatorScheme = accumulatorScheme @MiMCHash
 
-testAccumulator :: PHI -> Accumulator K I C M F
+testAccumulator :: PHI -> Accumulator K I C F
 testAccumulator phi =
     let s = testAccumulatorScheme phi
     in fst $ prover s (initAccumulator phi) $ testInstanceProofPair phi

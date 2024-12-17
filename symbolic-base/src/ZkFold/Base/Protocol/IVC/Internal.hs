@@ -41,49 +41,41 @@ import           ZkFold.Symbolic.Data.FieldElement          (FieldElement)
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
 -- | The recursion circuit satisfiability proof.
-data IVCProof k c m f
+data IVCProof k c f
     = IVCProof
     { _proofX :: Vector k (c f)
     -- ^ The commitment to the witness of the recursion circuit satisfiability proof.
-    , _proofW :: Vector k m
+    , _proofW :: Vector k [f]
     -- ^ The witness of the recursion circuit satisfiability proof.
-    } deriving (GHC.Generics.Generic)
+    } deriving (GHC.Generics.Generic, Show, NFData)
 
 makeLenses ''IVCProof
 
-deriving instance (Show (c f), Show m) => Show (IVCProof k c m f)
-deriving instance (NFData (c f), NFData m) => NFData (IVCProof k c m f)
-
-noIVCProof :: forall k c m f .
+noIVCProof :: forall k c f .
     ( KnownNat k
     , AdditiveMonoid (c f)
-    , m ~ [f]    
     , AdditiveMonoid f
-    ) => IVCProof k c m f
+    ) => IVCProof k c f
 noIVCProof = IVCProof (tabulate $ const zero) (tabulate $ const zero)
 
 -- | The current result of recursion together with the first iteration flag,
 -- the corresponding accumulator, and the recursion circuit satisfiability proof.
-data IVCResult k i c m f
+data IVCResult k i c f
     = IVCResult
     { _z     :: i f
-    , _acc   :: Accumulator k (RecursiveI i) c m f
-    , _proof :: IVCProof k c m f
-    } deriving (GHC.Generics.Generic)
+    , _acc   :: Accumulator k (RecursiveI i) c f
+    , _proof :: IVCProof k c f
+    } deriving (GHC.Generics.Generic, Show, NFData)
 
 makeLenses ''IVCResult
 
-deriving instance (Show f, Show (i f), Show (c f), Show m) => Show (IVCResult k i c m f)
-deriving instance (NFData f, NFData (i f), NFData (c f), NFData m) => NFData (IVCResult k i c m f)
-
-type IVCAssumptions ctx0 ctx1 algo d k a i p c m o f =
+type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
     ( FunctorAssumptions i
     , Zip i
     , FunctorAssumptions p
     , FunctorAssumptions c
     , HashAlgorithm algo f
-    , m ~ [f]
-    , HomomorphicCommit m (c f)
+    , HomomorphicCommit [f] (c f)
     , RandomOracle algo f f
     , RandomOracle algo (i f) f
     , RandomOracle algo (c f) f
@@ -109,11 +101,11 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c m o f =
 -- | Create the first IVC result
 -- 
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall ctx0 ctx1 algo d k a i p o m c . IVCAssumptions ctx0 ctx1 algo d k a i p c m o a
+ivcSetup :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
     => StepFunction a i p
     -> i a
     -> p a
-    -> IVCResult k i c m a
+    -> IVCResult k i c a
 ivcSetup f z0 witness =
     let
         p :: Predicate a i p
@@ -127,11 +119,11 @@ ivcSetup f z0 witness =
     in
         IVCResult z1 (emptyAccumulator @d pRec) noIVCProof
 
-ivcProve :: forall ctx0 ctx1 algo d k a i p c m o . IVCAssumptions ctx0 ctx1 algo d k a i p c m o a
+ivcProve :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
     => StepFunction a i p
-    -> IVCResult k i c m a
+    -> IVCResult k i c a
     -> p a
-    -> IVCResult k i c m a
+    -> IVCResult k i c a
 ivcProve f res witness =
     let
         p :: Predicate a i p
@@ -146,16 +138,16 @@ ivcProve f res witness =
         input :: RecursiveI i a
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
 
-        messages :: Vector k m
+        messages :: Vector k [a]
         messages = res^.proof^.proofW
 
         commits :: Vector k (c a)
         commits = res^.proof^.proofX
 
-        narkIP :: NARKInstanceProof k (RecursiveI i) c m a
+        narkIP :: NARKInstanceProof k (RecursiveI i) c a
         narkIP = NARKInstanceProof input (NARKProof commits messages)
 
-        accScheme :: AccumulatorScheme d k (RecursiveI i) c m a
+        accScheme :: AccumulatorScheme d k (RecursiveI i) c a
         accScheme = accumulatorScheme @algo @d pRec
 
         (acc', pf) = Acc.prover accScheme (res^.acc) narkIP
@@ -163,19 +155,19 @@ ivcProve f res witness =
         payload :: RecursiveP d k i p c a
         payload = RecursiveP witness commits (res^.acc^.x) one pf
 
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c m [a] a
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [a] [a] a
         protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
 
         (messages', commits') = unzip $ prover protocol input payload zero 0
 
-        ivcProof :: IVCProof k c m a
+        ivcProof :: IVCProof k c a
         ivcProof = IVCProof commits' messages'        
     in
         IVCResult z' acc' ivcProof
 
-ivcVerify :: forall ctx0 ctx1 algo d k a i p c m o f . IVCAssumptions ctx0 ctx1 algo d k a i p c m o f
+ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo d k a i p c f
     => StepFunction a i p
-    -> IVCResult k i c m f
+    -> IVCResult k i c f
     -> ((Vector k (c f), [f]), (Vector k (c f), c f))
 ivcVerify f res =
     let
@@ -185,16 +177,16 @@ ivcVerify f res =
         input :: RecursiveI i f
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
 
-        messages :: Vector k m
+        messages :: Vector k [f]
         messages = res^.proof^.proofW
 
         commits :: Vector k (c f)
         commits = res^.proof^.proofX
 
-        accScheme :: AccumulatorScheme d k (RecursiveI i) c m f
+        accScheme :: AccumulatorScheme d k (RecursiveI i) c f
         accScheme = accumulatorScheme @algo @d pRec
 
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c m [f] f
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [f] [f] f
         protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol' @d pRec
     in
         ( verifier protocol input (singleton $ zip messages commits) zero

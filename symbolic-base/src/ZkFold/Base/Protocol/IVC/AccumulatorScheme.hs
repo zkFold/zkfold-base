@@ -12,7 +12,7 @@ import           Data.Constraint.Nat                         (plusMinusInverse1)
 import           Data.Functor.Rep                            (Representable (..))
 import           Data.Zip                                    (Zip (..))
 import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     (type (~), fmap, ($), (.), (<$>))
+import           Prelude                                     (fmap, ($), (.), (<$>))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -28,25 +28,25 @@ import           ZkFold.Base.Protocol.IVC.Oracle             (RandomOracle (..),
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
-data AccumulatorScheme d k i c m f = AccumulatorScheme
+data AccumulatorScheme d k i c f = AccumulatorScheme
   {
     prover   ::
-               Accumulator k i c m f                          -- accumulator
-            -> NARKInstanceProof k i c m f                    -- instance-proof pair (pi, π)
-            -> (Accumulator k i c m f, Vector (d-1) (c f))    -- updated accumulator and accumulation proof
+               Accumulator k i c f                          -- accumulator
+            -> NARKInstanceProof k i c f                    -- instance-proof pair (pi, π)
+            -> (Accumulator k i c f, Vector (d-1) (c f))    -- updated accumulator and accumulation proof
 
-  , verifier :: i f                                           -- Public input
-            -> Vector k (c f)                                 -- NARK proof π.x
-            -> AccumulatorInstance k i c f                    -- accumulator instance acc.x
-            -> Vector (d-1) (c f)                             -- accumulation proof E_j
-            -> AccumulatorInstance k i c f                    -- updated accumulator instance acc'.x
+  , verifier :: i f                                         -- Public input
+            -> Vector k (c f)                               -- NARK proof π.x
+            -> AccumulatorInstance k i c f                  -- accumulator instance acc.x
+            -> Vector (d-1) (c f)                           -- accumulation proof E_j
+            -> AccumulatorInstance k i c f                  -- updated accumulator instance acc'.x
 
   , decider  ::
-               Accumulator k i c m f                          -- final accumulator
-            -> (Vector k (c f), c f)                          -- returns zeros if the final accumulator is valid
+               Accumulator k i c f                          -- final accumulator
+            -> (Vector k (c f), c f)                        -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k a i p c m f .
+accumulatorScheme :: forall algo d k a i p c f .
     ( KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
@@ -55,16 +55,15 @@ accumulatorScheme :: forall algo d k a i p c m f .
     , RandomOracle algo f f
     , RandomOracle algo (i f) f
     , RandomOracle algo (c f) f
-    , HomomorphicCommit m (c f)
-    , m ~ [f]
+    , HomomorphicCommit [f] (c f)
     , Field f
     , Scale a f
     , Scale a (PU.PolyVec f (d+1))
     , Scale f (c f)
-    , Scale f (Vector k (c f))
+    -- , Scale f (Vector k (c f))
     )
     => Predicate a i p
-    -> AccumulatorScheme d k i c m f
+    -> AccumulatorScheme d k i c f
 accumulatorScheme phi =
   let
       prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =

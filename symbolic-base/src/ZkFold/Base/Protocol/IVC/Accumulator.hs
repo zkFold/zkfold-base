@@ -55,31 +55,29 @@ instance
     , Context f ~ Context (i f)
     , Support f ~ Support (c f)
     , Support f ~ Support (i f)
-    , Support f ~ Support (c f)
     ) => SymbolicData (AccumulatorInstance k i c f)
 
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
-data Accumulator k i c m f
+data Accumulator k i c f
     = Accumulator
         { _x :: AccumulatorInstance k i c f
-        , _w :: Vector k m
+        , _w :: Vector k [f]
         }
     deriving (Show, Generic, NFData)
 
 makeLenses ''Accumulator
 
-emptyAccumulator :: forall d k a i p c m f .
+emptyAccumulator :: forall d k a i p c f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , HomomorphicCommit m (c f)
-    , m ~ [f]    
+    , HomomorphicCommit [f] (c f)
     , Ring f
     , Scale a f
-    ) => Predicate a i p -> Accumulator k i c m f
+    ) => Predicate a i p -> Accumulator k i c f
 emptyAccumulator phi =
     let accW  = tabulate (const zero)
         aiC   = fmap hcommit accW
@@ -90,13 +88,12 @@ emptyAccumulator phi =
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 
-emptyAccumulatorInstance :: forall d k a i p c m f .
+emptyAccumulatorInstance :: forall d k a i p c f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , HomomorphicCommit m (c f)
-    , m ~ [f]    
+    , HomomorphicCommit [f] (c f)
     , Ring f
     , Scale a f
     ) => Predicate a i p -> AccumulatorInstance k i c f
