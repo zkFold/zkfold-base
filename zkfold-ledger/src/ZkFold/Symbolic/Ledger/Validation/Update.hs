@@ -8,7 +8,7 @@ import           Prelude                                       hiding (Bool, Eq 
 
 import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Conditional              (bool)
+import           ZkFold.Symbolic.Data.Conditional              (Conditional, bool)
 import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
 import           ZkFold.Symbolic.Data.List                     (List, concat, singleton, (++))
 import           ZkFold.Symbolic.Ledger.Types
@@ -80,13 +80,12 @@ updateIsValid ::
   => SymbolicOutput (Output context)
   => SymbolicOutput (ContractData context)
   => SymbolicOutput (Value context)
-  => SymbolicData (MultiAssetValue context)
   => Context (AddressIndex context) ~ context
   => Context (Output context) ~ context
   => Context (ContractData context) ~ context
   => Context (Value context) ~ context
-  => Context (MultiAssetValue context) ~ context
   => Eq (Bool context) (MultiAssetValue context)
+  => Conditional (Bool context) (MultiAssetValue context)
   => Hash context
   -> Update context
   -> UpdateWitness context

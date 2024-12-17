@@ -64,6 +64,8 @@ deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context
 deriving instance (Haskell.Eq (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Eq (UInt n r context)
 deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Show (UInt n r context)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
+deriving newtype instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (UInt n r c)
+deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (Bool c) (UInt n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (UInt n r c) where
     fromConstant c = UInt . embed @c $ naturalToVector @c @n @r c
@@ -128,7 +130,7 @@ bitsPow 0 _ res _ _ = res
 bitsPow b bits res n m = bitsPow (b -! 1) bits newRes sq m
     where
         sq = (n * n) `mod` m
-        newRes = force $ gif (isSet bits (b -! 1)) ((res * n) `mod` m) res
+        newRes = force $ ifThenElse (isSet bits (b -! 1)) ((res * n) `mod` m) res
 
 
 cast :: forall a n r . (Arithmetic a, KnownNat n, KnownRegisterSize r) => Natural -> ([Natural], Natural, [Natural])
@@ -460,10 +462,6 @@ instance
     , KnownNat n
     , KnownRegisterSize r
     ) => Ring (UInt n r c)
-
-deriving newtype
-         instance (Symbolic c, KnownRegisters c n rs) =>
-         Eq (Bool c) (UInt n rs c)
 
 --------------------------------------------------------------------------------
 

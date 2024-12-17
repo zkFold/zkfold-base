@@ -31,7 +31,7 @@ import           ZkFold.Prelude                   ((!!))
 import           ZkFold.Symbolic.Class            (Symbolic)
 import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Conditional (bool)
+import           ZkFold.Symbolic.Data.Conditional (Conditional, bool)
 import qualified ZkFold.Symbolic.Data.Maybe       as Symbolic
 import qualified ZkFold.Symbolic.UPLC.Data        as Symbolic
 import           ZkFold.UPLC.BuiltinFunction
@@ -50,6 +50,7 @@ class
     ( Typeable v, SymbolicData v
     , Context v ~ c, Support v ~ Proxy c
     -- TODO: Remove after Conditional becomes part of SymbolicData
+    , Conditional (Bool c) v
     , Representable (Layout v)
     , Traversable (Layout v)
     , Representable (Payload v)
@@ -235,7 +236,7 @@ instance
 --
 -- Be careful with two layers of Maybe! Think about which errors do you wish to
 -- propagate.
-applyPoly :: Sym c => Env c -> BuiltinPolyFunction s t -> [Arg c] -> SomeValue c
+applyPoly :: forall c s t. Sym c => Env c -> BuiltinPolyFunction s t -> [Arg c] -> SomeValue c
 applyPoly ctx IfThenElse (ct:tt:et:args) = do
   MaybeValue c0 <- evalArg ctx ct []
   withArms (evalArg ctx tt args) (evalArg ctx et args) $ \t e0 -> do
