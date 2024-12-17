@@ -1,8 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
+
 module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 
+import           Control.DeepSeq                           (NFData)
 import           Data.Type.Equality
 import           GHC.TypeLits                              (KnownNat, Log2)
 import qualified GHC.TypeNats
@@ -20,11 +22,12 @@ import qualified ZkFold.Symbolic.Class                     as S
 import           ZkFold.Symbolic.Class                     (Symbolic)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString           (ByteString, concat, toWords)
-import           ZkFold.Symbolic.Data.Combinators          (Iso (..), NumberOfRegisters, RegisterSize (..), resize)
+import           ZkFold.Symbolic.Data.Combinators          (Iso (..), RegisterSize (..), resize)
 import           ZkFold.Symbolic.Data.Ed25519
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement         (FieldElement)
-import           ZkFold.Symbolic.Data.UInt                 (UInt)
+import           ZkFold.Symbolic.Data.UInt                 (RegistersOf, UInt)
+
 data ZKPassResult c = ZKPassResult
   { allocatorAddress   :: ByteString 256 c
   , allocatorSignature :: ByteString 520 c
@@ -52,11 +55,10 @@ verifyAllocatorSignature :: forall curve context n . (
     , BaseField curve ~ UInt 256 Auto context
     , KnownNat n
     , Scale (FieldElement context) (Point curve)
-    , SemiEuclidean (Hash context)
     , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
-    , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
     , SHA2N "SHA512/256" context
     , BooleanOf curve ~ Bool context
+    , NFData (context (RegistersOf 256 Auto (S.BaseField context)))
     )
     => ByteString 256 context
     -> ByteString 256 context
@@ -84,11 +86,10 @@ verifyValidatorSignature :: forall curve context n . (
     , BaseField curve ~ UInt 256 Auto context
     , KnownNat n
     , Scale (FieldElement context) (Point curve)
-    , SemiEuclidean (Hash context)
     , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
-    , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
     , SHA2N "SHA512/256" context
     , BooleanOf curve ~ Bool context
+    , NFData (context (RegistersOf 256 Auto (S.BaseField context)))
     )
     => ByteString 256 context
     -> ByteString 256 context
@@ -131,11 +132,11 @@ zkPassSymbolicVerifier ::
     , n ~ Ed25519_Base
     , EllipticCurve curve
     , BaseField curve ~ UInt 256 Auto context
-    , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
     , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
     , SemiEuclidean (Hash context)
     , Scale (FieldElement context) (Point curve)
     , SHA2N "SHA512/256" context
+    , NFData (context (RegistersOf 256 Auto (S.BaseField context)))
     )
     =>ZKPassResult context
     -> Bool context

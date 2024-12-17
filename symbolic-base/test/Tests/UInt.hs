@@ -2,8 +2,6 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-
 module Tests.UInt (specUInt) where
 
 import           Control.Applicative                         ((<*>))
@@ -16,7 +14,7 @@ import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1), U1)
-import           Prelude                                     (show, type (~))
+import           Prelude                                     (show)
 import qualified Prelude                                     as P
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (describe, hspec)
@@ -27,14 +25,12 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
-                                                              NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..), KnownRegisterSize, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -54,10 +50,10 @@ evalBoolVec (Bool (Interpreter (Par1 v))) = v
 evalBS :: forall a n . Arithmetic a => ByteString n (AC a) -> ByteString n (Interpreter a)
 evalBS (ByteString bits) = ByteString $ Interpreter (exec bits)
 
-execAcUint :: forall a n r . Arithmetic a => UInt n r (AC a) -> Vector (NumberOfRegisters a n r) a
+execAcUint :: forall a n r . Arithmetic a => UInt n r (AC a) -> RegistersOf n r a a
 execAcUint (UInt v) = exec v
 
-execZpUint :: forall a n r . UInt n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
+execZpUint :: forall a n r . UInt n r (Interpreter a) -> RegistersOf n r a a
 execZpUint (UInt (Interpreter v)) = v
 
 overflowSub :: forall n . KnownNat n => Binary Natural
@@ -87,16 +83,10 @@ with2n :: forall n {r}. KnownNat n => (KnownNat (2 * n) => r) -> r
 with2n = withDict (timesNat @2 @n)
 
 specUInt'
-    :: forall p n r r2n rs
+    :: forall p n rs
     .  PrimeField (Zp p)
     => KnownNat n
     => KnownRegisterSize rs
-    => r ~ NumberOfRegisters (Zp p) n rs
-    => r2n ~ NumberOfRegisters (Zp p) (2 * n) rs
-    => KnownNat r
-    => KnownNat r2n
-    => KnownNat (Ceil (GetRegisterSize (Zp p) n rs) OrdWord)
-    => KnownNat (Ceil (GetRegisterSize (Zp p) (2 * n) rs) OrdWord)
     => IO ()
 specUInt' = hspec $ do
     let n = value @n
@@ -237,11 +227,11 @@ specUInt' = hspec $ do
 
 specUInt :: IO ()
 specUInt = do
-    specUInt' @BLS12_381_Scalar @32 @_ @_ @Auto
-    specUInt' @BLS12_381_Scalar @500 @_ @_ @Auto
+    specUInt' @BLS12_381_Scalar @32 @Auto
+    specUInt' @BLS12_381_Scalar @500 @Auto
 
-    specUInt' @BLS12_381_Scalar @32 @_ @_ @(Fixed 10)
-    specUInt' @BLS12_381_Scalar @500 @_ @_ @(Fixed 10)
+    specUInt' @BLS12_381_Scalar @32 @(Fixed 10)
+    specUInt' @BLS12_381_Scalar @500 @(Fixed 10)
 
 
 less2n :: forall n. Dict (n <= 2 * n)

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -21,14 +22,13 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector              (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2 (SHA2, sha2)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
+import           ZkFold.Symbolic.Data.Bool            (Bool)
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
-                                                       NumberOfRegisters, RegisterSize (..), Resize (..))
+import           ZkFold.Symbolic.Data.Combinators     (Iso (..), RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
-import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
+import           ZkFold.Symbolic.Data.Input           (SymbolicInput)
+import           ZkFold.Symbolic.Data.UInt            (RegistersOf, UInt, expMod)
 
 type KeyLength = 512
 
@@ -36,68 +36,51 @@ type Signature ctx = ByteString KeyLength ctx
 
 data PrivateKey ctx
     = PrivateKey
-        { prvD :: UInt KeyLength 'Auto ctx
-        , prvN :: UInt KeyLength 'Auto ctx
+        { prvD :: UInt KeyLength Auto ctx
+        , prvN :: UInt KeyLength Auto ctx
         }
 
 deriving instance Generic (PrivateKey context)
-deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))) => NFData (PrivateKey context)
-deriving instance (P.Eq (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto))))   => P.Eq   (PrivateKey context)
+deriving instance (NFData (context (RegistersOf KeyLength Auto (BaseField context)))) => NFData (PrivateKey context)
+deriving instance (P.Eq (context (RegistersOf KeyLength Auto (BaseField context))))   => P.Eq   (PrivateKey context)
 deriving instance
     ( P.Show (BaseField context)
-    , P.Show (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
+    , P.Show (context (RegistersOf KeyLength Auto (BaseField context)))
     ) => P.Show (PrivateKey context)
 
-deriving instance (Symbolic ctx, KnownRegisters ctx KeyLength 'Auto) => SymbolicData (PrivateKey ctx)
-
-instance
-  ( Symbolic ctx
-  , KnownRegisters ctx KeyLength 'Auto
-  ) => SymbolicInput (PrivateKey ctx) where
-    isValid PrivateKey{..} = isValid prvD && isValid prvN
+deriving instance (Symbolic ctx) => SymbolicData (PrivateKey ctx)
+deriving instance (Symbolic ctx) => SymbolicInput (PrivateKey ctx)
 
 data PublicKey ctx
     = PublicKey
-        { pubE :: UInt 32 'Auto ctx
-        , pubN :: UInt KeyLength 'Auto ctx
+        { pubE :: UInt 32 Auto ctx
+        , pubN :: UInt KeyLength Auto ctx
         }
 
 deriving instance Generic (PublicKey context)
 deriving instance
-    ( NFData (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
-    , NFData (context (Vector (NumberOfRegisters (BaseField context) 32 'Auto)))
+    ( NFData (context (RegistersOf KeyLength Auto (BaseField context)))
+    , NFData (context (RegistersOf 32 Auto (BaseField context)))
     ) =>  NFData  (PublicKey context)
 deriving instance
-    ( P.Eq (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
-    , P.Eq (context (Vector (NumberOfRegisters (BaseField context) 32 'Auto)))
+    ( P.Eq (context (RegistersOf KeyLength Auto (BaseField context)))
+    , P.Eq (context (RegistersOf 32 Auto (BaseField context)))
     ) =>  P.Eq    (PublicKey context)
 deriving instance
-    ( P.Show (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
-    , P.Show (context (Vector (NumberOfRegisters (BaseField context) 32 'Auto)))
+    ( P.Show (context (RegistersOf KeyLength Auto (BaseField context)))
+    , P.Show (context (RegistersOf 32 Auto (BaseField context)))
     , P.Show (BaseField context)
     ) =>  P.Show  (PublicKey context)
 
-deriving instance
-    ( Symbolic ctx
-    , KnownRegisters ctx 32 'Auto
-    , KnownRegisters ctx KeyLength 'Auto
-    ) => SymbolicData (PublicKey ctx)
+deriving instance (Symbolic ctx) => SymbolicData (PublicKey ctx)
 
-instance
-  ( Symbolic ctx
-  , KnownRegisters ctx 32 'Auto
-  , KnownRegisters ctx KeyLength 'Auto
-  ) => SymbolicInput (PublicKey ctx) where
-    isValid PublicKey{..} = isValid pubE && isValid pubN
+deriving instance (Symbolic ctx) => SymbolicInput (PublicKey ctx)
 
 type RSA ctx msgLen =
    ( SHA2 "SHA256" ctx msgLen
-   , KnownRegisters ctx KeyLength 'Auto
-   , KnownRegisters ctx (2 * KeyLength) 'Auto
-   , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * KeyLength) 'Auto) OrdWord)
    , NFData (ctx (Vector KeyLength))
-   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)))
-   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)))
+   , NFData (ctx (RegistersOf KeyLength Auto (BaseField ctx)))
+   , NFData (ctx (RegistersOf (2 * KeyLength) Auto (BaseField ctx)))
    )
 
 sign
