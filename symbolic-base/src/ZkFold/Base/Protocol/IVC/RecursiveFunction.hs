@@ -109,7 +109,8 @@ recursiveFunction func =
             -> RecursiveI i f
         funcRecursive z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
             let
-                as = accumulatorScheme @algo pRec :: AccumulatorScheme d k (RecursiveI i) c f
+                accScheme :: AccumulatorScheme d k (RecursiveI i) c f
+                accScheme = accumulatorScheme @algo pRec
 
                 x' :: i f
                 x' = func x u
