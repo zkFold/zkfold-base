@@ -29,30 +29,22 @@ import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (Payloaded))
 import           ZkFold.Symbolic.Data.UInt        (UInt)
 import           ZkFold.Symbolic.MonadCircuit
 
-data ListItem x a = ListItem
-  { tailHash    :: Layout x a
-  , headLayout  :: Layout x a
-  , headPayload :: Payload x a
+data ListItem l p a = ListItem
+  { tailHash    :: l a
+  , headLayout  :: l a
+  , headPayload :: p a
   }
-  deriving (Generic1)
+  deriving (Functor, Generic1)
 
-deriving instance
-  (Functor (Layout x), Functor (Payload x)) =>
-  Functor (ListItem x)
-
-instance
-    (Representable (Layout x), Representable (Payload x)) =>
-    Distributive (ListItem x) where
+instance (Representable l, Representable p) => Distributive (ListItem l p) where
   distribute = distributeRep
 
-instance
-  (Representable (Layout x), Representable (Payload x)) =>
-  Representable (ListItem x)
+instance (Representable l, Representable p) => Representable (ListItem l p)
 
 data List c x = List
   { lHash    :: c (Layout x)
   , lSize    :: c Par1
-  , lWitness :: Payloaded (Infinite :.: ListItem x) c
+  , lWitness :: Payloaded (Infinite :.: ListItem (Layout x) (Payload x)) c
   }
   deriving (Generic)
 
