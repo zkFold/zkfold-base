@@ -4,6 +4,8 @@ module ZkFold.Base.Algebra.EllipticCurve.Secp256k1
   ( Secp256k1
   , Secp256k1_Base
   , Secp256k1_Scalar
+  , Fp
+  , Fn
   ) where
 
 import           ZkFold.Base.Algebra.Basic.Field

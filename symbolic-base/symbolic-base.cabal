@@ -253,6 +253,7 @@ test-suite symbolic-base-test
       Tests.Blake2b
       Tests.ByteString
       Tests.Compiler
+      Tests.EllipticCurve
       Tests.FFA
       Tests.Field
       Tests.GroebnerBasis

@@ -8,6 +8,7 @@ import           Tests.Blake2b             (specBlake2b)
 import           Tests.ByteString          (specByteString)
 import           Tests.Compiler            (specCompiler)
 import           Tests.FFA                 (specFFA)
+import           Tests.EllipticCurve       (specEllipticCurve)
 import           Tests.Field               (specField)
 import           Tests.GroebnerBasis       (specGroebner)
 import           Tests.Group               (specAdditiveGroup)
@@ -35,6 +36,7 @@ main = do
     specPairing
     specUnivariate
     specGroebner
+    specEllipticCurve
 
     -- Compiler spec
     specCompiler
