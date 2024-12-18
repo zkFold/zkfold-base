@@ -32,7 +32,6 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate (toPoly)
 
 -------------------------- Scalar field & field towers -------------------------
 
-
 -- Designations of curve parameters are as in:
 -- https://pkg.go.dev/github.com/consensys/gnark-crypto/ecc/bn254
 
