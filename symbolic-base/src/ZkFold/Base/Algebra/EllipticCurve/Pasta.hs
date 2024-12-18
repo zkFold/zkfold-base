@@ -31,7 +31,7 @@ instance EllipticCurve Pallas where
 
     type BaseField Pallas = Fp
 
-    gen = pointXY
+    pointGen = pointXY
         0x40000000000000000000000000000000224698fc094cf91b992d30ed00000000
         0x02
 
@@ -54,7 +54,7 @@ instance EllipticCurve Vesta where
 
     type BaseField Vesta = Fq
 
-    gen = pointXY
+    pointGen = pointXY
         0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000000
         0x02
 

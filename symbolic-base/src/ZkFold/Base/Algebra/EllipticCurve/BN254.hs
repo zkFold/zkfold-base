@@ -70,7 +70,7 @@ data BN254_G1
 instance EllipticCurve BN254_G1 where
   type ScalarField BN254_G1 = Fr
   type BaseField BN254_G1 = Fp
-  gen = pointXY 1 2
+  pointGen = pointXY 1 2
   add = addPoints
   mul = pointMul
 
@@ -85,7 +85,7 @@ data BN254_G2
 instance EllipticCurve BN254_G2 where
   type ScalarField BN254_G2 = Fr
   type BaseField BN254_G2 = Fp2
-  gen = pointXY
+  pointGen = pointXY
     (Ext2 0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed
           0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2)
     (Ext2 0x12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa

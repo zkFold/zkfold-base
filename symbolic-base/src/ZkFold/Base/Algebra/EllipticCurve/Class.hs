@@ -98,7 +98,7 @@ class
     type BooleanOf curve :: Type
     type BooleanOf curve = P.Bool
 
-    gen :: Point curve
+    pointGen :: Point curve
 
     add :: Point curve -> Point curve -> Point curve
 
@@ -136,7 +136,7 @@ instance (EllipticCurve curve, AdditiveGroup (BaseField curve)) => AdditiveGroup
     negate = pointNegate
 
 instance (EllipticCurve curve, Arbitrary (ScalarField curve)) => Arbitrary (Point curve) where
-    arbitrary = arbitrary <&> (`mul` gen)
+    arbitrary = arbitrary <&> (`mul` pointGen)
 
 class (EllipticCurve curve1, EllipticCurve curve2, ScalarField curve1 ~ ScalarField curve2,
         P.Eq (TargetGroup curve1 curve2), MultiplicativeGroup (TargetGroup curve1 curve2),

@@ -38,7 +38,7 @@ instance
     type ScalarField (AcEd25519 c) = FieldElement c
     type BooleanOf (AcEd25519 c) = Bool c
 
-    gen = pointXY
+    pointGen = pointXY
             (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
             (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
 

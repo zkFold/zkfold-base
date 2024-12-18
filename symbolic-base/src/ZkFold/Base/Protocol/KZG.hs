@@ -66,15 +66,15 @@ instance forall (c1 :: Type) (c2 :: Type) d kzg f g1 core.
     setupProve (KZG x) =
         let d  = value @d
             xs = V.fromList $ map (x^) [0..d-!1]
-            gs = fmap (`mul` gen) xs
+            gs = fmap (`mul` pointGen) xs
         in gs
 
     setupVerify :: kzg -> SetupVerify kzg
     setupVerify (KZG x) =
         let d  = value @d
             xs = V.fromList $ map (x^) [0..d-!1]
-            gs = fmap (`mul` gen) xs
-        in (gs, gen, x `mul` gen)
+            gs = fmap (`mul` pointGen) xs
+        in (gs, pointGen, x `mul` pointGen)
 
     prove :: SetupProve kzg
           -> Witness kzg

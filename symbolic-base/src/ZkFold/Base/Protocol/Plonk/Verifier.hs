@@ -145,8 +145,8 @@ plonkVerify
         -- Step 12: Compute E
         e = (
                 negate r0 + v * a_xi + vn 2 * b_xi + vn 3 * c_xi + vn 4 * s1_xi + vn 5 * s2_xi + eta * z1_xi'
-            ) `mul` gen
+            ) `mul` pointGen
 
         -- Step 13: Compute the pairing
         p1 = pairing (proof1 + eta `mul` proof2) h1
-        p2 = pairing (xi `mul` proof1 + (eta * xi * omega) `mul` proof2 + f - e) (gen @c2)
+        p2 = pairing (xi `mul` proof1 + (eta * xi * omega) `mul` proof2 + f - e) (pointGen @c2)

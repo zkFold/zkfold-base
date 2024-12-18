@@ -33,7 +33,7 @@ data Secp256k1
 instance EllipticCurve Secp256k1 where
   type ScalarField Secp256k1 = Fn
   type BaseField Secp256k1 = Fp
-  gen = pointXY
+  pointGen = pointXY
     0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
     0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
   add = addPoints

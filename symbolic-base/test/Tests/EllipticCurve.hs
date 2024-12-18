@@ -16,7 +16,7 @@ specEllipticCurve = hspec $ do
       it "should match test vector" $ do
         let p, q :: Point Secp256k1
             p = pointXY (fromConstant x) (fromConstant y)
-            q = scale k gen
+            q = scale k pointGen
         p `shouldBe` q
 
 data TestVector = TestVector
