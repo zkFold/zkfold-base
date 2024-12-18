@@ -25,6 +25,7 @@ data TestVector = TestVector
   , _y :: Natural -- y coordinate of scaled generator point
   }
 
+-- https://chuckbatson.wordpress.com/2014/11/26/secp256k1-test-vectors/
 secp256k1testVectors :: [TestVector]
 secp256k1testVectors =
   [ TestVector
