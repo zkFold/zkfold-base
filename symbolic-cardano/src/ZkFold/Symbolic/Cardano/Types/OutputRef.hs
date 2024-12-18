@@ -1,6 +1,4 @@
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
@@ -11,7 +9,7 @@ import qualified Prelude                             as Haskell
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators    (KnownRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input          (SymbolicInput)
@@ -30,14 +28,7 @@ deriving instance
     , Haskell.Eq (TxRefIndex context)
     ) => Haskell.Eq (OutputRef context)
 
-instance (Symbolic context, KnownRegisters context 32 Auto)
-    => SymbolicData (OutputRef context)
-
-instance (Symbolic context, KnownRegisters context 32 Auto)
-    => SymbolicInput (OutputRef context) where
-
-instance (Symbolic context, KnownRegisters context 32 Auto)
-    => Conditional (Bool context) (OutputRef context) where
-
-instance (Symbolic context, KnownRegisters context 32 Auto)
-    => Eq (Bool context) (OutputRef context) where
+instance (Symbolic context) => SymbolicData (OutputRef context)
+instance (Symbolic context) => SymbolicInput (OutputRef context)
+instance (Symbolic context) => Conditional (Bool context) (OutputRef context)
+instance (Symbolic context) => Eq (Bool context) (OutputRef context)

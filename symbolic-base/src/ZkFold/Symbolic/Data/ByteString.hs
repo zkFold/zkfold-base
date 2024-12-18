@@ -5,7 +5,6 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module ZkFold.Symbolic.Data.ByteString
@@ -227,8 +226,6 @@ truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
 append
     :: forall m n c
     .  Symbolic c
-    => KnownNat m
-    => KnownNat n
     => ByteString m c
     -> ByteString n c
     -> ByteString (m + n) c

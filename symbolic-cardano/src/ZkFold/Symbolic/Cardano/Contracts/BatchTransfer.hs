@@ -13,11 +13,9 @@ import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..), all)
-import           ZkFold.Symbolic.Data.Class           (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement    (fromFieldElement)
-import           ZkFold.Symbolic.Data.Input           (SymbolicInput)
 import           ZkFold.Symbolic.Data.UInt            (StrictConv (..))
 
 type Tokens = 10
@@ -28,8 +26,6 @@ type Tx context = Transaction 6 0 11 Tokens 0 () context
 verifySignature ::
     forall context .
     ( Symbolic context
-    , SymbolicData (TxOut context)
-    , KnownRegisters context 256 'Auto
     ) => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (resize pub :: ByteString 256 context))
     where
@@ -41,11 +37,7 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFi
 
 batchTransfer ::
     forall context.
-    ( Symbolic context
-    , SymbolicInput (TxOut context)
-    , KnownRegisters context 256 'Auto
-    , KnownRegisters context 64 'Auto
-    ) => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)-> Bool context
+    (Symbolic context) => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)-> Bool context
 batchTransfer tx transfers =
     let -- Extract the payment credentials and verify the signatures
         pkhs       = fromJust $ toVector @5 $ map (paymentCredential . txoAddress . txiOutput) $ init $ fromVector $ txInputs tx

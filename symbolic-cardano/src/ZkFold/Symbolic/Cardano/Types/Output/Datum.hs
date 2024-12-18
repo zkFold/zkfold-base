@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-
 module ZkFold.Symbolic.Cardano.Types.Output.Datum where
 
 import           Data.Constraint                         (withDict)

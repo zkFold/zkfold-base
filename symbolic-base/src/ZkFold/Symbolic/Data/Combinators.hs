@@ -1,7 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes     #-}
-{-# LANGUAGE TypeApplications        #-}
-{-# LANGUAGE TypeOperators           #-}
-{-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
 module ZkFold.Symbolic.Data.Combinators where
@@ -10,25 +7,21 @@ import           Control.Applicative              (Applicative)
 import           Control.Monad                    (mapM)
 import           Data.Foldable                    (foldlM)
 import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
-import           Data.Kind                        (Type)
 import           Data.List                        (find, splitAt)
 import           Data.List.Split                  (chunksOf)
 import           Data.Maybe                       (fromMaybe)
 import           Data.Proxy                       (Proxy (..))
 import           Data.Ratio                       ((%))
 import           Data.Traversable                 (Traversable, for, sequenceA)
-import           Data.Type.Bool                   (If)
-import           Data.Type.Ord
 import           GHC.Base                         (const, return)
 import           GHC.List                         (reverse)
 import           GHC.TypeNats
 import           Prelude                          (error, head, pure, tail, ($), (.), (<$>), (<>))
 import qualified Prelude                          as Haskell
-import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
-import           ZkFold.Symbolic.Class            (Arithmetic, BaseField)
+import           ZkFold.Symbolic.Class            (Arithmetic)
 import           ZkFold.Symbolic.MonadCircuit
 
 mzipWithMRep ::
@@ -99,45 +92,6 @@ registerSize  :: forall a n r. (Finite a, KnownNat n, KnownRegisterSize r) => Na
 registerSize = case regSize @r of
     Auto     -> Haskell.ceiling (getNatural @n % numberOfRegisters @a @n @r)
     Fixed rs -> rs
-
-type Ceil a b = Div (a + b - 1) b
-
-type family GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) :: Natural where
-    GetRegisterSize a bits (Fixed rs) = rs
-    GetRegisterSize a bits Auto       = Ceil bits (NumberOfRegisters a bits Auto)
-
-type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
-
-type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize ) :: Natural where
-  NumberOfRegisters a bits (Fixed rs) = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
-  NumberOfRegisters a bits Auto       = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
-                                                                          -- But it is weird anyway if someone is trying to store a value
-                                                                          -- which requires more than 50 registers.
-
-type family NumberOfRegisters' (a :: Type) (bits :: Natural) (c :: [Natural]) :: Natural where
-    NumberOfRegisters' a bits '[] = 0
-    NumberOfRegisters' a bits (x ': xs) =
-        OrdCond (CmpNat bits (x * MaxRegisterSize a x))
-            x
-            x
-            (NumberOfRegisters' a bits xs)
-
-type family BitLimit (a :: Type) :: Natural where
-    BitLimit a = Log2 (Order a)
-
-type family MaxAdded (regCount :: Natural) :: Natural where
-    MaxAdded regCount =
-        OrdCond (CmpNat regCount (2 ^ Log2 regCount))
-            (TypeError (Text "Impossible"))
-            (Log2 regCount)
-            (1 + Log2 regCount)
-
-type family MaxRegisterSize (a :: Type) (regCount :: Natural) :: Natural where
-    MaxRegisterSize a regCount = Div (BitLimit a - MaxAdded regCount) 2
-
-type family ListRange (from :: Natural) (to :: Natural) :: [Natural] where
-    ListRange from from = '[from]
-    ListRange from to = from ': ListRange (from + 1) to
 
 numberOfRegisters :: forall a n r . ( Finite a, KnownNat n, KnownRegisterSize r) => Natural
 numberOfRegisters =  case regSize @r of

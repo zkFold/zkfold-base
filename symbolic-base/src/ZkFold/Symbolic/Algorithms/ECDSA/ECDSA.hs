@@ -1,7 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE TypeOperators       #-}
+
 module ZkFold.Symbolic.Algorithms.ECDSA.ECDSA where
+
+import           Control.DeepSeq                         (NFData)
 import           Data.Type.Equality
 import           GHC.Base                                (($))
 import           GHC.TypeLits                            (KnownNat, Log2)
@@ -13,11 +16,11 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import qualified ZkFold.Symbolic.Class                   as S
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString         (ByteString)
-import           ZkFold.Symbolic.Data.Combinators        (Iso (..), NumberOfRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators        (Iso (..), RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
-import           ZkFold.Symbolic.Data.UInt               (UInt, eea)
+import           ZkFold.Symbolic.Data.UInt               (RegistersOf, UInt, eea)
 
 ecdsaVerify :: forall curve n c . (
       S.Symbolic c
@@ -26,9 +29,8 @@ ecdsaVerify :: forall curve n c . (
     , BaseField curve ~ UInt 256 'Auto c
     , Scale (FieldElement c) (Point curve)
     , Log2 (Order (S.BaseField c) GHC.TypeNats.- 1) ~ 255
-    , SemiEuclidean (UInt 256 'Auto c)
-    , KnownNat (NumberOfRegisters (S.BaseField c) 256 'Auto)
     , BooleanOf curve ~ Bool c
+    , NFData (c (RegistersOf 256 Auto (S.BaseField c)))
     )
     => Point curve
     -> ByteString 256 c

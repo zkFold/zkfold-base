@@ -6,7 +6,6 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkLogin
     , UserToken (..)
     ) where
 
-import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
@@ -40,8 +39,6 @@ tokenBits UserToken{..} = from validUntil `append` aud
 zkLogin
     :: forall ctx
     .  RSA ctx 320
-    => KnownRegisters ctx 64 'Auto
-    => KnownNat (Ceil (GetRegisterSize (BaseField ctx) 64 'Auto) OrdWord)
     => Certificate ctx
     -> UserToken ctx
     -> Date ctx

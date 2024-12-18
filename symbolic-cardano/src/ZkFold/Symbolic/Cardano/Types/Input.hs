@@ -1,7 +1,5 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-
 module ZkFold.Symbolic.Cardano.Types.Input where
 
 import           GHC.Generics                            (Generic)
@@ -16,10 +14,9 @@ import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators        (KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Input              (SymbolicInput, isValid)
+import           ZkFold.Symbolic.Data.Input              (SymbolicInput)
 
 data Input tokens datum context = Input  {
         txiOutputRef :: OutputRef context,
@@ -30,15 +27,11 @@ data Input tokens datum context = Input  {
 instance
     ( Symbolic context
     , KnownNat tokens
-    , KnownRegisters context 32 Auto
-    , KnownRegisters context 64 Auto
     ) => Conditional (Bool context) (Input tokens datum context)
 
 instance
     ( Symbolic context
     , KnownNat tokens
-    , KnownRegisters context 32 Auto
-    , KnownRegisters context 64 Auto
     ) => Eq (Bool context) (Input tokens datum context)
 
 deriving instance
@@ -46,18 +39,8 @@ deriving instance
     , Haskell.Eq (Output tokens datum context)
     ) => Haskell.Eq (Input tokens datum context)
 
-instance
-  ( Symbolic context, KnownNat tokens
-  , KnownRegisters context 32 Auto
-  , KnownRegisters context 64 Auto
-  ) => SymbolicData (Input tokens datum context)
-instance
-  ( Symbolic context
-  , KnownNat tokens
-  , KnownRegisters context 32 Auto
-  , KnownRegisters context 64 Auto
-  ) => SymbolicInput (Input tokens datum context) where
-  isValid (Input ior io) = isValid (ior, io)
+instance (Symbolic context, KnownNat tokens) => SymbolicData (Input tokens datum context)
+instance (Symbolic context, KnownNat tokens) => SymbolicInput (Input tokens datum context)
 
 txiAddress :: Input tokens datum context -> Address context
 txiAddress (Input _ txo) = txoAddress txo

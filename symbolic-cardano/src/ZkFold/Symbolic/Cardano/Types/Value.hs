@@ -1,7 +1,5 @@
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Cardano.Types.Value where
 
@@ -16,7 +14,7 @@ import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators    (KnownRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators    (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input
@@ -33,25 +31,13 @@ deriving instance (Haskell.Eq (ByteString 224 context), Haskell.Eq (ByteString 2
 deriving instance (Haskell.Ord (ByteString 224 context), Haskell.Ord (ByteString 256 context), Haskell.Ord (UInt 64 Auto context))
     => Haskell.Ord (Value n context)
 
-deriving instance (Symbolic context, KnownNat n, KnownRegisters context 64 Auto) => SymbolicData (Value n context)
+deriving instance (Symbolic context, KnownNat n) => SymbolicData (Value n context)
 
-deriving newtype instance
-  ( Symbolic context
-  , KnownRegisters context 64 Auto
-  ) => Eq (Bool context) (Value n context)
+deriving newtype instance (Symbolic context) => Eq (Bool context) (Value n context)
 
-deriving newtype instance
-  ( Symbolic context
-  , KnownRegisters context 64 Auto
-  , KnownNat n
-  ) => Conditional (Bool context) (Value n context)
+deriving newtype instance (Symbolic context, KnownNat n) => Conditional (Bool context) (Value n context)
 
-instance
-    ( Symbolic context
-    , KnownNat n
-    , KnownRegisters context 64 Auto
-    ) => SymbolicInput (Value n context) where
-    isValid (Value v) = isValid v
+deriving newtype instance (Symbolic context, KnownNat n) => SymbolicInput (Value n context)
 
 instance Symbolic context => Scale Natural (Value n context) where
     scale :: Natural -> Value n context -> Value n context

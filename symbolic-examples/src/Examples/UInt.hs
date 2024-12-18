@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-
 module Examples.UInt (
     exampleUIntMul,
     exampleUIntDivMod,
@@ -9,14 +7,12 @@ module Examples.UInt (
   ) where
 
 import           Control.DeepSeq                  (NFData)
-import           Data.Type.Equality               (type (~))
 import           GHC.TypeNats
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
-import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, NumberOfRegisters, resize)
-import           ZkFold.Symbolic.Data.UInt        (OrdWord, StrictNum (..), UInt)
+import           ZkFold.Symbolic.Data.Combinators (KnownRegisterSize, resize)
+import           ZkFold.Symbolic.Data.UInt        (RegistersOf, StrictNum (..), UInt)
 
 exampleUIntMul ::
   (KnownNat n, KnownRegisterSize r, Symbolic c) =>
@@ -25,9 +21,7 @@ exampleUIntMul = (*)
 
 exampleUIntDivMod ::
   (KnownNat n, KnownRegisterSize r, Symbolic c,
-   NumberOfRegisters (BaseField c) n r ~ k,
-   KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord),
-   KnownNat k, NFData (c (Vector k))) =>
+   NFData (c (RegistersOf n r (BaseField c)))) =>
   UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
 exampleUIntDivMod = divMod
 

@@ -5,11 +5,10 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-
 module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
     StrictNum(..),
+    RegistersOf,
     UInt(..),
     OrdWord,
     toConstant,
@@ -21,13 +20,19 @@ module ZkFold.Symbolic.Data.UInt (
 import           Control.DeepSeq
 import           Control.Monad.State               (StateT (..))
 import           Data.Aeson                        hiding (Bool)
-import           Data.Foldable                     (foldlM, foldr, foldrM, for_)
-import           Data.Functor                      ((<$>))
+import           Data.Binary                       (Binary)
+import           Data.Distributive                 (Distributive (..))
+import           Data.Foldable                     (Foldable, foldlM, foldr, foldrM, for_)
+import           Data.Functor                      (Functor, (<$>))
+import           Data.Functor.Rep                  (Representable (..), distributeRep)
 import           Data.Kind                         (Type)
 import           Data.List                         (unfoldr, zip)
 import           Data.Map                          (fromList, (!))
-import           Data.Traversable                  (for, traverse)
+import           Data.Ratio                        ((%))
+import           Data.Traversable                  (Traversable, for, traverse)
 import           Data.Tuple                        (swap)
+import           Data.Vector                       (Vector)
+import qualified Data.Vector                       as V
 import qualified Data.Zip                          as Z
 import           GHC.Generics                      (Generic, Par1 (..))
 import           GHC.Natural                       (naturalFromInteger)
@@ -39,8 +44,7 @@ import           Test.QuickCheck                   (Arbitrary (..), chooseIntege
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector           as V
-import           ZkFold.Base.Data.Vector           (Vector (..))
+import qualified ZkFold.Base.Data.Vector           as S
 import           ZkFold.Prelude                    (length, replicate, replicateA)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
@@ -55,20 +59,54 @@ import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, constraint, newAssigned)
 
+data RegisterData = RegData Natural RegisterSize Type
+
+class (KnownNat (Count d), KnownRegisterSize (RSize d), Finite (Based d)) => KnownRegData (d :: RegisterData) where
+  type Count d :: Natural
+  type RSize d :: RegisterSize
+  type Based d :: Type
+
+instance (KnownNat n, KnownRegisterSize r, Finite f) => KnownRegData (RegData n r f) where
+  type Count (RegData n r f) = n
+  type RSize (RegData n r f) = r
+  type Based (RegData n r f) = f
+
+numRegsFromData :: forall d. KnownRegData d => Natural
+numRegsFromData = numberOfRegisters @(Based d) @(Count d) @(RSize d)
+
+newtype RegRep (d :: RegisterData) = RegRep Natural
+  deriving (Binary, NFData, Haskell.Eq, Haskell.Ord)
+
+newtype Registers (d :: RegisterData) a = Registers { registers :: Vector a }
+  deriving (Haskell.Eq, NFData, Haskell.Show, Functor, Foldable, Traversable)
+
+instance KnownRegData d => Distributive (Registers d) where
+  distribute = distributeRep
+
+instance KnownRegData d => Representable (Registers d) where
+  type Rep (Registers d) = RegRep d
+  tabulate =
+    Registers
+      . V.generate (Haskell.fromEnum $ numRegsFromData @d)
+      . (. RegRep . Haskell.toEnum)
+  index (Registers r) (RegRep i) = r V.! Haskell.fromEnum i
+
+type RegistersOf n r f = Registers (RegData n r f)
 
 -- TODO (Issue #18): hide this constructor
-newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
+newtype UInt (n :: Natural) (r :: RegisterSize) (c :: (Type -> Type) -> Type) =
+  UInt (c (RegistersOf n r (BaseField c)))
 
 deriving instance Generic (UInt n r context)
-deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) n r)))) => NFData (UInt n r context)
-deriving instance (Haskell.Eq (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Eq (UInt n r context)
-deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Show (UInt n r context)
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (UInt n r c)
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (Bool c) (UInt n r c)
+deriving instance (NFData (c (RegistersOf n r (BaseField c)))) => NFData (UInt n r c)
+deriving instance (Haskell.Eq (c (RegistersOf n r (BaseField c)))) => Haskell.Eq (UInt n r c)
+deriving instance (Haskell.Show (BaseField c), Haskell.Show (c (RegistersOf n r (BaseField c)))) => Haskell.Show (UInt n r c)
+deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => SymbolicData (UInt n r c)
+deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Conditional (Bool c) (UInt n r c)
+deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Eq (Bool c) (UInt n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (UInt n r c) where
-    fromConstant c = UInt . embed @c $ naturalToVector @c @n @r c
+    fromConstant c = UInt . embed @c $ naturalToRegisters @c c
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Integer (UInt n r c) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
@@ -90,9 +128,7 @@ expMod
     => KnownNat n
     => KnownNat m
     => KnownNat (2 * m)
-    => KnownRegisters c (2 * m) r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
-    => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
+    => NFData (c (RegistersOf (2 * m) r (BaseField c)))
     => UInt n r c
     -> UInt p r c
     -> UInt m r c
@@ -117,9 +153,7 @@ bitsPow
     => KnownRegisterSize r
     => KnownNat n
     => KnownNat p
-    => KnownRegisters c n r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
-    => NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))
+    => NFData (c (RegistersOf n r (BaseField c)))
     => Natural
     -> ByteString p c
     -> UInt n r c
@@ -164,12 +198,7 @@ cast n =
 --
 eea
     :: forall n c r
-    .  Symbolic c
-    => SemiEuclidean (UInt n r c)
-    => KnownNat n
-    => KnownRegisters c n r
-    => AdditiveGroup (UInt n r c)
-    => Eq (Bool c) (UInt n r c)
+    .  (Symbolic c, KnownNat n, KnownRegisterSize r, NFData (c (RegistersOf n r (BaseField c))))
     => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c, UInt n r c)
 eea a b = eea' 1 a b one zero zero one
     where
@@ -189,7 +218,7 @@ eea a b = eea' 1 a b one zero zero one
 
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) where
     type Const (UInt n r (Interpreter (Zp p))) = Natural
-    toConstant (UInt (Interpreter xs)) = vectorToNatural xs (registerSize @(Zp p) @n @r)
+    toConstant (UInt (Interpreter xs)) = registersToNatural @(Interpreter (Zp p)) xs
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (UInt n r c) where
     one = fromConstant (1 :: Natural)
@@ -200,23 +229,23 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r c)
     arbitrary = do
         lo <- replicateA (numberOfRegisters @(BaseField c) @n @r -! 1) (toss $ registerSize @(BaseField c) @n @r)
         hi <- toss (highRegisterSize @(BaseField c) @n @r)
-        return $ UInt $ embed $ V.unsafeToVector (lo <> [hi])
+        return $ UInt $ embed $ Registers $ V.fromList (lo <> [hi])
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (UInt n r c) where
     from (ByteString b) = UInt $ symbolicF b
-        (naturalToVector @c @n @r . Haskell.foldl (\y p -> toConstant p + 2 * y) 0)
+        (naturalToRegisters @c . Haskell.foldl (\y p -> toConstant p + 2 * y) 0)
         (\bits -> do
-            let bsBits = V.fromVector bits
-            V.unsafeToVector . Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bsBits
+            let bsBits = S.fromVector bits
+            Registers . V.fromList . Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bsBits
         )
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (ByteString n c) where
     from (UInt u) = ByteString $ symbolicF u
-        (\v -> V.unsafeToVector $ fromConstant <$> toBsBits (vectorToNatural v (registerSize @(BaseField c) @n @r)) (value @n))
+        (\v -> S.unsafeToVector $ fromConstant <$> toBsBits (registersToNatural @c v) (value @n))
         (\ui -> do
-            let regs = V.fromVector ui
-            V.unsafeToVector <$> toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
+            let regs = V.toList (registers ui)
+            S.unsafeToVector <$> toBits (Haskell.reverse regs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
         )
 
 instance (Symbolic c, KnownRegisterSize r, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (UInt n r c) where
@@ -234,16 +263,16 @@ instance
     , KnownRegisterSize r
     ) => Resize (UInt n r c) (UInt k r c) where
     resize (UInt bits) = UInt $ symbolicF bits
-        (\l -> naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r)))
+        (naturalToRegisters @c . registersToNatural @c)
         (\v -> do
-            let regs = V.fromVector v
+            let regs = V.toList (registers v)
                 ns = replicate (numberOfRegisters @(BaseField c) @n @r -! 1) n ++ [highRegisterSize @(BaseField c) @n @r]
                 ks = replicate (numberOfRegisters @(BaseField c) @k @r -! 1) k ++ [highRegisterSize @(BaseField c) @k @r]
                 zs = zip ns regs
 
             resZ <- helper zs ks
             let (_, res) = Haskell.unzip resZ
-            return $ V.unsafeToVector res
+            return $ Registers (V.fromList res)
         )
         where
             n = registerSize @(BaseField c) @n @r
@@ -268,12 +297,9 @@ instance
 instance
     ( Symbolic c
     , KnownNat n
-    , KnownNat r
-    , KnownRegisterSize rs
-    , r ~ NumberOfRegisters (BaseField c) n rs
-    , KnownNat (Ceil (GetRegisterSize (BaseField c) n rs) OrdWord)
-    , NFData (c (Vector r))
-    ) => SemiEuclidean (UInt n rs c) where
+    , KnownRegisterSize r
+    , NFData (c (RegistersOf n r (BaseField c)))
+    ) => SemiEuclidean (UInt n r c) where
 
     divMod numerator d = bool @(Bool c) (q, r) (zero, zero) (d == zero)
         where
@@ -282,51 +308,45 @@ instance
             numeratorBits :: ByteString n c
             numeratorBits = from numerator
 
-            addBit :: UInt n rs c -> Natural -> UInt n rs c
+            addBit :: UInt n r c -> Natural -> UInt n r c
             addBit ui bs = ui + bool @(Bool c) zero one (isSet numeratorBits bs)
 
             longDivisionStep
-                :: (UInt n rs c, UInt n rs c)
+                :: (UInt n r c, UInt n r c)
                 -> Natural
-                -> (UInt n rs c, UInt n rs c)
+                -> (UInt n r c, UInt n r c)
             longDivisionStep (q', r') i =
                 let rs = force $ addBit (r' + r') (value @n -! i -! 1)
                  in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
 
 asWords
-    :: forall wordSize regSize ctx k
-    .  Symbolic ctx
-    => KnownNat (Ceil regSize wordSize)
-    => KnownNat wordSize
-    => ctx (Vector k)                           -- @k@ registers of size up to @regSize@
-    -> ctx (Vector (k * Ceil regSize wordSize)) -- @k * wordsPerReg@ registers of size @wordSize@
+    :: forall c w n r. (Symbolic c, KnownNat w, KnownNat n, KnownRegisterSize r)
+    => c (RegistersOf n r (BaseField c)) -- @k@ registers of size up to @regSize@
+    -> c Vector -- @k * wordsPerReg@ registers of size @wordSize@
 asWords v = fromCircuitF v $ \regs -> do
-    words <- Haskell.mapM (expansionW @wordSize wordsPerReg) regs
-    Haskell.pure $ V.reverse . V.unsafeToVector . Haskell.concat . V.fromVector $ words
+    words <- Haskell.mapM (expansionW @w wordsPerReg) (registers regs)
+    Haskell.pure $ V.reverse . V.foldMap V.fromList $ words
   where
       wordsPerReg :: Natural
-      wordsPerReg = value @(Ceil regSize wordSize)
+      wordsPerReg = Haskell.ceiling (registerSize @(BaseField c) @n @r % value @w)
+      -- wordsPerReg = value @(Ceil regSize wordSize)
 
 -- | Word size in bits used in comparisons. Subject to change
 type OrdWord = 16
 
-instance ( Symbolic c, KnownNat n, KnownRegisterSize r
-         , KnownRegisters c n r
-         , regSize ~ GetRegisterSize (BaseField c) n r
-         , KnownNat (Ceil regSize OrdWord)
-         ) => Ord (Bool c) (UInt n r c) where
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Ord (Bool c) (UInt n r c) where
     x <= y = y >= x
 
     x <  y = y > x
 
     (UInt u1) >= (UInt u2) =
-        let w1 = asWords @OrdWord @regSize u1
-            w2 = asWords @OrdWord @regSize u2
+        let w1 = asWords @c @OrdWord u1
+            w2 = asWords @c @OrdWord u2
          in bitwiseGE @OrdWord w1 w2
 
     (UInt u1) > (UInt u2) =
-        let w1 = asWords @OrdWord @regSize u1
-            w2 = asWords @OrdWord @regSize u2
+        let w1 = asWords @c @OrdWord u1
+            w2 = asWords @c @OrdWord u2
          in bitwiseGT @OrdWord w1 w2
 
     max x y = bool @(Bool c) x y $ x < y
@@ -335,11 +355,11 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt xc + UInt yc = UInt $ symbolic2F xc yc
-        (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) + vectorToNatural v (registerSize @(BaseField c) @n @r))
+        (\u v -> naturalToRegisters @c $ registersToNatural @c u + registersToNatural @c v)
         (\xv yv -> do
             j <- newAssigned (Haskell.const zero)
-            let xs = V.fromVector xv
-                ys = V.fromVector yv
+            let xs = V.toList (registers xv)
+                ys = V.toList (registers yv)
                 midx = Haskell.init xs
                 z    = Haskell.last xs
                 midy = Haskell.init ys
@@ -348,29 +368,25 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UIn
                 Haskell.zipWith (fullAdder $ registerSize @(BaseField c) @n @r) midx midy
             k <- fullAdded z w c
             (ks, _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 k
-            return $ V.unsafeToVector (zs ++ [ks])
+            return . Registers $ V.fromList (zs ++ [ks])
         )
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveMonoid (UInt n r c) where
-    zero = fromConstant (0:: Natural)
+    zero = fromConstant (0 :: Natural)
 
-instance
-    (Symbolic c
-    , KnownNat n
-    , KnownRegisterSize r
-    ) => AdditiveGroup (UInt n r c) where
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveGroup (UInt n r c) where
 
     UInt x - UInt y = UInt $ symbolic2F x y
-        (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) + 2 ^ (value @n) -! vectorToNatural v (registerSize @(BaseField c) @n @r))
-        (\xv yv -> do
-            let is = V.fromVector xv
-                js = V.fromVector yv
+        (\u v -> naturalToRegisters @c $ registersToNatural @c u + 2 ^ (value @n) -! registersToNatural @c v)
+        (\xv yv -> Registers . V.fromList <$> do
+            let is = V.toList (registers xv)
+                js = V.toList (registers yv)
             case Z.zip is js of
-                []              -> return $ V.unsafeToVector []
-                [(i, j)]        -> V.unsafeToVector <$> solve1 i j
+                []              -> return []
+                [(i, j)]        -> solve1 i j
                 ((i, j) : rest) -> let (z, w) = Haskell.last rest
                                        (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                    in V.unsafeToVector <$> solveN (i, j) (ris, rjs) (z, w)
+                                    in solveN (i, j) (ris, rjs) (z, w)
         )
         where
             t :: BaseField c
@@ -395,10 +411,10 @@ instance
 
     negate :: UInt n r c -> UInt n r c
     negate (UInt x) = UInt $ symbolicF x
-        (\v -> naturalToVector @c @n @r $ (2 ^ value @n) -! vectorToNatural v (registerSize @(BaseField c) @n @r))
+        (\v -> naturalToRegisters @c $ (2 ^ value @n) -! registersToNatural @c v)
         (\xv -> do
             j <- newAssigned (Haskell.const zero)
-            let xs = V.fromVector xv
+            let xs = V.toList (registers xv)
                 y = 2 ^ registerSize @(BaseField c) @n @r
                 ys = replicate (numberOfRegisters @(BaseField c) @n @r -! 2) (2 ^ registerSize @(BaseField c) @n @r -! 1)
                 y' = 2 ^ highRegisterSize @(BaseField c) @n @r -! 1
@@ -406,7 +422,7 @@ instance
                     | numberOfRegisters @(BaseField c) @n @r Haskell.== 1 = [y' + 1]
                     | otherwise = (y : ys) <> [y']
             (zs, _) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN ns xs)
-            return $ V.unsafeToVector zs
+            return $ Registers (V.fromList zs)
         )
         where
             negateN :: MonadCircuit i (BaseField c) w m => Natural -> i -> i -> m (i, i)
@@ -417,14 +433,14 @@ instance
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize rs) => MultiplicativeSemigroup (UInt n rs c) where
     UInt x * UInt y = UInt $ symbolic2F x y
-        (\u v -> naturalToVector @c @n @rs $ vectorToNatural u (registerSize @(BaseField c) @n @rs) * vectorToNatural v (registerSize @(BaseField c) @n @rs))
-        (\xv yv -> do
-            case V.fromVector $ Z.zip xv yv of
-              []              -> return $ V.unsafeToVector []
-              [(i, j)]        -> V.unsafeToVector <$> solve1 i j
+        (\u v -> naturalToRegisters @c $ registersToNatural @c u * registersToNatural @c v)
+        (\xv yv -> Registers . V.fromList <$> do
+            case V.toList $ Z.zip (registers xv) (registers yv) of
+              []              -> return []
+              [(i, j)]        -> solve1 i j
               ((i, j) : rest) -> let (z, w) = Haskell.last rest
                                      (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                  in V.unsafeToVector <$> solveN (i, j) (ris, rjs) (z, w)
+                                  in solveN (i, j) (ris, rjs) (z, w)
         )
         where
             solve1 :: forall i w m. MonadCircuit i (BaseField c) w m => i -> i -> m [i]
@@ -470,19 +486,18 @@ class StrictConv b a where
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize rs) => StrictConv Natural (UInt n rs c) where
     strictConv n = case cast @(BaseField c) @n @rs n of
-        (lo, hi, []) -> UInt $ embed $ V.unsafeToVector $ fromConstant <$> (lo <> [hi])
+        (lo, hi, []) -> UInt $ embed $ Registers $ V.fromList $ fromConstant <$> (lo <> [hi])
         _            -> error "strictConv: overflow"
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictConv (Zp p) (UInt n r c) where
     strictConv = strictConv . toConstant
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictConv (c Par1) (UInt n r c) where
-    strictConv a = UInt $ symbolicF a (\p -> V.unsafeToVector [unPar1 p]) (\xv -> do
+    strictConv a = UInt $ symbolicF a (Registers . V.singleton . unPar1) (\xv -> do
         let i = unPar1 xv
             len = Haskell.min (getNatural @n) (numberOfBits @(BaseField c))
         bits <- Haskell.reverse <$> expansion len i
-        V.unsafeToVector <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bits)
-
+        Registers . V.fromList <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bits)
 
 class StrictNum a where
     strictAdd :: a -> a -> a
@@ -491,11 +506,11 @@ class StrictNum a where
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c) where
     strictAdd (UInt x) (UInt y) = UInt $ symbolic2F x y
-        (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) + vectorToNatural v (registerSize @(BaseField c) @n @r))
+        (\u v -> naturalToRegisters @c $ registersToNatural @c u + registersToNatural @c v)
         (\xv yv -> do
             j <- newAssigned (Haskell.const zero)
-            let xs = V.fromVector xv
-                ys = V.fromVector yv
+            let xs = V.toList (registers xv)
+                ys = V.toList (registers yv)
                 z    = Haskell.last xs
                 w    = Haskell.last ys
                 midx = Haskell.init xs
@@ -504,18 +519,18 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c)
                 Haskell.zipWith (fullAdder $ registerSize @(BaseField c) @n @r) midx midy
             k <- fullAdded z w c
             (ks, _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 k
-            return $ V.unsafeToVector (zs ++ [ks])
+            return . Registers $ V.fromList (zs ++ [ks])
         )
 
     strictSub (UInt x) (UInt y) = UInt $ symbolic2F x y
-        (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) -! vectorToNatural v (registerSize @(BaseField c) @n @r))
-        (\xv yv -> do
-            case V.fromVector $ Z.zip xv yv of
-              []              -> return $ V.unsafeToVector []
-              [(i, j)]        -> V.unsafeToVector <$> solve1 i j
+        (\u v -> naturalToRegisters @c $ registersToNatural @c u -! registersToNatural @c v)
+        (\xv yv -> Registers . V.fromList <$> do
+            case V.toList $ Z.zip (registers xv) (registers yv) of
+              []              -> return []
+              [(i, j)]        -> solve1 i j
               ((i, j) : rest) -> let (z, w) = Haskell.last rest
                                      (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                  in V.unsafeToVector <$> solveN (i, j) (ris, rjs) (z, w)
+                                  in solveN (i, j) (ris, rjs) (z, w)
         )
         where
             t :: BaseField c
@@ -539,14 +554,14 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c)
                 return (k : zs <> [s'])
 
     strictMul (UInt x) (UInt y) = UInt $ symbolic2F x y
-        (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) * vectorToNatural v (registerSize @(BaseField c) @n @r))
-        (\xv yv -> do
-                case V.fromVector $ Z.zip xv yv of
-                  []              -> return $ V.unsafeToVector []
-                  [(i, j)]        -> V.unsafeToVector <$> solve1 i j
+        (\u v -> naturalToRegisters @c $ registersToNatural @c u * registersToNatural @c v)
+        (\xv yv -> Registers . V.fromList <$> do
+                case V.toList $ Z.zip (registers xv) (registers yv) of
+                  []              -> return []
+                  [(i, j)]        -> solve1 i j
                   ((i, j) : rest) -> let (z, w) = Haskell.last rest
                                          (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                      in V.unsafeToVector <$> solveN (i, j) (ris, rjs) (z, w)
+                                      in solveN (i, j) (ris, rjs) (z, w)
         )
         where
             solve1 :: MonadCircuit i (BaseField c) w m => i -> i -> m [i]
@@ -587,11 +602,10 @@ instance
   ( Symbolic c
   , KnownNat n
   , KnownRegisterSize r
-  , KnownRegisters c n r
   ) => SymbolicInput (UInt n r c) where
 
     isValid (UInt bits) = Bool $ fromCircuitF bits $ \v -> do
-        let vs = V.fromVector v
+        let vs = V.toList $ registers v
         bs <- toBits (Haskell.reverse vs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
         ys <- Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bs
         difference <- for (zip vs ys) $ \(i, j) -> newAssigned (\w -> w i - w j)
@@ -616,14 +630,20 @@ fullSub r xk yk b = do
     s <- newAssigned (\v -> v d + v b + (one + one) ^ r - one)
     splitExpansion r 1 s
 
-naturalToVector :: forall c n r . (Symbolic c, KnownNat n, KnownRegisterSize r) => Natural -> Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)
-naturalToVector c = let (lo, hi, _) = cast @(BaseField c) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
-    in V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
+naturalToRegisters ::
+    forall c n r . (Symbolic c, KnownNat n, KnownRegisterSize r) =>
+    Natural -> RegistersOf n r (BaseField c) (BaseField c)
+naturalToRegisters c =
+    let (lo, hi, _) = cast @(BaseField c) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
+     in Registers . V.fromList $ (fromConstant <$> lo) <> [fromConstant hi]
 
-vectorToNatural :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural -> Natural
-vectorToNatural v n = foldr (\l r -> fromConstant l  + b * r) 0 vs where
-    vs = Haskell.map toConstant $ V.fromVector v :: [Natural]
+registersToNatural ::
+    forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) =>
+    RegistersOf n r (BaseField c) (BaseField c) -> Natural
+registersToNatural v = foldr (\l r -> fromConstant l  + b * r) 0 vs where
+    vs = toConstant <$> registers v
     b = 2 ^ n
+    n = registerSize @(BaseField c) @n @r
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromJSON (UInt n r c) where
     parseJSON = Haskell.fmap strictConv . parseJSON @Natural
