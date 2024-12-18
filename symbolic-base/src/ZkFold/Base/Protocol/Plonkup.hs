@@ -15,7 +15,7 @@ import qualified Prelude                                             as P hiding
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing (..), CompressedPoint)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (CompressedPoint, EllipticCurve (..), Pairing (..))
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal

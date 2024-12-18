@@ -16,7 +16,7 @@ import           Prelude                                             hiding (Num
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), CompressedPoint, compress)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (CompressedPoint, EllipticCurve (..), compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             ((!!))
 import           ZkFold.Base.Protocol.NonInteractiveProof

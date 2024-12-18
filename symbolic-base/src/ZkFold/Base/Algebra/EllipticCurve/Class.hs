@@ -201,9 +201,9 @@ class EllipticCurve curve => WeierstrassCurve curve where
   weierstrassB :: BaseField curve
 
 data CompressedPoint curve = CompressedPoint
-  { _x    :: BaseField curve
-  , _bigY :: BooleanOf curve
-  , _isInf  :: BooleanOf curve
+  { _x     :: BaseField curve
+  , _bigY  :: BooleanOf curve
+  , _isInf :: BooleanOf curve
   } deriving Generic
 
 pointCompressed :: BoolType (BooleanOf curve) => BaseField curve -> BooleanOf curve -> CompressedPoint curve
