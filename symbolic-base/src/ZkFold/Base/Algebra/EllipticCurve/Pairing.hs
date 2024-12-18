@@ -108,7 +108,7 @@ millerLoop p q = impl
 frobTwisted ::
   forall c. (EllipticCurve c, Field (BaseField c)) => Natural -> BaseField c -> Point c -> Point c
 frobTwisted q xi (Point x y isInf) =
-  if isInf then inf else point ((x ^ q) * (xi ^ tx)) ((y ^ q) * (xi ^ ty))
+  if isInf then pointInf else pointXY ((x ^ q) * (xi ^ tx)) ((y ^ q) * (xi ^ ty))
   where
     tx = (q -! 1) `div` 3
     ty = q `div` 2
@@ -144,10 +144,10 @@ lineFunction ::
   Untwisted d i j ~ g =>
   Point c -> Point d -> Point d -> (Point d, g)
 lineFunction (Point x y isInf) (Point x1 y1 isInf1) (Point x2 y2 isInf2) =
-  if isInf || isInf1 || isInf2 then (inf, Ext2 (Ext3 one zero zero) zero)
-  else if x1 /= x2 then (point x3 y3, untwist (negate y) (x `scale` l) (y1 - l * x1))
-  else if y1 + y2 == zero then (inf, untwist x (negate x1) zero)
-  else (point x3' y3', untwist (negate y) (x `scale` l') (y1 - l' * x1))
+  if isInf || isInf1 || isInf2 then (pointInf, Ext2 (Ext3 one zero zero) zero)
+  else if x1 /= x2 then (pointXY x3 y3, untwist (negate y) (x `scale` l) (y1 - l * x1))
+  else if y1 + y2 == zero then (pointInf, untwist x (negate x1) zero)
+  else (pointXY x3' y3', untwist (negate y) (x `scale` l') (y1 - l' * x1))
   where
     l   = (y2 - y1) // (x2 - x1)
     x3  = l * l - x1 - x2

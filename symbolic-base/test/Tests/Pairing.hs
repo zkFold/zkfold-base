@@ -34,11 +34,11 @@ propVerificationKZG x p z =
     let n  = deg $ vec2poly p
 
         -- G1
-        gs = V.fromList $ map ((`mul` gen) . (x^)) [0 .. n]
+        gs = V.fromList $ map ((`mul` pointGen) . (x^)) [0 .. n]
         g0 = V.head gs :: Point c1
 
         -- G2
-        h0 = gen :: Point c2
+        h0 = pointGen :: Point c2
         h1 = x `mul` h0
 
         com = msm @c1 @core

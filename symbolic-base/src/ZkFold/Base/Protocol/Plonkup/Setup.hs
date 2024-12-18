@@ -75,9 +75,9 @@ plonkupSetup :: forall i p n l c1 c2 ts core.
     , CoreFunction c1 core) => Plonkup p i n l c1 c2 ts -> PlonkupSetup p i n l c1 c2
 plonkupSetup Plonkup {..} =
     let xs   = fromList $ map (x^) [0 .. (value @n + 5)]
-        gs   = fmap (`mul` gen) xs
-        h0   = gen
-        h1   = x `mul` gen
+        gs   = fmap (`mul` pointGen) xs
+        h0   = pointGen
+        h1   = x `mul` pointGen
 
         relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation ac :: PlonkupRelation p i n l (ScalarField c1)
 

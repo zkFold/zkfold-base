@@ -67,7 +67,7 @@ instance EllipticCurve BLS12_381_G1 where
 
     type BaseField BLS12_381_G1 = Fq
 
-    gen = point
+    pointGen = pointXY
         0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb
         0x8b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1
 
@@ -75,10 +75,10 @@ instance EllipticCurve BLS12_381_G1 where
 
     mul = pointMul
 
-instance StandardEllipticCurve BLS12_381_G1 where
-    aParameter = zero
+instance WeierstrassCurve BLS12_381_G1 where
+    weierstrassA = zero
 
-    bParameter = fromConstant (4 :: Natural)
+    weierstrassB = fromConstant (4 :: Natural)
 
 ------------------------------------ BLS12-381 G2 ------------------------------------
 
@@ -91,7 +91,7 @@ instance EllipticCurve BLS12_381_G2 where
 
     type BaseField BLS12_381_G2 = Fq2
 
-    gen = point
+    pointGen = pointXY
         (Ext2
             0x24aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8
             0x13e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7e)
@@ -103,10 +103,10 @@ instance EllipticCurve BLS12_381_G2 where
 
     mul = pointMul
 
-instance StandardEllipticCurve BLS12_381_G2 where
-    aParameter = zero
+instance WeierstrassCurve BLS12_381_G2 where
+    weierstrassA = zero
 
-    bParameter = fromConstant (4 :: Natural)
+    weierstrassB = fromConstant (4 :: Natural)
 
 ------------------------------------ Encoding ------------------------------------
 
@@ -143,7 +143,7 @@ instance Binary (Point BLS12_381_G1) where
             infinite = testBit byte 1
         if infinite then do
             skip (if compressed then 47 else 95)
-            return inf
+            return pointInf
         else do
             let byteXhead = bitReverse8 $ clearBit (clearBit (clearBit byte 0) 1) 2
             bytesXtail <- replicateM 47 getWord8
@@ -153,10 +153,10 @@ instance Binary (Point BLS12_381_G1) where
             else do
                 bytesY <- replicateM 48 getWord8
                 let y = ofBytes bytesY
-                return (point x y)
+                return (pointXY x y)
 
-instance Binary (PointCompressed BLS12_381_G1) where
-    put (PointCompressed x bigY isInf) =
+instance Binary (CompressedPoint BLS12_381_G1) where
+    put (CompressedPoint x bigY isInf) =
         if isInf then foldMap putWord8 (bitReverse8 (bit 0 .|. bit 1) : replicate 47 0) else
         let
             flags = bitReverse8 $ if bigY then bit 0 .|. bit 2 else bit 0
@@ -168,7 +168,7 @@ instance Binary (PointCompressed BLS12_381_G1) where
             infinite = testBit byte 1
         if infinite then do
             skip (if compressed then 47 else 95)
-            return inf
+            return pointInf
         else do
             let byteXhead = bitReverse8 $ clearBit (clearBit (clearBit byte 0) 1) 2
             bytesXtail <- replicateM 47 getWord8
@@ -197,7 +197,7 @@ instance Binary (Point BLS12_381_G2) where
             infinite = testBit byte 1
         if infinite then do
             skip (if compressed then 95 else 191)
-            return inf
+            return pointInf
         else do
             let byteX1head = bitReverse8 $ clearBit (clearBit (clearBit byte 0) 1) 2
             bytesX1tail <- replicateM 47 getWord8
@@ -211,10 +211,10 @@ instance Binary (Point BLS12_381_G2) where
                 bytesY0 <- replicateM 48 getWord8
                 let y0 = ofBytes bytesY0
                     y1 = ofBytes bytesY1
-                return (point (Ext2 x0 x1) (Ext2 y0 y1))
+                return (pointXY (Ext2 x0 x1) (Ext2 y0 y1))
 
-instance Binary (PointCompressed BLS12_381_G2) where
-    put (PointCompressed (Ext2 x0 x1) bigY isInf) =
+instance Binary (CompressedPoint BLS12_381_G2) where
+    put (CompressedPoint (Ext2 x0 x1) bigY isInf) =
         if isInf then foldMap putWord8 (bitReverse8 (bit 0 .|. bit 1) : replicate 95 0) else
         let
             flags = bitReverse8 $ if bigY then bit 0 .|. bit 2 else bit 0
@@ -227,7 +227,7 @@ instance Binary (PointCompressed BLS12_381_G2) where
             infinite = testBit byte 1
         if infinite then do
             skip (if compressed then 95 else 191)
-            return inf
+            return pointInf
         else do
             let byteX1head = bitReverse8 $ clearBit (clearBit (clearBit byte 0) 1) 2
             bytesX1tail <- replicateM 47 getWord8

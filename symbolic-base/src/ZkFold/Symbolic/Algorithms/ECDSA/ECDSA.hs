@@ -39,7 +39,7 @@ ecdsaVerify publicKey message (r, s) =
     where
         n = fromConstant $ value @n
 
-        g = gen
+        g = pointGen
 
         (sInv, _, _) = eea s n
 
