@@ -179,7 +179,9 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Class
