@@ -12,7 +12,7 @@ import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 
--------------------------- Scalar field & field towers -------------------------
+-------------------------- Scalar field ----------------------------------------
 
 -- Designations of curve parameters are as in:
 -- https://www.secg.org/sec2-v2.pdf
