@@ -12,12 +12,12 @@ import           Tests.Field               (specField)
 import           Tests.GroebnerBasis       (specGroebner)
 import           Tests.Group               (specAdditiveGroup)
 import           Tests.Hash                (specHash)
+import           Tests.IVC                 (specIVC)
 import           Tests.List                (specList)
 import           Tests.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
 import           Tests.Plonkup             (specPlonkup)
-import           Tests.Protostar           (specProtostar)
 import           Tests.RSA                 (specRSA)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
@@ -55,7 +55,7 @@ main = do
     -- Protocols
     specPlonkup
     specNonInteractiveProof
-    specProtostar
+    specIVC
 
     -- Cryptography
     specSHA2Natural
