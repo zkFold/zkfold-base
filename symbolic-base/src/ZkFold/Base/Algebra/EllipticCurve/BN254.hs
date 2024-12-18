@@ -30,7 +30,8 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Pairing
 import           ZkFold.Base.Algebra.Polynomials.Univariate (toPoly)
 
--------------------------- Scalar field & field towers -------------------------
+-------------------------- Scalar field ----------------------------------------
+
 
 -- Designations of curve parameters are as in:
 -- https://pkg.go.dev/github.com/consensys/gnark-crypto/ecc/bn254
