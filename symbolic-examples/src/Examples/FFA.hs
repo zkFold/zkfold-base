@@ -5,7 +5,7 @@ module Examples.FFA
   , exampleFFAmul097) where
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
 import           ZkFold.Symbolic.Class            (Symbolic)
 import           ZkFold.Symbolic.Data.FFA         (FFA)
 

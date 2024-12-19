@@ -15,7 +15,7 @@ import           Text.Show                       (show)
 import           ZkFold.Base.Algebra.Basic.Class (zero)
 import           ZkFold.Symbolic.Class           (Arithmetic)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Examples
+import           ZkFold.Symbolic.Examples        (ExampleOutput (..), examples)
 
 metrics :: String -> ArithmeticCircuit a p i o -> ByteString
 metrics name circuit =

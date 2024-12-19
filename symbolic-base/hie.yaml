@@ -10,4 +10,4 @@ cradle:
       component: "symbolic-base:bench:bench-poly-mul"
 
     - path: "bench/BenchEC.hs"
-      component: "symbolic-base:bench:in-circuit-ec-benchmark"
+      component: "symbolic-base:bench:bench-in-circuit-ec"
