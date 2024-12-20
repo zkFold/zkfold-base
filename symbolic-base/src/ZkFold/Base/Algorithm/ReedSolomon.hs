@@ -1,25 +1,28 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Base.Algorithm.ReedSolomon where
 
 
-import GHC.Natural (Natural)
-import ZkFold.Base.Algebra.Basic.Number (value, KnownNat)
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Base.Algebra.Polynomials.Univariate
-import Prelude (($), Eq, (==), fromIntegral, Num (fromInteger), (<), Integer, iterate, (/=), length, error, Integral (toInteger), unzip, map)
-import qualified Prelude as P
-import Data.Vector as V
-import Data.Bool (bool)
+import           Data.Bool                                  (bool)
+import           Data.Vector                                as V
+import           GHC.Natural                                (Natural)
+import           Prelude                                    (Eq, Integer, Integral (toInteger), Num (fromInteger),
+                                                             error, fromIntegral, iterate, length, map, unzip, ($),
+                                                             (/=), (<), (==))
+import qualified Prelude                                    as P
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field            (Zp)
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, value)
+import           ZkFold.Base.Algebra.Polynomials.Univariate
 
 
 type RSField p = Zp p
 
 data RSParams c i j = ReedSolomonParams
-    { fullLength      :: Natural
-    , usefulLength    :: Natural
-    , bitsPerBlock    :: Natural
+    { fullLength   :: Natural
+    , usefulLength :: Natural
+    , bitsPerBlock :: Natural
     }
 
 numberOfError :: forall n k. (KnownNat n, KnownNat k) => Natural
