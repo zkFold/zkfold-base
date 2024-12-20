@@ -14,6 +14,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , scaleP
     , qr
     , eea
+    , diff
     , lt
     , deg
     , vec2poly
@@ -280,6 +281,9 @@ eea a b = go (a, one) (b, zero)
             where
                 (q, r) = qr x y
 
+
+diff :: Scale Integer c => Poly c -> Poly c
+diff (P cs) = P $ V.imap (\i c -> scale (fromIntegral i :: Integer) c) cs -- i think imap index starts with 1 (not zero)
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
