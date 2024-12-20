@@ -41,6 +41,6 @@ mapVarArithmeticCircuit ac =
           , acSystem  = fromList $ zip asc $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac)
           , acWitness = (`Map.compose` backward) $ fmap witF <$> acWitness ac
           , acOutput  = acOutput ac <&> \case
-              SysVar v -> SysVar (varF v)
+              LinVar k v b -> LinVar k (varF v) b
               ConstVar c -> ConstVar c
           }

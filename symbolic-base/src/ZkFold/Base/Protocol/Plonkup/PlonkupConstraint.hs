@@ -8,6 +8,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Protocol.Plonkup.LookupConstraint       (LookupConstraint (..))
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint        (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 
 data PlonkupConstraint i a = ConsPlonk (PlonkConstraint i a) | ConsLookup (LookupConstraint i a) | ConsExtra
 
@@ -21,15 +22,15 @@ isLookupConstraint _              = zero
 
 getA :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> Var a i
 getA (ConsPlonk c)  = x1 c
-getA (ConsLookup c) = SysVar $ lkVar c
+getA (ConsLookup c) = toVar $ lkVar c
 getA ConsExtra      = x1 (toPlonkConstraint zero)
 
 getB :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> Var a i
 getB (ConsPlonk c)  = x2 c
-getB (ConsLookup c) = SysVar $ lkVar c
+getB (ConsLookup c) = toVar $ lkVar c
 getB ConsExtra      = x2 (toPlonkConstraint zero)
 
 getC :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> Var a i
 getC (ConsPlonk c)  = x3 c
-getC (ConsLookup c) = SysVar $ lkVar c
+getC (ConsLookup c) = toVar $ lkVar c
 getC ConsExtra      = x3 (toPlonkConstraint zero)
