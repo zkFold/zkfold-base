@@ -1,29 +1,29 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 module Tests.ReedSolomon where
 
+import           Data.Bool                                  (bool)
+import qualified Data.Vector                                as V
 import           GHC.Natural                                (Natural)
 import           Prelude
+import qualified Prelude                                    as P
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class hiding ((*), (+))
-import qualified ZkFold.Base.Algebra.Basic.Class as C
+import qualified ZkFold.Base.Algebra.Basic.Class            as C
+import           ZkFold.Base.Algebra.Basic.Class            hiding ((*), (+))
 import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Algorithm.ReedSolomon
-import ZkFold.Base.Algebra.Polynomials.Univariate
-import qualified Data.Vector as V
-import qualified Prelude as P
-import Data.Bool (bool)
 
 data ReedSolomonExample f = ReedSolomonExample
     {
-        char            :: Natural,  -- field order
-        fElements       :: [f],     -- field elements
-        primeElement    :: f,
-        k               :: Int, -- message length
-        t               :: Int, -- number of errors
-        msg             :: [f],     -- message
-        err           :: [f]      -- error polynomial
+        char         :: Natural,  -- field order
+        fElements    :: [f],     -- field elements
+        primeElement :: f,
+        k            :: Int, -- message length
+        t            :: Int, -- number of errors
+        msg          :: [f],     -- message
+        err          :: [f]      -- error polynomial
     } deriving (Show)
 
 instance (Arbitrary f, FiniteField f, Eq f) => Arbitrary (ReedSolomonExample f) where

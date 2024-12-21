@@ -6,9 +6,9 @@ module ZkFold.Base.Algorithm.ReedSolomon where
 import           Data.Bool                                  (bool)
 import           Data.Vector                                as V
 import           GHC.Natural                                (Natural)
-import           Prelude                                    (Eq, Integer, Integral (toInteger), Num (fromInteger),
+import           Prelude                                    (Eq, Int, Integer, Integral (toInteger), Num (fromInteger),
                                                              error, fromIntegral, iterate, length, map, unzip, ($),
-                                                             (/=), (<), (==), Int)
+                                                             (/=), (<), (==))
 import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
