@@ -8,7 +8,7 @@ import           Data.Vector                                as V
 import           GHC.Natural                                (Natural)
 import           Prelude                                    (Eq, Integer, Integral (toInteger), Num (fromInteger),
                                                              error, fromIntegral, iterate, length, map, unzip, ($),
-                                                             (/=), (<), (==))
+                                                             (/=), (<), (==), Int)
 import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -28,27 +28,26 @@ data RSParams c i j = ReedSolomonParams
 numberOfError :: forall n k. (KnownNat n, KnownNat k) => Natural
 numberOfError = (value @n -! value @k) `div` 2
 
-generator :: (Field a, Eq a) => Natural -> Natural -> a -> Poly a
-generator k n a = V.foldl (\pi ai -> pi * toLinPoly ai) one roots
+generator :: (Field a, Eq a) => Int -> Int -> a -> Poly a
+generator n k a = V.foldr (\ai pi -> toLinPoly ai * pi) one roots
     where
-        dif = fromIntegral $ n -! k
+        dif = n P.- k
         roots = V.iterateN dif (* a) a
-        toLinPoly p = toPoly $ fromList [one, negate p]
+        toLinPoly p = toPoly $ fromList [negate p, one]
 
-encode :: (Field c, Eq c) => [c] -> c -> Natural -> Natural -> Poly c
+encode :: (Field c, Eq c) => [c] -> c -> Int -> Int -> Poly c
 encode msg prim_elem n k = msg_padded - remainder
     where
-    a = prim_elem
-    g_x = generator k n a
-    poly_msg = toPoly $ fromList msg
-    msg_padded = scaleP one (n -! k) poly_msg
-    (_, remainder) = qr msg_padded g_x
+        a = prim_elem
+        g_x = generator n k a
+        poly_msg = toPoly $ fromList msg
+        msg_padded = scaleP one (fromIntegral $ n P.- k) poly_msg
+        (_, remainder) = qr msg_padded g_x
 
 -- beta = one
 decoder :: (Field c, Eq c, MultiplicativeGroup c) => Poly c -> c -> Natural -> Natural -> Poly c
 decoder encoded prim_elem n k = bool decoded encoded' isCorrect
     where
-        -- max_errors = div (n -! k) 2
         fieldElements = V.snoc (V.takeWhile (/= one) $  V.fromList $ iterate (* prim_elem) prim_elem) one
         fieldOrd = toInteger $ V.length fieldElements
         elementsWithLog = V.zip fieldElements (V.generate (fromIntegral fieldOrd) fromIntegral)
