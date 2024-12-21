@@ -115,6 +115,7 @@ library
       ZkFold.Base.Data.HFunctor
       ZkFold.Base.Data.List.Infinite
       ZkFold.Base.Data.Matrix
+      ZkFold.Base.Data.Orphans
       ZkFold.Base.Data.Package
       ZkFold.Base.Data.Product
       ZkFold.Base.Data.Sparse.Matrix
@@ -122,6 +123,21 @@ library
       ZkFold.Base.Data.Type
       ZkFold.Base.Data.Utils
       ZkFold.Base.Data.Vector
+      ZkFold.Base.Protocol.IVC
+      ZkFold.Base.Protocol.IVC.Accumulator
+      ZkFold.Base.Protocol.IVC.AccumulatorScheme
+      ZkFold.Base.Protocol.IVC.AlgebraicMap
+      ZkFold.Base.Protocol.IVC.CommitOpen
+      ZkFold.Base.Protocol.IVC.Commit
+      ZkFold.Base.Protocol.IVC.FiatShamir
+      ZkFold.Base.Protocol.IVC.Internal
+      ZkFold.Base.Protocol.IVC.NARK
+      ZkFold.Base.Protocol.IVC.Oracle
+      ZkFold.Base.Protocol.IVC.Predicate
+      ZkFold.Base.Protocol.IVC.RecursiveFunction
+      ZkFold.Base.Protocol.IVC.SpecialSound
+      ZkFold.Base.Protocol.IVC.StepFunction
+      ZkFold.Base.Protocol.IVC.VerifierCircuit
       ZkFold.Base.Protocol.KZG
       ZkFold.Base.Protocol.Plonk
       ZkFold.Base.Protocol.Plonk.Prover
@@ -145,19 +161,6 @@ library
       ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
       ZkFold.Base.Protocol.Plonkup.Verifier.Setup
       ZkFold.Base.Protocol.Plonkup.Witness
-      ZkFold.Base.Protocol.Protostar
-      ZkFold.Base.Protocol.Protostar.Accumulator
-      ZkFold.Base.Protocol.Protostar.AccumulatorScheme
-      ZkFold.Base.Protocol.Protostar.AlgebraicMap
-      ZkFold.Base.Protocol.Protostar.ArithmetizableFunction
-      ZkFold.Base.Protocol.Protostar.CommitOpen
-      ZkFold.Base.Protocol.Protostar.Commit
-      ZkFold.Base.Protocol.Protostar.FiatShamir
-      ZkFold.Base.Protocol.Protostar.IVC
-      ZkFold.Base.Protocol.Protostar.NARK
-      ZkFold.Base.Protocol.Protostar.Oracle
-      ZkFold.Base.Protocol.Protostar.RecursiveCircuit
-      ZkFold.Base.Protocol.Protostar.SpecialSound
       ZkFold.Base.Protocol.NonInteractiveProof
       ZkFold.Base.Protocol.NonInteractiveProof.Internal
       ZkFold.Base.Protocol.NonInteractiveProof.Prover
@@ -231,6 +234,7 @@ library
       swagger2                                   ,
       text                                       ,
       these                                 < 1.3,
+      transformers                               ,
       type-errors                         < 0.2.1,
       vector                               < 0.14,
       vector-binary-instances               < 0.3,
@@ -260,12 +264,12 @@ test-suite symbolic-base-test
       Tests.GroebnerBasis
       Tests.Group
       Tests.Hash
+      Tests.IVC
       Tests.List
       Tests.NonInteractiveProof
       Tests.Pairing
       Tests.Permutations
       Tests.Plonkup
-      Tests.Protostar
       Tests.ReedSolomon
       Tests.RSA
       Tests.SHA2
@@ -292,6 +296,7 @@ test-suite symbolic-base-test
       RSA                                   < 1.1,
       split                               < 0.2.6,
       symbolic-base                              ,
+      transformers                               ,
       vector                                     ,
       vector-algorithms                          ,
       aeson
