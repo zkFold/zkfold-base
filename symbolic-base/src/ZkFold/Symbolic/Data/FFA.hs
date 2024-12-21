@@ -2,7 +2,8 @@
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.FFA (FFA (..), Size, coprimesDownFrom, coprimes) where
+module ZkFold.Symbolic.Data.FFA where
+  -- (FFA (..), Size, coprimesDownFrom, coprimes)
 
 import           Control.Applicative              (pure)
 import           Control.DeepSeq                  (NFData, force)
@@ -15,7 +16,7 @@ import           Data.Ratio                       ((%))
 import           Data.Traversable                 (for, traverse)
 import           Data.Tuple                       (fst, snd, uncurry)
 import           Data.Zip                         (zipWith)
-import           Prelude                          (Integer, error)
+import           Prelude                          (Integer, error, undefined)
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -220,3 +221,177 @@ deriving newtype instance Symbolic c => Conditional (Bool c) (FFA p c)
 -- | TODO: fix when rewrite is done
 instance (Symbolic c) => SymbolicInput (FFA p c) where
   isValid _ = true
+
+
+---------------------------------- Some staff ----------------------------------
+{-
+newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
+
+k -> BaseField c -> Par1 (BaseField c) -> c Par1 -> FieldElement c
+
+data Point (curve :: Type) = Point
+  { _x     :: BaseField curve
+  , _y     :: BaseField curve
+  , _isInf :: BooleanOf curve
+  } deriving (Generic)
+
+type Fr = Zp BLS12_381_Scalar
+type Fq = Zp BLS12_381_Base
+
+instance EllipticCurve BLS12_381_G1 where
+    type ScalarField BLS12_381_G1 = Fr
+
+    type BaseField BLS12_381_G1 = Fq
+
+newtype Zp (p :: Natural) = Zp Integer
+    deriving (Generic, NFData)
+
+{-# INLINE fromZp #-}
+fromZp :: Zp p -> Natural
+fromZp (Zp a) = fromIntegral a
+
+{-# INLINE residue #-}
+residue :: forall p . KnownNat p => Integer -> Integer
+residue = (`Haskell.mod` fromIntegral (value @p))
+
+{-# INLINE toZp #-}
+toZp :: forall p . KnownNat p => Integer -> Zp p
+toZp = Zp . residue @p
+
+Natural -> Vector Size (BaseField c) -> c (Vector Size) -> FFA p c
+
+Par1 Fr ~ i (ScalarField c1)
+
+PlonkupRelation p i n l (ScalarField c1)
+
+-}
+{-
+Residue Numeral System
+Representation of an integer holding its values modulo several coprime integers.
+
+Contains all the necessary values to carry out operations such as
+multiplication and reduction in this representation.
+
+Representation of an integer.
+
+The integer is represented as a vector of [`Limb`]s with values in the
+native field plus a reference to the [`Rns`] used.
+-}
+--------------------------------- General FFA ----------------------------------
+
+type TMaxSize = 256
+type LimbMaxSize = 68
+
+data FFALimb (nlimbs :: Natural) (bits :: Natural) c = FFALimb
+  { limbs :: c (Vector nlimbs)
+  -- Actual limbs ffa representation.
+  , wrong_modulus  :: Natural
+  -- Order of the wrong field W. (In the article `p`).
+  , native_modulus :: Natural
+  -- Order of the native field N. (In the article `n`).
+  , binary_modulus :: Natural
+  -- In the article: 2^t
+  , crt_modulus    :: Natural
+
+  -- In the article notation: M = n * 2^t
+  , right_shifters :: Vector nlimbs Natural
+  -- Native field elements representing `2^(i*-r)` with `r = BIT_LEN_LIMB`.
+  , left_shifters  :: Vector nlimbs Natural
+  -- Native field elements representing `2^(i*r)` with `r = BIT_LEN_LIMB`.
+  , base_aux       :: Vector nlimbs Natural
+
+  -- The value `base_aux` is a vector of auxiliary limbs representing the value `2p` with `p` the size of the wrong modulus.
+  , negative_wrong_modulus_decomposed :: Vector nlimbs Natural
+  -- Negative wrong modulus: `-p mod 2^t` as vector of limbs.
+  , wrong_modulus_decomposed          :: Vector nlimbs Natural
+  -- Wrong modulus `p` as vector of limbs.
+  , wrong_modulus_minus_one           :: Vector nlimbs Natural
+  -- Wrong modulus -1  `p - 1` as vector of limbs.
+  , wrong_modulus_in_native_modulus   :: Natural
+  -- Wrong modulus as native field element: `p mod n`.
+
+  , max_reduced_limb   :: Natural
+  -- Maximum value for a reduced limb.
+  , max_unreduced_limb :: Natural
+  -- Maximum value for an unreduced limb.
+  , max_remainder      :: Natural
+  -- Maximum value of the remainder.
+  , max_operand        :: Natural
+  -- Maximum value that can be safely multiplied (guaranteeing the result will be reducible).
+  , max_mul_quotient   :: Natural
+  -- Maximum value of the quotient `q` in a reduction.
+
+  , max_most_significant_reduced_limb      :: Natural
+  -- Maximum value of most significant limb for `max_reduced_limb`.
+  , max_most_significant_operand_limb      :: Natural
+  -- Maximum value of most significant limb for `max_operand_limb`.
+  , max_most_significant_mul_quotient_limb :: Natural
+  -- Maximum value of most significant limb for `max_mul_quotient`.
+
+  , mul_v_bit_len :: Natural
+  -- Bit length of the maximum value allowed for residues in multiplication.
+  , red_v_bit_len :: Natural
+  -- Bit length of the maximum value allowed for residues in reduction circuit.
+  }
+
+calculateBaseAux :: Vector nlimbs Natural
+calculateBaseAux = undefined
+
+constructFFALimbs :: c (Vector nlimbs) -> FFALimb nlimbs bits c
+constructFFALimbs = undefined
+
+-- toZp / fromZp, ToConstant (type Zp a) / FromConstant a
+
+-- (+), (-), (*), (negate), (^), (finv)
+
+-- cast, isValid
+
+
+
+------------------------------------ Setup -------------------------------------
+
+-- a, b \in [0, p)
+
+-- a * b = r mod p, r \in [0, p)
+
+-- a * b = q * p + r, a * b < p^2
+
+-- a * b - r = q * p < p^2, q \in [0, p)
+
+-- circumventing the computation of a * b or q * p
+
+-- (a, b, q, p, r)
+
+--------------------------- Native Field Constraint ----------------------------
+ 
+-- a * b = r mod p => a * b = q * p + r
+
+-- a * b - q * p - r = 0 mod n, prim n < p
+-- min_n
+
+-- v_a * n + a_n = a
+-- v_b * n + b_n = b
+-- v_q * n + q_n = q
+-- v_p * n + p_n = p
+-- v_r * n + r_n = r
+
+-- v_overall * n = a_n * b_n - q_n * p_n - r_n
+
+-- (a, b, q, p, r, v_a, v_b, v_q, v_p, v_r, v_overall)
+
+---------- Constraint decomposition in modulo 2^𝑇 ring, where 𝑝 < 2^𝑇 ----------
+
+-- T \in [4, 254]
+
+-- p' = -p mod 2^T => p' = 2^T - p
+
+-- a * b - q * p = a * b + q * p' mod 2^T
+
+-- B = T/4
+
+-- ...
+
+--------------------------------------------------------------------------------
+
+
+
