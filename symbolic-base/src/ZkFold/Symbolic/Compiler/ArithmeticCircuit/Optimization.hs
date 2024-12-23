@@ -49,7 +49,7 @@ optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
     addInVarConstraints :: Map ByteString (Poly a (SysVar i) Natural) -> Map ByteString (Poly a (SysVar i) Natural)
     addInVarConstraints p = p <> fromList [(polyId, poly) | (inVar, v) <- assocs $ filterWithKey (const . isInVar) vs,
                                                             let poly = var inVar - fromConstant v,
-                                                            let polyId = toVar @a @p @i (pure (WSysVar inVar) - fromConstant v)]
+                                                            let polyId = witToVar @a @p @i (pure (WSysVar inVar) - fromConstant v)]
 
     optRanges :: Map (SysVar i) a -> MM.MonoidalMap a (S.Set (SysVar i)) -> MM.MonoidalMap a (S.Set (SysVar i))
     optRanges m = MM.mapMaybeWithKey (\k v -> bool (error "range constraint less then value")
@@ -66,7 +66,7 @@ optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
     optimizeFold CircuitFold {..} =
       CircuitFold { foldStep = optimize foldStep, .. }
 
-    varF (SysVar sV)  = maybe (SysVar sV) ConstVar (M.lookup sV vs)
+    varF lv@(LinVar k sV b)  = maybe lv (ConstVar . (\t -> k * t + b)) (M.lookup sV vs)
     varF (ConstVar c) = ConstVar c
 
 

@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -30,41 +29,42 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         exec1,
         apply,
         indexW,
-        toVar
+        witToVar
     ) where
 
-import           Control.DeepSeq                                       (NFData (..), NFData1 (..))
-import           Control.Monad.State                                   (State, modify, runState)
-import           Data.Aeson
-import           Data.Bifunctor                                        (Bifunctor (..))
-import           Data.Binary                                           (Binary)
-import           Data.ByteString                                       (ByteString)
-import           Data.Foldable                                         (fold, toList)
+import           Control.DeepSeq                                              (NFData (..), NFData1 (..))
+import           Control.Monad.State                                          (State, modify, runState)
+import           Data.Bifunctor                                               (Bifunctor (..))
+import           Data.Binary                                                  (Binary)
+import           Data.ByteString                                              (ByteString)
+import           Data.Foldable                                                (fold, toList)
 import           Data.Functor.Rep
-import           Data.List.Infinite                                    (Infinite)
-import           Data.Map.Monoidal                                     (MonoidalMap, insertWith)
-import           Data.Map.Strict                                       hiding (drop, foldl, foldr, insertWith, map,
-                                                                        null, splitAt, take, toList)
-import           Data.Maybe                                            (catMaybes, fromMaybe)
-import           Data.Semialign                                        (unzipDefault)
-import           Data.Semigroup.Generic                                (GenericSemigroupMonoid (..))
-import qualified Data.Set                                              as S
-import           GHC.Generics                                          (Generic, Par1 (..), U1 (..), (:*:) (..))
-import           Optics                                                hiding (at)
-import           Prelude                                               hiding (Num (..), drop, length, product, splitAt,
-                                                                        sum, take, (!!), (^))
+import           Data.List.Infinite                                           (Infinite)
+import           Data.Map.Monoidal                                            (MonoidalMap, insertWith)
+import           Data.Map.Strict                                              hiding (drop, foldl, foldr, insertWith,
+                                                                               map, null, splitAt, take, toList)
+import           Data.Maybe                                                   (catMaybes, fromMaybe)
+import           Data.Semialign                                               (unzipDefault)
+import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
+import qualified Data.Set                                                     as S
+import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
+import           Optics                                                       hiding (at)
+import           Prelude                                                      hiding (Num (..), drop, length, product,
+                                                                               splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                       (Zp)
+import           ZkFold.Base.Algebra.Basic.Field                              (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Multivariate          (Poly, evalMonomial, evalPolynomial, mapVars,
-                                                                        var)
+import           ZkFold.Base.Algebra.Polynomials.Multivariate                 (Poly, evalMonomial, evalPolynomial,
+                                                                               mapVars, var)
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | The type that represents a constraint in the arithmetic circuit.
@@ -130,25 +130,6 @@ instance (NFData a, NFData1 o, NFData (Rep i))
 -- | Variables are SHA256 digests (32 bytes)
 type VarField = Zp (2 ^ (32 * 8))
 
-data SysVar i
-  = InVar (Rep i)
-  | NewVar ByteString
-  deriving Generic
-deriving anyclass instance FromJSON (Rep i) => FromJSON (SysVar i)
-deriving anyclass instance FromJSON (Rep i) => FromJSONKey (SysVar i)
-deriving anyclass instance ToJSON (Rep i) => ToJSONKey (SysVar i)
-deriving anyclass instance ToJSON (Rep i) => ToJSON (SysVar i)
-deriving stock instance Show (Rep i) => Show (SysVar i)
-deriving stock instance Eq (Rep i) => Eq (SysVar i)
-deriving stock instance Ord (Rep i) => Ord (SysVar i)
-deriving instance NFData (Rep i) => NFData (SysVar i)
-
-imapSysVar ::
-  (Representable i, Representable j) =>
-  (forall x. j x -> i x) -> SysVar i -> SysVar j
-imapSysVar f (InVar r)  = index (f (tabulate InVar)) r
-imapSysVar _ (NewVar b) = NewVar b
-
 data WitVar p i
   = WExVar (Rep p)
   | WSysVar (SysVar i)
@@ -165,31 +146,10 @@ pmapWitVar ::
 pmapWitVar f (WExVar r)  = index (f (tabulate WExVar)) r
 pmapWitVar _ (WSysVar v) = WSysVar v
 
-data Var a i
-  = SysVar (SysVar i)
-  | ConstVar a
-  deriving Generic
-deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSON (Var a i)
-deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSONKey (Var a i)
-deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSONKey (Var a i)
-deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSON (Var a i)
-deriving stock instance (Show (Rep i), Show a) => Show (Var a i)
-deriving stock instance (Eq (Rep i), Eq a) => Eq (Var a i)
-deriving stock instance (Ord (Rep i), Ord a) => Ord (Var a i)
-deriving instance (NFData (Rep i), NFData a) => NFData (Var a i)
-instance FromConstant a (Var a i) where
-    fromConstant = ConstVar
-
-imapVar ::
-  (Representable i, Representable j) =>
-  (forall x. j x -> i x) -> Var a i -> Var a j
-imapVar f (SysVar s)   = SysVar (imapSysVar f s)
-imapVar _ (ConstVar c) = ConstVar c
-
 ---------------------------------- Variables -----------------------------------
 
-acInput :: Representable i => i (Var a i)
-acInput = fmapRep (SysVar . InVar) (tabulate id)
+acInput :: (Representable i, Semiring a) => i (Var a i)
+acInput = fmapRep (toVar . InVar) (tabulate id)
 
 getAllVars :: forall a p i o. (Representable i, Foldable i) => ArithmeticCircuit a p i o -> [SysVar i]
 getAllVars ac = toList acInput0 ++ map NewVar (keys $ acWitness ac) where
@@ -200,8 +160,8 @@ indexW ::
   (Arithmetic a, Representable p, Representable i) =>
   ArithmeticCircuit a p i o -> p a -> i a -> Var a i -> a
 indexW circuit payload inputs = \case
-  SysVar (InVar inV) -> index inputs inV
-  SysVar (NewVar newV) -> fromMaybe
+  LinVar k (InVar inV) b -> (\t -> k * t + b) $ index inputs inV
+  LinVar k (NewVar newV) b -> (\t -> k * t + b) $ fromMaybe
     (error ("no such NewVar: " <> show newV))
     (witnessGenerator circuit payload inputs !? newV)
   ConstVar cV -> cV
@@ -251,45 +211,57 @@ instance
   Symbolic (ArithmeticCircuit a p i) where
     type BaseField (ArithmeticCircuit a p i) = a
     type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
-    witnessF (behead -> (c, o)) = o <&> \case
-      ConstVar cv -> fromConstant cv
-      SysVar (InVar iv) -> at $ SysVar (InVar iv)
-      SysVar (NewVar nv) -> acWitness c ! nv
+    witnessF (behead -> (_, o)) = at <$> o
     fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
 
 ----------------------------- MonadCircuit instance ----------------------------
 
 instance Finite a => Witness (Var a i) (CircuitWitness a p i) where
-  at (ConstVar cV) = fromConstant cV
-  at (SysVar sV)   = WitnessF (\x -> x (WSysVar sV))
+  at (ConstVar cV)   = fromConstant cV
+  at (LinVar k sV b) = fromConstant k * pure (WSysVar sV) + fromConstant b
 
 instance
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1)
   => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
 
-    unconstrained wf = case runWitnessF wf $ const Nothing of
-      Just cV -> return (ConstVar cV)
-      Nothing -> do
-        let v = toVar @a wf
-        -- TODO: forbid reassignment of variables
-        zoom #acWitness $ modify (insert v wf)
-        return $ SysVar (NewVar v)
+    unconstrained wf = case runWitnessF wf $ \case
+      WSysVar sV -> LinUVar one sV zero
+      _          -> More of
+        ConstUVar c -> return (ConstVar c)
+        LinUVar k x b -> return (LinVar k x b)
+        _ -> do
+          let v = witToVar @a wf
+          -- TODO: forbid reassignment of variables
+          zoom #acWitness $ modify (insert v wf)
+          return $ toVar (NewVar v)
 
     constraint p =
       let evalConstVar = \case
-            SysVar sysV -> var sysV
+            LinVar k sysV b -> fromConstant k * var sysV + fromConstant b
             ConstVar cV -> fromConstant cV
           evalMaybe = \case
-            SysVar _ -> Nothing
             ConstVar cV -> Just cV
+            _ -> Nothing
       in case p evalMaybe of
-        Just c -> if c ==zero
+        Just c -> if c == zero
                     then return ()
                     else error "The constraint is non-zero"
-        Nothing -> zoom #acSystem . modify $ insert (toVar @_ @p (p at)) (p evalConstVar)
+        Nothing -> zoom #acSystem . modify $ insert (witToVar @_ @p (p at)) (p evalConstVar)
 
-    rangeConstraint (SysVar v) upperBound =
+    rangeConstraint (LinVar k x b) upperBound = do
+      v <- preparedVar
       zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
+      where
+        preparedVar = if k == one && b == zero || k == negate one && b == upperBound
+          then return x
+          else do
+            let
+              wf = at $ LinVar k x b
+              v = witToVar @a wf
+            -- TODO: forbid reassignment of variables
+            zoom #acWitness $ modify (insert v wf)
+            return (NewVar v)
+
     rangeConstraint (ConstVar c) upperBound =
       if c <= upperBound
         then return ()
@@ -316,10 +288,10 @@ instance
 --
 -- 5. Thus the result of running the witness with 'MerkleHash' as a
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
-toVar ::
+witToVar ::
   forall a p i. (Finite a, Binary a, Binary (Rep p), Binary (Rep i)) =>
   WitnessF a (WitVar p i) -> ByteString
-toVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
+witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   WExVar exV -> merkleHash exV
   WSysVar (InVar inV) -> merkleHash inV
   WSysVar (NewVar newV) -> M newV
@@ -368,10 +340,10 @@ apply xs ac = ac
   , acOutput = outF <$> acOutput ac
   }
   where
-    outF (SysVar (InVar (Left v)))  = ConstVar (index xs v)
-    outF (SysVar (InVar (Right v))) = SysVar (InVar v)
-    outF (SysVar (NewVar v))        = SysVar (NewVar v)
-    outF (ConstVar a)               = ConstVar a
+    outF (LinVar k (InVar (Left v)) b)  = ConstVar (k * index xs v + b)
+    outF (LinVar k (InVar (Right v)) b) = LinVar k (InVar v) b
+    outF (LinVar k (NewVar v) b)        = LinVar k (NewVar v) b
+    outF (ConstVar a)                   = ConstVar a
 
     varF (InVar (Left v))  = fromConstant (index xs v)
     varF (InVar (Right v)) = var (InVar v)
