@@ -66,8 +66,8 @@ optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
     optimizeFold CircuitFold {..} =
       CircuitFold { foldStep = optimize foldStep, .. }
 
-    varF lv@(LinVar k sV b)  = maybe lv (ConstVar . (\t -> k * t + b)) (M.lookup sV vs)
-    varF (ConstVar c) = ConstVar c
+    varF lv@(LinVar k sV b) = maybe lv (ConstVar . (\t -> k * t + b)) (M.lookup sV vs)
+    varF (ConstVar c)       = ConstVar c
 
 
 varsToReplace :: (Arithmetic a, Ord (Rep i)) => (Map ByteString (Constraint a i) , Map (SysVar i) a) -> (Map ByteString (Constraint a i) , Map (SysVar i) a)

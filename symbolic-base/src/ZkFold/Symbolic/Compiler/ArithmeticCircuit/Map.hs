@@ -34,8 +34,8 @@ mapVarArithmeticCircuit ac =
         backward = Map.fromAscList $ zip asc vars
         varF (InVar v)  = InVar v
         varF (NewVar v) = NewVar (forward ! v)
-        oVarF (LinVar k v b)   = LinVar k (varF v) b
-        oVarF (ConstVar c) = ConstVar c
+        oVarF (LinVar k v b) = LinVar k (varF v) b
+        oVarF (ConstVar c)   = ConstVar c
         witF (WSysVar v) = WSysVar (varF v)
         witF (WExVar v)  = WExVar v
      in ArithmeticCircuit
