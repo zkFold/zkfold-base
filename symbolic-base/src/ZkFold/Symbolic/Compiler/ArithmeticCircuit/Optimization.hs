@@ -1,10 +1,10 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization where
 
+import           Data.Bifunctor                                          (bimap)
 import           Data.Binary                                             (Binary)
 import           Data.Bool                                               (bool)
 import           Data.ByteString                                         (ByteString)
-import           Data.Functor                                            ((<&>))
 import           Data.Functor.Rep                                        (Representable (..))
 import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
                                                                           take)
@@ -33,13 +33,13 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (Witnes
 optimize :: forall a p i o.
   (Arithmetic a, Ord (Rep i), Functor o, Binary (Rep i), Binary a, Binary (Rep p)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
-optimize (ArithmeticCircuit s r w o) = ArithmeticCircuit {
+optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
     acSystem = addInVarConstraints newS,
     acRange = optRanges vs r,
     acWitness = (>>= optWitVar vs) <$>  M.filterWithKey (\k _ -> notMember (NewVar k) vs) w,
-    acOutput = o <&> \case
-      lv@(LinVar k sV b) -> maybe lv (ConstVar . (\t -> k * t + b)) (M.lookup sV vs)
-      so -> so}
+    acFold = optimizeFold . bimap varF (>>= optWitVar vs) <$> f,
+    acOutput = varF <$> o
+  }
   where
     (newS, vs) = varsToReplace (s, M.empty)
 
@@ -62,6 +62,13 @@ optimize (ArithmeticCircuit s r w o) = ArithmeticCircuit {
           Just k  -> fromConstant k
           Nothing -> pure $ WSysVar sv
       we  -> pure we
+
+    optimizeFold CircuitFold {..} =
+      CircuitFold { foldStep = optimize foldStep, .. }
+
+    varF lv@(LinVar k sV b) = maybe lv (ConstVar . (\t -> k * t + b)) (M.lookup sV vs)
+    varF (ConstVar c)       = ConstVar c
+
 
 varsToReplace :: (Arithmetic a, Ord (Rep i)) => (Map ByteString (Constraint a i) , Map (SysVar i) a) -> (Map ByteString (Constraint a i) , Map (SysVar i) a)
 varsToReplace (s, l) = if newVars == M.empty then (s, l) else varsToReplace (M.filter (/= zero) $ optimizeSystems newVars s, M.union newVars l)

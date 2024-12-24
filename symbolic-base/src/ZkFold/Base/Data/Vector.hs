@@ -5,7 +5,7 @@
 
 module ZkFold.Base.Data.Vector where
 
-import           Control.DeepSeq                  (NFData)
+import           Control.DeepSeq                  (NFData, NFData1)
 import           Control.Monad.State.Strict       (runState, state)
 import           Data.Aeson                       (FromJSON (..), ToJSON (..))
 import           Data.Distributive                (Distributive (..))
@@ -31,7 +31,7 @@ import           ZkFold.Base.Data.ByteString      (Binary (..))
 import           ZkFold.Prelude                   (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
-    deriving (Show, Show1, Eq, Functor, Foldable, Traversable, Generic, NFData, Ord)
+    deriving (Show, Show1, Eq, Functor, Foldable, Traversable, Generic, NFData, NFData1, Ord)
     deriving newtype (FromJSON, ToJSON)
 
 -- helper

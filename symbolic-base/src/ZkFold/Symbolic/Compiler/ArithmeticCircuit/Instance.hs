@@ -128,4 +128,5 @@ instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a
             acRange    <- v .: "range"
             acOutput   <- v .: "output"
             let acWitness = empty
+                acFold    = empty
             pure ArithmeticCircuit{..}
