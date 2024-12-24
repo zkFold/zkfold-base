@@ -38,7 +38,7 @@ instance (EllipticCurve curve, Random (ScalarField curve)) => PedersonSetup [] (
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
         let x = fst $ random $ mkStdGen 0 :: ScalarField curve
-        in take (value @PedersonSetupMaxSize) $ iterate (mul x) gen
+        in take (value @PedersonSetupMaxSize) $ iterate (mul x) pointGen
 
 instance (KnownNat n, EllipticCurve curve, Random (ScalarField curve), n <= PedersonSetupMaxSize) => PedersonSetup (Vector n) (Point curve) where
     groupElements =

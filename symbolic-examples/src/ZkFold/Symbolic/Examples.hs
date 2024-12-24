@@ -4,8 +4,9 @@
 
 module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
-import           Control.DeepSeq                             (NFData)
+import           Control.DeepSeq                             (NFData, NFData1)
 import           Data.Function                               (const, ($), (.))
+import           Data.Functor                                (Functor)
 import           Data.Functor.Rep                            (Rep, Representable)
 import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
@@ -27,7 +28,6 @@ import           GHC.Generics                                (Par1, (:*:), (:.:)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (Var)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
@@ -39,7 +39,7 @@ type C = ArithmeticCircuit A
 data ExampleOutput where
   ExampleOutput ::
     forall p i o.
-    (Representable p, Representable i, NFData (Rep i), NFData (o (Var A i))) =>
+    (Representable p, Representable i, NFData (Rep i), NFData1 o) =>
     (() -> C p i o) -> ExampleOutput
 
 exampleOutput ::
@@ -55,14 +55,14 @@ exampleOutput ::
   , Payload (Support f) ~ p
   , Representable i
   , NFData (Rep i)
-  , NFData (o (Var A i))
+  , NFData1 o
   ) => f -> ExampleOutput
 exampleOutput = ExampleOutput @p @i @o . const . compile
 
 -- | TODO: Maybe there is a better place for these orphans?
-instance NFData a => NFData (Par1 a)
-instance (NFData (f a), NFData (g a)) => NFData ((f :*: g) a)
-instance NFData (f (g a)) => NFData ((f :.: g) a)
+instance NFData1 Par1
+instance (NFData1 f, NFData1 g) => NFData1 (f :*: g)
+instance (Functor f, NFData1 f, NFData1 g) => NFData1 (f :.: g)
 
 examples :: [(String, ExampleOutput)]
 examples =

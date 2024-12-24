@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -8,6 +7,7 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
+        CircuitFold (..),
         Var (..),
         SysVar (..),
         WitVar (..),
@@ -32,12 +32,14 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         witToVar
     ) where
 
-import           Control.DeepSeq                                              (NFData)
+import           Control.DeepSeq                                              (NFData (..), NFData1 (..))
 import           Control.Monad.State                                          (State, modify, runState)
+import           Data.Bifunctor                                               (Bifunctor (..))
 import           Data.Binary                                                  (Binary)
 import           Data.ByteString                                              (ByteString)
 import           Data.Foldable                                                (fold, toList)
 import           Data.Functor.Rep
+import           Data.List.Infinite                                           (Infinite)
 import           Data.Map.Monoidal                                            (MonoidalMap, insertWith)
 import           Data.Map.Strict                                              hiding (drop, foldl, foldr, insertWith,
                                                                                map, null, splitAt, take, toList)
@@ -68,6 +70,38 @@ import           ZkFold.Symbolic.MonadCircuit
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
 
+type CircuitWitness a p i = WitnessF a (WitVar p i)
+
+data CircuitFold a v w =
+  forall s j.
+  ( Functor s, NFData1 s, Binary (Rep s), NFData (Rep s), Ord (Rep s)
+  , Functor j, Binary (Rep j), NFData (Rep j), Ord (Rep j)) =>
+    CircuitFold
+      { foldStep   :: ArithmeticCircuit a U1 (j :*: s) s
+      , foldSeed   :: s v
+      , foldStream :: Infinite (j w)
+      , foldCount  :: v
+      , foldResult :: s v
+      }
+
+instance Functor (CircuitFold a v) where
+  fmap = second
+
+instance Bifunctor (CircuitFold a) where
+  bimap f g CircuitFold {..} = CircuitFold
+    { foldStep = foldStep
+    , foldSeed = f <$> foldSeed
+    , foldStream = fmap g <$> foldStream
+    , foldCount = f foldCount
+    , foldResult = f <$> foldResult
+    }
+
+instance (NFData a, NFData v) => NFData (CircuitFold a v w) where
+  rnf CircuitFold {..} =
+    rnf (foldStep, foldCount)
+      `seq` liftRnf rnf foldSeed
+      `seq` liftRnf rnf foldResult
+
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a p i o = ArithmeticCircuit
     {
@@ -75,8 +109,10 @@ data ArithmeticCircuit a p i o = ArithmeticCircuit
         -- ^ The system of polynomial constraints
         acRange   :: MonoidalMap a (S.Set (SysVar i)),
         -- ^ The range constraints [0, a] for the selected variables
-        acWitness :: Map ByteString (WitnessF a (WitVar p i)),
+        acWitness :: Map ByteString (CircuitWitness a p i),
         -- ^ The witness generation functions
+        acFold    :: Map ByteString (CircuitFold a (Var a i) (CircuitWitness a p i)),
+        -- ^ The set of folding operations
         acOutput  :: o (Var a i)
         -- ^ The output variables
     } deriving (Generic)
@@ -87,8 +123,9 @@ deriving via (GenericSemigroupMonoid (ArithmeticCircuit a p i o))
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a p i o))
   instance (Ord a, Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a p i o)
 
-instance (NFData a, NFData (o (Var a i)), NFData (Rep i))
-    => NFData (ArithmeticCircuit a p i o)
+instance (NFData a, NFData1 o, NFData (Rep i))
+    => NFData (ArithmeticCircuit a p i o) where
+  rnf (ArithmeticCircuit s r w f o) = rnf (s, r, w, f) `seq` liftRnf rnf o
 
 -- | Variables are SHA256 digests (32 bytes)
 type VarField = Zp (2 ^ (32 * 8))
@@ -134,17 +171,21 @@ indexW circuit payload inputs = \case
 hlmap ::
   (Representable i, Representable j, Ord (Rep j), Functor o) =>
   (forall x . j x -> i x) -> ArithmeticCircuit a p i o -> ArithmeticCircuit a p j o
-hlmap f (ArithmeticCircuit s r w o) = ArithmeticCircuit
+hlmap f (ArithmeticCircuit s r w d o) = ArithmeticCircuit
   { acSystem = mapVars (imapSysVar f) <$> s
   , acRange = S.map (imapSysVar f) <$> r
   , acWitness = fmap (imapWitVar f) <$> w
+  , acFold = bimap (imapVar f) (imapWitVar f <$>) <$> d
   , acOutput = imapVar f <$> o
   }
 
 hpmap ::
   (Representable p, Representable q) => (forall x. q x -> p x) ->
   ArithmeticCircuit a p i o -> ArithmeticCircuit a q i o
-hpmap f ac = ac { acWitness = fmap (pmapWitVar f) <$> acWitness ac }
+hpmap f ac = ac
+  { acWitness = fmap (pmapWitVar f) <$> acWitness ac
+  , acFold = fmap (pmapWitVar f <$>) <$> acFold ac
+  }
 
 --------------------------- Symbolic compiler context --------------------------
 
@@ -175,13 +216,13 @@ instance
 
 ----------------------------- MonadCircuit instance ----------------------------
 
-instance Finite a => Witness (Var a i) (WitnessF a (WitVar p i)) where
+instance Finite a => Witness (Var a i) (CircuitWitness a p i) where
   at (ConstVar cV)   = fromConstant cV
   at (LinVar k sV b) = fromConstant k * pure (WSysVar sV) + fromConstant b
 
 instance
-  ( Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)
-  , o ~ U1) => MonadCircuit (Var a i) a (WitnessF a (WitVar p i)) (State (ArithmeticCircuit a p i o)) where
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1)
+  => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = case runWitnessF wf $ \case
       WSysVar sV -> LinUVar one sV zero
@@ -289,15 +330,21 @@ exec ac = eval ac U1 U1
 
 -- | Applies the values of the first couple of inputs to the arithmetic circuit.
 apply ::
-  (Eq a, Field a, Ord (Rep j), Representable i) =>
-  i a -> ArithmeticCircuit a p (i :*: j) U1 -> ArithmeticCircuit a p j U1
+  (Eq a, Field a, Ord (Rep j), Representable i, Functor o) =>
+  i a -> ArithmeticCircuit a p (i :*: j) o -> ArithmeticCircuit a p j o
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
   , acRange = S.fromList . catMaybes . toList . filterSet <$> acRange ac
   , acWitness = (>>= witF) <$> acWitness ac
-  , acOutput = U1
+  , acFold = bimap outF (>>= witF) <$> acFold ac
+  , acOutput = outF <$> acOutput ac
   }
   where
+    outF (LinVar k (InVar (Left v)) b)  = ConstVar (k * index xs v + b)
+    outF (LinVar k (InVar (Right v)) b) = LinVar k (InVar v) b
+    outF (LinVar k (NewVar v) b)        = LinVar k (NewVar v) b
+    outF (ConstVar a)                   = ConstVar a
+
     varF (InVar (Left v))  = fromConstant (index xs v)
     varF (InVar (Right v)) = var (InVar v)
     varF (NewVar v)        = var (NewVar v)

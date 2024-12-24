@@ -78,7 +78,7 @@ instance forall p i n l c1 c2 (ts :: Type) core .
         , Arithmetic (ScalarField c1)
         , ToTranscript ts Word8
         , ToTranscript ts (ScalarField c1)
-        , ToTranscript ts (PointCompressed c1)
+        , ToTranscript ts (CompressedPoint c1)
         , FromTranscript ts (ScalarField c1)
         , CoreFunction c1 core
         ) => NonInteractiveProof (Plonk p i n l c1 c2 ts) core where
