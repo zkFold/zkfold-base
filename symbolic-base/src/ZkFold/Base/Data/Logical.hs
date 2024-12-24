@@ -1,4 +1,6 @@
-{-# LANGUAGE DerivingVia, TypeOperators, UndecidableInstances #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Data.Logical
   ( Boolean (..)
@@ -11,18 +13,18 @@ module ZkFold.Base.Data.Logical
   , GEq (..)
   ) where
 
-import qualified Data.Bool as H
-import Control.Category
-import Data.Foldable hiding (all, any, and, or, elem)
-import Data.Functor.Identity
-import qualified Data.Functor.Rep as R
-import Data.Kind
-import qualified GHC.Generics as G
-import Prelude (type (~))
-import qualified Prelude as H
+import           Control.Category
+import qualified Data.Bool                        as H
+import           Data.Foldable                    hiding (all, and, any, elem, or)
+import           Data.Functor.Identity
+import qualified Data.Functor.Rep                 as R
+import           Data.Kind
+import qualified GHC.Generics                     as G
+import           Prelude                          (type (~))
+import qualified Prelude                          as H
 
-import ZkFold.Base.Data.Vector
-import ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.Vector
 
 class Boolean b where
 
