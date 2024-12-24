@@ -109,11 +109,13 @@ library
       ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
       ZkFold.Base.Algebra.Polynomials.Univariate
       ZkFold.Base.Control.HApplicative
+      ZkFold.Base.Data.Boolean
       ZkFold.Base.Data.ByteString
+      ZkFold.Base.Data.Conditional
+      ZkFold.Base.Data.Eq
       ZkFold.Base.Data.Functor.Rep
       ZkFold.Base.Data.HFunctor
       ZkFold.Base.Data.List.Infinite
-      ZkFold.Base.Data.Logical
       ZkFold.Base.Data.Matrix
       ZkFold.Base.Data.Orphans
       ZkFold.Base.Data.Package
