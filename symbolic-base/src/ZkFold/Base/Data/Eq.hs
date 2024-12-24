@@ -30,7 +30,12 @@ class Conditional a => Eq a where
   x == y = geq (G.from x) (G.from y)
 
   (/=) :: a -> a -> BooleanOf a
-  x /= y = not (x == y)
+  default (/=) ::
+    ( G.Generic a
+    , GEq (G.Rep a)
+    , BooleanOf a ~ GBooleanOf (G.Rep a)
+    ) => a -> a -> BooleanOf a
+  x /= y = gneq (G.from x) (G.from y)
 
 instance
   ( Eq x0, Eq x1
