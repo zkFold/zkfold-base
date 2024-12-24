@@ -5,7 +5,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         mapVarArithmeticCircuit,
     ) where
 
-import           Data.Functor                                        ((<&>))
+import           Data.Bifunctor                                      (bimap)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldr, fromList, map, null,
                                                                       splitAt, take, toList)
@@ -34,13 +34,14 @@ mapVarArithmeticCircuit ac =
         backward = Map.fromAscList $ zip asc vars
         varF (InVar v)  = InVar v
         varF (NewVar v) = NewVar (forward ! v)
+        oVarF (LinVar k v b) = LinVar k (varF v) b
+        oVarF (ConstVar c)   = ConstVar c
         witF (WSysVar v) = WSysVar (varF v)
         witF (WExVar v)  = WExVar v
      in ArithmeticCircuit
           { acRange   = Set.map varF <$> acRange ac
           , acSystem  = fromList $ zip asc $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac)
-          , acWitness = (`Map.compose` backward) $ fmap witF <$> acWitness ac
-          , acOutput  = acOutput ac <&> \case
-              LinVar k v b -> LinVar k (varF v) b
-              ConstVar c -> ConstVar c
+          , acWitness = (fmap witF <$> acWitness ac) `Map.compose` backward
+          , acFold = bimap oVarF (fmap witF) <$> acFold ac
+          , acOutput  = oVarF <$> acOutput ac
           }
