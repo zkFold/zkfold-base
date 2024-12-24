@@ -4,9 +4,9 @@ module ZkFold.Base.Data.Boolean
   ) where
 
 import           Control.Category
-import qualified Data.Bool                        as H
-import           Data.Foldable                    hiding (all, and, any, elem, or)
-import qualified Prelude                          as H
+import qualified Data.Bool        as H
+import           Data.Foldable    hiding (all, and, any, elem, or)
+import qualified Prelude          as H
 
 class Boolean b where
   true, false :: b

@@ -1,5 +1,5 @@
-{-# LANGUAGE DerivingVia          #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE DerivingVia   #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Data.Eq
   ( Eq (..)
@@ -14,9 +14,9 @@ import qualified GHC.Generics                     as G
 import           Prelude                          (type (~))
 import qualified Prelude                          as H
 
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Boolean
 import           ZkFold.Base.Data.Conditional
-import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 
 class Conditional a => Eq a where
