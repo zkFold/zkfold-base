@@ -27,11 +27,8 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector
 
 class Boolean b where
-
   true, false :: b
-
   not :: b -> b
-
   (&&), (||), xor :: b -> b -> b
 
 instance Boolean H.Bool where
@@ -67,10 +64,6 @@ class Boolean (BooleanOf a) => Conditional a where
     ) => a -> a -> BooleanOf a -> a
   bool f t b = G.to (gbool (G.from f) (G.from t) b)
 
-instance Conditional y => Conditional (x -> y) where
-  type BooleanOf (x -> y) = BooleanOf y
-  bool f t b x = bool (f x) (t x) b
-
 instance
   ( Conditional x0
   , Conditional x1
@@ -103,6 +96,9 @@ instance (R.Representable v, Conditional x)
 
 deriving via G.Generically1 (Vector n) x
   instance (KnownNat n, Conditional x) => Conditional (Vector n x)
+
+deriving via G.Generically1 ((->) x) y
+  instance Conditional y => Conditional (x -> y)
 
 instance Conditional (Identity x) where
   type BooleanOf (Identity x) = H.Bool
