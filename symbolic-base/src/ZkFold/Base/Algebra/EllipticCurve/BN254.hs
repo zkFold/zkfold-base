@@ -70,13 +70,13 @@ data BN254_G1
 instance EllipticCurve BN254_G1 where
   type ScalarField BN254_G1 = Fr
   type BaseField BN254_G1 = Fp
-  gen = point 1 2
+  pointGen = pointXY 1 2
   add = addPoints
   mul = pointMul
 
-instance StandardEllipticCurve BN254_G1 where
-  aParameter = 0
-  bParameter = 3
+instance WeierstrassCurve BN254_G1 where
+  weierstrassA = 0
+  weierstrassB = 3
 
 ------------------------------- bn254 G2 ---------------------------------------
 
@@ -85,7 +85,7 @@ data BN254_G2
 instance EllipticCurve BN254_G2 where
   type ScalarField BN254_G2 = Fr
   type BaseField BN254_G2 = Fp2
-  gen = point
+  pointGen = pointXY
     (Ext2 0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed
           0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2)
     (Ext2 0x12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa
@@ -93,9 +93,9 @@ instance EllipticCurve BN254_G2 where
   add = addPoints
   mul = pointMul
 
-instance StandardEllipticCurve BN254_G2 where
-  aParameter = zero
-  bParameter =
+instance WeierstrassCurve BN254_G2 where
+  weierstrassA = zero
+  weierstrassB =
     Ext2 0x2b149d40ceb8aaae81be18991be06ac3b5b4c5e559dbefa33267e6dc24a138e5
          0x9713b03af0fed4cd2cafadeed8fdf4a74fa084e52d1852e4a2bd0685c315d2
 
@@ -133,22 +133,22 @@ instance Pairing BN254_G1 BN254_G2 where
 
 instance Binary (Point BN254_G1) where
   put (Point xp yp isInf) =
-    if isInf then put @(Point BN254_G1) (point zero zero) else put xp >> put yp
+    if isInf then put @(Point BN254_G1) (pointXY zero zero) else put xp >> put yp
   get = do
     xp <- get
     yp <- get
     return $
       if xp == zero && yp == zero
-      then inf
-      else point xp yp
+      then pointInf
+      else pointXY xp yp
 
 instance Binary (Point BN254_G2) where
   put (Point xp yp isInf) =
-    if isInf then put @(Point BN254_G2) (point zero zero) else put xp >> put yp
+    if isInf then put @(Point BN254_G2) (pointXY zero zero) else put xp >> put yp
   get = do
     xp <- get
     yp <- get
     return $
       if xp == zero && yp == zero
-      then inf
-      else point xp yp
+      then pointInf
+      else pointXY xp yp

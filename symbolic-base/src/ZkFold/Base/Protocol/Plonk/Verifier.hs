@@ -32,7 +32,7 @@ plonkVerify :: forall p i n l c1 c2 ts .
     , Arithmetic (ScalarField c1)
     , ToTranscript ts Word8
     , ToTranscript ts (ScalarField c1)
-    , ToTranscript ts (PointCompressed c1)
+    , ToTranscript ts (CompressedPoint c1)
     , FromTranscript ts (ScalarField c1)
     ) => PlonkupVerifierSetup p i n l c1 c2 -> PlonkupInput l c1 -> PlonkupProof c1 -> Bool
 plonkVerify
@@ -145,8 +145,8 @@ plonkVerify
         -- Step 12: Compute E
         e = (
                 negate r0 + v * a_xi + vn 2 * b_xi + vn 3 * c_xi + vn 4 * s1_xi + vn 5 * s2_xi + eta * z1_xi'
-            ) `mul` gen
+            ) `mul` pointGen
 
         -- Step 13: Compute the pairing
         p1 = pairing (proof1 + eta `mul` proof2) h1
-        p2 = pairing (xi `mul` proof1 + (eta * xi * omega) `mul` proof2 + f - e) (gen @c2)
+        p2 = pairing (xi `mul` proof1 + (eta * xi * omega) `mul` proof2 + f - e) (pointGen @c2)
