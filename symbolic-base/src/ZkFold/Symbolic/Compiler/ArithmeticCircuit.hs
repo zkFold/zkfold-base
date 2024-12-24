@@ -105,7 +105,7 @@ desugarRanges c =
    in r' { acRange = mempty, acOutput = acOutput c }
 
 emptyCircuit :: ArithmeticCircuit a p i U1
-emptyCircuit = ArithmeticCircuit empty M.empty empty U1
+emptyCircuit = ArithmeticCircuit empty M.empty empty empty U1
 
 -- | Given a natural transformation
 -- from payload @p@ and input @i@ to output @o@,
