@@ -60,7 +60,7 @@ instance (Foldable v, R.Representable v, Eq x)
     G.Generically1 vx == G.Generically1 vy =
       and (R.mzipWithRep (==) vx vy)
     G.Generically1 vx /= G.Generically1 vy =
-      or (R.mzipWithRep (==) vx vy)
+      or (R.mzipWithRep (/=) vx vy)
 
 deriving via G.Generically1 (Vector n) x
   instance (KnownNat n, Eq x) => Eq (Vector n x)
