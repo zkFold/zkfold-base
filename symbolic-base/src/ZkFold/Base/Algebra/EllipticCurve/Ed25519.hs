@@ -33,7 +33,7 @@ instance EllipticCurve Ed25519 where
     type BaseField Ed25519 = Zp Ed25519_Base
     type ScalarField Ed25519 = Zp Ed25519_Scalar
 
-    gen = point
+    pointGen = pointXY
             (toZp @Ed25519_Base $ 15112221349535400772501151409588531511454012693041857206046113283949847762202)
             (toZp @Ed25519_Base $ 46316835694926478169428394003475163141307993866256225615783033603165251855960)
 
@@ -44,7 +44,7 @@ instance EllipticCurve Ed25519 where
 
 ed25519Add :: Point Ed25519 -> Point Ed25519 -> Point Ed25519
 ed25519Add p@(Point x1 y1 isInf1) q@(Point x2 y2 isInf2) =
-    if isInf2 then p else if isInf1 then q else point x3 y3
+    if isInf2 then p else if isInf1 then q else pointXY x3 y3
     where
         d :: BaseField Ed25519
         d = negate $ toZp 121665 // toZp 121666
@@ -56,7 +56,7 @@ ed25519Add p@(Point x1 y1 isInf1) q@(Point x2 y2 isInf2) =
         y3 = (y1 * y2 - a * x1 * x2) // (toZp 1 - d * x1 * x2 * y1 * y2)
 
 ed25519Double :: Point Ed25519 -> Point Ed25519
-ed25519Double (Point x y isInf) = if isInf then inf else point x3 y3
+ed25519Double (Point x y isInf) = if isInf then pointInf else pointXY x3 y3
     where
         a :: BaseField Ed25519
         a = negate $ toZp 1

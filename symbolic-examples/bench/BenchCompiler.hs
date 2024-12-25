@@ -1,6 +1,6 @@
 module Main where
 
-import           Control.DeepSeq                 (NFData, force)
+import           Control.DeepSeq                 (NFData, NFData1, force)
 import           Control.Monad                   (return)
 import           Data.ByteString.Lazy            (ByteString)
 import           Data.Function                   (const, ($))
@@ -25,8 +25,7 @@ metrics name circuit =
   <> "\nNumber of range lookups: " <> fromString (show $ acSizeR circuit)
 
 benchmark ::
-  ( Arithmetic a, NFData (o (Var a i)), NFData (Rep i)
-  , Representable p, Representable i) =>
+  (Arithmetic a, NFData1 o, NFData (Rep i), Representable p, Representable i) =>
   String -> (() -> ArithmeticCircuit a p i o) -> Benchmark
 benchmark name circuit = bgroup name
   [ bench "compilation" $ nf circuit ()

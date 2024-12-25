@@ -38,7 +38,7 @@ instance
     type ScalarField (AcEd25519 c) = FieldElement c
     type BooleanOf (AcEd25519 c) = Bool c
 
-    gen = point
+    pointGen = pointXY
             (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
             (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
 
@@ -84,7 +84,7 @@ acAdd25519
 acAdd25519 p@(Point x1 y1 isInf1) q@(Point x2 y2 isInf2) =
     if isInf1 then q
     else if isInf2 then p
-    else point x3 y3
+    else pointXY x3 y3
     where
         prodx = x1 * x2
         prody = y1 * y2
@@ -99,7 +99,7 @@ acDouble25519
     => Point (AcEd25519 c)
     -> Point (AcEd25519 c)
 acDouble25519 (Point x1 y1 isInf) =
-    if isInf then inf else point x3 y3
+    if isInf then pointInf else pointXY x3 y3
     where
         xsq = x1 * x1
         ysq = y1 * y1

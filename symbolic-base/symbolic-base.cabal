@@ -102,6 +102,7 @@ library
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.EllipticCurve.Ed25519
       ZkFold.Base.Algebra.EllipticCurve.Pairing
+      ZkFold.Base.Algebra.EllipticCurve.Secp256k1
       ZkFold.Base.Algebra.Polynomials.Multivariate
       ZkFold.Base.Algebra.Polynomials.Multivariate.Groebner
       ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial
@@ -259,6 +260,7 @@ test-suite symbolic-base-test
       Tests.Blake2b
       Tests.ByteString
       Tests.Compiler
+      Tests.EllipticCurve
       Tests.FFA
       Tests.Field
       Tests.GroebnerBasis
