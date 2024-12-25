@@ -14,7 +14,6 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , scaleP
     , qr
     , eea
-    , diff
     , getCoef
     , lt
     , deg
@@ -283,8 +282,6 @@ eea a b = go (a, one) (b, zero)
                 (q, r) = qr x y
 
 
-diff :: Scale Integer c => Poly c -> Poly c
-diff (P cs) = P $ V.imap (\i c -> scale (fromIntegral i :: Integer) c) cs
 
 getCoef :: Poly c -> Int -> c
 getCoef (P cs) n =  cs V.! n
