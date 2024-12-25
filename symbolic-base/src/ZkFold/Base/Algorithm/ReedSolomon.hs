@@ -3,18 +3,18 @@
 module ZkFold.Base.Algorithm.ReedSolomon where
 
 
+import           Data.Bifunctor                             (bimap)
 import           Data.Bool                                  (bool)
 import           Data.Vector                                as V
 import           GHC.Natural                                (Natural)
-import           Prelude                                    (Eq, Int, Integer, Num (fromInteger),
-                                                             error, fromIntegral, ($), (==), (<=), (.), id, Maybe (..))
+import           Prelude                                    (Eq, Int, Integer, Maybe (..), Num (fromInteger), error,
+                                                             fromIntegral, id, ($), (.), (<=), (==))
 import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field            (Zp)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, value)
 import           ZkFold.Base.Algebra.Polynomials.Univariate
-import Data.Bifunctor (bimap)
 
 
 type RSField p = Zp p

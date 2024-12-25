@@ -2,6 +2,7 @@
 module Tests.ReedSolomon where
 
 import           Data.Bool                                  (bool)
+import           Data.List                                  (sort)
 import qualified Data.Vector                                as V
 import           GHC.Natural                                (Natural)
 import           Prelude
@@ -14,7 +15,6 @@ import           ZkFold.Base.Algebra.Basic.Class            hiding ((*), (+))
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Algorithm.ReedSolomon
-import Data.List (sort)
 
 data ReedSolomonExample f = ReedSolomonExample
     {
@@ -41,9 +41,9 @@ instance (Arbitrary f, FiniteField f, Eq f) => Arbitrary (ReedSolomonExample f) 
 
 primElement :: forall f. FiniteField f => f
 primElement = case order @f of
-    7 -> fromConstant (3 :: Natural)
+    7  -> fromConstant (3 :: Natural)
     17 -> fromConstant (3 :: Natural)
-    _ -> error "can't find primitive element of field"
+    _  -> error "can't find primitive element of field"
 
 
 polyErr :: forall c. (Arbitrary c, Field c) => Int -> Int -> Gen [c]
