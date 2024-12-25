@@ -3,12 +3,11 @@
 module ZkFold.Base.Algorithm.ReedSolomon where
 
 
-import           Data.Bifunctor                             (bimap)
 import           Data.Bool                                  (bool)
 import           Data.Vector                                as V
 import           GHC.Natural                                (Natural)
 import           Prelude                                    (Eq, Int, Integer, Maybe (..), Num (fromInteger), error,
-                                                             fromIntegral, id, ($), (.), (<=), (==))
+                                                             fromIntegral, ($), (.), (<=), (==))
 import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
