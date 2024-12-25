@@ -62,10 +62,10 @@ decode encoded primeElement fieldOrd r = bool decoded encoded' isCorrect
 
         err = V.foldl (+) zero $ map (\(i,x) ->
             let xi = bool (monomial (fromIntegral i) one) (constant one) (i == fieldOrd)
-                ei = negate $ evalPoly omega x * finv (evalPoly lx' x)
+                ei = evalPoly omega x * finv (evalPoly lx' x)
             in constant ei * xi) iroots
 
-        fx = encoded - err
+        fx = encoded + err
         checkSum = V.map (evalPoly fx) $ V.take r fieldElements
 
         decoded = bool (error "Can't decode") (toPoly $ V.drop r $ fromPoly fx) (all (== zero) checkSum)
