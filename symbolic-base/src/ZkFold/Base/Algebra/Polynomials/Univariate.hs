@@ -14,6 +14,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , scaleP
     , qr
     , eea
+    , getCoef
     , lt
     , deg
     , vec2poly
@@ -279,6 +280,11 @@ eea a b = go (a, one) (b, zero)
         go (x, s) (y, t) = if deg y == -1 then (x, s) else go (y, t) (r, s - q * t)
             where
                 (q, r) = qr x y
+
+
+
+getCoef :: Poly c -> Int -> c
+getCoef (P cs) n =  cs V.! n
 
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
