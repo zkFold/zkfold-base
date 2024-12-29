@@ -94,24 +94,34 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
 ivcSetup :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
     => StepFunction a i p
     -> i a
+    -> p a
     -> IVCResult k i c a
-ivcSetup f z0 =
+ivcSetup f z0 witness =
     let
+        p :: Predicate a i p
+        p = predicate f
+
+        z' :: i a
+        z' = predicateEval p z0 witness
+
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
         pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI z0 zero)
 
+        acc0 :: Accumulator k (RecursiveI i) c a
+        acc0 = emptyAccumulator @d pRec
+
         input :: RecursiveI i a
-        input = RecursiveI z0 zero
+        input = RecursiveI z0 (oracle @algo $ acc0^.x)
 
         payload :: RecursiveP d k i p c a
-        payload = RecursiveP (tabulate $ const zero) (tabulate $ const zero) (emptyAccumulatorInstance @d pRec) zero (tabulate $ const zero)
+        payload = RecursiveP (tabulate $ const zero) (tabulate $ const zero) (acc0^.x) zero (tabulate $ const zero)
 
         protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [a] [a] a
         protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
 
         (messages, commits) = unzip $ prover protocol input payload zero 0
     in
-        IVCResult z0 (emptyAccumulator @d pRec) (IVCProof commits messages)
+        IVCResult z' acc0 (IVCProof commits messages)
 
 ivcProve :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
     => StepFunction a i p
