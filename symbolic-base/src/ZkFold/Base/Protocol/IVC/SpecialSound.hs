@@ -11,7 +11,7 @@ import           Prelude                               (undefined, ($))
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector               (Vector)
-import qualified ZkFold.Base.Protocol.IVC.AlgebraicMap as AM
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
@@ -59,7 +59,9 @@ specialSoundProtocol phi@Predicate {..} =
   let
       prover pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)
 
-      verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
+      verifier pi pm ts =
+        let AlgebraicMap {..} = algebraicMap @d phi
+        in applyAlgebraicMap pi pm ts one
   in
       SpecialSoundProtocol predicateEval prover verifier
 
@@ -71,7 +73,9 @@ specialSoundProtocol' :: forall d a i p f .
     ) => Predicate a i p -> SpecialSoundProtocol 1 i p [f] [f] f
 specialSoundProtocol' phi =
   let
-      verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
+      verifier pi pm ts =
+        let AlgebraicMap {..} = algebraicMap @d phi
+        in applyAlgebraicMap pi pm ts one
   in
       SpecialSoundProtocol undefined undefined verifier
 

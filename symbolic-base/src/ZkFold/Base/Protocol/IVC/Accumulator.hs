@@ -17,7 +17,7 @@ import           Prelude                               hiding (length, pi)
 import           ZkFold.Base.Algebra.Basic.Class       (Ring, Scale, zero)
 import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.Vector               (Vector)
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap (AlgebraicMap (..), algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle)
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
@@ -79,12 +79,14 @@ emptyAccumulator :: forall d k a i p c f .
     , Scale a f
     ) => Predicate a i p -> Accumulator k i c f
 emptyAccumulator phi =
-    let accW  = tabulate (const zero)
+    let AlgebraicMap {..} = algebraicMap @d phi
+        
+        accW  = tabulate (const zero)
         aiC   = fmap hcommit accW
         aiR   = tabulate (const zero)
         aiMu  = zero
         aiPI  = tabulate (const zero)
-        aiE   = hcommit $ algebraicMap @d phi aiPI accW aiR aiMu
+        aiE   = hcommit $ applyAlgebraicMap aiPI accW aiR aiMu
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 

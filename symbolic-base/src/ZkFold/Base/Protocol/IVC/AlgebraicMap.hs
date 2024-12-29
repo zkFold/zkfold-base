@@ -1,14 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap) where
+module ZkFold.Base.Protocol.IVC.AlgebraicMap (AlgebraicMap (..), algebraicMap) where
 
 import           Data.ByteString                                     (ByteString)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map, keys)
 import qualified Data.Map.Strict                                     as M
-import           Prelude                                             (fmap, zip, ($), (.), (<$>))
+import           Prelude                                             (type(~), fmap, zip, ($), (.), (<$>))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -27,35 +27,40 @@ import           ZkFold.Symbolic.Data.Eq
 -- The inputs are polymorphic in a ring element @f@.
 -- The main application is to define the verifier's algebraic map in the NARK protocol.
 --
-algebraicMap :: forall d k a i p f .
+newtype AlgebraicMap k pi f = AlgebraicMap {
+        applyAlgebraicMap :: pi -> Vector k [f] -> Vector (k-1) f -> f -> [f]
+    }
+
+algebraicMap :: forall d k a i p pi f .
     ( KnownNat (d+1)
     , Representable i
+    , pi ~ i f
     , Ring f
     , Scale a f
     )
     => Predicate a i p
-    -> i f
-    -> Vector k [f]
-    -> Vector (k-1) f
-    -> f
-    -> [f]
-algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
+    -> AlgebraicMap k pi f
+algebraicMap Predicate {..} = AlgebraicMap algMap
     where
         sys :: [PM.Poly a (SysVar i) Natural]
         sys = M.elems (acSystem predicateCircuit)
 
-        witness :: Map ByteString f
-        witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
+        algMap :: pi -> Vector k [f] -> Vector (k-1) f -> f -> [f]
+        algMap pi pm _ pad =
+            let
+                witness :: Map ByteString f
+                witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
 
-        varMap :: SysVar i -> f
-        varMap (InVar inV)   = index pi inV
-        varMap (NewVar newV) = M.findWithDefault zero newV witness
+                varMap :: SysVar i -> f
+                varMap (InVar inV)   = index pi inV
+                varMap (NewVar newV) = M.findWithDefault zero newV witness
 
-        f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
-        f_sps = degreeDecomposition @d $ sys
+                f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
+                f_sps = degreeDecomposition @d $ sys
 
-        f_sps_uni :: Vector (d+1) [f]
-        f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
+                f_sps_uni :: Vector (d+1) [f]
+                f_sps_uni = fmap (PM.evalPolynomial PM.evalMonomial varMap) <$> f_sps
+            in padDecomposition pad f_sps_uni
 
 padDecomposition :: forall d f .
     ( MultiplicativeMonoid f

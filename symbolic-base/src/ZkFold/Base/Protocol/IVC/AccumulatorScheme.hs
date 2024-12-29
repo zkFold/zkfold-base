@@ -20,7 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate as PU
 import           ZkFold.Base.Data.Vector                    (Vector, init, mapWithIx, tail, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC.Accumulator
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (algebraicMap)
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (AlgebraicMap (..), algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.IVC.FiatShamir        (transcript)
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
@@ -92,10 +92,12 @@ accumulatorScheme phi =
             polyR :: Vector (k-1) (PU.PolyVec f (d+1))
             polyR = zipWith (P.flip PU.polyVecLinear) (acc^.x^.r) r_i
 
+            AlgebraicMap {..} = algebraicMap @d phi
+
             -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
             --
             e_uni :: [Vector (d+1) f]
-            e_uni = unsafeToVector . toList <$> algebraicMap @d phi polyPi polyW polyR polyMu
+            e_uni = unsafeToVector . toList <$> applyAlgebraicMap polyPi polyW polyR polyMu
 
             -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
             e_all :: Vector (d+1) [f]
@@ -153,9 +155,11 @@ accumulatorScheme phi =
             -- Fig. 5, step 1
             commitsDiff = zipWith (\cm m_acc -> cm - hcommit m_acc) (acc^.x^.c) (acc^.w)
 
+            AlgebraicMap {..} = algebraicMap @d phi
+
             -- Fig. 5, step 2
             err :: [f]
-            err = algebraicMap @d phi (acc^.x^.pi) (acc^.w) (acc^.x^.r) (acc^.x^.mu)
+            err = applyAlgebraicMap (acc^.x^.pi) (acc^.w) (acc^.x^.r) (acc^.x^.mu)
 
 
             -- Fig. 5, step 3
