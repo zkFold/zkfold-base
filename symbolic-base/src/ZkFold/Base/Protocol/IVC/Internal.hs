@@ -94,27 +94,32 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
 ivcSetup :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
     => StepFunction a i p
     -> i a
-    -> p a
     -> IVCResult k i c a
-ivcSetup f z0 witness =
+ivcSetup f z0 =
     let
-        p :: Predicate a i p
-        p = predicate f
-
-        z1 :: i a
-        z1 = predicateEval p z0 witness
-
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f
+        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI z0 zero)
+
+        input :: RecursiveI i a
+        input = RecursiveI z0 zero
+
+        payload :: RecursiveP d k i p c a
+        payload = RecursiveP (tabulate $ const zero) (tabulate $ const zero) (emptyAccumulatorInstance @d pRec) zero (tabulate $ const zero)
+
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [a] [a] a
+        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
+
+        (messages, commits) = unzip $ prover protocol input payload zero 0
     in
-        IVCResult z1 (emptyAccumulator @d pRec) noIVCProof
+        IVCResult z0 (emptyAccumulator @d pRec) (IVCProof commits messages)
 
 ivcProve :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
     => StepFunction a i p
+    -> i a
     -> IVCResult k i c a
     -> p a
     -> IVCResult k i c a
-ivcProve f res witness =
+ivcProve f z0 res witness =
     let
         p :: Predicate a i p
         p = predicate f
@@ -123,7 +128,7 @@ ivcProve f res witness =
         z' = predicateEval p (res^.z) witness
 
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f
+        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI z0 zero)
 
         input :: RecursiveI i a
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
@@ -157,12 +162,13 @@ ivcProve f res witness =
 
 ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo d k a i p c f
     => StepFunction a i p
+    -> i a
     -> IVCResult k i c f
     -> ((Vector k (c f), [f]), (Vector k (c f), c f))
-ivcVerify f res =
+ivcVerify f z0 res =
     let
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f
+        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI z0 zero)
 
         input :: RecursiveI i f
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)

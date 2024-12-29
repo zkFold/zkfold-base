@@ -17,7 +17,7 @@ import           GHC.Generics                               (Generic, Generic1, 
 import           Prelude                                    (Foldable, Functor, Show, Traversable, fmap, type (~), ($),
                                                              (.), (<$>))
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale, zero)
+import           ZkFold.Base.Algebra.Basic.Class            (Scale, FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
 import           ZkFold.Base.Data.Orphans                   ()
@@ -33,7 +33,7 @@ import           ZkFold.Base.Protocol.IVC.StepFunction      (FunctorAssumptions,
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Conditional           (bool)
+import           ZkFold.Symbolic.Data.Conditional           (bool, Conditional)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement), fromFieldElement)
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
 import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
@@ -81,6 +81,8 @@ type RecursiveFunctionAssumptions algo d a i c f ctx =
     , Scale a f
     , Scale a (PolyVec f (d+1))
     , Scale f (c f)
+    , FromConstant (RecursiveI i a) (RecursiveI i f)
+    , Conditional (Bool ctx) (RecursiveI i f)
     )
 
 type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssumptions algo d a i c f ctx
@@ -95,8 +97,8 @@ recursiveFunction :: forall algo d k a i p c .
     , KnownNat (k-1)
     , KnownNat k
     , Zip i
-    ) => StepFunction a i p -> RecursiveFunction algo d k a i p c
-recursiveFunction func =
+    ) => StepFunction a i p -> RecursiveI i a -> RecursiveFunction algo d k a i p c
+recursiveFunction func z0 =
     let
         -- A helper function to derive the accumulator scheme
         func' :: forall ctx f . StepFunctionAssumptions a f ctx => RecursiveI i f -> RecursiveP d k i p c f -> RecursiveI i f
@@ -122,9 +124,9 @@ recursiveFunction func =
                 accX' = verifier accScheme z piX accX pf
 
                 h :: f
-                h = bool zero (oracle @algo accX') $ Bool $ fromFieldElement flag
+                h = oracle @algo accX'
             in
-                RecursiveI x' h
+                bool (fromConstant z0) (RecursiveI x' h) $ Bool $ fromFieldElement flag
 
     in funcRecursive
 
