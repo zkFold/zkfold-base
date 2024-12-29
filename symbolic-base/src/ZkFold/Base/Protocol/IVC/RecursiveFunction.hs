@@ -54,7 +54,7 @@ instance Representable i => Distributive (RecursiveI i) where
 
 instance Representable i => Representable (RecursiveI i)
 
-instance (HashAlgorithm algo f, RandomOracle algo f f, RandomOracle algo (i f) f) => RandomOracle algo (RecursiveI i f) f
+instance (RandomOracle algo [f] f, RandomOracle algo (i f) f) => RandomOracle algo (RecursiveI i f) f
 
 instance (SymbolicData f, SymbolicData (i f), Context f ~ Context (i f), Support f ~ Support (i f)) => SymbolicData (RecursiveI i f)
 
@@ -70,10 +70,11 @@ instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Represent
 
 instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Representable p, Representable c) => Representable (RecursiveP d k i p c)
 
+--------------------------------------------------------------------------------
+
 type RecursiveFunctionAssumptions algo d a i c f ctx =
     ( StepFunctionAssumptions a f ctx
-    , HashAlgorithm algo f
-    , RandomOracle algo f f
+    , RandomOracle algo [f] f
     , RandomOracle algo (i f) f
     , RandomOracle algo (c f) f
     , HomomorphicCommit [f] (c f)

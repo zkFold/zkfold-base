@@ -74,8 +74,8 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
     , k ~ 1
     , Zip i
     , Field f
-    , HashAlgorithm algo f
     , RandomOracle algo f f
+    , RandomOracle algo [f] f
     , RandomOracle algo (i f) f
     , RandomOracle algo (c f) f
     , HomomorphicCommit [f] (c f)

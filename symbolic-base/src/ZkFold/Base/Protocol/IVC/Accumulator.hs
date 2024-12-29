@@ -19,7 +19,7 @@ import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (+), type
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
-import           ZkFold.Base.Protocol.IVC.Oracle       (HashAlgorithm, RandomOracle)
+import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle)
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
 
@@ -42,7 +42,7 @@ instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Distr
 
 instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Representable (AccumulatorInstance k i c)
 
-instance (HashAlgorithm algo f, RandomOracle algo f f, RandomOracle algo (i f) f, RandomOracle algo (c f) f)
+instance (RandomOracle algo [f] f, RandomOracle algo (i f) f, RandomOracle algo (c f) f)
     => RandomOracle algo (AccumulatorInstance k i c f) f
 
 instance
