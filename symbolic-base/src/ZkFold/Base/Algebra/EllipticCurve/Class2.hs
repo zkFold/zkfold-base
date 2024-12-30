@@ -23,24 +23,24 @@ import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 
 {- | Elliptic curves are algebraic curves that form Abelian groups.
-Elliptic curves always have genus 1 and are birationally equivalent
-to a curve of degree 3. As such, elliptic curves are geometrically
+Elliptic curves always have genus @1@ and are birationally equivalent
+to a curve of degree @3@. As such, elliptic curves are geometrically
 the least complicated curves after the conic sections, curves of
-degree 2 and lines, curves of degree 1. By Bézout's theorem,
+degree @2@ and lines, curves of degree @1@. By Bézout's theorem,
 we know that a line in general position will intersect with an
-elliptic curve at 3 points counting multiplicity; point0, point1 and point2.
-The group laws of the elliptic curve are:
+elliptic curve at 3 points counting multiplicity;
+@point0@, @point1@ and @point2@. The group laws of the elliptic curve are:
 
-> point1 + point2 + point3 = zero
+> point0 + point1 + point2 = zero
 > pointInf = zero
 -}
 class
   ( Field field
   , Eq bool field
-  , Planar (point curve)
-  , AdditiveGroup (point curve field)
+  , Planar point
+  , AdditiveGroup (point field)
   ) => EllipticCurve curve bool field point where
-    isOnCurve :: point curve field -> bool
+    isOnCurve :: point field -> bool
 
 {- | The standard form of an elliptic curve is the Weierstrass equation:
 
@@ -51,17 +51,18 @@ Weierstrass curves have @A = 0@ and we make that assumption too. -}
 class WeierstrassCurve curve field where weierstrassB :: field
 
 {- | A class for smart constructor method
-`pointXY` of points from an @x@ and @y@ coordinate.
+`pointXY` for constructing points from an @x@ and @y@ coordinate.
 -}
 class Planar point where pointXY :: field -> field -> point field
 
 {- | A class for smart constructor method
-`pointInf` of a point at infinity. -}
+`pointInf` for constructing a point at infinity. -}
 class HasPointInf point where pointInf :: point
 
 {- | A type of points in the projective plane.
-When `_zBit` is `false`, then `_x` and `_y` are coordinates of a finite point.
-When `_zBit` is `true`, then `_y` `//` `_x` is
+
+* When `_zBit` is `false`, then `_x` and `_y` are coordinates of a finite point.
+* When `_zBit` is `true`, then `_y` `//` `_x` is
 the coordinate of a point on the projective line at infinity.
 -}
 data Point bool field = Point
@@ -125,22 +126,6 @@ instance
   , Conditional bool field
   , Eq bool field
   , Field field
-  ) => Scale Natural (Weierstrass curve (Point bool) field) where
-  scale = natScale
-instance
-  ( WeierstrassCurve curve field
-  , Conditional bool bool
-  , Conditional bool field
-  , Eq bool field
-  , Field field
-  ) => Scale Integer (Weierstrass curve (Point bool) field) where
-  scale = intScale
-instance
-  ( WeierstrassCurve curve field
-  , Conditional bool bool
-  , Conditional bool field
-  , Eq bool field
-  , Field field
   ) => AdditiveMonoid (Weierstrass curve (Point bool) field) where
     zero = pointInf
 instance
@@ -158,8 +143,23 @@ instance
   , Conditional bool field
   , Eq bool field
   , Field field
-  ) => EllipticCurve curve field (Weierstrass curve (Point bool) field) where
+  ) => EllipticCurve curve bool field (Weierstrass curve (Point bool)) where
     isOnCurve (Weierstrass (Point x y isInf)) =
-      if isInf then x == 0 else
-        let b = weierstrassB @curve
-        in y*y == x*x*x + b
+      if isInf then x == zero else
+      let b = weierstrassB @curve in y*y == x*x*x + b
+instance
+  ( WeierstrassCurve curve field
+  , Conditional bool bool
+  , Conditional bool field
+  , Eq bool field
+  , Field field
+  ) => Scale Natural (Weierstrass curve (Point bool) field) where
+  scale = natScale
+instance
+  ( WeierstrassCurve curve field
+  , Conditional bool bool
+  , Conditional bool field
+  , Eq bool field
+  , Field field
+  ) => Scale Integer (Weierstrass curve (Point bool) field) where
+  scale = intScale
