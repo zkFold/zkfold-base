@@ -8,7 +8,7 @@ import           Data.Functor.Rep                                    (Representa
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map, keys)
 import qualified Data.Map.Strict                                     as M
-import           Prelude                                             (type(~), fmap, zip, ($), (.), (<$>))
+import           Prelude                                             (fmap, zip, ($), (.), (<$>))
 import qualified Prelude                                             as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -27,25 +27,24 @@ import           ZkFold.Symbolic.Data.Eq
 -- The inputs are polymorphic in a ring element @f@.
 -- The main application is to define the verifier's algebraic map in the NARK protocol.
 --
-newtype AlgebraicMap k pi f = AlgebraicMap {
-        applyAlgebraicMap :: pi -> Vector k [f] -> Vector (k-1) f -> f -> [f]
+newtype AlgebraicMap k i f = AlgebraicMap {
+        applyAlgebraicMap :: i f -> Vector k [f] -> Vector (k-1) f -> f -> [f]
     }
 
-algebraicMap :: forall d k a i p pi f .
+algebraicMap :: forall d k a i p f .
     ( KnownNat (d+1)
     , Representable i
-    , pi ~ i f
     , Ring f
     , Scale a f
     )
     => Predicate a i p
-    -> AlgebraicMap k pi f
+    -> AlgebraicMap k i f
 algebraicMap Predicate {..} = AlgebraicMap algMap
     where
         sys :: [PM.Poly a (SysVar i) Natural]
         sys = M.elems (acSystem predicateCircuit)
 
-        algMap :: pi -> Vector k [f] -> Vector (k-1) f -> f -> [f]
+        algMap :: i f -> Vector k [f] -> Vector (k-1) f -> f -> [f]
         algMap pi pm _ pad =
             let
                 witness :: Map ByteString f
