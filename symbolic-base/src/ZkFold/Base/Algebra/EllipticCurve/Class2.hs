@@ -5,10 +5,13 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Class2
-  ( EllipticCurve (..)
+  ( -- * curve classes
+    EllipticCurve (..)
   , WeierstrassCurve (..)
+    -- * point classes
   , Planar (..)
   , HasPointInf (..)
+    -- * point types
   , Point (..)
   , Weierstrass (..)
   ) where
@@ -24,15 +27,15 @@ import ZkFold.Symbolic.Data.Eq
 
 {- | Elliptic curves are algebraic curves that form Abelian groups.
 Elliptic curves always have genus @1@ and are birationally equivalent
-to a curve of degree @3@. As such, elliptic curves are geometrically
-the least complicated curves after the conic sections, curves of
-degree @2@ and lines, curves of degree @1@. By Bézout's theorem,
+to a curve of degree @3@. As such, elliptic curves are
+the least complicated curves after conic sections, curves of
+degree @2@, and lines, curves of degree @1@. By Bézout's theorem,
 we know that a line in general position will intersect with an
 elliptic curve at 3 points counting multiplicity;
-@point0@, @point1@ and @point2@. The group laws of the elliptic curve are:
+@point0@, @point1@ and @point2@.
+The geometric group law of the elliptic curve is:
 
 > point0 + point1 + point2 = zero
-> pointInf = zero
 -}
 class
   ( Field field
@@ -40,15 +43,17 @@ class
   , Planar point
   , AdditiveGroup (point field)
   ) => EllipticCurve curve bool field point where
+    -- | `isOnCurve` validates an equation for an algebraic curve
+    -- which has degree 3 up to a birational equivalence.
     isOnCurve :: point field -> bool
 
 {- | The standard form of an elliptic curve is the Weierstrass equation:
 
-> y^2 = x^3 + A*x + B
+> y^2 = x^3 + a*x + b
 
-When @A = 0@ some computations can be simplified so all the public standard
-Weierstrass curves have @A = 0@ and we make that assumption too. -}
-class WeierstrassCurve curve field where weierstrassB :: field
+When @a = 0@ some computations can be simplified so all the public standard
+Weierstrass curves have @a = 0@ and we make that assumption too. -}
+class Field field => WeierstrassCurve curve field where weierstrassB :: field
 
 {- | A class for smart constructor method
 `pointXY` for constructing points from an @x@ and @y@ coordinate.
@@ -56,7 +61,8 @@ class WeierstrassCurve curve field where weierstrassB :: field
 class Planar point where pointXY :: field -> field -> point field
 
 {- | A class for smart constructor method
-`pointInf` for constructing a point at infinity. -}
+`pointInf` for constructing the point at infinity.
+-}
 class HasPointInf point where pointInf :: point
 
 {- | A type of points in the projective plane.
@@ -100,6 +106,8 @@ instance
 newtype Weierstrass curve point field = Weierstrass {pointWeierstrass :: point field}
 deriving newtype instance Conditional bool (point field)
   => Conditional bool (Weierstrass curve point field)
+deriving newtype instance Eq bool (point field)
+  => Eq bool (Weierstrass curve point field)
 deriving newtype instance HasPointInf (point field)
   => HasPointInf (Weierstrass curve point field)
 deriving newtype instance Planar point
