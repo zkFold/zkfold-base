@@ -48,19 +48,16 @@ class
 
 When @A = 0@ some computations can be simplified so all the public standard
 Weierstrass curves have @A = 0@ and we make that assumption too. -}
-class WeierstrassCurve curve field where
-  weierstrassB :: field
+class WeierstrassCurve curve field where weierstrassB :: field
 
 {- | A class for smart constructor method
 `pointXY` of points from an @x@ and @y@ coordinate.
 -}
-class Planar point where
-  pointXY :: field -> field -> point field
+class Planar point where pointXY :: field -> field -> point field
 
 {- | A class for smart constructor method
 `pointInf` of a point at infinity. -}
-class HasPointInf point where
-  pointInf :: point
+class HasPointInf point where pointInf :: point
 
 {- | A type of points in the projective plane.
 When `_zBit` is `false`, then `_x` and `_y` are coordinates of a finite point.
@@ -93,7 +90,8 @@ instance
   ) => Eq bool (Point bool field) where
     Point x0 y0 isInf0 == Point x1 y1 isInf1 =
       if not isInf0 && not isInf1 then x0 == x1 && y0 == y1
-      else if isInf0 && isInf1 then x0 == zero && x1 == zero || y0 // x0 == y1 // x1
+      else if isInf0 && isInf1
+      then x0 == zero && x1 == zero || x1*y0 == x0*y1 -- same slope y0//x0 = y1//x1
       else false
     pt0 /= pt1 = not (pt0 == pt1)
 
