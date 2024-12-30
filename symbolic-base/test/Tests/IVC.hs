@@ -55,7 +55,7 @@ testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
 testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
-testAlgebraicMap :: PHI -> AlgebraicMap K (I F) F
+testAlgebraicMap :: PHI -> AlgebraicMap K I F
 testAlgebraicMap = algebraicMap @D
 
 testSPS :: PHI -> SPS
