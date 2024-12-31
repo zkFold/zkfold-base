@@ -85,7 +85,7 @@ class
 * The characteristic of the field must not be @2@ or @3@.
 * The curve must have nonzero discriminant @Δ = -16 * (4*a^3 + 27*b^3)@.
 * When @a = 0@ some computations can be simplified so all the public
-  Weierstrass curves have @a = 0@ and we do too.
+  Weierstrass curves have @a = zero@ and nonzero @b@ and we do too.
 -}
 class Field field => WeierstrassCurve curve field where
   weierstrassB :: field
