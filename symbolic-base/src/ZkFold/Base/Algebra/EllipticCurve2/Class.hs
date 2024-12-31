@@ -115,11 +115,11 @@ class
 
 {- | A class for smart constructor method
 `pointXY` for constructing points from an @x@ and @y@ coordinate. -}
-class Planar point where pointXY :: field -> field -> point field
+class Planar point where pointXY :: Field field => field -> field -> point field
 
 {- | A class for smart constructor method
 `pointInf` for constructing the point at infinity. -}
-class HasPointInf point where pointInf :: point
+class HasPointInf point where pointInf :: Field field => point field
 
 {- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
 with a phantom `WeierstrassCurve` @curve@. -}
@@ -138,8 +138,8 @@ deriving newtype instance Conditional bool (point field)
   => Conditional bool (Weierstrass curve point field)
 deriving newtype instance Eq bool (point field)
   => Eq bool (Weierstrass curve point field)
-deriving newtype instance HasPointInf (point field)
-  => HasPointInf (Weierstrass curve point field)
+deriving newtype instance HasPointInf point
+  => HasPointInf (Weierstrass curve point)
 deriving newtype instance Planar point
   => Planar (Weierstrass curve point)
 instance
@@ -208,8 +208,8 @@ deriving newtype instance Conditional bool (point field)
   => Conditional bool (TwistedEdwards curve point field)
 deriving newtype instance Eq bool (point field)
   => Eq bool (TwistedEdwards curve point field)
-deriving newtype instance HasPointInf (point field)
-  => HasPointInf (TwistedEdwards curve point field)
+deriving newtype instance HasPointInf point
+  => HasPointInf (TwistedEdwards curve point)
 deriving newtype instance Planar point
   => Planar (TwistedEdwards curve point)
 instance
@@ -260,10 +260,7 @@ data Point bool field = Point
   } deriving Generic
 instance BoolType bool => Planar (Point bool) where
   pointXY x y = Point x y false
-instance
-  ( BoolType bool
-  , Semiring field
-  ) => HasPointInf (Point bool field) where
+instance BoolType bool => HasPointInf (Point bool) where
   pointInf = Point zero one true
 instance
   ( Conditional bool bool
