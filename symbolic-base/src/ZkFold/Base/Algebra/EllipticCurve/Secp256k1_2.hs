@@ -35,8 +35,18 @@ type Fp = Zp Secp256k1_Base
 instance Field field => WeierstrassCurve "secp256k1" field where
   weierstrassB = fromConstant (7 :: Natural)
 
+instance
+  ( Conditional bool bool
+  , Conditional bool baseField
+  , Eq bool baseField
+  , Field baseField
+  ) => SubgroupCurve "secp256k1" bool baseField Fn (Secp256k1 bool) where
+    pointGen = pointXY
+      (fromConstant (0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798 :: Natural))
+      (fromConstant (0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8 :: Natural))
+
 newtype Secp256k1 bool field = Secp256k1
-  {pointSecp256k1 :: Weierstrass "secp256k1" (Point bool) field}
+  {weierstrassSecp256k1 :: Weierstrass "secp256k1" (Point bool) field}
 deriving newtype instance BoolType bool => Planar (Secp256k1 bool)
 deriving newtype instance (BoolType bool, Semiring field)
   => HasPointInf (Secp256k1 bool field)
@@ -64,6 +74,13 @@ deriving newtype instance
   , Eq bool field
   , Field field
   ) => Scale Natural (Secp256k1 bool field)
+instance
+  ( Conditional bool bool
+  , Conditional bool field
+  , Eq bool field
+  , Field field
+  ) => Scale Fn (Secp256k1 bool field) where
+    scale n x = scale (toConstant n) x
 deriving newtype instance
   ( Conditional bool bool
   , Conditional bool field

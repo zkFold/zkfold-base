@@ -8,6 +8,7 @@
 module ZkFold.Base.Algebra.EllipticCurve.Class2
   ( -- * curve classes
     EllipticCurve (..)
+  , SubgroupCurve (..)
   , WeierstrassCurve (..)
     -- * point classes
   , Planar (..)
@@ -54,6 +55,22 @@ class
     -- which has degree 3 up to a birational equivalence.
     isOnCurve :: point field -> bool
 
+{- | Both the ECDSA and ECDH algorithms make use of
+the elliptic curve discrete logarithm problem, ECDLP.
+There is a "discrete exponential" function from a finite field @scalarField@
+to the group of points on an elliptic curve,
+given naturally by scaling a point of prime order,
+if there is one, constructed by the method `pointGen`.
+Then the inverse of the discrete exponential is hard to compute.
+-}
+class
+  ( EllipticCurve curve bool baseField point
+  , FiniteField scalarField
+  , Scale scalarField (point baseField)
+  ) => SubgroupCurve curve bool baseField scalarField point where
+    -- | generator of a cyclic subgroup of the curve of prime order
+    pointGen :: point baseField
+
 {- | The standard form of an elliptic curve is the Weierstrass equation:
 
 > y^2 = x^3 + a*x + b
@@ -63,22 +80,21 @@ Weierstrass curves have @a = 0@ and we make that assumption too. -}
 class Field field => WeierstrassCurve curve field where weierstrassB :: field
 
 {- | A class for smart constructor method
-`pointXY` for constructing points from an @x@ and @y@ coordinate.
--}
+`pointXY` for constructing points from an @x@ and @y@ coordinate. -}
 class Planar point where pointXY :: field -> field -> point field
 
 {- | A class for smart constructor method
-`pointInf` for constructing the point at infinity.
--}
+`pointInf` for constructing the point at infinity. -}
 class HasPointInf point where pointInf :: point
 
 {- | A class with a destructor method
-`casePoint` for handling finite and infinite points.
--}
+`casePoint` for handling finite and infinite points. -}
 class
-  ( Planar point
+  ( BoolType bool
+  , Planar point
   , HasPointInf (point field)
-  , BoolType bool
+  , Conditional bool (point field)
+  , Eq bool (point field)
   , FromConstant (AffinePoint field) (point field)
   , FromConstant (Slope field) (point field)
   ) => ProjectivePlanar bool field point where
@@ -89,10 +105,14 @@ class
           * finite `Planar` `AffinePoint`s;
           * the projective line of `Slope`s at infinity.
 
-          Up to `Eq`uality of points,
-          embedding finite and infinite points with `fromConstant`,
+          Embedding finite and infinite points with `fromConstant`,
 
-          prop> (id :: point field -> point field) = casePoint fromConstant fromConstant
+          prop> fromConstant (pointXY x y) = pointXY x y
+          prop> fromConstant pointInf = pointInf
+
+          And up to `Eq`uality of points,
+
+          prop> id = casePoint fromConstant fromConstant
     -}
     casePoint
       :: (Conditional bool r, Eq bool r)
@@ -100,7 +120,8 @@ class
       -> (Slope field -> r) -- ^ infinite case
       -> point field -> r
 
-{- | The `Weierstrass` newtype specifies a point on a particular `WeierstrassCurve`. -}
+{- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
+with a phantom `WeierstrassCurve` @curve@. -}
 newtype Weierstrass curve point field = Weierstrass {pointWeierstrass :: point field}
 deriving newtype instance Conditional bool (point field)
   => Conditional bool (Weierstrass curve point field)
@@ -172,9 +193,13 @@ instance
 
 {- | A type of points in the projective plane.
 
-* When `_zBit` is `false`, then `_x` and `_y` are coordinates of a finite point.
-* When `_zBit` is `true`, then `_y` `//` `_x` is
-the coordinate of a point on the projective line at infinity.
+For finite `AffinePoint`s,
+
+prop> Point x y true = fromConstant (AffinePoint x y)
+
+For the projective line of `Slope`s at infinity,
+
+prop> Point x y false = fromConstant (Slope x y)
 -}
 data Point bool field = Point
   { _x :: field
@@ -188,15 +213,18 @@ instance BoolType bool
     fromConstant (Slope x y) = Point x y true
 instance BoolType bool
   => FromConstant (AffinePoint field) (Point bool field) where
-    fromConstant (AffinePoint x y) = pointXY x y
+    fromConstant (AffinePoint x y) = Point x y false
 instance
   ( BoolType bool
   , Semiring field
   ) => HasPointInf (Point bool field) where
   pointInf = Point zero one true
 instance
-  ( BoolType bool
-  , Semiring field
+  ( Conditional bool bool
+  , Conditional bool field
+  , Eq bool bool
+  , Eq bool field
+  , Field field
   ) => ProjectivePlanar bool field (Point bool) where
     casePoint fin infin (Point x y isInf) =
       if isInf then infin (Slope x y) else fin (pointXY x y) 
