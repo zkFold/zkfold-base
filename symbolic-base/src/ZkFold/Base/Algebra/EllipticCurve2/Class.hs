@@ -89,7 +89,8 @@ class Planar point where pointXY :: field -> field -> point field
 class HasPointInf point where pointInf :: point
 
 {- | A class with a destructor method
-`casePoint` for handling finite and infinite points. -}
+`casePoint` for handling finite `AffinePoint`s
+and a projective line of `Slope`s at infinity. -}
 class
   ( BoolType bool
   , Planar point
