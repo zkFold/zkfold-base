@@ -33,12 +33,12 @@ import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 
-{- | Elliptic curves are plane algebraic curves that form Abelian groups.
+{- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 Elliptic curves always have genus @1@ and are birationally equivalent
-to a curve of degree @3@. As such, elliptic curves are
+to a projective curve of degree @3@. As such, elliptic curves are
 the least complicated curves after conic sections, curves of
-degree @2@, and lines, curves of degree @1@. By Bézout's theorem,
-we know that a line in general position will intersect with an
+degree @2@, and lines, curves of degree @1@. Bézout's theorem implies
+that a line in general position will intersect with an
 elliptic curve at 3 points counting multiplicity;
 @point0@, @point1@ and @point2@.
 The geometric group law of the elliptic curve is:
@@ -52,12 +52,13 @@ class
   , AdditiveGroup (point field)
   ) => EllipticCurve curve bool field point where
     -- | `isOnCurve` validates an equation for an plane algebraic curve
-    -- which has degree 3 up to a birational equivalence.
+    -- which has degree 3 up to some birational equivalence.
     isOnCurve :: point field -> bool
 
 {- | Both the ECDSA and ECDH algorithms make use of
 the elliptic curve discrete logarithm problem, ECDLP.
-There is a "discrete exponential" function from a finite field @scalarField@
+There is a discrete "exponential" function
+from a finite prime field @scalarField@
 to the group of points on an elliptic curve,
 given naturally by scaling a point of prime order,
 if there is one, constructed by the method `pointGen`.

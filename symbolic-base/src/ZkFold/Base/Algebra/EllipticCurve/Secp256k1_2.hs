@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -11,6 +12,7 @@ module ZkFold.Base.Algebra.EllipticCurve.Secp256k1_2
   , Secp256k1 (..)
   ) where
 
+import Data.Type.Equality
 import qualified Prelude
 
 import ZkFold.Base.Algebra.Basic.Class
@@ -39,8 +41,10 @@ instance
   ( Conditional bool bool
   , Conditional bool baseField
   , Eq bool baseField
-  , Field baseField
-  ) => SubgroupCurve "secp256k1" bool baseField Fn (Secp256k1 bool) where
+  , FiniteField baseField
+  , Order baseField ~ Secp256k1_Base
+  , scalarField ~ Fn
+  ) => SubgroupCurve "secp256k1" bool baseField scalarField (Secp256k1 bool) where
     pointGen = pointXY
       (fromConstant (0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798 :: Natural))
       (fromConstant (0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8 :: Natural))
