@@ -101,7 +101,6 @@ class
   , FromConstant (Slope field) (point field)
   ) => ProjectivePlanar bool field point where
 
-
     {- | `casePoint` expresses points as a disjoint union of
 
           * finite `Planar` `AffinePoint`s;
