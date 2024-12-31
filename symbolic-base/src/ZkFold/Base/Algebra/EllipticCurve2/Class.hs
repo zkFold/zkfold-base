@@ -10,17 +10,19 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
     EllipticCurve (..)
   , SubgroupCurve (..)
   , WeierstrassCurve (..)
+  , TwistedEdwardsCurve (..)
     -- * point classes
   , Planar (..)
   , HasPointInf (..)
   , ProjectivePlanar (..)
     -- * point types
   , Weierstrass (..)
+  , TwistedEdwards (..)
   , Point (..)
   , CompressedPoint (..)
   , AffinePoint (..)
   , CompressedAffinePoint (..)
-  , TwistedEdwardsPoint (..)
+  , TwistedExtendedPoint (..)
   , Slope (..)
   ) where
 
@@ -90,6 +92,18 @@ class
 class Field field => WeierstrassCurve curve field where
   weierstrassB :: field
 
+{- | A twisted Edwards curve is defined by the equation:
+
+> a*x^2 + y^2 = 1 + d*x^2*y^2
+
+* Twisted Edwards curves have y-axis symmetry.
+* The characteristic of the field must not be @2@.
+* @a@ and @d@ must be nonzero.
+-}
+class Field field => TwistedEdwardsCurve curve field where
+  twistedEdwardsA :: field
+  twistedEdwardsD :: field
+
 {- | A class for smart constructor method
 `pointXY` for constructing points from an @x@ and @y@ coordinate. -}
 class Planar point where pointXY :: field -> field -> point field
@@ -142,6 +156,12 @@ deriving newtype instance HasPointInf (point field)
   => HasPointInf (Weierstrass curve point field)
 deriving newtype instance Planar point
   => Planar (Weierstrass curve point)
+deriving newtype instance FromConstant (AffinePoint field) (point field)
+  => FromConstant (AffinePoint field) (Weierstrass curve point field)
+deriving newtype instance FromConstant (Slope field) (point field)
+  => FromConstant (Slope field) (Weierstrass curve point field)
+deriving newtype instance ProjectivePlanar bool field point
+  => ProjectivePlanar bool field (Weierstrass curve point)
 instance
   ( WeierstrassCurve curve field
   , Conditional bool bool
@@ -201,6 +221,35 @@ instance
   , Field field
   ) => Scale Integer (Weierstrass curve (Point bool) field) where
   scale = intScale
+
+newtype TwistedEdwards curve point field = TwistedEdwards {pointTwistedEdwards :: point field}
+deriving newtype instance Conditional bool (point field)
+  => Conditional bool (TwistedEdwards curve point field)
+deriving newtype instance Eq bool (point field)
+  => Eq bool (TwistedEdwards curve point field)
+deriving newtype instance HasPointInf (point field)
+  => HasPointInf (TwistedEdwards curve point field)
+deriving newtype instance Planar point
+  => Planar (TwistedEdwards curve point)
+deriving newtype instance FromConstant (AffinePoint field) (point field)
+  => FromConstant (AffinePoint field) (TwistedEdwards curve point field)
+deriving newtype instance FromConstant (Slope field) (point field)
+  => FromConstant (Slope field) (TwistedEdwards curve point field)
+deriving newtype instance ProjectivePlanar bool field point
+  => ProjectivePlanar bool field (TwistedEdwards curve point)
+instance
+  ( TwistedEdwardsCurve curve field
+  , Conditional bool bool
+  , Conditional bool field
+  , Eq bool field
+  , Field field
+  ) => AdditiveSemigroup (TwistedEdwards curve AffinePoint field) where
+    TwistedEdwards (AffinePoint x0 y0) + TwistedEdwards (AffinePoint x1 y1) =
+      let a = twistedEdwardsA @curve
+          d = twistedEdwardsD @curve
+          x2 = (x0 * y1 + y0 * x1) // (one + d * x0 * x1 * y0 * y1)
+          y2 = (y0 * y1 - a * x0 * x1) // (one - d * x0 * x1 * y0 * y1)
+      in pointXY x2 y2
 
 {- | A type of points in the projective plane.
 
@@ -281,7 +330,7 @@ data HomogeneousPoint field = HomogeneousPoint
   , _z :: field
   } deriving Generic
 
-data TwistedEdwardsPoint field = TwistedEdwardsPoint
+data TwistedExtendedPoint field = TwistedExtendedPoint
   { _x :: field
   , _y :: field
   , _t :: field

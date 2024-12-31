@@ -51,9 +51,30 @@ instance
 
 newtype Secp256k1 bool field = Secp256k1
   {curveSecp256k1 :: Weierstrass "secp256k1" (Point bool) field}
+deriving newtype instance
+  ( Conditional bool bool
+  , Conditional bool field
+  ) => Conditional bool (Secp256k1 bool field)
+deriving newtype instance
+  ( Conditional bool bool
+  , Eq bool bool
+  , Eq bool field
+  , Field field
+  ) => Eq bool (Secp256k1 bool field)
 deriving newtype instance BoolType bool => Planar (Secp256k1 bool)
 deriving newtype instance (BoolType bool, Semiring field)
   => HasPointInf (Secp256k1 bool field)
+deriving newtype instance BoolType bool
+  => FromConstant (AffinePoint field) (Secp256k1 bool field)
+deriving newtype instance BoolType bool
+  => FromConstant (Slope field) (Secp256k1 bool field)
+deriving newtype instance
+  ( Conditional bool bool
+  , Conditional bool field
+  , Eq bool field
+  , Eq bool bool
+  , Field field
+  ) => ProjectivePlanar bool field (Secp256k1 bool)
 deriving newtype instance
   ( Conditional bool bool
   , Conditional bool field
