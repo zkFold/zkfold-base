@@ -243,16 +243,7 @@ instance
   ) => Scale Integer (TwistedEdwards curve AffinePoint field) where
   scale = intScale
 
-{- | A type of points in the projective plane.
-
-For finite `AffinePoint`s,
-
-prop> Point x y true = fromConstant (AffinePoint x y)
-
-For the projective line of `Slope`s at infinity,
-
-prop> Point x y false = fromConstant (Slope x y)
--}
+{- | A type of points in the projective plane. -}
 data Point bool field = Point
   { _x :: field
   , _y :: field
@@ -273,10 +264,9 @@ instance
   , Field field
   ) => Eq bool (Point bool field) where
     Point x0 y0 isInf0 == Point x1 y1 isInf1 =
-      if not isInf0 && not isInf1 then x0 == x1 && y0 == y1
-      else if isInf0 && isInf1
-      then x0 == zero && x1 == zero || x1*y0 == x0*y1 -- same slope y0//x0 = y1//x1
-      else false
+      if not isInf0 && not isInf1
+      then x0 == x1 && y0 == y1
+      else isInf0 && isInf1 && x1*y0 == x0*y1 -- same slope y0//x0 = y1//x1
     pt0 /= pt1 = not (pt0 == pt1)
 
 data CompressedPoint bool field = CompressedPoint
