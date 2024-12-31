@@ -25,7 +25,7 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
   ) where
 
 import GHC.Generics
-import Prelude (Integer, fromInteger)
+import Prelude (Integer)
 
 import ZkFold.Base.Algebra.Basic.Class
 import ZkFold.Base.Algebra.Basic.Number
@@ -36,8 +36,8 @@ import ZkFold.Symbolic.Data.Eq
 {- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 Elliptic curves always have genus @1@ and are birationally equivalent
 to a projective curve of degree @3@. As such, elliptic curves are
-the least complicated curves after conic sections, curves of
-degree @2@, and lines, curves of degree @1@. Bézout's theorem implies
+the simplest curves after conic sections, curves of degree @2@,
+and lines, curves of degree @1@. Bézout's theorem implies
 that a line in general position will intersect with an
 elliptic curve at 3 points counting multiplicity;
 @point0@, @point1@ and @point2@.
@@ -57,16 +57,21 @@ class
 
 {- | Both the ECDSA and ECDH algorithms make use of
 the elliptic curve discrete logarithm problem, ECDLP.
-There is a discrete "exponential" function
-from a finite prime field @scalarField@
-to the group of points on an elliptic curve,
-given naturally by scaling a point of prime order,
-if there is one, constructed by the method `pointGen`.
-Then the inverse of the discrete exponential is hard to compute.
+There may be a discrete "exponential" function
+from a `PrimeField` of scalars
+into the `AdditiveGroup` of points on an elliptic curve.
+It's given naturally by scaling a point of prime order,
+if there is one on the curve.
+
+prop> scale order pointGen = zero
+
+>>> let discreteExp scalar = scale scalar pointGen
+
+Then the inverse of `discreteExp` is hard to compute.
 -}
 class
   ( EllipticCurve curve bool baseField point
-  , FiniteField scalarField
+  , PrimeField scalarField
   , Scale scalarField (point baseField)
   ) => SubgroupCurve curve bool baseField scalarField point where
     -- | generator of a cyclic subgroup of the curve of prime order
@@ -77,23 +82,13 @@ class
 > y^2 = x^3 + a*x + b
 
 * Weierstrass curves have x-axis symmetry.
-* The characteristic of the field cannot be @2@ or @3@.
-* Weierstrass curves must have nonzero discriminant @Δ = -16 * (4*a^3 + 27*b^3)@.
+* The characteristic of the field must not be @2@ or @3@.
+* The curve must have nonzero discriminant @Δ = -16 * (4*a^3 + 27*b^3)@.
 * When @a = 0@ some computations can be simplified so all the public
   Weierstrass curves have @a = 0@ and we do too.
 -}
 class Field field => WeierstrassCurve curve field where
   weierstrassB :: field
-
-
-  -- prop> weierstrassΔ /= 0 = true
-  weierstrassΔ :: field
-  weierstrassΔ =
-    let
-      b = weierstrassB @curve
-      neg432 = fromConstant ((-432) :: Integer)
-    in
-      neg432 * b * b
 
 {- | A class for smart constructor method
 `pointXY` for constructing points from an @x@ and @y@ coordinate. -}
