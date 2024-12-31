@@ -14,7 +14,6 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
     -- * point classes
   , Planar (..)
   , HasPointInf (..)
-  , ProjectivePlanar (..)
     -- * point types
   , Weierstrass (..)
   , TwistedEdwards (..)
@@ -23,7 +22,6 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
   , AffinePoint (..)
   , CompressedAffinePoint (..)
   , TwistedExtendedPoint (..)
-  , Slope (..)
   ) where
 
 import GHC.Generics
@@ -112,39 +110,6 @@ class Planar point where pointXY :: field -> field -> point field
 `pointInf` for constructing the point at infinity. -}
 class HasPointInf point where pointInf :: point
 
-{- | A class with a destructor method
-`casePoint` for handling finite `AffinePoint`s
-and a projective line of `Slope`s at infinity. -}
-class
-  ( BoolType bool
-  , Planar point
-  , HasPointInf (point field)
-  , Conditional bool (point field)
-  , Eq bool (point field)
-  , FromConstant (AffinePoint field) (point field)
-  , FromConstant (Slope field) (point field)
-  ) => ProjectivePlanar bool field point where
-
-    {- | `casePoint` expresses points as a disjoint union of
-
-          * finite `Planar` `AffinePoint`s;
-          * the projective line of `Slope`s at infinity.
-
-          Embedding finite and infinite points with `fromConstant`,
-
-          prop> fromConstant (pointXY x y) = pointXY x y
-          prop> fromConstant pointInf = pointInf
-
-          And up to `Eq`uality of points,
-
-          prop> id = casePoint fromConstant fromConstant
-    -}
-    casePoint
-      :: (Conditional bool r, Eq bool r)
-      => (AffinePoint field -> r) -- ^ finite case
-      -> (Slope field -> r) -- ^ infinite case
-      -> point field -> r
-
 {- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
 with a phantom `WeierstrassCurve` @curve@. -}
 newtype Weierstrass curve point field = Weierstrass {pointWeierstrass :: point field}
@@ -166,12 +131,6 @@ deriving newtype instance HasPointInf (point field)
   => HasPointInf (Weierstrass curve point field)
 deriving newtype instance Planar point
   => Planar (Weierstrass curve point)
-deriving newtype instance FromConstant (AffinePoint field) (point field)
-  => FromConstant (AffinePoint field) (Weierstrass curve point field)
-deriving newtype instance FromConstant (Slope field) (point field)
-  => FromConstant (Slope field) (Weierstrass curve point field)
-deriving newtype instance ProjectivePlanar bool field point
-  => ProjectivePlanar bool field (Weierstrass curve point)
 instance
   ( WeierstrassCurve curve field
   , Conditional bool bool
@@ -222,6 +181,8 @@ instance
   ) => Scale Integer (Weierstrass curve (Point bool) field) where
   scale = intScale
 
+{- | `TwistedEdwards` tags a `Planar` @point@, over a `Field` @field@,
+with a phantom `TwistedEdwardsCurve` @curve@. -}
 newtype TwistedEdwards curve point field = TwistedEdwards {pointTwistedEdwards :: point field}
 instance
   ( TwistedEdwardsCurve curve field
@@ -240,12 +201,6 @@ deriving newtype instance HasPointInf (point field)
   => HasPointInf (TwistedEdwards curve point field)
 deriving newtype instance Planar point
   => Planar (TwistedEdwards curve point)
-deriving newtype instance FromConstant (AffinePoint field) (point field)
-  => FromConstant (AffinePoint field) (TwistedEdwards curve point field)
-deriving newtype instance FromConstant (Slope field) (point field)
-  => FromConstant (Slope field) (TwistedEdwards curve point field)
-deriving newtype instance ProjectivePlanar bool field point
-  => ProjectivePlanar bool field (TwistedEdwards curve point)
 instance
   ( TwistedEdwardsCurve curve field
   , Field field
@@ -294,12 +249,6 @@ data Point bool field = Point
   } deriving Generic
 instance BoolType bool => Planar (Point bool) where
   pointXY x y = Point x y false
-instance BoolType bool
-  => FromConstant (Slope field) (Point bool field) where
-    fromConstant (Slope x y) = Point x y true
-instance BoolType bool
-  => FromConstant (AffinePoint field) (Point bool field) where
-    fromConstant (AffinePoint x y) = Point x y false
 instance
   ( BoolType bool
   , Semiring field
@@ -308,20 +257,9 @@ instance
 instance
   ( Conditional bool bool
   , Conditional bool field
-  , Eq bool bool
-  , Eq bool field
-  , Field field
-  ) => ProjectivePlanar bool field (Point bool) where
-    casePoint fin infin (Point x y isInf) =
-      if isInf then infin (Slope x y) else fin (pointXY x y) 
-instance
-  ( BoolType bool
-  , Conditional bool bool
-  , Conditional bool field
   ) => Conditional bool (Point bool field)
 instance
-  ( BoolType bool
-  , Conditional bool bool
+  ( Conditional bool bool
   , Eq bool bool
   , Eq bool field
   , Field field
@@ -361,9 +299,4 @@ data TwistedExtendedPoint field = TwistedExtendedPoint
   , _y :: field
   , _t :: field
   , _z :: field
-  } deriving Generic
-
-data Slope field = Slope
-  { _x :: field
-  , _y :: field
   } deriving Generic
