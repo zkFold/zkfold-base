@@ -16,7 +16,7 @@ import           Data.Functor.Rep                           (Representable (..))
 import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
 import           GHC.Generics                               (Generic, U1, (:*:))
-import           Prelude                                    (Show, const, ($))
+import           Prelude                                    (Show, const, id, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+))
@@ -153,7 +153,7 @@ ivcProve f z0 res witness =
         narkIP = NARKInstanceProof input (NARKProof commits messages)
 
         accScheme :: AccumulatorScheme d k (RecursiveI i) c a
-        accScheme = accumulatorScheme @algo @d pRec
+        accScheme = accumulatorScheme @algo @d pRec id
 
         (acc', pf) = Acc.prover accScheme (res^.acc) narkIP
 
@@ -190,7 +190,7 @@ ivcVerify f z0 res =
         commits = res^.proof^.proofX
 
         accScheme :: AccumulatorScheme d k (RecursiveI i) c f
-        accScheme = accumulatorScheme @algo @d pRec
+        accScheme = accumulatorScheme @algo @d pRec id
 
         protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [f] [f] f
         protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol' @d pRec

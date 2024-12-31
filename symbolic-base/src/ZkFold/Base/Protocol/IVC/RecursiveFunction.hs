@@ -14,7 +14,7 @@ import           Data.Functor.Rep                           (Representable (..),
 import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
 import           GHC.Generics                               (Generic, Generic1, U1 (..), (:*:) (..))
-import           Prelude                                    (Foldable, Functor, Show, Traversable, fmap, type (~), ($),
+import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, id, ($),
                                                              (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class            (Scale, FromConstant (..))
@@ -115,7 +115,7 @@ recursiveFunction func z0 =
         funcRecursive z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
             let
                 accScheme :: AccumulatorScheme d k (RecursiveI i) c f
-                accScheme = accumulatorScheme @algo pRec
+                accScheme = accumulatorScheme @algo pRec id
 
                 x' :: i f
                 x' = func x u

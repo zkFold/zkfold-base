@@ -91,7 +91,7 @@ testPublicInput phi =
     in pi
 
 testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
-testAccumulatorScheme = accumulatorScheme @MiMCHash
+testAccumulatorScheme = flip (accumulatorScheme @MiMCHash) id
 
 testAccumulator :: PHI -> Accumulator K I C F
 testAccumulator phi =
