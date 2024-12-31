@@ -25,7 +25,7 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
   ) where
 
 import GHC.Generics
-import Prelude (Integer)
+import Prelude (Integer, fromInteger)
 
 import ZkFold.Base.Algebra.Basic.Class
 import ZkFold.Base.Algebra.Basic.Number
@@ -76,9 +76,24 @@ class
 
 > y^2 = x^3 + a*x + b
 
-When @a = 0@ some computations can be simplified so all the public standard
-Weierstrass curves have @a = 0@ and we make that assumption too. -}
-class Field field => WeierstrassCurve curve field where weierstrassB :: field
+* Weierstrass curves have x-axis symmetry.
+* The characteristic of the field cannot be @2@ or @3@.
+* Weierstrass curves must have nonzero discriminant @Δ = -16 * (4*a^3 + 27*b^3)@.
+* When @a = 0@ some computations can be simplified so all the public
+  Weierstrass curves have @a = 0@ and we do too.
+-}
+class Field field => WeierstrassCurve curve field where
+  weierstrassB :: field
+
+
+  -- prop> weierstrassΔ /= 0 = true
+  weierstrassΔ :: field
+  weierstrassΔ =
+    let
+      b = weierstrassB @curve
+      neg432 = fromConstant ((-432) :: Integer)
+    in
+      neg432 * b * b
 
 {- | A class for smart constructor method
 `pointXY` for constructing points from an @x@ and @y@ coordinate. -}
