@@ -100,11 +100,11 @@ library
       ZkFold.Base.Algebra.EllipticCurve.BN254
       ZkFold.Base.Algebra.EllipticCurve.Pasta
       ZkFold.Base.Algebra.EllipticCurve.Class
-      ZkFold.Base.Algebra.EllipticCurve.Class2
+      ZkFold.Base.Algebra.EllipticCurve2.Class
       ZkFold.Base.Algebra.EllipticCurve.Ed25519
       ZkFold.Base.Algebra.EllipticCurve.Pairing
       ZkFold.Base.Algebra.EllipticCurve.Secp256k1
-      ZkFold.Base.Algebra.EllipticCurve.Secp256k1_2
+      ZkFold.Base.Algebra.EllipticCurve2.Secp256k1
       ZkFold.Base.Algebra.Polynomials.Multivariate
       ZkFold.Base.Algebra.Polynomials.Multivariate.Groebner
       ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial

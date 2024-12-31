@@ -3,7 +3,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Base.Algebra.EllipticCurve.Secp256k1_2
+module ZkFold.Base.Algebra.EllipticCurve2.Secp256k1
   ( Secp256k1_Point
   , Secp256k1_Base
   , Secp256k1_Scalar
@@ -18,7 +18,7 @@ import qualified Prelude
 import ZkFold.Base.Algebra.Basic.Class
 import ZkFold.Base.Algebra.Basic.Field
 import ZkFold.Base.Algebra.Basic.Number
-import ZkFold.Base.Algebra.EllipticCurve.Class2
+import ZkFold.Base.Algebra.EllipticCurve2.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
@@ -50,7 +50,7 @@ instance
       (fromConstant (0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8 :: Natural))
 
 newtype Secp256k1 bool field = Secp256k1
-  {weierstrassSecp256k1 :: Weierstrass "secp256k1" (Point bool) field}
+  {curveSecp256k1 :: Weierstrass "secp256k1" (Point bool) field}
 deriving newtype instance BoolType bool => Planar (Secp256k1 bool)
 deriving newtype instance (BoolType bool, Semiring field)
   => HasPointInf (Secp256k1 bool field)

@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
-module ZkFold.Base.Algebra.EllipticCurve.Class2
+module ZkFold.Base.Algebra.EllipticCurve2.Class
   ( -- * curve classes
     EllipticCurve (..)
   , SubgroupCurve (..)
