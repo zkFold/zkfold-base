@@ -11,6 +11,7 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
   , SubgroupCurve (..)
   , WeierstrassCurve (..)
   , TwistedEdwardsCurve (..)
+  , SymmetricCurve (..)
   , PairingCurves (..)
     -- * point classes
   , Planar (..)
@@ -102,6 +103,13 @@ class Field field => WeierstrassCurve curve field where
 class Field field => TwistedEdwardsCurve curve field where
   twistedEdwardsA :: field
   twistedEdwardsD :: field
+
+class EllipticCurve curve bool field point
+  => SymmetricCurve curve bool field point pt
+  | point -> pt, pt -> point where
+    pointCompressed :: field -> bool -> pt field
+    compressPoint :: point field -> pt field
+    decompressPoint :: pt field -> point field
 
 class
   ( SubgroupCurve curve1 bool field1 scalarField point1
