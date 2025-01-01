@@ -99,6 +99,7 @@ library
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.BN254
       ZkFold.Base.Algebra.EllipticCurve.Pasta
+      ZkFold.Base.Algebra.EllipticCurve2.Pasta
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.EllipticCurve2.Class
       ZkFold.Base.Algebra.EllipticCurve.Ed25519

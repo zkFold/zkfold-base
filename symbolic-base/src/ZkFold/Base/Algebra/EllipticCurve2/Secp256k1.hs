@@ -4,8 +4,8 @@
 
 module ZkFold.Base.Algebra.EllipticCurve2.Secp256k1
   ( Secp256k1_Base
-  , Secp256k1_Point
   , Secp256k1_Scalar
+  , Secp256k1_Point
   , Fn
   , Fp
   ) where
