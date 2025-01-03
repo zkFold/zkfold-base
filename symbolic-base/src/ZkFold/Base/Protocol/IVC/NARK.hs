@@ -38,4 +38,4 @@ narkInstanceProof :: Ring f
     -> i f
     -> p f
     -> NARKInstanceProof k i c f
-narkInstanceProof a pi0 w = NARKInstanceProof (input a pi0 w) (narkProof a pi0 w)
+narkInstanceProof phi pi0 w = NARKInstanceProof (input phi pi0 w) (narkProof phi pi0 w)

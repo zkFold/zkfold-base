@@ -31,13 +31,13 @@ newtype AlgebraicMap k i f = AlgebraicMap {
         applyAlgebraicMap :: i f -> Vector k [f] -> Vector (k-1) f -> f -> [f]
     }
 
-algebraicMap :: forall d k a i p f .
+algebraicMap :: forall d k a i p f ctx .
     ( KnownNat (d+1)
     , Representable i
     , Ring f
     , Scale a f
     )
-    => Predicate a i p
+    => Predicate a i p ctx
     -> AlgebraicMap k i f
 algebraicMap Predicate {..} = AlgebraicMap algMap
     where

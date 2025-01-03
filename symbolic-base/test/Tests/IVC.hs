@@ -30,14 +30,16 @@ import           ZkFold.Prelude                              (replicate)
 import           ZkFold.Symbolic.Class                       (BaseField, Symbolic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
+import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
 type F = Zp BLS12_381_Scalar
 type C = Constant (Point BLS12_381_G1)
 type I = Vector 1
 type P = U1
 type K = 1
+type CTX = Interpreter F
 type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) U1
-type PHI = Predicate F I P
+type PHI = Predicate F I P CTX
 type SPS = FiatShamir 1 I P C [F] [F] F
 type D = 2
 type PARDEG = 5
@@ -72,6 +74,9 @@ initAccumulatorInstance phi =
 testPublicInput0 :: I F
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
+testPublicInput :: PHI -> I F
+testPublicInput phi = predicateEval phi testPublicInput0 U1
+
 testInstanceProofPair :: PHI -> NARKInstanceProof K I C F
 testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 
@@ -84,11 +89,6 @@ testNarkProof :: PHI -> Vector K (C F)
 testNarkProof phi =
     let NARKInstanceProof _ (NARKProof cs _) = testInstanceProofPair phi
     in cs
-
-testPublicInput :: PHI -> I F
-testPublicInput phi =
-    let NARKInstanceProof pi _ = testInstanceProofPair phi
-    in pi
 
 testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
 testAccumulatorScheme = flip (accumulatorScheme @MiMCHash) id
@@ -142,6 +142,7 @@ specAccumulatorScheme = hspec $ do
 specIVC :: IO ()
 specIVC = do
     p <- generate arbitrary :: IO PAR
+    print $ testPublicInput $ testPredicate p
     print $ "Recursion circuit size: " ++ show (acSizeN $ testPredicateCircuit p)
     specAlgebraicMap
     specAccumulatorScheme

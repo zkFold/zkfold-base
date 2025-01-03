@@ -16,7 +16,7 @@ import           Data.Functor.Rep                           (Representable (..))
 import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
 import           GHC.Generics                               (Generic, U1, (:*:))
-import           Prelude                                    (Show, const, id, ($))
+import           Prelude                                    (Functor, Show, const, id, ($), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+))
@@ -35,8 +35,9 @@ import           ZkFold.Base.Protocol.IVC.RecursiveFunction
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol,
                                                              specialSoundProtocol')
 import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction)
+import           ZkFold.Symbolic.Class                      (Symbolic(..))
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement)
+import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
 -- | The recursion circuit satisfiability proof.
@@ -46,7 +47,7 @@ data IVCProof k c f
     -- ^ The commitment to the witness of the recursion circuit satisfiability proof.
     , _proofW :: Vector k [f]
     -- ^ The witness of the recursion circuit satisfiability proof.
-    } deriving (GHC.Generics.Generic, Show, NFData)
+    } deriving (GHC.Generics.Generic, Functor, Show, NFData)
 
 makeLenses ''IVCProof
 
@@ -64,11 +65,11 @@ data IVCResult k i c f
     { _z     :: i f
     , _acc   :: Accumulator k (RecursiveI i) c f
     , _proof :: IVCProof k c f
-    } deriving (GHC.Generics.Generic, Show, NFData)
+    } deriving (GHC.Generics.Generic, Functor, Show, NFData)
 
 makeLenses ''IVCResult
 
-type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
+type IVCAssumptions ctx0 ctx1 algo d k a i p c ctx f =
     ( RecursivePredicateAssumptions algo d k a i p c
     , KnownNat (d+1)
     , k ~ 1
@@ -79,9 +80,11 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
     , RandomOracle algo (i f) f
     , RandomOracle algo (c f) f
     , HomomorphicCommit [f] (c f)
+    , FromConstant a f
     , Scale a f
     , Scale a (PolyVec f (d+1))
     , Scale f (c f)
+    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx) ctx
     , ctx0 ~ Interpreter a
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
@@ -91,39 +94,42 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
 -- | Create the first IVC result
 --
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
+ivcSetup :: forall ctx0 ctx1 algo d k a i p c ctx w . (WitnessField ctx ~ w, IVCAssumptions ctx0 ctx1 algo d k a i p c ctx w)
     => StepFunction a i p
     -> i a
-    -> p a
-    -> IVCResult k i c a
-ivcSetup f z0 witness =
+    -> p w
+    -> IVCResult k i c w
+ivcSetup f x0 witness =
     let
-        p :: Predicate a i p
+        p :: Predicate a i p ctx
         p = predicate f
 
-        z' :: i a
-        z' = predicateEval p z0 witness
+        z' :: i w
+        z' = predicateWitness p (fromConstant <$> x0) witness
 
-        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI z0 zero)
+        fRec :: RecursiveFunction algo d k a i p c
+        fRec = recursiveFunction @algo @d @k @a @i @p @c @ctx f (RecursiveI x0 zero)
 
-        acc0 :: Accumulator k (RecursiveI i) c a
+        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx
+        pRec = recursivePredicate @algo fRec
+
+        acc0 :: Accumulator k (RecursiveI i) c w
         acc0 = emptyAccumulator @d pRec
 
-        input :: RecursiveI i a
-        input = RecursiveI z0 (oracle @algo $ acc0^.x)
+        input :: RecursiveI i w
+        input = RecursiveI (fromConstant <$> x0) (oracle @algo $ acc0^.x)
 
-        payload :: RecursiveP d k i p c a
-        payload = RecursiveP (tabulate $ const zero) (tabulate $ const zero) (acc0^.x) zero (tabulate $ const zero)
+        payload :: RecursiveP d k i p c w
+        payload = RecursiveP witness (tabulate (const zero)) (acc0^.x) zero (tabulate (const zero))
 
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [a] [a] a
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [w] [w] w
         protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
 
         (messages, commits) = unzip $ prover protocol input payload zero 0
-    in
-        IVCResult z' acc0 (IVCProof commits messages)
+    in IVCResult z' acc0 (IVCProof commits messages)
 
-ivcProve :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
+ivcProve :: forall ctx0 ctx1 algo d k a i p c ctx . IVCAssumptions ctx0 ctx1 algo d k a i p c ctx0 a
+    => RecursiveFunctionAssumptions algo d a i c (FieldElement ctx) ctx
     => StepFunction a i p
     -> i a
     -> IVCResult k i c a
@@ -131,14 +137,14 @@ ivcProve :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d 
     -> IVCResult k i c a
 ivcProve f z0 res witness =
     let
-        p :: Predicate a i p
+        p :: Predicate a i p ctx
         p = predicate f
 
         z' :: i a
         z' = predicateEval p (res^.z) witness
 
-        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI z0 zero)
+        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx0
+        pRec = recursivePredicate @algo $ recursiveFunction @algo @d @k @a @i @p @c @ctx0 f (RecursiveI z0 zero)
 
         input :: RecursiveI i a
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
@@ -170,15 +176,16 @@ ivcProve f z0 res witness =
     in
         IVCResult z' acc' ivcProof
 
-ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo d k a i p c f
+ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo d k a i p c ctx1 f
+    => f ~ FieldElement ctx1
     => StepFunction a i p
     -> i a
     -> IVCResult k i c f
     -> ((Vector k (c f), [f]), (Vector k (c f), c f))
 ivcVerify f z0 res =
     let
-        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI z0 zero)
+        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx1
+        pRec = recursivePredicate @algo $ recursiveFunction @algo @d @k @a @i @p @c @ctx1 f (RecursiveI z0 zero)
 
         input :: RecursiveI i f
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)

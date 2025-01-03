@@ -15,6 +15,7 @@ import           ZkFold.Base.Protocol.IVC.AlgebraicMap
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
 
 {-- | Section 3.1
 
@@ -49,28 +50,30 @@ data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
       -> o                              -- ^ verifier output
   }
 
-specialSoundProtocol :: forall d a i p .
+specialSoundProtocol :: forall d a i p ctx .
     ( KnownNat (d+1)
-    , Arithmetic a
     , Representable i
     , Representable p
-    ) => Predicate a i p -> SpecialSoundProtocol 1 i p [a] [a] a
+    , Symbolic ctx
+    , Scale a (WitnessField ctx)
+    , FromConstant a (WitnessField ctx)
+    ) => Predicate a i p ctx -> SpecialSoundProtocol 1 i p [WitnessField ctx] [WitnessField ctx] (WitnessField ctx)
 specialSoundProtocol phi@Predicate {..} =
   let
-      prover pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)
+      prover pi0 w _ _ = elems $ witnessGenerator @(WitnessField ctx) predicateCircuit (pi0 :*: w) (predicateWitness pi0 w)
 
       verifier pi pm ts =
         let AlgebraicMap {..} = algebraicMap @d phi
         in applyAlgebraicMap pi pm ts one
   in
-      SpecialSoundProtocol predicateEval prover verifier
+      SpecialSoundProtocol predicateWitness prover verifier
 
-specialSoundProtocol' :: forall d a i p f .
+specialSoundProtocol' :: forall d a i p ctx.
     ( KnownNat (d+1)
     , Representable i
-    , Ring f
-    , Scale a f
-    ) => Predicate a i p -> SpecialSoundProtocol 1 i p [f] [f] f
+    , Symbolic ctx
+    , Scale a (FieldElement ctx)
+    ) => Predicate a i p ctx -> SpecialSoundProtocol 1 i p [FieldElement ctx] [FieldElement ctx] (FieldElement ctx)
 specialSoundProtocol' phi =
   let
       verifier pi pm ts =
@@ -78,4 +81,3 @@ specialSoundProtocol' phi =
         in applyAlgebraicMap pi pm ts one
   in
       SpecialSoundProtocol undefined undefined verifier
-

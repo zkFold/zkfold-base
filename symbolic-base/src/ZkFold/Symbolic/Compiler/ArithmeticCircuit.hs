@@ -161,12 +161,12 @@ acValue = exec
 --
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
-acPrint ::
+acPrint :: forall a o.
   (Arithmetic a, Show a, Show (o (Var a U1)), Show (o a), Functor o) =>
   ArithmeticCircuit a U1 U1 o -> IO ()
 acPrint ac = do
     let m = elems (acSystem ac)
-        w = witnessGenerator ac U1 U1
+        w = witnessGenerator @a ac U1 U1
         v = acValue ac
         o = acOutput ac
     putStr "System size: "
@@ -184,11 +184,11 @@ acPrint ac = do
 
 ---------------------------------- Testing -------------------------------------
 
-isConstantInput ::
+isConstantInput :: forall a p i o.
   ( Arithmetic a, Show a, Representable p, Representable i
   , Show (p a), Show (i a), Arbitrary (p a), Arbitrary (i a)
   ) => ArithmeticCircuit a p i o -> Property
-isConstantInput c = property $ \x y p -> witnessGenerator c p x === witnessGenerator c p y
+isConstantInput c = property $ \x y p -> witnessGenerator @a c p x === witnessGenerator c p y
 
 checkClosedCircuit
     :: forall a o
@@ -198,13 +198,14 @@ checkClosedCircuit
     -> Property
 checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem c) ]
     where
-        w = witnessGenerator c U1 U1
+        w = witnessGenerator @a c U1 U1
         testPoly p = evalPolynomial evalMonomial varF p === zero
         varF (NewVar v) = w ! v
         varF (InVar v)  = absurd v
 
 checkCircuit
-    :: Arbitrary (p a)
+    :: forall a p i o
+     . Arbitrary (p a)
     => Arbitrary (i a)
     => Arithmetic a
     => Show a
@@ -217,7 +218,7 @@ checkCircuit c = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
         testPoly p = do
             ins <- arbitrary
             pls <- arbitrary
-            let w = witnessGenerator c pls ins
+            let w = witnessGenerator @a c pls ins
                 varF (NewVar v) = w ! v
                 varF (InVar v)  = index ins v
             return $ evalPolynomial evalMonomial varF p === zero

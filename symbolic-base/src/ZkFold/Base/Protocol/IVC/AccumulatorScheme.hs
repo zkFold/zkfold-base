@@ -45,7 +45,7 @@ data AccumulatorScheme d k i c f = AccumulatorScheme
             -> (Vector k (c f), c f)                        -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k a i p c f f'.
+accumulatorScheme :: forall algo d k a i p c f f' ctx.
     ( KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
@@ -61,7 +61,7 @@ accumulatorScheme :: forall algo d k a i p c f f'.
     , Scale a (PU.PolyVec f' (d+1))
     , Scale f (c f)
     )
-    => Predicate a i p
+    => Predicate a i p ctx
     -> (f -> f')
     -> AccumulatorScheme d k i c f
 accumulatorScheme phi mapField =

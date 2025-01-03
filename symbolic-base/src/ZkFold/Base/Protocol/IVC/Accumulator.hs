@@ -65,11 +65,11 @@ data Accumulator k i c f
         { _x :: AccumulatorInstance k i c f
         , _w :: Vector k [f]
         }
-    deriving (Show, Generic, NFData)
+    deriving (Show, Generic, Functor, NFData)
 
 makeLenses ''Accumulator
 
-emptyAccumulator :: forall d k a i p c f .
+emptyAccumulator :: forall d k a i p c ctx f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
@@ -77,7 +77,7 @@ emptyAccumulator :: forall d k a i p c f .
     , HomomorphicCommit [f] (c f)
     , Ring f
     , Scale a f
-    ) => Predicate a i p -> Accumulator k i c f
+    ) => Predicate a i p ctx -> Accumulator k i c f
 emptyAccumulator phi =
     let AlgebraicMap {..} = algebraicMap @d phi
         
@@ -90,7 +90,7 @@ emptyAccumulator phi =
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 
-emptyAccumulatorInstance :: forall d k a i p c f .
+emptyAccumulatorInstance :: forall d k a i p c ctx f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
@@ -98,5 +98,5 @@ emptyAccumulatorInstance :: forall d k a i p c f .
     , HomomorphicCommit [f] (c f)
     , Ring f
     , Scale a f
-    ) => Predicate a i p -> AccumulatorInstance k i c f
+    ) => Predicate a i p ctx -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x

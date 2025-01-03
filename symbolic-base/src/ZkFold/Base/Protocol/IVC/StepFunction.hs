@@ -18,11 +18,10 @@ type FunctorAssumptions f =
     , Ord (Rep f)
     )
 
-type StepFunctionAssumptions a f ctx =
+type StepFunctionAssumptions a ctx =
     ( Symbolic ctx
     , BaseField ctx ~ a
-    , FieldElement ctx ~ f
     )
 
-type StepFunction a i p = forall f ctx . StepFunctionAssumptions a f ctx
-    => i f -> p f -> i f
+type StepFunction a i p = forall ctx . StepFunctionAssumptions a ctx
+    => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)

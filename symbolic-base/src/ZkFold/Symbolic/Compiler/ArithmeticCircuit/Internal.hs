@@ -298,9 +298,11 @@ witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
 
 ----------------------------- Evaluation functions -----------------------------
 
-witnessGenerator ::
-  (Arithmetic a, Representable p, Representable i) =>
-  ArithmeticCircuit a p i o -> p a -> i a -> Map ByteString a
+-- | Generates witness for the arithmetic circuit.
+-- Viable options for `f` are `a` and `CircuitWitness a p i`.
+witnessGenerator :: forall f a p i o.
+  (Representable p, Representable i, ResidueField (Const f) f, FromConstant a f, Scale a f) =>
+  ArithmeticCircuit a p i o -> p f -> i f -> Map ByteString f
 witnessGenerator circuit payload inputs =
   let result = acWitness circuit <&> \k -> runWitnessF k $ \case
         WExVar eV -> index payload eV
