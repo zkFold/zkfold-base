@@ -74,8 +74,17 @@ instance SubgroupCurve "BLS12-381_G1" Bool Fq Fr BLS12_381_G1_PointOf where
 instance SymmetricCurve "BLS12-381_G1" Bool Fq
   BLS12_381_G1_PointOf BLS12_381_G1_CompressedPointOf where
     pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
-    compressPoint = Prelude.undefined
-    decompressPoint = Prelude.undefined
+    compressPoint (Weierstrass (Point x y isInf)) =
+      if isInf then pointInf else pointCompressed @"BLS12-381_G1" x (y > negate y)
+    decompressPoint (Weierstrass (CompressedPoint x bigY isInf)) =
+      if isInf then pointInf else
+        let b = weierstrassB @"BLS12-381_G1"
+            q = order @Fq
+            sqrt_ z = z ^ ((q + 1) `Prelude.div` 2)
+            y' = sqrt_ (x * x * x + b)
+            y'' = negate y'
+            y = if bigY then max y' y'' else min y' y''
+        in  pointXY x y
 
 instance Scale Fr BLS12_381_G1_Point where
   scale n x = scale (toConstant n) x
