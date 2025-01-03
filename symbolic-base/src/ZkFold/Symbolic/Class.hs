@@ -13,6 +13,7 @@ import           Data.Ord                         (Ord)
 import           Data.Type.Equality               (type (~))
 import           GHC.Generics                     (type (:.:) (unComp1))
 import           Numeric.Natural                  (Natural)
+import           Prelude                          (Traversable (..), const, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative (HApplicative (hpair, hunit))
@@ -66,6 +67,10 @@ class ( HApplicative c, Package c, Arithmetic (BaseField c)
 -- | Embeds the pure value(s) into generic context @c@.
 embed :: (Symbolic c, Functor f) => f (BaseField c) -> c f
 embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
+
+-- | Embeds the witness value(s) into generic context @c@. Inverse of 'witnessF'.
+embedW :: forall c f . (Symbolic c, Traversable f) => f (WitnessField c) -> c f
+embedW ws = fromCircuitF (hunit @c) $ const (traverse unconstrained ws)
 
 symbolicF ::
   (Symbolic c, BaseField c ~ a) => c f ->

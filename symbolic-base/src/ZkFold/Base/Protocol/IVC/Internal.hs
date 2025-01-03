@@ -10,18 +10,18 @@
 module ZkFold.Base.Protocol.IVC.Internal where
 
 import           Control.DeepSeq                            (NFData)
-import           Control.Lens                               ((^.))
+import           Control.Lens                               ((^.), Traversable)
 import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
-import           GHC.Generics                               (Generic, U1, (:*:))
-import           Prelude                                    (Functor, Show, const, id, ($), (<$>))
+import           GHC.Generics                               (Generic, U1, (:*:), (:.:) (..))
+import           Prelude                                    (Functor, Foldable, Show, const, id, foldl, error, ($), (<$>), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+))
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), value)
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
-import           ZkFold.Base.Data.Vector                    (Vector, singleton)
+import           ZkFold.Base.Data.Vector                    (Vector, singleton, head, tail)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme)
@@ -38,6 +38,7 @@ import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction)
 import           ZkFold.Symbolic.Class                      (Symbolic(..))
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
+import           ZkFold.Symbolic.Data.Payloaded             (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
 -- | The recursion circuit satisfiability proof.
@@ -47,7 +48,7 @@ data IVCProof k c f
     -- ^ The commitment to the witness of the recursion circuit satisfiability proof.
     , _proofW :: Vector k [f]
     -- ^ The witness of the recursion circuit satisfiability proof.
-    } deriving (GHC.Generics.Generic, Functor, Show, NFData)
+    } deriving (GHC.Generics.Generic, Functor, Foldable, Traversable, Show, NFData)
 
 makeLenses ''IVCProof
 
@@ -65,7 +66,7 @@ data IVCResult k i c f
     { _z     :: i f
     , _acc   :: Accumulator k (RecursiveI i) c f
     , _proof :: IVCProof k c f
-    } deriving (GHC.Generics.Generic, Functor, Show, NFData)
+    } deriving (GHC.Generics.Generic, Functor, Foldable, Traversable, Show, NFData)
 
 makeLenses ''IVCResult
 
@@ -174,6 +175,24 @@ ivcProve f x0 res witness =
         ivcProof = IVCProof commits' messages'
     in
         IVCResult z' acc' ivcProof
+
+-- TODO: return the final result and `Bool ctx` that contains the result of the accumulator verification
+ivc :: forall ctx0 ctx1 algo d k a i p c ctx w n . (WitnessField ctx ~ w, KnownNat n, IVCAssumptions ctx0 ctx1 algo d k a i p c ctx w)
+    => StepFunction a i p
+    -> i a
+    -> Payloaded (Vector n :.: p) ctx
+    -> IVCResult k i c w
+ivc f x0 (Payloaded (Comp1 ps)) =
+    let
+        setup :: IVCResult k i c w
+        setup = ivcSetup @ctx0 @ctx1 @algo @_ @_ @_ @_ @_ @_ @ctx f x0 (head ps)
+
+        prove :: IVCResult k i c w -> p w -> IVCResult k i c w
+        prove = ivcProve @ctx0 @ctx1 @algo @_ @_ @_ @_ @_ @_ @ctx f x0
+    in
+        if value @n == 0
+        then error "ivc: empty payload"
+        else foldl prove setup (tail ps)
 
 ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo d k a i p c ctx1 f
     => f ~ FieldElement ctx1

@@ -6,14 +6,12 @@ import           Data.Binary                           (Binary)
 import           GHC.Generics                          (U1 (..), (:*:) (..))
 import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
 
-import           ZkFold.Base.Control.HApplicative      (HApplicative(..))
 import           ZkFold.Base.Data.Package              (packed, unpacked)
 import           ZkFold.Base.Protocol.IVC.StepFunction (FunctorAssumptions, StepFunction, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter           (Interpreter(..))
-import           ZkFold.Symbolic.MonadCircuit          (MonadCircuit(..))
 
 type PredicateEval a i p        = i a -> p a -> i a
 type PredicateWitness a i p ctx = i (WitnessField ctx) -> p (WitnessField ctx) -> i (WitnessField ctx)
@@ -43,16 +41,10 @@ predicate func =
         predicateWitness x' u' =
             let
                 x :: i (FieldElement ctx)
-                x =
-                    fmap FieldElement $
-                    unpacked $ fromCircuitF (hunit @ctx) $
-                    const (traverse unconstrained x')
+                x = fmap FieldElement $ unpacked $ embedW x'
 
                 u :: p (FieldElement ctx)
-                u =
-                    fmap FieldElement $
-                    unpacked $ fromCircuitF (hunit @ctx) $
-                    const (traverse unconstrained u')
+                u = fmap FieldElement $ unpacked $ embedW u'
             in
                 witnessF . packed . fmap fromFieldElement $ func x u
 

@@ -65,7 +65,7 @@ data Accumulator k i c f
         { _x :: AccumulatorInstance k i c f
         , _w :: Vector k [f]
         }
-    deriving (Show, Generic, Functor, NFData)
+    deriving (Show, Generic, Functor, Foldable, Traversable, NFData)
 
 makeLenses ''Accumulator
 

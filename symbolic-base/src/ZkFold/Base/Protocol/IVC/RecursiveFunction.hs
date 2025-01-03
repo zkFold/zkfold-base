@@ -16,12 +16,11 @@ import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
 import           GHC.Generics                               (Generic, Generic1, U1 (..), (:*:) (..))
 import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, id, ($),
-                                                             (.), (<$>), traverse, const)
+                                                             (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class            (Scale, FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
-import           ZkFold.Base.Control.HApplicative           (HApplicative(..))
 import           ZkFold.Base.Data.Orphans                   ()
 import           ZkFold.Base.Data.Package                   (packed, unpacked)
 import           ZkFold.Base.Data.Vector                    (Vector)
@@ -32,7 +31,7 @@ import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), PredicateAssumptions, PredicateCircuit,
                                                              predicate)
 import           ZkFold.Base.Protocol.IVC.StepFunction      (FunctorAssumptions, StepFunction, StepFunctionAssumptions)
-import           ZkFold.Symbolic.Class                      (Symbolic(..))
+import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
@@ -40,7 +39,6 @@ import           ZkFold.Symbolic.Data.Conditional           (bool, Conditional)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement), fromFieldElement)
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
 import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit(..))
 
 -- | Public input to the recursive function
 data RecursiveI i f = RecursiveI (i f) f
@@ -167,16 +165,10 @@ recursivePredicate func =
         predicateWitness x' u' =
             let
                 x :: (RecursiveI i) (FieldElement ctx)
-                x =
-                    fmap FieldElement $
-                    unpacked $ fromCircuitF (hunit @ctx) $
-                    const (traverse unconstrained x')
+                x = fmap FieldElement $ unpacked $ embedW x'
 
                 u :: (RecursiveP d k i p c) (FieldElement ctx)
-                u =
-                    fmap FieldElement $
-                    unpacked $ fromCircuitF (hunit @ctx) $
-                    const (traverse unconstrained u')
+                u = fmap FieldElement $ unpacked $ embedW u'
             in
                 witnessF . packed . fmap fromFieldElement $ func x u
 
