@@ -97,6 +97,7 @@ library
       ZkFold.Base.Algebra.Basic.DFT
       ZkFold.Base.Algebra.Basic.VectorSpace
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+      ZkFold.Base.Algebra.EllipticCurve2.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve2.BN254
       ZkFold.Base.Algebra.EllipticCurve.Pasta
       ZkFold.Base.Algebra.EllipticCurve2.Pasta

@@ -282,6 +282,8 @@ data CompressedPoint bool field = CompressedPoint
   , _yBit :: bool
   , _zBit :: bool
   } deriving Generic
+instance BoolType bool => HasPointInf (CompressedPoint bool) where
+  pointInf = CompressedPoint zero true true
 
 data AffinePoint field = AffinePoint
   { _x :: field

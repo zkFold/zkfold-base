@@ -75,9 +75,8 @@ type BN254_G1_PointOf = Weierstrass "BN254_G1" (Point Bool)
 instance Field field => WeierstrassCurve "BN254_G1" field where
   weierstrassB = fromConstant (3 :: Natural)
 
-instance SubgroupCurve "BN254_G1" Bool Fp Fr
-  (Weierstrass "BN254_G1" (Point Bool)) where
-    pointGen = pointXY one (fromConstant (2 :: Natural))
+instance SubgroupCurve "BN254_G1" Bool Fp Fr BN254_G1_PointOf where
+  pointGen = pointXY one (fromConstant (2 :: Natural))
 
 instance Scale Fr BN254_G1_Point where
   scale n x = scale (toConstant n) x
