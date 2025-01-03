@@ -128,50 +128,49 @@ ivcSetup f x0 witness =
         (messages, commits) = unzip $ prover protocol input payload zero 0
     in IVCResult z' acc0 (IVCProof commits messages)
 
-ivcProve :: forall ctx0 ctx1 algo d k a i p c ctx . IVCAssumptions ctx0 ctx1 algo d k a i p c ctx0 a
-    => RecursiveFunctionAssumptions algo d a i c (FieldElement ctx) ctx
+ivcProve :: forall ctx0 ctx1 algo d k a i p c ctx w . (WitnessField ctx ~ w, IVCAssumptions ctx0 ctx1 algo d k a i p c ctx w)
     => StepFunction a i p
     -> i a
-    -> IVCResult k i c a
-    -> p a
-    -> IVCResult k i c a
-ivcProve f z0 res witness =
+    -> IVCResult k i c w
+    -> p w
+    -> IVCResult k i c w
+ivcProve f x0 res witness =
     let
         p :: Predicate a i p ctx
         p = predicate f
 
-        z' :: i a
-        z' = predicateEval p (res^.z) witness
+        z' :: i w
+        z' = predicateWitness p (res^.z) witness
 
-        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx0
-        pRec = recursivePredicate @algo $ recursiveFunction @algo @d @k @a @i @p @c @ctx0 f (RecursiveI z0 zero)
+        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx
+        pRec = recursivePredicate @algo $ recursiveFunction @algo @d @k @a @i @p @c @ctx f (RecursiveI x0 zero)
 
-        input :: RecursiveI i a
+        input :: RecursiveI i w
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
 
-        messages :: Vector k [a]
+        messages :: Vector k [w]
         messages = res^.proof^.proofW
 
-        commits :: Vector k (c a)
+        commits :: Vector k (c w)
         commits = res^.proof^.proofX
 
-        narkIP :: NARKInstanceProof k (RecursiveI i) c a
+        narkIP :: NARKInstanceProof k (RecursiveI i) c w
         narkIP = NARKInstanceProof input (NARKProof commits messages)
 
-        accScheme :: AccumulatorScheme d k (RecursiveI i) c a
+        accScheme :: AccumulatorScheme d k (RecursiveI i) c w
         accScheme = accumulatorScheme @algo @d pRec id
 
         (acc', pf) = Acc.prover accScheme (res^.acc) narkIP
 
-        payload :: RecursiveP d k i p c a
+        payload :: RecursiveP d k i p c w
         payload = RecursiveP witness commits (res^.acc^.x) one pf
 
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [a] [a] a
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [w] [w] w
         protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
 
         (messages', commits') = unzip $ prover protocol input payload zero 0
 
-        ivcProof :: IVCProof k c a
+        ivcProof :: IVCProof k c w
         ivcProof = IVCProof commits' messages'
     in
         IVCResult z' acc' ivcProof
