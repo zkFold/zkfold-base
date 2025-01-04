@@ -2,16 +2,19 @@
 
 module ZkFold.Base.Protocol.IVC.Predicate where
 
+import           Control.DeepSeq                       (NFData)
 import           Data.Binary                           (Binary)
+import           Data.Functor.Rep                      (Representable (..))
 import           GHC.Generics                          (U1 (..), (:*:) (..))
 import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
 
 import           ZkFold.Base.Data.Package              (packed, unpacked)
-import           ZkFold.Base.Protocol.IVC.StepFunction (FunctorAssumptions, StepFunction)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter           (Interpreter(..))
+
+type StepFunction i p = forall ctx . Symbolic ctx => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)
 
 type PredicateEval i p ctx    = i (BaseField ctx) -> p (BaseField ctx) -> i (BaseField ctx)
 type PredicateWitness i p ctx = i (WitnessField ctx) -> p (WitnessField ctx) -> i (WitnessField ctx)
@@ -23,15 +26,20 @@ data Predicate i p ctx = Predicate
     , predicateCircuit :: PredicateCircuit i p ctx
     }
 
-type PredicateAssumptions a i p =
-    ( Arithmetic a
-    , Binary a
-    , FunctorAssumptions i
-    , FunctorAssumptions p
+type FunctorAssumptions f =
+    ( Representable f
+    , Traversable f
+    , NFData (Rep f)
+    , Binary (Rep f)
+    , Ord (Rep f)
     )
 
-predicate :: forall i p ctx . (PredicateAssumptions (BaseField ctx) i p, Symbolic ctx)
-    => StepFunction i p -> Predicate i p ctx
+predicate :: forall i p ctx .
+    ( Symbolic ctx
+    , Binary (BaseField ctx)
+    , FunctorAssumptions i
+    , FunctorAssumptions p
+    ) => StepFunction i p -> Predicate i p ctx
 predicate func =
     let
         predicateEval :: i (BaseField ctx) -> p (BaseField ctx) -> i (BaseField ctx)

@@ -10,6 +10,7 @@
 module ZkFold.Base.Protocol.IVC.RecursiveFunction where
 
 import           Control.DeepSeq                            (NFData)
+import           Data.Binary                                (Binary)
 import           Data.Distributive                          (Distributive (..))
 import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep)
 import           Data.These                                 (These (..))
@@ -28,9 +29,7 @@ import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi, x)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), PredicateAssumptions, PredicateCircuit,
-                                                             predicate)
-import           ZkFold.Base.Protocol.IVC.StepFunction      (FunctorAssumptions, StepFunction)
+import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), PredicateCircuit, predicate)
 import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
@@ -93,16 +92,18 @@ type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssump
     => RecursiveI i f -> RecursiveP d k i p c f -> RecursiveI i f
 
 -- | Transform a step function into a recursive function
-recursiveFunction :: forall algo d k a i p c ctx.
-    ( PredicateAssumptions a i p
-    , FunctorAssumptions c
+recursiveFunction :: forall algo d k a i p c ctx .
+    ( Symbolic ctx
+    , BaseField ctx ~ a
+    , Binary a
     , KnownNat (d-1)
     , KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
+    , FunctorAssumptions i
+    , FunctorAssumptions p
+    , FunctorAssumptions c
     , Zip i
-    , Symbolic ctx
-    , BaseField ctx ~ a
     ) => StepFunction i p -> RecursiveI i a -> RecursiveFunction algo d k a i p c
 recursiveFunction func z0 =
     let
@@ -145,8 +146,10 @@ type RecursivePredicateAssumptions algo d k a i p c =
     ( KnownNat (d-1)
     , KnownNat (k-1)
     , KnownNat k
-    , PredicateAssumptions a i p
+    , FunctorAssumptions i
+    , FunctorAssumptions p
     , FunctorAssumptions c
+    , Binary a
     )
 
 recursivePredicate :: forall algo d k a i p c ctx0 ctx1 ctx .
