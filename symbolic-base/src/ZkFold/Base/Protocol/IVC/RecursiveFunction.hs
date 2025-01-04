@@ -73,23 +73,22 @@ instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Represent
 
 --------------------------------------------------------------------------------
 
-type RecursiveFunctionAssumptions algo d a i c f ctx =
+type RecursiveFunctionAssumptions algo d a i c ctx =
     ( Symbolic ctx
     , BaseField ctx ~ a
-    , FieldElement ctx ~ f
-    , RandomOracle algo [f] f
-    , RandomOracle algo (i f) f
-    , RandomOracle algo (c f) f
-    , HomomorphicCommit [f] (c f)
-    , Scale a f
-    , Scale a (PolyVec f (d+1))
-    , Scale f (c f)
-    , FromConstant (RecursiveI i a) (RecursiveI i f)
-    , Conditional (Bool ctx) (RecursiveI i f)
+    , RandomOracle algo [FieldElement ctx] (FieldElement ctx)
+    , RandomOracle algo (i (FieldElement ctx)) (FieldElement ctx)
+    , RandomOracle algo (c (FieldElement ctx)) (FieldElement ctx)
+    , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
+    , Scale a (FieldElement ctx)
+    , Scale a (PolyVec (FieldElement ctx) (d+1))
+    , Scale (FieldElement ctx) (c (FieldElement ctx))
+    , FromConstant (RecursiveI i a) (RecursiveI i (FieldElement ctx))
+    , Conditional (Bool ctx) (RecursiveI i (FieldElement ctx))
     )
 
-type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssumptions algo d a i c f ctx
-    => RecursiveI i f -> RecursiveP d k i p c f -> RecursiveI i f
+type RecursiveFunction algo d k a i p c = forall ctx . RecursiveFunctionAssumptions algo d a i c ctx
+    => RecursiveI i (FieldElement ctx) -> RecursiveP d k i p c (FieldElement ctx) -> RecursiveI i (FieldElement ctx)
 
 -- | Transform a step function into a recursive function
 recursiveFunction :: forall algo d k a i p c ctx .
@@ -118,7 +117,7 @@ recursiveFunction func z0 =
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
         pRec = predicate @_ @_ @ctx func'
 
-        funcRecursive :: forall ctx' f . RecursiveFunctionAssumptions algo d a i c f ctx'
+        funcRecursive :: forall ctx' . RecursiveFunctionAssumptions algo d a i c ctx'
             => RecursiveI i (FieldElement ctx')
             -> RecursiveP d k i p c (FieldElement ctx')
             -> RecursiveI i (FieldElement ctx')
@@ -154,11 +153,11 @@ type RecursivePredicateAssumptions algo d k a i p c =
 
 recursivePredicate :: forall algo d k a i p c ctx0 ctx1 ctx .
     ( RecursivePredicateAssumptions algo d k a i p c
-    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx) ctx
+    , RecursiveFunctionAssumptions algo d a i c ctx
     , ctx0 ~ Interpreter a
-    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
+    , RecursiveFunctionAssumptions algo d a i c ctx0
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
+    , RecursiveFunctionAssumptions algo d a i c ctx1
     ) => RecursiveFunction algo d k a i p c -> Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
 recursivePredicate func =
     let
@@ -176,7 +175,7 @@ recursivePredicate func =
             in
                 witnessF . packed . fmap fromFieldElement $ func x u
 
-        func' :: forall f ctx' . RecursiveFunctionAssumptions algo d a i c f ctx'
+        func' :: forall ctx' . RecursiveFunctionAssumptions algo d a i c ctx'
             => ctx' (RecursiveI i) -> ctx' (RecursiveP d k i p c) -> ctx' (RecursiveI i)
         func' x' u' =
             let

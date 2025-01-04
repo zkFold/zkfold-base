@@ -84,11 +84,11 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c ctx f =
     , Scale a f
     , Scale a (PolyVec f (d+1))
     , Scale f (c f)
-    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx) ctx
+    , RecursiveFunctionAssumptions algo d a i c ctx
     , ctx0 ~ Interpreter a
-    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
+    , RecursiveFunctionAssumptions algo d a i c ctx0
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
+    , RecursiveFunctionAssumptions algo d a i c ctx1
     )
 
 -- | Create the first IVC result
