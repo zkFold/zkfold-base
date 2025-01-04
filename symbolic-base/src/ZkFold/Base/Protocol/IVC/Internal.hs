@@ -108,7 +108,7 @@ ivcSetup f x0 witness =
         z' = predicateWitness p (fromConstant <$> x0) witness
 
         fRec :: RecursiveFunction algo d k a i p c
-        fRec = recursiveFunction @algo @d @k @a @i @p @c @ctx f (RecursiveI x0 zero)
+        fRec = recursiveFunction @algo f (RecursiveI x0 zero)
 
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
         pRec = recursivePredicate @algo fRec
@@ -143,7 +143,7 @@ ivcProve f x0 res witness =
         z' = predicateWitness p (res^.z) witness
 
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = recursivePredicate @algo $ recursiveFunction @algo @d @k @a @i @p @c @ctx f (RecursiveI x0 zero)
+        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI x0 zero)
 
         input :: RecursiveI i w
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
@@ -202,7 +202,7 @@ ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo
 ivcVerify f z0 res =
     let
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx1
-        pRec = recursivePredicate @algo $ recursiveFunction @algo @d @k @a @i @p @c @ctx1 f (RecursiveI z0 zero)
+        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI z0 zero)
 
         input :: RecursiveI i f
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
