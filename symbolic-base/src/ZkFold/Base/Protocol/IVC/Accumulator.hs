@@ -21,6 +21,7 @@ import           ZkFold.Base.Protocol.IVC.AlgebraicMap (AlgebraicMap (..), algeb
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.IVC.Oracle       (RandomOracle)
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
+import           ZkFold.Symbolic.Class                 (Symbolic(..))
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
 
 -- Page 19, Accumulator instance
@@ -69,15 +70,15 @@ data Accumulator k i c f
 
 makeLenses ''Accumulator
 
-emptyAccumulator :: forall d k a i p c ctx f .
+emptyAccumulator :: forall d k i p c ctx f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
     , HomomorphicCommit [f] (c f)
     , Ring f
-    , Scale a f
-    ) => Predicate a i p ctx -> Accumulator k i c f
+    , Scale (BaseField ctx) f
+    ) => Predicate i p ctx -> Accumulator k i c f
 emptyAccumulator phi =
     let AlgebraicMap {..} = algebraicMap @d phi
         
@@ -90,13 +91,13 @@ emptyAccumulator phi =
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 
-emptyAccumulatorInstance :: forall d k a i p c ctx f .
+emptyAccumulatorInstance :: forall d k i p c ctx f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
     , HomomorphicCommit [f] (c f)
     , Ring f
-    , Scale a f
-    ) => Predicate a i p ctx -> AccumulatorInstance k i c f
+    , Scale (BaseField ctx) f
+    ) => Predicate i p ctx -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x

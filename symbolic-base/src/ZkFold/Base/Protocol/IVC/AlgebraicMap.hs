@@ -18,6 +18,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.IVC.Predicate                  (Predicate (..))
+import           ZkFold.Symbolic.Class                               (Symbolic(..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
@@ -31,17 +32,17 @@ newtype AlgebraicMap k i f = AlgebraicMap {
         applyAlgebraicMap :: i f -> Vector k [f] -> Vector (k-1) f -> f -> [f]
     }
 
-algebraicMap :: forall d k a i p f ctx .
+algebraicMap :: forall d k i p f ctx .
     ( KnownNat (d+1)
     , Representable i
     , Ring f
-    , Scale a f
+    , Scale (BaseField ctx) f
     )
-    => Predicate a i p ctx
+    => Predicate i p ctx
     -> AlgebraicMap k i f
 algebraicMap Predicate {..} = AlgebraicMap algMap
     where
-        sys :: [PM.Poly a (SysVar i) Natural]
+        sys :: [PM.Poly (BaseField ctx) (SysVar i) Natural]
         sys = M.elems (acSystem predicateCircuit)
 
         algMap :: i f -> Vector k [f] -> Vector (k-1) f -> f -> [f]
@@ -54,7 +55,7 @@ algebraicMap Predicate {..} = AlgebraicMap algMap
                 varMap (InVar inV)   = index pi inV
                 varMap (NewVar newV) = M.findWithDefault zero newV witness
 
-                f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
+                f_sps :: Vector (d+1) [PM.Poly (BaseField ctx) (SysVar i) Natural]
                 f_sps = degreeDecomposition @d $ sys
 
                 f_sps_uni :: Vector (d+1) [f]

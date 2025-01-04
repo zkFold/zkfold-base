@@ -30,7 +30,7 @@ import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), PredicateAssumptions, PredicateCircuit,
                                                              predicate)
-import           ZkFold.Base.Protocol.IVC.StepFunction      (FunctorAssumptions, StepFunction, StepFunctionAssumptions)
+import           ZkFold.Base.Protocol.IVC.StepFunction      (FunctorAssumptions, StepFunction)
 import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
@@ -75,7 +75,8 @@ instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Represent
 --------------------------------------------------------------------------------
 
 type RecursiveFunctionAssumptions algo d a i c f ctx =
-    ( StepFunctionAssumptions a ctx
+    ( Symbolic ctx
+    , BaseField ctx ~ a
     , FieldElement ctx ~ f
     , RandomOracle algo [f] f
     , RandomOracle algo (i f) f
@@ -102,19 +103,19 @@ recursiveFunction :: forall algo d k a i p c ctx.
     , Zip i
     , Symbolic ctx
     , BaseField ctx ~ a
-    ) => StepFunction a i p -> RecursiveI i a -> RecursiveFunction algo d k a i p c
+    ) => StepFunction i p -> RecursiveI i a -> RecursiveFunction algo d k a i p c
 recursiveFunction func z0 =
     let
         -- A helper function to derive the accumulator scheme
-        func' :: forall ctx' . StepFunctionAssumptions a ctx'
+        func' :: forall ctx' . Symbolic ctx'
             => RecursiveI i (FieldElement ctx')
             -> RecursiveP d k i p c (FieldElement ctx')
             -> RecursiveI i (FieldElement ctx')
         func' (RecursiveI x h) (RecursiveP u _ _ _ _) = RecursiveI (func x u) h
 
         -- A helper predicate to derive the accumulator scheme
-        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = predicate @_ @_ @_ @ctx func'
+        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
+        pRec = predicate @_ @_ @ctx func'
 
         funcRecursive :: forall ctx' f . RecursiveFunctionAssumptions algo d a i c f ctx'
             => RecursiveI i (FieldElement ctx')
@@ -155,7 +156,7 @@ recursivePredicate :: forall algo d k a i p c ctx0 ctx1 ctx .
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
-    ) => RecursiveFunction algo d k a i p c -> Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx
+    ) => RecursiveFunction algo d k a i p c -> Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
 recursivePredicate func =
     let
         predicateEval :: (RecursiveI i) a -> (RecursiveP d k i p c) a -> (RecursiveI i) a
@@ -181,7 +182,7 @@ recursivePredicate func =
             in
                 packed . fmap fromFieldElement $ func x u
 
-        predicateCircuit :: PredicateCircuit a (RecursiveI i) (RecursiveP d k i p c)
+        predicateCircuit :: PredicateCircuit (RecursiveI i) (RecursiveP d k i p c) ctx
         predicateCircuit =
             hlmap (U1 :*:) $
             compileWith @a guessOutput (\(i :*: p) U1 -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'        

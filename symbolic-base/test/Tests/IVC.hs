@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.IVC (specIVC) where
 
@@ -9,7 +10,7 @@ import           Prelude                                     hiding (Num (..), p
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (arbitrary, generate, property, withMaxSuccess)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), ToConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_Scalar)
@@ -27,7 +28,7 @@ import           ZkFold.Base.Protocol.IVC.Oracle             (MiMCHash)
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.SpecialSound       (specialSoundProtocol)
 import           ZkFold.Prelude                              (replicate)
-import           ZkFold.Symbolic.Class                       (BaseField, Symbolic)
+import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
@@ -39,23 +40,23 @@ type P = U1
 type K = 1
 type CTX = Interpreter F
 type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) U1
-type PHI = Predicate F I P CTX
+type PHI = Predicate I P CTX
 type SPS = FiatShamir 1 I P C [F] [F] F
 type D = 2
 type PARDEG = 5
 type PAR = PolyVec F PARDEG
 
-testFunction :: forall ctx . (Symbolic ctx, FromConstant F (BaseField ctx))
+testFunction :: forall ctx . Symbolic ctx
     => PAR -> Vector 1 (FieldElement ctx) -> U1 (FieldElement ctx) -> Vector 1 (FieldElement ctx)
 testFunction p x _ =
-    let p' = fromList $ map fromConstant $ toList p :: PolyVec (FieldElement ctx) PARDEG
+    let p' = fromList $ map (fromConstant . toConstant) $ toList p :: PolyVec (FieldElement ctx) PARDEG
     in singleton $ evalPolyVec p' $ item x
-
-testPredicateCircuit :: PAR -> AC
-testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
 
 testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
+
+testPredicateCircuit :: PAR -> AC
+testPredicateCircuit p = predicateCircuit @I @P $ testPredicate p
 
 testAlgebraicMap :: PHI -> AlgebraicMap K I F
 testAlgebraicMap = algebraicMap @D

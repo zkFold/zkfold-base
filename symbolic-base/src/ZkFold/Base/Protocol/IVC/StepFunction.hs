@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-
 module ZkFold.Base.Protocol.IVC.StepFunction where
 
 import           Control.DeepSeq                   (NFData)
@@ -18,10 +16,4 @@ type FunctorAssumptions f =
     , Ord (Rep f)
     )
 
-type StepFunctionAssumptions a ctx =
-    ( Symbolic ctx
-    , BaseField ctx ~ a
-    )
-
-type StepFunction a i p = forall ctx . StepFunctionAssumptions a ctx
-    => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)
+type StepFunction i p = forall ctx . Symbolic ctx => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)

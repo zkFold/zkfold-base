@@ -50,14 +50,14 @@ data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
       -> o                              -- ^ verifier output
   }
 
-specialSoundProtocol :: forall d a i p ctx .
+specialSoundProtocol :: forall d i p ctx .
     ( KnownNat (d+1)
     , Representable i
     , Representable p
     , Symbolic ctx
-    , Scale a (WitnessField ctx)
-    , FromConstant a (WitnessField ctx)
-    ) => Predicate a i p ctx -> SpecialSoundProtocol 1 i p [WitnessField ctx] [WitnessField ctx] (WitnessField ctx)
+    , Scale (BaseField ctx) (WitnessField ctx)
+    , FromConstant (BaseField ctx) (WitnessField ctx)
+    ) => Predicate i p ctx -> SpecialSoundProtocol 1 i p [WitnessField ctx] [WitnessField ctx] (WitnessField ctx)
 specialSoundProtocol phi@Predicate {..} =
   let
       prover pi0 w _ _ = elems $ witnessGenerator @(WitnessField ctx) predicateCircuit (pi0 :*: w) (predicateWitness pi0 w)
@@ -68,12 +68,12 @@ specialSoundProtocol phi@Predicate {..} =
   in
       SpecialSoundProtocol predicateWitness prover verifier
 
-specialSoundProtocol' :: forall d a i p ctx.
+specialSoundProtocol' :: forall d i p ctx.
     ( KnownNat (d+1)
     , Representable i
     , Symbolic ctx
-    , Scale a (FieldElement ctx)
-    ) => Predicate a i p ctx -> SpecialSoundProtocol 1 i p [FieldElement ctx] [FieldElement ctx] (FieldElement ctx)
+    , Scale (BaseField ctx) (FieldElement ctx)
+    ) => Predicate i p ctx -> SpecialSoundProtocol 1 i p [FieldElement ctx] [FieldElement ctx] (FieldElement ctx)
 specialSoundProtocol' phi =
   let
       verifier pi pm ts =

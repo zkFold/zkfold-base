@@ -25,6 +25,7 @@ import           ZkFold.Base.Protocol.IVC.FiatShamir        (transcript)
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.IVC.Oracle            (RandomOracle (..))
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate)
+import           ZkFold.Symbolic.Class                      (Symbolic(..))
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k i c f = AccumulatorScheme
@@ -45,7 +46,7 @@ data AccumulatorScheme d k i c f = AccumulatorScheme
             -> (Vector k (c f), c f)                        -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k a i p c f f' ctx.
+accumulatorScheme :: forall algo d k i p c f f' ctx'.
     ( KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
@@ -57,11 +58,11 @@ accumulatorScheme :: forall algo d k a i p c f f' ctx.
     , HomomorphicCommit [f'] (c f)
     , Field f
     , Field f'
-    , Scale a f'
-    , Scale a (PU.PolyVec f' (d+1))
+    , Scale (BaseField ctx') f'
+    , Scale (BaseField ctx') (PU.PolyVec f' (d+1))
     , Scale f (c f)
     )
-    => Predicate a i p ctx
+    => Predicate i p ctx'
     -> (f -> f')
     -> AccumulatorScheme d k i c f
 accumulatorScheme phi mapField =

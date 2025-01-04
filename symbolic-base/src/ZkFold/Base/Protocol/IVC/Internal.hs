@@ -96,13 +96,13 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c ctx f =
 --
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
 ivcSetup :: forall ctx0 ctx1 algo d k a i p c ctx w . (WitnessField ctx ~ w, IVCAssumptions ctx0 ctx1 algo d k a i p c ctx w)
-    => StepFunction a i p
+    => StepFunction i p
     -> i a
     -> p w
     -> IVCResult k i c w
 ivcSetup f x0 witness =
     let
-        p :: Predicate a i p ctx
+        p :: Predicate i p ctx
         p = predicate f
 
         z' :: i w
@@ -111,7 +111,7 @@ ivcSetup f x0 witness =
         fRec :: RecursiveFunction algo d k a i p c
         fRec = recursiveFunction @algo @d @k @a @i @p @c @ctx f (RecursiveI x0 zero)
 
-        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx
+        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
         pRec = recursivePredicate @algo fRec
 
         acc0 :: Accumulator k (RecursiveI i) c w
@@ -130,20 +130,20 @@ ivcSetup f x0 witness =
     in IVCResult z' acc0 (IVCProof commits messages)
 
 ivcProve :: forall ctx0 ctx1 algo d k a i p c ctx w . (WitnessField ctx ~ w, IVCAssumptions ctx0 ctx1 algo d k a i p c ctx w)
-    => StepFunction a i p
+    => StepFunction i p
     -> i a
     -> IVCResult k i c w
     -> p w
     -> IVCResult k i c w
 ivcProve f x0 res witness =
     let
-        p :: Predicate a i p ctx
+        p :: Predicate i p ctx
         p = predicate f
 
         z' :: i w
         z' = predicateWitness p (res^.z) witness
 
-        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx
+        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
         pRec = recursivePredicate @algo $ recursiveFunction @algo @d @k @a @i @p @c @ctx f (RecursiveI x0 zero)
 
         input :: RecursiveI i w
@@ -178,7 +178,7 @@ ivcProve f x0 res witness =
 
 -- TODO: return the final result and `Bool ctx` that contains the result of the accumulator verification
 ivc :: forall ctx0 ctx1 algo d k a i p c ctx w n . (WitnessField ctx ~ w, KnownNat n, IVCAssumptions ctx0 ctx1 algo d k a i p c ctx w)
-    => StepFunction a i p
+    => StepFunction i p
     -> i a
     -> Payloaded (Vector n :.: p) ctx
     -> IVCResult k i c w
@@ -196,13 +196,13 @@ ivc f x0 (Payloaded (Comp1 ps)) =
 
 ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo d k a i p c ctx1 f
     => f ~ FieldElement ctx1
-    => StepFunction a i p
+    => StepFunction i p
     -> i a
     -> IVCResult k i c f
     -> ((Vector k (c f), [f]), (Vector k (c f), c f))
 ivcVerify f z0 res =
     let
-        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c) ctx1
+        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx1
         pRec = recursivePredicate @algo $ recursiveFunction @algo @d @k @a @i @p @c @ctx1 f (RecursiveI z0 zero)
 
         input :: RecursiveI i f
