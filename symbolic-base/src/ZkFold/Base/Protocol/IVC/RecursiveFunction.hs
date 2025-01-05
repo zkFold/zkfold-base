@@ -73,26 +73,19 @@ instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Represent
 
 --------------------------------------------------------------------------------
 
-type RecursiveFunctionAssumptions algo d a i c ctx =
+type RecursiveFunctionAssumptions algo a d k i p c ctx =
     ( Symbolic ctx
     , BaseField ctx ~ a
+    , Binary (BaseField ctx)
     , RandomOracle algo [FieldElement ctx] (FieldElement ctx)
     , RandomOracle algo (i (FieldElement ctx)) (FieldElement ctx)
     , RandomOracle algo (c (FieldElement ctx)) (FieldElement ctx)
     , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
-    , Scale a (FieldElement ctx)
-    , Scale a (PolyVec (FieldElement ctx) (d+1))
+    , Scale (BaseField ctx) (FieldElement ctx)
+    , Scale (BaseField ctx) (PolyVec (FieldElement ctx) (d+1))
     , Scale (FieldElement ctx) (c (FieldElement ctx))
-    , FromConstant (RecursiveI i a) (RecursiveI i (FieldElement ctx))
+    , FromConstant (RecursiveI i (BaseField ctx)) (RecursiveI i (FieldElement ctx))
     , Conditional (Bool ctx) (RecursiveI i (FieldElement ctx))
-    )
-
-type RecursiveFunction algo d k a i p c = forall ctx . RecursiveFunctionAssumptions algo d a i c ctx
-    => RecursiveI i (FieldElement ctx) -> RecursiveP d k i p c (FieldElement ctx) -> RecursiveI i (FieldElement ctx)
-
--- | Transform a step function into a recursive function
-recursiveFunction :: forall algo d k a i p c ctx .
-    ( Binary a
     , KnownNat (d-1)
     , KnownNat (d+1)
     , KnownNat (k-1)
@@ -101,13 +94,16 @@ recursiveFunction :: forall algo d k a i p c ctx .
     , FunctorAssumptions p
     , FunctorAssumptions c
     , Zip i
-    , RecursiveFunctionAssumptions algo d a i c ctx
     )
+
+type RecursiveFunction algo a d k i p c = forall ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
+    => RecursiveI i (FieldElement ctx) -> RecursiveP d k i p c (FieldElement ctx) -> RecursiveI i (FieldElement ctx)
+
+-- | Transform a step function into a recursive function
+recursiveFunction :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
     => StepFunction i p
     -> RecursiveI i a
-    -> RecursiveI i (FieldElement ctx)
-    -> RecursiveP d k i p c (FieldElement ctx)
-    -> RecursiveI i (FieldElement ctx)
+    -> RecursiveFunction algo a d k i p c
 recursiveFunction func z0 =
     let
         -- A helper function to derive the accumulator scheme
@@ -121,22 +117,22 @@ recursiveFunction func z0 =
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
         pRec = predicate @_ @_ @ctx func'
 
-        funcRecursive :: 
-               RecursiveI i (FieldElement ctx)
-            -> RecursiveP d k i p c (FieldElement ctx)
-            -> RecursiveI i (FieldElement ctx)
+        funcRecursive :: forall ctx' . RecursiveFunctionAssumptions algo a d k i p c ctx'
+            => RecursiveI i (FieldElement ctx')
+            -> RecursiveP d k i p c (FieldElement ctx')
+            -> RecursiveI i (FieldElement ctx')
         funcRecursive z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
             let
-                accScheme :: AccumulatorScheme d k (RecursiveI i) c (FieldElement ctx)
+                accScheme :: AccumulatorScheme d k (RecursiveI i) c (FieldElement ctx')
                 accScheme = accumulatorScheme @algo pRec id
 
-                x' :: i (FieldElement ctx)
+                x' :: i (FieldElement ctx')
                 x' = func x u
 
-                accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx)
+                accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx')
                 accX' = verifier accScheme z piX accX pf
 
-                h :: (FieldElement ctx)
+                h :: (FieldElement ctx')
                 h = oracle @algo accX'
             in
                 bool (fromConstant z0) (RecursiveI x' h) $ Bool $ fromFieldElement flag
@@ -145,26 +141,24 @@ recursiveFunction func z0 =
 
 --------------------------------------------------------------------------------
 
-type RecursivePredicateAssumptions algo d k a i p c =
-    ( KnownNat (d-1)
-    , KnownNat (k-1)
-    , KnownNat k
-    , FunctorAssumptions i
-    , FunctorAssumptions p
-    , FunctorAssumptions c
-    , Binary a
-    )
-
-recursivePredicate :: forall algo d k a i p c ctx0 ctx1 ctx .
-    ( RecursivePredicateAssumptions algo d k a i p c
-    , RecursiveFunctionAssumptions algo d a i c ctx
+recursivePredicate :: forall algo a d k i p c ctx0 ctx1 ctx .
+    ( RecursiveFunctionAssumptions algo a d k i p c ctx
     , ctx0 ~ Interpreter a
-    , RecursiveFunctionAssumptions algo d a i c ctx0
+    , RecursiveFunctionAssumptions algo a d k i p c ctx0
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo d a i c ctx1
-    ) => RecursiveFunction algo d k a i p c -> Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
+    , RecursiveFunctionAssumptions algo a d k i p c ctx1
+    ) => RecursiveFunction algo a d k i p c -> Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
 recursivePredicate func =
     let
+        func' :: forall ctx' . RecursiveFunctionAssumptions algo a d k i p c ctx'
+            => ctx' (RecursiveI i) -> ctx' (RecursiveP d k i p c) -> ctx' (RecursiveI i)
+        func' x' u' =
+            let
+                x = FieldElement <$> unpacked x'
+                u = FieldElement <$> unpacked u'
+            in
+                packed . fmap fromFieldElement $ func x u
+
         predicateEval :: (RecursiveI i) a -> (RecursiveP d k i p c) a -> (RecursiveI i) a
         predicateEval z u = runInterpreter $ func' (Interpreter z) (Interpreter u)
 
@@ -178,15 +172,6 @@ recursivePredicate func =
                 u = fmap FieldElement $ unpacked $ embedW u'
             in
                 witnessF . packed . fmap fromFieldElement $ func x u
-
-        func' :: forall ctx' . RecursiveFunctionAssumptions algo d a i c ctx'
-            => ctx' (RecursiveI i) -> ctx' (RecursiveP d k i p c) -> ctx' (RecursiveI i)
-        func' x' u' =
-            let
-                x = FieldElement <$> unpacked x'
-                u = FieldElement <$> unpacked u'
-            in
-                packed . fmap fromFieldElement $ func x u
 
         predicateCircuit :: PredicateCircuit (RecursiveI i) (RecursiveP d k i p c) ctx
         predicateCircuit =

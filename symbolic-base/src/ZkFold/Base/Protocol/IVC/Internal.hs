@@ -70,8 +70,7 @@ data IVCResult k i c f
 makeLenses ''IVCResult
 
 type IVCAssumptions ctx0 ctx1 algo d k a i p c ctx f =
-    ( RecursivePredicateAssumptions algo d k a i p c
-    , KnownNat (d+1)
+    ( KnownNat (d+1)
     , k ~ 1
     , Zip i
     , Field f
@@ -84,11 +83,13 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c ctx f =
     , Scale a f
     , Scale a (PolyVec f (d+1))
     , Scale f (c f)
-    , RecursiveFunctionAssumptions algo d a i c ctx
+    , Symbolic ctx
+    , BaseField ctx ~ a
+    , RecursiveFunctionAssumptions algo a d k i p c ctx
     , ctx0 ~ Interpreter a
-    , RecursiveFunctionAssumptions algo d a i c ctx0
+    , RecursiveFunctionAssumptions algo a d k i p c ctx0
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo d a i c ctx1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx1
     )
 
 -- | Create the first IVC result
@@ -107,8 +108,8 @@ ivcSetup f x0 witness =
         z' :: i w
         z' = predicateWitness p (fromConstant <$> x0) witness
 
-        fRec :: RecursiveFunction algo d k a i p c
-        fRec = recursiveFunction @algo f (RecursiveI x0 zero)
+        fRec :: RecursiveFunction algo a d k i p c
+        fRec = recursiveFunction @algo @a @d @k @i @p @c @ctx f (RecursiveI x0 zero)
 
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
         pRec = recursivePredicate @algo fRec
@@ -143,7 +144,7 @@ ivcProve f x0 res witness =
         z' = predicateWitness p (res^.z) witness
 
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI x0 zero)
+        pRec = recursivePredicate @algo $ recursiveFunction @algo @a @d @k @i @p @c @ctx f (RecursiveI x0 zero)
 
         input :: RecursiveI i w
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
@@ -202,7 +203,7 @@ ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo
 ivcVerify f z0 res =
     let
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx1
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f (RecursiveI z0 zero)
+        pRec = recursivePredicate @algo $ recursiveFunction @algo @a @d @k @i @p @c @ctx1 f (RecursiveI z0 zero)
 
         input :: RecursiveI i f
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
