@@ -10,6 +10,7 @@ module ZkFold.Symbolic.Data.FFA where
 import           Control.Applicative              (pure)
 import           Control.DeepSeq                  (NFData, force)
 import           Control.Monad                    (Monad, forM, return, (>>=))
+import           Control.Monad.State
 import           Data.Bits                        (Bits (..))
 import           Data.Foldable                    (any, foldlM, for_)
 import qualified Data.Foldable                    as F
@@ -21,6 +22,7 @@ import           Data.Semialign
 import           Data.Traversable                 (for, traverse)
 import           Data.Tuple                       (fst, snd, uncurry)
 import qualified Data.Vector                      as V
+import qualified Data.Vector.Mutable              as Mutable
 import           Data.Zip                         (zipWith)
 import           Prelude                          (Int, Integer, error, undefined)
 import qualified Prelude                          as Haskell
@@ -43,8 +45,6 @@ import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord         (blueprintGE)
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit, newAssigned)
-import qualified Data.Vector.Mutable as Mutable
-import Control.Monad.State
 
 type Size = 7
 
