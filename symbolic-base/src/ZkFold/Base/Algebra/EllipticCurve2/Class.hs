@@ -16,7 +16,6 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
     -- * point classes
   , Planar (..)
   , HasPointInf (..)
-  , ProjectivePlanar (..)
     -- * point types
   , Weierstrass (..)
   , TwistedEdwards (..)
@@ -25,7 +24,6 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
   , AffinePoint (..)
   , CompressedAffinePoint (..)
   , TwistedExtendedPoint (..)
-  , Slope (..)
   ) where
 
 import           GHC.Generics
@@ -129,42 +127,6 @@ class Planar point where pointXY :: Field field => field -> field -> point field
 `pointInf` for constructing the point at infinity. -}
 class HasPointInf point where pointInf :: Field field => point field
 
-{- | A class for constructing and destructing points in the projective plane;
-the union of the affine plane and a projective line of "slopes" at infinity.
-The infinite slope at infinity is the point at infinity.
--}
-class
-  ( Planar point
-  , HasPointInf point
-  ) => ProjectivePlanar bool point where
-  {- | Construct a finite slope at infinity. -}
-  slopeInf :: Field field => Slope field -> point field
-  {- | Handle all cases for a point in the projective plane. -}
-  casePoint
-    :: (Conditional bool r, Eq bool field, Field field)
-    => r -- ^ handle point (infinite slope) at infinity
-    -> (Slope field -> r) -- ^ handle finite slope at infinity
-    -> (AffinePoint field -> r) -- ^ handle a finite point
-    -> point field -> r
-
-isWeierstrass
-  :: forall curve bool point field.
-     ( WeierstrassCurve curve field
-     , ProjectivePlanar bool point
-     , BoolType bool
-     , Eq bool field
-     , Conditional bool bool
-     )
-  => point field -> bool
-isWeierstrass =
-  let
-    infCase = true
-    slopeCase _ = false
-    b = weierstrassB @curve
-    finCase (AffinePoint x y) = y*y == x*x*x + b
-  in
-    casePoint @bool infCase slopeCase finCase
-
 {- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
 with a phantom `WeierstrassCurve` @curve@. -}
 newtype Weierstrass curve point field = Weierstrass {pointWeierstrass :: point field}
@@ -175,7 +137,9 @@ instance
   , Eq bool field
   , Field field
   ) => EllipticCurve curve bool field (Weierstrass curve (Point bool)) where
-    isOnCurve = isWeierstrass @curve
+    isOnCurve (Weierstrass (Point x y isInf)) =
+      if isInf then x == zero else
+      let b = weierstrassB @curve in y*y == x*x*x + b
 deriving newtype instance Conditional bool (point field)
   => Conditional bool (Weierstrass curve point field)
 deriving newtype instance Eq bool (point field)
@@ -184,8 +148,6 @@ deriving newtype instance HasPointInf point
   => HasPointInf (Weierstrass curve point)
 deriving newtype instance Planar point
   => Planar (Weierstrass curve point)
-deriving newtype instance ProjectivePlanar bool point
-  => ProjectivePlanar bool (Weierstrass curve point)
 instance
   ( WeierstrassCurve curve field
   , Conditional bool bool
@@ -297,14 +259,6 @@ instance BoolType bool => Planar (Point bool) where
   pointXY x y = Point x y false
 instance BoolType bool => HasPointInf (Point bool) where
   pointInf = Point zero one true
-instance BoolType bool => ProjectivePlanar bool (Point bool) where
-  slopeInf (Slope dx dy) = Point dx dy true
-  casePoint infPtCase infSlopeCase finCase (Point x y isInf) =
-    if isInf
-    then if x == zero :: bool
-         then infPtCase
-         else infSlopeCase (Slope x y)
-    else finCase (AffinePoint x y)
 instance
   ( Conditional bool bool
   , Conditional bool field
@@ -338,11 +292,6 @@ instance Planar AffinePoint where pointXY = AffinePoint
 data CompressedAffinePoint bool field = CompressedAffinePoint
   { _xBit :: bool
   , _y    :: field
-  } deriving Generic
-
-data Slope field = Slope
-  { _x :: field
-  , _y :: field
   } deriving Generic
 
 data HomogeneousPoint field = HomogeneousPoint
