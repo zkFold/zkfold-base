@@ -22,8 +22,6 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
   , Point (..)
   , CompressedPoint (..)
   , AffinePoint (..)
-  , CompressedAffinePoint (..)
-  , TwistedExtendedPoint (..)
   ) where
 
 import           GHC.Generics
@@ -288,21 +286,10 @@ data AffinePoint field = AffinePoint
   , _y :: field
   } deriving Generic
 instance Planar AffinePoint where pointXY = AffinePoint
-
-data CompressedAffinePoint bool field = CompressedAffinePoint
-  { _xBit :: bool
-  , _y    :: field
-  } deriving Generic
-
-data HomogeneousPoint field = HomogeneousPoint
-  { _x :: field
-  , _y :: field
-  , _z :: field
-  } deriving Generic
-
-data TwistedExtendedPoint field = TwistedExtendedPoint
-  { _x :: field
-  , _y :: field
-  , _t :: field
-  , _z :: field
-  } deriving Generic
+instance Conditional bool field => Conditional bool (AffinePoint field)
+instance
+  ( Conditional bool bool
+  , Eq bool bool
+  , Eq bool field
+  , Field field
+  ) => Eq bool (AffinePoint field)
