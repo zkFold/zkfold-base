@@ -9,21 +9,23 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 import           Control.DeepSeq                                     (NFData)
 import           Data.Aeson                                          hiding (Bool)
 import           Data.Binary                                         (Binary)
+import           Data.Bool                                           (bool)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
 import           GHC.Generics                                        (Par1 (..))
-import           Prelude                                             (Show, mempty, pure, return, show, ($), (++), (.),
-                                                                      (<$>))
+import           Prelude                                             (Show, head, mempty, pure, return, show, ($), (++),
+                                                                      (.), (<$>), (<))
 import qualified Prelude                                             as Haskell
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
-import           ZkFold.Prelude                                      (genSubset)
+import           ZkFold.Prelude                                      (genSubset, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -42,7 +44,7 @@ instance
   , Haskell.Foldable i
   ) => Arbitrary (ArithmeticCircuit a p i Par1) where
     arbitrary = do
-        outVar <- SysVar . InVar <$> arbitrary
+        outVar <- toVar . InVar <$> arbitrary
         let ac = mempty {acOutput = Par1 outVar}
         fromFieldElement <$> arbitrary' (FieldElement ac) 10
 
@@ -62,7 +64,7 @@ instance
     arbitrary = do
         ac <- arbitrary @(ArithmeticCircuit a p i Par1)
         o  <- unsafeToVector <$> genSubset (value @l) (getAllVars ac)
-        return ac {acOutput = SysVar <$> o}
+        return ac {acOutput = toVar <$> o}
 
 arbitrary' ::
   forall a p i .
@@ -70,14 +72,18 @@ arbitrary' ::
   (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a p i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a p i))
-arbitrary' ac 0 = return ac
+arbitrary' ac 0 = return $ bool ac (newF * newF) (numOfVars < 2)
+  where
+    vars = getAllVars $ fromFieldElement ac
+    numOfVars = length vars
+    newF = FieldElement (fromFieldElement ac) { acOutput = pure (toVar $ head vars)}
 arbitrary' ac iter = do
     let vars = getAllVars (fromFieldElement ac)
     li <- elements vars
     ri <- elements vars
-    let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (SysVar li)}
-                 , FieldElement (fromFieldElement ac) { acOutput = pure (SysVar ri)})
-    let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural 10)) { acOutput = pure (SysVar li)}
+    let (l, r) = ( FieldElement (fromFieldElement ac) { acOutput = pure (toVar li)}
+                 , FieldElement (fromFieldElement ac) { acOutput = pure (toVar ri)})
+    let c = FieldElement (fromFieldElement $ createRangeConstraint ac (fromConstant @Natural 10)) { acOutput = pure (toVar li)}
 
     ac' <- elements [
         l + r
@@ -122,4 +128,5 @@ instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a
             acRange    <- v .: "range"
             acOutput   <- v .: "output"
             let acWitness = empty
+                acFold    = empty
             pure ArithmeticCircuit{..}

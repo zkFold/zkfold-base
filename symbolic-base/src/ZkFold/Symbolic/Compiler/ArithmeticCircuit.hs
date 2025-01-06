@@ -73,6 +73,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal     (Arithm
                                                                           exec, exec1, hlmap, hpmap, witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                        (expansion)
 import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))
@@ -100,11 +101,11 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(SysVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(toVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
 
 emptyCircuit :: ArithmeticCircuit a p i U1
-emptyCircuit = ArithmeticCircuit empty M.empty empty U1
+emptyCircuit = ArithmeticCircuit empty M.empty empty empty U1
 
 -- | Given a natural transformation
 -- from payload @p@ and input @i@ to output @o@,
@@ -116,10 +117,10 @@ naturalCircuit ::
   (forall x. p x -> i x -> o x) -> ArithmeticCircuit a p i o
 naturalCircuit f = uncurry crown $ swap $ flip runState emptyCircuit $
   for (f (tabulate Left) (tabulate Right)) $
-    either (unconstrained . pure . WExVar) (return . SysVar . InVar)
+    either (unconstrained . pure . WExVar) (return . toVar . InVar)
 
 -- | Identity circuit which returns its input @i@ and doesn't use the payload.
-idCircuit :: Representable i => ArithmeticCircuit a p i i
+idCircuit :: (Representable i, Semiring a) => ArithmeticCircuit a p i i
 idCircuit = emptyCircuit { acOutput = acInput }
 
 -- | Payload of an input to arithmetic circuit.
