@@ -1,10 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Blake2b where
 
 import           Crypto.Hash.BLAKE2.BLAKE2b                  (hash)
 import qualified Data.ByteString.Internal                    as BI
-import           Data.Maybe                                  (fromJust)
 import           GHC.Exts                                    (IsString (fromString))
 import           GHC.Generics                                hiding (from)
 import           Numeric.Natural                             (Natural)
@@ -14,17 +14,14 @@ import           Test.Hspec                                  (Spec, describe, hs
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
-import           ZkFold.Base.Data.ByteString                 (fromByteString)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b     (blake2b_224, blake2b_512)
 import           ZkFold.Symbolic.Class                       (Symbolic)
-import           ZkFold.Symbolic.Compiler                    (compile, eval1)
+import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile, eval1)
 import           ZkFold.Symbolic.Data.Bool                   (Bool)
-import           ZkFold.Symbolic.Data.ByteString             (ByteString, Resize (..))
-import           ZkFold.Symbolic.Data.Combinators            (Iso (..))
-import qualified ZkFold.Symbolic.Data.Eq                     as ZK
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-import           ZkFold.Symbolic.Interpreter                 (Interpreter)
+import           ZkFold.Symbolic.Data.ByteString             (ByteString (..))
+import qualified ZkFold.Symbolic.Data.Eq                     as Symbolic
+import           ZkFold.Symbolic.Interpreter                 (Interpreter (..))
 
 blake2bNumeric :: forall c . (Symbolic c, Eq (c (Vector 512))) => Spec
 blake2bNumeric =
@@ -50,22 +47,17 @@ blake2bExampleRfc =
         abc  = fromConstant @_ @(ByteString 512 _) $ hash 64 BI.empty "abc"
     in it "example test from rfc7693 " $ abc' == abc
 
-equalityBlake ::
-  forall a c .
-   ( Symbolic c
-   , Iso (FieldElement c) (ByteString 255 c)
-   , FromConstant a (ByteString 24 c)
-   ) => a -> FieldElement c -> Bool c
-equalityBlake input target =
-    let hash'   = from @(ByteString 255 c) $ resize $ blake2b_224 @3 @c $ fromConstant input
-        target' = {- resize $ from @_ @(ByteString 255 c) -} target
-    in target' ZK.== hash'
+equalityBlake :: forall c . Symbolic c
+    => BI.ByteString -> ByteString 24 c -> Bool c
+equalityBlake target input = fromConstant target Symbolic.== blake2b_224 @3 @c input
 
 blake2bSymbolic :: Spec
 blake2bSymbolic =
-    let ac    = compile @Fr $ equalityBlake $ fromString @BI.ByteString "abc"
-        hash' = fromJust $ fromByteString @Fr $ {- BI.reverse -} hash 28 BI.empty "abc"
-    in it "simple test with cardano-crypto " $ eval1 ac (U1 :*: U1) (Par1 hash' :*: U1) == 1
+    let ac :: ArithmeticCircuit Fr (U1 :*: U1) (Vector 24 :*: U1) Par1
+        ac    = compile @Fr $ equalityBlake $ hash 28 BI.empty "abc"
+        ByteString bs = fromConstant @_ @(ByteString 24 (Interpreter Fr)) $ fromString @BI.ByteString "abc"
+        input         = runInterpreter bs
+    in it "simple test with cardano-crypto " $ eval1 ac (U1 :*: U1) (input :*: U1) == 1
 
 specBlake2b :: IO ()
 specBlake2b = hspec $ describe "BLAKE2b self-test validation" $ do
