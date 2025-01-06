@@ -19,7 +19,7 @@ import           GHC.Generics                               (Generic, Generic1, 
 import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, id, ($),
                                                              (.), (<$>))
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale, FromConstant (..))
+import           ZkFold.Base.Algebra.Basic.Class            (Scale, FromConstant (..), AdditiveGroup)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
 import           ZkFold.Base.Data.Orphans                   ()
@@ -27,15 +27,15 @@ import           ZkFold.Base.Data.Package                   (packed, unpacked)
 import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi, x)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
-import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit)
+import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit, PedersonSetup)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), PredicateCircuit, predicate)
 import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Conditional           (bool, Conditional)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement), fromFieldElement)
+import           ZkFold.Symbolic.Data.Conditional           (Conditional (..))
+import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
 import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
 
@@ -54,8 +54,6 @@ instance Representable i => Distributive (RecursiveI i) where
     collect = collectRep
 
 instance Representable i => Representable (RecursiveI i)
-
-instance (RandomOracle algo [f] f, RandomOracle algo (i f) f) => RandomOracle algo (RecursiveI i f) f
 
 instance (SymbolicData f, SymbolicData (i f), Context f ~ Context (i f), Support f ~ Support (i f)) => SymbolicData (RecursiveI i f)
 
@@ -77,9 +75,9 @@ type RecursiveFunctionAssumptions algo a d k i p c ctx =
     ( Symbolic ctx
     , BaseField ctx ~ a
     , Binary (BaseField ctx)
-    , RandomOracle algo [FieldElement ctx] (FieldElement ctx)
-    , RandomOracle algo (i (FieldElement ctx)) (FieldElement ctx)
-    , RandomOracle algo (c (FieldElement ctx)) (FieldElement ctx)
+    , HashAlgorithm algo
+    , PedersonSetup [] (c (FieldElement ctx))
+    , AdditiveGroup (c (FieldElement ctx))
     , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
     , Scale (BaseField ctx) (FieldElement ctx)
     , Scale (BaseField ctx) (PolyVec (FieldElement ctx) (d+1))

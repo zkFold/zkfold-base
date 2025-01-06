@@ -12,7 +12,7 @@ import           Data.Constraint.Nat                        (plusMinusInverse1)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Zip                                   (Zip (..))
 import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    (fmap, ($), (.), (<$>))
+import           Prelude                                    (Foldable, fmap, ($), (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -23,7 +23,7 @@ import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (AlgebraicMap (..), 
 import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.IVC.FiatShamir        (transcript)
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Base.Protocol.IVC.Oracle            (RandomOracle (..))
+import           ZkFold.Base.Protocol.IVC.Oracle            (HashAlgorithm, oracle)
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate)
 import           ZkFold.Symbolic.Class                      (Symbolic(..))
 
@@ -51,10 +51,9 @@ accumulatorScheme :: forall algo d k i p c f f' ctx'.
     , KnownNat (d+1)
     , Representable i
     , Zip i
-    , RandomOracle algo f f
-    , RandomOracle algo [f] f
-    , RandomOracle algo (i f) f
-    , RandomOracle algo (c f) f
+    , HashAlgorithm algo
+    , Foldable i
+    , Foldable c
     , HomomorphicCommit [f'] (c f)
     , Field f
     , Field f'

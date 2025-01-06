@@ -16,12 +16,12 @@ import           ZkFold.Base.Data.Vector                 (Vector, unsafeToVector
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Prelude                          (take)
 
--- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
+-- | Commit to the object @x@ with commitment of type @a@ using the algorithm @algo@
 --
-class Commit algo a f where
-    commit :: a -> f
+class Commit algo x a where
+    commit :: x -> a
 
-instance RandomOracle algo a x => Commit algo a x where
+instance (HashAlgorithm algo, RingRepresentation x a) => Commit algo x a where
     commit = oracle @algo
 
 -- | Homomorphic commitment scheme, i.e. (hcommit x) * (hcommit y) == hcommit (x + y)
