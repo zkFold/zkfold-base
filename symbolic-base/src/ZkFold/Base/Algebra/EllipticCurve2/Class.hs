@@ -288,8 +288,7 @@ data AffinePoint field = AffinePoint
 instance Planar AffinePoint where pointXY = AffinePoint
 instance Conditional bool field => Conditional bool (AffinePoint field)
 instance
-  ( Conditional bool bool
-  , Eq bool bool
+  ( BoolType bool
   , Eq bool field
   , Field field
   ) => Eq bool (AffinePoint field)
