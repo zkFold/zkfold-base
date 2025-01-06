@@ -8,20 +8,20 @@ module ZkFold.Base.Algebra.EllipticCurve2.Pairing
   , finalExponentiation
   ) where
 
-import qualified Data.Bool                               as H
-import           Data.Function                           (($), (.))
-import           Data.Functor                            ((<$>))
-import           Data.Int                                (Int8)
-import           Data.Tuple                              (snd)
-import           Data.Type.Equality                      (type (~))
-import           Numeric.Natural                         (Natural)
-import           Prelude                                 (fromInteger)
+import qualified Data.Bool                                as H
+import           Data.Function                            (($), (.))
+import           Data.Functor                             ((<$>))
+import           Data.Int                                 (Int8)
+import           Data.Tuple                               (snd)
+import           Data.Type.Equality                       (type (~))
+import           Numeric.Natural                          (Natural)
+import           Prelude                                  (fromInteger)
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.EllipticCurve2.Class
-import           ZkFold.Symbolic.Data.Bool               hiding (Bool)
+import           ZkFold.Symbolic.Data.Bool                hiding (Bool)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 
@@ -106,7 +106,7 @@ millerLoop ::
   Field g =>
   Weierstrass c (Point bool) fldC ->
   Weierstrass d (Point bool) fldD ->
-  [Int8] -> 
+  [Int8] ->
   (Weierstrass d (Point bool) fldD, g) ->
   (Weierstrass d (Point bool) fldD, g)
 millerLoop p q = impl

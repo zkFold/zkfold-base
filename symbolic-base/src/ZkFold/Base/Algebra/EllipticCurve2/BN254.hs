@@ -1,6 +1,6 @@
-{-# LANGUAGE DerivingVia     #-}
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE OverloadedLists      #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -21,8 +21,8 @@ import           Control.Monad                              (return, (>>))
 import           Data.Binary                                (Binary (..))
 import           Data.Bool                                  ((&&))
 import           Data.Function                              (($))
-import qualified Prelude
 import           Prelude                                    (Bool, Integer)
+import qualified Prelude
 import           Text.Show                                  (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class

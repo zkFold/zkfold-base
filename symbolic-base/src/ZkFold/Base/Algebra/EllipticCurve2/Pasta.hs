@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -11,19 +11,19 @@ module ZkFold.Base.Algebra.EllipticCurve2.Pasta
   , Fq
   ) where
 
-import Control.Monad
-import Data.Type.Equality
+import           Control.Monad
+import           Data.Type.Equality
+import           Prelude                                  (($))
 import qualified Prelude
-import Prelude (($))
 
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Field
-import ZkFold.Base.Algebra.Basic.Number
-import ZkFold.Base.Algebra.EllipticCurve2.Class
-import ZkFold.Base.Data.ByteString
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Conditional
-import ZkFold.Symbolic.Data.Eq
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.EllipticCurve2.Class
+import           ZkFold.Base.Data.ByteString
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.Eq
 
 -------------------------------- Introducing Fields ----------------------------------
 

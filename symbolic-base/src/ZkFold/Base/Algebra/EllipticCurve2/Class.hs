@@ -1,8 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE RebindableSyntax #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RebindableSyntax      #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module ZkFold.Base.Algebra.EllipticCurve2.Class
@@ -26,14 +26,14 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
   , TwistedExtendedPoint (..)
   ) where
 
-import GHC.Generics
-import Prelude (Integer)
+import           GHC.Generics
+import           Prelude                          (Integer)
 
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Number
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Conditional
-import ZkFold.Symbolic.Data.Eq
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.Eq
 
 {- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 Elliptic curves always have genus @1@ and are birationally equivalent
@@ -253,8 +253,8 @@ instance
 
 {- | A type of points in the projective plane. -}
 data Point bool field = Point
-  { _x :: field
-  , _y :: field
+  { _x    :: field
+  , _y    :: field
   , _zBit :: bool
   } deriving Generic
 instance BoolType bool => Planar (Point bool) where
@@ -278,7 +278,7 @@ instance
     pt0 /= pt1 = not (pt0 == pt1)
 
 data CompressedPoint bool field = CompressedPoint
-  { _x :: field
+  { _x    :: field
   , _yBit :: bool
   , _zBit :: bool
   } deriving Generic
@@ -293,7 +293,7 @@ instance Planar AffinePoint where pointXY = AffinePoint
 
 data CompressedAffinePoint bool field = CompressedAffinePoint
   { _xBit :: bool
-  , _y :: field
+  , _y    :: field
   } deriving Generic
 
 data HomogeneousPoint field = HomogeneousPoint

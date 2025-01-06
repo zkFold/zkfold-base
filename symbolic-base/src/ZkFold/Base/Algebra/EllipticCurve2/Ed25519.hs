@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -10,13 +10,13 @@ module ZkFold.Base.Algebra.EllipticCurve2.Ed25519
   , Fq
   ) where
 
-import Data.Type.Equality
+import           Data.Type.Equality
 
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Field
-import ZkFold.Base.Algebra.Basic.Number
-import ZkFold.Base.Algebra.EllipticCurve2.Class
-import ZkFold.Symbolic.Data.Eq
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.EllipticCurve2.Class
+import           ZkFold.Symbolic.Data.Eq
 
 -- | 2^252 + 27742317777372353535851937790883648493 is the order of the multiplicative group in Ed25519
 -- with the generator point defined below in @instance EllipticCurve (Ed25519 Void r)@

@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -10,15 +10,15 @@ module ZkFold.Base.Algebra.EllipticCurve2.Secp256k1
   , Fp
   ) where
 
-import Data.Type.Equality
+import           Data.Type.Equality
 import qualified Prelude
 
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Field
-import ZkFold.Base.Algebra.Basic.Number
-import ZkFold.Base.Algebra.EllipticCurve2.Class
-import ZkFold.Symbolic.Data.Conditional
-import ZkFold.Symbolic.Data.Eq
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.EllipticCurve2.Class
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.Eq
 
 type Secp256k1_Scalar = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 instance Prime Secp256k1_Scalar
