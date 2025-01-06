@@ -58,7 +58,6 @@ accumulatorScheme :: forall algo d k i p c f f' ctx'.
     , Field f
     , Field f'
     , Scale (BaseField ctx') f'
-    , Scale (BaseField ctx') (PU.PolyVec f' (d+1))
     , Scale f (c f)
     )
     => Predicate i p ctx'

@@ -19,15 +19,14 @@ import           GHC.Generics                               (Generic, Generic1, 
 import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, id, ($),
                                                              (.), (<$>))
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale, FromConstant (..), AdditiveGroup)
+import           ZkFold.Base.Algebra.Basic.Class            (Scale, FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
-import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
 import           ZkFold.Base.Data.Orphans                   ()
 import           ZkFold.Base.Data.Package                   (packed, unpacked)
 import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi, x)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
-import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit, PedersonSetup)
+import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), PredicateCircuit, predicate)
 import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
@@ -76,11 +75,7 @@ type RecursiveFunctionAssumptions algo a d k i p c ctx =
     , BaseField ctx ~ a
     , Binary (BaseField ctx)
     , HashAlgorithm algo
-    , PedersonSetup [] (c (FieldElement ctx))
-    , AdditiveGroup (c (FieldElement ctx))
     , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
-    , Scale (BaseField ctx) (FieldElement ctx)
-    , Scale (BaseField ctx) (PolyVec (FieldElement ctx) (d+1))
     , Scale (FieldElement ctx) (c (FieldElement ctx))
     , FromConstant (RecursiveI i (BaseField ctx)) (RecursiveI i (FieldElement ctx))
     , Conditional (Bool ctx) (RecursiveI i (FieldElement ctx))
