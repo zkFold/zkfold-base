@@ -12,7 +12,7 @@ module ZkFold.Base.Algebra.EllipticCurve2.Class
   , WeierstrassCurve (..)
   , TwistedEdwardsCurve (..)
   , SymmetricCurve (..)
-  , PairingCurves (..)
+  , Pairing (..)
     -- * point classes
   , Planar (..)
   , HasPointInf (..)
@@ -112,14 +112,12 @@ class EllipticCurve curve bool field point
     decompressPoint :: pt field -> point field
 
 class
-  ( SubgroupCurve curve1 bool field1 scalarField point1
-  , SubgroupCurve curve2 bool field2 scalarField point2
-  , Eq bool g
-  , MultiplicativeGroup g
-  , Exponent g scalarField
-  ) => PairingCurves curve1 curve2 bool field1 field2 scalarField point1 point2 g
-    | curve1 curve2 field1 field2 -> g where
-    pairing :: point1 field1 -> point2 field2 -> g
+  ( Field field
+  , AdditiveGroup u, Scale field u
+  , AdditiveGroup v, Scale field v
+  , MultiplicativeGroup t, Exponent t field
+  ) => Pairing field u v t | u v -> t where
+    pairing :: u -> v -> t
 
 {- | A class for smart constructor method
 `pointXY` for constructing points from an @x@ and @y@ coordinate. -}

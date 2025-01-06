@@ -118,21 +118,18 @@ deriving via (NonZero Fp12) instance MultiplicativeGroup BN254_GT
 instance Finite BN254_GT where
   type Order BN254_GT = BN254_Scalar
 
-instance PairingCurves
-  "BN254_G1" "BN254_G2" Bool
-  Fp Fp2 Fr
-  BN254_G1_PointOf BN254_G2_PointOf BN254_GT where
-    pairing p q
-      = BN254_GT
-      $ finalExponentiation @Fr
-      $ millerAlgorithmBN xi param p q
-      where
-        param = [ 1
-          , 1, 0, 1, 0, 0,-1, 0, 1, 1, 0, 0, 0,-1, 0, 0, 1
-          , 1, 0, 0,-1, 0, 0, 0, 0, 0, 1, 0, 0,-1, 0, 0, 1
-          , 1, 1, 0, 0, 0, 0,-1, 0, 1, 0, 0,-1, 0, 1, 1, 0
-          , 0, 1, 0, 0,-1, 1, 0, 0,-1, 0, 1, 0, 1, 0, 0, 0
-          ]
+instance Pairing Fr BN254_G1_Point BN254_G2_Point BN254_GT where
+  pairing p q
+    = BN254_GT
+    $ finalExponentiation @Fr
+    $ millerAlgorithmBN xi param p q
+    where
+      param = [ 1
+        , 1, 0, 1, 0, 0,-1, 0, 1, 1, 0, 0, 0,-1, 0, 0, 1
+        , 1, 0, 0,-1, 0, 0, 0, 0, 0, 1, 0, 0,-1, 0, 0, 1
+        , 1, 1, 0, 0, 0, 0,-1, 0, 1, 0, 0,-1, 0, 1, 1, 0
+        , 0, 1, 0, 0,-1, 1, 0, 0,-1, 0, 1, 0, 1, 0, 0, 0
+        ]
 
 ------------------------------ Encoding ----------------------------------------
 

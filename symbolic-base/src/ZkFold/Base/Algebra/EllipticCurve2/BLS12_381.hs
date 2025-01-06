@@ -23,6 +23,7 @@ import           ZkFold.Base.Algebra.EllipticCurve2.Pairing
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString
 import qualified ZkFold.Symbolic.Data.Eq                    as Symbolic
+import qualified ZkFold.Symbolic.Data.Conditional                    as Symbolic
 
 -------------------------------- Introducing Fields ----------------------------------
 
@@ -56,50 +57,56 @@ instance IrreduciblePoly Fq6 IP3 where
         in toPoly [e, zero, one]
 type Fq12 = Ext2 Fq6 IP3
 
------------------------------------- BLS12-381 G1 ------------------------------------
+------------------------------------- BLS12-381 --------------------------------------
 
-type BLS12_381_G1_Point = BLS12_381_G1_PointOf Fq
-type BLS12_381_G1_PointOf = Weierstrass "BLS12-381_G1" (Point Bool)
-type BLS12_381_G1_CompressedPointOf = Weierstrass "BLS12-381_G1" (CompressedPoint Bool)
-type BLS12_381_G1_CompressedPoint = BLS12_381_G1_CompressedPointOf Fq
-
-instance Field field => WeierstrassCurve "BLS12-381_G1" field where
+instance Field field => WeierstrassCurve "BLS12-381" field where
   weierstrassB = fromConstant (4 :: Natural)
 
-instance SubgroupCurve "BLS12-381_G1" Bool Fq Fr BLS12_381_G1_PointOf where
-    pointGen = pointXY
-      0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb
-      0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb
+type BLS12_381_Point = Weierstrass "BLS12-381" (Point Bool)
 
-instance SymmetricCurve "BLS12-381_G1" Bool Fq
-  BLS12_381_G1_PointOf BLS12_381_G1_CompressedPointOf where
+type BLS12_381_CompressedPoint = Weierstrass "BLS12-381" (CompressedPoint Bool)
+
+instance
+  ( Symbolic.Conditional Bool field
+  , Symbolic.Eq Bool field
+  , FiniteField field
+  , Ord field
+  ) => SymmetricCurve "BLS12-381" Bool field
+  BLS12_381_Point BLS12_381_CompressedPoint where
     pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
     compressPoint (Weierstrass (Point x y isInf)) =
-      if isInf then pointInf else pointCompressed @"BLS12-381_G1" x (y > negate y)
+      if isInf then pointInf else pointCompressed @"BLS12-381" x (y > negate y)
     decompressPoint (Weierstrass (CompressedPoint x bigY isInf)) =
       if isInf then pointInf else
-        let b = weierstrassB @"BLS12-381_G1"
-            q = order @Fq
+        let b = weierstrassB @"BLS12-381"
+            q = order @field
             sqrt_ z = z ^ ((q + 1) `Prelude.div` 2)
             y' = sqrt_ (x * x * x + b)
             y'' = negate y'
             y = if bigY then max y' y'' else min y' y''
         in  pointXY x y
 
+------------------------------------ BLS12-381 G1 ------------------------------------
+
+type BLS12_381_G1_Point = BLS12_381_Point Fq
+
+type BLS12_381_G1_CompressedPoint = BLS12_381_CompressedPoint Fq
+
+instance SubgroupCurve "BLS12-381" Bool Fq Fr BLS12_381_Point where
+  pointGen = pointXY
+    0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb
+    0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb
+
 instance Scale Fr BLS12_381_G1_Point where
   scale n x = scale (toConstant n) x
 
 ------------------------------------ BLS12-381 G2 ------------------------------------
 
-type BLS12_381_G2_Point = BLS12_381_G2_PointOf Fq2
-type BLS12_381_G2_PointOf = Weierstrass "BLS12-381_G2" (Point Bool)
-type BLS12_381_G2_CompressedPointOf = Weierstrass "BLS12-381_G2" (CompressedPoint Bool)
-type BLS12_381_G2_CompressedPoint = BLS12_381_G2_CompressedPointOf Fq2
+type BLS12_381_G2_Point = BLS12_381_Point Fq2
 
-instance Field field => WeierstrassCurve "BLS12-381_G2" field where
-  weierstrassB = fromConstant (4 :: Natural)
+type BLS12_381_G2_CompressedPoint = BLS12_381_CompressedPoint Fq2
 
-instance SubgroupCurve "BLS12-381_G2" Bool Fq2 Fr BLS12_381_G2_PointOf where
+instance SubgroupCurve "BLS12-381" Bool Fq2 Fr BLS12_381_Point where
   pointGen = pointXY
     (Ext2
       0x24aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8
@@ -107,12 +114,6 @@ instance SubgroupCurve "BLS12-381_G2" Bool Fq2 Fr BLS12_381_G2_PointOf where
     (Ext2
       0xce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801
       0x606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be)
-
-instance SymmetricCurve "BLS12-381_G2" Bool Fq2
-  BLS12_381_G2_PointOf BLS12_381_G2_CompressedPointOf where
-    pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
-    compressPoint = Prelude.undefined
-    decompressPoint = Prelude.undefined
 
 instance Scale Fr BLS12_381_G2_Point where
   scale n x = scale (toConstant n) x
@@ -159,7 +160,7 @@ instance Binary BLS12_381_G1_Point where
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
             if compressed then return $
-              decompressPoint @"BLS12-381_G1" @Bool (pointCompressed @"BLS12-381_G1" x bigY)
+              decompressPoint @"BLS12-381" @Bool (pointCompressed @"BLS12-381" x bigY)
             else do
                 bytesY <- replicateM 48 getWord8
                 let y = ofBytes bytesY
@@ -184,7 +185,7 @@ instance Binary BLS12_381_G1_CompressedPoint where
             bytesXtail <- replicateM 47 getWord8
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
-            pointCompressed @"BLS12-381_G1" x <$>
+            pointCompressed @"BLS12-381" x <$>
               if compressed then return bigY else do
                 bytesY <- replicateM 48 getWord8
                 let y :: Fq = ofBytes bytesY
@@ -216,7 +217,7 @@ instance Binary BLS12_381_G2_Point where
                 x0 = ofBytes bytesX0
                 bigY = testBit byte 2
             if compressed then return $
-              decompressPoint @"BLS12-381_G2" @Bool (pointCompressed @"BLS12-381_G2" (Ext2 x0 x1) bigY)
+              decompressPoint @"BLS12-381" @Bool (pointCompressed @"BLS12-381" (Ext2 x0 x1) bigY)
             else do
                 bytesY1 <- replicateM 48 getWord8
                 bytesY0 <- replicateM 48 getWord8
@@ -247,7 +248,7 @@ instance Binary BLS12_381_G2_CompressedPoint where
                 x0 = ofBytes bytesX0
                 x = Ext2 x0 x1
                 bigY = testBit byte 2
-            pointCompressed @"BLS12-381_G2" x <$>
+            pointCompressed @"BLS12-381" x <$>
               if compressed then return bigY else do
                 bytesY1 <- replicateM 48 getWord8
                 bytesY0 <- replicateM 48 getWord8
@@ -275,18 +276,15 @@ deriving via (NonZero Fq12) instance MultiplicativeGroup BLS12_381_GT
 instance Finite BLS12_381_GT where
     type Order BLS12_381_GT = BLS12_381_Scalar
 
-instance PairingCurves
-  "BLS12-381_G1" "BLS12-381_G2" Bool
-  Fq Fq2 Fr
-  BLS12_381_G1_PointOf BLS12_381_G2_PointOf BLS12_381_GT where
-    pairing a b
-      = BLS12_381_GT
-      $ finalExponentiation @Fr
-      $ millerAlgorithmBLS12 param a b
-      where
-        param = [-1
-          ,-1, 0,-1, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
-          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
-          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-          ]
+instance Pairing Fr BLS12_381_G1_Point BLS12_381_G2_Point BLS12_381_GT where
+  pairing a b
+    = BLS12_381_GT
+    $ finalExponentiation @Fr
+    $ millerAlgorithmBLS12 param a b
+    where
+      param = [-1
+        ,-1, 0,-1, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+        , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+        , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]
