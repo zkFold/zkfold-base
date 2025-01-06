@@ -50,7 +50,6 @@ instance
       (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
       (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
 
-instance
-  ( Field field
-  ) => Scale Fl (TwistedEdwards "ed25519" AffinePoint field) where
+instance Field field
+  => Scale Fl (TwistedEdwards "ed25519" AffinePoint field) where
     scale n x = scale (toConstant n) x
