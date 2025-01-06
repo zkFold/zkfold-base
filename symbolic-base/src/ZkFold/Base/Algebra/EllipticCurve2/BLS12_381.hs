@@ -22,8 +22,8 @@ import           ZkFold.Base.Algebra.EllipticCurve2.Class
 import           ZkFold.Base.Algebra.EllipticCurve2.Pairing
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString
+import qualified ZkFold.Symbolic.Data.Conditional           as Symbolic
 import qualified ZkFold.Symbolic.Data.Eq                    as Symbolic
-import qualified ZkFold.Symbolic.Data.Conditional                    as Symbolic
 
 -------------------------------- Introducing Fields ----------------------------------
 
