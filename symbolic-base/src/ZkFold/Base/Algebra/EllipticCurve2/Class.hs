@@ -53,7 +53,7 @@ class
   , Planar point
   , AdditiveGroup (point field)
   ) => EllipticCurve curve bool field point where
-    -- | `isOnCurve` validates an equation for an plane algebraic curve
+    -- | `isOnCurve` validates an equation for a plane algebraic curve
     -- which has degree 3 up to some birational equivalence.
     isOnCurve :: point field -> bool
 
