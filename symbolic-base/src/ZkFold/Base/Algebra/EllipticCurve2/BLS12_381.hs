@@ -75,7 +75,7 @@ instance
   BLS12_381_Point BLS12_381_CompressedPoint where
     pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
     compressPoint (Weierstrass (Point x y isInf)) =
-      if isInf then pointInf else pointCompressed @"BLS12-381" x (y > negate y)
+      if isInf then pointInf else pointCompressed x (y > negate y)
     decompressPoint (Weierstrass (CompressedPoint x bigY isInf)) =
       if isInf then pointInf else
         let b = weierstrassB @"BLS12-381"
@@ -160,7 +160,7 @@ instance Binary BLS12_381_G1_Point where
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
             if compressed then return $
-              decompressPoint @"BLS12-381" @Bool (pointCompressed @"BLS12-381" x bigY)
+              decompressPoint @_ @Bool (pointCompressed x bigY)
             else do
                 bytesY <- replicateM 48 getWord8
                 let y = ofBytes bytesY
@@ -185,7 +185,7 @@ instance Binary BLS12_381_G1_CompressedPoint where
             bytesXtail <- replicateM 47 getWord8
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
-            pointCompressed @"BLS12-381" x <$>
+            pointCompressed x <$>
               if compressed then return bigY else do
                 bytesY <- replicateM 48 getWord8
                 let y :: Fq = ofBytes bytesY
@@ -217,7 +217,7 @@ instance Binary BLS12_381_G2_Point where
                 x0 = ofBytes bytesX0
                 bigY = testBit byte 2
             if compressed then return $
-              decompressPoint @"BLS12-381" @Bool (pointCompressed @"BLS12-381" (Ext2 x0 x1) bigY)
+              decompressPoint @_ @Bool (pointCompressed (Ext2 x0 x1) bigY)
             else do
                 bytesY1 <- replicateM 48 getWord8
                 bytesY0 <- replicateM 48 getWord8
@@ -248,7 +248,7 @@ instance Binary BLS12_381_G2_CompressedPoint where
                 x0 = ofBytes bytesX0
                 x = Ext2 x0 x1
                 bigY = testBit byte 2
-            pointCompressed @"BLS12-381" x <$>
+            pointCompressed x <$>
               if compressed then return bigY else do
                 bytesY1 <- replicateM 48 getWord8
                 bytesY0 <- replicateM 48 getWord8
