@@ -111,11 +111,11 @@ class EllipticCurve curve bool field point
 
 class
   ( Field field
-  , AdditiveGroup u, Scale field u
-  , AdditiveGroup v, Scale field v
-  , MultiplicativeGroup t, Exponent t field
-  ) => Pairing field u v t | u v -> t where
-    pairing :: u -> v -> t
+  , AdditiveGroup g1, Scale field g1
+  , AdditiveGroup g2, Scale field g2
+  , MultiplicativeGroup gt, Exponent gt field
+  ) => Pairing field g1 g2 gt | g1 g2 -> gt where
+    pairing :: g1 -> g2 -> gt
 
 {- | A class for smart constructor method
 `pointXY` for constructing points from an @x@ and @y@ coordinate. -}
