@@ -16,10 +16,11 @@ import           Data.Functor.Rep                           (Representable (..))
 import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
 import           GHC.Generics                               (Generic, U1, (:*:), (:.:) (..))
-import           Prelude                                    (Functor, Foldable, Show, const, id, foldl, error, ($), (<$>), (==))
+import           Prelude                                    (Functor, Foldable, Show, fmap, const, id, foldl, error, ($), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, value)
+import           ZkFold.Base.Data.Package                   (unpacked)
 import           ZkFold.Base.Data.Vector                    (Vector, singleton, head, tail)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
@@ -33,8 +34,10 @@ import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, Predi
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol,
                                                              specialSoundProtocol')
-import           ZkFold.Symbolic.Class                      (Symbolic(..))
+import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
+import           ZkFold.Symbolic.Data.Bool                  (Bool, BoolType (..), all)
+import           ZkFold.Symbolic.Data.Eq                    (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Payloaded             (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
@@ -168,7 +171,39 @@ ivcProve f x0 res witness =
     in
         IVCResult z' acc' ivcProof
 
--- TODO: return the final result and `Bool ctx` that contains the result of the accumulator verification
+ivcVerify :: forall algo a d k i p c ctx f ctx0 ctx1 .
+    ( ctx0 ~ Interpreter a
+    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+    , RecursiveFunctionAssumptions algo a d k i p c ctx1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx
+    , FieldElement ctx ~ f
+    , Eq (Bool ctx) (c f)
+    )
+    => StepFunction i p
+    -> i a
+    -> IVCResult k i c f
+    -> Bool ctx
+ivcVerify f x0 res =
+    let
+        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
+        pRec = recursivePredicate @algo $ recursiveFunction @algo @a @d @k @i @p @c @ctx f (RecursiveI x0 zero)
+
+        input :: RecursiveI i f
+        input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
+
+        messages :: Vector k [f]
+        messages = res^.proof^.proofW
+
+        commits :: Vector k (c f)
+        commits = res^.proof^.proofX
+
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [f] [f] f
+        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol' @d pRec
+
+        (vs1, vs2) = verifier protocol input (singleton $ zip messages commits) zero
+    in all (== zero) vs1 && all (== zero) vs2
+
 ivc :: forall algo a d k i p c ctx w n ctx0 ctx1 .
     ( ctx0 ~ Interpreter a
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
@@ -182,11 +217,12 @@ ivc :: forall algo a d k i p c ctx w n ctx0 ctx1 .
     , Scale a w
     , Scale w (c w)
     , KnownNat n
+    , Eq (Bool ctx) (c (FieldElement ctx))
     )
     => StepFunction i p
     -> i a
     -> Payloaded (Vector n :.: p) ctx
-    -> IVCResult k i c w
+    -> (Bool ctx, AccumulatorInstance k (RecursiveI i) c (FieldElement ctx))
 ivc f x0 (Payloaded (Comp1 ps)) =
     let
         setup :: IVCResult k i c w
@@ -194,42 +230,10 @@ ivc f x0 (Payloaded (Comp1 ps)) =
 
         prove :: IVCResult k i c w -> p w -> IVCResult k i c w
         prove = ivcProve @algo @_ @d @_ @_ @_ @_ @ctx f x0
+
+        res :: IVCResult k i c (FieldElement ctx)
+        res = fmap FieldElement $ unpacked $ embedW $ if value @n == 0
+            then error "ivc: empty payload"
+            else foldl prove setup (tail ps)
     in
-        if value @n == 0
-        then error "ivc: empty payload"
-        else foldl prove setup (tail ps)
-
-ivcVerify :: forall algo a d k i p c ctx0 ctx1 f .
-    ( ctx0 ~ Interpreter a
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx0
-    , RecursiveFunctionAssumptions algo a d k i p c ctx1
-    , FieldElement ctx1 ~ f
-    )
-    => StepFunction i p
-    -> i a
-    -> IVCResult k i c f
-    -> ((Vector k (c f), [f]), (Vector k (c f), c f))
-ivcVerify f z0 res =
-    let
-        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx1
-        pRec = recursivePredicate @algo $ recursiveFunction @algo @a @d @k @i @p @c @ctx1 f (RecursiveI z0 zero)
-
-        input :: RecursiveI i f
-        input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
-
-        messages :: Vector k [f]
-        messages = res^.proof^.proofW
-
-        commits :: Vector k (c f)
-        commits = res^.proof^.proofX
-
-        accScheme :: AccumulatorScheme d k (RecursiveI i) c f
-        accScheme = accumulatorScheme @algo @d pRec id
-
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [f] [f] f
-        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol' @d pRec
-    in
-        ( verifier protocol input (singleton $ zip messages commits) zero
-        , Acc.decider accScheme (res^.acc)
-        )
+        (ivcVerify @algo @_ @d f x0 res, res^.acc^.x)
