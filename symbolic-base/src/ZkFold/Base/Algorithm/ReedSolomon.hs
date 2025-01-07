@@ -6,8 +6,8 @@ module ZkFold.Base.Algorithm.ReedSolomon where
 import           Data.Bool                                  (bool)
 import           Data.Vector                                as V
 import           GHC.Natural                                (Natural)
-import           Prelude                                    (Eq, Int, Integer, Maybe (..), error,
-                                                             fromIntegral, ($), (.), (<=), (==), min, iterate)
+import           Prelude                                    (Eq, Int, Integer, Maybe (..), error, fromIntegral, iterate,
+                                                             min, ($), (.), (<=), (==))
 import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
