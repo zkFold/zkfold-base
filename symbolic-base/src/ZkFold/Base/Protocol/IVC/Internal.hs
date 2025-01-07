@@ -19,8 +19,7 @@ import           GHC.Generics                               (Generic, U1, (:*:),
 import           Prelude                                    (Functor, Foldable, Show, const, id, foldl, error, ($), (<$>), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), value)
-import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, value)
 import           ZkFold.Base.Data.Vector                    (Vector, singleton, head, tail)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
@@ -51,13 +50,6 @@ data IVCProof k c f
 
 makeLenses ''IVCProof
 
-noIVCProof :: forall k c f .
-    ( KnownNat k
-    , AdditiveMonoid (c f)
-    , AdditiveMonoid f
-    ) => IVCProof k c f
-noIVCProof = IVCProof (tabulate $ const zero) (tabulate $ const zero)
-
 -- | The current result of recursion together with the first iteration flag,
 -- the corresponding accumulator, and the recursion circuit satisfiability proof.
 data IVCResult k i c f
@@ -69,29 +61,21 @@ data IVCResult k i c f
 
 makeLenses ''IVCResult
 
-type IVCAssumptions ctx0 ctx1 algo d k a i p c ctx f =
-    ( KnownNat (d+1)
-    , k ~ 1
-    , Zip i
-    , Field f
-    , HomomorphicCommit [f] (c f)
-    , FromConstant a f
-    , Scale a f
-    , Scale a (PolyVec f (d+1))
-    , Scale f (c f)
-    , Symbolic ctx
-    , BaseField ctx ~ a
-    , RecursiveFunctionAssumptions algo a d k i p c ctx
-    , ctx0 ~ Interpreter a
-    , RecursiveFunctionAssumptions algo a d k i p c ctx0
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx1
-    )
-
 -- | Create the first IVC result
 --
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall ctx0 ctx1 algo d k a i p c ctx w . (WitnessField ctx ~ w, IVCAssumptions ctx0 ctx1 algo d k a i p c ctx w)
+ivcSetup :: forall algo a d k i p c ctx w ctx0 ctx1.
+    ( ctx0 ~ Interpreter a
+    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+    , RecursiveFunctionAssumptions algo a d k i p c ctx1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx
+    , WitnessField ctx ~ w
+    , Field w
+    , HomomorphicCommit [w] (c w)
+    , FromConstant a w
+    , Scale a w
+    )
     => StepFunction i p
     -> i a
     -> p w
@@ -125,7 +109,19 @@ ivcSetup f x0 witness =
         (messages, commits) = unzip $ prover protocol input payload zero 0
     in IVCResult z' acc0 (IVCProof commits messages)
 
-ivcProve :: forall ctx0 ctx1 algo d k a i p c ctx w . (WitnessField ctx ~ w, IVCAssumptions ctx0 ctx1 algo d k a i p c ctx w)
+ivcProve :: forall algo a d k i p c ctx w ctx0 ctx1.
+    ( ctx0 ~ Interpreter a
+    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+    , RecursiveFunctionAssumptions algo a d k i p c ctx1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx
+    , WitnessField ctx ~ w
+    , Field w
+    , HomomorphicCommit [w] (c w)
+    , FromConstant a w
+    , Scale a w
+    , Scale w (c w)
+    )
     => StepFunction i p
     -> i a
     -> IVCResult k i c w
@@ -173,7 +169,20 @@ ivcProve f x0 res witness =
         IVCResult z' acc' ivcProof
 
 -- TODO: return the final result and `Bool ctx` that contains the result of the accumulator verification
-ivc :: forall ctx0 ctx1 algo d k a i p c ctx w n . (WitnessField ctx ~ w, KnownNat n, IVCAssumptions ctx0 ctx1 algo d k a i p c ctx w)
+ivc :: forall algo a d k i p c ctx w n ctx0 ctx1 .
+    ( ctx0 ~ Interpreter a
+    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+    , RecursiveFunctionAssumptions algo a d k i p c ctx1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx
+    , WitnessField ctx ~ w
+    , Field w
+    , HomomorphicCommit [w] (c w)
+    , FromConstant a w
+    , Scale a w
+    , Scale w (c w)
+    , KnownNat n
+    )
     => StepFunction i p
     -> i a
     -> Payloaded (Vector n :.: p) ctx
@@ -181,17 +190,22 @@ ivc :: forall ctx0 ctx1 algo d k a i p c ctx w n . (WitnessField ctx ~ w, KnownN
 ivc f x0 (Payloaded (Comp1 ps)) =
     let
         setup :: IVCResult k i c w
-        setup = ivcSetup @ctx0 @ctx1 @algo @_ @_ @_ @_ @_ @_ @ctx f x0 (head ps)
+        setup = ivcSetup @algo @_ @d @_ @_ @_ @_ @ctx f x0 (head ps)
 
         prove :: IVCResult k i c w -> p w -> IVCResult k i c w
-        prove = ivcProve @ctx0 @ctx1 @algo @_ @_ @_ @_ @_ @_ @ctx f x0
+        prove = ivcProve @algo @_ @d @_ @_ @_ @_ @ctx f x0
     in
         if value @n == 0
         then error "ivc: empty payload"
         else foldl prove setup (tail ps)
 
-ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo d k a i p c ctx1 f
-    => f ~ FieldElement ctx1
+ivcVerify :: forall algo a d k i p c ctx0 ctx1 f .
+    ( ctx0 ~ Interpreter a
+    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+    , RecursiveFunctionAssumptions algo a d k i p c ctx1
+    , FieldElement ctx1 ~ f
+    )
     => StepFunction i p
     -> i a
     -> IVCResult k i c f

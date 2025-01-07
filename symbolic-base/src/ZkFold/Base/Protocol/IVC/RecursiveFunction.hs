@@ -81,8 +81,7 @@ type RecursiveFunctionAssumptions algo a d k i p c ctx =
     , Conditional (Bool ctx) (RecursiveI i (FieldElement ctx))
     , KnownNat (d-1)
     , KnownNat (d+1)
-    , KnownNat (k-1)
-    , KnownNat k
+    , k ~ 1 -- TODO: This should be generalized once we support multi-round special-sound protocols
     , FunctorAssumptions i
     , FunctorAssumptions p
     , FunctorAssumptions c
@@ -134,11 +133,11 @@ recursiveFunction func z0 =
 
 --------------------------------------------------------------------------------
 
-recursivePredicate :: forall algo a d k i p c ctx0 ctx1 ctx .
-    ( RecursiveFunctionAssumptions algo a d k i p c ctx
-    , ctx0 ~ Interpreter a
-    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+recursivePredicate :: forall algo a d k i p c ctx ctx0 ctx1 .
+    ( ctx0 ~ Interpreter a
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
+    , RecursiveFunctionAssumptions algo a d k i p c ctx
+    , RecursiveFunctionAssumptions algo a d k i p c ctx0
     , RecursiveFunctionAssumptions algo a d k i p c ctx1
     ) => RecursiveFunction algo a d k i p c -> Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
 recursivePredicate func =
