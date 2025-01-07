@@ -6,23 +6,14 @@ module ZkFold.Base.Algorithm.ReedSolomon where
 import           Data.Bool                                  (bool)
 import           Data.Vector                                as V
 import           GHC.Natural                                (Natural)
-import           Prelude                                    (Eq, Int, Integer, Maybe (..), Num (fromInteger), error,
-                                                             fromIntegral, ($), (.), (<=), (==))
+import           Prelude                                    (Eq, Int, Integer, Maybe (..), error,
+                                                             fromIntegral, ($), (.), (<=), (==), min, iterate)
 import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field            (Zp)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, value)
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 
-
-type RSField p = Zp p
-
-data RSParams c i j = ReedSolomonParams
-    { fullLength   :: Natural
-    , usefulLength :: Natural
-    , bitsPerBlock :: Natural
-    }
 
 numberOfError :: forall n k. (KnownNat n, KnownNat k) => Natural
 numberOfError = (value @n -! value @k) `div` 2
@@ -42,31 +33,31 @@ encode msg prim_elem r = msg_padded - reminder
         (_, reminder) = qr msg_padded g_x
 
 -- beta = one
-decode :: (Field c, Eq c) => Poly c -> c -> Int -> Int  -> Poly c
-decode encoded primeElement fieldOrd r = bool decoded encoded' isCorrect
+decode :: (Field c, Eq c) => Poly c -> c -> Int -> Int -> Poly c
+decode encoded primeElement r n = bool decoded encoded' isCorrect
     where
-        fieldElements = iterateN fieldOrd (* primeElement) primeElement
+        rElems = iterateN r (* primeElement) primeElement
 
         encoded' = toPoly . V.drop r $ fromPoly encoded
-        syndromes = toPoly . V.map (evalPoly encoded) $ take r fieldElements
+        syndromes = toPoly . V.map (evalPoly encoded) $ rElems
         isCorrect = zero == syndromes
 
         (_, lx) = berlekamp syndromes r
 
-        es1 = V.indexed $ V.iterateN fieldOrd (* primeElement) one
-
-        iroots = mapMaybe (\(i,x) -> bool Nothing (Just (fieldOrd P.- i , x)) (evalPoly lx x == zero)) es1
+        invPE = finv primeElement
+        es1 = V.indexed . V.fromList $ one : P.take (n P.- 1) (iterate (* invPE) invPE)
+        iroots = mapMaybe (\(i,x) -> bool Nothing (Just (i , x)) (evalPoly lx x == zero)) es1
 
         omega = toPoly $ take r $ fromPoly (lx * syndromes)
         lx'= diff lx
 
         err = V.foldl (+) zero $ map (\(i,x) ->
-            let xi = bool (monomial (fromIntegral i) one) (constant one) (i == fieldOrd)
+            let xi = bool (monomial (fromIntegral i) one) (constant one) (i == 0)
                 ei = evalPoly omega x * finv (evalPoly lx' x)
             in constant ei * xi) iroots
 
         fx = encoded + err
-        checkSum = V.map (evalPoly fx) $ V.take r fieldElements
+        checkSum = V.map (evalPoly fx) rElems
 
         decoded = bool (error "Can't decode") (toPoly $ V.drop r $ fromPoly fx) (all (== zero) checkSum)
 
@@ -86,7 +77,7 @@ berlekamp s r
             | n == lenS = bool (error "locators didn't find") (l, cx) (deg cx == l)
             | P.otherwise = bool innerChoice (go cx bx n' l (m+1) b) (d == zero)
             where
-                d = scalarN (fromIntegral n P.+ 1) (l+1) lxv sv
+                d = scalarN (fromIntegral n P.+ 1) (fromIntegral l P.+1) lxv sv
 
                 lxv = fromPoly cx
                 cx' = cx - fromConstant d * constant (finv b) * bx * monomial m one
@@ -95,11 +86,11 @@ berlekamp s r
                 innerChoice = bool (go cx' bx n' l (m+1) b) (go cx' cx n' (n+1-l) 1 d) (2*l <= n)
 
 
-scalarN :: (Semiring c) => Int -> Integer -> Vector c -> Vector c -> c
-scalarN q l lv rv = V.foldl (+) zero $ V.take (fromInteger l) $ V.zipWith (*) lPadded rPadded
+scalarN :: (Semiring c) => Int -> Int -> Vector c -> Vector c -> c
+scalarN q l lv rv = bool (V.foldl (+) zero $ V.zipWith (*) lPadded rPadded) zero (min l (length lv) <= q P.- length rv)
     where
-        lPadded = lv V.++ V.replicate (q P.- V.length lv) zero
-        rPadded = V.reverse $ V.take q $ rv V.++ V.replicate (q P.- V.length rv) zero
+        lPadded = V.drop (q P.- V.length rv) lv
+        rPadded = V.reverse $ V.take q rv
 
 
 diff :: ( Field c, Eq c) =>Poly c -> Poly c

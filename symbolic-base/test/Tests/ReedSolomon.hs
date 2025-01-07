@@ -1,4 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+
+
 module Tests.ReedSolomon where
 
 import           Data.Bool                                  (bool)
@@ -12,15 +14,14 @@ import           Test.QuickCheck
 
 import qualified ZkFold.Base.Algebra.Basic.Class            as C
 import           ZkFold.Base.Algebra.Basic.Class            hiding ((*), (+))
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Algorithm.ReedSolomon
+import ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+    (Fr)
 
 data ReedSolomonExample f = ReedSolomonExample
     {
-        char         :: Natural,  -- field order
-        fElements    :: [f],     -- field elements
-        primeElement :: f,
+        pe           :: f,       -- primitive element
         k            :: Int,     -- message length
         r            :: Int,     -- number of errors * 2
         msg          :: [f],     -- message
@@ -29,22 +30,14 @@ data ReedSolomonExample f = ReedSolomonExample
 
 instance (Arbitrary f, FiniteField f, Eq f) => Arbitrary (ReedSolomonExample f) where
   arbitrary = do
-    let c = order @f
-    t <- chooseInt (1,P.div (fromIntegral c) 3)
+    let pe = fromConstant (3 :: Natural)
+        c = fromIntegral $ min 100 (order @f)
+    t <- chooseInt (1,P.div c 3)
     let r = 2*t
-        k = fromIntegral c P.- r P.- 1
-        pe = primElement @f
-        es = take (fromIntegral c P.- 1) $ iterate (C.* pe) pe
+        k = c P.- r P.- 1
     msg <- vector @f k
     er <- polyErr (k+t) t
-    return $ ReedSolomonExample c es pe k r msg er
-
-primElement :: forall f. FiniteField f => f
-primElement = case order @f of
-    7  -> fromConstant (3 :: Natural)
-    17 -> fromConstant (3 :: Natural)
-    _  -> error "can't find primitive element of field"
-
+    return $ ReedSolomonExample pe k r msg er
 
 polyErr :: forall c. (Arbitrary c, Field c) => Int -> Int -> Gen [c]
 polyErr kt t = do
@@ -53,67 +46,67 @@ polyErr kt t = do
 
 ----------------------------------------------------------------------------------------
 
-propGenerator :: forall c. (Field c, Eq c) => ReedSolomonExample c -> Bool
+propGenerator :: forall c. (FiniteField c, Eq c) => ReedSolomonExample c -> Bool
 propGenerator ReedSolomonExample {..} =
-    let vals = take r fElements
-        polyGen = generator r primeElement
+    let vals = take r $ iterate (C.* pe) (pe :: c)
+        polyGen = generator r pe
     in all (\x -> evalPoly polyGen x == zero) vals
 
 propEncoder :: forall c. (Field c, Eq c) => ReedSolomonExample c -> Bool
 propEncoder ReedSolomonExample {..} =
-    let encodedMsg = encode msg primeElement r
-        reminder = snd $ qr encodedMsg (generator r primeElement)
+    let encodedMsg = encode msg pe r
+        reminder = snd $ qr encodedMsg (generator r pe)
     in deg reminder == -1
 
-propBerlekampNoError :: forall c. (Field c, Eq c) => ReedSolomonExample c -> Bool
+propBerlekampNoError :: forall c. (FiniteField c, Eq c) => ReedSolomonExample c -> Bool
 propBerlekampNoError ReedSolomonExample {..} =
     let
-        vals = V.fromList $ take r fElements
-        encodedMsg = encode msg primeElement r
+        vals = V.iterateN r (C.* pe) pe
+        encodedMsg = encode msg pe r
         syndromes = toPoly $ V.map (evalPoly encodedMsg) vals
     in syndromes == zero && berlekamp syndromes r == (0, one)
 
-propBerlekampWithErrors :: forall c. (Field c, Ord c) => ReedSolomonExample c -> Bool
+propBerlekampWithErrors :: forall c. (FiniteField c, Ord c) => ReedSolomonExample c -> Bool
 propBerlekampWithErrors ReedSolomonExample {..} =
     let
-        vals = V.fromList $ take r fElements
-        encoded' = encode msg primeElement r
+        vals = V.iterateN r (C.* pe) pe
+        encoded' = encode msg pe r
         errorMsg = toPoly $ V.fromList err
         encoded = encoded' C.+ errorMsg
         syndromes = toPoly $ V.map (evalPoly encoded) vals
         bl = snd $ berlekamp syndromes r
-        roots = filter (/= zero) $ map (\x -> bool zero x (evalPoly bl x == zero)) fElements
+        roots = filter (/= zero) $ map (\x -> bool zero x (evalPoly bl x == zero)) $ takeWhile (/= pe) $ iterate (C.* pe) pe
 
-        es1 = take (fromIntegral char P.- 1) $ iterate (C.* primeElement) one
-        rightLocators = filter (/= zero) $ zipWith (\e pe -> bool zero (finv pe) (e /= zero)) err es1
+        es1 = takeWhile (/= one) $ iterate (C.* pe) one
+        rightLocators = filter (/= zero) $ zipWith (\e p -> bool zero (finv p) (e /= zero)) err es1
     in sort roots == sort rightLocators
 
-propDecodeWithoutError :: forall c. (Field c, Eq c) => ReedSolomonExample c -> Bool
+propDecodeWithoutError :: forall c. (FiniteField c, Eq c) => ReedSolomonExample c -> Bool
 propDecodeWithoutError ReedSolomonExample {..} =
-    let encoded = encode msg primeElement r
-        decoded = decode encoded primeElement (fromIntegral char P.- 1) r
+    let encoded = encode msg pe r
+        decoded = decode encoded pe r (k+r)
     in toPoly (V.fromList msg) == decoded
 
-propDecodeWithError :: forall c. (Field c, Eq c) => ReedSolomonExample c -> Bool
+propDecodeWithError :: forall c. (FiniteField c, Eq c) => ReedSolomonExample c -> Bool
 propDecodeWithError ReedSolomonExample {..} =
-    let encoded' = encode msg primeElement r
+    let encoded' = encode msg pe r
         errorMsg = toPoly $ V.fromList err
         encoded = encoded' C.+ errorMsg
-        decoded = decode encoded primeElement (fromIntegral char P.- 1) r
+        decoded = decode encoded pe r (k+r)
     in toPoly (V.fromList msg) == decoded
 
 specReedSolomon :: IO ()
 specReedSolomon = hspec $ do
     describe "Reed-Solomon" $ do
         it "generator function is correct" $ do
-            property $ propGenerator @(Zp 17)
+            property $ propGenerator @Fr
         it "encoder function is correct" $ do
-            property $ propEncoder @(Zp 17)
+            property $ propEncoder @Fr
         it "berlekamp function is correct without errors" $ do
-            property $ propBerlekampNoError @(Zp 17)
+            property $ propBerlekampNoError @Fr
         it "berlekamp function is correct with errors" $ do
-            property $ propBerlekampWithErrors @(Zp 17)
+            property $ propBerlekampWithErrors @Fr
         it "decode function is correct without errors" $ do
-            property $ propDecodeWithoutError @(Zp 17)
+            property $ propDecodeWithoutError @Fr
         it "decode function is correct with errors" $ do
-            property $ propDecodeWithError @(Zp 17)
+            property $ propDecodeWithError @Fr
