@@ -34,7 +34,7 @@ jobs:
       run: |
         cabal update
         cabal configure --enable-tests --enable-benchmarks --enable-documentation
-    
+
     - name: Generate cache key
       # Creates plan.json file
       run: |
@@ -87,6 +87,9 @@ jobs:
 
     - name: Test
       run: cabal test all --test-option="--skip=SLOW"
+
+    - name: Compiler benchmark
+      run: cabal bench symbolic-examples
 
     # - name: Check cabal file
     #   run: cabal check
