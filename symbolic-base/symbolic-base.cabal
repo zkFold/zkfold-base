@@ -129,6 +129,7 @@ library
       ZkFold.Base.Protocol.IVC.AlgebraicMap
       ZkFold.Base.Protocol.IVC.CommitOpen
       ZkFold.Base.Protocol.IVC.Commit
+      ZkFold.Base.Protocol.IVC.CycleFold
       ZkFold.Base.Protocol.IVC.FiatShamir
       ZkFold.Base.Protocol.IVC.Internal
       ZkFold.Base.Protocol.IVC.NARK
