@@ -14,9 +14,13 @@ import           Test.QuickCheck
 
 import qualified ZkFold.Base.Algebra.Basic.Class             as C
 import           ZkFold.Base.Algebra.Basic.Class             hiding ((*), (+))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
+import qualified ZkFold.Base.Algebra.EllipticCurve.BLS12_381 as BLS12_381
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Algorithm.ReedSolomon
+import Data.Typeable (typeOf, Typeable)
+import qualified ZkFold.Base.Algebra.EllipticCurve.BN254     as BN254
+import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta     as Pasta
+
 
 data ReedSolomonExample f = ReedSolomonExample
     {
@@ -94,18 +98,28 @@ propDecodeWithError ReedSolomonExample {..} =
         decoded = decode encoded pe r (k+r)
     in toPoly (V.fromList msg) == decoded
 
-specReedSolomon :: IO ()
-specReedSolomon = hspec $ do
+specReedSolomon':: forall a . (FiniteField a, Ord a, Arbitrary a, Show a, Typeable a) => IO ()
+specReedSolomon' = hspec $ do
     describe "Reed-Solomon" $ do
-        it "generator function is correct" $ do
-            property $ propGenerator @Fr
-        it "encoder function is correct" $ do
-            property $ propEncoder @Fr
-        it "berlekamp function is correct without errors" $ do
-            property $ propBerlekampNoError @Fr
-        it "berlekamp function is correct with errors" $ do
-            property $ propBerlekampWithErrors @Fr
-        it "decode function is correct without errors" $ do
-            property $ propDecodeWithoutError @Fr
-        it "decode function is correct with errors" $ do
-            property $ propDecodeWithError @Fr
+        describe ("Type: " ++ show (typeOf @a zero)) $ do
+            it "generator function is correct" $ do
+                property $ propGenerator @a
+            it "encoder function is correct" $ do
+                property $ propEncoder @a
+            it "berlekamp function is correct without errors" $ do
+                property $ propBerlekampNoError @a
+            it "berlekamp function is correct with errors" $ do
+                property $ propBerlekampWithErrors @a
+            it "decode function is correct without errors" $ do
+                property $ propDecodeWithoutError @a
+            it "decode function is correct with errors" $ do
+                property $ propDecodeWithError @a
+
+specReedSolomon :: IO ()
+specReedSolomon = do
+    specReedSolomon' @BN254.Fr
+    specReedSolomon' @BN254.Fp
+    specReedSolomon' @BLS12_381.Fr
+    specReedSolomon' @BLS12_381.Fq
+    specReedSolomon' @Pasta.Fp
+    specReedSolomon' @Pasta.Fq

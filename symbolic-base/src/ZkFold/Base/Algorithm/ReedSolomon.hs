@@ -4,7 +4,7 @@ module ZkFold.Base.Algorithm.ReedSolomon where
 
 
 import           Data.Bool                                  (bool)
-import           Data.Vector                                as V
+import           Data.Vector                                as V hiding (sum)
 import           GHC.Natural                                (Natural)
 import           Prelude                                    (Eq, Int, Integer, Maybe (..), error, fromIntegral, iterate,
                                                              min, ($), (.), (<=), (==))
@@ -87,7 +87,7 @@ berlekamp s r
 
 
 scalarN :: (Semiring c) => Int -> Int -> Vector c -> Vector c -> c
-scalarN q l lv rv = bool (V.foldl (+) zero $ V.zipWith (*) lPadded rPadded) zero (min l (length lv) <= q P.- length rv)
+scalarN q l lv rv = bool (sum $ V.zipWith (*) lPadded rPadded) zero (min l (length lv) <= q P.- length rv)
     where
         lPadded = V.drop (q P.- V.length rv) lv
         rPadded = V.reverse $ V.take q rv
