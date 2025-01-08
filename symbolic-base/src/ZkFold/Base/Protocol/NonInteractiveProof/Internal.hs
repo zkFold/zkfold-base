@@ -11,8 +11,8 @@ import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
 
-import           ZkFold.Base.Algebra.Basic.Class            (Field, MultiplicativeSemigroup ((*)), sum)
-import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
+import           ZkFold.Base.Algebra.Basic.Class            (MultiplicativeSemigroup ((*)), scale, sum)
+import           ZkFold.Base.Algebra.EllipticCurve.Class    (SubgroupCurve (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, PolyVec, fromPolyVec)
 import           ZkFold.Base.Data.ByteString
 
@@ -64,13 +64,15 @@ class NonInteractiveProof a core where
 
     verify :: SetupVerify a -> Input a -> Proof a -> Bool
 
-class (EllipticCurve curve) => CoreFunction curve core where
-    msm :: (f ~ ScalarField curve) => V.Vector (Point curve) -> PolyVec f size -> Point curve
+class SubgroupCurve curve Bool baseField scalarField point
+  => CoreFunction curve baseField scalarField point core where
+    msm :: V.Vector (point baseField) -> PolyVec scalarField size -> point baseField
 
-    polyMul :: (f ~ ScalarField curve, Field f, Eq f) => Poly f -> Poly f -> Poly f
+    polyMul :: Poly scalarField -> Poly scalarField -> Poly scalarField
 
 data HaskellCore
 
-instance (EllipticCurve curve, f ~ ScalarField curve) => CoreFunction curve HaskellCore where
-    msm gs f = sum $ V.zipWith mul (fromPolyVec f) gs
+instance (Eq scalarField, SubgroupCurve curve Bool baseField scalarField point)
+  => CoreFunction curve baseField scalarField point HaskellCore where
+    msm gs f = sum $ V.zipWith scale (fromPolyVec f) gs
     polyMul = (*)

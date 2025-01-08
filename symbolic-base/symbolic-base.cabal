@@ -97,19 +97,12 @@ library
       ZkFold.Base.Algebra.Basic.DFT
       ZkFold.Base.Algebra.Basic.VectorSpace
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-      ZkFold.Base.Algebra.EllipticCurve2.BLS12_381
       ZkFold.Base.Algebra.EllipticCurve.BN254
-      ZkFold.Base.Algebra.EllipticCurve2.BN254
       ZkFold.Base.Algebra.EllipticCurve.Pasta
-      ZkFold.Base.Algebra.EllipticCurve2.Pasta
       ZkFold.Base.Algebra.EllipticCurve.Class
-      ZkFold.Base.Algebra.EllipticCurve2.Class
       ZkFold.Base.Algebra.EllipticCurve.Ed25519
-      ZkFold.Base.Algebra.EllipticCurve2.Ed25519
       ZkFold.Base.Algebra.EllipticCurve.Pairing
-      ZkFold.Base.Algebra.EllipticCurve2.Pairing
       ZkFold.Base.Algebra.EllipticCurve.Secp256k1
-      ZkFold.Base.Algebra.EllipticCurve2.Secp256k1
       ZkFold.Base.Algebra.Polynomials.Multivariate
       ZkFold.Base.Algebra.Polynomials.Multivariate.Groebner
       ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial

@@ -9,17 +9,15 @@ import           Data.List                               ((++))
 import           Test.QuickCheck                         (Arbitrary (..), Arbitrary1, arbitrary1)
 import           Text.Show                               (Show, show)
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
-
-data PlonkupWitnessInput p i c = PlonkupWitnessInput
-  { payloadInput :: p (ScalarField c)
-  , witnessInput :: i (ScalarField c)
+data PlonkupWitnessInput p i scalarField = PlonkupWitnessInput
+  { payloadInput :: p scalarField
+  , witnessInput :: i scalarField
   }
 
-instance (Show1 p, Show1 i, Show (ScalarField c))
-  => Show (PlonkupWitnessInput p i c) where
+instance (Show1 p, Show1 i, Show scalarField)
+  => Show (PlonkupWitnessInput p i scalarField) where
     show (PlonkupWitnessInput p v) = "Plonkup Witness Input: " ++ show p ++ ", " ++ show v
 
-instance (Arbitrary1 p, Arbitrary1 i, Arbitrary (ScalarField c))
-  => Arbitrary (PlonkupWitnessInput p i c) where
+instance (Arbitrary1 p, Arbitrary1 i, Arbitrary scalarField)
+  => Arbitrary (PlonkupWitnessInput p i scalarField) where
     arbitrary = PlonkupWitnessInput <$> arbitrary1 <*> arbitrary1
