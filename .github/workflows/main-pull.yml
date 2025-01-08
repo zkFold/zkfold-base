@@ -89,7 +89,7 @@ jobs:
       run: cabal test all --test-option="--skip=SLOW"
 
     - name: Compiler benchmark
-      run: cabal bench symbolic-examples
+      run: cabal bench compiler-golden-stats
 
     # - name: Check cabal file
     #   run: cabal check
