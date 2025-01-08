@@ -198,6 +198,7 @@ library
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
+      ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.UInt
