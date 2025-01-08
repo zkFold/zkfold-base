@@ -7,6 +7,8 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
         CircuitFold (..),
@@ -39,8 +41,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         witToVar
     ) where
 
-import           Control.DeepSeq                                              (NFData (..), NFData1 (..))
-import           Control.Monad.State                                          (State, modify, runState)
+import           Control.DeepSeq                                              (NFData (..), NFData1 (..), force)
+import           Control.Monad.Writer                                         (MonadWriter (..))
 import           Data.Bifunctor                                               (Bifunctor (..))
 import           Data.Binary                                                  (Binary)
 import           Data.ByteString                                              (ByteString)
@@ -70,6 +72,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate                 (P
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.ByteString                                  (fromByteString, toByteString)
 import           ZkFold.Base.Data.HFunctor
+import           ZkFold.Base.Data.Orphans                                     ()
 import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Product
 import           ZkFold.Prelude                                               (take)
@@ -177,7 +180,7 @@ naturalCircuit ::
   ( Arithmetic a, Representable p, Representable i, Traversable o
   , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   (forall x. p x -> i x -> o x) -> ArithmeticCircuit a p i o
-naturalCircuit f = uncurry (set #acOutput) $ flip runState emptyCircuit $
+naturalCircuit f = uncurry crown $
   for (f (tabulate Left) (tabulate Right)) $
     either (unconstrained . pure . WExVar) (return . toVar . InVar)
 
@@ -249,9 +252,11 @@ behead = liftA2 (,) (set #acOutput U1) acOutput
 instance HFunctor (ArithmeticCircuit a p i) where
     hmap = over #acOutput
 
-instance (Ord (Rep i), Ord a) => HApplicative (ArithmeticCircuit a p i) where
+instance (NFData (Rep i), NFData a, Ord (Rep i), Ord a) =>
+      HApplicative (ArithmeticCircuit a p i) where
     hpure = crown mempty
-    hliftA2 f (behead -> (c, o)) (behead -> (d, p)) = crown (c <> d) (f o p)
+    hliftA2 f (behead -> (c, o)) (behead -> (d, p)) =
+      crown (force $ c <> d) (f o p)
 
 instance (Ord (Rep i), Ord a) => Package (ArithmeticCircuit a p i) where
     unpackWith f (behead -> (c, o)) = crown c <$> f o
@@ -263,7 +268,8 @@ instance
     type BaseField (ArithmeticCircuit a p i) = a
     type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
     witnessF (behead -> (_, o)) = at <$> o
-    fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
+    fromCircuitF (behead -> (c, o)) f =
+      let (c', o') = f o in crown (force $ c <> c') o'
 
 instance
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
@@ -288,7 +294,7 @@ instance Finite a => Witness (Var a i) (CircuitWitness a p i) where
 
 instance
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1)
-  => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
+  => MonadCircuit (Var a i) a (CircuitWitness a p i) ((,) (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = case runWitnessF wf $ \case
       WSysVar sV -> LinUVar one sV zero
@@ -298,7 +304,7 @@ instance
         _ -> do
           let v = witToVar @a wf
           -- TODO: forbid reassignment of variables
-          zoom #acWitness $ modify (M.insert v wf)
+          tell mempty { acWitness = M.singleton v wf }
           return $ toVar (NewVar (EqVar v))
 
     constraint p =
@@ -312,11 +318,14 @@ instance
         Just c -> if c == zero
                     then return ()
                     else error "The constraint is non-zero"
-        Nothing -> zoom #acSystem . modify $ M.insert (witToVar @_ @p (p at)) (p evalConstVar)
+        Nothing -> tell mempty {
+            acSystem = M.singleton (witToVar @_ @p (p at)) (p evalConstVar)
+          }
 
     rangeConstraint (LinVar k x b) upperBound = do
       v <- preparedVar
-      zoom #acRange . modify $ MM.insertWith S.union upperBound (S.singleton v)
+      -- zoom #acRange . modify $ insertWith S.union upperBound (S.singleton v)
+      tell mempty { acRange = MM.singleton upperBound (S.singleton v) }
       where
         preparedVar = if k == one && b == zero || k == negate one && b == upperBound
           then return x
@@ -325,7 +334,7 @@ instance
               wf = at $ LinVar k x b
               v = witToVar @a wf
             -- TODO: forbid reassignment of variables
-            zoom #acWitness $ modify (M.insert v wf)
+            tell mempty { acWitness = M.singleton v wf }
             return (NewVar (EqVar v))
 
     rangeConstraint (ConstVar c) upperBound =

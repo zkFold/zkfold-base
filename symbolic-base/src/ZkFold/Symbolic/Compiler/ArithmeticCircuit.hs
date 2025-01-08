@@ -41,7 +41,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
 
 import           Control.DeepSeq                                         (NFData)
 import           Control.Monad                                           (foldM)
-import           Control.Monad.State                                     (execState)
 import           Data.Binary                                             (Binary)
 import           Data.Foldable                                           (for_)
 import           Data.Functor.Rep                                        (Representable (..), mzipRep)
@@ -96,7 +95,7 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(toVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
+  let r' = fst $ traverse (uncurry desugarRange) $ [(toVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
 
 -- | Payload of an input to arithmetic circuit.
