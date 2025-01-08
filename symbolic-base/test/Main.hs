@@ -65,8 +65,6 @@ main = do
     specSHA2Natural
     specSHA2
     specRSA
-
-    -- TODO: implement a proper blake2b test
     specBlake2b
 
     putStrLn "\nAll tests passed!"
