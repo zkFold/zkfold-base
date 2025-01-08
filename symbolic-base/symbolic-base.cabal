@@ -317,7 +317,7 @@ benchmark bench-poly-mul
       tasty-bench,
       vector,
 
-benchmark in-circuit-ec-benchmark 
+benchmark bench-in-circuit-ec 
     import:           options-exe
     main-is:          BenchEC.hs
     hs-source-dirs:   bench

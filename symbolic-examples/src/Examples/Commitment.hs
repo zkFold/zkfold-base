@@ -2,7 +2,7 @@ module Examples.Commitment (
     exampleCommitment
   ) where
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..), Point)
 import           ZkFold.Base.Data.Vector                 (Vector)
 import           ZkFold.Base.Protocol.IVC.Commit         (HomomorphicCommit (..))
 import           ZkFold.Symbolic.Data.Ed25519            (AcEd25519)

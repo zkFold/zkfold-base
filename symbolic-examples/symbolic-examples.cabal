@@ -91,6 +91,7 @@ library
       ZkFold.Symbolic.Examples
     other-modules:
       Examples.BatchTransfer
+      Examples.Blake2b
       Examples.ByteString
       Examples.Conditional
       Examples.Constant
