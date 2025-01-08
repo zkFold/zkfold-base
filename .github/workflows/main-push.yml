@@ -3,7 +3,7 @@ name: CI Push
 on:
   push:
     branches: [ main ]
-    
+
   workflow_dispatch:
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
           ${{ runner.os }}-build-${{ env.cache-name }}-
           ${{ runner.os }}-build-
           ${{ runner.os }}-
-          
+
     - name: Build package
       shell: bash
       run: |
@@ -46,6 +46,6 @@ jobs:
       run: |
         cabal sdist symbolic-base
         cabal upload --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/sdist/*.tar.gz
-        
+
         cabal v2-haddock symbolic-base --haddock-for-hackage --enable-doc
         cabal upload --documentation --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/*-docs.tar.gz
