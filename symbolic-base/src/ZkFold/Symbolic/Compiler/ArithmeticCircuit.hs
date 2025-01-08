@@ -135,10 +135,10 @@ guessOutput ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>
   (Ord (Rep i), Ord (Rep o), NFData (Rep i), NFData (Rep o)) =>
   (Representable i, Representable o, Foldable o) =>
-  ArithmeticCircuit a p i o -> ArithmeticCircuit a p (i :*: o) U1
+  ArithmeticCircuit a p i o -> ArithmeticCircuit a p (i :*: o) o
 guessOutput c = fromCircuit2F (hlmap fstP c) (hmap sndP idCircuit) $ \o o' -> do
   for_ (mzipRep o o') $ \(i, j) -> constraint (\x -> x i - x j)
-  return U1
+  return o
 
 ----------------------------------- Information -----------------------------------
 

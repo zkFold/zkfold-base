@@ -40,7 +40,6 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool, BoolType (..)
 import           ZkFold.Symbolic.Data.Eq                    (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Payloaded             (Payloaded (..))
-import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
@@ -67,17 +66,13 @@ makeLenses ''IVCResult
 -- | Create the first IVC result
 --
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall algo a d k i p c ctx w ctx0 ctx1.
-    ( ctx0 ~ Interpreter a
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+ivcSetup :: forall algo a d k i p c ctx w ctx1.
+    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
     , RecursiveFunctionAssumptions algo a d k i p c ctx1
     , RecursiveFunctionAssumptions algo a d k i p c ctx
     , WitnessField ctx ~ w
     , Field w
     , HomomorphicCommit [w] (c w)
-    , FromConstant a w
-    , Scale a w
     )
     => StepFunction i p
     -> i a
@@ -112,17 +107,13 @@ ivcSetup f x0 witness =
         (messages, commits) = unzip $ prover protocol input payload zero 0
     in IVCResult z' acc0 (IVCProof commits messages)
 
-ivcProve :: forall algo a d k i p c ctx w ctx0 ctx1.
-    ( ctx0 ~ Interpreter a
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+ivcProve :: forall algo a d k i p c ctx w ctx1.
+    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
     , RecursiveFunctionAssumptions algo a d k i p c ctx1
     , RecursiveFunctionAssumptions algo a d k i p c ctx
     , WitnessField ctx ~ w
     , Field w
     , HomomorphicCommit [w] (c w)
-    , FromConstant a w
-    , Scale a w
     , Scale w (c w)
     )
     => StepFunction i p
@@ -171,10 +162,8 @@ ivcProve f x0 res witness =
     in
         IVCResult z' acc' ivcProof
 
-ivcVerify :: forall algo a d k i p c ctx f ctx0 ctx1 .
-    ( ctx0 ~ Interpreter a
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+ivcVerify :: forall algo a d k i p c ctx f ctx1 .
+    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
     , RecursiveFunctionAssumptions algo a d k i p c ctx1
     , RecursiveFunctionAssumptions algo a d k i p c ctx
     , FieldElement ctx ~ f
@@ -204,17 +193,13 @@ ivcVerify f x0 res =
         (vs1, vs2) = verifier protocol input (singleton $ zip messages commits) zero
     in all (== zero) vs1 && all (== zero) vs2
 
-ivc :: forall algo a d k i p c ctx w n ctx0 ctx1 .
-    ( ctx0 ~ Interpreter a
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx0
+ivc :: forall algo a d k i p c ctx w n ctx1 .
+    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
     , RecursiveFunctionAssumptions algo a d k i p c ctx1
     , RecursiveFunctionAssumptions algo a d k i p c ctx
     , WitnessField ctx ~ w
     , Field w
     , HomomorphicCommit [w] (c w)
-    , FromConstant a w
-    , Scale a w
     , Scale w (c w)
     , KnownNat n
     , Eq (Bool ctx) (c (FieldElement ctx))

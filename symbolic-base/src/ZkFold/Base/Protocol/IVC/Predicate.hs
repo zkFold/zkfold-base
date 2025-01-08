@@ -12,17 +12,14 @@ import           ZkFold.Base.Data.Package              (packed, unpacked)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
-import           ZkFold.Symbolic.Interpreter           (Interpreter(..))
 
 type StepFunction i p = forall ctx . Symbolic ctx => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)
 
-type PredicateEval i p ctx    = i (BaseField ctx) -> p (BaseField ctx) -> i (BaseField ctx)
 type PredicateWitness i p ctx = i (WitnessField ctx) -> p (WitnessField ctx) -> i (WitnessField ctx)
-type PredicateCircuit i p ctx = ArithmeticCircuit (BaseField ctx) (i :*: p) i U1
+type PredicateCircuit i p ctx = ArithmeticCircuit (BaseField ctx) (i :*: p) i i
 
 data Predicate i p ctx = Predicate
-    { predicateEval    :: PredicateEval i p ctx
-    , predicateWitness :: PredicateWitness i p ctx
+    { predicateWitness :: PredicateWitness i p ctx
     , predicateCircuit :: PredicateCircuit i p ctx
     }
 
@@ -42,9 +39,6 @@ predicate :: forall i p ctx .
     ) => StepFunction i p -> Predicate i p ctx
 predicate func =
     let
-        predicateEval :: i (BaseField ctx) -> p (BaseField ctx) -> i (BaseField ctx)
-        predicateEval x u = runInterpreter $ func' (Interpreter x) (Interpreter u)
-
         predicateWitness :: i (WitnessField ctx) -> p (WitnessField ctx) -> i (WitnessField ctx)
         predicateWitness x' u' =
             let

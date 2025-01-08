@@ -36,7 +36,6 @@ import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional           (Conditional (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
-import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
 
 -- | Public input to the recursive function
 data RecursiveI i f = RecursiveI (i f) f
@@ -74,6 +73,8 @@ type RecursiveFunctionAssumptions algo a d k i p c ctx =
     ( Symbolic ctx
     , BaseField ctx ~ a
     , Binary (BaseField ctx)
+    , FromConstant (BaseField ctx) (WitnessField ctx)
+    , Scale (BaseField ctx) (WitnessField ctx)
     , HashAlgorithm algo
     , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
     , Scale (FieldElement ctx) (c (FieldElement ctx))
@@ -133,11 +134,9 @@ recursiveFunction func z0 =
 
 --------------------------------------------------------------------------------
 
-recursivePredicate :: forall algo a d k i p c ctx ctx0 ctx1 .
-    ( ctx0 ~ Interpreter a
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
+recursivePredicate :: forall algo a d k i p c ctx ctx1 .
+    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
     , RecursiveFunctionAssumptions algo a d k i p c ctx
-    , RecursiveFunctionAssumptions algo a d k i p c ctx0
     , RecursiveFunctionAssumptions algo a d k i p c ctx1
     ) => RecursiveFunction algo a d k i p c -> Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
 recursivePredicate func =
@@ -150,9 +149,6 @@ recursivePredicate func =
                 u = FieldElement <$> unpacked u'
             in
                 packed . fmap fromFieldElement $ func x u
-
-        predicateEval :: (RecursiveI i) a -> (RecursiveP d k i p c) a -> (RecursiveI i) a
-        predicateEval z u = runInterpreter $ func' (Interpreter z) (Interpreter u)
 
         predicateWitness :: (RecursiveI i) (WitnessField ctx) -> (RecursiveP d k i p c) (WitnessField ctx) -> (RecursiveI i) (WitnessField ctx)
         predicateWitness x' u' =

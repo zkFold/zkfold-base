@@ -55,8 +55,8 @@ specialSoundProtocol :: forall d i p ctx .
     , Representable i
     , Representable p
     , Symbolic ctx
-    , Scale (BaseField ctx) (WitnessField ctx)
     , FromConstant (BaseField ctx) (WitnessField ctx)
+    , Scale (BaseField ctx) (WitnessField ctx)
     ) => Predicate i p ctx -> SpecialSoundProtocol 1 i p [WitnessField ctx] [WitnessField ctx] (WitnessField ctx)
 specialSoundProtocol phi@Predicate {..} =
   let

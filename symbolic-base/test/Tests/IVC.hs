@@ -39,7 +39,7 @@ type I = Vector 1
 type P = U1
 type K = 1
 type CTX = Interpreter F
-type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) U1
+type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) (Vector 1)
 type PHI = Predicate I P CTX
 type SPS = FiatShamir 1 I P C [F] [F] F
 type D = 2
@@ -76,7 +76,7 @@ testPublicInput0 :: I F
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
 testPublicInput :: PHI -> I F
-testPublicInput phi = predicateEval phi testPublicInput0 U1
+testPublicInput phi = predicateWitness phi testPublicInput0 U1
 
 testInstanceProofPair :: PHI -> NARKInstanceProof K I C F
 testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
