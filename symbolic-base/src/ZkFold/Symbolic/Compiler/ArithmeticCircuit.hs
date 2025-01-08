@@ -41,7 +41,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
 
 import           Control.DeepSeq                                         (NFData)
 import           Control.Monad                                           (foldM)
-import           Control.Monad.State                                     (execState, runState)
+import           Control.Monad.State                                     (execState)
 import           Data.Binary                                             (Binary)
 import           Data.Foldable                                           (for_)
 import           Data.Functor.Rep                                        (Representable (..), mzipRep)
@@ -49,8 +49,6 @@ import           Data.Map                                                hiding 
                                                                           take)
 import qualified Data.Map.Monoidal                                       as M
 import qualified Data.Set                                                as S
-import           Data.Traversable                                        (for)
-import           Data.Tuple                                              (swap)
 import           Data.Void                                               (absurd)
 import           GHC.Generics                                            (U1 (..), (:*:))
 import           Numeric.Natural                                         (Natural)
@@ -67,10 +65,7 @@ import           ZkFold.Base.Data.Product                                (fstP, 
 import           ZkFold.Prelude                                          (length)
 import           ZkFold.Symbolic.Class                                   (fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal     (Arithmetic, ArithmeticCircuit (..),
-                                                                          Constraint, SysVar (..), Var (..),
-                                                                          WitVar (..), acInput, crown, eval, eval1,
-                                                                          exec, exec1, hlmap, hpmap, witnessGenerator)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
@@ -103,25 +98,6 @@ desugarRanges ::
 desugarRanges c =
   let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(toVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
    in r' { acRange = mempty, acOutput = acOutput c }
-
-emptyCircuit :: ArithmeticCircuit a p i U1
-emptyCircuit = ArithmeticCircuit empty M.empty empty empty U1
-
--- | Given a natural transformation
--- from payload @p@ and input @i@ to output @o@,
--- returns a corresponding arithmetic circuit
--- where outputs computing the payload are unconstrained.
-naturalCircuit ::
-  ( Arithmetic a, Representable p, Representable i, Traversable o
-  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
-  (forall x. p x -> i x -> o x) -> ArithmeticCircuit a p i o
-naturalCircuit f = uncurry crown $ swap $ flip runState emptyCircuit $
-  for (f (tabulate Left) (tabulate Right)) $
-    either (unconstrained . pure . WExVar) (return . toVar . InVar)
-
--- | Identity circuit which returns its input @i@ and doesn't use the payload.
-idCircuit :: (Representable i, Semiring a) => ArithmeticCircuit a p i i
-idCircuit = emptyCircuit { acOutput = acInput }
 
 -- | Payload of an input to arithmetic circuit.
 -- To be used as an argument to 'compileWith'.

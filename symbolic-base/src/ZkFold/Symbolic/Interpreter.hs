@@ -10,16 +10,21 @@ import           Control.DeepSeq                  (NFData)
 import           Control.Monad                    (Monad, return)
 import           Data.Aeson                       (FromJSON, ToJSON)
 import           Data.Eq                          (Eq)
-import           Data.Function                    (id, ($))
+import           Data.Function                    (id, ($), (.))
 import           Data.Functor                     (Functor, (<$>))
 import           Data.Functor.Identity            (Identity (..))
-import           GHC.Generics                     (Generic)
+import           Data.List                        (foldl')
+import           Data.List.Infinite               (toList)
+import           GHC.Generics                     (Generic, Par1 (..))
 import           Text.Show                        (Show)
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
+import           ZkFold.Prelude                   (take)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
 
 newtype Interpreter a f = Interpreter { runInterpreter :: f a }
@@ -43,6 +48,10 @@ instance Arithmetic a => Symbolic (Interpreter a) where
   witnessF (Interpreter x) = x
   fromCircuitF (Interpreter x) c = Interpreter $ runWitnesses @a (c x)
   sanityF (Interpreter x) f _ = Interpreter (f x)
+
+instance Arithmetic a => SymbolicFold (Interpreter a) where
+  sfoldl fun seed stream (Interpreter (Par1 cnt)) =
+    foldl' ((. Interpreter) . fun) seed $ take (toConstant cnt) $ toList stream
 
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.

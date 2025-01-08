@@ -20,13 +20,15 @@ import           ZkFold.Base.Data.ByteString     ()
 data SysVar i
   = InVar (Rep i)
   | NewVar ByteString
+  | FoldVar ByteString ByteString
   deriving Generic
 
 imapSysVar ::
   (Representable i, Representable j) =>
   (forall x. j x -> i x) -> SysVar i -> SysVar j
-imapSysVar f (InVar r)  = index (f (tabulate InVar)) r
-imapSysVar _ (NewVar b) = NewVar b
+imapSysVar f (InVar r)     = index (f (tabulate InVar)) r
+imapSysVar _ (NewVar b)    = NewVar b
+imapSysVar _ (FoldVar b c) = FoldVar b c
 
 deriving anyclass instance FromJSON (Rep i) => FromJSON (SysVar i)
 deriving anyclass instance FromJSON (Rep i) => FromJSONKey (SysVar i)
@@ -36,7 +38,6 @@ deriving stock instance Show (Rep i) => Show (SysVar i)
 deriving stock instance Eq (Rep i) => Eq (SysVar i)
 deriving stock instance Ord (Rep i) => Ord (SysVar i)
 deriving instance NFData (Rep i) => NFData (SysVar i)
-
 
 data Var a i
   = LinVar a (SysVar i) a

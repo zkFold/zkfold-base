@@ -14,6 +14,10 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         VarField,
         Arithmetic,
         Constraint,
+        -- circuit constructors
+        emptyCircuit,
+        naturalCircuit,
+        idCircuit,
         -- variable getters and setters
         acInput,
         getAllVars,
@@ -41,12 +45,14 @@ import           Data.Foldable                                                (f
 import           Data.Functor.Rep
 import           Data.List.Infinite                                           (Infinite)
 import           Data.Map.Monoidal                                            (MonoidalMap, insertWith)
+import qualified Data.Map.Monoidal                                            as M
 import           Data.Map.Strict                                              hiding (drop, foldl, foldr, insertWith,
                                                                                map, null, splitAt, take, toList)
 import           Data.Maybe                                                   (catMaybes, fromMaybe)
 import           Data.Semialign                                               (unzipDefault)
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
+import           Data.Traversable                                             (for)
 import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics                                                       hiding (at)
 import           Prelude                                                      hiding (Num (..), drop, length, product,
@@ -58,13 +64,16 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate                 (Poly, evalMonomial, evalPolynomial,
                                                                                mapVars, var)
 import           ZkFold.Base.Control.HApplicative
+import           ZkFold.Base.Data.ByteString                                  (toByteString)
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
+import           ZkFold.Base.Data.Product
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
+import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | The type that represents a constraint in the arithmetic circuit.
@@ -146,6 +155,27 @@ pmapWitVar ::
 pmapWitVar f (WExVar r)  = index (f (tabulate WExVar)) r
 pmapWitVar _ (WSysVar v) = WSysVar v
 
+----------------------------- Circuit constructors -----------------------------
+
+emptyCircuit :: ArithmeticCircuit a p i U1
+emptyCircuit = ArithmeticCircuit empty M.empty empty empty U1
+
+-- | Given a natural transformation
+-- from payload @p@ and input @i@ to output @o@,
+-- returns a corresponding arithmetic circuit
+-- where outputs computing the payload are unconstrained.
+naturalCircuit ::
+  ( Arithmetic a, Representable p, Representable i, Traversable o
+  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
+  (forall x. p x -> i x -> o x) -> ArithmeticCircuit a p i o
+naturalCircuit f = uncurry (set #acOutput) $ flip runState emptyCircuit $
+  for (f (tabulate Left) (tabulate Right)) $
+    either (unconstrained . pure . WExVar) (return . toVar . InVar)
+
+-- | Identity circuit which returns its input @i@ and doesn't use the payload.
+idCircuit :: (Representable i, Semiring a) => ArithmeticCircuit a p i i
+idCircuit = emptyCircuit { acOutput = acInput }
+
 ---------------------------------- Variables -----------------------------------
 
 acInput :: (Representable i, Semiring a) => i (Var a i)
@@ -163,7 +193,10 @@ indexW circuit payload inputs = \case
   LinVar k (InVar inV) b -> (\t -> k * t + b) $ index inputs inV
   LinVar k (NewVar newV) b -> (\t -> k * t + b) $ fromMaybe
     (error ("no such NewVar: " <> show newV))
-    (witnessGenerator circuit payload inputs !? newV)
+    (fst (witnessGenerator circuit payload inputs) !? newV)
+  LinVar k (FoldVar fldID fldV) b -> (\t -> k * t + b) $ fromMaybe
+    (error ("no such FoldVar: " <> show (fldID, fldV)))
+    ((snd (witnessGenerator circuit payload inputs) !? fldID) >>= (!? fldV))
   ConstVar cV -> cV
 
 -------------------------------- "HProfunctor" ---------------------------------
@@ -213,6 +246,19 @@ instance
     type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
     witnessF (behead -> (_, o)) = at <$> o
     fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
+
+instance
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
+  SymbolicFold (ArithmeticCircuit a p i) where
+    sfoldl fun (behead -> (sc, foldSeed))
+           foldStream (behead -> (cc, Par1 foldCount)) =
+      uncurry (set #acOutput) $ flip runState (sc <> cc) $ do
+        let foldStep = fun (hmap sndP idCircuit) (hmap fstP idCircuit)
+            fldID = runHash $ merkleHash (foldSeed, foldCount, foldStep)
+            foldResult = tabulate (\r ->
+              LinVar one (FoldVar fldID (toByteString r)) zero)
+        zoom #acFold $ modify $ insert fldID CircuitFold {..}
+        return foldResult
 
 ----------------------------- MonadCircuit instance ----------------------------
 
@@ -295,18 +341,22 @@ witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   WExVar exV -> merkleHash exV
   WSysVar (InVar inV) -> merkleHash inV
   WSysVar (NewVar newV) -> M newV
+  WSysVar (FoldVar fldID fldV) -> merkleHash (fldID, fldV)
 
 ----------------------------- Evaluation functions -----------------------------
 
 witnessGenerator ::
   (Arithmetic a, Representable p, Representable i) =>
-  ArithmeticCircuit a p i o -> p a -> i a -> Map ByteString a
+  ArithmeticCircuit a p i o -> p a -> i a ->
+  (Map ByteString a, Map ByteString (Map ByteString a))
 witnessGenerator circuit payload inputs =
-  let result = acWitness circuit <&> \k -> runWitnessF k $ \case
+  let newResult = acWitness circuit <&> \k -> runWitnessF k $ \case
         WExVar eV -> index payload eV
         WSysVar (InVar iV) -> index inputs iV
-        WSysVar (NewVar nV) -> result ! nV
-  in result
+        WSysVar (NewVar nV) -> newResult ! nV
+        WSysVar (FoldVar fldID fldV) -> foldResult ! fldID ! fldV
+      foldResult = acFold circuit <&> _
+  in (newResult, foldResult)
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
 eval1 ::
@@ -343,15 +393,18 @@ apply xs ac = ac
     outF (LinVar k (InVar (Left v)) b)  = ConstVar (k * index xs v + b)
     outF (LinVar k (InVar (Right v)) b) = LinVar k (InVar v) b
     outF (LinVar k (NewVar v) b)        = LinVar k (NewVar v) b
+    outF (LinVar k (FoldVar i v) b)     = LinVar k (FoldVar i v) b
     outF (ConstVar a)                   = ConstVar a
 
     varF (InVar (Left v))  = fromConstant (index xs v)
     varF (InVar (Right v)) = var (InVar v)
     varF (NewVar v)        = var (NewVar v)
+    varF (FoldVar i v)     = var (FoldVar i v)
 
     witF (WSysVar (InVar (Left v)))  = WitnessF $ const $ fromConstant (index xs v)
     witF (WSysVar (InVar (Right v))) = pure $ WSysVar (InVar v)
     witF (WSysVar (NewVar v))        = pure $ WSysVar (NewVar v)
+    witF (WSysVar (FoldVar i v))     = pure $ WSysVar (FoldVar i v)
     witF (WExVar v)                  = pure (WExVar v)
 
     filterSet :: Ord (Rep j) => S.Set (SysVar (i :*: j)) ->  S.Set (Maybe (SysVar j))
