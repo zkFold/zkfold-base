@@ -2,12 +2,12 @@
 
 module ZkFold.Base.Protocol.Plonkup.Witness where
 
-import           Control.Applicative                     ((<*>))
-import           Data.Functor                            ((<$>))
-import           Data.Functor.Classes                    (Show1)
-import           Data.List                               ((++))
-import           Test.QuickCheck                         (Arbitrary (..), Arbitrary1, arbitrary1)
-import           Text.Show                               (Show, show)
+import           Control.Applicative  ((<*>))
+import           Data.Functor         ((<$>))
+import           Data.Functor.Classes (Show1)
+import           Data.List            ((++))
+import           Test.QuickCheck      (Arbitrary (..), Arbitrary1, arbitrary1)
+import           Text.Show            (Show, show)
 
 data PlonkupWitnessInput p i scalarField = PlonkupWitnessInput
   { payloadInput :: p scalarField

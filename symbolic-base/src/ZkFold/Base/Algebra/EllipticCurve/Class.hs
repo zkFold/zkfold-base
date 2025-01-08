@@ -28,8 +28,8 @@ import           Data.Kind                        (Type)
 import           Data.String                      (fromString)
 import           GHC.Generics
 import           GHC.TypeLits                     (Symbol)
-import qualified Prelude
 import           Prelude                          (Integer)
+import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
