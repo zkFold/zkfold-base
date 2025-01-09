@@ -14,14 +14,10 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_PointOf)
--- import qualified ZkFold.Base.Data.Vector                   as V
--- import qualified ZkFold.Symbolic.Class                     as S
 import           ZkFold.Symbolic.Class                     (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
--- import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
--- import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
 
