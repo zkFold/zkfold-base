@@ -12,14 +12,14 @@ import           Data.Constraint.Nat                        (plusMinusInverse1)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Zip                                   (Zip (..))
 import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    (Foldable, fmap, ($), (.), (<$>))
+import           Prelude                                    (Foldable, fmap, ($), (.), (<$>), Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Algebra.Polynomials.Univariate as PU
 import           ZkFold.Base.Data.Vector                    (Vector, init, mapWithIx, tail, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC.Accumulator
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (AlgebraicMap (..), algebraicMap)
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.IVC.FiatShamir        (transcript)
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
@@ -51,6 +51,7 @@ accumulatorScheme :: forall algo d k i p c f f' ctx'.
     , KnownNat (d+1)
     , Representable i
     , Zip i
+    , Ord (Rep i)
     , HashAlgorithm algo
     , Foldable i
     , Foldable c
@@ -92,12 +93,10 @@ accumulatorScheme phi mapField =
             polyR :: Vector (k-1) (PU.PolyVec f' (d+1))
             polyR = zipWith PU.polyVecLinear (fmap mapField r_i) (fmap mapField $ acc^.x^.r)
 
-            AlgebraicMap {..} = algebraicMap @d phi :: AlgebraicMap k i (PU.PolyVec f' (d+1))
-
             -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
             --
             e_uni :: [Vector (d+1) f']
-            e_uni = unsafeToVector . toList <$> applyAlgebraicMap polyPi polyW polyR polyMu
+            e_uni = unsafeToVector . toList <$> algebraicMap @d phi polyPi polyW polyR polyMu
 
             -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
             e_all :: Vector (d+1) [f']
@@ -156,11 +155,9 @@ accumulatorScheme phi mapField =
             -- Fig. 5, step 1
             commitsDiff = zipWith (\cm m_acc -> cm - hcommit m_acc) (acc^.x^.c) (fmap (fmap mapField) $ acc^.w)
 
-            AlgebraicMap {..} = algebraicMap @d phi :: AlgebraicMap k i f'
-
             -- Fig. 5, step 2
             err :: [f']
-            err = applyAlgebraicMap (fmap mapField $ acc^.x^.pi) (fmap (fmap mapField) $ acc^.w) (fmap mapField $ acc^.x^.r) (mapField $ acc^.x^.mu)
+            err = algebraicMap @d phi (fmap mapField $ acc^.x^.pi) (fmap (fmap mapField) $ acc^.w) (fmap mapField $ acc^.x^.r) (mapField $ acc^.x^.mu)
 
 
             -- Fig. 5, step 3

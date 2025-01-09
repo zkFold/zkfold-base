@@ -11,13 +11,13 @@ import           Control.Lens                          ((^.))
 import           Control.Lens.Combinators              (makeLenses)
 import           Data.Distributive                     (Distributive (..))
 import           Data.Functor.Rep                      (Representable (..), collectRep, distributeRep)
-import           GHC.Generics
+import           GHC.Generics hiding (Rep)
 import           Prelude                               hiding (length, pi)
 
 import           ZkFold.Base.Algebra.Basic.Class       (Ring, Scale, zero)
 import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.Vector               (Vector)
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap (AlgebraicMap (..), algebraicMap)
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
 import           ZkFold.Symbolic.Class                 (Symbolic(..))
@@ -71,27 +71,29 @@ emptyAccumulator :: forall d k i p c ctx f .
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
+    , Ord (Rep i)
     , HomomorphicCommit [f] (c f)
     , Ring f
     , Scale (BaseField ctx) f
     ) => Predicate i p ctx -> Accumulator k i c f
 emptyAccumulator phi =
-    let AlgebraicMap {..} = algebraicMap @d phi
-        
+    let
         accW  = tabulate (const zero)
         aiC   = fmap hcommit accW
         aiR   = tabulate (const zero)
         aiMu  = zero
         aiPI  = tabulate (const zero)
-        aiE   = hcommit $ applyAlgebraicMap aiPI accW aiR aiMu
+        aiE   = hcommit $ algebraicMap @d phi aiPI accW aiR aiMu
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
-    in Accumulator accX accW
+    in
+        Accumulator accX accW
 
 emptyAccumulatorInstance :: forall d k i p c ctx f .
     ( KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
     , Representable i
+    , Ord (Rep i)
     , HomomorphicCommit [f] (c f)
     , Ring f
     , Scale (BaseField ctx) f

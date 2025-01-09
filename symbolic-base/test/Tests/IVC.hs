@@ -20,7 +20,7 @@ import           ZkFold.Base.Data.Vector                     (Vector (..), item,
 import           ZkFold.Base.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..),
                                                               emptyAccumulator)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme  as Acc
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (AlgebraicMap (..), algebraicMap)
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (AlgebraicMap, algebraicMap)
 import           ZkFold.Base.Protocol.IVC.CommitOpen         (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir         (FiatShamir, fiatShamir)
 import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
@@ -125,9 +125,7 @@ specAlgebraicMap = hspec $ do
         describe "Algebraic map" $ do
             it "must output zeros on the public input and testMessages" $ do
                withMaxSuccess 10 $ property $
-                    \p ->
-                        let AlgebraicMap {..} = testAlgebraicMap $ testPredicate p
-                        in applyAlgebraicMap (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
+                    \p -> testAlgebraicMap (testPredicate p) (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
                             == replicate (acSizeN $ testPredicateCircuit p) zero
 
 specAccumulatorScheme :: IO ()

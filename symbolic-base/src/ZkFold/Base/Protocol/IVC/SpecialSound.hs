@@ -6,7 +6,7 @@ module ZkFold.Base.Protocol.IVC.SpecialSound where
 import           Data.Functor.Rep                      (Representable (..))
 import           Data.Map.Strict                       (elems)
 import           GHC.Generics                          ((:*:) (..))
-import           Prelude                               (undefined, ($))
+import           Prelude                               (undefined, ($), Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -53,6 +53,7 @@ data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
 specialSoundProtocol :: forall d i p ctx .
     ( KnownNat (d+1)
     , Representable i
+    , Ord (Rep i)
     , Representable p
     , Symbolic ctx
     , FromConstant (BaseField ctx) (WitnessField ctx)
@@ -62,22 +63,19 @@ specialSoundProtocol phi@Predicate {..} =
   let
       prover pi0 w _ _ = elems $ witnessGenerator @(WitnessField ctx) predicateCircuit (pi0 :*: w) (predicateWitness pi0 w)
 
-      verifier pi pm ts =
-        let AlgebraicMap {..} = algebraicMap @d phi
-        in applyAlgebraicMap pi pm ts one
+      verifier pi pm ts = algebraicMap @d phi pi pm ts one
   in
       SpecialSoundProtocol predicateWitness prover verifier
 
 specialSoundProtocol' :: forall d i p ctx.
     ( KnownNat (d+1)
     , Representable i
+    , Ord (Rep i)
     , Symbolic ctx
     , Scale (BaseField ctx) (FieldElement ctx)
     ) => Predicate i p ctx -> SpecialSoundProtocol 1 i p [FieldElement ctx] [FieldElement ctx] (FieldElement ctx)
 specialSoundProtocol' phi =
   let
-      verifier pi pm ts =
-        let AlgebraicMap {..} = algebraicMap @d phi
-        in applyAlgebraicMap pi pm ts one
+      verifier pi pm ts = algebraicMap @d phi pi pm ts one
   in
       SpecialSoundProtocol undefined undefined verifier
