@@ -4,27 +4,49 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Symbolic.Data.Ed25519 (AcEd25519) where
+module ZkFold.Symbolic.Data.Ed25519 (Ed25519_Point) where
 
-import           Control.DeepSeq                           (NFData, force)
+-- import           Control.DeepSeq                           (NFData, force)
 import           Prelude                                   (fromInteger, type (~), ($))
 import qualified Prelude                                   as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
-import qualified ZkFold.Base.Data.Vector                   as V
-import qualified ZkFold.Symbolic.Class                     as S
-import           ZkFold.Symbolic.Class                     (Symbolic)
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_PointOf)
+-- import qualified ZkFold.Base.Data.Vector                   as V
+-- import qualified ZkFold.Symbolic.Class                     as S
+import           ZkFold.Symbolic.Class                     (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Class
+-- import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.Eq
+-- import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
 
+type Ed25519_Point c = Ed25519_PointOf (FFA Ed25519_Base c)
+
+instance Symbolic c => SubgroupCurve "ed25519" (Bool c) (FFA Ed25519_Base c) (FieldElement c) Ed25519_PointOf where
+  pointGen = pointXY
+    (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
+    (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
+
+instance
+  ( Symbolic ctx
+  , a ~ BaseField ctx
+  , bits ~ NumberOfBits a
+  ) => Scale (FieldElement ctx) (Ed25519_Point ctx) where
+
+    scale sc x = sum $ P.zipWith (\b p -> bool @(Bool ctx) zero p (isSet bits b)) [upper, upper -! 1 .. 0] (P.iterate (\e -> e + e) x)
+        where
+            bits :: ByteString bits ctx
+            bits = ByteString $ binaryExpansion sc
+
+            upper :: Natural
+            upper = value @bits -! 1
+
+{-
 data AcEd25519 c
 
 -- | Ed25519 with @UInt 256 ArithmeticCircuit a@ as computational backend
@@ -110,3 +132,4 @@ acDouble25519 (Point x1 y1 isInf) =
         x3 = force $ (xy + xy) // (a * xsq + ysq)
         y3 = force $ (ysq - a * xsq) // (one + one - a * xsq  - ysq)
 
+-}
