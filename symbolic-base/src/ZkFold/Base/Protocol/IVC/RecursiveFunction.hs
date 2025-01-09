@@ -74,9 +74,14 @@ type RecursiveFunctionAssumptions algo a d k i p c ctx =
     , BaseField ctx ~ a
     , Binary (BaseField ctx)
     , FromConstant (BaseField ctx) (WitnessField ctx)
-    , Scale (BaseField ctx) (WitnessField ctx)
     , HashAlgorithm algo
+    , HomomorphicCommit [WitnessField ctx] (c (WitnessField ctx))
     , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
+    , Scale (BaseField ctx) (WitnessField ctx)
+    , Scale (WitnessField ctx) (Vector (k-1) (WitnessField ctx))
+    , Scale (WitnessField ctx) (Vector k (c (WitnessField ctx)))
+    , Scale (WitnessField ctx) (Vector k [WitnessField ctx])
+    , Scale (WitnessField ctx) (c (WitnessField ctx))
     , Scale (FieldElement ctx) (c (FieldElement ctx))
     , FromConstant (RecursiveI i (BaseField ctx)) (RecursiveI i (FieldElement ctx))
     , Conditional (Bool ctx) (RecursiveI i (FieldElement ctx))
@@ -93,8 +98,8 @@ type RecursiveFunction algo a d k i p c = forall ctx . RecursiveFunctionAssumpti
     => RecursiveI i (FieldElement ctx) -> RecursiveP d k i p c (FieldElement ctx) -> RecursiveI i (FieldElement ctx)
 
 -- | Transform a step function into a recursive function
-recursiveFunction :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
-    => StepFunction i p
+recursiveFunction :: forall algo a d k i p c .
+       StepFunction i p
     -> RecursiveI i a
     -> RecursiveFunction algo a d k i p c
 recursiveFunction func z0 =
@@ -106,26 +111,26 @@ recursiveFunction func z0 =
             -> RecursiveI i (FieldElement ctx')
         func' (RecursiveI x h) (RecursiveP u _ _ _ _) = RecursiveI (func x u) h
 
-        -- A helper predicate to derive the accumulator scheme
-        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = predicate @_ @_ @ctx func'
-
-        funcRecursive :: forall ctx' . RecursiveFunctionAssumptions algo a d k i p c ctx'
-            => RecursiveI i (FieldElement ctx')
-            -> RecursiveP d k i p c (FieldElement ctx')
-            -> RecursiveI i (FieldElement ctx')
+        funcRecursive :: forall ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
+            => RecursiveI i (FieldElement ctx)
+            -> RecursiveP d k i p c (FieldElement ctx)
+            -> RecursiveI i (FieldElement ctx)
         funcRecursive z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
             let
-                accScheme :: AccumulatorScheme d k (RecursiveI i) c (FieldElement ctx')
-                accScheme = accumulatorScheme @algo pRec id
+                -- A helper predicate to derive the accumulator scheme
+                pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
+                pRec = predicate @_ @_ @ctx func'
 
-                x' :: i (FieldElement ctx')
+                accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
+                accScheme = accumulatorScheme @algo pRec id id
+
+                x' :: i (FieldElement ctx)
                 x' = func x u
 
-                accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx')
+                accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx)
                 accX' = verifier accScheme z piX accX pf
 
-                h :: (FieldElement ctx')
+                h :: (FieldElement ctx)
                 h = oracle @algo accX'
             in
                 bool (fromConstant z0) (RecursiveI x' h) $ Bool $ fromFieldElement flag
@@ -164,5 +169,5 @@ recursivePredicate func =
         predicateCircuit :: PredicateCircuit (RecursiveI i) (RecursiveP d k i p c) ctx
         predicateCircuit =
             hlmap (U1 :*:) $
-            compileWith @a guessOutput (\(i :*: p) U1 -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'        
+            compileWith @a guessOutput (\(i :*: p) U1 -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
     in Predicate {..}

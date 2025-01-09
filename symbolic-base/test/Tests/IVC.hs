@@ -3,8 +3,7 @@
 
 module Tests.IVC (specIVC) where
 
-import           Data.Functor.Constant                       (Constant)
-import           GHC.Generics                                (U1 (..), type (:*:) (..))
+import           GHC.Generics                                (U1 (..), type (:*:) (..), Par1)
 import           GHC.IsList                                  (IsList (..))
 import           Prelude                                     hiding (Num (..), pi, replicate, sum, (+))
 import           Test.Hspec                                  (describe, hspec, it)
@@ -13,9 +12,9 @@ import           Test.QuickCheck                             (arbitrary, generat
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), ToConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (Point)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyVec)
+import           ZkFold.Base.Data.Package                    (unpacked)
 import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..),
                                                               emptyAccumulator)
@@ -28,23 +27,25 @@ import           ZkFold.Base.Protocol.IVC.Oracle             (MiMCHash)
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.SpecialSound       (specialSoundProtocol)
 import           ZkFold.Prelude                              (replicate)
-import           ZkFold.Symbolic.Class                       (Symbolic)
+import           ZkFold.Symbolic.Class                       (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
-type F = Zp BLS12_381_Scalar
-type C = Constant (Point BLS12_381_G1)
+type A = Zp BLS12_381_Scalar
+type C = Par1
 type I = Vector 1
 type P = U1
 type K = 1
-type CTX = Interpreter F
-type AC = ArithmeticCircuit F (Vector 1 :*: U1) (Vector 1) (Vector 1)
+type CTX = Interpreter A
+type AC = ArithmeticCircuit A (Vector 1 :*: U1) (Vector 1) (Vector 1)
+type W = WitnessField CTX
+type F = FieldElement CTX
 type PHI = Predicate I P CTX
-type SPS = FiatShamir 1 I P C [F] [F] F
+type SPS = FiatShamir 1 I P C CTX
 type D = 2
 type PARDEG = 5
-type PAR = PolyVec F PARDEG
+type PAR = PolyVec A PARDEG
 
 testFunction :: forall ctx . Symbolic ctx
     => PAR -> Vector 1 (FieldElement ctx) -> U1 (FieldElement ctx) -> Vector 1 (FieldElement ctx)
@@ -58,66 +59,69 @@ testPredicate p = predicate $ testFunction p
 testPredicateCircuit :: PAR -> AC
 testPredicateCircuit p = predicateCircuit @I @P $ testPredicate p
 
-testAlgebraicMap :: PHI -> AlgebraicMap K I F
+testAlgebraicMap :: PHI -> AlgebraicMap K I W
 testAlgebraicMap = algebraicMap @D
 
 testSPS :: PHI -> SPS
-testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D
+testSPS = fiatShamir @MiMCHash @K @I @P @C @CTX . commitOpen @K @I @P @C @CTX  . specialSoundProtocol @D @I @P @CTX
 
-initAccumulator :: PHI -> Accumulator K I C F
+initAccumulator :: PHI -> Accumulator K I C W
 initAccumulator = emptyAccumulator @D
 
-initAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
+initAccumulatorInstance :: PHI -> AccumulatorInstance K I C W
 initAccumulatorInstance phi =
     let Accumulator ai _ = initAccumulator phi
     in ai
 
-testPublicInput0 :: I F
+testPublicInput0 :: I W
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
-testPublicInput :: PHI -> I F
+testPublicInput :: PHI -> I W
 testPublicInput phi = predicateWitness phi testPublicInput0 U1
 
-testInstanceProofPair :: PHI -> NARKInstanceProof K I C F
+testInstanceProofPair :: PHI -> NARKInstanceProof K I C CTX
 testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 
-testMessages :: PHI -> Vector K [F]
+testMessages :: PHI -> Vector K [W]
 testMessages phi =
     let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair phi
     in ms
 
-testNarkProof :: PHI -> Vector K (C F)
+testNarkProof :: PHI -> Vector K (C W)
 testNarkProof phi =
     let NARKInstanceProof _ (NARKProof cs _) = testInstanceProofPair phi
     in cs
 
-testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
-testAccumulatorScheme = flip (accumulatorScheme @MiMCHash) id
+testAccumulatorScheme :: PHI -> AccumulatorScheme D K I C CTX
+testAccumulatorScheme phi = accumulatorScheme @MiMCHash phi id id
 
-testAccumulator :: PHI -> Accumulator K I C F
+testAccumulator :: PHI -> Accumulator K I C W
 testAccumulator phi =
     let s = testAccumulatorScheme phi
     in fst $ prover s (initAccumulator phi) $ testInstanceProofPair phi
 
-testAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
+testAccumulatorInstance :: PHI -> AccumulatorInstance K I C W
 testAccumulatorInstance phi =
     let Accumulator ai _ = testAccumulator phi
     in ai
 
-testAccumulationProof :: PHI -> Vector (D - 1) (C F)
+testAccumulationProof :: PHI -> Vector (D - 1) (C W)
 testAccumulationProof phi =
     let s = testAccumulatorScheme phi
     in snd $ prover s (initAccumulator phi) $ testInstanceProofPair phi
 
+fromWitness :: Traversable t => t W -> t F
+fromWitness = fmap FieldElement . unpacked . embedW
+
 testDeciderResult :: PHI -> (Vector K (C F), C F)
 testDeciderResult phi =
     let s = testAccumulatorScheme phi
-    in decider s $ testAccumulator phi
+    in decider s $ fromWitness $ testAccumulator phi
 
 testVerifierResult :: PHI -> AccumulatorInstance K I C F
 testVerifierResult phi =
     let s = testAccumulatorScheme phi
-    in verifier s (testPublicInput phi) (testNarkProof phi) (initAccumulatorInstance phi) (testAccumulationProof phi)
+    in verifier s (fromWitness $ testPublicInput phi) (fromWitness <$> testNarkProof phi) (fromWitness $ initAccumulatorInstance phi) (fromWitness <$> testAccumulationProof phi)
 
 specAlgebraicMap :: IO ()
 specAlgebraicMap = hspec $ do
@@ -136,7 +140,7 @@ specAccumulatorScheme = hspec $ do
                 withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
         describe "verifier" $ do
             it "must output zeros" $ do
-                withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)
+                withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == fromWitness (testAccumulatorInstance (testPredicate p))
 
 specIVC :: IO ()
 specIVC = do

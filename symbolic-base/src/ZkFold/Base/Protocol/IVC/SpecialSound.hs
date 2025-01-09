@@ -6,7 +6,7 @@ module ZkFold.Base.Protocol.IVC.SpecialSound where
 import           Data.Functor.Rep                      (Representable (..))
 import           Data.Map.Strict                       (elems)
 import           GHC.Generics                          ((:*:) (..))
-import           Prelude                               (undefined, ($), Ord)
+import           Prelude                               (($), Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -29,25 +29,25 @@ and checks that the output is a zero vector of length l.
 
 --}
 
-data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
+data SpecialSoundProtocol k i p ctx = SpecialSoundProtocol
   {
     input ::
-         i f                            -- ^ previous public input
-      -> p f                            -- ^ witness
-      -> i f                            -- ^ public input
+         i (WitnessField ctx)                            -- ^ previous public input
+      -> p (WitnessField ctx)                            -- ^ witness
+      -> i (WitnessField ctx)                            -- ^ public input
 
   , prover ::
-         i f                            -- ^ previous public input
-      -> p f                            -- ^ witness
-      -> f                              -- ^ current random challenge
-      -> Natural                        -- ^ round number (starting from 1)
-      -> m                              -- ^ prover message
+         i (WitnessField ctx)                            -- ^ previous public input
+      -> p (WitnessField ctx)                            -- ^ witness
+      -> WitnessField ctx                                -- ^ current random challenge
+      -> Natural                                         -- ^ round number (starting from 1)
+      -> [WitnessField ctx]                              -- ^ prover message
 
   , verifier ::
-         i f                            -- ^ public input
-      -> Vector k m                     -- ^ prover messages
-      -> Vector (k-1) f                 -- ^ random challenges
-      -> o                              -- ^ verifier output
+         i (FieldElement ctx)                            -- ^ public input
+      -> Vector k [FieldElement ctx]                     -- ^ prover messages
+      -> Vector (k-1) (FieldElement ctx)                 -- ^ random challenges
+      -> [FieldElement ctx]                              -- ^ verifier output
   }
 
 specialSoundProtocol :: forall d i p ctx .
@@ -58,7 +58,7 @@ specialSoundProtocol :: forall d i p ctx .
     , Symbolic ctx
     , FromConstant (BaseField ctx) (WitnessField ctx)
     , Scale (BaseField ctx) (WitnessField ctx)
-    ) => Predicate i p ctx -> SpecialSoundProtocol 1 i p [WitnessField ctx] [WitnessField ctx] (WitnessField ctx)
+    ) => Predicate i p ctx -> SpecialSoundProtocol 1 i p ctx
 specialSoundProtocol phi@Predicate {..} =
   let
       prover pi0 w _ _ = elems $ witnessGenerator @(WitnessField ctx) predicateCircuit (pi0 :*: w) (predicateWitness pi0 w)
@@ -66,16 +66,3 @@ specialSoundProtocol phi@Predicate {..} =
       verifier pi pm ts = algebraicMap @d phi pi pm ts one
   in
       SpecialSoundProtocol predicateWitness prover verifier
-
-specialSoundProtocol' :: forall d i p ctx.
-    ( KnownNat (d+1)
-    , Representable i
-    , Ord (Rep i)
-    , Symbolic ctx
-    , Scale (BaseField ctx) (FieldElement ctx)
-    ) => Predicate i p ctx -> SpecialSoundProtocol 1 i p [FieldElement ctx] [FieldElement ctx] (FieldElement ctx)
-specialSoundProtocol' phi =
-  let
-      verifier pi pm ts = algebraicMap @d phi pi pm ts one
-  in
-      SpecialSoundProtocol undefined undefined verifier

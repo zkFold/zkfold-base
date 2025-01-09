@@ -24,7 +24,7 @@ oracle = hash @algo . toList . rrep
 class Ring a => RingRepresentation x a where
     rrep :: x -> [a]
 
-instance Ring a => RingRepresentation a a where
+instance {-# INCOHERENT #-} Ring a => RingRepresentation a a where
     rrep a = [a]
 
 instance {-# INCOHERENT #-} (RingRepresentation b a, RingRepresentation c a) => RingRepresentation (b, c) a where

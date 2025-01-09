@@ -1,16 +1,43 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Base.Protocol.IVC.CommitOpen where
 
 import           Data.Zip                              (zipWith)
 import           Prelude                               hiding (Num (..), length, pi, tail, zipWith, (&&))
 
 import           ZkFold.Base.Algebra.Basic.Class       (AdditiveGroup (..))
+import           ZkFold.Base.Algebra.Basic.Number      (Natural, type (-))
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (hcommit))
 import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
+import           ZkFold.Symbolic.Class                 (Symbolic(..))
+import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
 
-type CommitOpen k i p c m o f = SpecialSoundProtocol k i p (m, c f) (Vector k (c f), o) f
+data CommitOpen k i p c ctx = CommitOpen
+    {
+        input   ::
+               i (WitnessField ctx)
+            -> p (WitnessField ctx)
+            -> i (WitnessField ctx)
 
-commitOpen :: HomomorphicCommit m (c f) => SpecialSoundProtocol k i p m o f -> CommitOpen k i p c m o f
+      , prover  ::
+               i (WitnessField ctx)
+            -> p (WitnessField ctx)
+            -> WitnessField ctx
+            -> Natural
+            -> ([WitnessField ctx], c (WitnessField ctx))
+
+      , verifier ::
+               i (FieldElement ctx)
+            -> Vector k ([FieldElement ctx], c (FieldElement ctx))
+            -> Vector (k-1) (FieldElement ctx)
+            -> ([FieldElement ctx], Vector k (c (FieldElement ctx)))
+    }
+
+commitOpen :: forall k i p c ctx .
+    ( HomomorphicCommit [WitnessField ctx] (c (WitnessField ctx))
+    , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
+    ) => SpecialSoundProtocol k i p ctx -> CommitOpen k i p c ctx
 commitOpen SpecialSoundProtocol {..} =
     let
         prover' pi0 w r i =
@@ -20,6 +47,6 @@ commitOpen SpecialSoundProtocol {..} =
         verifier' pi pms rs =
             let ms = fmap fst pms
                 cs = fmap snd pms
-            in (zipWith (-) (fmap hcommit ms) cs, verifier pi ms rs)
+            in (verifier pi ms rs, zipWith (-) (fmap hcommit ms) cs)
     in
-        SpecialSoundProtocol input prover' verifier'
+        CommitOpen input prover' verifier'
