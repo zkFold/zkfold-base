@@ -17,7 +17,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyV
 import           ZkFold.Base.Data.Package                    (unpacked)
 import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..),
-                                                              emptyAccumulator)
+                                                              emptyAccumulator, emptyAccumulatorInstance)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme  as Acc
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (AlgebraicMap, algebraicMap)
 import           ZkFold.Base.Protocol.IVC.CommitOpen         (commitOpen)
@@ -65,14 +65,6 @@ testAlgebraicMap = algebraicMap @D
 testSPS :: PHI -> SPS
 testSPS = fiatShamir @MiMCHash @K @I @P @C @CTX . commitOpen @K @I @P @C @CTX  . specialSoundProtocol @D @I @P @CTX
 
-initAccumulator :: PHI -> Accumulator K I C W
-initAccumulator = emptyAccumulator @D
-
-initAccumulatorInstance :: PHI -> AccumulatorInstance K I C W
-initAccumulatorInstance phi =
-    let Accumulator ai _ = initAccumulator phi
-    in ai
-
 testPublicInput0 :: I W
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
@@ -98,7 +90,7 @@ testAccumulatorScheme phi = accumulatorScheme @MiMCHash phi id id
 testAccumulator :: PHI -> Accumulator K I C W
 testAccumulator phi =
     let s = testAccumulatorScheme phi
-    in fst $ prover s (initAccumulator phi) $ testInstanceProofPair phi
+    in fst $ prover s emptyAccumulator $ testInstanceProofPair phi
 
 testAccumulatorInstance :: PHI -> AccumulatorInstance K I C W
 testAccumulatorInstance phi =
@@ -108,7 +100,7 @@ testAccumulatorInstance phi =
 testAccumulationProof :: PHI -> Vector (D - 1) (C W)
 testAccumulationProof phi =
     let s = testAccumulatorScheme phi
-    in snd $ prover s (initAccumulator phi) $ testInstanceProofPair phi
+    in snd $ prover s emptyAccumulator $ testInstanceProofPair phi
 
 fromWitness :: Traversable t => t W -> t F
 fromWitness = fmap FieldElement . unpacked . embedW
@@ -121,7 +113,7 @@ testDeciderResult phi =
 testVerifierResult :: PHI -> AccumulatorInstance K I C F
 testVerifierResult phi =
     let s = testAccumulatorScheme phi
-    in verifier s (fromWitness $ testPublicInput phi) (fromWitness <$> testNarkProof phi) (fromWitness $ initAccumulatorInstance phi) (fromWitness <$> testAccumulationProof phi)
+    in verifier s (fromWitness $ testPublicInput phi) (fromWitness <$> testNarkProof phi) emptyAccumulatorInstance (fromWitness <$> testAccumulationProof phi)
 
 specAlgebraicMap :: IO ()
 specAlgebraicMap = hspec $ do

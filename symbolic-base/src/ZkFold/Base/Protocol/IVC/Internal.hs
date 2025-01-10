@@ -88,7 +88,7 @@ ivcSetup f x0 witness =
         pRec = recursivePredicate @algo fRec
 
         acc0 :: Accumulator k (RecursiveI i) c (WitnessField ctx)
-        acc0 = emptyAccumulator @d pRec
+        acc0 = emptyAccumulator
 
         input :: RecursiveI i (WitnessField ctx)
         input = RecursiveI (fromConstant <$> x0) (oracle @algo $ acc0^.x)

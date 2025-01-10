@@ -11,16 +11,12 @@ import           Control.Lens                          ((^.))
 import           Control.Lens.Combinators              (makeLenses)
 import           Data.Distributive                     (Distributive (..))
 import           Data.Functor.Rep                      (Representable (..), collectRep, distributeRep)
-import           GHC.Generics hiding (Rep)
+import           GHC.Generics                          (Generic, Generic1)
 import           Prelude                               hiding (length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Class       (Ring, Scale, zero)
-import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (+), type (-))
+import           ZkFold.Base.Algebra.Basic.Class       (Ring, zero, AdditiveMonoid)
+import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-))
 import           ZkFold.Base.Data.Vector               (Vector)
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
-import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
-import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
-import           ZkFold.Symbolic.Class                 (Symbolic(..))
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
 
 -- Page 19, Accumulator instance
@@ -66,36 +62,30 @@ data Accumulator k i c f
 
 makeLenses ''Accumulator
 
-emptyAccumulator :: forall d k i p c ctx f .
-    ( KnownNat (d+1)
-    , KnownNat (k-1)
+emptyAccumulator :: forall k i c f .
+    ( KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , Ord (Rep i)
-    , HomomorphicCommit [f] (c f)
+    , AdditiveMonoid (c f)
     , Ring f
-    , Scale (BaseField ctx) f
-    ) => Predicate i p ctx -> Accumulator k i c f
-emptyAccumulator phi =
+    ) => Accumulator k i c f
+emptyAccumulator =
     let
         accW  = tabulate (const zero)
-        aiC   = fmap hcommit accW
+        aiC   = tabulate (const zero)
         aiR   = tabulate (const zero)
         aiMu  = zero
         aiPI  = tabulate (const zero)
-        aiE   = hcommit $ algebraicMap @d phi aiPI accW aiR aiMu
+        aiE   = zero
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in
         Accumulator accX accW
 
-emptyAccumulatorInstance :: forall d k i p c ctx f .
-    ( KnownNat (d+1)
-    , KnownNat (k-1)
+emptyAccumulatorInstance ::  forall k i c f .
+    ( KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , Ord (Rep i)
-    , HomomorphicCommit [f] (c f)
+    , AdditiveMonoid (c f)
     , Ring f
-    , Scale (BaseField ctx) f
-    ) => Predicate i p ctx -> AccumulatorInstance k i c f
-emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x
+    ) => AccumulatorInstance k i c f
+emptyAccumulatorInstance = emptyAccumulator ^. x
