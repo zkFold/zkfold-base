@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RebindableSyntax      #-}
+{-# LANGUAGE TypeOperators  #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
@@ -28,14 +29,17 @@ import           Data.Kind                        (Type)
 import           Data.String                      (fromString)
 import           GHC.Generics
 import           GHC.TypeLits                     (Symbol)
-import           Prelude                          (Integer)
+import           Prelude                          (Integer, type (~))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Input
 
 {- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 Elliptic curves always have genus @1@ and are birationally equivalent
@@ -143,6 +147,20 @@ instance
     isOnCurve (Weierstrass (Point x y isInf)) =
       if isInf then x == zero else
       let b = weierstrassB @curve in y*y == x*x*x + b
+deriving newtype instance
+  ( SymbolicOutput bool
+  , SymbolicOutput field
+  , Context field ~ Context bool
+  ) => SymbolicData (Weierstrass curve (Point bool) field)
+instance
+  ( SymbolicInput field
+  , Context field ~ ctx
+  , Symbolic ctx
+  , WeierstrassCurve curve field
+  , Eq (Bool ctx) field
+  , Conditional (Bool ctx) field
+  ) => SymbolicInput (Weierstrass curve (Point (Bool ctx)) field) where
+    isValid = isOnCurve
 deriving newtype instance Conditional bool (point field)
   => Conditional bool (Weierstrass curve point field)
 deriving newtype instance Eq bool (point field)
@@ -213,6 +231,17 @@ instance
       let a = twistedEdwardsA @curve
           d = twistedEdwardsD @curve
       in a*x*x + y*y == one + d*x*x*y*y
+deriving newtype instance SymbolicOutput field
+  => SymbolicData (TwistedEdwards curve AffinePoint field)
+instance
+  ( SymbolicInput field
+  , Context field ~ ctx
+  , Symbolic ctx
+  , TwistedEdwardsCurve curve field
+  , Eq (Bool ctx) field
+  , Conditional (Bool ctx) field
+  ) => SymbolicInput (TwistedEdwards curve AffinePoint field) where
+    isValid = isOnCurve
 deriving newtype instance Conditional bool (point field)
   => Conditional bool (TwistedEdwards curve point field)
 deriving newtype instance Eq bool (point field)
@@ -258,6 +287,11 @@ data Point bool field = Point
   , _y    :: field
   , _zBit :: bool
   } deriving Generic
+instance
+  ( SymbolicOutput bool
+  , SymbolicOutput field
+  , Context field ~ Context bool
+  ) => SymbolicData (Point bool field)
 instance BoolType bool => Planar (Point bool) where
   pointXY x y = Point x y false
 instance BoolType bool => HasPointInf (Point bool) where
@@ -287,6 +321,11 @@ data CompressedPoint bool field = CompressedPoint
   , _yBit :: bool
   , _zBit :: bool
   } deriving Generic
+instance
+  ( SymbolicOutput bool
+  , SymbolicOutput field
+  , Context field ~ Context bool
+  ) => SymbolicData (CompressedPoint bool field)
 instance BoolType bool => HasPointInf (CompressedPoint bool) where
   pointInf = CompressedPoint zero true true
 
@@ -294,6 +333,7 @@ data AffinePoint field = AffinePoint
   { _x :: field
   , _y :: field
   } deriving Generic
+instance SymbolicOutput field => SymbolicData (AffinePoint field)
 instance Planar AffinePoint where pointXY = AffinePoint
 instance Conditional bool field => Conditional bool (AffinePoint field)
 instance
