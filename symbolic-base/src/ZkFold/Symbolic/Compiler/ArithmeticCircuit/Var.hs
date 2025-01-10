@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var where
 import           Control.Applicative             ()
 import           Control.DeepSeq                 (NFData)
 import           Data.Aeson                      (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
+import           Data.Binary                     (Binary)
 import           Data.ByteString                 (ByteString)
 import           Data.Functor.Rep                (Rep, Representable, index, tabulate)
 import           GHC.Generics                    (Generic)
@@ -15,7 +16,6 @@ import           Prelude                         (Eq, Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString     ()
-import Data.Binary (Binary)
 
 
 data SysVar i
