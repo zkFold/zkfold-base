@@ -95,7 +95,6 @@ data CircuitFold a v w =
       , foldSeed   :: s v
       , foldStream :: Infinite (j w)
       , foldCount  :: v
-      , foldResult :: s v
       }
 
 instance Functor (CircuitFold a v) where
@@ -107,14 +106,10 @@ instance Bifunctor (CircuitFold a) where
     , foldSeed = f <$> foldSeed
     , foldStream = fmap g <$> foldStream
     , foldCount = f foldCount
-    , foldResult = f <$> foldResult
     }
 
 instance (NFData a, NFData v) => NFData (CircuitFold a v w) where
-  rnf CircuitFold {..} =
-    rnf (foldStep, foldCount)
-      `seq` liftRnf rnf foldSeed
-      `seq` liftRnf rnf foldResult
+  rnf CircuitFold {..} = rnf (foldStep, foldCount) `seq` liftRnf rnf foldSeed
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a p i o = ArithmeticCircuit
@@ -261,10 +256,9 @@ instance
         let foldStep = fun (hmap fstP idCircuit) (hmap sndP idCircuit)
             fldID = runHash $ merkleHash
               (acOutput foldStep, foldSeed, acOutput streamHash, foldCount)
-            foldResult = tabulate (\r ->
-              LinVar one (FoldVar fldID (toByteString r)) zero)
+            result = tabulate (\r -> LinVar one (FoldVar fldID (toByteString r)) zero)
         zoom #acFold $ modify $ M.insert fldID CircuitFold {..}
-        return foldResult
+        return result
 
 ----------------------------- MonadCircuit instance ----------------------------
 
