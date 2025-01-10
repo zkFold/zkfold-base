@@ -19,21 +19,6 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
 import           ZkFold.Symbolic.Data.UInt               (UInt, eea)
 
--- ecdsaVerify :: forall curve n c . (
---       S.Symbolic c
---     , KnownNat n
---     , EllipticCurve curve
---     , BaseField curve ~ UInt 256 'Auto c
---     , Scale (FieldElement c) (Point curve)
---     , Log2 (Order (S.BaseField c) GHC.TypeNats.- 1) ~ 255
---     , SemiEuclidean (UInt 256 'Auto c)
---     , KnownNat (NumberOfRegisters (S.BaseField c) 256 'Auto)
---     , BooleanOf curve ~ Bool c
---     )
---     => Point curve
---     -> ByteString 256 c
---     -> (UInt 256 'Auto c, UInt 256 'Auto c)
---     -> Bool c
 ecdsaVerify
   :: forall n c curve baseField scalarField point.
      ( S.Symbolic c
