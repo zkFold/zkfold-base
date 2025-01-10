@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module ZkFold.Symbolic.Fold where
 
@@ -16,7 +17,9 @@ import           ZkFold.Symbolic.Class (Symbolic (..))
 class Symbolic c => SymbolicFold c where
   sfoldl ::
     (Binary (Rep f), NFData (Rep f), Ord (Rep f)) =>
+    (forall a. Binary a => Binary (f a)) =>
     (Representable f, NFData1 f, Traversable f) =>
     (Binary (Rep g), NFData (Rep g), Ord (Rep g), Representable g) =>
+    (forall a. Binary a => Binary (h a)) =>
     (forall s. (Symbolic s, BaseField s ~ BaseField c) => s f -> s g -> s f) ->
-    c f -> Infinite (g (WitnessField c)) -> c Par1 -> c f
+    c f -> c h -> Infinite (g (WitnessField c)) -> c Par1 -> c f

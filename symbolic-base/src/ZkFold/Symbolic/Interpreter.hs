@@ -50,7 +50,7 @@ instance Arithmetic a => Symbolic (Interpreter a) where
   sanityF (Interpreter x) f _ = Interpreter (f x)
 
 instance Arithmetic a => SymbolicFold (Interpreter a) where
-  sfoldl fun seed stream (Interpreter (Par1 cnt)) =
+  sfoldl fun seed _ stream (Interpreter (Par1 cnt)) =
     foldl' ((. Interpreter) . fun) seed $ take (toConstant cnt) $ toList stream
 
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses

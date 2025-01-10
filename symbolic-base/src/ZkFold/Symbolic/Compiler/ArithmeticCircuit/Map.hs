@@ -34,6 +34,8 @@ mapVarArithmeticCircuit ac =
         backward = Map.fromAscList $ zip asc vars
         varF (InVar v)  = InVar v
         varF (NewVar v) = NewVar (forward ! v)
+        -- | TODO: compress fold ids, too
+        varF (FoldVar fldId fldV) = FoldVar fldId fldV
         oVarF (LinVar k v b) = LinVar k (varF v) b
         oVarF (ConstVar c)   = ConstVar c
         witF (WSysVar v) = WSysVar (varF v)

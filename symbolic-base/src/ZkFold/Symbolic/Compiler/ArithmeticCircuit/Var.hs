@@ -15,6 +15,7 @@ import           Prelude                         (Eq, Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString     ()
+import Data.Binary (Binary)
 
 
 data SysVar i
@@ -30,6 +31,7 @@ imapSysVar f (InVar r)     = index (f (tabulate InVar)) r
 imapSysVar _ (NewVar b)    = NewVar b
 imapSysVar _ (FoldVar b c) = FoldVar b c
 
+deriving anyclass instance Binary (Rep i) => Binary (SysVar i)
 deriving anyclass instance FromJSON (Rep i) => FromJSON (SysVar i)
 deriving anyclass instance FromJSON (Rep i) => FromJSONKey (SysVar i)
 deriving anyclass instance ToJSON (Rep i) => ToJSONKey (SysVar i)
@@ -53,6 +55,7 @@ imapVar ::
 imapVar f (LinVar k x b) = LinVar k (imapSysVar f x) b
 imapVar _ (ConstVar c)   = ConstVar c
 
+deriving anyclass instance (Binary (Rep i), Binary a) => Binary (Var a i)
 deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSON (Var a i)
 deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSONKey (Var a i)
 deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSONKey (Var a i)

@@ -6,7 +6,7 @@ module ZkFold.Base.Protocol.IVC.SpecialSound where
 import           Data.Functor.Rep                      (Representable (..))
 import           Data.Map.Strict                       (elems)
 import           GHC.Generics                          ((:*:) (..))
-import           Prelude                               (undefined, ($))
+import           Prelude                               (undefined)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -57,7 +57,10 @@ specialSoundProtocol :: forall d a i p .
     ) => Predicate a i p -> SpecialSoundProtocol 1 i p [a] [a] a
 specialSoundProtocol phi@Predicate {..} =
   let
-      prover pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)
+      prover pi0 w _ _ =
+        -- FIXME: what to do with values from folds?
+        let (wGen, _) = witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)
+         in elems wGen
 
       verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
   in
