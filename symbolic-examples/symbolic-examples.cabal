@@ -113,7 +113,7 @@ library
       symbolic-cardano,
     hs-source-dirs: src
 
-benchmark bench-compiler
+benchmark bench-compilation-evaluation
     import:           options-exe
     main-is:          BenchCompiler.hs
     hs-source-dirs:   bench
@@ -125,9 +125,21 @@ benchmark bench-compiler
     build-depends:
       adjunctions,
       base,
-      bytestring,
       deepseq,
       symbolic-base,
       symbolic-examples,
-      tasty-bench,
-      tasty-golden,
+      tasty-bench
+
+benchmark compiler-golden-stats
+    import:           options-exe
+    main-is:          GoldenTest.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:      -O3
+    build-depends:
+      base,
+      bytestring,
+      symbolic-base,
+      symbolic-examples,
+      tasty,
+      tasty-golden

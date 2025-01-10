@@ -19,6 +19,7 @@ import           Tests.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Pairing             (specPairing)
 import           Tests.Permutations        (specPermutations)
 import           Tests.Plonkup             (specPlonkup)
+import           Tests.ReedSolomon         (specReedSolomon)
 import           Tests.RSA                 (specRSA)
 import           Tests.SHA2                (specSHA2, specSHA2Natural)
 import           Tests.UInt                (specUInt)
@@ -37,6 +38,7 @@ main = do
     specUnivariate
     specGroebner
     specEllipticCurve
+    specReedSolomon
 
     -- Compiler spec
     specCompiler
