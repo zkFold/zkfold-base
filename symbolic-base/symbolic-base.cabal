@@ -204,6 +204,7 @@ library
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.FieldElement
+      ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
     build-depends:
