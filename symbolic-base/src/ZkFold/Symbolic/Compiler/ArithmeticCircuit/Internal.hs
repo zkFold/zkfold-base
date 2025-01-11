@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         CircuitFold (..),
         Var (..),
         SysVar (..),
+        NewVar (..),
         WitVar (..),
         VarField,
         Arithmetic,
@@ -182,9 +183,15 @@ acInput :: (Representable i, Semiring a) => i (Var a i)
 acInput = fmapRep (toVar . InVar) (tabulate id)
 
 getAllVars :: forall a p i o. (Representable i, Foldable i) => ArithmeticCircuit a p i o -> [SysVar i]
-getAllVars ac = toList acInput0 ++ map NewVar (M.keys $ acWitness ac) where
-  acInput0 :: i (SysVar i)
-  acInput0 = fmapRep InVar (tabulate @i id)
+getAllVars ac =
+  toList acInput0
+  ++ map (NewVar . EqVar) (M.keys $ acWitness ac)
+  ++ map NewVar (M.foldMapWithKey (\fi -> map (FoldVar fi) . keys) $ acFold ac)
+  where
+    acInput0 :: i (SysVar i)
+    acInput0 = tabulate InVar
+    keys :: CircuitFold a v w -> [ByteString]
+    keys CircuitFold {..} = toList $ imapRep (\r _ -> toByteString r) foldSeed
 
 indexW ::
   (Arithmetic a, Representable p, Representable i) =>
@@ -193,10 +200,7 @@ indexW circuit payload inputs = \case
   LinVar k (InVar inV) b -> (\t -> k * t + b) $ index inputs inV
   LinVar k (NewVar newV) b -> (\t -> k * t + b) $ fromMaybe
     (error ("no such NewVar: " <> show newV))
-    (fst (witnessGenerator circuit payload inputs) M.!? newV)
-  LinVar k (FoldVar fldID fldV) b -> (\t -> k * t + b) $ fromMaybe
-    (error ("no such FoldVar: " <> show (fldID, fldV)))
-    ((snd (witnessGenerator circuit payload inputs) M.!? fldID) >>= (M.!? fldV))
+    (witnessGenerator circuit payload inputs M.!? newV)
   ConstVar cV -> cV
 
 -------------------------------- "HProfunctor" ---------------------------------
@@ -256,7 +260,7 @@ instance
         let foldStep = fun (hmap fstP idCircuit) (hmap sndP idCircuit)
             fldID = runHash $ merkleHash
               (acOutput foldStep, foldSeed, acOutput streamHash, foldCount)
-            result = tabulate (\r -> LinVar one (FoldVar fldID (toByteString r)) zero)
+            result = tabulate (\r -> LinVar one (NewVar (FoldVar fldID (toByteString r))) zero)
         zoom #acFold $ modify $ M.insert fldID CircuitFold {..}
         return result
 
@@ -279,7 +283,7 @@ instance
           let v = witToVar @a wf
           -- TODO: forbid reassignment of variables
           zoom #acWitness $ modify (M.insert v wf)
-          return $ toVar (NewVar v)
+          return $ toVar (NewVar (EqVar v))
 
     constraint p =
       let evalConstVar = \case
@@ -306,7 +310,7 @@ instance
               v = witToVar @a wf
             -- TODO: forbid reassignment of variables
             zoom #acWitness $ modify (M.insert v wf)
-            return (NewVar v)
+            return (NewVar (EqVar v))
 
     rangeConstraint (ConstVar c) upperBound =
       if c <= upperBound
@@ -340,27 +344,26 @@ witToVar ::
 witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   WExVar exV -> merkleHash exV
   WSysVar (InVar inV) -> merkleHash inV
-  WSysVar (NewVar newV) -> M newV
-  WSysVar (FoldVar fldID fldV) -> merkleHash (fldID, fldV)
+  WSysVar (NewVar (EqVar eqV)) -> M eqV
+  WSysVar (NewVar (FoldVar fldID fldV)) -> merkleHash (fldID, fldV)
 
 ----------------------------- Evaluation functions -----------------------------
 
 witnessGenerator ::
   (Arithmetic a, Representable p, Representable i) =>
-  ArithmeticCircuit a p i o -> p a -> i a ->
-  (Map ByteString a, Map ByteString (Map ByteString a))
+  ArithmeticCircuit a p i o -> p a -> i a -> Map NewVar a
 witnessGenerator circuit payload inputs =
   let evalSysVar = \case
         InVar iV -> index inputs iV
-        NewVar nV -> newVars M.! nV
-        FoldVar fldID fldV -> foldVars M.! fldID M.! fldV
+        NewVar (EqVar eqV) -> eqVars M.! eqV
+        NewVar (FoldVar fldID fldV) -> foldVars M.! fldID M.! fldV
       evalVar = \case
         LinVar k sV b -> k * evalSysVar sV + b
         ConstVar c -> c
       evalWitness k = runWitnessF k \case
         WExVar eV -> index payload eV
         WSysVar sV -> evalSysVar sV
-      newVars = evalWitness <$> acWitness circuit
+      eqVars = evalWitness <$> acWitness circuit
       foldVars = acFold circuit <&> \CircuitFold {..} ->
         let foldList =
               take (toConstant $ evalVar foldCount) (I.toList foldStream)
@@ -369,7 +372,8 @@ witnessGenerator circuit payload inputs =
                      (evalVar <$> foldSeed)
                      foldList
          in M.fromList $ toList $ mzipRep (tabulate toByteString) result
-  in (newVars, foldVars)
+  in M.mapKeysMonotonic EqVar eqVars
+      <> M.unions (M.mapWithKey (M.mapKeysMonotonic . FoldVar) foldVars)
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
 eval1 ::
@@ -406,18 +410,15 @@ apply xs ac = ac
     outF (LinVar k (InVar (Left v)) b)  = ConstVar (k * index xs v + b)
     outF (LinVar k (InVar (Right v)) b) = LinVar k (InVar v) b
     outF (LinVar k (NewVar v) b)        = LinVar k (NewVar v) b
-    outF (LinVar k (FoldVar i v) b)     = LinVar k (FoldVar i v) b
     outF (ConstVar a)                   = ConstVar a
 
     varF (InVar (Left v))  = fromConstant (index xs v)
     varF (InVar (Right v)) = var (InVar v)
     varF (NewVar v)        = var (NewVar v)
-    varF (FoldVar i v)     = var (FoldVar i v)
 
     witF (WSysVar (InVar (Left v)))  = WitnessF $ const $ fromConstant (index xs v)
     witF (WSysVar (InVar (Right v))) = pure $ WSysVar (InVar v)
     witF (WSysVar (NewVar v))        = pure $ WSysVar (NewVar v)
-    witF (WSysVar (FoldVar i v))     = pure $ WSysVar (FoldVar i v)
     witF (WExVar v)                  = pure (WExVar v)
 
     filterSet :: Ord (Rep j) => S.Set (SysVar (i :*: j)) ->  S.Set (Maybe (SysVar j))

@@ -48,9 +48,9 @@ algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
         witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
 
         varMap :: SysVar i -> f
-        varMap (InVar inV)   = index pi inV
-        varMap (NewVar newV) = M.findWithDefault zero newV witness
-        varMap (FoldVar _ _) = P.error "FIXME"
+        varMap (InVar inV)            = index pi inV
+        varMap (NewVar (EqVar newV))  = M.findWithDefault zero newV witness
+        varMap (NewVar (FoldVar _ _)) = P.error "unexpected FOLD constraint"
 
         f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
         f_sps = degreeDecomposition @d $ sys

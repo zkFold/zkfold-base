@@ -174,11 +174,10 @@ checkClosedCircuit
     -> Property
 checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem c) ]
     where
-        (nw, fw) = witnessGenerator c U1 U1
+        w = witnessGenerator c U1 U1
         testPoly p = evalPolynomial evalMonomial varF p === zero
-        varF (InVar v)     = absurd v
-        varF (NewVar v)    = nw ! v
-        varF (FoldVar i v) = fw ! i ! v
+        varF (InVar v)  = absurd v
+        varF (NewVar v) = w ! v
 
 checkCircuit
     :: Arbitrary (p a)
@@ -194,8 +193,7 @@ checkCircuit c = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
         testPoly p = do
             ins <- arbitrary
             pls <- arbitrary
-            let (nw, fw) = witnessGenerator c pls ins
-                varF (InVar v)     = index ins v
-                varF (NewVar v)    = nw ! v
-                varF (FoldVar i v) = fw ! i ! v
+            let w = witnessGenerator c pls ins
+                varF (InVar v)  = index ins v
+                varF (NewVar v) = w ! v
             return $ evalPolynomial evalMonomial varF p === zero
