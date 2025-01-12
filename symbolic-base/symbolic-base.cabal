@@ -109,6 +109,7 @@ library
       ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
       ZkFold.Base.Algebra.Polynomials.Univariate
+      ZkFold.Base.Algorithm.ReedSolomon
       ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
       ZkFold.Base.Data.Functor.Rep
@@ -204,6 +205,7 @@ library
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.FieldElement
+      ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
     build-depends:
@@ -272,6 +274,7 @@ test-suite symbolic-base-test
       Tests.Pairing
       Tests.Permutations
       Tests.Plonkup
+      Tests.ReedSolomon
       Tests.RSA
       Tests.SHA2
       Tests.UInt
@@ -318,7 +321,7 @@ benchmark bench-poly-mul
       tasty-bench,
       vector,
 
-benchmark in-circuit-ec-benchmark 
+benchmark bench-in-circuit-ec 
     import:           options-exe
     main-is:          BenchEC.hs
     hs-source-dirs:   bench
