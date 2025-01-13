@@ -13,6 +13,7 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , removeZeros
     , scaleP
     , qr
+    , qrBase
     , eea
     , lt
     , deg
@@ -52,8 +53,9 @@ import           Control.DeepSeq                  (NFData (..))
 import qualified Data.Vector                      as V
 import           GHC.Generics                     (Generic)
 import           GHC.IsList                       (IsList (..))
-import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/),
-                                                   (^))
+import           GHC.Num                          (Num (fromInteger))
+import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take,
+                                                   truncate, (/), (^))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 
@@ -261,8 +263,8 @@ deg (P cs) = fromIntegral (V.length cs) - 1
 scaleP :: Ring c => c -> Natural -> Poly c -> Poly c
 scaleP a n (P cs) = P $ V.replicate (fromIntegral n) zero V.++ fmap (a *) cs
 
-qr :: (Field c, Eq c) => Poly c -> Poly c -> (Poly c, Poly c)
-qr a b = go a b zero
+qrBase :: (Field c, Eq c) => Poly c -> Poly c -> (Poly c, Poly c)
+qrBase a b = go a b zero
     where
         go x y q = if deg x < deg y then (q, x) else go x' y q'
             where
@@ -271,6 +273,44 @@ qr a b = go a b zero
                 -- ^ if `deg x < deg y`, `n` is not evaluated, so this would not error out
                 x' = x - scaleP c n y
                 q' = q + scaleP c n one
+
+truncate :: forall c . (Field c, Eq c) => Integer -> Poly c -> Poly c
+truncate n (P r) = toPoly (P.snd $ V.splitAt (P.fromInteger n) r)
+
+reciprocal :: forall c . (Field c, Eq c) => Poly c -> Poly c
+reciprocal p
+    | k == 1    = constant $ one // lt p
+    | otherwise = truncate (k - 2) r
+    where
+        k = deg p + 1
+
+        q = reciprocal $ truncate (k `P.div` 2) p
+
+        r = q * (scaleP one (fromIntegral (3 * k `P.div` 2-2)) (constant (one + one)) - q * p)
+
+qr :: forall c . (Field c, Eq c) => Poly c -> Poly c -> (Poly c, Poly c)
+qr u v | deg u == -1 = (zero, zero)
+           | deg v == -1 = error "Dividing a polynomial by zero"
+           | otherwise   = if me > 2 * ne then (q', u - v * q') else (q, u - v * q)
+    where
+        t = monomial @c (2 * fromInteger ne) one - s * ve
+        (q2, _) = qr (truncate (2 * ne) (ue * t)) ve
+        q' = q + q2
+
+        m = deg u
+        n = deg v
+
+        p = ceiling @Double @Integer $ logBase 2 (fromIntegral $ n + 1)
+        nd = 2 P.^ p P.- 1 P.- n
+
+        me = m + nd
+        ne = n + nd
+
+        ue = scaleP one (fromInteger nd) u
+        ve = scaleP one (fromInteger nd) v
+
+        s = reciprocal ve
+        q = truncate (2 P.* ne) (ue * s)
 
 -- | Extended Euclidean algorithm.
 eea :: (Field c, Eq c) => Poly c -> Poly c -> (Poly c, Poly c)
