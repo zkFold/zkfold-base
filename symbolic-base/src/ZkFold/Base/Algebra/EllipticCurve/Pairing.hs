@@ -49,8 +49,8 @@ millerAlgorithmBLS12 ::forall c d bool fldC fldD i j g.
   Untwisted fldD i j ~ g =>
   Field g =>
   [Int8] ->
-  Weierstrass c (Point bool) fldC ->
-  Weierstrass d (Point bool) fldD ->
+  Weierstrass c (Point bool fldC) ->
+  Weierstrass d (Point bool fldD) ->
   g
 millerAlgorithmBLS12 (x:xs) p q = snd $
   millerLoop p q xs (H.bool (negate q) q (x Prelude.> 0), one)
@@ -66,8 +66,8 @@ millerAlgorithmBN :: forall c d bool fldC fldD i j g.
   Field g =>
   fldD ->
   [Int8] ->
-  Weierstrass c (Point bool) fldC ->
-  Weierstrass d (Point bool) fldD ->
+  Weierstrass c (Point bool fldC) ->
+  Weierstrass d (Point bool fldD) ->
   g
 millerAlgorithmBN xi (x:xs) p q = finalStepBN xi p q $
   millerLoop p q xs (H.bool (negate q) q (x Prelude.> 0), one)
@@ -84,9 +84,9 @@ finalStepBN :: forall c d bool fldC fldD i j g.
   Untwisted fldD i j ~ g =>
   Field g =>
   fldD ->
-  Weierstrass c (Point bool) fldC ->
-  Weierstrass d (Point bool) fldD ->
-  (Weierstrass d (Point bool) fldD, g) ->
+  Weierstrass c (Point bool fldC) ->
+  Weierstrass d (Point bool fldD) ->
+  (Weierstrass d (Point bool fldD), g) ->
   g
 finalStepBN xi p q (t, f) = f * f' * f''
   where
@@ -104,11 +104,11 @@ millerLoop ::
   Conditional bool fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
-  Weierstrass c (Point bool) fldC ->
-  Weierstrass d (Point bool) fldD ->
+  Weierstrass c (Point bool fldC) ->
+  Weierstrass d (Point bool fldD) ->
   [Int8] ->
-  (Weierstrass d (Point bool) fldD, g) ->
-  (Weierstrass d (Point bool) fldD, g)
+  (Weierstrass d (Point bool fldD), g) ->
+  (Weierstrass d (Point bool fldD), g)
 millerLoop p q = impl
   where impl []     tf = tf
         impl (x:xs) tf
@@ -138,10 +138,10 @@ additionStep ::
   Conditional bool fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
-  Weierstrass c (Point bool) fldC ->
-  Weierstrass d (Point bool) fldD ->
-  (Weierstrass d (Point bool) fldD, g) ->
-  (Weierstrass d (Point bool) fldD, g)
+  Weierstrass c (Point bool fldC) ->
+  Weierstrass d (Point bool fldD) ->
+  (Weierstrass d (Point bool fldD), g) ->
+  (Weierstrass d (Point bool fldD), g)
 additionStep p q (t, f) = (* f) <$> lineFunction p q t
 
 doublingStep ::
@@ -152,9 +152,9 @@ doublingStep ::
   Conditional bool fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
-  Weierstrass c (Point bool) fldC ->
-  (Weierstrass d (Point bool) fldD, g) ->
-  (Weierstrass d (Point bool) fldD, g)
+  Weierstrass c (Point bool fldC) ->
+  (Weierstrass d (Point bool fldD), g) ->
+  (Weierstrass d (Point bool fldD), g)
 doublingStep p (t, f) = (* f) . (* f) <$> lineFunction p t t
 
 

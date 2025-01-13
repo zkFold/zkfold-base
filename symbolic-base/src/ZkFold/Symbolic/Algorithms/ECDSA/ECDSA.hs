@@ -20,18 +20,18 @@ import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
 import           ZkFold.Symbolic.Data.UInt               (UInt, eea)
 
 ecdsaVerify
-  :: forall n c curve baseField scalarField point.
+  :: forall n c curve baseField point.
      ( S.Symbolic c
      , KnownNat n
      , baseField ~ UInt 256 'Auto c
-     , scalarField ~ FieldElement c
-     , point ~ Weierstrass curve (Point (Bool c))
-     , SubgroupCurve curve (Bool c) baseField scalarField point
+     , ScalarFieldOf point ~ FieldElement c
+     , point ~ Weierstrass curve (Point (Bool c) baseField)
+     , CyclicSubgroup point
      , SemiEuclidean (UInt 256 'Auto c)
      , KnownNat (NumberOfRegisters (S.BaseField c) 256 'Auto)
      , Log2 (Order (S.BaseField c) GHC.TypeNats.- 1) ~ 255
      )
-  => point baseField
+  => point
   -> ByteString 256 c
   -> (UInt 256 'Auto c, UInt 256 'Auto c)
   -> Bool c
@@ -40,7 +40,7 @@ ecdsaVerify publicKey message (r, s) =
     where
         n = fromConstant $ value @n
 
-        g = pointGen @curve @(Bool c) @baseField @scalarField
+        g = pointGen @point
 
         (sInv, _, _) = eea s n
 

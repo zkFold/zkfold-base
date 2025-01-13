@@ -9,10 +9,10 @@
 module ZkFold.Base.Algebra.EllipticCurve.Class
   ( -- * curve classes
     EllipticCurve (..)
-  , SubgroupCurve (..)
+  , CyclicSubgroup (..)
   , WeierstrassCurve (..)
   , TwistedEdwardsCurve (..)
-  , SymmetricCurve (..)
+  , CompressiblePoint (..)
   , Pairing (..)
     -- * point classes
   , Planar (..)
@@ -54,14 +54,16 @@ The geometric group law of the elliptic curve is:
 > point0 + point1 + point2 = zero
 -}
 class
-  ( Field field
-  , Eq bool field
-  , Planar point
-  , AdditiveGroup (point field)
-  ) => EllipticCurve (curve :: Symbol) bool (field :: Type) point | point -> curve where
+  ( Field (BaseFieldOf point)
+  , Eq bool (BaseFieldOf point)
+  , Planar (BaseFieldOf point) point
+  , AdditiveGroup point
+  ) => EllipticCurve bool point where
+    type CurveOf point :: Symbol
+    type BaseFieldOf point :: Type
     -- | `isOnCurve` validates an equation for a plane algebraic curve
     -- which has degree 3 up to some birational equivalence.
-    isOnCurve :: point field -> bool
+    isOnCurve :: point -> bool
 
 {- | Both the ECDSA and ECDH algorithms make use of
 the elliptic curve discrete logarithm problem, ECDLP.
@@ -78,13 +80,15 @@ prop> scale order pointGen = zero
 Then the inverse of `discreteExp` is hard to compute.
 -}
 class
-  ( EllipticCurve curve bool baseField point
-  , FiniteField scalarField
-    -- ^ require prime order?
-  , Scale scalarField (point baseField)
-  ) => SubgroupCurve curve bool baseField scalarField point where
-    -- | generator of a cyclic subgroup of the curve of prime order
-    pointGen :: point baseField
+  ( AdditiveGroup g
+  , FiniteField (ScalarFieldOf g)
+  , Scale (ScalarFieldOf g) g
+  ) => CyclicSubgroup g where
+    type ScalarFieldOf g :: Type
+    -- | generator of a cyclic subgroup
+    --
+    -- prop> scale (order @(ScalarFieldOf g)) pointGen = zero
+    pointGen :: g
 
 {- | The standard form of an elliptic curve is the Weierstrass equation:
 
@@ -111,12 +115,11 @@ class Field field => TwistedEdwardsCurve (curve :: Symbol) field where
   twistedEdwardsA :: field
   twistedEdwardsD :: field
 
-class EllipticCurve curve bool field point
-  => SymmetricCurve curve bool field point pt
-  | point -> pt, pt -> point where
-    pointCompressed :: field -> bool -> pt field
-    compressPoint :: point field -> pt field
-    decompressPoint :: pt field -> point field
+class CompressiblePoint bool point where
+  type CompressedPointOf point :: Type
+  pointCompressed :: BaseFieldOf point -> bool -> pt
+  compressPoint :: point -> pt
+  decompressPoint :: pt -> point
 
 class
   ( Field field
@@ -128,22 +131,25 @@ class
 
 {- | A class for smart constructor method
 `pointXY` for constructing points from an @x@ and @y@ coordinate. -}
-class Planar point where pointXY :: Field field => field -> field -> point field
+class Planar field point | point -> field where
+  pointXY :: field -> field -> point
 
 {- | A class for smart constructor method
 `pointInf` for constructing the point at infinity. -}
-class HasPointInf point where pointInf :: Field field => point field
+class HasPointInf point where pointInf :: point
 
 {- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
 with a phantom `WeierstrassCurve` @curve@. -}
-newtype Weierstrass curve point field = Weierstrass {pointWeierstrass :: point field}
+newtype Weierstrass curve point = Weierstrass {pointWeierstrass :: point}
 instance
   ( WeierstrassCurve curve field
   , Conditional bool bool
   , Conditional bool field
   , Eq bool field
   , Field field
-  ) => EllipticCurve curve bool field (Weierstrass curve (Point bool)) where
+  ) => EllipticCurve bool (Weierstrass curve (Point bool field)) where
+    type CurveOf (Weierstrass curve (Point bool field)) = curve
+    type BaseFieldOf (Weierstrass curve (Point bool field)) = field
     isOnCurve (Weierstrass (Point x y isInf)) =
       if isInf then x == zero else
       let b = weierstrassB @curve in y*y == x*x*x + b
@@ -151,7 +157,7 @@ deriving newtype instance
   ( SymbolicOutput bool
   , SymbolicOutput field
   , Context field ~ Context bool
-  ) => SymbolicData (Weierstrass curve (Point bool) field)
+  ) => SymbolicData (Weierstrass curve (Point bool field))
 instance
   ( SymbolicInput field
   , Context field ~ ctx
@@ -159,23 +165,23 @@ instance
   , WeierstrassCurve curve field
   , Eq (Bool ctx) field
   , Conditional (Bool ctx) field
-  ) => SymbolicInput (Weierstrass curve (Point (Bool ctx)) field) where
+  ) => SymbolicInput (Weierstrass curve (Point (Bool ctx) field)) where
     isValid = isOnCurve
-deriving newtype instance Conditional bool (point field)
-  => Conditional bool (Weierstrass curve point field)
-deriving newtype instance Eq bool (point field)
-  => Eq bool (Weierstrass curve point field)
+deriving newtype instance Conditional bool point
+  => Conditional bool (Weierstrass curve point)
+deriving newtype instance Eq bool point
+  => Eq bool (Weierstrass curve point)
 deriving newtype instance HasPointInf point
   => HasPointInf (Weierstrass curve point)
-deriving newtype instance Planar point
-  => Planar (Weierstrass curve point)
+deriving newtype instance Planar field point
+  => Planar field (Weierstrass curve point)
 instance
   ( WeierstrassCurve curve field
   , Conditional bool bool
   , Conditional bool field
   , Eq bool field
   , Field field
-  ) => AdditiveSemigroup (Weierstrass curve (Point bool) field) where
+  ) => AdditiveSemigroup (Weierstrass curve (Point bool field)) where
     pt0@(Weierstrass (Point x0 y0 isInf0)) + pt1@(Weierstrass (Point x1 y1 isInf1)) =
       if isInf0 then pt1 else if isInf1 then pt0 -- additive identity
       else if x0 == x1 && y0 + y1 == zero :: bool then pointInf -- additive inverse
@@ -191,7 +197,7 @@ instance
   , Conditional bool field
   , Eq bool field
   , Field field
-  ) => AdditiveMonoid (Weierstrass curve (Point bool) field) where
+  ) => AdditiveMonoid (Weierstrass curve (Point bool field)) where
     zero = pointInf
 instance
   ( WeierstrassCurve curve field
@@ -199,7 +205,7 @@ instance
   , Conditional bool field
   , Eq bool field
   , Field field
-  ) => AdditiveGroup (Weierstrass curve (Point bool) field) where
+  ) => AdditiveGroup (Weierstrass curve (Point bool field)) where
     negate pt@(Weierstrass (Point x y isInf)) =
       if isInf then pt else pointXY x (negate y)
 instance
@@ -208,7 +214,7 @@ instance
   , Conditional bool field
   , Eq bool field
   , Field field
-  ) => Scale Natural (Weierstrass curve (Point bool) field) where
+  ) => Scale Natural (Weierstrass curve (Point bool field)) where
   scale = natScale
 instance
   ( WeierstrassCurve curve field
@@ -216,23 +222,25 @@ instance
   , Conditional bool field
   , Eq bool field
   , Field field
-  ) => Scale Integer (Weierstrass curve (Point bool) field) where
+  ) => Scale Integer (Weierstrass curve (Point bool field)) where
   scale = intScale
 
 {- | `TwistedEdwards` tags a `Planar` @point@, over a `Field` @field@,
 with a phantom `TwistedEdwardsCurve` @curve@. -}
-newtype TwistedEdwards curve point field = TwistedEdwards {pointTwistedEdwards :: point field}
+newtype TwistedEdwards curve point = TwistedEdwards {pointTwistedEdwards :: point}
 instance
   ( TwistedEdwardsCurve curve field
   , Field field
   , Eq bool field
-  ) => EllipticCurve curve bool field (TwistedEdwards curve AffinePoint) where
+  ) => EllipticCurve bool (TwistedEdwards curve (AffinePoint field)) where
+    type CurveOf (TwistedEdwards curve (AffinePoint field)) = curve
+    type BaseFieldOf (TwistedEdwards curve (AffinePoint field)) = field
     isOnCurve (TwistedEdwards (AffinePoint x y)) =
       let a = twistedEdwardsA @curve
           d = twistedEdwardsD @curve
       in a*x*x + y*y == one + d*x*x*y*y
 deriving newtype instance SymbolicOutput field
-  => SymbolicData (TwistedEdwards curve AffinePoint field)
+  => SymbolicData (TwistedEdwards curve (AffinePoint field))
 instance
   ( SymbolicInput field
   , Context field ~ ctx
@@ -240,20 +248,20 @@ instance
   , TwistedEdwardsCurve curve field
   , Eq (Bool ctx) field
   , Conditional (Bool ctx) field
-  ) => SymbolicInput (TwistedEdwards curve AffinePoint field) where
+  ) => SymbolicInput (TwistedEdwards curve (AffinePoint field)) where
     isValid = isOnCurve
-deriving newtype instance Conditional bool (point field)
-  => Conditional bool (TwistedEdwards curve point field)
-deriving newtype instance Eq bool (point field)
-  => Eq bool (TwistedEdwards curve point field)
+deriving newtype instance Conditional bool point
+  => Conditional bool (TwistedEdwards curve point)
+deriving newtype instance Eq bool point
+  => Eq bool (TwistedEdwards curve point)
 deriving newtype instance HasPointInf point
   => HasPointInf (TwistedEdwards curve point)
-deriving newtype instance Planar point
-  => Planar (TwistedEdwards curve point)
+deriving newtype instance Planar field point
+  => Planar field (TwistedEdwards curve point)
 instance
   ( TwistedEdwardsCurve curve field
   , Field field
-  ) => AdditiveSemigroup (TwistedEdwards curve AffinePoint field) where
+  ) => AdditiveSemigroup (TwistedEdwards curve (AffinePoint field)) where
     TwistedEdwards (AffinePoint x0 y0) + TwistedEdwards (AffinePoint x1 y1) =
       let a = twistedEdwardsA @curve
           d = twistedEdwardsD @curve
@@ -263,22 +271,22 @@ instance
 instance
   ( TwistedEdwardsCurve curve field
   , Field field
-  ) => AdditiveMonoid (TwistedEdwards curve AffinePoint field) where
+  ) => AdditiveMonoid (TwistedEdwards curve (AffinePoint field)) where
     zero = pointXY zero one
 instance
   ( TwistedEdwardsCurve curve field
   , Field field
-  ) => AdditiveGroup (TwistedEdwards curve AffinePoint field) where
+  ) => AdditiveGroup (TwistedEdwards curve (AffinePoint field)) where
     negate (TwistedEdwards (AffinePoint x y)) = pointXY (negate x) y
 instance
   ( TwistedEdwardsCurve curve field
   , Field field
-  ) => Scale Natural (TwistedEdwards curve AffinePoint field) where
+  ) => Scale Natural (TwistedEdwards curve (AffinePoint field)) where
   scale = natScale
 instance
   ( TwistedEdwardsCurve curve field
   , Field field
-  ) => Scale Integer (TwistedEdwards curve AffinePoint field) where
+  ) => Scale Integer (TwistedEdwards curve (AffinePoint field)) where
   scale = intScale
 
 {- | A type of points in the projective plane. -}
@@ -292,9 +300,9 @@ instance
   , SymbolicOutput field
   , Context field ~ Context bool
   ) => SymbolicData (Point bool field)
-instance BoolType bool => Planar (Point bool) where
+instance BoolType bool => Planar field (Point bool field) where
   pointXY x y = Point x y false
-instance BoolType bool => HasPointInf (Point bool) where
+instance (BoolType bool, Semiring field) => HasPointInf (Point bool field) where
   pointInf = Point zero one true
 instance Prelude.Show field => Prelude.Show (Point Prelude.Bool field) where
   show (Point x y isInf) =
@@ -326,15 +334,16 @@ instance
   , SymbolicOutput field
   , Context field ~ Context bool
   ) => SymbolicData (CompressedPoint bool field)
-instance BoolType bool => HasPointInf (CompressedPoint bool) where
-  pointInf = CompressedPoint zero true true
+instance (BoolType bool, AdditiveMonoid field)
+  => HasPointInf (CompressedPoint bool field) where
+    pointInf = CompressedPoint zero true true
 
 data AffinePoint field = AffinePoint
   { _x :: field
   , _y :: field
   } deriving Generic
 instance SymbolicOutput field => SymbolicData (AffinePoint field)
-instance Planar AffinePoint where pointXY = AffinePoint
+instance Planar field (AffinePoint field) where pointXY = AffinePoint
 instance Conditional bool field => Conditional bool (AffinePoint field)
 instance
   ( BoolType bool
