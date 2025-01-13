@@ -70,12 +70,13 @@ type Fp12 = Ext2 Fp6 "IP3"
 
 type BN254_G1_Point = BN254_G1_PointOf Fp
 
-type BN254_G1_PointOf = Weierstrass "BN254_G1" (Point Bool)
+type BN254_G1_PointOf field = Weierstrass "BN254_G1" (Point Bool field)
 
 instance Field field => WeierstrassCurve "BN254_G1" field where
   weierstrassB = fromConstant (3 :: Natural)
 
-instance SubgroupCurve "BN254_G1" Bool Fp Fr BN254_G1_PointOf where
+instance CyclicGroup BN254_G1_Point where
+  type ScalarFieldOf BN254_G1_Point = Fr
   pointGen = pointXY one (fromConstant (2 :: Natural))
 
 instance Scale Fr BN254_G1_Point where
@@ -85,19 +86,20 @@ instance Scale Fr BN254_G1_Point where
 
 type BN254_G2_Point = BN254_G2_PointOf Fp2
 
-type BN254_G2_PointOf = Weierstrass "BN254_G2" (Point Bool)
+type BN254_G2_PointOf field = Weierstrass "BN254_G2" (Point Bool field)
 
 instance WeierstrassCurve "BN254_G2" Fp2 where
   weierstrassB =
     Ext2 0x2b149d40ceb8aaae81be18991be06ac3b5b4c5e559dbefa33267e6dc24a138e5
          0x9713b03af0fed4cd2cafadeed8fdf4a74fa084e52d1852e4a2bd0685c315d2
 
-instance SubgroupCurve "BN254_G2" Bool Fp2 Fr BN254_G2_PointOf where
-    pointGen = pointXY
-      (Ext2 0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed
-            0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2)
-      (Ext2 0x12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa
-            0x90689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b)
+instance CyclicGroup BN254_G2_Point where
+  type ScalarFieldOf BN254_G2_Point = Fr
+  pointGen = pointXY
+    (Ext2 0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed
+          0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2)
+    (Ext2 0x12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa
+          0x90689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b)
 
 instance Scale Fr BN254_G2_Point where
   scale n x = scale (toConstant n) x
@@ -118,7 +120,7 @@ deriving via (NonZero Fp12) instance MultiplicativeGroup BN254_GT
 instance Finite BN254_GT where
   type Order BN254_GT = BN254_Scalar
 
-instance Pairing Fr BN254_G1_Point BN254_G2_Point BN254_GT where
+instance Pairing BN254_G1_Point BN254_G2_Point BN254_GT where
   pairing p q
     = BN254_GT
     $ finalExponentiation @Fr

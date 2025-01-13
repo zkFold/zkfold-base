@@ -29,7 +29,7 @@ instance Prime Ed25519_Scalar
 type Ed25519_Base = 57896044618658097711785492504343953926634992332820282019728792003956564819949
 instance Prime Ed25519_Base
 
-type Ed25519_PointOf = TwistedEdwards "ed25519" AffinePoint
+type Ed25519_PointOf baseField = TwistedEdwards "ed25519" (AffinePoint baseField)
 type Ed25519_Point = Ed25519_PointOf Fq
 
 type Fl = Zp Ed25519_Scalar
@@ -41,7 +41,8 @@ instance Field field => TwistedEdwardsCurve "ed25519" field where
     negate fromConstant (121665 :: Natural)
         // fromConstant (121666 :: Natural)
 
-instance SubgroupCurve "ed25519" Bool Fq Fl Ed25519_PointOf where
+instance CyclicGroup Ed25519_Point where
+  type ScalarFieldOf Ed25519_Point = Fl
   pointGen = pointXY
     (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
     (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))

@@ -13,7 +13,7 @@ import           Prelude                                             hiding (Num
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (CompressedPoint, EllipticCurve (..), compress)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (Compressible (..), CyclicGroup (..), compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             ((!!))
 import           ZkFold.Base.Protocol.NonInteractiveProof
@@ -31,24 +31,24 @@ import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Ord
 
-plonkProve :: forall p i n l c1 c2 ts core .
+plonkProve :: forall p i n l g1 g2 ts core .
     ( KnownNat n
     , Foldable l
-    , Ord (BooleanOf c1) (BaseField c1)
-    , AdditiveGroup (BaseField c1)
-    , Arithmetic (ScalarField c1)
+    -- , Ord (BooleanOf g1) (BaseField g1)
+    -- , AdditiveGroup (BaseField g1)
+    -- , Arithmetic (ScalarFieldOf g1)
     , ToTranscript ts Word8
-    , ToTranscript ts (ScalarField c1)
-    , ToTranscript ts (CompressedPoint c1)
-    , FromTranscript ts (ScalarField c1)
-    , CoreFunction c1 core
-    ) => PlonkupProverSetup p i n l c1 c2 -> (PlonkupWitnessInput p i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1, PlonkupProverTestInfo n c1)
+    , ToTranscript ts (ScalarFieldOf g1)
+    , ToTranscript ts (Compressed g1)
+    , FromTranscript ts (ScalarFieldOf g1)
+    , CoreFunction g1 core
+    ) => PlonkupProverSetup p i n l g1 g2 -> (PlonkupWitnessInput p i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1)
 plonkProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wExtra wInput, PlonkupProverSecret ps)
     = (with4n6 @n $ PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})
     where
-        (@) :: forall size . (KnownNat size) => PolyVec (ScalarField c1) size -> PolyVec (ScalarField c1) size -> PolyVec (ScalarField c1) size
-        (@) a b = poly2vec $ polyMul @c1 @core (vec2poly a) (vec2poly b)
+        (@) :: forall size . (KnownNat size) => PolyVec (ScalarFieldOf g1) size -> PolyVec (ScalarFieldOf g1) size -> PolyVec (ScalarFieldOf g1) size
+        (@) a b = poly2vec $ polyMul @g1 @core (veg2poly a) (veg2poly b)
 
         PlonkupCircuitPolynomials {..} = polynomials
         secret i = ps !! (i -! 1)
@@ -59,20 +59,20 @@ plonkProve PlonkupProverSetup {..}
         (w1, w2, w3) = witness relation wExtra wInput
         wPub = pubInput relation wExtra wInput
 
-        w1X = with4n6 @n $ polyVecInLagrangeBasis omega w1 :: PlonkupPolyExtended n c1
-        w2X = with4n6 @n $ polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n c1
-        w3X = with4n6 @n $ polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n c1
+        w1X = with4n6 @n $ polyVecInLagrangeBasis omega w1 :: PlonkupPolyExtended n g1
+        w2X = with4n6 @n $ polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n g1
+        w3X = with4n6 @n $ polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n g1
 
         pi  = toPolyVec @_ @n $ fromList $ foldMap (\x -> [negate x]) wPub
-        piX = with4n6 @n $ polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n c1
+        piX = with4n6 @n $ polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n g1
 
         -- Round 1
 
-        aX = with4n6 @n $ polyVecLinear (secret 1) (secret 2) @ zhX + w1X :: PlonkupPolyExtended n c1
-        bX = with4n6 @n $ polyVecLinear (secret 3) (secret 4) @ zhX + w2X :: PlonkupPolyExtended n c1
-        cX = with4n6 @n $ polyVecLinear (secret 5) (secret 6) @ zhX + w3X :: PlonkupPolyExtended n c1
+        aX = with4n6 @n $ polyVecLinear (secret 1) (secret 2) @ zhX + w1X :: PlonkupPolyExtended n g1
+        bX = with4n6 @n $ polyVecLinear (secret 3) (secret 4) @ zhX + w2X :: PlonkupPolyExtended n g1
+        cX = with4n6 @n $ polyVecLinear (secret 5) (secret 6) @ zhX + w3X :: PlonkupPolyExtended n g1
 
-        com = msm @c1 @core @_ @(PlonkupPolyExtendedLength n)
+        com = msm @g1 @core
         cmA = gs `com` aX
         cmB = gs `com` bX
         cmC = gs `com` cX
@@ -83,19 +83,19 @@ plonkProve PlonkupProverSetup {..}
             `transcript` compress cmA
             `transcript` compress cmB
             `transcript` compress cmC :: ts
-        -- zeta = challenge ts1 :: ScalarField c1
+        -- zeta = challenge ts1 :: ScalarFieldOf g1
 
         t_zeta = t relation
-        f_zeta = fromList $ zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (toList $ qK relation) (toList $ t relation) (toList w1) :: PolyVec (ScalarField c1) n
+        f_zeta = fromList $ zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (toList $ qK relation) (toList $ t relation) (toList w1) :: PolyVec (ScalarFieldOf g1) n
 
-        fX = with4n6 @n $ polyVecLinear (secret 7) (secret 8) @ zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n c1
+        fX = with4n6 @n $ polyVecLinear (secret 7) (secret 8) @ zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n g1
 
         s  = sortByList (toList f_zeta ++ toList t_zeta) (toList t_zeta)
-        h1 = toPolyVec $ V.ifilter (\i _ -> odd i) $ fromList s  :: PolyVec (ScalarField c1) n
-        h2 = toPolyVec $ V.ifilter (\i _ -> even i) $ fromList s :: PolyVec (ScalarField c1) n
+        h1 = toPolyVec $ V.ifilter (\i _ -> odd i) $ fromList s  :: PolyVec (ScalarFieldOf g1) n
+        h2 = toPolyVec $ V.ifilter (\i _ -> even i) $ fromList s :: PolyVec (ScalarFieldOf g1) n
 
-        h1X = with4n6 @n $ polyVecQuadratic (secret 9) (secret 10) (secret 11) @ zhX + polyVecInLagrangeBasis omega h1 :: PlonkupPolyExtended n c1
-        h2X = with4n6 @n $ polyVecLinear (secret 12) (secret 13) @ zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n c1
+        h1X = with4n6 @n $ polyVecQuadratic (secret 9) (secret 10) (secret 11) @ zhX + polyVecInLagrangeBasis omega h1 :: PlonkupPolyExtended n g1
+        h2X = with4n6 @n $ polyVecLinear (secret 12) (secret 13) @ zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n g1
 
         cmF  = gs `com` fX
         cmH1 = gs `com` h1X
@@ -115,13 +115,13 @@ plonkProve PlonkupProverSetup {..}
         omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
         omegas' = with4n6 @n $ toPolyVec $ V.iterateN (fromIntegral $ value @(PlonkupPolyExtendedLength n)) (* omega) one
 
-        cumprod :: PolyVec (ScalarField c1) n -> PolyVec (ScalarField c1) n
+        cumprod :: PolyVec (ScalarFieldOf g1) n -> PolyVec (ScalarFieldOf g1) n
         cumprod = toPolyVec . V.scanl1' (*) . fromPolyVec
 
-        rotR :: PolyVec (ScalarField c1) n -> PolyVec (ScalarField c1) n
+        rotR :: PolyVec (ScalarFieldOf g1) n -> PolyVec (ScalarFieldOf g1) n
         rotR p = toPolyVec $ V.drop (fromIntegral $ value @n -! 1) (fromPolyVec p) V.++ V.take (fromIntegral $ value @n -! 1) (fromPolyVec p)
 
-        rotL :: PolyVec (ScalarField c1) n -> PolyVec (ScalarField c1) n
+        rotL :: PolyVec (ScalarFieldOf g1) n -> PolyVec (ScalarFieldOf g1) n
         rotL p = toPolyVec $ V.drop 1 (fromPolyVec p) V.++ V.take 1 (fromPolyVec p)
 
         -- TODO: check operation order
@@ -132,14 +132,14 @@ plonkProve PlonkupProverSetup {..}
             ./. (w1 + (beta *. sigma1s) .+ gamma)
             ./. (w2 + (beta *. sigma2s) .+ gamma)
             ./. (w3 + (beta *. sigma3s) .+ gamma)
-        z1X = with4n6 @n $ polyVecQuadratic (secret 14) (secret 15) (secret 16) * zhX + polyVecInLagrangeBasis omega grandProduct1 :: PlonkupPolyExtended n c1
+        z1X = with4n6 @n $ polyVecQuadratic (secret 14) (secret 15) (secret 16) * zhX + polyVecInLagrangeBasis omega grandProduct1 :: PlonkupPolyExtended n g1
 
         grandProduct2 = rotR . cumprod $
                 (one + delta) *. (epsilon +. f_zeta)
             .*. ((epsilon * (one + delta)) +. t_zeta + delta *. rotL t_zeta)
             ./. ((epsilon * (one + delta)) +. h1 + delta *. h2)
             ./. ((epsilon * (one + delta)) +. h2 + delta *. rotL h1)
-        z2X = with4n6 @n $ polyVecQuadratic (secret 17) (secret 18) (secret 19) * zhX + polyVecInLagrangeBasis omega grandProduct2 :: PlonkupPolyExtended n c1
+        z2X = with4n6 @n $ polyVecQuadratic (secret 17) (secret 18) (secret 19) * zhX + polyVecInLagrangeBasis omega grandProduct2 :: PlonkupPolyExtended n g1
 
         cmZ1 = gs `com` z1X
         cmZ2 = gs `com` z2X

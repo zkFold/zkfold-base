@@ -12,7 +12,7 @@ module ZkFold.Base.Algebra.EllipticCurve.Class
   , CyclicGroup (..)
   , WeierstrassCurve (..)
   , TwistedEdwardsCurve (..)
-  , CompressiblePoint (..)
+  , Compressible (..)
   , Pairing (..)
     -- * point classes
   , Planar (..)
@@ -115,18 +115,19 @@ class Field field => TwistedEdwardsCurve (curve :: Symbol) field where
   twistedEdwardsA :: field
   twistedEdwardsD :: field
 
-class CompressiblePoint bool point where
-  type CompressedPointOf point :: Type
-  pointCompressed :: BaseFieldOf point -> bool -> pt
-  compressPoint :: point -> pt
-  decompressPoint :: pt -> point
+class Compressible bool point where
+  type Compressed point :: Type
+  pointCompressed :: BaseFieldOf point -> bool -> Compressed point
+  compress :: point -> Compressed point
+  decompress :: Compressed point -> point
 
 class
-  ( Field field
-  , AdditiveGroup g1, Scale field g1
-  , AdditiveGroup g2, Scale field g2
-  , MultiplicativeGroup gt, Exponent gt field
-  ) => Pairing field g1 g2 gt | g1 g2 -> gt where
+  ( CyclicGroup g1
+  , CyclicGroup g2
+  , ScalarFieldOf g1 ~ ScalarFieldOf g2
+  , MultiplicativeGroup gt
+  , Exponent gt (ScalarFieldOf g1)
+  ) => Pairing g1 g2 gt | g1 g2 -> gt where
     pairing :: g1 -> g2 -> gt
 
 {- | A class for smart constructor method

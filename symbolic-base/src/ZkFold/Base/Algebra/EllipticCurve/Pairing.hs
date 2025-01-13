@@ -41,7 +41,8 @@ finalExponentiation x = x ^ ((p ^ (12 :: Natural) -! 1) `div` r)
     r = order @scalarField
 
 millerAlgorithmBLS12 ::forall c d bool fldC fldD i j g.
-  EllipticCurve d bool fldD (Weierstrass d (Point bool)) =>
+  WeierstrassCurve d fldD =>
+  Eq bool fldD =>
   FiniteField fldC =>
   Scale fldC fldD =>
   Conditional bool bool =>
@@ -57,7 +58,8 @@ millerAlgorithmBLS12 (x:xs) p q = snd $
 millerAlgorithmBLS12 _ _ _ = one
 
 millerAlgorithmBN :: forall c d bool fldC fldD i j g.
-  EllipticCurve d bool fldD (Weierstrass d (Point bool)) =>
+  WeierstrassCurve d fldD =>
+  Eq bool fldD =>
   FiniteField fldC =>
   Scale fldC fldD =>
   Conditional bool bool =>
@@ -76,7 +78,8 @@ millerAlgorithmBN _ _ _ _ = one
 -- --------------------------------------------------------------------------------
 
 finalStepBN :: forall c d bool fldC fldD i j g.
-  EllipticCurve d bool fldD (Weierstrass d (Point bool)) =>
+  WeierstrassCurve d fldD =>
+  Eq bool fldD =>
   FiniteField fldC =>
   Scale fldC fldD =>
   Conditional bool bool =>
@@ -97,7 +100,8 @@ finalStepBN xi p q (t, f) = f * f' * f''
     (_, f'') = lineFunction p t' q2
 
 millerLoop ::
-  EllipticCurve d bool fldD (Weierstrass d (Point bool)) =>
+  WeierstrassCurve d fldD =>
+  Eq bool fldD =>
   Field fldC =>
   Scale fldC fldD =>
   Conditional bool bool =>
@@ -121,9 +125,9 @@ millerLoop p q = impl
 
 frobTwisted ::
   forall c bool fld.
-  ( EllipticCurve c bool fld (Weierstrass c (Point bool))
+  ( WeierstrassCurve c fld, Eq bool fld
   , Conditional bool bool, Conditional bool fld
-  ) => Natural -> fld -> Weierstrass c (Point bool) fld -> Weierstrass c (Point bool) fld
+  ) => Natural -> fld -> Weierstrass c (Point bool fld) -> Weierstrass c (Point bool fld)
 frobTwisted q xi (Weierstrass (Point x y isInf)) =
   if isInf then pointInf else pointXY ((x ^ q) * (xi ^ tx)) ((y ^ q) * (xi ^ ty))
   where
@@ -131,7 +135,8 @@ frobTwisted q xi (Weierstrass (Point x y isInf)) =
     ty = q `div` 2
 
 additionStep ::
-  EllipticCurve d bool fldD (Weierstrass d (Point bool)) =>
+  WeierstrassCurve d fldD =>
+  Eq bool fldD =>
   Field fldC =>
   Scale fldC fldD =>
   Conditional bool bool =>
@@ -145,7 +150,8 @@ additionStep ::
 additionStep p q (t, f) = (* f) <$> lineFunction p q t
 
 doublingStep ::
-  EllipticCurve d bool fldD (Weierstrass d (Point bool)) =>
+  WeierstrassCurve d fldD =>
+  Eq bool fldD =>
   Field fldC =>
   Scale fldC fldD =>
   Conditional bool bool =>
@@ -159,16 +165,17 @@ doublingStep p (t, f) = (* f) . (* f) <$> lineFunction p t t
 
 
 lineFunction :: forall c d bool baseFieldC baseFieldD i j g.
-  EllipticCurve d bool baseFieldD (Weierstrass d (Point bool)) =>
+  WeierstrassCurve d baseFieldD =>
   Field baseFieldC =>
   Scale baseFieldC baseFieldD =>
   Conditional bool bool =>
   Conditional bool baseFieldD =>
+  Eq bool baseFieldD =>
   Untwisted baseFieldD i j ~ g =>
-  Weierstrass c (Point bool) baseFieldC ->
-  Weierstrass d (Point bool) baseFieldD ->
-  Weierstrass d (Point bool) baseFieldD ->
-  (Weierstrass d (Point bool) baseFieldD, g)
+  Weierstrass c (Point bool baseFieldC) ->
+  Weierstrass d (Point bool baseFieldD) ->
+  Weierstrass d (Point bool baseFieldD) ->
+  (Weierstrass d (Point bool baseFieldD), g)
 lineFunction
   (Weierstrass (Point x y isInf))
   (Weierstrass (Point x1 y1 isInf1))

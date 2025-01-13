@@ -34,18 +34,21 @@ class PedersonSetup s c where
 
 type PedersonSetupMaxSize = 100
 
-instance (EllipticCurve curve, Random (ScalarField curve)) => PedersonSetup [] (Point curve) where
+instance
+  ( CyclicGroup g
+  , Random (ScalarFieldOf g)
+  ) => PedersonSetup [] g where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
-        let x = fst $ random $ mkStdGen 0 :: ScalarField curve
-        in take (value @PedersonSetupMaxSize) $ iterate (mul x) pointGen
+        let x = fst $ random $ mkStdGen 0 :: ScalarFieldOf g
+        in take (value @PedersonSetupMaxSize) $ iterate (scale x) pointGen
 
-instance (KnownNat n, EllipticCurve curve, Random (ScalarField curve), n <= PedersonSetupMaxSize) => PedersonSetup (Vector n) (Point curve) where
+instance (KnownNat n, CyclicGroup g, Random (ScalarFieldOf g), n <= PedersonSetupMaxSize) => PedersonSetup (Vector n) g where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
         unsafeToVector $ take (value @n) $ groupElements @[]
 
-instance (PedersonSetup s (Point curve), Functor s) => PedersonSetup s (Constant (Point curve) a) where
+instance (PedersonSetup s g, Functor s) => PedersonSetup s (Constant g a) where
     groupElements = Constant <$> groupElements @s
 
 instance (PedersonSetup s c, Zip s, Foldable s, Scale f c, AdditiveGroup c) => HomomorphicCommit (s f) c where

@@ -21,9 +21,10 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
 
-type Ed25519_Point c = Ed25519_PointOf (FFA Ed25519_Base c)
+type Ed25519_Point ctx = Ed25519_PointOf (FFA Ed25519_Base ctx)
 
-instance Symbolic c => SubgroupCurve "ed25519" (Bool c) (FFA Ed25519_Base c) (FieldElement c) Ed25519_PointOf where
+instance Symbolic ctx => CyclicGroup (Ed25519_Point ctx) where
+  type ScalarFieldOf (Ed25519_Point ctx) = FieldElement ctx
   pointGen = pointXY
     (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
     (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))

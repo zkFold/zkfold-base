@@ -40,13 +40,14 @@ type Fq = Zp FqModulus
 instance Field field => WeierstrassCurve "Pasta" field where
   weierstrassB = fromConstant (5 :: Natural)
 
-type Pasta_Point = Weierstrass "Pasta" (Point Prelude.Bool)
+type Pasta_Point field = Weierstrass "Pasta" (Point Prelude.Bool field)
 
 ------------------------------------ Pallas ------------------------------------
 
 type Pallas_Point = Pasta_Point Fp
 
-instance SubgroupCurve "Pasta" Prelude.Bool Fp Fq Pasta_Point where
+instance CyclicGroup Pallas_Point where
+  type ScalarFieldOf Pallas_Point = Fq
   pointGen = pointXY
     0x40000000000000000000000000000000224698fc094cf91b992d30ed00000000
     0x02
@@ -58,7 +59,8 @@ instance Scale Fq Pallas_Point where
 
 type Vesta_Point = Pasta_Point Fq
 
-instance SubgroupCurve "Pasta" Prelude.Bool Fq Fp Pasta_Point where
+instance CyclicGroup Vesta_Point where
+  type ScalarFieldOf Vesta_Point = Fp
   pointGen = pointXY
     0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000000
     0x02

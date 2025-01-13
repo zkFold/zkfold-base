@@ -5,39 +5,38 @@ module ZkFold.Base.Protocol.Plonkup.Proof where
 
 import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class (Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Class (CyclicGroup (..))
 
-data PlonkupProof baseField scalarField = PlonkupProof {
-        cmA     :: Point Bool baseField,
-        cmB     :: Point Bool baseField,
-        cmC     :: Point Bool baseField,
-        cmF     :: Point Bool baseField,
-        cmH1    :: Point Bool baseField,
-        cmH2    :: Point Bool baseField,
-        cmZ1    :: Point Bool baseField,
-        cmZ2    :: Point Bool baseField,
-        cmQlow  :: Point Bool baseField,
-        cmQmid  :: Point Bool baseField,
-        cmQhigh :: Point Bool baseField,
-        proof1  :: Point Bool baseField,
-        proof2  :: Point Bool baseField,
-        a_xi    :: scalarField,
-        b_xi    :: scalarField,
-        c_xi    :: scalarField,
-        s1_xi   :: scalarField,
-        s2_xi   :: scalarField,
-        f_xi    :: scalarField,
-        t_xi    :: scalarField,
-        t_xi'   :: scalarField,
-        z1_xi'  :: scalarField,
-        z2_xi'  :: scalarField,
-        h1_xi'  :: scalarField,
-        h2_xi   :: scalarField,
-        l1_xi   :: scalarField
+data PlonkupProof g = PlonkupProof {
+        cmA     :: g,
+        cmB     :: g,
+        cmC     :: g,
+        cmF     :: g,
+        cmH1    :: g,
+        cmH2    :: g,
+        cmZ1    :: g,
+        cmZ2    :: g,
+        cmQlow  :: g,
+        cmQmid  :: g,
+        cmQhigh :: g,
+        proof1  :: g,
+        proof2  :: g,
+        a_xi    :: ScalarFieldOf g,
+        b_xi    :: ScalarFieldOf g,
+        c_xi    :: ScalarFieldOf g,
+        s1_xi   :: ScalarFieldOf g,
+        s2_xi   :: ScalarFieldOf g,
+        f_xi    :: ScalarFieldOf g,
+        t_xi    :: ScalarFieldOf g,
+        t_xi'   :: ScalarFieldOf g,
+        z1_xi'  :: ScalarFieldOf g,
+        z2_xi'  :: ScalarFieldOf g,
+        h1_xi'  :: ScalarFieldOf g,
+        h2_xi   :: ScalarFieldOf g,
+        l1_xi   :: ScalarFieldOf g
         -- ^ The denominator in the L_1 polynomial evaluation
     }
-instance (Show scalarField, Show baseField)
-  => Show (PlonkupProof baseField scalarField) where
+instance (Show (ScalarFieldOf g), Show g) => Show (PlonkupProof g) where
     show PlonkupProof {..} =
         "Plonkup Proof: "
         ++ show cmA ++ " "

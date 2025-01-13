@@ -50,20 +50,18 @@ instance (Show field) => Show (WitnessKZG field g1 g2 d) where
 --         WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> (V.fromList <$> replicateM m arbitrary))
 
 -- TODO (Issue #18): check list lengths
-instance forall c1 c2 (k1 :: Type) k2 pt1 pt2 f g1 g2 gt d kzg core.
+instance forall f g1 g2 gt d kzg core.
     ( KZG f g1 g2 d ~ kzg
     , KnownNat d
     , Ord f
     , Binary f
     , FiniteField f
     , AdditiveGroup f
+    , f ~ ScalarFieldOf g1
     , Binary g1
-    , Pairing f g1 g2 gt
+    , Pairing g1 g2 gt
     , Eq gt
-    , SubgroupCurve c2 Bool k2 f pt2
-    , CoreFunction c1 k1 f pt1 core
-    , pt1 k1 ~ g1
-    , pt2 k2 ~ g2
+    , CoreFunction g1 core
     ) => NonInteractiveProof (KZG f g1 g2 d) core where
     type Transcript (KZG f g1 g2 d)  = ByteString
     type SetupProve (KZG f g1 g2 d)  = V.Vector g1
@@ -76,18 +74,15 @@ instance forall c1 c2 (k1 :: Type) k2 pt1 pt2 f g1 g2 gt d kzg core.
     setupProve (KZG x) =
         let d  = value @d
             xs = V.fromList $ map (x^) [0..d-!1]
-            g1_gen = pointGen @c1 @Bool @k1 @f @pt1
-            gs = fmap (`scale` g1_gen) xs
+            gs = fmap (`scale` pointGen @g1) xs
         in gs
 
     setupVerify :: kzg -> SetupVerify kzg
     setupVerify (KZG x) =
         let d  = value @d
             xs = V.fromList $ map (x^) [0..d-!1]
-            g1_gen = pointGen @c1 @Bool @k1 @f @pt1
-            g2_gen = pointGen @c2 @Bool @k2 @f @pt2
-            gs = fmap (`scale` g1_gen) xs
-        in (gs, g2_gen, x `scale` g2_gen)
+            gs = fmap (`scale` pointGen @g1) xs
+        in (gs, pointGen @g2, x `scale` pointGen @g2)
 
     prove :: SetupProve kzg
           -> Witness kzg
@@ -99,7 +94,7 @@ instance forall c1 c2 (k1 :: Type) k2 pt1 pt2 f g1 g2 gt d kzg core.
                      -> (Transcript kzg, (Input kzg, Proof kzg))
             proveOne (ts0, (iMap, pMap)) (z, fs) = (ts3, (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
-                    com = msm @c1 @k1 @f @pt1 @core
+                    com = msm @g1 @core
                     cms  = fmap (com gs) fs
                     fzs  = fmap (`evalPolyVec` z) fs
 
@@ -112,8 +107,8 @@ instance forall c1 c2 (k1 :: Type) k2 pt1 pt2 f g1 g2 gt d kzg core.
     verify :: SetupVerify kzg -> Input kzg -> Proof kzg -> Bool
     verify (gs, h0, h1) input proof =
             let (e0, e1) = snd $ foldl (prepareVerifyOne (input, proof)) (empty, (zero, zero)) $ keys input
-                p1 = pairing @f e0 h0
-                p2 = pairing @f e1 h1
+                p1 = pairing e0 h0
+                p2 = pairing e1 h1
             in p1 == p2
         where
             prepareVerifyOne
@@ -134,7 +129,7 @@ instance forall c1 c2 (k1 :: Type) k2 pt1 pt2 f g1 g2 gt d kzg core.
 
                     gamma = V.fromList gamma'
 
-                    com = msm @c1 @k1 @f @pt1 @core
+                    com = msm @g1 @core
 
                     v0' = r `scale` sum (V.zipWith scale gamma cms)
                         - r `scale` (gs `com` toPolyVec @f @d [sum $ V.zipWith (*) gamma fzs])
