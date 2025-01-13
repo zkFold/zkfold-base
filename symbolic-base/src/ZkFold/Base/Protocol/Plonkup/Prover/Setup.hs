@@ -7,32 +7,28 @@ import qualified Data.Vector                                     as V
 import           Prelude                                         hiding (Num (..), drop, length, sum, take, (!!), (/),
                                                                   (^))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class         (EllipticCurve (..), Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate      hiding (qr)
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Base.Protocol.Plonkup.Relation           (PlonkupRelation (..))
 
-data PlonkupProverSetup p i n l c1 c2 = PlonkupProverSetup
-    { omega       :: ScalarField c1
-    , k1          :: ScalarField c1
-    , k2          :: ScalarField c1
-    , gs          :: V.Vector (Point c1)
-    , sigma1s     :: PolyVec (ScalarField c1) n
-    , sigma2s     :: PolyVec (ScalarField c1) n
-    , sigma3s     :: PolyVec (ScalarField c1) n
-    , relation    :: PlonkupRelation p i n l (ScalarField c1)
-    , polynomials :: PlonkupCircuitPolynomials n c1
+data PlonkupProverSetup p i n l f g1 g2 = PlonkupProverSetup
+    { omega       :: f
+    , k1          :: f
+    , k2          :: f
+    , gs          :: V.Vector g1
+    , sigma1s     :: PolyVec f n
+    , sigma2s     :: PolyVec f n
+    , sigma3s     :: PolyVec f n
+    , relation    :: PlonkupRelation p i n l f
+    , polynomials :: PlonkupCircuitPolynomials n f
     }
 
 instance
-        ( EllipticCurve c1
-        , EllipticCurve c2
-        , Show (BaseField c1)
-        , Show (BaseField c2)
-        , Show (ScalarField c1)
-        , Show (PlonkupRelation p i n l (ScalarField c1))
-        , BooleanOf c1 ~ Bool
-        ) => Show (PlonkupProverSetup p i n l c1 c2) where
+        ( Show g1
+        , Show g2
+        , Show f
+        , Show (PlonkupRelation p i n l f)
+        ) => Show (PlonkupProverSetup p i n l f g1 g2) where
     show PlonkupProverSetup {..} =
         "Prover setup: "
         ++ show omega ++ " "

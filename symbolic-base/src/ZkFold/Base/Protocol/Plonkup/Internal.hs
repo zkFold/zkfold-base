@@ -12,7 +12,6 @@ import           Prelude                                             hiding (Num
 import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec)
 import           ZkFold.Base.Protocol.Plonkup.Utils
 import           ZkFold.Symbolic.Compiler                            ()
@@ -23,12 +22,12 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
 
-data Plonkup p i (n :: Natural) l curve1 curve2 transcript = Plonkup {
-        omega :: ScalarField curve1,
-        k1    :: ScalarField curve1,
-        k2    :: ScalarField curve1,
-        ac    :: ArithmeticCircuit (ScalarField curve1) p i l,
-        x     :: ScalarField curve1
+data Plonkup p i (n :: Natural) l f g1 g2 transcript = Plonkup {
+        omega :: f,
+        k1    :: f,
+        k2    :: f,
+        ac    :: ArithmeticCircuit f p i l,
+        x     :: f
     }
 
 type PlonkupPermutationSize n = 3 * n
@@ -39,16 +38,16 @@ type PlonkupPolyExtendedLength n = 4 * n + 6
 with4n6 :: forall n {r}. KnownNat n => (KnownNat (4 * n + 6) => r) -> r
 with4n6 f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)
 
-type PlonkupPolyExtended n c = PolyVec (ScalarField c) (PlonkupPolyExtendedLength n)
+type PlonkupPolyExtended n f = PolyVec f (PlonkupPolyExtendedLength n)
 
-instance (Show (ScalarField c1), Show (Rep i), Show1 l, Ord (Rep i)) => Show (Plonkup p i n l c1 c2 t) where
+instance (Show f, Show (Rep i), Show1 l, Ord (Rep i)) => Show (Plonkup p i n l f g1 g2 t) where
     show Plonkup {..} =
         "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac)  ++ " " ++ show ac ++ " " ++ show x
 
 instance
-  ( KnownNat n, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)
-  , Arbitrary (ArithmeticCircuit (ScalarField c1) p i l)
-  ) => Arbitrary (Plonkup p i n l c1 c2 t) where
+  ( KnownNat n, Arithmetic f, Arbitrary f
+  , Arbitrary (ArithmeticCircuit f p i l)
+  ) => Arbitrary (Plonkup p i n l f g1 g2 t) where
     arbitrary = do
         ac <- arbitrary
         let (omega, k1, k2) = getParams (value @n)

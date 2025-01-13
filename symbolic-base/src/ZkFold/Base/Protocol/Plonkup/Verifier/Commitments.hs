@@ -7,19 +7,19 @@ import           Prelude                                 hiding (Num (..), drop,
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class (Point)
 
-data PlonkupCircuitCommitments baseField = PlonkupCircuitCommitments {
-        cmQl :: Point Bool baseField,
-        cmQr :: Point Bool baseField,
-        cmQo :: Point Bool baseField,
-        cmQm :: Point Bool baseField,
-        cmQc :: Point Bool baseField,
-        cmQk :: Point Bool baseField,
-        cmS1 :: Point Bool baseField,
-        cmS2 :: Point Bool baseField,
-        cmS3 :: Point Bool baseField,
-        cmT1 :: Point Bool baseField
+data PlonkupCircuitCommitments g = PlonkupCircuitCommitments {
+        cmQl :: g,
+        cmQr :: g,
+        cmQo :: g,
+        cmQm :: g,
+        cmQc :: g,
+        cmQk :: g,
+        cmS1 :: g,
+        cmS2 :: g,
+        cmS3 :: g,
+        cmT1 :: g
     }
-instance (Show baseField) => Show (PlonkupCircuitCommitments baseField) where
+instance (Show g) => Show (PlonkupCircuitCommitments g) where
     show PlonkupCircuitCommitments {..} =
         "Plonkup Circuit Commitments: "
         ++ show cmQl ++ " "

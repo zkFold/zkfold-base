@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonk.Verifier
@@ -20,21 +21,24 @@ import           ZkFold.Base.Protocol.Plonkup.Internal
 import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.Ord
 
-plonkVerify :: forall p i n l c1 c2 ts .
+plonkVerify :: forall p i n l scalarField g1 g2 gt c1 c2 f1 f2 pt1 pt2 cp1 ts.
     ( KnownNat n
+    , KnownNat (PlonkupPolyExtendedLength n)
     , Foldable l
-    , Pairing c1 c2
-    , Ord (BooleanOf c1) (BaseField c1)
-    , AdditiveGroup (BaseField c1)
-    , Arithmetic (ScalarField c1)
+    , SubgroupCurve c1 Bool f1 scalarField pt1
+    , SubgroupCurve c2 Bool f2 scalarField pt2
+    , SymmetricCurve c1 Bool f1 pt1 cp1
+    , g1 ~ pt1 f1
+    , g2 ~ pt2 f2
+    , Pairing scalarField g1 g2 gt
+    , Eq scalarField
+    , Eq gt
     , ToTranscript ts Word8
-    , ToTranscript ts (ScalarField c1)
-    , ToTranscript ts (CompressedPoint c1)
-    , FromTranscript ts (ScalarField c1)
-    ) => PlonkupVerifierSetup p i n l c1 c2 -> PlonkupInput l c1 -> PlonkupProof c1 -> Bool
+    , ToTranscript ts scalarField
+    , ToTranscript ts (cp1 f1)
+    , FromTranscript ts scalarField
+    ) => PlonkupVerifierSetup p i n l scalarField g1 g2 -> PlonkupInput l scalarField -> PlonkupProof g1 scalarField -> Bool
 plonkVerify
     PlonkupVerifierSetup {..}
     (PlonkupInput wPub)
@@ -45,6 +49,8 @@ plonkVerify
         n = value @n
 
         -- Step 4: Compute challenges
+
+        compress = compressPoint @c1 @Bool
 
         ts1   = mempty
             `transcript` compress cmA
@@ -97,13 +103,13 @@ plonkVerify
         eta = challenge ts6
 
         -- Step 5: Compute zero polynomial evaluation
-        zhX_xi = with4n6 @n $ polyVecZero @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi :: ScalarField c1
+        zhX_xi = with4n6 @n $ polyVecZero @scalarField @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi :: scalarField
 
         -- Step 6: Compute Lagrange polynomial evaluation
-        lagrange1_xi = with4n6 @n $ polyVecLagrange @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
+        lagrange1_xi = with4n6 @n $ polyVecLagrange @scalarField @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
 
         -- Step 7: Compute public polynomial evaluation
-        pi_xi = with4n6 @n $ polyVecInLagrangeBasis @(ScalarField c1) @n @(PlonkupPolyExtendedLength n) omega
+        pi_xi = with4n6 @n $ polyVecInLagrangeBasis @scalarField @n @(PlonkupPolyExtendedLength n) omega
             (toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub)
             `evalPolyVec` xi
 
@@ -119,34 +125,37 @@ plonkVerify
 
         -- Step 10: Compute D
         d =
-                (a_xi * b_xi) `mul` cmQm + a_xi `mul` cmQl + b_xi `mul` cmQr + c_xi `mul` cmQo + cmQc
-              + ((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * k2 * xi + gamma) * alpha + lagrange1_xi * alpha2) `mul` cmZ1
-              - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * alpha * beta * z1_xi') `mul` cmS3
-            --   + ((a_xi - f_xi) * alpha3) `mul` cmQk
-            --   + ((one + delta) * (epsilon + f_xi) * (epsilon * (one + delta) + t_xi + delta * t_xi') * alpha4 + lagrange1_xi * alpha5) `mul` cmZ2
-            --   - (z2_xi' * (epsilon * (one + delta) + h2_xi + delta * h1_xi') * alpha4) `mul` cmH1
-              - zhX_xi `mul` (cmQlow + (xi^(n+2)) `mul` cmQmid + (xi^(2*n+4)) `mul` cmQhigh)
+                (a_xi * b_xi) `scale` cmQm + a_xi `scale` cmQl + b_xi `scale` cmQr + c_xi `scale` cmQo + cmQc
+              + ((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * k2 * xi + gamma) * alpha + lagrange1_xi * alpha2) `scale` cmZ1
+              - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * alpha * beta * z1_xi') `scale` cmS3
+            --   + ((a_xi - f_xi) * alpha3) `scale` cmQk
+            --   + ((one + delta) * (epsilon + f_xi) * (epsilon * (one + delta) + t_xi + delta * t_xi') * alpha4 + lagrange1_xi * alpha5) `scale` cmZ2
+            --   - (z2_xi' * (epsilon * (one + delta) + h2_xi + delta * h1_xi') * alpha4) `scale` cmH1
+              - zhX_xi `scale` (cmQlow + (xi^(n+2)) `scale` cmQmid + (xi^(2*n+4)) `scale` cmQhigh)
 
         -- Step 11: Compute F
         f = d
-            + v `mul` cmA
-            + vn 2 `mul` cmB
-            + vn 3 `mul` cmC
-            + vn 4 `mul` cmS1
-            + vn 5 `mul` cmS2
-            -- + vn 6 `mul` cmF
-            -- + vn 7 `mul` cmT_zeta
-            -- + vn 8 `mul` cmH2
-            + eta `mul` cmZ1
-            -- + (eta * v) `mul` cmT_zeta
-            -- + (eta * vn 2) `mul` cmZ2
-            -- + (eta * vn 3) `mul` cmH1
+            + v `scale` cmA
+            + vn 2 `scale` cmB
+            + vn 3 `scale` cmC
+            + vn 4 `scale` cmS1
+            + vn 5 `scale` cmS2
+            -- + vn 6 `scale` cmF
+            -- + vn 7 `scale` cmT_zeta
+            -- + vn 8 `scale` cmH2
+            + eta `scale` cmZ1
+            -- + (eta * v) `scale` cmT_zeta
+            -- + (eta * vn 2) `scale` cmZ2
+            -- + (eta * vn 3) `scale` cmH1
 
         -- Step 12: Compute E
+        gen1 = pointGen @c1 @Bool @f1 @scalarField @pt1
         e = (
                 negate r0 + v * a_xi + vn 2 * b_xi + vn 3 * c_xi + vn 4 * s1_xi + vn 5 * s2_xi + eta * z1_xi'
-            ) `mul` pointGen
+            ) `scale` gen1
 
         -- Step 13: Compute the pairing
-        p1 = pairing (proof1 + eta `mul` proof2) h1
-        p2 = pairing (xi `mul` proof1 + (eta * xi * omega) `mul` proof2 + f - e) (pointGen @c2)
+        pair = pairing @scalarField @g1 @g2 @gt
+        gen2 = pointGen @c2 @Bool @f2 @scalarField @pt2
+        p1 = pair (proof1 + eta `scale` proof2) h1
+        p2 = pair (xi `scale` proof1 + (eta * xi * omega) `scale` proof2 + f - e) gen2

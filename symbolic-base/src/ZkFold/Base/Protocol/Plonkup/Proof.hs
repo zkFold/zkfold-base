@@ -5,22 +5,20 @@ module ZkFold.Base.Protocol.Plonkup.Proof where
 
 import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class (Point)
-
-data PlonkupProof baseField scalarField = PlonkupProof {
-        cmA     :: Point Bool baseField,
-        cmB     :: Point Bool baseField,
-        cmC     :: Point Bool baseField,
-        cmF     :: Point Bool baseField,
-        cmH1    :: Point Bool baseField,
-        cmH2    :: Point Bool baseField,
-        cmZ1    :: Point Bool baseField,
-        cmZ2    :: Point Bool baseField,
-        cmQlow  :: Point Bool baseField,
-        cmQmid  :: Point Bool baseField,
-        cmQhigh :: Point Bool baseField,
-        proof1  :: Point Bool baseField,
-        proof2  :: Point Bool baseField,
+data PlonkupProof g scalarField = PlonkupProof {
+        cmA     :: g,
+        cmB     :: g,
+        cmC     :: g,
+        cmF     :: g,
+        cmH1    :: g,
+        cmH2    :: g,
+        cmZ1    :: g,
+        cmZ2    :: g,
+        cmQlow  :: g,
+        cmQmid  :: g,
+        cmQhigh :: g,
+        proof1  :: g,
+        proof2  :: g,
         a_xi    :: scalarField,
         b_xi    :: scalarField,
         c_xi    :: scalarField,
@@ -36,8 +34,8 @@ data PlonkupProof baseField scalarField = PlonkupProof {
         l1_xi   :: scalarField
         -- ^ The denominator in the L_1 polynomial evaluation
     }
-instance (Show scalarField, Show baseField)
-  => Show (PlonkupProof baseField scalarField) where
+instance (Show scalarField, Show g)
+  => Show (PlonkupProof g scalarField) where
     show PlonkupProof {..} =
         "Plonkup Proof: "
         ++ show cmA ++ " "

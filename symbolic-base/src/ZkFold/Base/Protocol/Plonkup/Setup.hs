@@ -23,31 +23,26 @@ import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRel
 import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
-data PlonkupSetup p i n l c1 c2 = PlonkupSetup
-    { omega       :: ScalarField c1
-    , k1          :: ScalarField c1
-    , k2          :: ScalarField c1
-    , gs          :: V.Vector (Point c1)
-    , h0          :: Point c2
-    , h1          :: Point c2
-    , sigma1s     :: PolyVec (ScalarField c1) n
-    , sigma2s     :: PolyVec (ScalarField c1) n
-    , sigma3s     :: PolyVec (ScalarField c1) n
-    , relation    :: PlonkupRelation p i n l (ScalarField c1)
-    , polynomials :: PlonkupCircuitPolynomials n c1
-    , commitments :: PlonkupCircuitCommitments c1
+data PlonkupSetup p i n l scalarField g1 g2 = PlonkupSetup
+    { omega       :: scalarField
+    , k1          :: scalarField
+    , k2          :: scalarField
+    , gs          :: V.Vector g1
+    , h0          :: g2
+    , h1          :: g2
+    , sigma1s     :: PolyVec scalarField n
+    , sigma2s     :: PolyVec scalarField n
+    , sigma3s     :: PolyVec scalarField n
+    , relation    :: PlonkupRelation p i n l scalarField
+    , polynomials :: PlonkupCircuitPolynomials n scalarField
+    , commitments :: PlonkupCircuitCommitments g1
     }
 
 instance
-        ( EllipticCurve c1
-        , EllipticCurve c2
-        , Show (BaseField c1)
-        , Show (BaseField c2)
-        , Show (ScalarField c1)
-        , Show (PlonkupRelation p i n l (ScalarField c1))
-        , BooleanOf c1 ~ Bool
-        , BooleanOf c2 ~ Bool
-        ) => Show (PlonkupSetup p i n l c1 c2) where
+        ( Show scalarField
+        , Show g1
+        , Show g2
+        ) => Show (PlonkupSetup p i n l scalarField g1 g2) where
     show PlonkupSetup {..} =
         "Setup: "
         ++ show omega ++ " "
