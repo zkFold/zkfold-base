@@ -34,7 +34,7 @@ instance
     , NFData (c (V.Vector Size))
     ) => EllipticCurve (AcEd25519 c)  where
 
-    type BaseField (AcEd25519 c) = FFA Ed25519_Base c
+    type BaseField (AcEd25519 c) = FFAOld Ed25519_Base c
     type ScalarField (AcEd25519 c) = FieldElement c
     type BooleanOf (AcEd25519 c) = Bool c
 
@@ -68,10 +68,10 @@ instance
             upper :: Natural
             upper = value @bits -! 1
 
-a :: Symbolic ctx => FFA Ed25519_Base ctx
+a :: Symbolic ctx => FFAOld Ed25519_Base ctx
 a = fromConstant @P.Integer (-1)
 
-d :: Symbolic ctx => FFA Ed25519_Base ctx
+d :: Symbolic ctx => FFAOld Ed25519_Base ctx
 d = fromConstant @P.Integer (-121665) // fromConstant @Natural 121666
 
 acAdd25519
