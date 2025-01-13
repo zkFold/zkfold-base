@@ -77,7 +77,7 @@ instance Field field => WeierstrassCurve "BN254_G1" field where
 
 instance CyclicGroup BN254_G1_Point where
   type ScalarFieldOf BN254_G1_Point = Fr
-  pointGen = pointXY one (fromConstant (2 :: Natural))
+  pointGen = pointXY 1 2
 
 instance Scale Fr BN254_G1_Point where
   scale n x = scale (toConstant n) x
