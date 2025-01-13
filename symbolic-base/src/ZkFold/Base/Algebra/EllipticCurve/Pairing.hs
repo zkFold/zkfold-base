@@ -125,7 +125,7 @@ millerLoop p q = impl
 
 frobTwisted ::
   forall c bool fld.
-  ( WeierstrassCurve c fld, Eq bool fld
+  ( WeierstrassCurve c fld
   , Conditional bool bool, Conditional bool fld
   ) => Natural -> fld -> Weierstrass c (Point bool fld) -> Weierstrass c (Point bool fld)
 frobTwisted q xi (Weierstrass (Point x y isInf)) =

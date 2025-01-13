@@ -11,7 +11,7 @@ import           Data.Bool                                           (bool)
 import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             hiding (Num (..), Ord (..), drop, length, pi, sum,
+import           Prelude                                             hiding (Num (..), drop, length, pi, sum,
                                                                       take, (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -30,16 +30,13 @@ import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRel
 import           ZkFold.Base.Protocol.Plonkup.Testing                (PlonkupProverTestInfo (..))
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.Ord
 
 plonkupProve :: forall p i n l g1 g2 ts core .
     ( KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , Foldable l
-    -- , Ord (BooleanOf g1) (BaseField g1)
-    -- , AdditiveGroup (BaseField g1)
-    -- , Arithmetic (ScalarFieldOf g1)
+    , Ord (ScalarFieldOf g1)
+    , Compressible Bool g1
     , ToTranscript ts Word8
     , ToTranscript ts (ScalarFieldOf g1)
     , ToTranscript ts (Compressed g1)

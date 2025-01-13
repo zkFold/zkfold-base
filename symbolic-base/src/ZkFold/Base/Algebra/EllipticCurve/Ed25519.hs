@@ -11,8 +11,6 @@ module ZkFold.Base.Algebra.EllipticCurve.Ed25519
   , Fq
   ) where
 
-import           Prelude                                 (Bool)
-
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number

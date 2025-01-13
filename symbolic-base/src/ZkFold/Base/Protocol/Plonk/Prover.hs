@@ -8,12 +8,12 @@ import           Data.Bool                                           (bool)
 import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             hiding (Num (..), Ord, drop, length, pi, sum, take,
+import           Prelude                                             hiding (Num (..), drop, length, pi, sum, take,
                                                                       (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (Compressible (..), CyclicGroup (..), compress)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (Compressible (..), CyclicGroup (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             ((!!))
 import           ZkFold.Base.Protocol.NonInteractiveProof
@@ -28,15 +28,12 @@ import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRel
 import           ZkFold.Base.Protocol.Plonkup.Testing                (PlonkupProverTestInfo (..))
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.Ord
 
 plonkProve :: forall p i n l g1 g2 ts core .
     ( KnownNat n
     , Foldable l
-    -- , Ord (BooleanOf g1) (BaseField g1)
-    -- , AdditiveGroup (BaseField g1)
-    -- , Arithmetic (ScalarFieldOf g1)
+    , Ord (ScalarFieldOf g1)
+    , Compressible Bool g1
     , ToTranscript ts Word8
     , ToTranscript ts (ScalarFieldOf g1)
     , ToTranscript ts (Compressed g1)
@@ -48,7 +45,7 @@ plonkProve PlonkupProverSetup {..}
     = (with4n6 @n $ PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})
     where
         (@) :: forall size . (KnownNat size) => PolyVec (ScalarFieldOf g1) size -> PolyVec (ScalarFieldOf g1) size -> PolyVec (ScalarFieldOf g1) size
-        (@) a b = poly2vec $ polyMul @g1 @core (veg2poly a) (veg2poly b)
+        (@) a b = poly2vec $ polyMul @g1 @core (vec2poly a) (vec2poly b)
 
         PlonkupCircuitPolynomials {..} = polynomials
         secret i = ps !! (i -! 1)
@@ -80,9 +77,9 @@ plonkProve PlonkupProverSetup {..}
         -- Round 2
 
         ts1   = mempty
-            `transcript` compress cmA
-            `transcript` compress cmB
-            `transcript` compress cmC :: ts
+            `transcript` compress @Bool cmA
+            `transcript` compress @Bool cmB
+            `transcript` compress @Bool cmC :: ts
         -- zeta = challenge ts1 :: ScalarFieldOf g1
 
         t_zeta = t relation
@@ -104,9 +101,9 @@ plonkProve PlonkupProverSetup {..}
         -- Round 3
 
         ts2 = ts1
-            -- `transcript` compress cmF
-            -- `transcript` compress cmH1
-            -- `transcript` compress cmH2
+            -- `transcript` compress @Bool cmF
+            -- `transcript` compress @Bool cmH1
+            -- `transcript` compress @Bool cmH2
         beta    = challenge (ts2 `transcript` (1 :: Word8))
         gamma   = challenge (ts2 `transcript` (2 :: Word8))
         delta   = challenge (ts2 `transcript` (3 :: Word8))
@@ -147,8 +144,8 @@ plonkProve PlonkupProverSetup {..}
         -- Round 4
 
         ts3 = ts2
-            `transcript` compress cmZ1
-            -- `transcript` compress cmZ2
+            `transcript` compress @Bool cmZ1
+            -- `transcript` compress @Bool cmZ2
         alpha  = challenge ts3
         alpha2 = alpha * alpha
         -- alpha3 = alpha2 * alpha
@@ -179,9 +176,9 @@ plonkProve PlonkupProverSetup {..}
         -- Round 5
 
         ts4 = ts3
-            `transcript` compress cmQlow
-            `transcript` compress cmQmid
-            `transcript` compress cmQhigh
+            `transcript` compress @Bool cmQlow
+            `transcript` compress @Bool cmQmid
+            `transcript` compress @Bool cmQhigh
         xi = challenge ts4
 
         a_xi    = aX `evalPolyVec` xi
