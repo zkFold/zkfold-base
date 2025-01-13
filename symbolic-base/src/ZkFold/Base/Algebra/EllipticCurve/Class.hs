@@ -9,7 +9,7 @@
 module ZkFold.Base.Algebra.EllipticCurve.Class
   ( -- * curve classes
     EllipticCurve (..)
-  , CyclicSubgroup (..)
+  , CyclicGroup (..)
   , WeierstrassCurve (..)
   , TwistedEdwardsCurve (..)
   , CompressiblePoint (..)
@@ -83,7 +83,7 @@ class
   ( AdditiveGroup g
   , FiniteField (ScalarFieldOf g)
   , Scale (ScalarFieldOf g) g
-  ) => CyclicSubgroup g where
+  ) => CyclicGroup g where
     type ScalarFieldOf g :: Type
     -- | generator of a cyclic subgroup
     --

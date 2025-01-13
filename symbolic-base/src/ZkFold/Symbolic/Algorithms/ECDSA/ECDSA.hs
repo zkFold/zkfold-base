@@ -26,7 +26,7 @@ ecdsaVerify
      , baseField ~ UInt 256 'Auto c
      , ScalarFieldOf point ~ FieldElement c
      , point ~ Weierstrass curve (Point (Bool c) baseField)
-     , CyclicSubgroup point
+     , CyclicGroup point
      , SemiEuclidean (UInt 256 'Auto c)
      , KnownNat (NumberOfRegisters (S.BaseField c) 256 'Auto)
      , Log2 (Order (S.BaseField c) GHC.TypeNats.- 1) ~ 255
