@@ -2,6 +2,8 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module ZkFold.Base.Protocol.IVC.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
 import           Data.Functor.Constant                       (Constant (..))
@@ -56,7 +58,7 @@ instance (PedersonSetup s c, Zip s, Foldable s, Scale f c, AdditiveGroup c) => H
 
 --------------------------------------------------------------------------------
 
--- For testing purposes 
+-- For testing purposes
 
 instance (FiniteField f) => AdditiveSemigroup (Par1 f) where
     Par1 x + Par1 y = Par1 $ x + y
@@ -73,8 +75,7 @@ instance (FiniteField f) => Scale Integer (Par1 f) where
 instance (FiniteField f) => AdditiveGroup (Par1 f) where
     negate (Par1 x) = Par1 $ negate x
 
-
-instance (FiniteField f) => Scale f (Par1 f) where
+instance {-# INCOHERENT #-} (FiniteField f) => Scale f (Par1 f) where
     scale x y = Par1 $ x * unPar1 y
 
 instance (FiniteField f) => PedersonSetup [] (Par1 f) where

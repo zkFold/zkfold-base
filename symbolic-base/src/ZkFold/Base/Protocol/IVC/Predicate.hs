@@ -8,12 +8,20 @@ import           Data.Functor.Rep                      (Representable (..))
 import           GHC.Generics                          (U1 (..), (:*:) (..))
 import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
 
+import           ZkFold.Base.Algebra.Basic.Class       (Scale, FromConstant)
 import           ZkFold.Base.Data.Package              (packed, unpacked)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
 
-type StepFunction i p = forall ctx . Symbolic ctx => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)
+type StepFunctionAssumptions a i p ctx =
+    ( Symbolic ctx
+    , BaseField ctx ~ a
+    , Scale a (WitnessField ctx)
+    , FromConstant a (WitnessField ctx)
+    )
+
+type StepFunction a i p = forall ctx . StepFunctionAssumptions a i p ctx => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)
 
 type PredicateWitness i p ctx = i (WitnessField ctx) -> p (WitnessField ctx) -> i (WitnessField ctx)
 type PredicateCircuit i p ctx = ArithmeticCircuit (BaseField ctx) (i :*: p) i i
@@ -32,11 +40,11 @@ type FunctorAssumptions f =
     )
 
 predicate :: forall i p ctx .
-    ( Symbolic ctx
+    ( StepFunctionAssumptions (BaseField ctx) i p ctx
     , Binary (BaseField ctx)
     , FunctorAssumptions i
     , FunctorAssumptions p
-    ) => StepFunction i p -> Predicate i p ctx
+    ) => StepFunction (BaseField ctx) i p -> Predicate i p ctx
 predicate func =
     let
         predicateWitness :: i (WitnessField ctx) -> p (WitnessField ctx) -> i (WitnessField ctx)
@@ -50,7 +58,7 @@ predicate func =
             in
                 witnessF . packed . fmap fromFieldElement $ func x u
 
-        func' :: forall ctx' . Symbolic ctx' => ctx' i -> ctx' p -> ctx' i
+        func' :: forall ctx' . StepFunctionAssumptions (BaseField ctx) i p ctx' => ctx' i -> ctx' p -> ctx' i
         func' x' u' =
             let
                 x = FieldElement <$> unpacked x'

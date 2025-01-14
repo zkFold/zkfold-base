@@ -13,9 +13,8 @@ import           Control.DeepSeq                            (NFData)
 import           Control.Lens                               ((^.), Traversable)
 import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
-import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
-import           GHC.Generics                               (Generic, U1, (:*:), (:.:) (..))
+import           GHC.Generics                               (Generic, (:.:) (..), Par1)
 import           Prelude                                    (Functor, Foldable, Show, fmap, const, id, foldl, error, ($), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -33,7 +32,6 @@ import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, Predi
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtocol)
 import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
 import           ZkFold.Symbolic.Data.Bool                  (Bool, BoolType (..), all)
 import           ZkFold.Symbolic.Data.Eq                    (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
@@ -64,12 +62,8 @@ makeLenses ''IVCResult
 -- | Create the first IVC result
 --
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall algo a d k i p c ctx ctx1.
-    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx
-    )
-    => StepFunction i p
+ivcSetup :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
+    => StepFunction a i p
     -> i a
     -> p (WitnessField ctx)
     -> IVCResult k i c (WitnessField ctx)
@@ -82,10 +76,10 @@ ivcSetup f x0 witness =
         z' = predicateWitness p (fromConstant <$> x0) witness
 
         fRec :: RecursiveFunction algo a d k i p c
-        fRec = recursiveFunction @algo @a @d @k @i @p @c f (RecursiveI x0 zero)
+        fRec = recursiveFunction @algo f (RecursiveI x0 zero)
 
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = recursivePredicate @algo fRec
+        pRec = predicate fRec
 
         acc0 :: Accumulator k (RecursiveI i) c (WitnessField ctx)
         acc0 = emptyAccumulator
@@ -102,12 +96,8 @@ ivcSetup f x0 witness =
         (messages, commits) = unzip $ prover protocol input payload
     in IVCResult z' acc0 (IVCProof commits messages)
 
-ivcProve :: forall algo a d k i p c ctx ctx1.
-    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx
-    )
-    => StepFunction i p
+ivcProve :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
+    => StepFunction a i p
     -> i a
     -> IVCResult k i c (WitnessField ctx)
     -> p (WitnessField ctx)
@@ -121,7 +111,7 @@ ivcProve f x0 res witness =
         z' = predicateWitness p (res^.z) witness
 
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = recursivePredicate @algo $ recursiveFunction @algo @a @d @k @i @p @c f (RecursiveI x0 zero)
+        pRec = predicate $ recursiveFunction @algo f (RecursiveI x0 zero)
 
         input :: RecursiveI i (WitnessField ctx)
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
@@ -153,20 +143,18 @@ ivcProve f x0 res witness =
     in
         IVCResult z' acc' ivcProof
 
-ivcVerify :: forall algo a d k i p c ctx ctx1 .
-    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx
-    , Eq (Bool ctx) (c (FieldElement ctx))
+ivcVerify :: forall algo a d k i p c ctx .
+    ( RecursiveFunctionAssumptions algo a d k i p c ctx
+    , Eq (Bool ctx) (Par1 (FieldElement ctx))
     )
-    => StepFunction i p
+    => StepFunction a i p
     -> i a
     -> IVCResult k i c (FieldElement ctx)
     -> Bool ctx
 ivcVerify f x0 res =
     let
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = recursivePredicate @algo $ recursiveFunction @algo @a @d @k @i @p @c f (RecursiveI x0 zero)
+        pRec = predicate $ recursiveFunction @algo f (RecursiveI x0 zero)
 
         input :: RecursiveI i (FieldElement ctx)
         input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
@@ -183,14 +171,12 @@ ivcVerify f x0 res =
         (vs1, vs2) = verifier protocol input (zip messages commits)
     in all (== zero) vs1 && all (== zero) vs2
 
-ivc :: forall algo a d k i p c ctx n ctx1 .
-    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx
-    , Eq (Bool ctx) (c (FieldElement ctx))
+ivc :: forall algo a d k i p c ctx n .
+    ( RecursiveFunctionAssumptions algo a d k i p c ctx
+    , Eq (Bool ctx) (Par1 (FieldElement ctx))
     , KnownNat n
     )
-    => StepFunction i p
+    => StepFunction a i p
     -> i a
     -> Payloaded (Vector n :.: p) ctx
     -> (Bool ctx, AccumulatorInstance k (RecursiveI i) c (FieldElement ctx))
@@ -207,4 +193,4 @@ ivc f x0 (Payloaded (Comp1 ps)) =
             then error "ivc: empty payload"
             else foldl prove setup (tail ps)
     in
-        (ivcVerify @algo @_ @d f x0 res, res^.acc^.x)
+        (ivcVerify @algo @_ @d @_ @_ @p f x0 res, res^.acc^.x)

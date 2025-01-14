@@ -190,7 +190,7 @@ instance (Random a, KnownNat size) => Random (Vector size a) where
 instance (AdditiveSemigroup a) => AdditiveSemigroup (Vector n a) where
     (+) = zipWith (+)
 
-instance (Scale b a) => Scale b (Vector n a) where
+instance {-# INCOHERENT #-} (Scale b a) => Scale b (Vector n a) where
     scale = fmap . scale
 
 instance (AdditiveMonoid a, KnownNat n) => AdditiveMonoid (Vector n a) where

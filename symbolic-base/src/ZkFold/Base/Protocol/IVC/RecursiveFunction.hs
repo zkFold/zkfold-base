@@ -15,20 +15,19 @@ import           Data.Distributive                          (Distributive (..))
 import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep)
 import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
-import           GHC.Generics                               (Generic, Generic1, U1 (..), (:*:) (..))
+import           GHC.Generics                               (Generic, Generic1, U1 (..), (:*:) (..), Par1)
 import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, id, ($),
                                                              (.), (<$>))
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale, FromConstant (..))
+import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.Orphans                   ()
 import           ZkFold.Base.Data.Package                   (packed, unpacked)
 import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi, x)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
-import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), PredicateCircuit, predicate)
+import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), PredicateCircuit, predicate, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
@@ -57,6 +56,16 @@ instance (SymbolicData f, SymbolicData (i f), Context f ~ Context (i f), Support
 
 instance (SymbolicInput f, SymbolicInput (i f), Context f ~ Context (i f)) => SymbolicInput (RecursiveI i f)
 
+instance {-# INCOHERENT #-} (Functor i, FromConstant a (FieldElement ctx)) => FromConstant (RecursiveI i a) (RecursiveI i (FieldElement ctx)) where
+    fromConstant (RecursiveI x h) = RecursiveI (fmap fromConstant x) (fromConstant h)
+
+instance (Symbolic ctx, Traversable i, Representable i) => Conditional (Bool ctx) (RecursiveI i (FieldElement ctx)) where
+    bool x y b =
+        let
+            x' = packed $ fmap fromFieldElement x
+            y' = packed $ fmap fromFieldElement y
+        in fmap FieldElement $ unpacked $ bool x' y' b
+
 -- | Payload to the recursive function
 data RecursiveP d k i p c f = RecursiveP (p f) (Vector k (c f)) (AccumulatorInstance k (RecursiveI i) c f) f (Vector (d-1) (c f))
     deriving (Generic, Generic1, Functor, Foldable, Traversable)
@@ -70,21 +79,10 @@ instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Represent
 --------------------------------------------------------------------------------
 
 type RecursiveFunctionAssumptions algo a d k i p c ctx =
-    ( Symbolic ctx
-    , BaseField ctx ~ a
+    ( StepFunctionAssumptions a i p ctx
     , Binary (BaseField ctx)
-    , FromConstant (BaseField ctx) (WitnessField ctx)
     , HashAlgorithm algo
-    , HomomorphicCommit [WitnessField ctx] (c (WitnessField ctx))
-    , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
-    , Scale (BaseField ctx) (WitnessField ctx)
-    , Scale (WitnessField ctx) (Vector (k-1) (WitnessField ctx))
-    , Scale (WitnessField ctx) (Vector k (c (WitnessField ctx)))
-    , Scale (WitnessField ctx) (Vector k [WitnessField ctx])
-    , Scale (WitnessField ctx) (c (WitnessField ctx))
-    , Scale (FieldElement ctx) (c (FieldElement ctx))
-    , FromConstant (RecursiveI i (BaseField ctx)) (RecursiveI i (FieldElement ctx))
-    , Conditional (Bool ctx) (RecursiveI i (FieldElement ctx))
+    , c ~ Par1
     , KnownNat (d-1)
     , KnownNat (d+1)
     , k ~ 1 -- TODO: This should be generalized once we support multi-round special-sound protocols
@@ -99,18 +97,11 @@ type RecursiveFunction algo a d k i p c = forall ctx . RecursiveFunctionAssumpti
 
 -- | Transform a step function into a recursive function
 recursiveFunction :: forall algo a d k i p c .
-       StepFunction i p
+       StepFunction a i p
     -> RecursiveI i a
     -> RecursiveFunction algo a d k i p c
 recursiveFunction func z0 =
     let
-        -- A helper function to derive the accumulator scheme
-        func' :: forall ctx' . Symbolic ctx'
-            => RecursiveI i (FieldElement ctx')
-            -> RecursiveP d k i p c (FieldElement ctx')
-            -> RecursiveI i (FieldElement ctx')
-        func' (RecursiveI x h) (RecursiveP u _ _ _ _) = RecursiveI (func x u) h
-
         funcRecursive :: forall ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
             => RecursiveI i (FieldElement ctx)
             -> RecursiveP d k i p c (FieldElement ctx)
@@ -119,7 +110,7 @@ recursiveFunction func z0 =
             let
                 -- A helper predicate to derive the accumulator scheme
                 pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-                pRec = predicate @_ @_ @ctx func'
+                pRec = predicate funcRecursive
 
                 accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
                 accScheme = accumulatorScheme @algo pRec id id
