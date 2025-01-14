@@ -23,23 +23,24 @@ import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 
 -- | `d` is the degree of polynomials in the protocol
-newtype KZG field g1 g2 (d :: Natural) = KZG field
-instance Show field => Show (KZG field g1 g2 d) where
+newtype KZG g1 g2 (d :: Natural) = KZG (ScalarFieldOf g1)
+instance Show (ScalarFieldOf g1) => Show (KZG g1 g2 d) where
     show (KZG x) = "KZG " <> show x
-instance Eq field => Eq (KZG field g1 g2 d) where
+instance Eq (ScalarFieldOf g1) => Eq (KZG g1 g2 d) where
     KZG x == KZG y = x == y
-instance Arbitrary field => Arbitrary (KZG field g1 g2 d) where
+instance Arbitrary (ScalarFieldOf g1) => Arbitrary (KZG g1 g2 d) where
     arbitrary = KZG <$> arbitrary
 
-newtype WitnessKZG field g1 g2 d = WitnessKZG { runWitness :: Map field (V.Vector (PolyVec field d)) }
-instance (Show field) => Show (WitnessKZG field g1 g2 d) where
+newtype WitnessKZG g1 g2 d = WitnessKZG
+  { runWitness :: Map (ScalarFieldOf g1) (V.Vector (PolyVec (ScalarFieldOf g1) d)) }
+instance (Show (ScalarFieldOf g1)) => Show (WitnessKZG g1 g2 d) where
     show (WitnessKZG w) = "WitnessKZG " <> show w
 instance
   ( KnownNat d
-  , Arbitrary scalarField
-  , Ord scalarField
-  , Ring scalarField
-  ) => Arbitrary (WitnessKZG scalarField g1 g2 d) where
+  , Arbitrary (ScalarFieldOf g1)
+  , Ord (ScalarFieldOf g1)
+  , Ring (ScalarFieldOf g1)
+  ) => Arbitrary (WitnessKZG g1 g2 d) where
     arbitrary = do
         n <- chooseInt (1, 3)
         m <- chooseInt (1, 5)
@@ -47,7 +48,7 @@ instance
 
 -- TODO (Issue #18): check list lengths
 instance forall f g1 g2 gt d kzg core.
-    ( KZG f g1 g2 d ~ kzg
+    ( KZG g1 g2 d ~ kzg
     , KnownNat d
     , Ord f
     , Binary f
@@ -58,13 +59,13 @@ instance forall f g1 g2 gt d kzg core.
     , Pairing g1 g2 gt
     , Eq gt
     , CoreFunction g1 core
-    ) => NonInteractiveProof (KZG f g1 g2 d) core where
-    type Transcript (KZG f g1 g2 d)  = ByteString
-    type SetupProve (KZG f g1 g2 d)  = V.Vector g1
-    type SetupVerify (KZG f g1 g2 d) = (V.Vector g1, g2, g2)
-    type Witness (KZG f g1 g2 d)     = WitnessKZG f g1 g2 d
-    type Input (KZG f g1 g2 d)       = Map f (V.Vector g1, V.Vector f)
-    type Proof (KZG f g1 g2 d)       = Map f g1
+    ) => NonInteractiveProof (KZG g1 g2 d) core where
+    type Transcript (KZG g1 g2 d)  = ByteString
+    type SetupProve (KZG g1 g2 d)  = V.Vector g1
+    type SetupVerify (KZG g1 g2 d) = (V.Vector g1, g2, g2)
+    type Witness (KZG g1 g2 d)     = WitnessKZG g1 g2 d
+    type Input (KZG g1 g2 d)       = Map (ScalarFieldOf g1) (V.Vector g1, V.Vector (ScalarFieldOf g1))
+    type Proof (KZG g1 g2 d)       = Map (ScalarFieldOf g1) g1
 
     setupProve :: kzg -> SetupProve kzg
     setupProve (KZG x) =
