@@ -20,7 +20,7 @@ import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
 import           ZkFold.Symbolic.Data.UInt               (UInt, eea)
 
 ecdsaVerify
-  :: forall n c curve baseField point.
+  :: forall point n c curve baseField.
      ( S.Symbolic c
      , KnownNat n
      , baseField ~ UInt 256 'Auto c

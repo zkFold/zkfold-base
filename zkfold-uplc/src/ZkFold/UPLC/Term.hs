@@ -11,8 +11,7 @@ import           Data.Word                                   (Word64)
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (Integer)
 
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_G2)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (Point)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import           ZkFold.UPLC.BuiltinFunction                 (BuiltinFunction)
 import           ZkFold.UPLC.BuiltinType                     (BuiltinType (..))
 
@@ -51,8 +50,8 @@ data Constant (t :: BuiltinType) where
   CData :: Data -> Constant BTData
   CList :: [Constant t] -> Constant (BTList t)
   CPair :: Constant t -> Constant u -> Constant (BTPair t u)
-  CG1 :: Point BLS12_381_G1 -> Constant BTBLSG1
-  CG2 :: Point BLS12_381_G2 -> Constant BTBLSG2
+  CG1 :: BLS12_381_G1_Point -> Constant BTBLSG1
+  CG2 :: BLS12_381_G2_Point -> Constant BTBLSG2
 
 -- | Terms of Plutus Core as a Haskell datatype.
 -- According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf).

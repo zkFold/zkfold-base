@@ -68,7 +68,6 @@ specPairing'
     => Arbitrary g1
     => Arbitrary g2
     => Show g2
-    => AdditiveGroup g1
     => Show g1
     => IO ()
 specPairing' = hspec $ do

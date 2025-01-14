@@ -215,7 +215,7 @@ instance Finite (Zp p) => Finite (FFA p b) where
 -- FIXME: This Eq instance is wrong
 deriving newtype instance Symbolic c => Eq (Bool c) (FFA p c)
 
-deriving newtype instance Symbolic c => Conditional (Bool c) (FFA p c)
+deriving newtype instance (Symbolic c, b ~ Bool c) => Conditional b (FFA p c)
 
 -- | TODO: fix when rewrite is done
 instance (Symbolic c) => SymbolicInput (FFA p c) where

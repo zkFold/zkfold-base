@@ -200,6 +200,7 @@ library
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
+      ZkFold.Symbolic.Data.Secp256k1
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.FieldElement

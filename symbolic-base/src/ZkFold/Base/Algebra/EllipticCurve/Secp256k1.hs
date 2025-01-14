@@ -6,6 +6,7 @@ module ZkFold.Base.Algebra.EllipticCurve.Secp256k1
   ( Secp256k1_Base
   , Secp256k1_Scalar
   , Secp256k1_Point
+  , Secp256k1_PointOf
   , Fn
   , Fp
   ) where
@@ -23,7 +24,8 @@ instance Prime Secp256k1_Scalar
 type Secp256k1_Base = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
 instance Prime Secp256k1_Base
 
-type Secp256k1_Point = Weierstrass "secp256k1" (Point Prelude.Bool Fp)
+type Secp256k1_Point = Secp256k1_PointOf Prelude.Bool Fp
+type Secp256k1_PointOf bool field = Weierstrass "secp256k1" (Point bool field)
 
 type Fn = Zp Secp256k1_Scalar
 type Fp = Zp Secp256k1_Base
