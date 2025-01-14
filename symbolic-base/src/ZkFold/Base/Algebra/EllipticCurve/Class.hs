@@ -143,13 +143,26 @@ class HasPointInf point where pointInf :: point
 {- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
 with a phantom `WeierstrassCurve` @curve@. -}
 newtype Weierstrass curve point = Weierstrass {pointWeierstrass :: point}
+deriving newtype instance Prelude.Eq point
+  => Prelude.Eq (Weierstrass curve point)
+deriving newtype instance Prelude.Show point
+  => Prelude.Show (Weierstrass curve point)
 instance
-  ( Arbitrary (ScalarFieldOf (Weierstrass curve point))
-  , CyclicGroup (Weierstrass curve point)
-  ) => Arbitrary (Weierstrass curve point) where
+  ( Arbitrary (ScalarFieldOf (Weierstrass curve (Point Prelude.Bool field)))
+  , CyclicGroup (Weierstrass curve (Point Prelude.Bool field))
+  ) => Arbitrary (Weierstrass curve (Point Prelude.Bool field)) where
     arbitrary = do
-      c <- arbitrary @ScalarFieldOf (Weierstrass curve point)
+      c <- arbitrary @(ScalarFieldOf (Weierstrass curve (Point Prelude.Bool field)))
       return $ scale c pointGen
+instance
+  ( Arbitrary (ScalarFieldOf (Weierstrass curve (Point Prelude.Bool field)))
+  , CyclicGroup (Weierstrass curve (Point Prelude.Bool field))
+  , Compressible Prelude.Bool (Weierstrass curve (Point Prelude.Bool field))
+  , Compressed (Weierstrass curve (Point Prelude.Bool field)) ~ Weierstrass curve (CompressedPoint Prelude.Bool field)
+  ) => Arbitrary (Weierstrass curve (CompressedPoint Prelude.Bool field)) where
+    arbitrary = do
+      c <- arbitrary @(ScalarFieldOf (Weierstrass curve (Point Prelude.Bool field)))
+      return $ compress @Prelude.Bool (scale c (pointGen @(Weierstrass curve (Point Prelude.Bool field))))
 instance
   ( WeierstrassCurve curve field
   , Conditional bool bool
@@ -303,7 +316,7 @@ data Point bool field = Point
   { _x    :: field
   , _y    :: field
   , _zBit :: bool
-  } deriving Generic
+  } deriving (Generic, Prelude.Eq)
 instance
   ( SymbolicOutput bool
   , SymbolicOutput field
@@ -337,7 +350,7 @@ data CompressedPoint bool field = CompressedPoint
   { _x    :: field
   , _yBit :: bool
   , _zBit :: bool
-  } deriving Generic
+  } deriving (Generic, Prelude.Show, Prelude.Eq)
 instance
   ( SymbolicOutput bool
   , SymbolicOutput field

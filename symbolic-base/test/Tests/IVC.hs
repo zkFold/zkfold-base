@@ -12,7 +12,7 @@ import           Test.QuickCheck                             (arbitrary, generat
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.Class     (Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyVec)
 import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
@@ -32,7 +32,7 @@ import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit,
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
-type C = Constant (Point BLS12_381_G1)
+type C = Constant BLS12_381_G1_Point
 type I = Vector 1
 type P = U1
 type K = 1

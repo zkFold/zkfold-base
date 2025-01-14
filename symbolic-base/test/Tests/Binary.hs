@@ -11,7 +11,6 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Compr
                                                               BLS12_381_G2_CompressedPoint, BLS12_381_G2_Point,
                                                               BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.BN254     (BN254_G1_Point, BN254_G2_Point)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (CompressedPoint, Point)
 import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point)
 import           ZkFold.Base.Data.ByteString                 (LittleEndian, fromByteString, toByteString)
 
