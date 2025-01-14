@@ -71,8 +71,6 @@ instance forall p i n l g1 g2 gt (ts :: Type) core .
         , KnownNat n
         , Foldable l
         , Compressible Bool g1
-        -- , Sym.Ord (BooleanOf g1) (BaseField g1)
-        -- , AdditiveGroup (BaseField g1)
         , Pairing g1 g2 gt
         , Eq gt
         , Arithmetic (ScalarFieldOf g1)
