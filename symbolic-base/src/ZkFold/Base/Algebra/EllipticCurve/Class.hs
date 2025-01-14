@@ -143,6 +143,7 @@ class HasPointInf point where pointInf :: point
 {- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
 with a phantom `WeierstrassCurve` @curve@. -}
 newtype Weierstrass curve point = Weierstrass {pointWeierstrass :: point}
+  deriving Generic
 deriving newtype instance Prelude.Eq point
   => Prelude.Eq (Weierstrass curve point)
 deriving newtype instance Prelude.Show point
