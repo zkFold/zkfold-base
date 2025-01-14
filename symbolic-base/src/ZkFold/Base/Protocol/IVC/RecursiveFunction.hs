@@ -95,35 +95,27 @@ type RecursiveFunction algo a d k i p c = forall ctx . RecursiveFunctionAssumpti
     => RecursiveI i (FieldElement ctx) -> Payloaded (RecursiveP d k i p c) ctx -> RecursiveI i (FieldElement ctx)
 
 -- | Transform a step function into a recursive function
-recursiveFunction :: forall algo a d k i p c .
-       StepFunction a i p
+recursiveFunction :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
+    => StepFunction a i p
     -> RecursiveI i a
-    -> RecursiveFunction algo a d k i p c
-recursiveFunction func z0 =
+    -> RecursiveI i (FieldElement ctx) -> Payloaded (RecursiveP d k i p c) ctx -> RecursiveI i (FieldElement ctx)
+recursiveFunction func z0 z@(RecursiveI x _) p@(Payloaded (RecursiveP u _ _ _ _)) =
     let
-        funcRecursive :: forall ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
-            => RecursiveI i (FieldElement ctx)
-            -> Payloaded (RecursiveP d k i p c) ctx
-            -> RecursiveI i (FieldElement ctx)
-        funcRecursive z@(RecursiveI x _) p@(Payloaded (RecursiveP u _ _ _ _)) =
-            let
-                RecursiveP _ piX accX flag pf = fmap FieldElement $ unpacked $ embedW @ctx $ runPayloaded p
+        RecursiveP _ piX accX flag pf = fmap FieldElement $ unpacked $ embedW $ runPayloaded p
 
-                pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-                pRec = predicate funcRecursive
+        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
+        pRec = predicate (recursiveFunction @algo func z0)
 
-                accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
-                accScheme = accumulatorScheme @algo pRec id id
+        accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
+        accScheme = accumulatorScheme @algo pRec id id
 
-                x' :: i (FieldElement ctx)
-                x' = func x (Payloaded u)
+        x' :: i (FieldElement ctx)
+        x' = func x (Payloaded u)
 
-                accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx)
-                accX' = verifier accScheme z piX accX pf
+        accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx)
+        accX' = verifier accScheme z piX accX pf
 
-                h :: (FieldElement ctx)
-                h = oracle @algo accX'
-            in
-                bool (fromConstant z0) (RecursiveI x' h) $ Bool $ fromFieldElement flag
-
-    in funcRecursive
+        h :: (FieldElement ctx)
+        h = oracle @algo accX'
+    in
+        bool (fromConstant z0) (RecursiveI x' h) $ Bool $ fromFieldElement flag
