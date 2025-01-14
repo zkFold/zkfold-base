@@ -29,7 +29,7 @@ import           Data.Kind                        (Type)
 import           Data.String                      (fromString)
 import           GHC.Generics
 import           GHC.TypeLits                     (Symbol)
-import           Prelude                          (Integer, type (~), ($), (>>=), return)
+import           Prelude                          (Integer, return, type (~), ($), (>>=))
 import qualified Prelude
 import           Test.QuickCheck                  hiding (scale)
 

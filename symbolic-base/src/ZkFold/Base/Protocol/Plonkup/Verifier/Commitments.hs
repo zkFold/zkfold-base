@@ -3,7 +3,7 @@
 
 module ZkFold.Base.Protocol.Plonkup.Verifier.Commitments where
 
-import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+import           Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 data PlonkupCircuitCommitments g = PlonkupCircuitCommitments {
         cmQl :: g,
