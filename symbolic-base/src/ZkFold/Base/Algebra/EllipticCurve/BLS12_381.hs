@@ -283,14 +283,14 @@ instance Finite BLS12_381_GT where
     type Order BLS12_381_GT = BLS12_381_Scalar
 
 instance Pairing BLS12_381_G1_Point BLS12_381_G2_Point BLS12_381_GT where
-  pairing a b
-    = BLS12_381_GT
-    $ finalExponentiation @Fr
-    $ millerAlgorithmBLS12 param a b
-    where
-      param = [-1
-        ,-1, 0,-1, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
-        , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
-        , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        ]
+    pairing a b
+      = BLS12_381_GT
+      $ finalExponentiation @Fr
+      $ millerAlgorithmBLS12 param a b
+      where
+        param = [-1
+          ,-1, 0,-1, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+          , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+          ]
