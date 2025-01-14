@@ -15,7 +15,8 @@ import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Zip                                   (Zip (..), unzip)
 import           GHC.Generics                               (Generic, (:.:) (..), Par1)
-import           Prelude                                    (Functor, Foldable, Show, fmap, const, id, foldl, error, ($), (<$>))
+import           Prelude                                    (Functor, Foldable, Show, fmap, const, id, foldl, error, ($))
+import qualified Prelude                                    as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, value)
@@ -27,7 +28,6 @@ import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, 
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtocol)
@@ -52,124 +52,12 @@ makeLenses ''IVCProof
 -- the corresponding accumulator, and the recursion circuit satisfiability proof.
 data IVCResult k i c f
     = IVCResult
-    { _z     :: i f
+    { _z     :: RecursiveI i f
     , _acc   :: Accumulator k (RecursiveI i) c f
     , _proof :: IVCProof k c f
     } deriving (GHC.Generics.Generic, Functor, Foldable, Traversable, Show, NFData)
 
 makeLenses ''IVCResult
-
--- | Create the first IVC result
---
--- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
-    => StepFunction a i p
-    -> i a
-    -> p (WitnessField ctx)
-    -> IVCResult k i c (WitnessField ctx)
-ivcSetup f x0 witness =
-    let
-        p :: Predicate i p ctx
-        p = predicate f
-
-        z' :: i (WitnessField ctx)
-        z' = predicateWitness p (fromConstant <$> x0) witness
-
-        fRec :: RecursiveFunction algo a d k i p c
-        fRec = recursiveFunction @algo f (RecursiveI x0 zero)
-
-        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = predicate fRec
-
-        acc0 :: Accumulator k (RecursiveI i) c (WitnessField ctx)
-        acc0 = emptyAccumulator
-
-        input :: RecursiveI i (WitnessField ctx)
-        input = RecursiveI (fromConstant <$> x0) (oracle @algo $ acc0^.x)
-
-        payload :: RecursiveP d k i p c (WitnessField ctx)
-        payload = RecursiveP witness (tabulate (const zero)) (acc0^.x) zero (tabulate (const zero))
-
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c ctx
-        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
-
-        (messages, commits) = unzip $ prover protocol input payload
-    in IVCResult z' acc0 (IVCProof commits messages)
-
-ivcProve :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
-    => StepFunction a i p
-    -> i a
-    -> IVCResult k i c (WitnessField ctx)
-    -> p (WitnessField ctx)
-    -> IVCResult k i c (WitnessField ctx)
-ivcProve f x0 res witness =
-    let
-        p :: Predicate i p ctx
-        p = predicate f
-
-        z' :: i (WitnessField ctx)
-        z' = predicateWitness p (res^.z) witness
-
-        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = predicate $ recursiveFunction @algo f (RecursiveI x0 zero)
-
-        input :: RecursiveI i (WitnessField ctx)
-        input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
-
-        messages :: Vector k [WitnessField ctx]
-        messages = res^.proof^.proofW
-
-        commits :: Vector k (c (WitnessField ctx))
-        commits = res^.proof^.proofX
-
-        narkIP :: NARKInstanceProof k (RecursiveI i) c ctx
-        narkIP = NARKInstanceProof input (NARKProof commits messages)
-
-        accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
-        accScheme = accumulatorScheme @algo @d pRec id id
-
-        (acc', pf) = Acc.prover accScheme (res^.acc) narkIP
-
-        payload :: RecursiveP d k i p c (WitnessField ctx)
-        payload = RecursiveP witness commits (res^.acc^.x) one pf
-
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c ctx
-        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
-
-        (messages', commits') = unzip $ prover protocol input payload
-
-        ivcProof :: IVCProof k c (WitnessField ctx)
-        ivcProof = IVCProof commits' messages'
-    in
-        IVCResult z' acc' ivcProof
-
-ivcVerify :: forall algo a d k i p c ctx .
-    ( RecursiveFunctionAssumptions algo a d k i p c ctx
-    , Eq (Bool ctx) (Par1 (FieldElement ctx))
-    )
-    => StepFunction a i p
-    -> i a
-    -> IVCResult k i c (FieldElement ctx)
-    -> Bool ctx
-ivcVerify f x0 res =
-    let
-        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = predicate $ recursiveFunction @algo f (RecursiveI x0 zero)
-
-        input :: RecursiveI i (FieldElement ctx)
-        input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
-
-        messages :: Vector k [FieldElement ctx]
-        messages = res^.proof^.proofW
-
-        commits :: Vector k (c (FieldElement ctx))
-        commits = res^.proof^.proofX
-
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c ctx
-        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
-
-        (vs1, vs2) = verifier protocol input (zip messages commits)
-    in all (== zero) vs1 && all (== zero) vs2
 
 ivc :: forall algo a d k i p c ctx n .
     ( RecursiveFunctionAssumptions algo a d k i p c ctx
@@ -182,15 +70,57 @@ ivc :: forall algo a d k i p c ctx n .
     -> (Bool ctx, AccumulatorInstance k (RecursiveI i) c (FieldElement ctx))
 ivc f x0 (Payloaded (Comp1 ps)) =
     let
+        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
+        pRec = predicate $ recursiveFunction @algo f (RecursiveI x0 zero)
+
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c ctx
+        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
+
+        accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
+        accScheme = accumulatorScheme @algo @d pRec id id
+
+        ivcProve :: Haskell.Bool -> IVCResult k i c (WitnessField ctx) -> p (WitnessField ctx) -> IVCResult k i c (WitnessField ctx)
+        ivcProve baseCase res witness =
+            let
+                narkIP :: NARKInstanceProof k (RecursiveI i) c ctx
+                narkIP = NARKInstanceProof (res^.z) (NARKProof (res^.proof^.proofX) (res^.proof^.proofW))
+
+                (acc', pf) = if baseCase
+                    then (emptyAccumulator, tabulate (const zero))
+                    else Acc.prover accScheme (res^.acc) narkIP
+
+                payload :: RecursiveP d k i p c (WitnessField ctx)
+                payload = RecursiveP witness (res^.proof^.proofX) (res^.acc^.x) one pf
+
+                z' :: RecursiveI i (WitnessField ctx)
+                z' = predicateWitness pRec (res^.z) payload
+
+                (messages, commits) = unzip $ prover protocol (res^.z) payload
+
+                ivcProof :: IVCProof k c (WitnessField ctx)
+                ivcProof = IVCProof commits messages
+            in
+                IVCResult z' acc' ivcProof
+
+        ivcVerify :: IVCResult k i c (FieldElement ctx) -> Bool ctx
+        ivcVerify res =
+            let
+                (vs1, vs2) = verifier protocol (res^.z) (zip (res^.proof^.proofW) (res^.proof^.proofX))
+            in
+                all (== zero) vs1 && all (== zero) vs2
+
+        res0 :: IVCResult k i c (WitnessField ctx)
+        res0 = IVCResult (RecursiveI (fmap fromConstant x0) zero) emptyAccumulator (IVCProof (tabulate $ const zero) (tabulate $ const []))
+
         setup :: IVCResult k i c (WitnessField ctx)
-        setup = ivcSetup @algo @_ @d @_ @_ @_ @_ @ctx f x0 (head ps)
+        setup = ivcProve true res0 (head ps)
 
         prove :: IVCResult k i c (WitnessField ctx) -> p (WitnessField ctx) -> IVCResult k i c (WitnessField ctx)
-        prove = ivcProve @algo @_ @d @_ @_ @_ @_ @ctx f x0
+        prove = ivcProve false
 
-        res :: IVCResult k i c (FieldElement ctx)
-        res = fmap FieldElement $ unpacked $ embedW $ if value @n == 0
+        result :: IVCResult k i c (FieldElement ctx)
+        result = fmap FieldElement $ unpacked $ embedW $ if value @n == 0
             then error "ivc: empty payload"
             else foldl prove setup (tail ps)
     in
-        (ivcVerify @algo @_ @d @_ @_ @p f x0 res, res^.acc^.x)
+        (ivcVerify result, result^.acc^.x)
