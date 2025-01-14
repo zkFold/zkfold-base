@@ -8,7 +8,6 @@ module ZkFold.Base.Protocol.KZG where
 
 import           Control.Monad                              (replicateM)
 import           Data.ByteString                            (ByteString, empty)
-import           Data.Kind                                  (Type)
 import           Data.Map.Strict                            (Map, fromList, insert, keys, toList, (!))
 import qualified Data.Vector                                as V
 import           Data.Vector.Binary                         ()
@@ -35,19 +34,16 @@ instance Arbitrary field => Arbitrary (KZG field g1 g2 d) where
 newtype WitnessKZG field g1 g2 d = WitnessKZG { runWitness :: Map field (V.Vector (PolyVec field d)) }
 instance (Show field) => Show (WitnessKZG field g1 g2 d) where
     show (WitnessKZG w) = "WitnessKZG " <> show w
--- instance
---   ( SubgroupCurve c1 Bool baseField1 scalarField point
---   , SubgroupCurve c2 Bool baseField2 scalarField point
---   , KnownNat d
---   , Arbitrary scalarField
---   , Ord scalarField
---   , g1 ~ point baseField1
---   , g2 ~ point baseField2
---   ) => Arbitrary (WitnessKZG scalarField g1 g2 d) where
---     arbitrary = do
---         n <- chooseInt (1, 3)
---         m <- chooseInt (1, 5)
---         WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> (V.fromList <$> replicateM m arbitrary))
+instance
+  ( KnownNat d
+  , Arbitrary scalarField
+  , Ord scalarField
+  , Ring scalarField
+  ) => Arbitrary (WitnessKZG scalarField g1 g2 d) where
+    arbitrary = do
+        n <- chooseInt (1, 3)
+        m <- chooseInt (1, 5)
+        WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> (V.fromList <$> replicateM m arbitrary))
 
 -- TODO (Issue #18): check list lengths
 instance forall f g1 g2 gt d kzg core.

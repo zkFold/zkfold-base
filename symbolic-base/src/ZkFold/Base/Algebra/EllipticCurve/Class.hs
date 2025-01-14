@@ -29,8 +29,9 @@ import           Data.Kind                        (Type)
 import           Data.String                      (fromString)
 import           GHC.Generics
 import           GHC.TypeLits                     (Symbol)
-import           Prelude                          (Integer, type (~))
+import           Prelude                          (Integer, type (~), ($), (>>=), return)
 import qualified Prelude
+import           Test.QuickCheck                  hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -142,6 +143,13 @@ class HasPointInf point where pointInf :: point
 {- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
 with a phantom `WeierstrassCurve` @curve@. -}
 newtype Weierstrass curve point = Weierstrass {pointWeierstrass :: point}
+instance
+  ( Arbitrary (ScalarFieldOf (Weierstrass curve point))
+  , CyclicGroup (Weierstrass curve point)
+  ) => Arbitrary (Weierstrass curve point) where
+    arbitrary = do
+      c <- arbitrary @ScalarFieldOf (Weierstrass curve point)
+      return $ scale c pointGen
 instance
   ( WeierstrassCurve curve field
   , Conditional bool bool
