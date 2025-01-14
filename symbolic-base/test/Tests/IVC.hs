@@ -31,6 +31,7 @@ import           ZkFold.Prelude                              (replicate)
 import           ZkFold.Symbolic.Class                       (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
+import           ZkFold.Symbolic.Data.Payloaded              (Payloaded)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
 type A = Zp BLS12_381_Scalar
@@ -49,7 +50,7 @@ type PARDEG = 5
 type PAR = PolyVec A PARDEG
 
 testFunction :: forall ctx . Symbolic ctx
-    => PAR -> Vector 1 (FieldElement ctx) -> U1 (FieldElement ctx) -> Vector 1 (FieldElement ctx)
+    => PAR -> Vector 1 (FieldElement ctx) -> Payloaded U1 ctx -> Vector 1 (FieldElement ctx)
 testFunction p x _ =
     let p' = fromList $ map (fromConstant . toConstant) $ toList p :: PolyVec (FieldElement ctx) PARDEG
     in singleton $ evalPolyVec p' $ item x

@@ -15,9 +15,8 @@ import           Data.Distributive                          (Distributive (..))
 import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep)
 import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
-import           GHC.Generics                               (Generic, Generic1, U1 (..), (:*:) (..), Par1)
-import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, id, ($),
-                                                             (.), (<$>))
+import           GHC.Generics                               (Generic, Generic1, Par1)
+import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, id, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
@@ -27,14 +26,14 @@ import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi, x)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), PredicateCircuit, predicate, StepFunctionAssumptions)
+import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), predicate, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional           (Conditional (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
+import           ZkFold.Symbolic.Data.Payloaded             (Payloaded (..))
 
 -- | Public input to the recursive function
 data RecursiveI i f = RecursiveI (i f) f
@@ -93,7 +92,7 @@ type RecursiveFunctionAssumptions algo a d k i p c ctx =
     )
 
 type RecursiveFunction algo a d k i p c = forall ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
-    => RecursiveI i (FieldElement ctx) -> RecursiveP d k i p c (FieldElement ctx) -> RecursiveI i (FieldElement ctx)
+    => RecursiveI i (FieldElement ctx) -> Payloaded (RecursiveP d k i p c) ctx -> RecursiveI i (FieldElement ctx)
 
 -- | Transform a step function into a recursive function
 recursiveFunction :: forall algo a d k i p c .
@@ -104,11 +103,12 @@ recursiveFunction func z0 =
     let
         funcRecursive :: forall ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
             => RecursiveI i (FieldElement ctx)
-            -> RecursiveP d k i p c (FieldElement ctx)
+            -> Payloaded (RecursiveP d k i p c) ctx
             -> RecursiveI i (FieldElement ctx)
-        funcRecursive z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
+        funcRecursive z@(RecursiveI x _) p@(Payloaded (RecursiveP u _ _ _ _)) =
             let
-                -- A helper predicate to derive the accumulator scheme
+                RecursiveP _ piX accX flag pf = fmap FieldElement $ unpacked $ embedW @ctx $ runPayloaded p
+
                 pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
                 pRec = predicate funcRecursive
 
@@ -116,7 +116,7 @@ recursiveFunction func z0 =
                 accScheme = accumulatorScheme @algo pRec id id
 
                 x' :: i (FieldElement ctx)
-                x' = func x u
+                x' = func x (Payloaded u)
 
                 accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx)
                 accX' = verifier accScheme z piX accX pf
@@ -127,38 +127,3 @@ recursiveFunction func z0 =
                 bool (fromConstant z0) (RecursiveI x' h) $ Bool $ fromFieldElement flag
 
     in funcRecursive
-
---------------------------------------------------------------------------------
-
-recursivePredicate :: forall algo a d k i p c ctx ctx1 .
-    ( ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
-    , RecursiveFunctionAssumptions algo a d k i p c ctx
-    , RecursiveFunctionAssumptions algo a d k i p c ctx1
-    ) => RecursiveFunction algo a d k i p c -> Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-recursivePredicate func =
-    let
-        func' :: forall ctx' . RecursiveFunctionAssumptions algo a d k i p c ctx'
-            => ctx' (RecursiveI i) -> ctx' (RecursiveP d k i p c) -> ctx' (RecursiveI i)
-        func' x' u' =
-            let
-                x = FieldElement <$> unpacked x'
-                u = FieldElement <$> unpacked u'
-            in
-                packed . fmap fromFieldElement $ func x u
-
-        predicateWitness :: (RecursiveI i) (WitnessField ctx) -> (RecursiveP d k i p c) (WitnessField ctx) -> (RecursiveI i) (WitnessField ctx)
-        predicateWitness x' u' =
-            let
-                x :: (RecursiveI i) (FieldElement ctx)
-                x = fmap FieldElement $ unpacked $ embedW x'
-
-                u :: (RecursiveP d k i p c) (FieldElement ctx)
-                u = fmap FieldElement $ unpacked $ embedW u'
-            in
-                witnessF . packed . fmap fromFieldElement $ func x u
-
-        predicateCircuit :: PredicateCircuit (RecursiveI i) (RecursiveP d k i p c) ctx
-        predicateCircuit =
-            hlmap (U1 :*:) $
-            compileWith @a guessOutput (\(i :*: p) U1 -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
-    in Predicate {..}

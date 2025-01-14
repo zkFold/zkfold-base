@@ -13,6 +13,7 @@ import           ZkFold.Base.Data.Package              (packed, unpacked)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
+import           ZkFold.Symbolic.Data.Payloaded        (Payloaded (..))
 
 type StepFunctionAssumptions a i p ctx =
     ( Symbolic ctx
@@ -21,7 +22,7 @@ type StepFunctionAssumptions a i p ctx =
     , FromConstant a (WitnessField ctx)
     )
 
-type StepFunction a i p = forall ctx . StepFunctionAssumptions a i p ctx => i (FieldElement ctx) -> p (FieldElement ctx) -> i (FieldElement ctx)
+type StepFunction a i p = forall ctx . StepFunctionAssumptions a i p ctx => i (FieldElement ctx) -> Payloaded p ctx -> i (FieldElement ctx)
 
 type PredicateWitness i p ctx = i (WitnessField ctx) -> p (WitnessField ctx) -> i (WitnessField ctx)
 type PredicateCircuit i p ctx = ArithmeticCircuit (BaseField ctx) (i :*: p) i i
@@ -53,21 +54,20 @@ predicate func =
                 x :: i (FieldElement ctx)
                 x = fmap FieldElement $ unpacked $ embedW x'
 
-                u :: p (FieldElement ctx)
-                u = fmap FieldElement $ unpacked $ embedW u'
+                u :: Payloaded p ctx
+                u = Payloaded u'
             in
                 witnessF . packed . fmap fromFieldElement $ func x u
 
-        func' :: forall ctx' . StepFunctionAssumptions (BaseField ctx) i p ctx' => ctx' i -> ctx' p -> ctx' i
-        func' x' u' =
+        func' :: forall ctx' . StepFunctionAssumptions (BaseField ctx) i p ctx' => ctx' i -> Payloaded p ctx' -> ctx' i
+        func' x' u =
             let
                 x = FieldElement <$> unpacked x'
-                u = FieldElement <$> unpacked u'
             in
                 packed . fmap fromFieldElement $ func x u
 
         predicateCircuit :: PredicateCircuit i p ctx
         predicateCircuit =
             hlmap (U1 :*:) $
-            compileWith @(BaseField ctx) guessOutput (\(i :*: p) U1 -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
+            compileWith @(BaseField ctx) guessOutput (\(i :*: p) U1 -> (U1 :*: p :*: U1, i :*: U1 :*: U1)) func'
     in Predicate {..}
