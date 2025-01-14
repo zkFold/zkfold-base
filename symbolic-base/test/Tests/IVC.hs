@@ -25,6 +25,7 @@ import           ZkFold.Base.Protocol.IVC.FiatShamir         (FiatShamir, fiatSh
 import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle             (MiMCHash)
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate (..), predicate)
+import           ZkFold.Base.Protocol.IVC.RecursiveFunction  (RecursiveI (..), RecursiveP, recursiveFunction)
 import           ZkFold.Base.Protocol.IVC.SpecialSound       (specialSoundProtocol)
 import           ZkFold.Prelude                              (replicate)
 import           ZkFold.Symbolic.Class                       (Symbolic(..), embedW)
@@ -55,6 +56,9 @@ testFunction p x _ =
 
 testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
+
+testRecursivePredicate :: PAR -> Predicate (RecursiveI I) (RecursiveP D K I P C) CTX
+testRecursivePredicate p = predicate $ recursiveFunction @MiMCHash (testFunction p) (RecursiveI (singleton zero) zero)
 
 testPredicateCircuit :: PAR -> AC
 testPredicateCircuit p = predicateCircuit @I @P $ testPredicate p
@@ -138,6 +142,7 @@ specIVC :: IO ()
 specIVC = do
     p <- generate arbitrary :: IO PAR
     print $ testPublicInput $ testPredicate p
-    print $ "Recursion circuit size: " ++ show (acSizeN $ testPredicateCircuit p)
+    print $ "Predicate circuit size: " ++ show (acSizeN $ testPredicateCircuit p)
+    print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
     specAlgebraicMap
     specAccumulatorScheme
