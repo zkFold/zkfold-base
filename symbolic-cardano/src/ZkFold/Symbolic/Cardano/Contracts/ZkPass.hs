@@ -4,27 +4,27 @@
 module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 
 import           Data.Type.Equality
-import           GHC.TypeLits                              (KnownNat, Log2)
+import           GHC.TypeLits                                (KnownNat, Log2)
 import qualified GHC.TypeNats
-import           Prelude                                   hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
-                                                            (&&), (*), (+))
+import           Prelude                                     hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
+                                                              (&&), (*), (+))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1 hiding (Secp256k1_Point)
-import qualified ZkFold.Base.Data.Vector                   as V
-import           ZkFold.Base.Data.Vector                   hiding (concat)
-import           ZkFold.Symbolic.Algorithms.ECDSA.ECDSA    (ecdsaVerify)
-import           ZkFold.Symbolic.Algorithms.Hash.SHA2      (SHA2N, sha2)
-import qualified ZkFold.Symbolic.Class                     as S
-import           ZkFold.Symbolic.Class                     (Symbolic)
+import qualified ZkFold.Base.Data.Vector                     as V
+import           ZkFold.Base.Data.Vector                     hiding (concat)
+import           ZkFold.Symbolic.Algorithms.ECDSA.ECDSA      (ecdsaVerify)
+import           ZkFold.Symbolic.Algorithms.Hash.SHA2        (SHA2N, sha2)
+import qualified ZkFold.Symbolic.Class                       as S
+import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString           (ByteString, concat, toWords)
-import           ZkFold.Symbolic.Data.Combinators          (Iso (..), NumberOfRegisters, RegisterSize (..), resize)
-import           ZkFold.Symbolic.Data.Secp256k1            (Secp256k1_Point)
+import           ZkFold.Symbolic.Data.ByteString             (ByteString, concat, toWords)
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..), NumberOfRegisters, RegisterSize (..), resize)
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FieldElement         (FieldElement)
-import           ZkFold.Symbolic.Data.UInt                 (UInt)
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import           ZkFold.Symbolic.Data.Secp256k1              (Secp256k1_Point)
+import           ZkFold.Symbolic.Data.UInt                   (UInt)
 data ZKPassResult c = ZKPassResult
   { allocatorAddress   :: ByteString 256 c
   , allocatorSignature :: ByteString 520 c
