@@ -16,7 +16,7 @@ import           Data.Functor.Rep                           (Representable (..),
 import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
 import           GHC.Generics                               (Generic, Generic1, Par1)
-import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, id, ($))
+import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
@@ -107,7 +107,7 @@ recursiveFunction func z0 z@(RecursiveI x _) p@(Payloaded (RecursiveP u _ _ _ _)
         pRec = predicate (recursiveFunction @algo func z0)
 
         accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
-        accScheme = accumulatorScheme @algo pRec id id
+        accScheme = accumulatorScheme @algo pRec
 
         x' :: i (FieldElement ctx)
         x' = func x (Payloaded u)

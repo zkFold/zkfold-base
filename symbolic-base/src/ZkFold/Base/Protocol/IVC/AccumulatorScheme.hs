@@ -47,7 +47,7 @@ data AccumulatorScheme d k i c ctx = AccumulatorScheme
             -> (Vector k (c (FieldElement ctx)), c (FieldElement ctx))       -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k i p c ctx ctx'.
+accumulatorScheme :: forall algo d k i p c ctx .
     ( KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
@@ -57,21 +57,15 @@ accumulatorScheme :: forall algo d k i p c ctx ctx'.
     , Foldable i
     , Foldable c
     , Symbolic ctx
-    , Symbolic ctx'
-    , HomomorphicCommit [WitnessField ctx'] (c (WitnessField ctx))
-    , HomomorphicCommit [FieldElement ctx'] (c (FieldElement ctx))
-    , Scale (BaseField ctx') (WitnessField ctx')
+    , HomomorphicCommit [WitnessField ctx] (c (WitnessField ctx))
+    , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
+    , Scale (BaseField ctx) (WitnessField ctx)
     , Scale (WitnessField ctx) (c (WitnessField ctx))
-    , Scale (WitnessField ctx) (Vector (k-1) (WitnessField ctx))
-    , Scale (WitnessField ctx) (Vector k (c (WitnessField ctx)))
-    , Scale (WitnessField ctx) (Vector k [WitnessField ctx])
     , Scale (FieldElement ctx) (c (FieldElement ctx))
     )
-    => Predicate i p ctx'
-    -> (WitnessField ctx -> WitnessField ctx')
-    -> (FieldElement ctx -> FieldElement ctx')
+    => Predicate i p ctx
     -> AccumulatorScheme d k i c ctx
-accumulatorScheme phi mapFieldW mapFieldF =
+accumulatorScheme phi =
   let
       prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
         let
@@ -85,32 +79,32 @@ accumulatorScheme phi mapFieldW mapFieldF =
             -- Fig. 3, step 2
 
             -- X + mu as a univariate polynomial
-            polyMu :: PU.PolyVec (WitnessField ctx') (d+1)
-            polyMu = PU.polyVecLinear one (mapFieldW $ acc^.x^.mu)
+            polyMu :: PU.PolyVec (WitnessField ctx) (d+1)
+            polyMu = PU.polyVecLinear one (acc^.x^.mu)
 
             -- X * pi + pi' as a list of univariate polynomials
-            polyPi :: i (PU.PolyVec (WitnessField ctx') (d+1))
-            polyPi = zipWith PU.polyVecLinear (fmap mapFieldW pubi) (fmap mapFieldW $ acc^.x^.pi)
+            polyPi :: i (PU.PolyVec (WitnessField ctx) (d+1))
+            polyPi = zipWith PU.polyVecLinear pubi (acc^.x^.pi)
 
             -- X * mi + mi'
-            polyW :: Vector k [PU.PolyVec (WitnessField ctx') (d+1)]
-            polyW = zipWith (zipWith PU.polyVecLinear) (fmap (fmap mapFieldW) pi_w) (fmap (fmap mapFieldW) $ acc^.w)
+            polyW :: Vector k [PU.PolyVec (WitnessField ctx) (d+1)]
+            polyW = zipWith (zipWith PU.polyVecLinear) pi_w (acc^.w)
 
             -- X * ri + ri'
-            polyR :: Vector (k-1) (PU.PolyVec (WitnessField ctx') (d+1))
-            polyR = zipWith PU.polyVecLinear (fmap mapFieldW r_i) (fmap mapFieldW $ acc^.x^.r)
+            polyR :: Vector (k-1) (PU.PolyVec (WitnessField ctx) (d+1))
+            polyR = zipWith PU.polyVecLinear r_i (acc^.x^.r)
 
             -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
             --
-            e_uni :: [Vector (d+1) (WitnessField ctx')]
+            e_uni :: [Vector (d+1) (WitnessField ctx)]
             e_uni = unsafeToVector . toList <$> algebraicMap @d phi polyPi polyW polyR polyMu
 
             -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
-            e_all :: Vector (d+1) [WitnessField ctx']
+            e_all :: Vector (d+1) [WitnessField ctx]
             e_all = tabulate (\i -> fmap (`index` i) e_uni)
 
             -- e_j are coefficients of degree-j homogenous polynomials where j is from the range [1, d - 1]
-            e_j :: Vector (d-1) [WitnessField ctx']
+            e_j :: Vector (d-1) [WitnessField ctx]
             e_j = withDict (plusMinusInverse1 @1 @d) $ tail $ init e_all
 
             -- Fig. 3, step 3
@@ -160,11 +154,11 @@ accumulatorScheme phi mapFieldW mapFieldF =
       decider acc =
         let
             -- Fig. 5, step 1
-            commitsDiff = zipWith (\cm m_acc -> cm - hcommit m_acc) (acc^.x^.c) (fmap (fmap mapFieldF) $ acc^.w)
+            commitsDiff = zipWith (\cm m_acc -> cm - hcommit m_acc) (acc^.x^.c) (acc^.w)
 
             -- Fig. 5, step 2
-            err :: [FieldElement ctx']
-            err = algebraicMap @d phi (fmap mapFieldF $ acc^.x^.pi) (fmap (fmap mapFieldF) $ acc^.w) (fmap mapFieldF $ acc^.x^.r) (mapFieldF $ acc^.x^.mu)
+            err :: [FieldElement ctx]
+            err = algebraicMap @d phi (acc^.x^.pi) (acc^.w) (acc^.x^.r) (acc^.x^.mu)
 
 
             -- Fig. 5, step 3

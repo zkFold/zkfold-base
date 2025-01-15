@@ -90,7 +90,7 @@ testNarkProof phi =
     in cs
 
 testAccumulatorScheme :: PHI -> AccumulatorScheme D K I C CTX
-testAccumulatorScheme phi = accumulatorScheme @MiMCHash phi id id
+testAccumulatorScheme = accumulatorScheme @MiMCHash
 
 testAccumulator :: PHI -> Accumulator K I C W
 testAccumulator phi =

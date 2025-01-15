@@ -15,7 +15,7 @@ import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Zip                                   (Zip (..), unzip)
 import           GHC.Generics                               (Generic, (:.:) (..), Par1)
-import           Prelude                                    (Functor, Foldable, Show, fmap, const, id, foldl, error, ($))
+import           Prelude                                    (Functor, Foldable, Show, fmap, const, foldl, error, ($))
 import qualified Prelude                                    as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -77,7 +77,7 @@ ivc f x0 (Payloaded (Comp1 ps)) =
         protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
 
         accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
-        accScheme = accumulatorScheme @algo @d pRec id id
+        accScheme = accumulatorScheme @algo @d pRec
 
         ivcProve :: Haskell.Bool -> IVCResult k i c (WitnessField ctx) -> p (WitnessField ctx) -> IVCResult k i c (WitnessField ctx)
         ivcProve baseCase res witness =
