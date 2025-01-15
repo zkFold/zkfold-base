@@ -4,6 +4,7 @@
 
 module ZkFold.Base.Protocol.Plonkup.Setup where
 
+import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
@@ -22,7 +23,6 @@ import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkupRelation)
 import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import Data.Binary (Binary)
 
 data PlonkupSetup p i n l c1 c2 = PlonkupSetup
     { omega       :: ScalarField c1

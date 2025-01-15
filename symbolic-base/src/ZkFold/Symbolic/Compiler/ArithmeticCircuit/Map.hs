@@ -37,8 +37,8 @@ mapVarArithmeticCircuit ac =
         varF (NewVar (FoldVar fldId fldV)) = NewVar (FoldVar fldId fldV)
         oVarF (LinVar k v b) = LinVar k (varF v) b
         oVarF (ConstVar c)   = ConstVar c
-        witF (WSysVar v) = WSysVar (varF v)
-        witF (WExVar v)  = WExVar v
+        witF (WSysVar v)    = WSysVar (varF v)
+        witF (WExVar v)     = WExVar v
         -- | TODO: compress fold ids, too
         witF (WFoldVar i v) = WFoldVar i v
      in ArithmeticCircuit

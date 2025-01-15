@@ -52,7 +52,7 @@ import           Data.Map.Monoidal                                            (M
 import qualified Data.Map.Monoidal                                            as MM
 import           Data.Map.Strict                                              (Map)
 import qualified Data.Map.Strict                                              as M
-import           Data.Maybe                                                   (catMaybes, fromMaybe, fromJust)
+import           Data.Maybe                                                   (catMaybes, fromJust, fromMaybe)
 import           Data.Semialign                                               (unzipDefault)
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
@@ -68,7 +68,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate                 (Poly, evalMonomial, evalPolynomial,
                                                                                mapVars, var)
 import           ZkFold.Base.Control.HApplicative
-import           ZkFold.Base.Data.ByteString                                  (toByteString, fromByteString)
+import           ZkFold.Base.Data.ByteString                                  (fromByteString, toByteString)
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Product
