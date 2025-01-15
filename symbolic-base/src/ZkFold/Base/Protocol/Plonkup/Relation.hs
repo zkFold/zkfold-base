@@ -31,6 +31,7 @@ import           ZkFold.Prelude                                      (length, re
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
+import Data.Binary (Binary)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation p i n l a = PlonkupRelation
@@ -67,13 +68,14 @@ instance
         , Foldable l
         , Ord (Rep i)
         , Arithmetic a
+        , Binary a
         , Arbitrary (ArithmeticCircuit a p i l)
         ) => Arbitrary (PlonkupRelation p i n l a) where
     arbitrary = fromJust . toPlonkupRelation <$> arbitrary
 
 toPlonkupRelation ::
   forall i p n l a .
-  ( KnownNat n, Arithmetic a, Ord (Rep i)
+  ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i)
   , Representable p, Representable i, Representable l, Foldable l
   ) => ArithmeticCircuit a p i l -> Maybe (PlonkupRelation p i n l a)
 toPlonkupRelation ac =

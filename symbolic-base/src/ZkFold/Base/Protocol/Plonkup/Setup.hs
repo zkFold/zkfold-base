@@ -22,6 +22,7 @@ import           ZkFold.Base.Protocol.Plonkup.Prover
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkupRelation)
 import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import Data.Binary (Binary)
 
 data PlonkupSetup p i n l c1 c2 = PlonkupSetup
     { omega       :: ScalarField c1
@@ -71,6 +72,7 @@ plonkupSetup :: forall i p n l c1 c2 ts core.
     , Foldable l
     , Ord (Rep i)
     , Arithmetic (ScalarField c1)
+    , Binary (ScalarField c1)
     , Pairing c1 c2
     , CoreFunction c1 core) => Plonkup p i n l c1 c2 ts -> PlonkupSetup p i n l c1 c2
 plonkupSetup Plonkup {..} =

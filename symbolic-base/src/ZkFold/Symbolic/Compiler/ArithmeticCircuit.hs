@@ -130,7 +130,8 @@ acSizeM = length . acWitness
 acSizeR :: ArithmeticCircuit a p i o -> Natural
 acSizeR = sum . map length . M.elems . acRange
 
-acValue :: (Arithmetic a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a
+acValue ::
+  (Arithmetic a, Binary a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a
 acValue = exec
 
 -- | Prints the constraint system, the witness, and the output.
@@ -138,7 +139,8 @@ acValue = exec
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
 acPrint ::
-  (Arithmetic a, Show a, Show (o (Var a U1)), Show (o a), Functor o) =>
+  (Arithmetic a, Binary a, Show a) =>
+  (Show (o (Var a U1)), Show (o a), Functor o) =>
   ArithmeticCircuit a U1 U1 o -> IO ()
 acPrint ac = do
     let m = elems (acSystem ac)
@@ -161,7 +163,7 @@ acPrint ac = do
 ---------------------------------- Testing -------------------------------------
 
 isConstantInput ::
-  ( Arithmetic a, Show a, Representable p, Representable i
+  ( Arithmetic a, Binary a, Show a, Representable p, Representable i
   , Show (p a), Show (i a), Arbitrary (p a), Arbitrary (i a)
   ) => ArithmeticCircuit a p i o -> Property
 isConstantInput c = property $ \x y p -> witnessGenerator c p x === witnessGenerator c p y
@@ -169,6 +171,7 @@ isConstantInput c = property $ \x y p -> witnessGenerator c p x === witnessGener
 checkClosedCircuit
     :: forall a o
      . Arithmetic a
+    => Binary a
     => Show a
     => ArithmeticCircuit a U1 U1 o
     -> Property
@@ -183,6 +186,7 @@ checkCircuit
     :: Arbitrary (p a)
     => Arbitrary (i a)
     => Arithmetic a
+    => Binary a
     => Show a
     => Representable p
     => Representable i

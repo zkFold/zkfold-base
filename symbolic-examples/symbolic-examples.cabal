@@ -125,6 +125,7 @@ benchmark bench-compilation-evaluation
     build-depends:
       adjunctions,
       base,
+      binary,
       deepseq,
       symbolic-base,
       symbolic-examples,

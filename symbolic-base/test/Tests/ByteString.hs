@@ -6,6 +6,7 @@ module Tests.ByteString (specByteString) where
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
 import           Data.Aeson                                  (decode, encode)
+import           Data.Binary                                 (Binary)
 import           Data.Constraint                             (withDict)
 import           Data.Constraint.Nat                         (plusNat)
 import           Data.Function                               (($))
@@ -39,12 +40,14 @@ toss x = chooseNatural (0, x)
 
 type AC a = ArithmeticCircuit a U1 U1
 
-eval :: forall a n . Arithmetic a => ByteString n (AC a) -> ByteString n (Interpreter a)
+eval ::
+  forall a n . (Arithmetic a, Binary a) =>
+  ByteString n (AC a) -> ByteString n (Interpreter a)
 eval (ByteString bits) = ByteString $ Interpreter (exec bits)
 
-type Binary a = a -> a -> a
+type BinaryOp a = a -> a -> a
 
-type UBinary n b = Binary (ByteString n b)
+type UBinary n b = BinaryOp (ByteString n b)
 
 isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n (Interpreter (Zp p)) -> UBinary n (AC (Zp p)) -> Natural -> Natural -> Property
 isHom f g x y = eval (fromConstant x `g` fromConstant y) === fromConstant x `f` fromConstant y

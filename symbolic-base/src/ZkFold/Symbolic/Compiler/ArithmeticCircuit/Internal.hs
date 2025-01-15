@@ -52,7 +52,7 @@ import           Data.Map.Monoidal                                            (M
 import qualified Data.Map.Monoidal                                            as MM
 import           Data.Map.Strict                                              (Map)
 import qualified Data.Map.Strict                                              as M
-import           Data.Maybe                                                   (catMaybes, fromMaybe)
+import           Data.Maybe                                                   (catMaybes, fromMaybe, fromJust)
 import           Data.Semialign                                               (unzipDefault)
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
@@ -68,7 +68,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate                 (Poly, evalMonomial, evalPolynomial,
                                                                                mapVars, var)
 import           ZkFold.Base.Control.HApplicative
-import           ZkFold.Base.Data.ByteString                                  (toByteString)
+import           ZkFold.Base.Data.ByteString                                  (toByteString, fromByteString)
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Product
@@ -87,13 +87,16 @@ type Constraint c i = Poly c (SysVar i) Natural
 type CircuitWitness a p i = WitnessF a (WitVar p i)
 
 data CircuitFold a v w =
-  forall s j.
-  ( Traversable s, Representable s, NFData1 s
+  forall p s j.
+  ( Binary (Rep p), Representable p
+  , Traversable s, Representable s, NFData1 s
   , Binary (Rep s), NFData (Rep s), Ord (Rep s)
   , Representable j, Binary (Rep j), NFData (Rep j), Ord (Rep j)) =>
     CircuitFold
-      { foldStep   :: ArithmeticCircuit a U1 (s :*: j) s
+      { foldStep   :: ArithmeticCircuit a p (s :*: j) s
+      , foldStepP  :: p (CircuitWitness a p (s :*: j))
       , foldSeed   :: s v
+      , foldSeedP  :: p w
       , foldStream :: Infinite (j w)
       , foldCount  :: v
       }
@@ -104,7 +107,9 @@ instance Functor (CircuitFold a v) where
 instance Bifunctor (CircuitFold a) where
   bimap f g CircuitFold {..} = CircuitFold
     { foldStep = foldStep
+    , foldStepP = foldStepP
     , foldSeed = f <$> foldSeed
+    , foldSeedP = g <$> foldSeedP
     , foldStream = fmap g <$> foldStream
     , foldCount = f foldCount
     }
@@ -142,19 +147,22 @@ type VarField = Zp (2 ^ (32 * 8))
 
 data WitVar p i
   = WExVar (Rep p)
+  | WFoldVar ByteString ByteString
   | WSysVar (SysVar i)
 
 imapWitVar ::
   (Representable i, Representable j) =>
   (forall x. j x -> i x) -> WitVar p i -> WitVar p j
-imapWitVar _ (WExVar r)  = WExVar r
-imapWitVar f (WSysVar v) = WSysVar (imapSysVar f v)
+imapWitVar _ (WExVar r)     = WExVar r
+imapWitVar _ (WFoldVar b c) = WFoldVar b c
+imapWitVar f (WSysVar v)    = WSysVar (imapSysVar f v)
 
 pmapWitVar ::
   (Representable p, Representable q) =>
   (forall x. q x -> p x) -> WitVar p i -> WitVar q i
-pmapWitVar f (WExVar r)  = index (f (tabulate WExVar)) r
-pmapWitVar _ (WSysVar v) = WSysVar v
+pmapWitVar f (WExVar r)     = index (f (tabulate WExVar)) r
+pmapWitVar _ (WFoldVar b c) = WFoldVar b c
+pmapWitVar _ (WSysVar v)    = WSysVar v
 
 ----------------------------- Circuit constructors -----------------------------
 
@@ -182,7 +190,9 @@ idCircuit = emptyCircuit { acOutput = acInput }
 acInput :: (Representable i, Semiring a) => i (Var a i)
 acInput = fmapRep (toVar . InVar) (tabulate id)
 
-getAllVars :: forall a p i o. (Representable i, Foldable i) => ArithmeticCircuit a p i o -> [SysVar i]
+getAllVars ::
+  forall a p i o. (Representable i, Foldable i) =>
+  ArithmeticCircuit a p i o -> [SysVar i]
 getAllVars ac =
   toList acInput0
   ++ map (NewVar . EqVar) (M.keys $ acWitness ac)
@@ -194,13 +204,17 @@ getAllVars ac =
     keys CircuitFold {..} = toList $ imapRep (\r _ -> toByteString r) foldSeed
 
 indexW ::
-  (Arithmetic a, Representable p, Representable i) =>
+  (Arithmetic a, Binary a, Representable p, Representable i) =>
   ArithmeticCircuit a p i o -> p a -> i a -> Var a i -> a
-indexW circuit payload inputs = \case
+indexW circuit payload inputs =
+  indexG (witnessGenerator circuit payload inputs) inputs
+
+indexG :: (Representable i, Arithmetic a) => Map NewVar a -> i a -> Var a i -> a
+indexG witGen inputs = \case
   LinVar k (InVar inV) b -> (\t -> k * t + b) $ index inputs inV
   LinVar k (NewVar newV) b -> (\t -> k * t + b) $ fromMaybe
     (error ("no such NewVar: " <> show newV))
-    (witnessGenerator circuit payload inputs M.!? newV)
+    (witGen M.!? newV)
   ConstVar cV -> cV
 
 -------------------------------- "HProfunctor" ---------------------------------
@@ -254,15 +268,17 @@ instance
 instance
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
   SymbolicFold (ArithmeticCircuit a p i) where
-    sfoldl fun (behead -> (sc, foldSeed)) streamHash
+    sfoldl fun (behead -> (sc, foldSeed)) foldSeedP streamHash
            foldStream (behead -> (cc, Par1 foldCount)) =
-      uncurry (set #acOutput) $ flip runState (sc <> cc) $ do
-        let foldStep = fun (hmap fstP idCircuit) (hmap sndP idCircuit)
+        let (foldStep, foldStepP) =
+              fun (hmap fstP idCircuit)
+                  (tabulate $ pure . WExVar)
+                  (hmap sndP idCircuit)
             fldID = runHash $ merkleHash
               (acOutput foldStep, foldSeed, acOutput streamHash, foldCount)
-            result = tabulate (\r -> LinVar one (NewVar (FoldVar fldID (toByteString r))) zero)
-        zoom #acFold $ modify $ M.insert fldID CircuitFold {..}
-        return result
+            (resultC :*: resultP) = tabulate (\r -> LinVar one (NewVar (FoldVar fldID (toByteString r))) zero)
+            fc = emptyCircuit { acFold = M.singleton fldID CircuitFold {..} }
+        in ((sc <> cc <> fc) { acOutput = resultC }, at <$> resultP)
 
 ----------------------------- MonadCircuit instance ----------------------------
 
@@ -343,56 +359,76 @@ witToVar ::
   WitnessF a (WitVar p i) -> ByteString
 witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   WExVar exV -> merkleHash exV
+  WFoldVar fldID fldV -> merkleHash (fldID, True, fldV)
   WSysVar (InVar inV) -> merkleHash inV
   WSysVar (NewVar (EqVar eqV)) -> M eqV
-  WSysVar (NewVar (FoldVar fldID fldV)) -> merkleHash (fldID, fldV)
+  WSysVar (NewVar (FoldVar fldID fldV)) -> merkleHash (fldID, False, fldV)
 
 ----------------------------- Evaluation functions -----------------------------
 
 witnessGenerator ::
-  (Arithmetic a, Representable p, Representable i) =>
+  (Arithmetic a, Binary a, Representable p, Representable i) =>
   ArithmeticCircuit a p i o -> p a -> i a -> Map NewVar a
-witnessGenerator circuit payload inputs =
-  let evalSysVar = \case
-        InVar iV -> index inputs iV
-        NewVar (EqVar eqV) -> eqVars M.! eqV
-        NewVar (FoldVar fldID fldV) -> foldVars M.! fldID M.! fldV
-      evalVar = \case
-        LinVar k sV b -> k * evalSysVar sV + b
-        ConstVar c -> c
-      evalWitness k = runWitnessF k \case
-        WExVar eV -> index payload eV
-        WSysVar sV -> evalSysVar sV
-      eqVars = evalWitness <$> acWitness circuit
-      foldVars = acFold circuit <&> \CircuitFold {..} ->
-        let foldList =
-              take (toConstant $ evalVar foldCount) (I.toList foldStream)
-            result =
-              foldl' (\x y -> eval foldStep U1 (x :*: fmap evalWitness y))
-                     (evalVar <$> foldSeed)
+witnessGenerator circ p i = fst (allWitnesses circ p i)
+  where
+    allWitnesses ::
+      (Arithmetic b, Binary b, Representable q, Representable j) =>
+      ArithmeticCircuit b q j n -> q b -> j b ->
+      (Map NewVar b, Map ByteString (ByteString -> b))
+    allWitnesses circuit payload inputs =
+      let evalSysVar = \case
+            InVar iV -> index inputs iV
+            NewVar (EqVar eqV) -> eqVars M.! eqV
+            NewVar (FoldVar fldID fldV) -> fst (foldVars M.! fldID) M.! fldV
+          evalVar = \case
+            LinVar k sV b -> k * evalSysVar sV + b
+            ConstVar c -> c
+          evalWitness k = runWitnessF k \case
+            WExVar eV -> index payload eV
+            WFoldVar fldID fldV -> snd (foldVars M.! fldID) fldV
+            WSysVar sV -> evalSysVar sV
+          eqVars = evalWitness <$> acWitness circuit
+          foldVars = acFold circuit <&> \CircuitFold {..} ->
+            let foldList =
+                  take (toConstant $ evalVar foldCount) (I.toList foldStream)
+                (resultL, resultP) =
+                  foldl' (\(xc, xp) y ->
+                    let input = xc :*: fmap evalWitness y
+                        (wg, pg) = allWitnesses foldStep xp input
+                    in (indexG wg input <$> acOutput foldStep
+                        , foldStepP <&> flip runWitnessF \case
+                            WExVar pV -> index xp pV
+                            WFoldVar fldID fldV -> (pg M.! fldID) fldV
+                            WSysVar (InVar inV) -> index input inV
+                            WSysVar (NewVar nV) -> wg M.! nV
+                        ))
+                     (evalVar <$> foldSeed, evalWitness <$> foldSeedP)
                      foldList
-         in M.fromList $ toList $ mzipRep (tabulate toByteString) result
-  in M.mapKeysMonotonic EqVar eqVars
-      <> M.unions (M.mapWithKey (M.mapKeysMonotonic . FoldVar) foldVars)
+            in (M.fromList $ toList $ mzipRep (tabulate toByteString) resultL,
+                index resultP . fromJust . fromByteString)
+        in (M.mapKeysMonotonic EqVar eqVars
+            <> M.unions (M.mapWithKey ((. fst) . M.mapKeysMonotonic . FoldVar) foldVars),
+            snd <$> foldVars)
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
 eval1 ::
-  (Arithmetic a, Representable p, Representable i) =>
+  (Arithmetic a, Binary a, Representable p, Representable i) =>
   ArithmeticCircuit a p i Par1 -> p a -> i a -> a
 eval1 ctx p i = unPar1 (eval ctx p i)
 
 -- | Evaluates the arithmetic circuit using the supplied input map.
 eval ::
-  (Arithmetic a, Representable p, Representable i, Functor o) =>
+  (Arithmetic a, Binary a, Representable p, Representable i, Functor o) =>
   ArithmeticCircuit a p i o -> p a -> i a -> o a
 eval ctx p i = indexW ctx p i <$> acOutput ctx
 
 -- | Evaluates the arithmetic circuit with no inputs and one output.
-exec1 :: Arithmetic a => ArithmeticCircuit a U1 U1 Par1 -> a
+exec1 :: (Arithmetic a, Binary a) => ArithmeticCircuit a U1 U1 Par1 -> a
 exec1 ac = eval1 ac U1 U1
 
 -- | Evaluates the arithmetic circuit with no inputs.
-exec :: (Arithmetic a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a
+exec ::
+  (Arithmetic a, Binary a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a
 exec ac = eval ac U1 U1
 
 -- | Applies the values of the first couple of inputs to the arithmetic circuit.
@@ -419,6 +455,7 @@ apply xs ac = ac
     witF (WSysVar (InVar (Left v)))  = WitnessF $ const $ fromConstant (index xs v)
     witF (WSysVar (InVar (Right v))) = pure $ WSysVar (InVar v)
     witF (WSysVar (NewVar v))        = pure $ WSysVar (NewVar v)
+    witF (WFoldVar i v)              = pure (WFoldVar i v)
     witF (WExVar v)                  = pure (WExVar v)
 
     filterSet :: Ord (Rep j) => S.Set (SysVar (i :*: j)) ->  S.Set (Maybe (SysVar j))

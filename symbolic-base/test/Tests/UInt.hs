@@ -9,6 +9,7 @@ module Tests.UInt (specUInt) where
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return, when)
 import           Data.Aeson                                  (decode, encode)
+import           Data.Binary                                 (Binary)
 import           Data.Constraint
 import           Data.Constraint.Nat                         (timesNat)
 import           Data.Constraint.Unsafe
@@ -45,29 +46,33 @@ toss x = chooseNatural (0, x)
 
 type AC a = ArithmeticCircuit a U1 U1
 
-evalBool :: forall a . Arithmetic a => Bool (AC a) -> a
+evalBool :: forall a . (Arithmetic a, Binary a) => Bool (AC a) -> a
 evalBool (Bool ac) = exec1 ac
 
 evalBoolVec :: forall a . Bool (Interpreter a) -> a
 evalBoolVec (Bool (Interpreter (Par1 v))) = v
 
-evalBS :: forall a n . Arithmetic a => ByteString n (AC a) -> ByteString n (Interpreter a)
+evalBS ::
+  forall a n . (Arithmetic a, Binary a) =>
+  ByteString n (AC a) -> ByteString n (Interpreter a)
 evalBS (ByteString bits) = ByteString $ Interpreter (exec bits)
 
-execAcUint :: forall a n r . Arithmetic a => UInt n r (AC a) -> Vector (NumberOfRegisters a n r) a
+execAcUint ::
+  forall a n r . (Arithmetic a, Binary a) =>
+  UInt n r (AC a) -> Vector (NumberOfRegisters a n r) a
 execAcUint (UInt v) = exec v
 
 execZpUint :: forall a n r . UInt n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
 execZpUint (UInt (Interpreter v)) = v
 
-overflowSub :: forall n . KnownNat n => Binary Natural
+overflowSub :: forall n . KnownNat n => BinaryOp Natural
 overflowSub x y
   | x > y = x -! y
   | P.otherwise = 2 ^ value @n + x -! y
 
-type Binary a = a -> a -> a
+type BinaryOp a = a -> a -> a
 
-type UBinary n b r = Binary (UInt n b r)
+type UBinary n b r = BinaryOp (UInt n b r)
 
 isHom
     :: forall n p r
@@ -76,7 +81,7 @@ isHom
     => KnownRegisterSize r
     => UBinary n r (Interpreter (Zp p))
     -> UBinary n r (AC (Zp p))
-    -> Binary Natural
+    -> BinaryOp Natural
     -> Natural
     -> Natural
     -> Property

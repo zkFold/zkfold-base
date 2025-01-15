@@ -25,7 +25,7 @@ import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler
 
 propCircuitInvariance ::
-  ( Arithmetic a, Show a, Ord (Rep i)
+  ( Arithmetic a, Binary a, Show a, Ord (Rep i)
   , Representable p, Representable i, Foldable i) =>
   ArithmeticCircuit a p i Par1 -> p a -> i a -> Property
 propCircuitInvariance ac pl wi = eval ac pl wi === eval (mapVarArithmeticCircuit ac) pl wi

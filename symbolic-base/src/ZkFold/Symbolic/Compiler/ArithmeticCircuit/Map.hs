@@ -39,6 +39,8 @@ mapVarArithmeticCircuit ac =
         oVarF (ConstVar c)   = ConstVar c
         witF (WSysVar v) = WSysVar (varF v)
         witF (WExVar v)  = WExVar v
+        -- | TODO: compress fold ids, too
+        witF (WFoldVar i v) = WFoldVar i v
      in ArithmeticCircuit
           { acRange   = Set.map varF <$> acRange ac
           , acSystem  = fromList $ zip asc $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac)
