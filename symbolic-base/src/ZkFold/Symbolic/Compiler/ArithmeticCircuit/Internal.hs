@@ -80,6 +80,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
@@ -117,7 +118,7 @@ data ArithmeticCircuit a p i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acRange   :: MonoidalMap a (S.Set (SysVar i)),
+        acRange   :: MonoidalMap (Lookup a) (S.Set (SysVar i)),
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (CircuitWitness a p i),
         -- ^ The witness generation functions
@@ -300,7 +301,7 @@ instance
 
     rangeConstraint (LinVar k x b) upperBound = do
       v <- preparedVar
-      zoom #acRange . modify $ MM.insertWith S.union upperBound (S.singleton v)
+      zoom #acRange . modify $ MM.insertWith S.union (Range upperBound) (S.singleton v)
       where
         preparedVar = if k == one && b == zero || k == negate one && b == upperBound
           then return x

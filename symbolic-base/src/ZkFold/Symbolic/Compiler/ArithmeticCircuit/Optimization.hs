@@ -22,6 +22,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 
 --------------------------------- High-level functions --------------------------------
 
@@ -52,9 +53,11 @@ optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
                                                             let poly = var inVar - fromConstant v,
                                                             let polyId = witToVar @a @p @i (pure (WSysVar inVar) - fromConstant v)]
 
-    optRanges :: Map (SysVar i) a -> MM.MonoidalMap a (S.Set (SysVar i)) -> MM.MonoidalMap a (S.Set (SysVar i))
-    optRanges m = MM.mapMaybeWithKey (\k v -> bool (error "range constraint less then value")
-      (let t = S.difference v $ keysSet m in if null t then Nothing else Just t) (all (<= k) $ restrictKeys m v))
+    optRanges :: Map (SysVar i) a -> MM.MonoidalMap (Lookup a) (S.Set (SysVar i)) -> MM.MonoidalMap (Lookup a) (S.Set (SysVar i))
+    optRanges m = MM.mapMaybeWithKey (\k' v -> bool Nothing (maybeSet v $ fromRange k') (isRange k'))
+      where
+        maybeSet v k = bool (error "range constraint less then value")
+                            (let t = S.difference v $ keysSet m in if null t then Nothing else Just t) (all (<= k) $ restrictKeys m v)
 
     optWitVar :: Map (SysVar i) a -> WitVar p i -> WitnessF a (WitVar p i)
     optWitVar m = \case
