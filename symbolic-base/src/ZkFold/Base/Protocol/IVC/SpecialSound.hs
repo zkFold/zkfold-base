@@ -3,6 +3,7 @@
 
 module ZkFold.Base.Protocol.IVC.SpecialSound where
 
+import           Data.Binary                           (Binary)
 import           Data.Function                         (($))
 import           Data.Functor.Rep                      (Representable (..))
 import           Data.Map.Strict                       (elems)
@@ -53,6 +54,7 @@ data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
 specialSoundProtocol :: forall d a i p .
     ( KnownNat (d+1)
     , Arithmetic a
+    , Binary a
     , Representable i
     , Representable p
     ) => Predicate a i p -> SpecialSoundProtocol 1 i p [a] [a] a
