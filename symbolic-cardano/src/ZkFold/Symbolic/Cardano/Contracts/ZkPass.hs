@@ -48,8 +48,8 @@ hashFunction :: forall c . (
 hashFunction = sha2 @"SHA512/256"
 
 verifyAllocatorSignature :: forall point context n curve .
-    ( EllipticCurve (Bool context) point
-    , point ~ Weierstrass curve (Point (Bool context) (UInt 256 Auto context))
+    ( EllipticCurve point
+    , point ~ Weierstrass curve (Point (UInt 256 Auto context))
     , ScalarFieldOf point ~ FieldElement context
     , KnownNat n
     , Scale (FieldElement context) point
@@ -80,8 +80,8 @@ verifyAllocatorSignature taskId validatorAddress allocatorAddress allocatorSigna
         verifyVerdict = ecdsaVerify @point @n @context (pointXY (from $ item x) (from $ item y)) encodedParams (r, s)
 
 verifyValidatorSignature :: forall point context n curve .
-    ( EllipticCurve (Bool context) point
-    , point ~ Weierstrass curve (Point (Bool context) (UInt 256 Auto context))
+    ( EllipticCurve point
+    , point ~ Weierstrass curve (Point (UInt 256 Auto context))
     , BaseFieldOf point ~ UInt 256 Auto context
     , KnownNat n
     , ScalarFieldOf point ~ FieldElement context
@@ -130,7 +130,7 @@ zkPassSymbolicVerifier ::
     forall context point n . (
     point ~ Secp256k1_Point context -- probably another ec is needed here, for example, secp256k1
     , n ~ Secp256k1_Base
-    , EllipticCurve (Bool context) point
+    , EllipticCurve point
     , BaseFieldOf point ~ UInt 256 Auto context
     , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
     , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255

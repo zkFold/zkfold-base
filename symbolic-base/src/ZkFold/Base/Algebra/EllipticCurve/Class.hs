@@ -154,20 +154,20 @@ deriving newtype instance Prelude.Show point
 instance
   ( Arbitrary (ScalarFieldOf (Weierstrass curve (Point field)))
   , CyclicGroup (Weierstrass curve (Point field))
-  , BooleanOf field ~ Prelude.Bool
   ) => Arbitrary (Weierstrass curve (Point field)) where
     arbitrary = do
       c <- arbitrary @(ScalarFieldOf (Weierstrass curve (Point field)))
       return $ scale c pointGen
--- instance
---   ( Arbitrary (ScalarFieldOf (Weierstrass curve (Point field)))
---   , CyclicGroup (Weierstrass curve (Point Prelude.Bool field))
---   , Compressible Prelude.Bool (Weierstrass curve (Point Prelude.Bool field))
---   , Compressed (Weierstrass curve (Point Prelude.Bool field)) ~ Weierstrass curve (CompressedPoint Prelude.Bool field)
---   ) => Arbitrary (Weierstrass curve (CompressedPoint Prelude.Bool field)) where
---     arbitrary = do
---       c <- arbitrary @(ScalarFieldOf (Weierstrass curve (Point Prelude.Bool field)))
---       return $ compress @Prelude.Bool (scale c (pointGen @(Weierstrass curve (Point Prelude.Bool field))))
+instance
+  ( Arbitrary (ScalarFieldOf (Weierstrass curve (Point field)))
+  , CyclicGroup (Weierstrass curve (Point field))
+  , Compressible (Weierstrass curve (Point field))
+  , Compressed (Weierstrass curve (Point field))
+    ~ Weierstrass curve (CompressedPoint field)
+  ) => Arbitrary (Weierstrass curve (CompressedPoint field)) where
+    arbitrary = do
+      c <- arbitrary @(Weierstrass curve (Point field))
+      return $ compress c
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
