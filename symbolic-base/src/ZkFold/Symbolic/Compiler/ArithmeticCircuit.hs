@@ -43,6 +43,7 @@ import           Control.DeepSeq                                         (NFData
 import           Control.Monad                                           (foldM)
 import           Control.Monad.State                                     (execState)
 import           Data.Binary                                             (Binary)
+import           Data.Bool                                               (bool)
 import           Data.Foldable                                           (for_)
 import           Data.Functor.Rep                                        (Representable (..), mzipRep)
 import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
@@ -66,14 +67,13 @@ import           ZkFold.Prelude                                          (length
 import           ZkFold.Symbolic.Class                                   (fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                        (expansion)
 import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
-import Data.Bool (bool)
 
 --------------------------------- High-level functions --------------------------------
 

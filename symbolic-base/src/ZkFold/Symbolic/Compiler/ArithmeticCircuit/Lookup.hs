@@ -3,12 +3,12 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup where
-import GHC.Base (Eq, Ord, Bool (..), error)
-import Control.DeepSeq (NFData)
-import GHC.Generics (Generic)
-import Data.Binary (Binary)
-import Data.Aeson (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
-import GHC.Show (Show)
+import           Control.DeepSeq (NFData)
+import           Data.Aeson      (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
+import           Data.Binary     (Binary)
+import           GHC.Base        (Bool (..), Eq, Ord, error)
+import           GHC.Generics    (Generic)
+import           GHC.Show        (Show)
 
 
 data Lookup a = Range a | Tuple1 a | Tuple2 a | Tuple3 a
