@@ -62,22 +62,23 @@ type Fq12 = Ext2 Fq6 IP3
 instance Field field => WeierstrassCurve "BLS12-381" field where
   weierstrassB = fromConstant (4 :: Natural)
 
-type BLS12_381_Point baseField = Weierstrass "BLS12-381" (Point Bool baseField)
+type BLS12_381_Point baseField = Weierstrass "BLS12-381" (Point baseField)
 
 type BLS12_381_CompressedPoint baseField =
-  Weierstrass "BLS12-381" (CompressedPoint Bool baseField)
+  Weierstrass "BLS12-381" (CompressedPoint baseField)
 
 instance
-  ( Symbolic.Conditional Bool field
-  , Symbolic.Eq Bool field
+  ( Symbolic.Conditional (Symbolic.BooleanOf field) field
+  , Symbolic.Eq field
   , FiniteField field
   , Ord field
-  ) => Compressible Bool (BLS12_381_Point field) where
+  , Symbolic.BooleanOf field ~ Bool
+  ) => Compressible (BLS12_381_Point field) where
     type Compressed (BLS12_381_Point field) = BLS12_381_CompressedPoint field
     pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
     compress (Weierstrass (Point x y isInf)) =
       if isInf then pointInf
-      else pointCompressed @Bool @(BLS12_381_Point field) x (y > negate y)
+      else pointCompressed @(BLS12_381_Point field) x (y > negate y)
     decompress (Weierstrass (CompressedPoint x bigY isInf)) =
       if isInf then pointInf else
         let b = weierstrassB @"BLS12-381"
@@ -164,8 +165,8 @@ instance Binary BLS12_381_G1_Point where
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
             if compressed then return $
-              decompress @Bool @BLS12_381_G1_Point
-                (pointCompressed @Bool @BLS12_381_G1_Point x bigY)
+              decompress @BLS12_381_G1_Point
+                (pointCompressed @BLS12_381_G1_Point x bigY)
             else do
                 bytesY <- replicateM 48 getWord8
                 let y = ofBytes bytesY
@@ -190,7 +191,7 @@ instance Binary BLS12_381_G1_CompressedPoint where
             bytesXtail <- replicateM 47 getWord8
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
-            pointCompressed @Bool @BLS12_381_G1_Point x <$>
+            pointCompressed @BLS12_381_G1_Point x <$>
               if compressed then return bigY else do
                 bytesY <- replicateM 48 getWord8
                 let y :: Fq = ofBytes bytesY
@@ -222,8 +223,8 @@ instance Binary BLS12_381_G2_Point where
                 x0 = ofBytes bytesX0
                 bigY = testBit byte 2
             if compressed then return $
-              decompress @Bool @BLS12_381_G2_Point
-                (pointCompressed @Bool @BLS12_381_G2_Point (Ext2 x0 x1) bigY)
+              decompress @BLS12_381_G2_Point
+                (pointCompressed @BLS12_381_G2_Point (Ext2 x0 x1) bigY)
             else do
                 bytesY1 <- replicateM 48 getWord8
                 bytesY0 <- replicateM 48 getWord8
@@ -254,7 +255,7 @@ instance Binary BLS12_381_G2_CompressedPoint where
                 x0 = ofBytes bytesX0
                 x = Ext2 x0 x1
                 bigY = testBit byte 2
-            pointCompressed @Bool @BLS12_381_G2_Point x <$>
+            pointCompressed @BLS12_381_G2_Point x <$>
               if compressed then return bigY else do
                 bytesY1 <- replicateM 48 getWord8
                 bytesY0 <- replicateM 48 getWord8
@@ -269,7 +270,14 @@ instance Binary BLS12_381_G2_CompressedPoint where
 -- | An image of a pairing is a cyclic multiplicative subgroup of @'Fq12'@
 -- of order @'BLS12_381_Scalar'@.
 newtype BLS12_381_GT = BLS12_381_GT Fq12
-    deriving newtype (Eq, Show, MultiplicativeSemigroup, MultiplicativeMonoid, Symbolic.Eq Bool)
+    deriving newtype
+        ( Eq
+        , Show
+        , MultiplicativeSemigroup
+        , MultiplicativeMonoid
+        , Symbolic.Conditional Prelude.Bool
+        , Symbolic.Eq
+        )
 
 instance Exponent BLS12_381_GT Natural where
     BLS12_381_GT a ^ p = BLS12_381_GT (a ^ p)

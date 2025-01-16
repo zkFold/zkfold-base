@@ -65,7 +65,7 @@ deriving instance (Haskell.Eq (context (Vector (NumberOfRegisters (BaseField con
 deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Show (UInt n r context)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (UInt n r c)
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (Bool c) (UInt n r c)
+deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (UInt n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (UInt n r c) where
     fromConstant c = UInt . embed @c $ naturalToVector @c @n @r c
@@ -167,9 +167,8 @@ eea
     .  Symbolic c
     => SemiEuclidean (UInt n r c)
     => KnownNat n
-    => KnownRegisters c n r
     => AdditiveGroup (UInt n r c)
-    => Eq (Bool c) (UInt n r c)
+    => Eq (UInt n r c)
     => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c, UInt n r c)
 eea a b = eea' 1 a b one zero zero one
     where

@@ -40,7 +40,7 @@ type Fq = Zp FqModulus
 instance Field field => WeierstrassCurve "Pasta" field where
   weierstrassB = fromConstant (5 :: Natural)
 
-type Pasta_Point field = Weierstrass "Pasta" (Point Prelude.Bool field)
+type Pasta_Point field = Weierstrass "Pasta" (Point field)
 
 ------------------------------------ Pallas ------------------------------------
 
@@ -73,7 +73,8 @@ instance Scale Fp Vesta_Point where
 instance
   ( Binary field
   , Field field
-  , Eq Prelude.Bool field
+  , Eq field
+  , BooleanOf field ~ Prelude.Bool
   ) => Binary (Pasta_Point field) where
     put (Weierstrass (Point xp yp isInf)) =
       if isInf
