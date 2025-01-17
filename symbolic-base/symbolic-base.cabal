@@ -130,6 +130,9 @@ library
       ZkFold.Base.Protocol.IVC.CommitOpen
       ZkFold.Base.Protocol.IVC.Commit
       ZkFold.Base.Protocol.IVC.CycleFold
+      ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext
+      ZkFold.Base.Protocol.IVC.CycleFold.NativeContext
+      ZkFold.Base.Protocol.IVC.CycleFold.Utils
       ZkFold.Base.Protocol.IVC.FiatShamir
       ZkFold.Base.Protocol.IVC.Internal
       ZkFold.Base.Protocol.IVC.NARK
