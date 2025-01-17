@@ -3,9 +3,9 @@
 
 module Tests.IVC (specIVC) where
 
-import           GHC.Generics                                (U1 (..), type (:*:) (..), Par1)
+import           GHC.Generics                                (U1 (..), type (:*:) (..), Par1, type (:.:) (..))
 import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     hiding (Num (..), pi, replicate, sum, (+))
+import           Prelude                                     hiding (Num (..), Bool (..), pi, replicate, sum, (+))
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (arbitrary, generate, property, withMaxSuccess)
 
@@ -16,10 +16,12 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyVec)
 import           ZkFold.Base.Data.Package                    (unpacked)
 import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
+import           ZkFold.Base.Protocol.IVC                    (ivc)
 import           ZkFold.Base.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..),
                                                               emptyAccumulator, emptyAccumulatorInstance)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme  as Acc
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (AlgebraicMap, algebraicMap)
+import           ZkFold.Base.Protocol.IVC.Commit             ()
 import           ZkFold.Base.Protocol.IVC.CommitOpen         (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir         (FiatShamir, fiatShamir)
 import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
@@ -30,8 +32,9 @@ import           ZkFold.Base.Protocol.IVC.SpecialSound       (specialSoundProtoc
 import           ZkFold.Prelude                              (replicate)
 import           ZkFold.Symbolic.Class                       (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
+import           ZkFold.Symbolic.Data.Bool (Bool, true)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
-import           ZkFold.Symbolic.Data.Payloaded              (Payloaded)
+import           ZkFold.Symbolic.Data.Payloaded              (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
 type A = Zp BLS12_381_Scalar
@@ -120,6 +123,9 @@ testVerifierResult phi =
     let s = testAccumulatorScheme phi
     in verifier s (fromWitness $ testPublicInput phi) (fromWitness <$> testNarkProof phi) emptyAccumulatorInstance (fromWitness <$> testAccumulationProof phi)
 
+testIVC :: PAR -> Bool CTX
+testIVC p = fst $ ivc @MiMCHash @_ @D (testFunction p) (singleton 42) (Payloaded $ Comp1 $ singleton U1)
+
 specAlgebraicMap :: IO ()
 specAlgebraicMap = hspec $ do
     describe "Algebraic map specification" $ do
@@ -139,6 +145,13 @@ specAccumulatorScheme = hspec $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == fromWitness (testAccumulatorInstance (testPredicate p))
 
+specIVC' :: IO ()
+specIVC' = hspec $ do
+    describe "IVC specification" $ do
+        describe "IVC (Interpreter)" $ do
+            it "must output True" $ do
+                withMaxSuccess 10 $ property $ \p -> testIVC p == true
+
 specIVC :: IO ()
 specIVC = do
     p <- generate arbitrary :: IO PAR
@@ -147,3 +160,4 @@ specIVC = do
     print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
     specAlgebraicMap
     specAccumulatorScheme
+    specIVC'

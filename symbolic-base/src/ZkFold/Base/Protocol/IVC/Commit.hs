@@ -12,7 +12,7 @@ import           Data.Functor.Constant                       (Constant (..))
 import           Data.Functor.Rep                            (WrappedRep(..))
 import           Data.Zip                                    (Zip (..))
 import           GHC.Generics                                (Par1 (..))
-import           Prelude                                     hiding (Num (..), Bool (..), sum, take, zipWith, (^))
+import           Prelude                                     hiding (Num (..), Eq (..), Bool (..), sum, take, zipWith, (^))
 import qualified Prelude                                     as Haskell
 import           System.Random                               (Random (..), mkStdGen)
 
@@ -27,6 +27,7 @@ import           ZkFold.Prelude                              (take)
 import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Conditional            (Conditional (..))
+import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 -- | Commit to the object @x@ with commitment of type @a@ using the algorithm @algo@
@@ -76,10 +77,10 @@ instance {-# INCOHERENT #-} Binary (WrappedRep Par1) where
     put (WrapRep ()) = pure ()
     get = pure $ WrapRep ()
 
-instance {-# INCOHERENT #-} Eq (WrappedRep Par1) where
+instance {-# INCOHERENT #-} Haskell.Eq (WrappedRep Par1) where
     _ == _ = Haskell.True
 
-instance {-# INCOHERENT #-} Eq (WrappedRep Par1) => Ord (WrappedRep Par1) where
+instance {-# INCOHERENT #-} Haskell.Eq (WrappedRep Par1) => Ord (WrappedRep Par1) where
     compare _ _ = EQ
 
 instance (FiniteField f) => AdditiveSemigroup (Par1 f) where
@@ -111,6 +112,9 @@ instance (FiniteField f) => MultiplicativeMonoid (Par1 f) where
 
 instance Symbolic ctx => Conditional (Bool ctx) (Par1 (FieldElement ctx)) where
     bool x y b = Par1 $ bool (unPar1 x) (unPar1 y) b
+
+instance Symbolic ctx => Eq (Bool ctx) (Par1 (FieldElement ctx)) where
+    Par1 x == Par1 y = x == y
 
 instance (FiniteField f) => PedersonSetup [] (Par1 f) where
     groupElements =
