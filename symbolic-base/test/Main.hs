@@ -32,7 +32,7 @@ main = do
     -- -- Algebra
     -- specPermutations
     -- specField
-    -- specAdditiveGroup
+    specAdditiveGroup
     -- specPairing
     -- specUnivariate
     -- specGroebner
@@ -57,7 +57,7 @@ main = do
     -- -- Protocols
     -- specPlonkup
     -- specNonInteractiveProof
-    specIVC
+    -- specIVC
 
     -- -- Cryptography
     -- specSHA2Natural

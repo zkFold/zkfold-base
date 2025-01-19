@@ -24,7 +24,7 @@ import           ZkFold.Base.Data.Package                   (unpacked)
 import           ZkFold.Base.Data.Vector                    (Vector, head, tail)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Base.Protocol.IVC.AccumulatorScheme as Acc
-import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme)
+import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme, decider')
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
@@ -106,8 +106,10 @@ ivc f x0 (Payloaded (Comp1 ps)) =
         ivcVerify res =
             let
                 (vs1, vs2) = verifier protocol (res^.z) (zip (res^.proof^.proofW) (res^.proof^.proofX))
+
+                vs3 = decider' accScheme (res^.acc)
             in
-                all (== zero) vs1 && all (== zero) vs2
+                all (== zero) vs1 && all (== zero) vs2 && all (== zero) vs3
 
         res0 :: IVCResult k i c (WitnessField ctx)
         res0 = IVCResult (RecursiveI (fmap fromConstant x0) zero) emptyAccumulator (IVCProof (tabulate $ const zero) (tabulate $ const []))

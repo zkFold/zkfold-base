@@ -26,7 +26,6 @@ import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (
 import           ZkFold.Base.Protocol.IVC.Oracle            (HashAlgorithm, oracle)
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate)
 import           ZkFold.Symbolic.Class                      (Symbolic(..))
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k i c ctx = AccumulatorScheme
@@ -36,15 +35,33 @@ data AccumulatorScheme d k i c ctx = AccumulatorScheme
             -> NARKInstanceProof k i c ctx                                                    -- instance-proof pair (pi, π)
             -> (Accumulator k i c (WitnessField ctx), Vector (d-1) (c (WitnessField ctx)))    -- updated accumulator and accumulation proof
 
-  , verifier :: i (FieldElement ctx)                                         -- Public input
-            -> Vector k (c (FieldElement ctx))                               -- NARK proof π.x
-            -> AccumulatorInstance k i c (FieldElement ctx)                  -- accumulator instance acc.x
-            -> Vector (d-1) (c (FieldElement ctx))                           -- accumulation proof E_j
-            -> AccumulatorInstance k i c (FieldElement ctx)                  -- updated accumulator instance acc'.x
+  , verifier :: forall f .
+            ( Field f
+            , AdditiveMonoid (c f)
+            , Scale f (c f)
+            )
+            => i f                                          -- Public input
+            -> Vector k (c f)                               -- NARK proof π.x
+            -> AccumulatorInstance k i c f                  -- accumulator instance acc.x
+            -> Vector (d-1) (c f)                           -- accumulation proof E_j
+            -> AccumulatorInstance k i c f                  -- updated accumulator instance acc'.x
 
-  , decider  ::
-               Accumulator k i c (FieldElement ctx)                          -- final accumulator
-            -> (Vector k (c (FieldElement ctx)), c (FieldElement ctx))       -- returns zeros if the final accumulator is valid
+  , decider  :: forall f .
+            ( Ring f
+            , Scale (BaseField ctx) f
+            , HomomorphicCommit [f] (c f)
+            )
+            => Accumulator k i c f                          -- final accumulator
+            -> (Vector k (c f), c f)                        -- returns zeros if the final accumulator is valid
+
+  -- | A version of the decider without the commitment check
+  , decider'  :: forall f .
+            ( Ring f
+            , Scale (BaseField ctx) f
+            , HomomorphicCommit [f] (c f)
+            )
+            => Accumulator k i c f                          -- final accumulator
+            -> c f                                          -- returns zeros if the final accumulator is valid
   }
 
 accumulatorScheme :: forall algo d k i p c ctx .
@@ -58,10 +75,8 @@ accumulatorScheme :: forall algo d k i p c ctx .
     , Foldable c
     , Symbolic ctx
     , HomomorphicCommit [WitnessField ctx] (c (WitnessField ctx))
-    , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
     , Scale (BaseField ctx) (WitnessField ctx)
     , Scale (WitnessField ctx) (c (WitnessField ctx))
-    , Scale (FieldElement ctx) (c (FieldElement ctx))
     )
     => Predicate i p ctx
     -> AccumulatorScheme d k i c ctx
@@ -127,17 +142,27 @@ accumulatorScheme phi =
         in
             (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
 
+      verifier :: forall f .
+        ( Field f
+        , Scale f (c f)
+        , AdditiveMonoid (c f)
+        )
+        => i f
+        -> Vector k (c f)
+        -> AccumulatorInstance k i c f
+        -> Vector (d-1) (c f)
+        -> AccumulatorInstance k i c f
       verifier pubi pi_x acc pf =
         let
-            r_0 :: FieldElement ctx
+            r_0 :: f
             r_0 = oracle @algo pubi
 
             -- Fig. 4, step 1
-            r_i :: Vector (k-1) (FieldElement ctx)
+            r_i :: Vector (k-1) f
             r_i = transcript @algo r_0 pi_x
 
             -- Fig. 4, step 2
-            alpha :: FieldElement ctx
+            alpha :: f
             alpha = oracle @algo (acc, pubi, pi_x, pf)
 
             -- Fig. 4, steps 3-4
@@ -151,13 +176,16 @@ accumulatorScheme phi =
         in
             AccumulatorInstance { _pi = pi'', _c = ci'', _r = ri'', _e = e', _mu = mu' }
 
+      decider :: forall f . (Ring f, Scale (BaseField ctx) f, HomomorphicCommit [f] (c f))
+        => Accumulator k i c f
+        -> (Vector k (c f), c f)
       decider acc =
         let
             -- Fig. 5, step 1
             commitsDiff = zipWith (\cm m_acc -> cm - hcommit m_acc) (acc^.x^.c) (acc^.w)
 
             -- Fig. 5, step 2
-            err :: [FieldElement ctx]
+            err :: [f]
             err = algebraicMap @d phi (acc^.x^.pi) (acc^.w) (acc^.x^.r) (acc^.x^.mu)
 
 
@@ -166,5 +194,20 @@ accumulatorScheme phi =
         in
             (commitsDiff, eDiff)
 
+      decider' :: forall f . (Ring f, Scale (BaseField ctx) f, HomomorphicCommit [f] (c f))
+        => Accumulator k i c f
+        -> c f
+      decider' acc =
+        let
+            -- Fig. 5, step 2
+            err :: [f]
+            err = algebraicMap @d phi (acc^.x^.pi) (acc^.w) (acc^.x^.r) (acc^.x^.mu)
+
+
+            -- Fig. 5, step 3
+            eDiff = (acc^.x^.e) - hcommit err
+        in
+            eDiff
+
   in
-      AccumulatorScheme prover verifier decider
+      AccumulatorScheme prover verifier decider decider'

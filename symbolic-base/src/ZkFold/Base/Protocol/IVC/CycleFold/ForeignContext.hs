@@ -16,7 +16,7 @@ import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Data.Package                   (unpacked)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
-import           ZkFold.Base.Protocol.IVC.CycleFold.Utils   (PrimaryField, PrimaryGroup)
+import           ZkFold.Base.Protocol.IVC.CycleFold.Utils   (PrimaryField, PrimaryGroup, SecondaryGroup)
 import           ZkFold.Base.Protocol.IVC.FiatShamir        (FiatShamir, fiatShamir)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate)
@@ -34,6 +34,7 @@ type ForeignContext ctx = ctx
 data NativeOperationInput f =
       Addition (PrimaryGroup f)
     | Multiplication (PrimaryField f)
+    deriving (Generic, Generic1, Functor, Foldable, Traversable)
 
 --------------------------------------------------------------------------------
 
@@ -111,7 +112,7 @@ opProtocol :: forall algo d k ctx .
     , FromConstant (BaseField ctx) (WitnessField ctx)
     , Scale (BaseField ctx) (WitnessField ctx)
     )
-    => FiatShamir k NativeOperation NativePayload PrimaryGroup (ForeignContext ctx)
+    => FiatShamir k NativeOperation NativePayload SecondaryGroup (ForeignContext ctx)
 opProtocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d opPredicate
 
 opAccumulatorScheme :: forall algo d k ctx .
@@ -123,5 +124,5 @@ opAccumulatorScheme :: forall algo d k ctx .
     , FromConstant (BaseField ctx) (WitnessField ctx)
     , Scale (BaseField ctx) (WitnessField ctx)
     )
-    => AccumulatorScheme d k NativeOperation PrimaryGroup (ForeignContext ctx)
+    => AccumulatorScheme d k NativeOperation SecondaryGroup (ForeignContext ctx)
 opAccumulatorScheme = accumulatorScheme @algo opPredicate
