@@ -4,6 +4,7 @@
 
 module ZkFold.Base.Protocol.Plonkup.Setup where
 
+import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Maybe                                          (fromJust)
 import qualified Data.Vector                                         as V
@@ -71,6 +72,7 @@ plonkupSetup :: forall i p n l c1 c2 ts core.
     , Foldable l
     , Ord (Rep i)
     , Arithmetic (ScalarField c1)
+    , Binary (ScalarField c1)
     , Pairing c1 c2
     , CoreFunction c1 core) => Plonkup p i n l c1 c2 ts -> PlonkupSetup p i n l c1 c2
 plonkupSetup Plonkup {..} =

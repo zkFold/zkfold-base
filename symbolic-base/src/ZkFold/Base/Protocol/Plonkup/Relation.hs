@@ -4,6 +4,7 @@
 
 module ZkFold.Base.Protocol.Plonkup.Relation where
 
+import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (bool)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
@@ -67,13 +68,14 @@ instance
         , Foldable l
         , Ord (Rep i)
         , Arithmetic a
+        , Binary a
         , Arbitrary (ArithmeticCircuit a p i l)
         ) => Arbitrary (PlonkupRelation p i n l a) where
     arbitrary = fromJust . toPlonkupRelation <$> arbitrary
 
 toPlonkupRelation ::
   forall i p n l a .
-  ( KnownNat n, Arithmetic a, Ord (Rep i)
+  ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i)
   , Representable p, Representable i, Representable l, Foldable l
   ) => ArithmeticCircuit a p i l -> Maybe (PlonkupRelation p i n l a)
 toPlonkupRelation ac =
