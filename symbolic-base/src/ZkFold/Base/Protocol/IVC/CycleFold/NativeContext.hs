@@ -1,23 +1,26 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.IVC.CycleFold.NativeContext where
 
 import           Control.Lens                                      ((^.))
 import           GHC.Generics                                      ((:.:) (..), Par1 (..))
-import           Prelude                                           (type (~), fmap, ($), undefined, Integer, Functor, (.), Foldable, Traversable)
+import           Prelude                                           (Integer, Functor (..), Foldable, Traversable, type (~), undefined, const, return, (.), ($), (<$>))
 import qualified Prelude                                           as Haskell
 import           Test.QuickCheck                                   (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field                   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, type (+), type (-), Natural)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381       (BLS12_381_Scalar)
 import           ZkFold.Base.Data.ByteString                       (Binary)
 import           ZkFold.Base.Data.Package                          (packed, unpacked)
 import           ZkFold.Base.Data.Vector                           (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme        (AccumulatorScheme (..))
 import           ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext
-import ZkFold.Base.Protocol.IVC.CycleFold.Utils                    (PrimaryGroup, ForeignField, SecondaryGroup)
+import ZkFold.Base.Protocol.IVC.CycleFold.Utils                    (PrimaryGroup, ForeignField, SecondaryGroup, PrimaryField)
 import           ZkFold.Base.Protocol.IVC.NARK                     (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Symbolic.Data.Bool                         (Bool)
@@ -32,13 +35,13 @@ type ForeignPayload = NativePayload :.: ForeignField
 
 --------------------------------------------------------------------------------
 
-data ForeignPoint k ctx = ForeignPoint
+data ForeignPoint algo (d :: Natural) k ctx = ForeignPoint
     { fpValue               :: ForeignOperation (FieldElement ctx)
     , fpAccumulatorInstance :: (AccumulatorInstance k NativeOperation SecondaryGroup :.: ForeignField) (FieldElement ctx)
     , fpAccumulatorProof    :: ((Vector k :.: []) :.: ForeignField) (WitnessField ctx)
     }
 
-fpIsValid :: ForeignPoint k ctx -> Bool ctx
+fpIsValid :: ForeignPoint algo d k ctx -> Bool ctx
 fpIsValid = undefined
 
 --------------------------------------------------------------------------------
@@ -70,9 +73,9 @@ fopCircuit :: forall algo d k ctx .
     , Scale (BaseField ctx) (WitnessField ctx)
     , FiniteField (ForeignField (FieldElement ctx))
     )
-    => ForeignPoint k ctx
+    => ForeignPoint algo d k ctx
     -> ForeignOperationInput (WitnessField ctx)
-    -> ForeignPoint k ctx
+    -> ForeignPoint algo d k ctx
 fopCircuit ForeignPoint {..} op =
     let
         -- witness computation
@@ -102,7 +105,7 @@ fopCircuit ForeignPoint {..} op =
 
         (acc', pf) = prover (opAccumulatorScheme @algo) acc narkIP
 
-        -- circuit computation
+        -- in-circuit computation
 
         inputC :: NativeOperation (ForeignField (FieldElement ctx))
         inputC = unComp1 $ fromWitness $ fromNative @_ @ctx input
@@ -126,28 +129,111 @@ fopCircuit ForeignPoint {..} op =
 
 --------------------------------------------------------------------------------
 
-instance Haskell.Show (ForeignPoint k ctx) where
-    show = undefined
+instance Haskell.Show (ForeignPoint algo d k ctx) where
+    show = const "ForeignPoint"
 
-instance Haskell.Eq (ForeignPoint k ctx) where
-    (==) :: ForeignPoint k ctx -> ForeignPoint k ctx -> Haskell.Bool
-    (==) = undefined
+instance (Haskell.Eq (ctx Par1), Haskell.Eq (WitnessField ctx)) => Haskell.Eq (ForeignPoint algo d k ctx) where
+    p == p' = opRes (unComp1 $ fpValue p) Haskell.== opRes (unComp1 $ fpValue p')
 
-instance AdditiveSemigroup (ForeignPoint k ctx) where
-    (+) = undefined
+instance
+    ( HashAlgorithm algo
+    , KnownNat (d-1)
+    , KnownNat (d+1)
+    , k ~ 1
+    , Symbolic ctx
+    , Binary (BaseField ctx)
+    , FromConstant (BaseField ctx) (WitnessField ctx)
+    , Scale (BaseField ctx) (WitnessField ctx)
+    ) => AdditiveSemigroup (ForeignPoint algo d k ctx) where
+    p + p' =
+        let
+            g :: PrimaryGroup (ForeignField (FieldElement ctx))
+            g = opRes $ unComp1 $ fpValue p'
 
-instance Scale Natural (ForeignPoint k ctx) where
-    scale = undefined
+            opi :: ForeignOperationInput (WitnessField ctx)
+            opi = toWitness $ Comp1 $ Addition g
+        in
+            fopCircuit p opi
 
-instance AdditiveMonoid (ForeignPoint k ctx) where
-    zero = undefined
+instance
+    ( HashAlgorithm algo
+    , KnownNat (d-1)
+    , KnownNat (d+1)
+    , k ~ 1
+    , Symbolic ctx
+    , Binary (BaseField ctx)
+    , FromConstant (BaseField ctx) (WitnessField ctx)
+    , Scale (BaseField ctx) (WitnessField ctx)
+    ) => Scale Natural (ForeignPoint algo d k ctx) where
+    scale a p =
+        let
+            s :: PrimaryField (ForeignField (WitnessField ctx))
+            s = fromConstant a
 
-instance Scale Integer (ForeignPoint k ctx) where
-    scale = undefined
+            opi :: ForeignOperationInput (WitnessField ctx)
+            opi = Comp1 $ Multiplication s
+        in
+            fopCircuit p opi
 
-instance AdditiveGroup (ForeignPoint k ctx) where
-    negate = undefined
-    (-) = undefined
+instance
+    ( HashAlgorithm algo
+    , KnownNat (d-1)
+    , KnownNat (d+1)
+    , k ~ 1
+    , Symbolic ctx
+    , Binary (BaseField ctx)
+    , FromConstant (BaseField ctx) (WitnessField ctx)
+    , Scale (BaseField ctx) (WitnessField ctx)
+    ) => AdditiveMonoid (ForeignPoint algo d k ctx) where
+    zero =
+        let
+            acc = emptyAccumulator
+        in
+            ForeignPoint (Comp1 $ opInit zero) (Comp1 $ acc^.x) (toWitness @_ @ctx $ Comp1 $ Comp1 $ acc^.w)
 
-instance Arbitrary (ForeignPoint k ctx) where
-    arbitrary = undefined
+instance
+    ( HashAlgorithm algo
+    , KnownNat (d-1)
+    , KnownNat (d+1)
+    , k ~ 1
+    , Symbolic ctx
+    , Binary (BaseField ctx)
+    , FromConstant (BaseField ctx) (WitnessField ctx)
+    , Scale (BaseField ctx) (WitnessField ctx)
+    ) => Scale Integer (ForeignPoint algo d k ctx) where
+    scale a p =
+        let
+            s :: PrimaryField (ForeignField (WitnessField ctx))
+            s = fromConstant a
+
+            opi :: ForeignOperationInput (WitnessField ctx)
+            opi = Comp1 $ Multiplication s
+        in
+            fopCircuit p opi
+
+instance
+    ( HashAlgorithm algo
+    , KnownNat (d-1)
+    , KnownNat (d+1)
+    , k ~ 1
+    , Symbolic ctx
+    , Binary (BaseField ctx)
+    , FromConstant (BaseField ctx) (WitnessField ctx)
+    , Scale (BaseField ctx) (WitnessField ctx)
+    ) => AdditiveGroup (ForeignPoint algo d k ctx) where
+    negate = scale (-1 :: Integer)
+
+instance 
+    ( HashAlgorithm algo
+    , KnownNat (d-1)
+    , KnownNat (d+1)
+    , k ~ 1
+    , Symbolic ctx
+    , Binary (BaseField ctx)
+    , FromConstant (BaseField ctx) (WitnessField ctx)
+    , Scale (BaseField ctx) (WitnessField ctx)
+    ) => Arbitrary (ForeignPoint algo d k ctx) where
+    arbitrary = do
+        let acc = emptyAccumulator
+        s <- fromConstant . toConstant @(Zp BLS12_381_Scalar) <$> arbitrary
+        return $ ForeignPoint (Comp1 $ opInit s) (Comp1 $ acc^.x) (toWitness @_ @ctx $ Comp1 $ Comp1 $ acc^.w)

@@ -15,6 +15,7 @@ import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     hiding (Num (..), Eq (..), Bool (..), sum, take, zipWith, (^))
 import qualified Prelude                                     as Haskell
 import           System.Random                               (Random (..), mkStdGen)
+import           Test.QuickCheck                             (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -83,6 +84,15 @@ instance {-# INCOHERENT #-} Haskell.Eq (WrappedRep Par1) where
 instance {-# INCOHERENT #-} Haskell.Eq (WrappedRep Par1) => Ord (WrappedRep Par1) where
     compare _ _ = EQ
 
+instance Finite f => Finite (Par1 f) where
+    type Order (Par1 f) = Order f
+
+instance FromConstant Natural f => FromConstant Natural (Par1 f) where
+    fromConstant x = Par1 $ fromConstant x
+
+instance FromConstant Integer f => FromConstant Integer (Par1 f) where
+    fromConstant x = Par1 $ fromConstant x
+
 instance (FiniteField f) => AdditiveSemigroup (Par1 f) where
     Par1 x + Par1 y = Par1 $ x + y
 
@@ -110,6 +120,16 @@ instance Exponent f Natural => Exponent (Par1 f) Natural where
 instance (FiniteField f) => MultiplicativeMonoid (Par1 f) where
     one = Par1 one
 
+instance (FiniteField f) => Semiring (Par1 f)
+
+instance (FiniteField f) => Ring (Par1 f)
+
+instance Exponent f Integer => Exponent (Par1 f) Integer where
+    (^) (Par1 x) n = Par1 $ x ^ n
+
+instance (FiniteField f) => Field (Par1 f) where
+    (//) (Par1 x) (Par1 y) = Par1 $ x // y
+
 instance Symbolic ctx => Conditional (Bool ctx) (Par1 (FieldElement ctx)) where
     bool x y b = Par1 $ bool (unPar1 x) (unPar1 y) b
 
@@ -120,3 +140,6 @@ instance (FiniteField f) => PedersonSetup [] (Par1 f) where
     groupElements =
         let x = toConstant $ fst $ random @(Zp BLS12_381_Scalar) $ mkStdGen 0
         in take (value @PedersonSetupMaxSize) $ map Par1 $ iterate (natScale x) (one + one)
+
+instance Arbitrary f => Arbitrary (Par1 f) where
+    arbitrary = Par1 <$> arbitrary

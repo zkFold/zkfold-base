@@ -17,6 +17,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BN254
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Pasta          (Pallas, Vesta)
 import           ZkFold.Base.Protocol.IVC.CycleFold.NativeContext (ForeignPoint(..))
+import           ZkFold.Base.Protocol.IVC.Oracle                  (MiMCHash)
 import           ZkFold.Symbolic.Interpreter                      (Interpreter(..))
 
 specAdditiveGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
@@ -35,8 +36,6 @@ specAdditiveGroup' = hspec $ do
 
 specAdditiveGroup :: IO ()
 specAdditiveGroup = do
-    specAdditiveGroup' @(ForeignPoint 1 (Interpreter (ScalarField Pallas)))
-
     specAdditiveGroup' @(Point BN254_G1)
     specAdditiveGroup' @(Point BN254_G2)
 
@@ -45,3 +44,5 @@ specAdditiveGroup = do
 
     specAdditiveGroup' @(Point Pallas)
     specAdditiveGroup' @(Point Vesta)
+
+    specAdditiveGroup' @(ForeignPoint MiMCHash 2 1 (Interpreter (ScalarField Pallas)))

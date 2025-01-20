@@ -10,7 +10,7 @@ import           Data.Zip                                   (Zip (..), Semialign
 import           GHC.Generics                               (Par1 (..), Generic, Generic1)
 import           Prelude                                    (Functor, Traversable, type (~), fmap, ($), Foldable)
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), FromConstant (..), AdditiveSemigroup (..))
+import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), FromConstant (..), AdditiveSemigroup (..), FiniteField, zero)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Data.Package                   (unpacked)
@@ -46,6 +46,15 @@ data NativeOperation f = NativeOperation
     , opId  :: f
     }
     deriving (Generic, Generic1, Functor, Foldable, Traversable)
+
+opInit :: FiniteField f => f -> NativeOperation f
+opInit s = NativeOperation
+    { opS   = zero
+    , opG   = zero
+    , opH   = zero
+    , opRes = Par1 s
+    , opId  = zero
+    }
 
 instance Distributive NativeOperation where
     distribute = distributeRep
