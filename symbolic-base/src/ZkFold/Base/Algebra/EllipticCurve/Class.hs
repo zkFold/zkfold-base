@@ -7,6 +7,7 @@
 
 module ZkFold.Base.Algebra.EllipticCurve.Class where
 
+import           Data.Aeson                       (ToJSON)
 import           Data.Functor                     ((<&>))
 import           Data.Kind                        (Type)
 import           Data.String                      (fromString)
@@ -111,6 +112,7 @@ instance
   ) => Show (Point curve) where
     show (Point x y isInf) = if isInf then "Inf" else "(" ++ show x ++ ", " ++ show y ++ ")"
 
+deriving instance (ToJSON (BaseField curve), ToJSON (BooleanOf curve)) => ToJSON (Point curve)
 instance EllipticCurve curve => AdditiveSemigroup (Point curve) where
     (+) = add
 
@@ -187,7 +189,7 @@ pointNegate (Point x y isInf) = if isInf then pointInf else pointXY x (negate y)
 pointMul
     :: forall curve s
     .  EllipticCurve curve
-    => BinaryExpansion (s)
+    => BinaryExpansion s
     => Bits s ~ [s]
     => P.Eq s
     => s
