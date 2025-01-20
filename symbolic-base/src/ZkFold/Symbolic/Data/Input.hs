@@ -5,17 +5,13 @@ module ZkFold.Symbolic.Data.Input (
     SymbolicInput (..)
 ) where
 
-import           Control.DeepSeq                  (NFData)
-import qualified Data.Functor.Rep                 as R
-import           Data.Ord                         (Ord)
 import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..))
 import qualified GHC.Generics                     as G
 import           GHC.TypeLits                     (KnownNat)
-import           Prelude                          (Traversable, foldl, ($), (.))
+import           Prelude                          (foldl, ($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString      (Binary)
 import           ZkFold.Base.Data.Vector          (Vector, fromVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
@@ -25,13 +21,7 @@ import           ZkFold.Symbolic.MonadCircuit
 
 
 -- | A class for Symbolic input.
-class
-    ( SymbolicOutput d
-    , Binary (R.Rep (Layout d))
-    , Ord (R.Rep (Layout d))
-    , NFData (R.Rep (Layout d))
-    , Binary (R.Rep (Payload d))
-    ) => SymbolicInput d where
+class SymbolicOutput d => SymbolicInput d where
     isValid :: d -> Bool (Context d)
     default isValid ::
       (G.Generic d, GSymbolicInput (G.Rep d), GContext (G.Rep d) ~ Context d)
@@ -46,13 +36,7 @@ instance Symbolic c => SymbolicInput (Bool c) where
         isZero $ G.Par1 u
 
 
-instance
-  ( Symbolic c
-  , Binary (R.Rep f)
-  , Ord (R.Rep f)
-  , NFData (R.Rep f)
-  , R.Representable f
-  , Traversable f) => SymbolicInput (c f) where
+instance (Symbolic c, LayoutFunctor f) => SymbolicInput (c f) where
   isValid _ = true
 
 

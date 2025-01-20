@@ -6,7 +6,7 @@
 
 module ZkFold.Base.Protocol.IVC.Accumulator where
 
-import           Control.DeepSeq                       (NFData (..))
+import           Control.DeepSeq                       (NFData (..), NFData1)
 import           Control.Lens                          ((^.))
 import           Control.Lens.Combinators              (makeLenses)
 import           Data.Distributive                     (Distributive (..))
@@ -22,6 +22,8 @@ import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.IVC.Oracle       (HashAlgorithm, RandomOracle)
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
+import Data.Binary (Binary)
+import ZkFold.Base.Data.ByteString (Binary1)
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f
@@ -32,9 +34,11 @@ data AccumulatorInstance k i c f
         , _e  :: c f             -- E ∈ C in the paper
         , _mu :: f               -- μ ∈ F in the paper
         }
-    deriving (Show, Eq, Generic, Generic1, NFData, Functor, Foldable, Traversable)
+    deriving (Show, Eq, Generic, Generic1, NFData, NFData1, Functor, Foldable, Traversable)
 
 makeLenses ''AccumulatorInstance
+
+instance (KnownNat k, KnownNat (k - 1), Binary1 i, Binary1 c, Binary f) => Binary (AccumulatorInstance k i c f)
 
 instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Distributive (AccumulatorInstance k i c) where
     distribute = distributeRep

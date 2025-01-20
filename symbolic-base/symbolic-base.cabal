@@ -112,7 +112,6 @@ library
       ZkFold.Base.Algorithm.ReedSolomon
       ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
-      ZkFold.Base.Data.Functor.Rep
       ZkFold.Base.Data.HFunctor
       ZkFold.Base.Data.List.Infinite
       ZkFold.Base.Data.Matrix
