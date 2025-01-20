@@ -15,7 +15,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations              (fromPermutation)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing, Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
+import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr, polyVecInLagrangeBasis, polyVecLagrange, polyVecDiv)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction (..))
 import           ZkFold.Base.Protocol.Plonkup.Internal
 import           ZkFold.Base.Protocol.Plonkup.Prover
@@ -117,3 +117,17 @@ plonkupSetup Plonkup {..} =
         commitments = PlonkupCircuitCommitments {..}
 
     in PlonkupSetup {..}
+    where
+        polyVecDiv :: forall c size . (c ~ ScalarField c1, KnownNat size) =>PolyVec c size -> PolyVec c size -> PolyVec c size
+        polyVecDiv l r = poly2vec $ fst $ (polyQr @c1 @core) (vec2poly l) (vec2poly r)
+
+        polyVecLagrange :: forall c m size . (c ~ ScalarField c1, KnownNat m, KnownNat size) =>
+            Natural -> c -> PolyVec c size
+        polyVecLagrange i omega' = scalePV (omega'^i // fromConstant (value @m)) $ (polyVecZero @c @m @size - one) `polyVecDiv` polyVecLinear one (negate $ omega'^i)
+
+        polyVecInLagrangeBasis :: forall c m size . (c ~ ScalarField c1, KnownNat m, KnownNat size) =>
+            c -> PolyVec c m -> PolyVec c size
+        polyVecInLagrangeBasis omega' cs =
+            let ls = fmap (\i -> polyVecLagrange @c @m @size i omega') (V.generate (V.length (fromPolyVec cs)) (fromIntegral . succ))
+            in sum $ V.zipWith scalePV (fromPolyVec cs) ls
+

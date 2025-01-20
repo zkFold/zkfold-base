@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.Plonkup.Verifier
     ( module ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
@@ -15,7 +16,7 @@ import           Prelude                                             hiding (Num
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
+import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr, polyVecInLagrangeBasis, polyVecLagrange, polyVecDiv)
 import           ZkFold.Base.Protocol.NonInteractiveProof            hiding (verify)
 import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal
@@ -24,8 +25,9 @@ import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Ord
+import qualified Data.Vector as V
 
-plonkupVerify :: forall p i n l c1 c2 ts .
+plonkupVerify :: forall p i n l c1 c2 ts core .
     ( KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , Foldable l
@@ -37,6 +39,7 @@ plonkupVerify :: forall p i n l c1 c2 ts .
     , ToTranscript ts (ScalarField c1)
     , ToTranscript ts (CompressedPoint c1)
     , FromTranscript ts (ScalarField c1)
+    , CoreFunction c1 core
     ) => PlonkupVerifierSetup p i n l c1 c2 -> PlonkupInput l c1 -> PlonkupProof c1 -> Bool
 plonkupVerify
     PlonkupVerifierSetup {..}
@@ -154,3 +157,16 @@ plonkupVerify
         -- Step 13: Compute the pairing
         p1 = pairing (proof1 + eta `mul` proof2) h1
         p2 = pairing (xi `mul` proof1 + (eta * xi * omega) `mul` proof2 + f - e) (pointGen @c2)
+
+        polyVecDiv :: forall c size . (c ~ ScalarField c1, KnownNat size) =>PolyVec c size -> PolyVec c size -> PolyVec c size
+        polyVecDiv l r = poly2vec $ fst $ (polyQr @c1 @core) (vec2poly l) (vec2poly r)
+
+        polyVecLagrange :: forall c m size . (c ~ ScalarField c1, KnownNat m, KnownNat size) =>
+            Natural -> c -> PolyVec c size
+        polyVecLagrange i omega' = scalePV (omega'^i // fromConstant (value @m)) $ (polyVecZero @c @m @size - one) `polyVecDiv` polyVecLinear one (negate $ omega'^i)
+
+        polyVecInLagrangeBasis :: forall c m size . (c ~ ScalarField c1, KnownNat m, KnownNat size) =>
+            c -> PolyVec c m -> PolyVec c size
+        polyVecInLagrangeBasis omega' cs =
+            let ls = fmap (\i -> polyVecLagrange @c @m @size i omega') (V.generate (V.length (fromPolyVec cs)) (fromIntegral . succ))
+            in sum $ V.zipWith scalePV (fromPolyVec cs) ls
