@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.FFA (FFA (..), Size, coprimesDownFrom, coprimes) where
@@ -15,7 +16,7 @@ import           Data.Ratio                       ((%))
 import           Data.Traversable                 (for, traverse)
 import           Data.Tuple                       (fst, snd, uncurry)
 import           Data.Zip                         (zipWith)
-import           Prelude                          (Integer, error)
+import           Prelude                          (Integer, error, type (~))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
