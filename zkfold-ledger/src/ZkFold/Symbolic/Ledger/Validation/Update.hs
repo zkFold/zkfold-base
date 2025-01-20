@@ -84,7 +84,7 @@ updateIsValid ::
   => Context (Output context) ~ context
   => Context (ContractData context) ~ context
   => Context (Value context) ~ context
-  => Eq (Bool context) (MultiAssetValue context)
+  => Eq (MultiAssetValue context)
   => Conditional (Bool context) (MultiAssetValue context)
   => Hash context
   -> Update context
