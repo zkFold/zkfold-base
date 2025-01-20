@@ -13,8 +13,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cabal: [3.10.2.1]
-        ghc: [9.6.3]
+        cabal: [3.10.3.0]
+        ghc: [9.6.6]
 
     runs-on: ${{ matrix.os }}
 
@@ -34,7 +34,7 @@ jobs:
       run: |
         cabal update
         cabal configure --enable-tests --enable-benchmarks --enable-documentation
-    
+
     - name: Generate cache key
       # Creates plan.json file
       run: |
@@ -87,6 +87,9 @@ jobs:
 
     - name: Test
       run: cabal test all --test-option="--skip=SLOW"
+
+    - name: Compiler benchmark
+      run: cabal bench compiler-golden-stats
 
     # - name: Check cabal file
     #   run: cabal check

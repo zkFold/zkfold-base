@@ -2,7 +2,7 @@ cabal-version:      3.0
 
 name:               symbolic-base
 version:            0.1.0.0
-tested-with:        GHC == 9.6.3
+tested-with:        GHC == 9.6.6
 synopsis:           ZkFold Symbolic compiler and zero-knowledge proof protocols
 homepage:           https://zkfold.io/
 category:           Cryptography, DSL, Math, Symbolic Computation
@@ -109,6 +109,7 @@ library
       ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
       ZkFold.Base.Algebra.Polynomials.Univariate
+      ZkFold.Base.Algorithm.ReedSolomon
       ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
       ZkFold.Base.Data.Functor.Rep
@@ -206,6 +207,7 @@ library
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.FieldElement
+      ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
     build-depends:
@@ -274,6 +276,7 @@ test-suite symbolic-base-test
       Tests.Pairing
       Tests.Permutations
       Tests.Plonkup
+      Tests.ReedSolomon
       Tests.RSA
       Tests.SHA2
       Tests.UInt
@@ -319,7 +322,7 @@ benchmark bench-poly-mul
       tasty-bench,
       vector,
 
-benchmark in-circuit-ec-benchmark 
+benchmark bench-in-circuit-ec 
     import:           options-exe
     main-is:          BenchEC.hs
     hs-source-dirs:   bench

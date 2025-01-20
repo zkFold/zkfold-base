@@ -10,9 +10,9 @@ module Examples.UInt (
 
 import           Control.DeepSeq                  (NFData)
 import           Data.Type.Equality               (type (~))
-import           GHC.TypeNats
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
 import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, NumberOfRegisters, resize)

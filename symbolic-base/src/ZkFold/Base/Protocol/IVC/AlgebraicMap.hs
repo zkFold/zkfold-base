@@ -7,7 +7,7 @@ import           Data.ByteString                                     (ByteString
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map.Strict                                     (Map, keys, insert)
 import qualified Data.Map.Strict                                     as M
-import           Prelude                                             (fmap, zip, ($), Ord, map, Either (..))
+import           Prelude                                             (Either (..), Ord, fmap, zip, map,  error, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -53,9 +53,10 @@ algebraicMap Predicate {..} = algMap
                 witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
 
                 varMap :: Either () (SysVar i) -> f
-                varMap (Left ())             = pad
-                varMap (Right (InVar inV))   = index pi inV
-                varMap (Right (NewVar newV)) = M.findWithDefault zero newV witness
+                varMap (Left ())                      = pad
+                varMap (Right (InVar inV))            = index pi inV
+                varMap (Right (NewVar (EqVar newV)))  = M.findWithDefault zero newV witness
+                varMap (Right (NewVar (FoldVar _ _))) = error "unexpected FOLD constraint"
 
                 f_sps :: [f]
                 f_sps = fmap (PM.evalPolynomial PM.evalMonomial varMap) sys''

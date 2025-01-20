@@ -36,7 +36,8 @@ optimize :: forall a p i o.
 optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
     acSystem = addInVarConstraints newS,
     acRange = optRanges vs r,
-    acWitness = (>>= optWitVar vs) <$>  M.filterWithKey (\k _ -> notMember (NewVar k) vs) w,
+    acWitness = (>>= optWitVar vs) <$>
+      M.filterWithKey (\k _ -> notMember (NewVar (EqVar k)) vs) w,
     acFold = optimizeFold . bimap varF (>>= optWitVar vs) <$> f,
     acOutput = varF <$> o
   }

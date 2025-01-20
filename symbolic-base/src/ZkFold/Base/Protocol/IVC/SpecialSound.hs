@@ -3,10 +3,11 @@
 
 module ZkFold.Base.Protocol.IVC.SpecialSound where
 
+import           Data.Function                         (($))
 import           Data.Functor.Rep                      (Representable (..))
 import           Data.Map.Strict                       (elems)
 import           GHC.Generics                          ((:*:) (..))
-import           Prelude                               (($), Ord)
+import           Prelude                               (Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -61,7 +62,7 @@ specialSoundProtocol :: forall d i p ctx .
     ) => Predicate i p ctx -> SpecialSoundProtocol 1 i p ctx
 specialSoundProtocol phi@Predicate {..} =
   let
-      prover pi0 w _ _ = elems $ witnessGenerator @(WitnessField ctx) predicateCircuit (pi0 :*: w) (predicateWitness pi0 w)
+      prover pi0 w _ _ = elems $ witnessGenerator' @(WitnessField ctx) predicateCircuit (pi0 :*: w) (predicateWitness pi0 w)
 
       verifier pi pm ts = algebraicMap @d phi pi pm ts one
   in
