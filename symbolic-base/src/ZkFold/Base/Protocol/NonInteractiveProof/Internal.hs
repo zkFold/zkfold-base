@@ -11,9 +11,9 @@ import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
 
-import           ZkFold.Base.Algebra.Basic.Class            (Field, MultiplicativeSemigroup ((*)), sum)
+import           ZkFold.Base.Algebra.Basic.Class            (Field, sum, (*))
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (EllipticCurve (..), Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, PolyVec, fromPolyVec)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, PolyVec, fromPolyVec, qr)
 import           ZkFold.Base.Data.ByteString
 
 class Monoid ts => ToTranscript ts a where
@@ -69,8 +69,13 @@ class (EllipticCurve curve) => CoreFunction curve core where
 
     polyMul :: (f ~ ScalarField curve, Field f, Eq f) => Poly f -> Poly f -> Poly f
 
+    polyQr :: (f ~ ScalarField curve, Field f, Eq f) => Poly f -> Poly f -> (Poly f, Poly f)
+
 data HaskellCore
 
 instance (EllipticCurve curve, f ~ ScalarField curve) => CoreFunction curve HaskellCore where
     msm gs f = sum $ V.zipWith mul (fromPolyVec f) gs
+
     polyMul = (*)
+
+    polyQr = qr

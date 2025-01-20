@@ -71,5 +71,5 @@ instance forall p i n l c1 c2 ts core.
         in (input, proof)
 
     verify :: SetupVerify (Plonkup p i n l c1 c2 ts) -> Input (Plonkup p i n l c1 c2 ts) -> Proof (Plonkup p i n l c1 c2 ts) -> Bool
-    verify = with4n6 @n $ plonkupVerify @p @i @n @l @c1 @c2 @ts
+    verify = with4n6 @n $ plonkupVerify @p @i @n @l @c1 @c2 @ts @core
 

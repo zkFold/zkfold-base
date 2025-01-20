@@ -52,8 +52,8 @@ import           Control.DeepSeq                  (NFData (..))
 import qualified Data.Vector                      as V
 import           GHC.Generics                     (Generic)
 import           GHC.IsList                       (IsList (..))
-import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/),
-                                                   (^))
+import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take,
+                                                   truncate, (/), (^))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 
@@ -112,7 +112,7 @@ instance (Ring c, Eq c) => AdditiveMonoid (Poly c) where
 instance (Ring c, Eq c) => AdditiveGroup (Poly c) where
     negate (P cs) = P $ fmap negate cs
 
-instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
+instance {-# OVERLAPPABLE #-} (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
     -- | If it is possible to calculate a primitive root of unity in the field, proceed with FFT multiplication.
     -- Otherwise default to Karatsuba multiplication for polynomials of degree higher than 64 or use naive multiplication otherwise.
     -- 64 is a threshold determined by benchmarking.
@@ -329,7 +329,7 @@ instance (Field c, KnownNat size) => Exponent (PolyVec c size) Natural where
 instance {-# OVERLAPPING #-} (Field c, KnownNat size) => Scale (PolyVec c size) (PolyVec c size)
 
 -- TODO (Issue #18): check for overflow
-instance (Field c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
+instance {-# OVERLAPPABLE #-} (Field c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
     (PV l) * (PV r) = toPolyVec $ mulAdaptive l r
 
 instance (Field c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where

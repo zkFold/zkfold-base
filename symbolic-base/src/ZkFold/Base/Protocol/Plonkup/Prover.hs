@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.Plonkup.Prover
     ( module ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
@@ -17,7 +18,8 @@ import           Prelude                                             hiding (Num
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (CompressedPoint, EllipticCurve (..), compress)
-import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
+import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (polyVecDiv, polyVecInLagrangeBasis,
+                                                                      polyVecLagrange, qr)
 import           ZkFold.Base.Data.Vector                             ((!!))
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonkup.Input
@@ -52,6 +54,19 @@ plonkupProve PlonkupProverSetup {..}
     where
         (@) :: forall size . (KnownNat size) => PolyVec (ScalarField c1) size -> PolyVec (ScalarField c1) size -> PolyVec (ScalarField c1) size
         (@) a b = poly2vec $ polyMul @c1 @core (vec2poly a) (vec2poly b)
+
+        polyVecDiv :: forall c size . (c ~ ScalarField c1, KnownNat size) =>PolyVec c size -> PolyVec c size -> PolyVec c size
+        polyVecDiv l r = poly2vec $ fst $ (polyQr @c1 @core) (vec2poly l) (vec2poly r)
+
+        polyVecLagrange :: forall c m size . (c ~ ScalarField c1, KnownNat m, KnownNat size) =>
+            Natural -> c -> PolyVec c size
+        polyVecLagrange i omega' = scalePV (omega'^i // fromConstant (value @m)) $ (polyVecZero @c @m @size - one) `polyVecDiv` polyVecLinear one (negate $ omega'^i)
+
+        polyVecInLagrangeBasis :: forall c m size . (c ~ ScalarField c1, KnownNat m, KnownNat size) =>
+            c -> PolyVec c m -> PolyVec c size
+        polyVecInLagrangeBasis omega' cs =
+            let ls = fmap (\i -> polyVecLagrange @c @m @size i omega') (V.generate (V.length (fromPolyVec cs)) (fromIntegral . succ))
+            in sum $ V.zipWith scalePV (fromPolyVec cs) ls
 
         PlonkupCircuitPolynomials {..} = polynomials
         secret i = ps !! (i -! 1)

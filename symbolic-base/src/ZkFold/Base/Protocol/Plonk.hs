@@ -101,4 +101,4 @@ instance forall p i n l c1 c2 (ts :: Type) core .
         in (input, proof)
 
     verify :: SetupVerify (Plonk p i n l c1 c2 ts) -> Input (Plonk p i n l c1 c2 ts) -> Proof (Plonk p i n l c1 c2 ts) -> Bool
-    verify = plonkVerify @p @i @n @l @c1 @c2 @ts
+    verify = plonkVerify @p @i @n @l @c1 @c2 @ts @core
