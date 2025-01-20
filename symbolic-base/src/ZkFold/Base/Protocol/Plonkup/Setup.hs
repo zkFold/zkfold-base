@@ -16,7 +16,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Basic.Permutations              (fromPermutation)
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing, Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr, polyVecInLagrangeBasis, polyVecLagrange, polyVecDiv)
+import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (polyVecDiv, polyVecInLagrangeBasis,
+                                                                      polyVecLagrange, qr)
 import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction (..))
 import           ZkFold.Base.Protocol.Plonkup.Internal
 import           ZkFold.Base.Protocol.Plonkup.Prover

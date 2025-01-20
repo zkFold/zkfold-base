@@ -1,11 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Base.Protocol.Plonk.Verifier
     ( plonkVerify
     ) where
 
+import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), Ord, drop, length, sum, take,
@@ -14,7 +15,8 @@ import           Prelude                                             hiding (Num
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr, polyVecInLagrangeBasis, polyVecLagrange, polyVecDiv)
+import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (polyVecDiv, polyVecInLagrangeBasis,
+                                                                      polyVecLagrange, qr)
 import           ZkFold.Base.Protocol.NonInteractiveProof            hiding (verify)
 import           ZkFold.Base.Protocol.Plonkup.Input
 import           ZkFold.Base.Protocol.Plonkup.Internal
@@ -23,7 +25,6 @@ import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Ord
-import qualified Data.Vector as V
 
 plonkVerify :: forall p i n l c1 c2 ts core .
     ( KnownNat n
