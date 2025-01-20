@@ -49,7 +49,7 @@ instance (Ord a, Arbitrary a, Binary a, Ord (Rep i), Semiring a) => Arbitrary (P
         qr <- arbitrary
         qo <- arbitrary
         qc <- arbitrary
-        let arbitraryNewVar = toVar . NewVar . toByteString @a <$> arbitrary
+        let arbitraryNewVar = toVar . NewVar . EqVar . toByteString @a <$> arbitrary
         xs <- sort <$> replicateM 3 arbitraryNewVar
         let x1 = head xs; x2 = xs !! 1; x3 = xs !! 2
         return $ PlonkConstraint qm ql qr qo qc x1 x2 x3

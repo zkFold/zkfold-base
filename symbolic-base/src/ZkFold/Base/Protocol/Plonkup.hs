@@ -7,6 +7,7 @@ module ZkFold.Base.Protocol.Plonkup (
     Plonkup (..)
 ) where
 
+import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
@@ -38,6 +39,7 @@ instance forall p i n l g1 g2 gt ts core.
         , Compressible Bool g1
         , Eq gt
         , Arithmetic (ScalarFieldOf g1)
+        , Binary (ScalarFieldOf g2)
         , ToTranscript ts Word8
         , ToTranscript ts (ScalarFieldOf g1)
         , ToTranscript ts (Compressed g1)
