@@ -21,9 +21,9 @@ import           Prelude                           (fst, type (~), undefined, ($
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative  (HApplicative (..))
-import           ZkFold.Base.Data.Orphans          ()
 import           ZkFold.Base.Data.HFunctor         (hmap)
 import           ZkFold.Base.Data.List.Infinite    ()
+import           ZkFold.Base.Data.Orphans          ()
 import           ZkFold.Base.Data.Product          (fstP, sndP)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))

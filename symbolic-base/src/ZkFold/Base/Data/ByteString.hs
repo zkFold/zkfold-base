@@ -27,7 +27,7 @@ import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy   as Lazy
 import           Data.Foldable          (foldl')
 import qualified Data.Text.Encoding     as Text
-import           GHC.Generics           (U1, Par1, (:*:), (:.:))
+import           GHC.Generics           (Par1, U1, (:*:), (:.:))
 import           Numeric.Natural        (Natural)
 import           Prelude
 import           Test.QuickCheck        (Arbitrary (..))

@@ -9,6 +9,7 @@ module ZkFold.Base.Protocol.IVC.Accumulator where
 import           Control.DeepSeq                       (NFData (..), NFData1)
 import           Control.Lens                          ((^.))
 import           Control.Lens.Combinators              (makeLenses)
+import           Data.Binary                           (Binary)
 import           Data.Distributive                     (Distributive (..))
 import           Data.Functor.Rep                      (Representable (..), collectRep, distributeRep)
 import           GHC.Generics
@@ -16,14 +17,13 @@ import           Prelude                               hiding (length, pi)
 
 import           ZkFold.Base.Algebra.Basic.Class       (Ring, Scale, zero)
 import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (+), type (-))
+import           ZkFold.Base.Data.ByteString           (Binary1)
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
 import           ZkFold.Base.Protocol.IVC.Oracle       (HashAlgorithm, RandomOracle)
 import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
-import Data.Binary (Binary)
-import ZkFold.Base.Data.ByteString (Binary1)
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f
