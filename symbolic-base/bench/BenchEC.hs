@@ -13,16 +13,15 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519 hiding (Ed25519_Point)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Data.Ed25519
+import           ZkFold.Symbolic.Data.Ed25519 (Ed25519_Point)
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Interpreter
 
 type I = Interpreter (Zp BLS12_381_Scalar)
 type A = ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1
-type PtFFA c = Point (AcEd25519 c)
+type PtFFA c = Ed25519_Point c
 
 benchOps :: NFData a => String -> a -> (Natural-> a -> a) -> Benchmark
 benchOps desc p0 op = env (fromIntegral <$> randomRIO (1 :: Integer, 3)) $ \ ~n ->
