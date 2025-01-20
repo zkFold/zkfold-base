@@ -317,21 +317,6 @@ benchmark bench-poly-mul
       tasty-bench,
       vector,
 
-benchmark bench-poly-div
-    import:           options-exe
-    main-is:          BenchPolyDiv.hs
-    hs-source-dirs:   bench
-    type:             exitcode-stdio-1.0
-    ghc-options:
-      -O3
-    build-depends:
-      base,
-      deepseq,
-      random,
-      symbolic-base,
-      tasty-bench,
-      vector,
-
 benchmark in-circuit-ec-benchmark 
     import:           options-exe
     main-is:          BenchEC.hs
