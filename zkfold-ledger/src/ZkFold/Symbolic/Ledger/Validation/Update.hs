@@ -22,9 +22,7 @@ data UpdateWitness context = UpdateWitness
 applyOnlineTransaction ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
-  => Context (AddressIndex context) ~ context
   => Support (AddressIndex context) ~ Proxy context
-  => SymbolicData (AddressIndex context)
   => AddressIndex context
   -> Transaction context
   -> TransactionWitness context
@@ -42,9 +40,7 @@ applyOnlineTransaction ix tx w u hashes b =
 
 applyOfflineTransaction ::
      Signature context
-  => Context (AddressIndex context) ~ context
   => Support (AddressIndex context)  ~ Proxy context
-  => SymbolicData (AddressIndex context)
   => AddressIndex context
   -> Transaction context
   -> TransactionWitness context
@@ -58,10 +54,8 @@ applyOfflineTransaction ix tx w u =
 newUpdate ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
-  => SymbolicOutput (AddressIndex context)
   => SymbolicOutput (Output context)
   => SymbolicOutput (ContractData context)
-  => Context (AddressIndex context) ~ context
   => Context (Output context) ~ context
   => Context (ContractData context) ~ context
   => Hash context
@@ -76,11 +70,9 @@ newUpdate hsh updWitness =
 updateIsValid ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
-  => SymbolicOutput (AddressIndex context)
   => SymbolicOutput (Output context)
   => SymbolicOutput (ContractData context)
   => SymbolicOutput (Value context)
-  => Context (AddressIndex context) ~ context
   => Context (Output context) ~ context
   => Context (ContractData context) ~ context
   => Context (Value context) ~ context

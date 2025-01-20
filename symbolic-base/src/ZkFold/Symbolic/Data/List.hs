@@ -18,7 +18,6 @@ import           Data.Traversable                  (Traversable, traverse)
 import           Data.Tuple                        (snd)
 import           GHC.Generics                      (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
 import           Prelude                           (fst, type (~), undefined, ($), (.), (<$>))
-import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative  (HApplicative (..))
@@ -114,6 +113,8 @@ appImpl lHash lSize (Comp1 lWitness) headL headP =
 hashFun :: MonadCircuit i a w m => i -> i -> i -> m i
 hashFun s h t = newAssigned (($ h) + ($ t) * ($ s))
 
+-- | TODO: Is there really a nicer way to handle empty lists?
+--
 uncons ::
   forall c x.
   SymbolicOutput x =>
@@ -133,8 +134,6 @@ uncons List{..} = case lWitness of
         _ <- mzipWithMRep (\i j -> constraint (($ i) - ($ j))) hash y
         return (hH :*: tH)
 
--- | TODO: Is there really a nicer way to handle empty lists?
---
 head ::
   SymbolicOutput x =>
   Context x ~ c =>
@@ -147,11 +146,11 @@ tail ::
   List c x -> List c x
 tail = snd . uncons
 
-reverse ::
-  forall x c.
+revapp ::
   (SymbolicData x, Context x ~ c, SymbolicFold c) =>
-  List c x -> List c x
-reverse List {..} =
+  List c x -> List c x -> List c x
+-- | revapp xs ys = reverse xs ++ ys
+revapp xs ys =
   let (l, p) =
         sfoldl
         (\hs w it ->
@@ -163,25 +162,35 @@ reverse List {..} =
                     (witnessF $ hmap sndP it)
            in (hpair ih is, iw)
         )
-        (embed $ pureRep zero)
-        (pureRep zero)
-        lHash
-        (fmap (\ListItem {..} -> headLayout :*: headPayload) . unComp1 $ runPayloaded lWitness)
-        lSize
+        (lHash ys `hpair` lSize ys)
+        (runPayloaded $ lWitness ys)
+        (lHash xs)
+        (fmap (\ListItem {..} -> headLayout :*: headPayload)
+          . unComp1
+          . runPayloaded
+          $ lWitness xs)
+        (lSize xs)
    in List
       { lHash = hmap fstP l
       , lSize = hmap sndP l
       , lWitness = Payloaded p
       }
 
-last :: List c x -> x
-last = Haskell.error "TODO" -- head . reverse
+reverse ::
+  (SymbolicData x, Context x ~ c, SymbolicFold c) => List c x -> List c x
+reverse xs = revapp xs emptyList
 
-init :: List c x -> List c x
-init = Haskell.error "TODO" -- reverse . tail . reverse
+last :: (SymbolicOutput x, Context x ~ c, SymbolicFold c) => List c x -> x
+last = head . reverse
 
-(++) :: List context x -> List context x -> List context x
-_ ++ _ = undefined
+init ::
+  (SymbolicOutput x, Context x ~ c, SymbolicFold c) => List c x -> List c x
+init = reverse . tail . reverse
+
+(++) ::
+  (SymbolicData x, Context x ~ c, SymbolicFold c) =>
+  List c x -> List c x -> List c x
+xs ++ ys = revapp (reverse xs) ys
 
 filter ::
        (x -> Bool context)
