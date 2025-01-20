@@ -20,7 +20,7 @@ import           ZkFold.Base.Data.Vector                           (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme        (AccumulatorScheme (..))
 import           ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext
-import ZkFold.Base.Protocol.IVC.CycleFold.Utils                    (PrimaryGroup, ForeignField, SecondaryGroup, PrimaryField)
+import           ZkFold.Base.Protocol.IVC.CycleFold.Utils          (PrimaryGroup, ForeignField, SecondaryGroup, PrimaryField)
 import           ZkFold.Base.Protocol.IVC.NARK                     (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Symbolic.Data.Bool                         (Bool)
