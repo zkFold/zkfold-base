@@ -2,13 +2,13 @@ module Examples.Commitment (
     exampleCommitment
   ) where
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Data.Vector                 (Vector)
 import           ZkFold.Base.Protocol.IVC.Commit         (HomomorphicCommit (..))
-import           ZkFold.Symbolic.Data.Ed25519            (AcEd25519)
+import           ZkFold.Symbolic.Data.Ed25519            (Ed25519_Point)
+import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
 
 exampleCommitment
-    :: HomomorphicCommit (Vector 1 (ScalarField (AcEd25519 c))) (Point (AcEd25519 c))
-    => Vector 1 (ScalarField (AcEd25519 c))
-    -> Point (AcEd25519 c)
+    :: HomomorphicCommit (Vector 1 (FieldElement c)) (Ed25519_Point c)
+    => Vector 1 (FieldElement c)
+    -> Ed25519_Point c
 exampleCommitment = hcommit
