@@ -5,6 +5,7 @@
 module Tests.SHA2 (specSHA2Natural, specSHA2) where
 
 import           Control.Monad                               (forM_)
+import           Data.Binary                                 (Binary)
 import           Data.Bits                                   (shiftR)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
@@ -139,7 +140,9 @@ specSHA2Natural = do
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-eval :: forall a n . Arithmetic a => ByteString n (ArithmeticCircuit a U1 U1) -> Vector n a
+eval ::
+  forall a n . (Arithmetic a, Binary a) =>
+  ByteString n (ArithmeticCircuit a U1 U1) -> Vector n a
 eval (ByteString bits) = exec bits
 
 specSHA2bs
