@@ -13,9 +13,9 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519 hiding (Ed25519_Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519   hiding (Ed25519_Point)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Data.Ed25519 (Ed25519_Point)
+import           ZkFold.Symbolic.Data.Ed25519                (Ed25519_Point)
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Interpreter
 
