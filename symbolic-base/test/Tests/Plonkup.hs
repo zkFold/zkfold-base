@@ -6,9 +6,8 @@
 module Tests.Plonkup (specPlonkup) where
 
 import           Control.Monad                                       (Functor (..), forM_, return)
-
+import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (Bool)
-import Data.Binary ( Binary )
 import           Data.ByteString                                     (ByteString)
 import           Data.Eq                                             (Eq (..))
 import           Data.Foldable                                       (Foldable, toList)
