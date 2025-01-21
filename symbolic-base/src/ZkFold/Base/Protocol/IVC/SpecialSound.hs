@@ -13,10 +13,9 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap
-import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate (..))
-import           ZkFold.Symbolic.Class
+import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate (..), PredicateFunctionAssumptions)
 import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
+import           ZkFold.Symbolic.MonadCircuit          (ResidueField)
 
 {-- | Section 3.1
 
@@ -30,40 +29,39 @@ and checks that the output is a zero vector of length l.
 
 --}
 
-data SpecialSoundProtocol k i p ctx = SpecialSoundProtocol
+data SpecialSoundProtocol k a i p = SpecialSoundProtocol
   {
-    input ::
-         i (WitnessField ctx)                            -- ^ previous public input
-      -> p (WitnessField ctx)                            -- ^ witness
-      -> i (WitnessField ctx)                            -- ^ public input
+    input :: forall f . PredicateFunctionAssumptions a f
+      => i f                            -- ^ previous public input
+      -> p f                            -- ^ witness
+      -> i f                            -- ^ public input
 
-  , prover ::
-         i (WitnessField ctx)                            -- ^ previous public input
-      -> p (WitnessField ctx)                            -- ^ witness
-      -> WitnessField ctx                                -- ^ current random challenge
-      -> Natural                                         -- ^ round number (starting from 1)
-      -> [WitnessField ctx]                              -- ^ prover message
+  , prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f)
+      => i f                            -- ^ previous public input
+      -> p f                            -- ^ witness
+      -> f                              -- ^ current random challenge
+      -> Natural                        -- ^ round number (starting from 1)
+      -> [f]                            -- ^ prover message
 
-  , verifier ::
-         i (FieldElement ctx)                            -- ^ public input
-      -> Vector k [FieldElement ctx]                     -- ^ prover messages
-      -> Vector (k-1) (FieldElement ctx)                 -- ^ random challenges
-      -> [FieldElement ctx]                              -- ^ verifier output
+  , verifier :: forall f . PredicateFunctionAssumptions a f
+      => i f                            -- ^ public input
+      -> Vector k [f]                   -- ^ prover messages
+      -> Vector (k-1) f                 -- ^ random challenges
+      -> [f]                            -- ^ verifier output
   }
 
-specialSoundProtocol :: forall d i p ctx .
+specialSoundProtocol :: forall d a i p .
     ( KnownNat (d+1)
     , Representable i
     , Ord (Rep i)
     , Representable p
-    , Symbolic ctx
-    , FromConstant (BaseField ctx) (WitnessField ctx)
-    , Scale (BaseField ctx) (WitnessField ctx)
-    ) => Predicate i p ctx -> SpecialSoundProtocol 1 i p ctx
+    ) => Predicate a i p -> SpecialSoundProtocol 1 a i p
 specialSoundProtocol phi@Predicate {..} =
   let
-      prover pi0 w _ _ = elems $ witnessGenerator' @(WitnessField ctx) predicateCircuit (pi0 :*: w) (predicateWitness pi0 w)
+      prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f) => i f -> p f -> f -> Natural -> [f]
+      prover pi0 w _ _ = elems $ witnessGenerator' @f predicateCircuit (pi0 :*: w) (predicateFunction pi0 w)
 
+      verifier :: forall f . PredicateFunctionAssumptions a f => i f -> Vector 1 [f] -> Vector 0 f -> [f]
       verifier pi pm ts = algebraicMap @d phi pi pm ts one
   in
-      SpecialSoundProtocol predicateWitness prover verifier
+      SpecialSoundProtocol predicateFunction prover verifier

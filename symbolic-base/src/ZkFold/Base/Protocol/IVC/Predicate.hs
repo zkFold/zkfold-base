@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.IVC.Predicate where
 
@@ -8,66 +9,56 @@ import           Data.Functor.Rep                      (Representable (..))
 import           GHC.Generics                          (U1 (..), (:*:) (..))
 import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
 
-import           ZkFold.Base.Algebra.Basic.Class       (Scale, FromConstant)
+import           ZkFold.Base.Algebra.Basic.Class       (Scale, FromConstant, FiniteField)
 import           ZkFold.Base.Data.Package              (packed, unpacked)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
-import           ZkFold.Symbolic.Data.Payloaded        (Payloaded (..))
 
-type StepFunctionAssumptions a i p ctx =
-    ( Symbolic ctx
-    , BaseField ctx ~ a
-    , Scale a (WitnessField ctx)
-    , FromConstant a (WitnessField ctx)
+type PredicateFunctionAssumptions a f =
+    ( FiniteField f
+    , FromConstant a f
+    , Scale a f
     )
 
-type StepFunction a i p = forall ctx . StepFunctionAssumptions a i p ctx => i (FieldElement ctx) -> Payloaded p ctx -> i (FieldElement ctx)
+type PredicateFunction a i p = forall f . PredicateFunctionAssumptions a f => i f -> p f -> i f
+type PredicateCircuit a i p  = ArithmeticCircuit a (i :*: p) i i
 
-type PredicateWitness i p ctx = i (WitnessField ctx) -> p (WitnessField ctx) -> i (WitnessField ctx)
-type PredicateCircuit i p ctx = ArithmeticCircuit (BaseField ctx) (i :*: p) i i
-
-data Predicate i p ctx = Predicate
-    { predicateWitness :: PredicateWitness i p ctx
-    , predicateCircuit :: PredicateCircuit i p ctx
+data Predicate a i p = Predicate
+    { predicateFunction :: PredicateFunction a i p
+    , predicateCircuit  :: PredicateCircuit a i p
     }
 
-type FunctorAssumptions f =
-    ( Representable f
-    , Traversable f
-    , NFData (Rep f)
-    , Binary (Rep f)
-    , Ord (Rep f)
+type FunctorAssumptions t =
+    ( Representable t
+    , Traversable t
+    , NFData (Rep t)
+    , Binary (Rep t)
+    , Ord (Rep t)
     )
 
-predicate :: forall i p ctx .
-    ( StepFunctionAssumptions (BaseField ctx) i p ctx
-    , Binary (BaseField ctx)
+predicate :: forall a i p .
+    ( Arithmetic a
+    , Binary a
     , FunctorAssumptions i
     , FunctorAssumptions p
-    ) => StepFunction (BaseField ctx) i p -> Predicate i p ctx
-predicate func =
+    ) => PredicateFunction a i p -> Predicate a i p
+predicate predicateFunction =
     let
-        predicateWitness :: i (WitnessField ctx) -> p (WitnessField ctx) -> i (WitnessField ctx)
-        predicateWitness x' u' =
-            let
-                x :: i (FieldElement ctx)
-                x = fmap FieldElement $ unpacked $ embedW x'
-
-                u :: Payloaded p ctx
-                u = Payloaded u'
-            in
-                witnessF . packed . fmap fromFieldElement $ func x u
-
-        func' :: forall ctx' . StepFunctionAssumptions (BaseField ctx) i p ctx' => ctx' i -> Payloaded p ctx' -> ctx' i
-        func' x' u =
+        func' :: forall ctx .
+            ( Symbolic ctx
+            , FromConstant a (BaseField ctx)
+            , Scale a (BaseField ctx)
+            ) => ctx i -> ctx p -> ctx i
+        func' x' u' =
             let
                 x = FieldElement <$> unpacked x'
+                u = FieldElement <$> unpacked u'
             in
-                packed . fmap fromFieldElement $ func x u
+                packed . fmap fromFieldElement $ predicateFunction x u
 
-        predicateCircuit :: PredicateCircuit i p ctx
+        predicateCircuit :: PredicateCircuit a i p
         predicateCircuit =
             hlmap (U1 :*:) $
-            compileWith @(BaseField ctx) guessOutput (\(i :*: p) U1 -> (U1 :*: p :*: U1, i :*: U1 :*: U1)) func'
+            compileWith @a guessOutput (\(i :*: p) U1 -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
     in Predicate {..}

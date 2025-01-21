@@ -33,7 +33,7 @@ main = do
     -- -- Algebra
     -- specPermutations
     -- specField
-    -- specAdditiveGroup
+    specAdditiveGroup
     -- specPairing
     -- specUnivariate
     -- specGroebner

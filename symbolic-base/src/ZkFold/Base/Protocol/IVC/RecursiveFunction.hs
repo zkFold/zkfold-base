@@ -12,13 +12,13 @@ module ZkFold.Base.Protocol.IVC.RecursiveFunction where
 import           Control.DeepSeq                            (NFData)
 import           Data.Binary                                (Binary)
 import           Data.Distributive                          (Distributive (..))
-import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep)
+import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep, mzipWithRep)
 import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
 import           GHC.Generics                               (Generic, Generic1, Par1)
 import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, ($))
 
-import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..), zero)
+import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..), Scale, FiniteField, zero, (+), (-), (*))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.Orphans                   ()
 import           ZkFold.Base.Data.Package                   (packed, unpacked)
@@ -26,8 +26,8 @@ import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi, x)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), StepFunctionAssumptions, predicate)
-import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
+import           ZkFold.Base.Protocol.IVC.Predicate         (FunctorAssumptions, Predicate (..), predicate, PredicateFunction)
+import           ZkFold.Symbolic.Class                      (Symbolic(..), Arithmetic)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional           (Conditional (..))
@@ -77,46 +77,47 @@ instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Represent
 
 --------------------------------------------------------------------------------
 
-type RecursiveFunctionAssumptions algo a d k i p c ctx =
-    ( StepFunctionAssumptions a i p ctx
-    , Binary (BaseField ctx)
-    , HashAlgorithm algo
-    , c ~ Par1
+type RecursiveFunctionAssumptions algo a d k i p c f =
+    ( HashAlgorithm algo
+    , Arithmetic a
+    , Binary a
     , KnownNat (d-1)
     , KnownNat (d+1)
     , k ~ 1 -- TODO: This should be generalized once we support multi-round special-sound protocols
     , FunctorAssumptions i
+    , Zip i
     , FunctorAssumptions p
     , FunctorAssumptions c
-    , Zip i
+    , c ~ Par1
+    , FiniteField f
+    , FromConstant a f
+    , Scale a f
     )
 
-type RecursiveFunction algo a d k i p c = forall ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
+type RecursiveFunction algo a d k i p c = forall ctx f . RecursiveFunctionAssumptions algo a d k i p c f
     => RecursiveI i (FieldElement ctx) -> Payloaded (RecursiveP d k i p c) ctx -> RecursiveI i (FieldElement ctx)
 
 -- | Transform a step function into a recursive function
-recursiveFunction :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
-    => StepFunction a i p
-    -> RecursiveI i (FieldElement ctx)
-    -> Payloaded (RecursiveP d k i p c) ctx
-    -> RecursiveI i (FieldElement ctx)
-recursiveFunction func z@(RecursiveI x _) p@(Payloaded (RecursiveP u _ _ _ _)) =
+recursiveFunction :: forall algo a d k i p c f . RecursiveFunctionAssumptions algo a d k i p c f
+    => PredicateFunction a i p
+    -> RecursiveI i f
+    -> RecursiveP d k i p c f
+    -> RecursiveI i f
+recursiveFunction func z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
     let
-        RecursiveP _ piX accX flag pf = fmap FieldElement $ unpacked $ embedW $ runPayloaded p
+        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
+        pRec = predicate (recursiveFunction @algo @a func)
 
-        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = predicate (recursiveFunction @algo func)
-
-        accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
+        accScheme :: AccumulatorScheme d k a (RecursiveI i) c
         accScheme = accumulatorScheme @algo pRec
 
-        x' :: i (FieldElement ctx)
-        x' = func x (Payloaded u)
+        x' :: i f
+        x' = func x u
 
-        accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx)
+        accX' :: AccumulatorInstance k (RecursiveI i) c f
         accX' = verifier accScheme z piX accX pf
 
-        h :: (FieldElement ctx)
+        h :: f
         h = oracle @algo accX'
     in
-        bool (RecursiveI x zero) (RecursiveI x' h) $ Bool $ fromFieldElement flag
+        mzipWithRep (\v1 v2 -> v1 + (v2-v1)*flag) (RecursiveI x zero) (RecursiveI x' h)

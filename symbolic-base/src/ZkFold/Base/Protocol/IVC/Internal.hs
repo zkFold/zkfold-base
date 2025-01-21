@@ -14,7 +14,7 @@ import           Control.Lens                               ((^.), Traversable)
 import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Zip                                   (Zip (..), unzip)
-import           GHC.Generics                               (Generic, (:.:) (..), Par1)
+import           GHC.Generics                               (Generic, (:.:) (..))
 import           Prelude                                    (Functor, Foldable, Show, fmap, const, foldl, error, ($))
 import qualified Prelude                                    as Haskell
 
@@ -28,7 +28,7 @@ import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, 
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, Predicate (..), predicate)
+import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate, PredicateFunction)
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtocol)
 import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
@@ -60,29 +60,31 @@ data IVCResult k i c f
 makeLenses ''IVCResult
 
 ivc :: forall algo a d k i p c ctx n .
-    ( RecursiveFunctionAssumptions algo a d k i p c ctx
-    , Eq (Bool ctx) (Par1 (FieldElement ctx))
+    ( RecursiveFunctionAssumptions algo a d k i p c (FieldElement ctx)
+    , Symbolic ctx
+    , FromConstant a (WitnessField ctx)
+    , Scale a (WitnessField ctx)
     , KnownNat n
     )
-    => StepFunction a i p
+    => PredicateFunction a i p
     -> Payloaded i ctx
     -> Payloaded (Vector n :.: p) ctx
     -> (Bool ctx, AccumulatorInstance k (RecursiveI i) c (FieldElement ctx))
 ivc f (Payloaded x0) (Payloaded (Comp1 ps)) =
     let
-        pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = predicate $ recursiveFunction @algo f
+        pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
+        pRec = predicate $ recursiveFunction @algo @a f
 
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c ctx
+        protocol :: FiatShamir k a (RecursiveI i) (RecursiveP d k i p c) c
         protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
 
-        accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
+        accScheme :: AccumulatorScheme d k a (RecursiveI i) c
         accScheme = accumulatorScheme @algo @d pRec
 
         ivcProve :: Haskell.Bool -> IVCResult k i c (WitnessField ctx) -> p (WitnessField ctx) -> IVCResult k i c (WitnessField ctx)
         ivcProve baseCase res witness =
             let
-                narkIP :: NARKInstanceProof k (RecursiveI i) c ctx
+                narkIP :: NARKInstanceProof k (RecursiveI i) c (WitnessField ctx)
                 narkIP = NARKInstanceProof (res^.z) (NARKProof (res^.proof^.proofX) (res^.proof^.proofW))
 
                 (acc', pf) = if baseCase
@@ -93,7 +95,7 @@ ivc f (Payloaded x0) (Payloaded (Comp1 ps)) =
                 payload = RecursiveP witness (res^.proof^.proofX) (res^.acc^.x) one pf
 
                 z' :: RecursiveI i (WitnessField ctx)
-                z' = predicateWitness pRec (res^.z) payload
+                z' = predicateFunction pRec (res^.z) payload
 
                 (messages, commits) = unzip $ prover protocol (res^.z) payload
 

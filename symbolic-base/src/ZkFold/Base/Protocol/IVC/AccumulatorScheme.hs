@@ -24,16 +24,15 @@ import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit (
 import           ZkFold.Base.Protocol.IVC.FiatShamir        (transcript)
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.IVC.Oracle            (HashAlgorithm, oracle)
-import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate)
-import           ZkFold.Symbolic.Class                      (Symbolic(..))
+import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate, PredicateFunctionAssumptions)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
-data AccumulatorScheme d k i c ctx = AccumulatorScheme
+data AccumulatorScheme d k a i c = AccumulatorScheme
   {
-    prover   ::
-               Accumulator k i c (WitnessField ctx)                                           -- accumulator
-            -> NARKInstanceProof k i c ctx                                                    -- instance-proof pair (pi, π)
-            -> (Accumulator k i c (WitnessField ctx), Vector (d-1) (c (WitnessField ctx)))    -- updated accumulator and accumulation proof
+    prover   :: forall f . (PredicateFunctionAssumptions a f, Scale f (c f), HomomorphicCommit [f] (c f))
+            => Accumulator k i c f                          -- accumulator
+            -> NARKInstanceProof k i c f                    -- instance-proof pair (pi, π)
+            -> (Accumulator k i c f, Vector (d-1) (c f))    -- updated accumulator and accumulation proof
 
   , verifier :: forall f .
             ( Field f
@@ -48,7 +47,7 @@ data AccumulatorScheme d k i c ctx = AccumulatorScheme
 
   , decider  :: forall f .
             ( Ring f
-            , Scale (BaseField ctx) f
+            , Scale a f
             , HomomorphicCommit [f] (c f)
             )
             => Accumulator k i c f                          -- final accumulator
@@ -57,77 +56,77 @@ data AccumulatorScheme d k i c ctx = AccumulatorScheme
   -- | A version of the decider without the commitment check
   , decider'  :: forall f .
             ( Ring f
-            , Scale (BaseField ctx) f
+            , Scale a f
             , HomomorphicCommit [f] (c f)
             )
             => Accumulator k i c f                          -- final accumulator
             -> c f                                          -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k i p c ctx .
-    ( KnownNat (d-1)
+accumulatorScheme :: forall algo d k a i p c .
+    ( HashAlgorithm algo
+    , KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
     , Zip i
     , Ord (Rep i)
-    , HashAlgorithm algo
     , Foldable i
     , Foldable c
-    , Symbolic ctx
-    , HomomorphicCommit [WitnessField ctx] (c (WitnessField ctx))
-    , Scale (BaseField ctx) (WitnessField ctx)
-    , Scale (WitnessField ctx) (c (WitnessField ctx))
     )
-    => Predicate i p ctx
-    -> AccumulatorScheme d k i c ctx
+    => Predicate a i p
+    -> AccumulatorScheme d k a i c
 accumulatorScheme phi =
   let
+      prover :: forall f . (PredicateFunctionAssumptions a f, Scale f (c f), HomomorphicCommit [f] (c f))
+        => Accumulator k i c f
+        -> NARKInstanceProof k i c f
+        -> (Accumulator k i c f, Vector (d-1) (c f))
       prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
         let
-            r_0 :: WitnessField ctx
+            r_0 :: f
             r_0 = oracle @algo pubi
 
             -- Fig. 3, step 1
-            r_i :: Vector (k-1) (WitnessField ctx)
+            r_i :: Vector (k-1) f
             r_i = transcript @algo r_0 pi_x
 
             -- Fig. 3, step 2
 
             -- X + mu as a univariate polynomial
-            polyMu :: PU.PolyVec (WitnessField ctx) (d+1)
+            polyMu :: PU.PolyVec f (d+1)
             polyMu = PU.polyVecLinear one (acc^.x^.mu)
 
             -- X * pi + pi' as a list of univariate polynomials
-            polyPi :: i (PU.PolyVec (WitnessField ctx) (d+1))
+            polyPi :: i (PU.PolyVec f (d+1))
             polyPi = zipWith PU.polyVecLinear pubi (acc^.x^.pi)
 
             -- X * mi + mi'
-            polyW :: Vector k [PU.PolyVec (WitnessField ctx) (d+1)]
+            polyW :: Vector k [PU.PolyVec f (d+1)]
             polyW = zipWith (zipWith PU.polyVecLinear) pi_w (acc^.w)
 
             -- X * ri + ri'
-            polyR :: Vector (k-1) (PU.PolyVec (WitnessField ctx) (d+1))
+            polyR :: Vector (k-1) (PU.PolyVec f (d+1))
             polyR = zipWith PU.polyVecLinear r_i (acc^.x^.r)
 
             -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
             --
-            e_uni :: [Vector (d+1) (WitnessField ctx)]
+            e_uni :: [Vector (d+1) f]
             e_uni = unsafeToVector . toList <$> algebraicMap @d phi polyPi polyW polyR polyMu
 
             -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
-            e_all :: Vector (d+1) [WitnessField ctx]
+            e_all :: Vector (d+1) [f]
             e_all = tabulate (\i -> fmap (`index` i) e_uni)
 
             -- e_j are coefficients of degree-j homogenous polynomials where j is from the range [1, d - 1]
-            e_j :: Vector (d-1) [WitnessField ctx]
+            e_j :: Vector (d-1) [f]
             e_j = withDict (plusMinusInverse1 @1 @d) $ tail $ init e_all
 
             -- Fig. 3, step 3
-            pf :: Vector (d-1) (c (WitnessField ctx))
+            pf :: Vector (d-1) (c f)
             pf = hcommit <$> e_j
 
             -- Fig. 3, step 4
-            alpha :: WitnessField ctx
+            alpha :: f
             alpha = oracle @algo (acc^.x, pubi, pi_x, pf)
 
             -- Fig. 3, steps 5, 6
@@ -176,7 +175,7 @@ accumulatorScheme phi =
         in
             AccumulatorInstance { _pi = pi'', _c = ci'', _r = ri'', _e = e', _mu = mu' }
 
-      decider :: forall f . (Ring f, Scale (BaseField ctx) f, HomomorphicCommit [f] (c f))
+      decider :: forall f . (Ring f, Scale a f, HomomorphicCommit [f] (c f))
         => Accumulator k i c f
         -> (Vector k (c f), c f)
       decider acc =
@@ -194,7 +193,7 @@ accumulatorScheme phi =
         in
             (commitsDiff, eDiff)
 
-      decider' :: forall f . (Ring f, Scale (BaseField ctx) f, HomomorphicCommit [f] (c f))
+      decider' :: forall f . (Ring f, Scale a f, HomomorphicCommit [f] (c f))
         => Accumulator k i c f
         -> c f
       decider' acc =

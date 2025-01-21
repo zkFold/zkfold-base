@@ -9,7 +9,7 @@ import           Prelude                                     hiding (Num (..), B
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (arbitrary, generate, property, withMaxSuccess)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), ToConstant (..), one, zero)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), ToConstant (..), Ring, one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -46,40 +46,40 @@ type CTX = Interpreter A
 type AC = ArithmeticCircuit A (Vector 1 :*: U1) (Vector 1) (Vector 1)
 type W = WitnessField CTX
 type F = FieldElement CTX
-type PHI = Predicate I P CTX
-type SPS = FiatShamir 1 I P C CTX
+type PHI = Predicate A I P
+type SPS = FiatShamir 1 A I P C
 type D = 2
 type PARDEG = 5
 type PAR = PolyVec A PARDEG
 
-testFunction :: forall ctx . Symbolic ctx
-    => PAR -> Vector 1 (FieldElement ctx) -> Payloaded U1 ctx -> Vector 1 (FieldElement ctx)
+testFunction :: forall f . (Ring f)
+    => PAR -> Vector 1 f -> U1 f -> Vector 1 f
 testFunction p x _ =
-    let p' = fromList $ map (fromConstant . toConstant) $ toList p :: PolyVec (FieldElement ctx) PARDEG
+    let p' = fromList $ map (fromConstant . toConstant) $ toList p :: PolyVec f PARDEG
     in singleton $ evalPolyVec p' $ item x
 
 testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
-testRecursivePredicate :: PAR -> Predicate (RecursiveI I) (RecursiveP D K I P C) CTX
-testRecursivePredicate p = predicate $ recursiveFunction @MiMCHash (testFunction p)
+testRecursivePredicate :: PAR -> Predicate A (RecursiveI I) (RecursiveP D K I P C)
+testRecursivePredicate p = predicate $ recursiveFunction @MiMCHash @A (testFunction p)
 
 testPredicateCircuit :: PAR -> AC
-testPredicateCircuit p = predicateCircuit @I @P $ testPredicate p
+testPredicateCircuit p = predicateCircuit @A @I @P $ testPredicate p
 
 testAlgebraicMap :: PHI -> AlgebraicMap K I W
 testAlgebraicMap = algebraicMap @D
 
 testSPS :: PHI -> SPS
-testSPS = fiatShamir @MiMCHash @K @I @P @C @CTX . commitOpen @K @I @P @C @CTX  . specialSoundProtocol @D @I @P @CTX
+testSPS = fiatShamir @MiMCHash @K @A @I @P @C . commitOpen @K @A @I @P @C  . specialSoundProtocol @D @A @I @P
 
 testPublicInput0 :: I W
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
 testPublicInput :: PHI -> I W
-testPublicInput phi = predicateWitness phi testPublicInput0 U1
+testPublicInput phi = predicateFunction phi testPublicInput0 U1
 
-testInstanceProofPair :: PHI -> NARKInstanceProof K I C CTX
+testInstanceProofPair :: PHI -> NARKInstanceProof K I C W
 testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 
 testMessages :: PHI -> Vector K [W]
@@ -92,7 +92,7 @@ testNarkProof phi =
     let NARKInstanceProof _ (NARKProof cs _) = testInstanceProofPair phi
     in cs
 
-testAccumulatorScheme :: PHI -> AccumulatorScheme D K I C CTX
+testAccumulatorScheme :: PHI -> AccumulatorScheme D K A I C
 testAccumulatorScheme = accumulatorScheme @MiMCHash
 
 testAccumulator :: PHI -> Accumulator K I C W
@@ -124,7 +124,7 @@ testVerifierResult phi =
     in verifier s (fromWitness $ testPublicInput phi) (fromWitness <$> testNarkProof phi) emptyAccumulatorInstance (fromWitness <$> testAccumulationProof phi)
 
 testIVC :: PAR -> Bool CTX
-testIVC p = fst $ ivc @MiMCHash @_ @D (testFunction p) (Payloaded $ singleton 42) (Payloaded $ Comp1 $ singleton U1)
+testIVC p = fst $ ivc @MiMCHash @A @D (testFunction p) (Payloaded $ singleton 42) (Payloaded $ Comp1 $ singleton U1)
 
 specAlgebraicMap :: IO ()
 specAlgebraicMap = hspec $ do

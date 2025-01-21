@@ -15,7 +15,6 @@ import qualified ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import qualified ZkFold.Base.Data.Vector                             as V
 import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.IVC.Predicate                  (Predicate (..))
-import           ZkFold.Symbolic.Class                               (Symbolic(..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
@@ -26,25 +25,25 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 --
 type AlgebraicMap k i f = i f -> Vector k [f] -> Vector (k-1) f -> f -> [f]
 
-algebraicMap :: forall d k i p f ctx .
+algebraicMap :: forall d k a i p f .
     ( KnownNat (d+1)
     , Representable i
     , Ord (Rep i)
     , Ring f
-    , Scale (BaseField ctx) f
+    , Scale a f
     )
-    => Predicate i p ctx
+    => Predicate a i p
     -> AlgebraicMap k i f
 algebraicMap Predicate {..} = algMap
     where
-        sys :: [PM.Poly (BaseField ctx) (SysVar i) Natural]
+        sys :: [PM.Poly a (SysVar i) Natural]
         sys = M.elems (acSystem predicateCircuit)
 
-        sys' :: [PM.Poly (BaseField ctx) (Either () (SysVar i)) Natural]
+        sys' :: [PM.Poly a (Either () (SysVar i)) Natural]
         sys' = map (PM.mapVars Right) sys
 
-        sys'' :: [PM.Poly (BaseField ctx) (Either () (SysVar i)) Natural]
-        sys'' = map (padDecomposition @_ @d (Left ())) sys'
+        sys'' :: [PM.Poly a (Either () (SysVar i)) Natural]
+        sys'' = map (padDecomposition @d (Left ())) sys'
 
         algMap :: i f -> Vector k [f] -> Vector (k-1) f -> f -> [f]
         algMap pi pm _ pad =
@@ -63,7 +62,7 @@ algebraicMap Predicate {..} = algMap
 
             in f_sps
 
-padDecomposition :: forall a d var .
+padDecomposition :: forall d a var .
     ( KnownNat (d+1)
     , Ord var
     ) => var -> PM.Poly a var Natural -> PM.Poly a var Natural

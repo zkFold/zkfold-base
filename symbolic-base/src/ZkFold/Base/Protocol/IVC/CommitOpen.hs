@@ -5,45 +5,53 @@ module ZkFold.Base.Protocol.IVC.CommitOpen where
 import           Data.Zip                              (zipWith)
 import           Prelude                               hiding (Num (..), length, pi, tail, zipWith, (&&))
 
-import           ZkFold.Base.Algebra.Basic.Class       (AdditiveGroup (..))
+import           ZkFold.Base.Algebra.Basic.Class       (AdditiveGroup (..), Const)
 import           ZkFold.Base.Algebra.Basic.Number      (Natural, type (-))
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (hcommit))
+import           ZkFold.Base.Protocol.IVC.Predicate    (PredicateFunctionAssumptions)
 import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
-import           ZkFold.Symbolic.Class                 (Symbolic(..))
-import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
+import           ZkFold.Symbolic.MonadCircuit          (ResidueField)
 
-data CommitOpen k i p c ctx = CommitOpen
+data CommitOpen k a i p c = CommitOpen
     {
-        input   ::
-               i (WitnessField ctx)
-            -> p (WitnessField ctx)
-            -> i (WitnessField ctx)
+        input :: forall f . PredicateFunctionAssumptions a f
+            => i f
+            -> p f
+            -> i f
 
-      , prover  ::
-               i (WitnessField ctx)
-            -> p (WitnessField ctx)
-            -> WitnessField ctx
+      , prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+            => i f
+            -> p f
+            -> f
             -> Natural
-            -> ([WitnessField ctx], c (WitnessField ctx))
+            -> ([f], c f)
 
-      , verifier ::
-               i (FieldElement ctx)
-            -> Vector k ([FieldElement ctx], c (FieldElement ctx))
-            -> Vector (k-1) (FieldElement ctx)
-            -> ([FieldElement ctx], Vector k (c (FieldElement ctx)))
+      , verifier :: forall f . (PredicateFunctionAssumptions a f, HomomorphicCommit [f] (c f))
+            => i f
+            -> Vector k ([f], c f)
+            -> Vector (k-1) f
+            -> ([f], Vector k (c f))
     }
 
-commitOpen :: forall k i p c ctx .
-    ( HomomorphicCommit [WitnessField ctx] (c (WitnessField ctx))
-    , HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx))
-    ) => SpecialSoundProtocol k i p ctx -> CommitOpen k i p c ctx
+commitOpen :: forall k a i p c . SpecialSoundProtocol k a i p -> CommitOpen k a i p c
 commitOpen SpecialSoundProtocol {..} =
     let
+        prover' :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+            => i f
+            -> p f
+            -> f
+            -> Natural
+            -> ([f], c f)
         prover' pi0 w r i =
             let m = prover pi0 w r i
             in (m, hcommit m)
 
+        verifier' :: forall f . (PredicateFunctionAssumptions a f, HomomorphicCommit [f] (c f))
+            => i f
+            -> Vector k ([f], c f)
+            -> Vector (k-1) f
+            -> ([f], Vector k (c f))
         verifier' pi pms rs =
             let ms = fmap fst pms
                 cs = fmap snd pms

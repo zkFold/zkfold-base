@@ -7,32 +7,31 @@ import           Data.Constraint                       (withDict)
 import           Data.Constraint.Nat                   (plusMinusInverse1)
 import           Prelude                               hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
-import           ZkFold.Base.Algebra.Basic.Class       (Ring)
+import           ZkFold.Base.Algebra.Basic.Class       (Ring, Const)
 import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-))
 import           ZkFold.Base.Data.Vector               (Vector, init, scanl, unfold)
+import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.CommitOpen
 import           ZkFold.Base.Protocol.IVC.Oracle       (HashAlgorithm, oracle)
-import           ZkFold.Symbolic.Class                 (Symbolic(..))
-import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
+import           ZkFold.Base.Protocol.IVC.Predicate    (PredicateFunctionAssumptions)
+import           ZkFold.Symbolic.MonadCircuit          (ResidueField)
 
--- type FiatShamir k i p c m o f = SpecialSoundProtocol 1 i p (Vector k (m, c f)) (Vector k (c f), o) f
-
-data FiatShamir k i p c ctx = FiatShamir
+data FiatShamir k a i p c = FiatShamir
     {
-        input   ::
-               i (WitnessField ctx)
-            -> p (WitnessField ctx)
-            -> i (WitnessField ctx)
+        input :: forall f . PredicateFunctionAssumptions a f
+            => i f
+            -> p f
+            -> i f
 
-      , prover  ::
-               i (WitnessField ctx)
-            -> p (WitnessField ctx)
-            -> Vector k ([WitnessField ctx], c (WitnessField ctx))
+      , prover  :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+            => i f
+            -> p f
+            -> Vector k ([f], c f)
 
-      , verifier ::
-               i (FieldElement ctx)
-            -> Vector k ([FieldElement ctx], c (FieldElement ctx))
-            -> ([FieldElement ctx], Vector k (c (FieldElement ctx)))
+      , verifier :: forall f . (PredicateFunctionAssumptions a f, HomomorphicCommit [f] (c f))
+            => i f
+            -> Vector k ([f], c f)
+            -> ([f], Vector k (c f))
     }
 
 -- The transcript of the Fiat-Shamired protocol (ignoring the last round)
@@ -43,15 +42,18 @@ transcript :: forall algo k c f .
     ) => f -> Vector k (c f) -> Vector (k-1) f
 transcript r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle @algo)) r0 cs
 
-fiatShamir :: forall algo k i p c ctx .
+fiatShamir :: forall algo k a i p c .
     ( HashAlgorithm algo
     , KnownNat k
     , Foldable i
     , Foldable c
-    , Symbolic ctx
-    ) => CommitOpen k i p c ctx -> FiatShamir k i p c ctx
+    ) => CommitOpen k a i p c -> FiatShamir k a i p c
 fiatShamir CommitOpen {..} =
     let
+        prover' :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+            => i f
+            -> p f
+            -> Vector k ([f], c f)
         prover' pi0 w =
             let r0 = oracle @algo pi0
                 f (r, k) =
@@ -59,6 +61,10 @@ fiatShamir CommitOpen {..} =
                     in ((m', c'), (oracle @algo (r, c'), k + 1))
             in unfold f (r0, 1)
 
+        verifier' :: forall f . (PredicateFunctionAssumptions a f, HomomorphicCommit [f] (c f))
+            => i f
+            -> Vector k ([f], c f)
+            -> ([f], Vector k (c f))
         verifier' pi pms =
             let r0 = oracle @algo pi
                 rs = transcript @algo r0 $ fmap snd pms

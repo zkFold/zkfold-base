@@ -8,12 +8,11 @@ import           Data.Functor.Rep                           (Representable (..),
 import           Data.These                                 (These(..))
 import           Data.Zip                                   (Zip (..), Semialign (..))
 import           GHC.Generics                               (Par1 (..), Generic, Generic1)
-import           Prelude                                    (Functor, Traversable, type (~), fmap, ($), Foldable)
+import           Prelude                                    (Functor, Traversable, type (~), ($), Foldable)
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), FromConstant (..), AdditiveSemigroup (..), FiniteField, zero)
+import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), AdditiveSemigroup (..), FiniteField, zero, (+), (-), (*))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.ByteString                (Binary)
-import           ZkFold.Base.Data.Package                   (unpacked)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
 import           ZkFold.Base.Protocol.IVC.CycleFold.Utils   (PrimaryField, PrimaryGroup, SecondaryGroup)
@@ -21,11 +20,7 @@ import           ZkFold.Base.Protocol.IVC.FiatShamir        (FiatShamir, fiatSha
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtocol)
-import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
-import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
-import           ZkFold.Symbolic.Data.Conditional           (Conditional (..))
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
-import           ZkFold.Symbolic.Data.Payloaded             (Payloaded (..))
+import           ZkFold.Symbolic.Class                      (Arithmetic)
 
 type ForeignContext ctx = ctx
 
@@ -81,57 +76,51 @@ instance Representable NativePayload
 
 --------------------------------------------------------------------------------
 
-opCircuit :: forall ctx . Symbolic ctx
-    => NativeOperation (FieldElement ctx)
-    -> Payloaded NativePayload ctx
-    -> NativeOperation (FieldElement ctx)
-opCircuit _ (Payloaded (NativePayload s g h op)) =
+opCircuit :: forall f . FiniteField f
+    => NativeOperation f
+    -> NativePayload f
+    -> NativeOperation f
+opCircuit _ ((NativePayload s g h op)) =
     let
-        opS :: PrimaryField (FieldElement ctx)
-        opS = fmap FieldElement $ unpacked $ embedW s
+        opS :: PrimaryField f
+        opS = s
 
-        opG :: PrimaryGroup (FieldElement ctx)
-        opG = fmap FieldElement $ unpacked $ embedW g
+        opG :: PrimaryGroup f
+        opG = g
 
-        opH :: PrimaryGroup (FieldElement ctx)
-        opH = fmap FieldElement $ unpacked $ embedW h
+        opH :: PrimaryGroup f
+        opH = h
 
-        opId :: FieldElement ctx
-        opId = unPar1 $ fmap FieldElement $ unpacked $ embedW op
+        opId :: f
+        opId = unPar1 op
 
-        opRes :: PrimaryGroup (FieldElement ctx)
-        opRes = bool (opG + opH) (scale opS opG) $ Bool $ fromFieldElement opId
+        opRes :: PrimaryGroup f
+        opRes = mzipWithRep (\v1 v2 -> v1 + (v2-v1)*opId) (opG + opH) (scale opS opG)
     in NativeOperation {..}
 
-opPredicate :: forall ctx .
-    ( Symbolic ctx
-    , Binary (BaseField ctx)
-    , FromConstant (BaseField ctx) (WitnessField ctx)
-    , Scale (BaseField ctx) (WitnessField ctx)
+opPredicate :: forall a .
+    ( Arithmetic a
+    , Binary a
     )
-    => Predicate NativeOperation NativePayload (ForeignContext ctx)
+    => Predicate a NativeOperation NativePayload
 opPredicate = predicate opCircuit
 
-opProtocol :: forall algo d k ctx .
+opProtocol :: forall algo d k a .
     ( HashAlgorithm algo
     , KnownNat (d + 1)
     , k ~ 1
-    , Symbolic ctx
-    , Binary (BaseField ctx)
-    , FromConstant (BaseField ctx) (WitnessField ctx)
-    , Scale (BaseField ctx) (WitnessField ctx)
+    , Arithmetic a
+    , Binary a
     )
-    => FiatShamir k NativeOperation NativePayload SecondaryGroup (ForeignContext ctx)
-opProtocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d opPredicate
+    => FiatShamir k a NativeOperation NativePayload SecondaryGroup
+opProtocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d $ opPredicate
 
-opAccumulatorScheme :: forall algo d k ctx .
+opAccumulatorScheme :: forall algo d k a .
     ( HashAlgorithm algo
     , KnownNat (d - 1)
     , KnownNat (d + 1)
-    , Symbolic ctx
-    , Binary (BaseField ctx)
-    , FromConstant (BaseField ctx) (WitnessField ctx)
-    , Scale (BaseField ctx) (WitnessField ctx)
+    , Arithmetic a
+    , Binary a
     )
-    => AccumulatorScheme d k NativeOperation SecondaryGroup (ForeignContext ctx)
-opAccumulatorScheme = accumulatorScheme @algo opPredicate
+    => AccumulatorScheme d k a NativeOperation SecondaryGroup
+opAccumulatorScheme = accumulatorScheme @algo $ opPredicate
