@@ -4,10 +4,10 @@ module ZkFold.Base.Protocol.Plonk.Prover
     ( plonkProve
     ) where
 
+import           Data.Binary                                         (Binary, Word8)
 import           Data.Bool                                           (bool)
 import           Data.Functor.Rep                                    (Representable)
 import qualified Data.Vector                                         as V
-import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
 import           Prelude                                             hiding (Num (..), Ord, drop, length, pi, sum, take,
                                                                       (!!), (/), (^))
@@ -44,7 +44,10 @@ plonkProve :: forall p i n l c1 c2 ts core .
     , ToTranscript ts (CompressedPoint c1)
     , FromTranscript ts (ScalarField c1)
     , CoreFunction c1 core
-    , Representable p, Representable i, Functor l
+    , Representable p
+    , Representable i
+    , Functor l
+    , Binary (ScalarField c1)
     ) => PlonkupProverSetup p i n l c1 c2 -> (PlonkupWitnessInput p i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1, PlonkupProverTestInfo n c1)
 plonkProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wExtra wInput, PlonkupProverSecret ps)

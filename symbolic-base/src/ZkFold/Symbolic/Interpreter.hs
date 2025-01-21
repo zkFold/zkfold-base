@@ -15,6 +15,7 @@ import           Data.Functor                     (Functor, (<$>))
 import           Data.Functor.Identity            (Identity (..))
 import           Data.List                        (foldl')
 import           Data.List.Infinite               (toList)
+import           Data.Tuple                       (uncurry)
 import           GHC.Generics                     (Generic, Par1 (..))
 import           Text.Show                        (Show)
 
@@ -50,8 +51,9 @@ instance Arithmetic a => Symbolic (Interpreter a) where
   sanityF (Interpreter x) f _ = Interpreter (f x)
 
 instance Arithmetic a => SymbolicFold (Interpreter a) where
-  sfoldl fun seed _ stream (Interpreter (Par1 cnt)) =
-    foldl' ((. Interpreter) . fun) seed $ take (toConstant cnt) $ toList stream
+  sfoldl fun seed pload _ stream (Interpreter (Par1 cnt)) =
+    foldl' ((. Interpreter) . uncurry fun) (seed, pload)
+      $ take (toConstant cnt) $ toList stream
 
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.

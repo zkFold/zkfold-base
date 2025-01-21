@@ -7,6 +7,7 @@ module ZkFold.Base.Protocol.Plonkup.Prover
     , plonkupProve
     ) where
 
+import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (bool)
 import           Data.Functor.Rep                                    (Representable)
 import qualified Data.Vector                                         as V
@@ -46,7 +47,11 @@ plonkupProve :: forall p i n l c1 c2 ts core .
     , ToTranscript ts (ScalarField c1)
     , ToTranscript ts (CompressedPoint c1)
     , FromTranscript ts (ScalarField c1)
-    , CoreFunction c1 core, Representable p, Representable i, Functor l
+    , CoreFunction c1 core
+    , Representable p
+    , Representable i
+    , Functor l
+    , Binary (ScalarField c1)
     ) => PlonkupProverSetup p i n l c1 c2 -> (PlonkupWitnessInput p i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1, PlonkupProverTestInfo n c1)
 plonkupProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wExtra wInput, PlonkupProverSecret ps)

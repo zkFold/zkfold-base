@@ -7,25 +7,28 @@ module ZkFold.Base.Protocol.Plonkup (
     Plonkup (..)
 ) where
 
-import           Data.Functor.Rep                                    (Rep, Representable)
-import           Data.Word                                           (Word8)
-import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
-                                                                      sum, take, (!!), (/), (^))
-import qualified Prelude                                             as P hiding (length)
+import           Data.Binary                                       (Binary)
+import           Data.Functor.Rep                                  (Rep, Representable)
+import           Data.Word                                         (Word8)
+import           Prelude                                           hiding (Num (..), div, drop, length, replicate, sum,
+                                                                    take, (!!), (/), (^))
+import qualified Prelude                                           as P hiding (length)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (CompressedPoint, EllipticCurve (..), Pairing (..))
-import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Base.Protocol.Plonkup.Input
+import           ZkFold.Base.Algebra.Basic.Class                   (AdditiveGroup)
+import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat)
+import           ZkFold.Base.Algebra.EllipticCurve.Class           (CompressedPoint, EllipticCurve (..), Pairing (..))
+import           ZkFold.Base.Protocol.NonInteractiveProof.Internal (CoreFunction, FromTranscript,
+                                                                    NonInteractiveProof (..), ToTranscript)
+import           ZkFold.Base.Protocol.Plonkup.Input                (PlonkupInput)
 import           ZkFold.Base.Protocol.Plonkup.Internal
-import           ZkFold.Base.Protocol.Plonkup.Proof
-import           ZkFold.Base.Protocol.Plonkup.Prover
-import           ZkFold.Base.Protocol.Plonkup.Setup
-import           ZkFold.Base.Protocol.Plonkup.Verifier
-import           ZkFold.Base.Protocol.Plonkup.Witness
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import qualified ZkFold.Symbolic.Data.Ord                            as Sym
+import           ZkFold.Base.Protocol.Plonkup.Proof                (PlonkupProof)
+import           ZkFold.Base.Protocol.Plonkup.Prover               (PlonkupProverSecret, PlonkupProverSetup (..),
+                                                                    plonkupProve)
+import           ZkFold.Base.Protocol.Plonkup.Setup                (PlonkupSetup (..), plonkupSetup)
+import           ZkFold.Base.Protocol.Plonkup.Verifier             (PlonkupVerifierSetup (..), plonkupVerify)
+import           ZkFold.Base.Protocol.Plonkup.Witness              (PlonkupWitnessInput)
+import           ZkFold.Symbolic.Class                             (Arithmetic)
+import qualified ZkFold.Symbolic.Data.Ord                          as Sym
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
@@ -40,6 +43,7 @@ instance forall p i n l c1 c2 ts core.
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
         , Arithmetic (ScalarField c1)
+        , Binary (ScalarField c1)
         , ToTranscript ts Word8
         , ToTranscript ts (ScalarField c1)
         , ToTranscript ts (CompressedPoint c1)
