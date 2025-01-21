@@ -3,13 +3,13 @@
 
 module Tests.IVC (specIVC) where
 
-import           GHC.Generics                                (U1 (..), type (:*:) (..), Par1, type (:.:) (..))
+import           GHC.Generics                                (Par1, U1 (..), type (:*:) (..), type (:.:) (..))
 import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     hiding (Num (..), Bool (..), pi, replicate, sum, (+))
+import           Prelude                                     hiding (Bool (..), Num (..), pi, replicate, sum, (+))
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (arbitrary, generate, property, withMaxSuccess)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), ToConstant (..), Ring, one, zero)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), Ring, ToConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -30,9 +30,9 @@ import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate (..), pr
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction  (RecursiveI (..), RecursiveP, recursiveFunction)
 import           ZkFold.Base.Protocol.IVC.SpecialSound       (specialSoundProtocol)
 import           ZkFold.Prelude                              (replicate)
-import           ZkFold.Symbolic.Class                       (Symbolic(..), embedW)
+import           ZkFold.Symbolic.Class                       (Symbolic (..), embedW)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
-import           ZkFold.Symbolic.Data.Bool (Bool, true)
+import           ZkFold.Symbolic.Data.Bool                   (Bool, true)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 import           ZkFold.Symbolic.Data.Payloaded              (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)

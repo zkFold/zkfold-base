@@ -3,17 +3,17 @@
 
 module ZkFold.Base.Protocol.IVC.Predicate where
 
-import           Control.DeepSeq                       (NFData)
-import           Data.Binary                           (Binary)
-import           Data.Functor.Rep                      (Representable (..))
-import           GHC.Generics                          (U1 (..), (:*:) (..))
-import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
+import           Control.DeepSeq                   (NFData)
+import           Data.Binary                       (Binary)
+import           Data.Functor.Rep                  (Representable (..))
+import           GHC.Generics                      (U1 (..), (:*:) (..))
+import           Prelude                           hiding (Num (..), drop, head, replicate, take, zipWith)
 
-import           ZkFold.Base.Algebra.Basic.Class       (Scale, FromConstant, FiniteField)
-import           ZkFold.Base.Data.Package              (packed, unpacked)
+import           ZkFold.Base.Algebra.Basic.Class   (FiniteField, FromConstant, Scale)
+import           ZkFold.Base.Data.Package          (packed, unpacked)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
-import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
+import           ZkFold.Symbolic.Compiler          (ArithmeticCircuit, compileWith, guessOutput, hlmap)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 
 type PredicateFunctionAssumptions a f =
     ( FiniteField f

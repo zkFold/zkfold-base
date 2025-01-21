@@ -3,18 +3,18 @@
 
 module ZkFold.Base.Protocol.IVC.FiatShamir where
 
-import           Data.Constraint                       (withDict)
-import           Data.Constraint.Nat                   (plusMinusInverse1)
-import           Prelude                               hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
+import           Data.Constraint                     (withDict)
+import           Data.Constraint.Nat                 (plusMinusInverse1)
+import           Prelude                             hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
-import           ZkFold.Base.Algebra.Basic.Class       (Ring, Const)
-import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-))
-import           ZkFold.Base.Data.Vector               (Vector, init, scanl, unfold)
-import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit)
+import           ZkFold.Base.Algebra.Basic.Class     (Const, Ring)
+import           ZkFold.Base.Algebra.Basic.Number    (KnownNat, type (-))
+import           ZkFold.Base.Data.Vector             (Vector, init, scanl, unfold)
+import           ZkFold.Base.Protocol.IVC.Commit     (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.CommitOpen
-import           ZkFold.Base.Protocol.IVC.Oracle       (HashAlgorithm, oracle)
-import           ZkFold.Base.Protocol.IVC.Predicate    (PredicateFunctionAssumptions)
-import           ZkFold.Symbolic.MonadCircuit          (ResidueField)
+import           ZkFold.Base.Protocol.IVC.Oracle     (HashAlgorithm, oracle)
+import           ZkFold.Base.Protocol.IVC.Predicate  (PredicateFunctionAssumptions)
+import           ZkFold.Symbolic.MonadCircuit        (ResidueField)
 
 data FiatShamir k a i p c = FiatShamir
     {

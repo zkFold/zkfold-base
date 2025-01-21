@@ -12,7 +12,7 @@ import           Data.Constraint.Nat                        (plusMinusInverse1)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Zip                                   (Zip (..))
 import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    (Foldable, fmap, ($), (.), (<$>), Ord)
+import           Prelude                                    (Foldable, Ord, fmap, ($), (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number

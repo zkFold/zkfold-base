@@ -16,9 +16,9 @@ import           Data.Functor.Rep                           (Representable (..),
 import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
 import           GHC.Generics                               (Generic, Generic1, Par1)
-import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, ($))
+import           Prelude                                    (Foldable, Functor, Show, Traversable, fmap, type (~), ($))
 
-import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..), Scale, FiniteField, zero, (+), (-), (*))
+import           ZkFold.Base.Algebra.Basic.Class            (FiniteField, FromConstant (..), Scale, zero, (*), (+), (-))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.Orphans                   ()
 import           ZkFold.Base.Data.Package                   (packed, unpacked)
@@ -26,8 +26,9 @@ import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi, x)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Base.Protocol.IVC.Predicate         (FunctorAssumptions, Predicate (..), predicate, PredicateFunction)
-import           ZkFold.Symbolic.Class                      (Symbolic(..), Arithmetic)
+import           ZkFold.Base.Protocol.IVC.Predicate         (FunctorAssumptions, Predicate (..), PredicateFunction,
+                                                             predicate)
+import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional           (Conditional (..))

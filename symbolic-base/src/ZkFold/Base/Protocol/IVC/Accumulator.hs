@@ -6,18 +6,18 @@
 
 module ZkFold.Base.Protocol.IVC.Accumulator where
 
-import           Control.DeepSeq                       (NFData (..))
-import           Control.Lens                          ((^.))
-import           Control.Lens.Combinators              (makeLenses)
-import           Data.Distributive                     (Distributive (..))
-import           Data.Functor.Rep                      (Representable (..), collectRep, distributeRep)
-import           GHC.Generics                          (Generic, Generic1)
-import           Prelude                               hiding (length, pi)
+import           Control.DeepSeq                  (NFData (..))
+import           Control.Lens                     ((^.))
+import           Control.Lens.Combinators         (makeLenses)
+import           Data.Distributive                (Distributive (..))
+import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep)
+import           GHC.Generics                     (Generic, Generic1)
+import           Prelude                          hiding (length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Class       (Ring, zero, AdditiveMonoid)
-import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (-))
-import           ZkFold.Base.Data.Vector               (Vector)
-import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
+import           ZkFold.Base.Algebra.Basic.Class  (AdditiveMonoid, Ring, zero)
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat, type (-))
+import           ZkFold.Base.Data.Vector          (Vector)
+import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f

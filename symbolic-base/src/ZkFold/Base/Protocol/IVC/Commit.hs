@@ -9,10 +9,11 @@ module ZkFold.Base.Protocol.IVC.Commit (Commit (..), HomomorphicCommit (..), Ped
 import           Control.DeepSeq                             (NFData (..))
 import           Data.Binary                                 (Binary (..))
 import           Data.Functor.Constant                       (Constant (..))
-import           Data.Functor.Rep                            (WrappedRep(..))
+import           Data.Functor.Rep                            (WrappedRep (..))
 import           Data.Zip                                    (Zip (..))
 import           GHC.Generics                                (Par1 (..))
-import           Prelude                                     hiding (Num (..), Eq (..), Bool (..), sum, take, zipWith, (^))
+import           Prelude                                     hiding (Bool (..), Eq (..), Num (..), sum, take, zipWith,
+                                                              (^))
 import qualified Prelude                                     as Haskell
 import           System.Random                               (Random (..), mkStdGen)
 import           Test.QuickCheck                             (Arbitrary (..))

@@ -5,14 +5,15 @@
 module ZkFold.Base.Protocol.IVC.CycleFold.NativeContext where
 
 import           Control.Lens                                      ((^.))
-import           GHC.Generics                                      ((:.:) (..), Par1 (..))
-import           Prelude                                           (Integer, Functor (..), Foldable, Traversable, type (~), undefined, const, return, (.), ($), (<$>))
+import           GHC.Generics                                      (Par1 (..), (:.:) (..))
+import           Prelude                                           (Foldable, Functor (..), Integer, Traversable, const,
+                                                                    return, type (~), undefined, ($), (.), (<$>))
 import qualified Prelude                                           as Haskell
 import           Test.QuickCheck                                   (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                   (Zp)
-import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, type (+), type (-), Natural)
+import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, Natural, type (+), type (-))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381       (BLS12_381_Scalar)
 import           ZkFold.Base.Data.ByteString                       (Binary)
 import           ZkFold.Base.Data.Package                          (packed, unpacked)
@@ -20,11 +21,13 @@ import           ZkFold.Base.Data.Vector                           (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme        (AccumulatorScheme (..))
 import           ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext
-import           ZkFold.Base.Protocol.IVC.CycleFold.Utils          (PrimaryGroup, ForeignField, SecondaryGroup, PrimaryField)
-import           ZkFold.Base.Protocol.IVC.NARK                     (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
+import           ZkFold.Base.Protocol.IVC.CycleFold.Utils          (ForeignField, PrimaryField, PrimaryGroup,
+                                                                    SecondaryGroup)
+import           ZkFold.Base.Protocol.IVC.NARK                     (NARKInstanceProof (..), NARKProof (..),
+                                                                    narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle
+import           ZkFold.Symbolic.Class                             (Arithmetic, Symbolic (..), embedW)
 import           ZkFold.Symbolic.Data.Bool                         (Bool)
-import           ZkFold.Symbolic.Class                             (Symbolic(..), Arithmetic, embedW)
 import           ZkFold.Symbolic.Data.FieldElement                 (FieldElement (..))
 
 type ForeignOperationInput = NativeOperationInput :.: ForeignField
@@ -228,7 +231,7 @@ instance
     ) => AdditiveGroup (ForeignPoint algo d k a' ctx) where
     negate = scale (-1 :: Integer)
 
-instance 
+instance
     ( HashAlgorithm algo
     , KnownNat (d-1)
     , KnownNat (d+1)

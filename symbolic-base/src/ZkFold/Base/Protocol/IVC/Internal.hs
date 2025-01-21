@@ -10,12 +10,12 @@
 module ZkFold.Base.Protocol.IVC.Internal where
 
 import           Control.DeepSeq                            (NFData)
-import           Control.Lens                               ((^.), Traversable)
+import           Control.Lens                               (Traversable, (^.))
 import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Zip                                   (Zip (..), unzip)
 import           GHC.Generics                               (Generic, (:.:) (..))
-import           Prelude                                    (Functor, Foldable, Show, fmap, const, foldl, error, ($))
+import           Prelude                                    (Foldable, Functor, Show, const, error, fmap, foldl, ($))
 import qualified Prelude                                    as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -28,10 +28,10 @@ import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, 
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate, PredicateFunction)
+import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), PredicateFunction, predicate)
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtocol)
-import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
+import           ZkFold.Symbolic.Class                      (Symbolic (..), embedW)
 import           ZkFold.Symbolic.Data.Bool                  (Bool, BoolType (..), all)
 import           ZkFold.Symbolic.Data.Eq                    (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))

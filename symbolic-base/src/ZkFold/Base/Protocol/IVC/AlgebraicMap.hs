@@ -5,9 +5,9 @@ module ZkFold.Base.Protocol.IVC.AlgebraicMap (AlgebraicMap, algebraicMap) where
 
 import           Data.ByteString                                     (ByteString)
 import           Data.Functor.Rep                                    (Representable (..))
-import           Data.Map.Strict                                     (Map, keys, insert)
+import           Data.Map.Strict                                     (Map, insert, keys)
 import qualified Data.Map.Strict                                     as M
-import           Prelude                                             (Either (..), Ord, fmap, zip, map,  error, ($))
+import           Prelude                                             (Either (..), Ord, error, fmap, map, zip, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number

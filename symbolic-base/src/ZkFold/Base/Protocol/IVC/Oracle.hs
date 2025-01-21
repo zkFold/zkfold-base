@@ -1,9 +1,9 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Base.Protocol.IVC.Oracle where
 
 import           Data.Foldable                                  (Foldable (..))
-import           Prelude                                        ((.), (++), concatMap)
+import           Prelude                                        (concatMap, (++), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector                        (Vector)

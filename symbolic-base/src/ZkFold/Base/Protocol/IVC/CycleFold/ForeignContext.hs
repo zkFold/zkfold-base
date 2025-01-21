@@ -1,16 +1,17 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext where
 
-import           Data.Distributive (Distributive (..))
-import           Data.Functor.Rep                           (Representable (..), distributeRep, collectRep, mzipWithRep)
-import           Data.These                                 (These(..))
-import           Data.Zip                                   (Zip (..), Semialign (..))
-import           GHC.Generics                               (Par1 (..), Generic, Generic1)
-import           Prelude                                    (Functor, Traversable, type (~), ($), Foldable)
+import           Data.Distributive                          (Distributive (..))
+import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep, mzipWithRep)
+import           Data.These                                 (These (..))
+import           Data.Zip                                   (Semialign (..), Zip (..))
+import           GHC.Generics                               (Generic, Generic1, Par1 (..))
+import           Prelude                                    (Foldable, Functor, Traversable, type (~), ($))
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), AdditiveSemigroup (..), FiniteField, zero, (+), (-), (*))
+import           ZkFold.Base.Algebra.Basic.Class            (AdditiveSemigroup (..), FiniteField, Scale (..), zero, (*),
+                                                             (+), (-))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
