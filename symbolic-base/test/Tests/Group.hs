@@ -36,13 +36,13 @@ specAdditiveGroup' = hspec $ do
 
 specAdditiveGroup :: IO ()
 specAdditiveGroup = do
-    -- specAdditiveGroup' @(Point BN254_G1)
-    -- specAdditiveGroup' @(Point BN254_G2)
+    specAdditiveGroup' @(Point BN254_G1)
+    specAdditiveGroup' @(Point BN254_G2)
 
-    -- specAdditiveGroup' @(Point BLS12_381_G1)
-    -- specAdditiveGroup' @(Point BLS12_381_G2)
+    specAdditiveGroup' @(Point BLS12_381_G1)
+    specAdditiveGroup' @(Point BLS12_381_G2)
 
-    -- specAdditiveGroup' @(Point Pallas)
-    -- specAdditiveGroup' @(Point Vesta)
+    specAdditiveGroup' @(Point Pallas)
+    specAdditiveGroup' @(Point Vesta)
 
     specAdditiveGroup' @(ForeignPoint MiMCHash 2 1 (ScalarField Pallas) (Interpreter (ScalarField Pallas)))

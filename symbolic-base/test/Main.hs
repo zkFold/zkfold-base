@@ -27,44 +27,44 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
-    -- -- Base
-    -- specBinary
+    -- Base
+    specBinary
 
-    -- -- Algebra
-    -- specPermutations
-    -- specField
+    -- Algebra
+    specPermutations
+    specField
     specAdditiveGroup
-    -- specPairing
-    -- specUnivariate
-    -- specGroebner
-    -- specEllipticCurve
-    -- specReedSolomon
+    specPairing
+    specUnivariate
+    specGroebner
+    specEllipticCurve
+    specReedSolomon
 
-    -- -- Compiler spec
-    -- specCompiler
+    -- Compiler spec
+    specCompiler
 
-    -- -- Symbolic types and operations
-    -- specHash
-    -- specList
-    -- specUInt
-    -- specFFA
-    -- specByteString
+    -- Symbolic types and operations
+    specHash
+    specList
+    specUInt
+    specFFA
+    specByteString
 
-    -- -- Arithmetic circuit
-    -- specArithmeticCircuit
+    -- Arithmetic circuit
+    specArithmeticCircuit
 
-    -- -- Arithmetization
-    -- specArithmetization
+    -- Arithmetization
+    specArithmetization
 
-    -- -- Protocols
-    -- specPlonkup
-    -- specNonInteractiveProof
+    -- Protocols
+    specPlonkup
+    specNonInteractiveProof
     specIVC
 
-    -- -- Cryptography
-    -- specSHA2Natural
-    -- specSHA2
-    -- specRSA
-    -- specBlake2b
+    -- Cryptography
+    specSHA2Natural
+    specSHA2
+    specRSA
+    specBlake2b
 
     putStrLn "\nAll tests passed!"
