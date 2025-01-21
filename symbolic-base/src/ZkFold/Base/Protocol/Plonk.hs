@@ -7,7 +7,7 @@ module ZkFold.Base.Protocol.Plonk (
 
 import           Data.Binary                                         (Binary)
 import           Data.Functor.Classes                                (Show1)
-import           Data.Functor.Rep                                    (Rep)
+import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Kind                                           (Type)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
@@ -72,6 +72,9 @@ instance forall p i n l c1 c2 (ts :: Type) core .
         , Proof (Plonkup p i n l c1 c2 ts) ~ PlonkupProof c1
         , KnownNat n
         , Foldable l
+        , Representable p
+        , Representable i
+        , Representable l
         , Sym.Ord (BooleanOf c1) (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2

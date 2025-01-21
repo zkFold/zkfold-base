@@ -5,7 +5,7 @@
 
 module Tests.Plonkup (specPlonkup) where
 
-import           Control.Monad                                       (forM_, return)
+import           Control.Monad                                       (forM_, return, Functor (..))
 import           Data.Bool                                           (Bool)
 import           Data.ByteString                                     (ByteString)
 import           Data.Eq                                             (Eq (..))
@@ -62,10 +62,16 @@ propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
 propPlonkupRelationHolds ::
-  forall p i n l a . (Foldable l, KnownNat n, Arithmetic a) =>
+  forall p i n l a . (Foldable l, KnownNat n, Arithmetic a, Representable p, Representable i, Functor l) =>
   PlonkupRelation p i n l a -> p a -> i a -> Bool
 propPlonkupRelationHolds PlonkupRelation {..} p w =
-    let (w1, w2, w3) = witness p w
+    let w1' e i = toPolyVec $ fromList $ fmap (indexW plonkupAC e i) plonkupA
+        w2' e i = toPolyVec $ fromList $ fmap (indexW plonkupAC e i) plonkupB
+        w3' e i = toPolyVec $ fromList $ fmap (indexW plonkupAC e i) plonkupC
+        witness e i  = (w1' e i, w2' e i, w3' e i)
+        pubInput e i = fmap (indexW plonkupAC e i) xPub
+        
+        (w1, w2, w3) = witness p w
         pub          = negate $ toPolyVec $ fromList $ toList $ pubInput p w
     in qL .*. w1 + qR .*. w2 + qO .*. w3 + qM .*. w1 .*. w2 + qC + pub == zero
 

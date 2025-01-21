@@ -5,6 +5,7 @@ module ZkFold.Base.Protocol.Plonk.Prover
     ) where
 
 import           Data.Bool                                           (bool)
+import           Data.Functor.Rep                                    (Representable)
 import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           GHC.IsList                                          (IsList (..))
@@ -16,20 +17,21 @@ import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, 
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (CompressedPoint, EllipticCurve (..), compress)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
 import           ZkFold.Base.Data.Vector                             ((!!))
-import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Base.Protocol.Plonkup                        (with4n6)
-import           ZkFold.Base.Protocol.Plonkup.Input
-import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPolyExtended, PlonkupPolyExtendedLength)
-import           ZkFold.Base.Protocol.Plonkup.Proof
-import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
-import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
-import           ZkFold.Base.Protocol.Plonkup.Prover.Setup
+import           ZkFold.Base.Protocol.NonInteractiveProof.Internal   (CoreFunction (..), FromTranscript, ToTranscript,
+                                                                      challenge, transcript)
+import           ZkFold.Base.Protocol.Plonkup.Input                  (PlonkupInput (..))
+import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPolyExtended, PlonkupPolyExtendedLength,
+                                                                      with4n6)
+import           ZkFold.Base.Protocol.Plonkup.Proof                  (PlonkupProof (..))
+import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials     (PlonkupCircuitPolynomials (..))
+import           ZkFold.Base.Protocol.Plonkup.Prover.Secret          (PlonkupProverSecret (..))
+import           ZkFold.Base.Protocol.Plonkup.Prover.Setup           (PlonkupProverSetup (..))
 import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
 import           ZkFold.Base.Protocol.Plonkup.Testing                (PlonkupProverTestInfo (..))
 import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
-import           ZkFold.Base.Protocol.Plonkup.Witness
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, indexW)
+import           ZkFold.Symbolic.Data.Ord                            (Ord)
 
 plonkProve :: forall p i n l c1 c2 ts core .
     ( KnownNat n
@@ -42,6 +44,7 @@ plonkProve :: forall p i n l c1 c2 ts core .
     , ToTranscript ts (CompressedPoint c1)
     , FromTranscript ts (ScalarField c1)
     , CoreFunction c1 core
+    , Representable p, Representable i, Functor l
     ) => PlonkupProverSetup p i n l c1 c2 -> (PlonkupWitnessInput p i c1, PlonkupProverSecret c1) -> (PlonkupInput l c1, PlonkupProof c1, PlonkupProverTestInfo n c1)
 plonkProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wExtra wInput, PlonkupProverSecret ps)
@@ -56,8 +59,14 @@ plonkProve PlonkupProverSetup {..}
         n = value @n
         zhX = with4n6 @n $ polyVecZero @_ @n @(PlonkupPolyExtendedLength n)
 
-        (w1, w2, w3) = witness relation wExtra wInput
-        wPub = pubInput relation wExtra wInput
+        w1' e i = toPolyVec $ fromList $ fmap (indexW (plonkupAC relation) e i) (plonkupA relation)
+        w2' e i = toPolyVec $ fromList $ fmap (indexW (plonkupAC relation) e i) (plonkupB relation)
+        w3' e i = toPolyVec $ fromList $ fmap (indexW (plonkupAC relation) e i) (plonkupC relation)
+        witness e i  = (w1' e i, w2' e i, w3' e i)
+        pubInput e i = fmap (indexW (plonkupAC relation) e i) (xPub relation)
+
+        (w1, w2, w3) = witness wExtra wInput
+        wPub = pubInput wExtra wInput
 
         w1X = with4n6 @n $ polyVecInLagrangeBasis omega w1 :: PlonkupPolyExtended n c1
         w2X = with4n6 @n $ polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n c1

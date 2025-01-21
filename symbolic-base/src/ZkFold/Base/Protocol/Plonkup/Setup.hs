@@ -4,24 +4,25 @@
 
 module ZkFold.Base.Protocol.Plonkup.Setup where
 
-import           Data.Functor.Rep                                    (Rep, Representable)
-import           Data.Maybe                                          (fromJust)
-import qualified Data.Vector                                         as V
-import           GHC.IsList                                          (IsList (..))
-import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
-                                                                      (/), (^))
+import           Data.Functor.Rep                                  (Rep, Representable)
+import           Data.Maybe                                        (fromJust)
+import qualified Data.Vector                                       as V
+import           GHC.IsList                                        (IsList (..))
+import           Prelude                                           hiding (Num (..), drop, length, sum, take, (!!), (/),
+                                                                    (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Permutations              (fromPermutation)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..), Pairing, Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
-import           ZkFold.Base.Protocol.NonInteractiveProof            (CoreFunction (..))
-import           ZkFold.Base.Protocol.Plonkup.Internal
-import           ZkFold.Base.Protocol.Plonkup.Prover
-import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..), toPlonkupRelation)
-import           ZkFold.Base.Protocol.Plonkup.Verifier
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, value)
+import           ZkFold.Base.Algebra.Basic.Permutations            (fromPermutation)
+import           ZkFold.Base.Algebra.EllipticCurve.Class           (EllipticCurve (..), Pairing, Point)
+import           ZkFold.Base.Algebra.Polynomials.Univariate        (PolyVec, polyVecInLagrangeBasis, toPolyVec)
+import           ZkFold.Base.Protocol.NonInteractiveProof.Internal (CoreFunction (..))
+import           ZkFold.Base.Protocol.Plonkup.Internal             (Plonkup (..), PlonkupPermutationSize,
+                                                                    PlonkupPolyExtendedLength, with4n6)
+import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
+import           ZkFold.Base.Protocol.Plonkup.Relation             (PlonkupRelation (..), toPlonkupRelation)
+import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
+import           ZkFold.Symbolic.Class                             (Arithmetic)
 
 data PlonkupSetup p i n l c1 c2 = PlonkupSetup
     { omega       :: ScalarField c1
@@ -65,8 +66,6 @@ instance
 
 plonkupSetup :: forall i p n l c1 c2 ts core.
     ( KnownNat n
-    , Representable p
-    , Representable i
     , Representable l
     , Foldable l
     , Ord (Rep i)
