@@ -18,7 +18,7 @@ import           Data.Zip                                   (Semialign (..), Zip
 import           GHC.Generics                               (Generic, Generic1, Par1)
 import           Prelude                                    (Foldable, Functor, Show, Traversable, type (~), fmap, ($))
 
-import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..))
+import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..), zero)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.Orphans                   ()
 import           ZkFold.Base.Data.Package                   (packed, unpacked)
@@ -26,7 +26,7 @@ import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi, x)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), predicate, StepFunctionAssumptions)
+import           ZkFold.Base.Protocol.IVC.Predicate         (StepFunction, FunctorAssumptions, Predicate (..), StepFunctionAssumptions, predicate)
 import           ZkFold.Symbolic.Class                      (Symbolic(..), embedW)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
@@ -97,14 +97,15 @@ type RecursiveFunction algo a d k i p c = forall ctx . RecursiveFunctionAssumpti
 -- | Transform a step function into a recursive function
 recursiveFunction :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
     => StepFunction a i p
-    -> RecursiveI i a
-    -> RecursiveI i (FieldElement ctx) -> Payloaded (RecursiveP d k i p c) ctx -> RecursiveI i (FieldElement ctx)
-recursiveFunction func z0 z@(RecursiveI x _) p@(Payloaded (RecursiveP u _ _ _ _)) =
+    -> RecursiveI i (FieldElement ctx)
+    -> Payloaded (RecursiveP d k i p c) ctx
+    -> RecursiveI i (FieldElement ctx)
+recursiveFunction func z@(RecursiveI x _) p@(Payloaded (RecursiveP u _ _ _ _)) =
     let
         RecursiveP _ piX accX flag pf = fmap FieldElement $ unpacked $ embedW $ runPayloaded p
 
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = predicate (recursiveFunction @algo func z0)
+        pRec = predicate (recursiveFunction @algo func)
 
         accScheme :: AccumulatorScheme d k (RecursiveI i) c ctx
         accScheme = accumulatorScheme @algo pRec
@@ -118,4 +119,4 @@ recursiveFunction func z0 z@(RecursiveI x _) p@(Payloaded (RecursiveP u _ _ _ _)
         h :: (FieldElement ctx)
         h = oracle @algo accX'
     in
-        bool (fromConstant z0) (RecursiveI x' h) $ Bool $ fromFieldElement flag
+        bool (RecursiveI x zero) (RecursiveI x' h) $ Bool $ fromFieldElement flag

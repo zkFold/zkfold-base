@@ -62,7 +62,7 @@ testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
 testRecursivePredicate :: PAR -> Predicate (RecursiveI I) (RecursiveP D K I P C) CTX
-testRecursivePredicate p = predicate $ recursiveFunction @MiMCHash (testFunction p) (RecursiveI (singleton zero) zero)
+testRecursivePredicate p = predicate $ recursiveFunction @MiMCHash (testFunction p)
 
 testPredicateCircuit :: PAR -> AC
 testPredicateCircuit p = predicateCircuit @I @P $ testPredicate p
@@ -124,7 +124,7 @@ testVerifierResult phi =
     in verifier s (fromWitness $ testPublicInput phi) (fromWitness <$> testNarkProof phi) emptyAccumulatorInstance (fromWitness <$> testAccumulationProof phi)
 
 testIVC :: PAR -> Bool CTX
-testIVC p = fst $ ivc @MiMCHash @_ @D (testFunction p) (singleton 42) (Payloaded $ Comp1 $ singleton U1)
+testIVC p = fst $ ivc @MiMCHash @_ @D (testFunction p) (Payloaded $ singleton 42) (Payloaded $ Comp1 $ singleton U1)
 
 specAlgebraicMap :: IO ()
 specAlgebraicMap = hspec $ do

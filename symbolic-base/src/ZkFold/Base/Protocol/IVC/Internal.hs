@@ -65,13 +65,13 @@ ivc :: forall algo a d k i p c ctx n .
     , KnownNat n
     )
     => StepFunction a i p
-    -> i a
+    -> Payloaded i ctx
     -> Payloaded (Vector n :.: p) ctx
     -> (Bool ctx, AccumulatorInstance k (RecursiveI i) c (FieldElement ctx))
-ivc f x0 (Payloaded (Comp1 ps)) =
+ivc f (Payloaded x0) (Payloaded (Comp1 ps)) =
     let
         pRec :: Predicate (RecursiveI i) (RecursiveP d k i p c) ctx
-        pRec = predicate $ recursiveFunction @algo f (RecursiveI x0 zero)
+        pRec = predicate $ recursiveFunction @algo f
 
         protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c ctx
         protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
@@ -112,7 +112,7 @@ ivc f x0 (Payloaded (Comp1 ps)) =
                 all (== zero) vs1 && all (== zero) vs2 && all (== zero) vs3
 
         res0 :: IVCResult k i c (WitnessField ctx)
-        res0 = IVCResult (RecursiveI (fmap fromConstant x0) zero) emptyAccumulator (IVCProof (tabulate $ const zero) (tabulate $ const []))
+        res0 = IVCResult (RecursiveI x0 zero) emptyAccumulator (IVCProof (tabulate $ const zero) (tabulate $ const []))
 
         setup :: IVCResult k i c (WitnessField ctx)
         setup = ivcProve true res0 (head ps)
