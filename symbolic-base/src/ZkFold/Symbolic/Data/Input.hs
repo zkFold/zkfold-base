@@ -1,5 +1,8 @@
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DerivingVia           #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module ZkFold.Symbolic.Data.Input (
     SymbolicInput (..)
@@ -12,13 +15,12 @@ import           GHC.TypeLits                     (KnownNat)
 import           Prelude                          (foldl, ($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector          (Vector, fromVector)
+import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.MonadCircuit
-
 
 -- | A class for Symbolic input.
 class SymbolicOutput d => SymbolicInput d where
@@ -28,27 +30,23 @@ class SymbolicOutput d => SymbolicInput d where
       => d -> Bool (Context d)
     isValid = gisValid @(G.Rep d) . G.from
 
-
 instance Symbolic c => SymbolicInput (Bool c) where
   isValid (Bool b) = Bool $ fromCircuitF b $
       \(G.Par1 v) -> do
         u <- newAssigned (\x -> x v * (one - x v))
         isZero $ G.Par1 u
 
-
 instance (Symbolic c, LayoutFunctor f) => SymbolicInput (c f) where
   isValid _ = true
-
 
 instance Symbolic c => SymbolicInput (Proxy c) where
   isValid _ = true
 
 instance (
-    Symbolic (Context x)
-    , Context x ~ Context y
+    Context x ~ Context y
     , SymbolicInput x
     , SymbolicInput y
-    ) => SymbolicInput (x, y) where
+    ) => SymbolicInput (x, y)
 
 instance (
     Symbolic (Context x)
@@ -57,14 +55,14 @@ instance (
     , SymbolicInput x
     , SymbolicInput y
     , SymbolicInput z
-    ) => SymbolicInput (x, y, z) where
+    ) => SymbolicInput (x, y, z)
 
-instance (
-  Symbolic (Context x)
-  , KnownNat n
-  , SymbolicInput x
-  ) => SymbolicInput (Vector n x) where
-  isValid v = foldl (\l r -> l && isValid r) true $ fromVector v
+instance (LayoutFunctor f, SymbolicInput x) =>
+    SymbolicInput (RepresentableSymbolicData f x) where
+  isValid = foldl (\l r -> l && isValid r) true . rsd
+
+deriving via (RepresentableSymbolicData (Vector n) x) instance
+  (KnownNat n, SymbolicInput x) => SymbolicInput (Vector n x)
 
 class GSymbolicData u => GSymbolicInput u where
     gisValid :: u x -> Bool (GContext u)

@@ -34,14 +34,14 @@ import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), Pre
 import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
-import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor, SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor, SymbolicData (..), RepresentableSymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional           (bool)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement), fromFieldElement)
-import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
+import           ZkFold.Symbolic.Data.Input                 (SymbolicInput (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
 
 -- | Public input to the recursive function
-data RecursiveI i f = RecursiveI (i f) f
+data RecursiveI i f = RecursiveI (RepresentableSymbolicData i f) f
     deriving (Generic, Generic1, Show, Binary, NFData, NFData1, Functor, Foldable, Traversable)
 
 instance Semialign i => Semialign (RecursiveI i) where
@@ -58,9 +58,9 @@ instance Representable i => Representable (RecursiveI i)
 
 instance (HashAlgorithm algo f, RandomOracle algo f f, RandomOracle algo (i f) f) => RandomOracle algo (RecursiveI i f) f
 
-instance (SymbolicData f, SymbolicData (i f), Context f ~ Context (i f), Support f ~ Support (i f)) => SymbolicData (RecursiveI i f)
+instance (SymbolicData f, LayoutFunctor i) => SymbolicData (RecursiveI i f)
 
-instance (SymbolicInput f, SymbolicInput (i f), Context f ~ Context (i f)) => SymbolicInput (RecursiveI i f)
+instance (SymbolicInput f, LayoutFunctor i) => SymbolicInput (RecursiveI i f)
 
 -- | Payload to the recursive function
 data RecursiveP d k i p c f = RecursiveP (p f) (Vector k (c f)) (AccumulatorInstance k (RecursiveI i) c f) f (Vector (d-1) (c f))
@@ -103,7 +103,7 @@ recursiveFunction func =
     let
         -- A helper function to derive the accumulator scheme
         func' :: forall ctx f . StepFunctionAssumptions a f ctx => RecursiveI i f -> RecursiveP d k i p c f -> RecursiveI i f
-        func' (RecursiveI x h) (RecursiveP u _ _ _ _) = RecursiveI (func x u) h
+        func' (RecursiveI (RSD x) h) (RecursiveP u _ _ _ _) = RecursiveI (RSD (func x u)) h
 
         -- A helper predicate to derive the accumulator scheme
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
@@ -113,7 +113,7 @@ recursiveFunction func =
             => RecursiveI i f
             -> RecursiveP d k i p c f
             -> RecursiveI i f
-        funcRecursive z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
+        funcRecursive z@(RecursiveI (RSD x) _) (RecursiveP u piX accX flag pf) =
             let
                 accScheme :: AccumulatorScheme d k (RecursiveI i) c f
                 accScheme = accumulatorScheme @algo pRec
@@ -127,7 +127,7 @@ recursiveFunction func =
                 h :: f
                 h = bool zero (oracle @algo accX') $ Bool $ fromFieldElement flag
             in
-                RecursiveI x' h
+                RecursiveI (RSD x') h
 
     in funcRecursive
 

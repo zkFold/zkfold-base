@@ -15,7 +15,7 @@ import           ZkFold.Symbolic.Class            (Symbolic (fromCircuitF, witne
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Eq          (Eq, (==))
-import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
+import           ZkFold.Symbolic.Data.Input       (SymbolicInput (..))
 import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (Payloaded))
 import           ZkFold.Symbolic.MonadCircuit     (constraint, unconstrained)
 
