@@ -34,7 +34,8 @@ import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), Pre
 import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
-import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor, SymbolicData (..), RepresentableSymbolicData (..))
+import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor, RepresentableSymbolicData (..),
+                                                             SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional           (bool)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement), fromFieldElement)
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput (..))

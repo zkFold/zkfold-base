@@ -36,9 +36,9 @@ import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtoco
                                                              specialSoundProtocol')
 import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
+import           ZkFold.Symbolic.Data.Class                 (RepresentableSymbolicData (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement)
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
-import ZkFold.Symbolic.Data.Class (RepresentableSymbolicData(..))
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
