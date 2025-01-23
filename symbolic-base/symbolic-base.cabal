@@ -250,36 +250,36 @@ test-suite symbolic-base-test
         "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N"
     main-is: Main.hs
     other-modules:
-      Tests.ArithmeticCircuit
-      Tests.Arithmetization
-      Tests.Arithmetization.Test1
-      Tests.Arithmetization.Test2
-      Tests.Arithmetization.Test3
-      Tests.Arithmetization.Test4
-      Tests.Arithmetization.Optimization
-      Tests.Binary
-      Tests.Blake2b
-      Tests.ByteString
-      Tests.Compiler
-      Tests.EllipticCurve
-      Tests.FFA
-      Tests.Field
-      Tests.GroebnerBasis
-      Tests.Group
-      Tests.Hash
-      Tests.IVC
-      Tests.List
-      Tests.NonInteractiveProof
-      Tests.Pairing
-      Tests.Permutations
-      Tests.Plonkup
-      Tests.ReedSolomon
-      Tests.RSA
-      Tests.SHA2
-      Tests.UInt
-      Tests.Univariate
-      Tests.Univariate.Poly
-      Tests.Univariate.PolyVec
+      Tests.Base.Algebra.EllipticCurve
+      Tests.Base.Algebra.Field
+      Tests.Base.Algebra.GroebnerBasis
+      Tests.Base.Algebra.Group
+      Tests.Base.Algebra.Pairing
+      Tests.Base.Algebra.Permutations
+      Tests.Base.Algebra.ReedSolomon
+      Tests.Base.Algebra.Univariate
+      Tests.Base.Algebra.Univariate.Poly
+      Tests.Base.Algebra.Univariate.PolyVec
+      Tests.Base.Data.Binary
+      Tests.Base.Protocol.IVC
+      Tests.Base.Protocol.NonInteractiveProof
+      Tests.Base.Protocol.Plonkup
+      Tests.Symbolic.Algorithm.Blake2b
+      Tests.Symbolic.Algorithm.RSA
+      Tests.Symbolic.Algorithm.SHA2
+      Tests.Symbolic.ArithmeticCircuit
+      Tests.Symbolic.Compiler
+      Tests.Symbolic.Compiler.CompileWith
+      Tests.Symbolic.Compiler.Optimization
+      Tests.Symbolic.Compiler.Test1
+      Tests.Symbolic.Compiler.Test2
+      Tests.Symbolic.Compiler.Test3
+      Tests.Symbolic.Compiler.Test4
+      Tests.Symbolic.Data.ByteString
+      Tests.Symbolic.Data.FFA
+      Tests.Symbolic.Data.Hash
+      Tests.Symbolic.Data.List
+      Tests.Symbolic.Data.UInt
     build-depends:
       base                          >= 4.9 && < 5,
       adjunctions                           < 4.5,
@@ -289,7 +289,6 @@ test-suite symbolic-base-test
       constraints                                ,
       containers                                 ,
       containers                                 ,
-      deepseq                                    ,
       directory                        <= 1.3.8.4,
       filepath                         <= 1.5.2.0,
       hspec                                < 2.12,
