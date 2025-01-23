@@ -23,6 +23,6 @@ class Symbolic c => SymbolicFold c where
     (Binary (Rep g), NFData (Rep g), Ord (Rep g), Representable g) =>
     (forall a. Binary a => Binary (h a)) =>
     (WitnessField c ~ wc) =>
-    (forall s. (Symbolic s, BaseField s ~ BaseField c) =>
+    (forall s. (SymbolicFold s, BaseField s ~ BaseField c) =>
       s f -> p (WitnessField s) -> s g -> (s f, p (WitnessField s))) ->
     c f -> p wc -> c h -> Infinite (g wc) -> c Par1 -> (c f, p wc)

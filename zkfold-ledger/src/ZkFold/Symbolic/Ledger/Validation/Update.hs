@@ -54,9 +54,7 @@ applyOfflineTransaction ix tx w u =
 newUpdate ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
-  => SymbolicOutput (Output context)
   => SymbolicOutput (ContractData context)
-  => Context (Output context) ~ context
   => Context (ContractData context) ~ context
   => Hash context
   -> UpdateWitness context
@@ -70,10 +68,8 @@ newUpdate hsh updWitness =
 updateIsValid ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
-  => SymbolicOutput (Output context)
   => SymbolicOutput (ContractData context)
   => SymbolicOutput (Value context)
-  => Context (Output context) ~ context
   => Context (ContractData context) ~ context
   => Context (Value context) ~ context
   => Eq (Bool context) (MultiAssetValue context)

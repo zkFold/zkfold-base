@@ -1,39 +1,38 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE BlockArguments        #-}
-{-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DerivingStrategies    #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TypeOperators  #-}
 
 module ZkFold.Symbolic.Data.List where
 
 import           Control.Monad                     (return)
 import           Data.Distributive                 (Distributive (..))
-import           Data.Function                     (const)
-import           Data.Functor                      (Functor (..))
+import           Data.Function                     (const, ($), (.))
+import           Data.Functor                      (Functor (..), (<$>))
 import           Data.Functor.Rep                  (Representable (..), pureRep, tabulate)
 import           Data.List.Infinite                (Infinite (..))
 import           Data.Proxy                        (Proxy (..))
 import           Data.Traversable                  (traverse)
-import           Data.Tuple                        (snd)
+import           Data.Tuple                        (fst, snd)
+import           Data.Type.Equality                (type (~))
 import           GHC.Generics                      (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
-import           Prelude                           (fst, type (~), undefined, ($), (.), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number  (KnownNat)
 import           ZkFold.Base.Data.HFunctor         (hmap)
 import           ZkFold.Base.Data.List.Infinite    ()
 import           ZkFold.Base.Data.Orphans          ()
 import           ZkFold.Base.Data.Product          (fstP, sndP)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool         (Bool (..))
+import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput (..))
+import           ZkFold.Symbolic.Data.Morph        (MorphFrom, MorphTo (..), (@))
 import           ZkFold.Symbolic.Data.Payloaded    (Payloaded (Payloaded, runPayloaded))
+import           ZkFold.Symbolic.Data.Switch       (Switch (..))
 import           ZkFold.Symbolic.Data.UInt         (UInt)
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
@@ -73,7 +72,9 @@ emptyList
     .  SymbolicData x
     => Context x ~ context
     => List context x
-emptyList = List (embed $ pureRep zero) (fromFieldElement zero) $ Payloaded $ tabulate (const zero)
+emptyList =
+  List (embed $ pureRep zero) (fromFieldElement zero) $
+    Payloaded $ tabulate (const zero)
 
 null
     :: forall context x
@@ -137,32 +138,13 @@ tail ::
   List c x -> List c x
 tail = snd . uncons
 
-data Morph ctx input output =
-  forall i o.
-  ( SymbolicOutput i, Context i ~ ctx
-  , Layout i ~ Layout input, Payload i ~ Payload input
-  , SymbolicOutput o, Context o ~ ctx
-  , Layout o ~ Layout output, Payload o ~ Payload output
-  ) => Morph (i -> o)
-
-(@) ::
-  ( SymbolicOutput i, Context i ~ ctx
-  , Layout i ~ Layout input, Payload i ~ Payload input
-  , SymbolicOutput o, Context o ~ ctx
-  , Layout o ~ Layout output, Payload o ~ Payload output
-  ) => Morph ctx input output -> i -> o
-Morph f @ x =
-  let y = f . restore $ const (arithmetize x Proxy, payload x Proxy)
-   in restore $ const (arithmetize y Proxy, payload y Proxy)
-
 foldl ::
   forall x y c.
   ( SymbolicOutput x, Context x ~ c
   , SymbolicOutput y, Context y ~ c
   , SymbolicFold c
   ) =>
-  (forall s. (Symbolic s, BaseField s ~ BaseField c) => Morph s (y, x) y) ->
-  y -> List c x -> y
+  MorphFrom c (y, x) y -> y -> List c x -> y
 foldl f y List {..} = restore \s ->
   sfoldl foldOp (arithmetize y s) (payload y s) lHash
     (fmap (\ListItem {..} -> headLayout :*: headPayload)
@@ -171,7 +153,7 @@ foldl f y List {..} = restore \s ->
   where
     foldOp ::
       forall s.
-      (Symbolic s, BaseField s ~ BaseField c) =>
+      (SymbolicFold s, BaseField s ~ BaseField c) =>
       s (Layout y) -> Payload y (WitnessField s) ->
       s (Layout x :*: Payload x) ->
       (s (Layout y), Payload y (WitnessField s))
@@ -181,20 +163,6 @@ foldl f y List {..} = restore \s ->
                   , Switch (hmap fstP il) (witnessF (hmap sndP il))
                       :: Switch s x)
        in (sLayout, sPayload)
-
-data Switch c x = Switch
-  { sLayout  :: c (Layout x)
-  , sPayload :: Payload x (WitnessField c)
-  }
-
-instance (Symbolic c, SymbolicData x) => SymbolicData (Switch c x) where
-  type Context (Switch c x) = c
-  type Support (Switch c x) = Proxy c
-  type Layout (Switch c x) = Layout x
-  type Payload (Switch c x) = Payload x
-  arithmetize = const . sLayout
-  payload = const . sPayload
-  restore f = let (sLayout, sPayload) = f Proxy in Switch {..}
 
 revapp ::
   forall c x.
@@ -223,8 +191,7 @@ foldr ::
   forall c x y.
   (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
   (SymbolicOutput y, Context y ~ c) =>
-  (forall s. (Symbolic s, BaseField s ~ BaseField c) => Morph s (x, y) y) ->
-  y -> List c x -> y
+  MorphFrom c (x, y) y -> y -> List c x -> y
 foldr f s xs =
   foldl (Morph \(y :: Switch s y, x :: Switch s x) ->
                     f @ (x, y) :: Switch s y) s (reverse xs)
@@ -232,19 +199,29 @@ foldr f s xs =
 filter ::
   forall c x.
   (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
-  (forall s. (Symbolic s, BaseField s ~ BaseField c) => Morph s x (Bool c)) ->
-  List c x -> List c x
+  MorphFrom c x (Bool c) -> List c x -> List c x
 filter pred = foldr (Morph \(x :: Switch s x, ys) ->
   ifThenElse (pred @ x :: Bool s) (x .: ys) ys) emptyList
 
-delete :: x -> List context x -> List context x
-delete = undefined
-
-(\\) ::
+delete ::
   forall c x.
   (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
-  List c x -> List c x -> List c x
-(\\) = foldl $ Morph \(xs, x :: Switch s x) -> delete x xs
+  MorphFrom c (x, x) (Bool c) -> x -> List c x -> List c x
+delete eq x xs =
+  let (_, _, result) =
+        foldr (Morph \(y :: Switch s x, (ok :: Bool s, y0 :: Switch s x, ys)) ->
+          let test = eq @ (y, y0)
+           in (ok || test, y0, ifThenElse (ok || not test) (y .: ys) ys))
+           (false :: Bool c, x, emptyList) xs
+   in result
+
+setminus ::
+  forall c x.
+  (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
+  MorphFrom c (x, x) (Bool c) -> List c x -> List c x -> List c x
+setminus eq = foldl $ Morph \(xs, x :: Switch s x) ->
+  delete (Morph \(y :: Switch s' x, z :: Switch s' x) ->
+    eq @ (y, z) :: Bool s') x xs
 
 singleton
     :: forall context x
@@ -254,8 +231,18 @@ singleton
     -> List context x
 singleton x = x .: emptyList
 
-(!!) :: List context x -> UInt n Auto context -> x
-(!!) = undefined
+(!!) ::
+  forall x c n.
+  (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
+  (KnownNat n, KnownRegisters c n Auto) =>
+  List c x -> UInt n Auto c -> x
+xs !! n = snd $ foldl (Morph \((m :: UInt n Auto s, y :: Switch s x), x) ->
+  (m - one, ifThenElse (m == zero :: Bool s) x y))
+  (n, restore $ const (embed $ pureRep zero, pureRep zero)) xs
 
-concat :: List context (List context x) -> List context x
-concat = undefined
+concat ::
+  forall c x.
+  (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
+  List c (List c x) -> List c x
+concat xs = reverse $
+  foldl (Morph \(ys, x :: List s (Switch s x)) -> revapp x ys) emptyList xs

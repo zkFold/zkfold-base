@@ -26,7 +26,7 @@ import           Prelude                                  (type (~))
 import           ZkFold.Base.Algebra.Basic.Class          (AdditiveMonoid, MultiplicativeMonoid)
 import           ZkFold.Symbolic.Data.Bool                (Bool)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators         (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators         (KnownRegisters, RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional         (Conditional)
 import           ZkFold.Symbolic.Data.Eq                  (Eq)
 import           ZkFold.Symbolic.Data.List                (List)
@@ -54,6 +54,7 @@ import           ZkFold.Symbolic.Ledger.Types.Value
 
 type Signature context =
     ( SymbolicFold context
+    , KnownRegisters context 32 Auto
     , AdditiveMonoid (UInt 32 Auto context)
     , AdditiveMonoid (Value context)
     , Conditional (Bool context) (Update context)
@@ -113,4 +114,7 @@ type Signature context =
 
     , SymbolicOutput (AddressIndex context)
     , Context (AddressIndex context) ~ context
+
+    , SymbolicOutput (Output context)
+    , Context (Output context) ~ context
     )

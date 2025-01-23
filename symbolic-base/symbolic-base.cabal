@@ -194,15 +194,17 @@ library
       ZkFold.Symbolic.Data.Ed25519
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.FFA
+      ZkFold.Symbolic.Data.FieldElement
       ZkFold.Symbolic.Data.Hash
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
+      ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
+      ZkFold.Symbolic.Data.Switch
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
-      ZkFold.Symbolic.Data.FieldElement
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
