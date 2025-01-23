@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -7,9 +6,8 @@
 module ZkFold.Base.Protocol.IVC.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
 import           Control.DeepSeq                             (NFData (..))
-import           Data.Binary                                 (Binary (..))
-import           Data.Functor.Constant                       (Constant (..))
-import           Data.Functor.Rep                            (WrappedRep (..))
+import           Data.Binary                                 (Binary (..), encode, decode)
+import           Data.Functor.Rep                            (WrappedRep (..), Representable (..))
 import           Data.Zip                                    (Zip (..))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     hiding (Bool (..), Eq (..), Num (..), sum, take, zipWith,
@@ -23,9 +21,8 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Data.Vector                     (Vector, unsafeToVector)
+import           ZkFold.Base.Data.ByteString                 (LittleEndian(..))
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Prelude                              (take)
 import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Conditional            (Conditional (..))
@@ -48,21 +45,24 @@ class AdditiveGroup c => HomomorphicCommit a c where
 class PedersonSetup s c where
     groupElements :: s c
 
-type PedersonSetupMaxSize = 100
-
 instance (EllipticCurve curve, Random (ScalarField curve)) => PedersonSetup [] (Point curve) where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
         let x = fst $ random $ mkStdGen 0 :: ScalarField curve
-        in take (value @PedersonSetupMaxSize) $ iterate (mul x) pointGen
+        in iterate (mul x) pointGen
 
-instance (KnownNat n, EllipticCurve curve, Random (ScalarField curve), n <= PedersonSetupMaxSize) => PedersonSetup (Vector n) (Point curve) where
+instance
+    ( EllipticCurve curve
+    , Random (ScalarField curve)
+    , Representable s
+    , Binary (Rep s)
+    , Exponent (ScalarField curve) Natural
+    ) => PedersonSetup s (Point curve) where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
-        unsafeToVector $ take (value @n) $ groupElements @[]
-
-instance (PedersonSetup s (Point curve), Functor s) => PedersonSetup s (Constant (Point curve) a) where
-    groupElements = Constant <$> groupElements @s
+        let x = fst $ random $ mkStdGen 0 :: ScalarField curve
+            f = unLittleEndian . decode . encode
+        in tabulate (\i -> mul (x^f i) pointGen)
 
 instance (PedersonSetup s c, Zip s, Foldable s, Scale f c, AdditiveGroup c) => HomomorphicCommit (s f) c where
     hcommit v = sum $ zipWith scale v groupElements
@@ -140,7 +140,7 @@ instance Symbolic ctx => Eq (Bool ctx) (Par1 (FieldElement ctx)) where
 instance (FiniteField f) => PedersonSetup [] (Par1 f) where
     groupElements =
         let x = toConstant $ fst $ random @(Zp BLS12_381_Scalar) $ mkStdGen 0
-        in take (value @PedersonSetupMaxSize) $ map Par1 $ iterate (natScale x) (one + one)
+        in map Par1 $ iterate (natScale x) (one + one)
 
 instance Arbitrary f => Arbitrary (Par1 f) where
     arbitrary = Par1 <$> arbitrary
