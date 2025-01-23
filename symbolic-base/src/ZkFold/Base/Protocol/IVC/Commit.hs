@@ -6,8 +6,8 @@
 module ZkFold.Base.Protocol.IVC.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
 
 import           Control.DeepSeq                             (NFData (..))
-import           Data.Binary                                 (Binary (..), encode, decode)
-import           Data.Functor.Rep                            (WrappedRep (..), Representable (..))
+import           Data.Binary                                 (Binary (..), decode, encode)
+import           Data.Functor.Rep                            (Representable (..), WrappedRep (..))
 import           Data.Zip                                    (Zip (..))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     hiding (Bool (..), Eq (..), Num (..), sum, take, zipWith,
@@ -21,7 +21,7 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Data.ByteString                 (LittleEndian(..))
+import           ZkFold.Base.Data.ByteString                 (LittleEndian (..))
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                   (Bool)
