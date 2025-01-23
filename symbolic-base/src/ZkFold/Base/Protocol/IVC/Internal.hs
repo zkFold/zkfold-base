@@ -36,7 +36,6 @@ import           ZkFold.Base.Protocol.IVC.SpecialSound      (SpecialSoundProtoco
                                                              specialSoundProtocol')
 import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
-import           ZkFold.Symbolic.Data.Class                 (RepresentableSymbolicData (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement)
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
@@ -127,7 +126,7 @@ ivcProve f res witness =
         pRec = recursivePredicate @algo $ recursiveFunction @algo f
 
         input :: RecursiveI i a
-        input = RecursiveI (RSD (res^.z)) (oracle @algo $ res^.acc^.x)
+        input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
 
         messages :: Vector k [a]
         messages = res^.proof^.proofW
@@ -166,7 +165,7 @@ ivcVerify f res =
         pRec = recursivePredicate @algo $ recursiveFunction @algo f
 
         input :: RecursiveI i f
-        input = RecursiveI (RSD (res^.z)) (oracle @algo $ res^.acc^.x)
+        input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
 
         messages :: Vector k [f]
         messages = res^.proof^.proofW

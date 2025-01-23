@@ -1,6 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE DerivingVia           #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
@@ -12,7 +9,7 @@ import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..))
 import qualified GHC.Generics                     as G
 import           GHC.TypeLits                     (KnownNat)
-import           Prelude                          (foldl, ($), (.))
+import           Prelude                          (($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.Vector          (Vector)
@@ -49,20 +46,15 @@ instance (
     ) => SymbolicInput (x, y)
 
 instance (
-    Symbolic (Context x)
-    , Context x ~ Context y
+    Context x ~ Context y
     , Context y ~ Context z
     , SymbolicInput x
     , SymbolicInput y
     , SymbolicInput z
     ) => SymbolicInput (x, y, z)
 
-instance (LayoutFunctor f, SymbolicInput x) =>
-    SymbolicInput (RepresentableSymbolicData f x) where
-  isValid = foldl (\l r -> l && isValid r) true . rsd
-
-deriving via (RepresentableSymbolicData (Vector n) x) instance
-  (KnownNat n, SymbolicInput x) => SymbolicInput (Vector n x)
+instance (KnownNat n, SymbolicInput x) => SymbolicInput (Vector n x) where
+  isValid = all isValid
 
 class GSymbolicData u => GSymbolicInput u where
     gisValid :: u x -> Bool (GContext u)
@@ -70,7 +62,6 @@ class GSymbolicData u => GSymbolicInput u where
 instance
     ( GContext u ~ GContext v
     , GSupport u ~ GSupport v
-    , Symbolic (GContext u)
     , GSymbolicInput u
     , GSymbolicInput v
     ) => GSymbolicInput (u G.:*: v) where

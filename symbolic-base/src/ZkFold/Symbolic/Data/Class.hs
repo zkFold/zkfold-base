@@ -6,34 +6,27 @@ module ZkFold.Symbolic.Data.Class (
         IsVariable,
         LayoutFunctor,
         PayloadFunctor,
-        ContextKind,
         SymbolicData (..),
         SymbolicOutput,
         GSymbolicData (..),
-        RepresentableSymbolicData (..),
     ) where
 
 import           Control.Applicative              ((<*>))
 import           Control.DeepSeq                  (NFData, NFData1)
 import           Data.Bifunctor                   (bimap)
 import           Data.Binary                      (Binary)
-import           Data.Distributive                (Distributive (..))
-import           Data.Foldable                    (Foldable)
 import           Data.Function                    (flip, (.))
-import           Data.Functor                     (Functor (..), (<$>))
+import           Data.Functor                     ((<$>))
 import           Data.Functor.Rep                 (Representable)
 import qualified Data.Functor.Rep                 as R
 import           Data.Kind                        (Type)
 import           Data.Ord                         (Ord)
-import           Data.Semialign                   (Semialign)
 import           Data.Traversable                 (Traversable)
 import           Data.Tuple                       (fst)
 import           Data.Type.Equality               (type (~))
 import           Data.Typeable                    (Proxy (..))
-import           Data.Zip                         (Zip)
 import           GHC.Generics                     (U1 (..), (:*:) (..), (:.:) (..))
 import qualified GHC.Generics                     as G
-import           Text.Show                        (Show)
 
 import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
 import           ZkFold.Base.Control.HApplicative (HApplicative, hliftA2, hpure)
@@ -51,8 +44,6 @@ type PayloadFunctor f = (Representable f, IsVariable (R.Rep f))
 
 type LayoutFunctor f = (Binary1 f, NFData1 f, PayloadFunctor f, Traversable f)
 
-type ContextKind = (Type -> Type) -> Type
-
 -- | A class for Symbolic data types.
 class
     ( Symbolic (Context x)
@@ -60,7 +51,7 @@ class
     , PayloadFunctor (Payload x)
     ) => SymbolicData x where
 
-    type Context x :: ContextKind
+    type Context x :: (Type -> Type) -> Type
     type Context x = GContext (G.Rep x)
 
     type Support x :: Type
@@ -180,30 +171,16 @@ instance
     , Support y ~ Support z
     ) => SymbolicData (v, w, x, y, z) where
 
-newtype RepresentableSymbolicData f x = RSD {rsd :: f x}
-  deriving ( G.Generic, Show, Binary, NFData, NFData1, Semialign, Zip
-           , Functor, Foldable, Traversable, Representable)
+instance (SymbolicData x, KnownNat n) => SymbolicData (Vector n x) where
+    type Context (Vector n x) = Context x
+    type Support (Vector n x) = Support x
+    type Layout (Vector n x) = Vector n :.: Layout x
+    type Payload (Vector n x) = Vector n :.: Payload x
 
-instance Distributive f => Distributive (RepresentableSymbolicData f) where
-  distribute = RSD . distribute . fmap rsd
-  collect f = RSD . collect (rsd . f)
-
-instance
-  (LayoutFunctor f, SymbolicData x) =>
-  SymbolicData (RepresentableSymbolicData f x) where
-    type Context (RepresentableSymbolicData f x) = Context x
-    type Support (RepresentableSymbolicData f x) = Support x
-    type Layout (RepresentableSymbolicData f x) = f :.: Layout x
-    type Payload (RepresentableSymbolicData f x) = f :.: Payload x
-
-    arithmetize xs s = pack (flip arithmetize s <$> rsd xs)
-    payload xs s = Comp1 (flip payload s <$> rsd xs)
-    restore =
-      RSD . R.tabulate . (\f i -> restore (bimap (hmap (ix i)) (ix i) . f))
+    arithmetize xs s = pack (flip arithmetize s <$> xs)
+    payload xs s = Comp1 (flip payload s <$> xs)
+    restore f = R.tabulate (\i -> restore (bimap (hmap (ix i)) (ix i) . f))
       where ix i = flip R.index i . unComp1
-
-deriving via (RepresentableSymbolicData (Vector n) x) instance
-  (KnownNat n, SymbolicData x) => SymbolicData (Vector n x)
 
 instance SymbolicData f => SymbolicData (x -> f) where
     type Context (x -> f) = Context f
