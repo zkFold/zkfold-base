@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Input (
     SymbolicInput (..)
