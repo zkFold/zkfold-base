@@ -13,8 +13,8 @@ import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..),
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
--- import           ZkFold.Base.Algebra.EllipticCurve.Class     (ScalarField)
--- import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas)
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (ScalarFieldOf)
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas_Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyVec)
 import           ZkFold.Base.Data.Package                    (unpacked)
 import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
@@ -40,9 +40,7 @@ import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 import           ZkFold.Symbolic.Data.Payloaded              (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
-import           Tests.Group                                 (specAdditiveGroup')
-import ZkFold.Base.Algebra.EllipticCurve.Pasta (Pallas_Point)
-import ZkFold.Base.Algebra.EllipticCurve.Class (ScalarFieldOf)
+import           Tests.Base.Algebra.Group                    (specAdditiveGroup')
 
 type A = Zp BLS12_381_Scalar
 type C = Par1
