@@ -6,10 +6,10 @@ module ZkFold.Symbolic.Data.Conditional where
 
 import qualified Data.Bool                        as H
 import           Data.Function                    (($))
-import           Data.Functor.Rep                 (Representable, mzipWithRep)
+import           Data.Functor.Rep                 (mzipWithRep)
 import           Data.Proxy
-import           Data.Traversable                 (Traversable)
-import           GHC.Generics
+import           GHC.Generics                     (K1 (..), M1 (..), Par1 (..), Rec0, type (:*:) (..))
+import qualified GHC.Generics                     as G
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -29,8 +29,8 @@ class BoolType b => Conditional b a where
     --
     -- [On false] @bool onFalse onTrue 'false' == onFalse@
     bool :: a -> a -> b -> a
-    default bool :: (Generic a, GConditional b (Rep a)) => a -> a -> b -> a
-    bool f t b = to (gbool (from f) (from t) b)
+    default bool :: (G.Generic a, GConditional b (G.Rep a)) => a -> a -> b -> a
+    bool f t b = G.to (gbool (G.from f) (G.from t) b)
 
 ifThenElse :: Conditional b a => b -> a -> a -> a
 ifThenElse b x y = bool y x b
@@ -38,10 +38,7 @@ ifThenElse b x y = bool y x b
 (?) :: Conditional b a => b -> a -> a -> a
 (?) = ifThenElse
 
-instance ( Symbolic c
-         , Traversable f
-         , Representable f
-         ) => Conditional (Bool c) (c f) where
+instance (Symbolic c, LayoutFunctor f) => Conditional (Bool c) (c f) where
     bool x y (Bool b) = restore $ \s ->
       ( fromCircuit3F b (arithmetize x s) (arithmetize y s) $ \(Par1 c) ->
           mzipWithMRep $ \i j -> do
