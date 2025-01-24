@@ -4,35 +4,35 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Symbolic.Data.Ed25519 (Ed25519_Point) where
+module ZkFold.Symbolic.Data.Secp256k1 (Secp256k1_Point) where
 
-import           Prelude                                   (fromInteger, type (~), ($))
-import qualified Prelude                                   as P
+import           Prelude                                     (fromInteger, type (~), ($))
+import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_PointOf)
-import           ZkFold.Symbolic.Class                     (Symbolic (..))
+import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Base, Secp256k1_PointOf)
+import           ZkFold.Symbolic.Class                       (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
 
-type Ed25519_Point ctx = Ed25519_PointOf (FFA Ed25519_Base ctx)
+type Secp256k1_Point ctx = Secp256k1_PointOf (Bool ctx) (FFA Secp256k1_Base ctx)
 
-instance Symbolic ctx => CyclicGroup (Ed25519_Point ctx) where
-  type ScalarFieldOf (Ed25519_Point ctx) = FieldElement ctx
+instance Symbolic ctx => CyclicGroup (Secp256k1_Point ctx) where
+  type ScalarFieldOf (Secp256k1_Point ctx) = FieldElement ctx
   pointGen = pointXY
-    (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
-    (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
+    (fromConstant (0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798 :: Natural))
+    (fromConstant (0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8 :: Natural))
 
 instance
   ( Symbolic ctx
   , a ~ BaseField ctx
   , bits ~ NumberOfBits a
-  ) => Scale (FieldElement ctx) (Ed25519_Point ctx) where
+  ) => Scale (FieldElement ctx) (Secp256k1_Point ctx) where
 
     scale sc x = sum $ P.zipWith (\b p -> bool @(Bool ctx) zero p (isSet bits b)) [upper, upper -! 1 .. 0] (P.iterate (\e -> e + e) x)
         where

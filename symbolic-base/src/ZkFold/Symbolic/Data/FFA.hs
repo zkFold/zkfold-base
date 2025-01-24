@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.FFA (FFA (..), Size, coprimesDownFrom, coprimes) where
@@ -15,7 +16,7 @@ import           Data.Ratio                       ((%))
 import           Data.Traversable                 (for, traverse)
 import           Data.Tuple                       (fst, snd, uncurry)
 import           Data.Zip                         (zipWith)
-import           Prelude                          (Integer, error)
+import           Prelude                          (Integer, error, type (~))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -215,7 +216,7 @@ instance Finite (Zp p) => Finite (FFA p b) where
 -- FIXME: This Eq instance is wrong
 deriving newtype instance Symbolic c => Eq (Bool c) (FFA p c)
 
-deriving newtype instance Symbolic c => Conditional (Bool c) (FFA p c)
+deriving newtype instance (Symbolic c, b ~ Bool c) => Conditional b (FFA p c)
 
 -- | TODO: fix when rewrite is done
 instance (Symbolic c) => SymbolicInput (FFA p c) where

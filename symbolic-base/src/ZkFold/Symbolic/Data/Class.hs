@@ -1,19 +1,26 @@
-{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Class (
+        IsVariable,
+        LayoutFunctor,
+        PayloadFunctor,
         SymbolicData (..),
         SymbolicOutput,
         GSymbolicData (..),
     ) where
 
 import           Control.Applicative              ((<*>))
+import           Control.DeepSeq                  (NFData, NFData1)
 import           Data.Bifunctor                   (bimap)
+import           Data.Binary                      (Binary)
 import           Data.Function                    (flip, (.))
 import           Data.Functor                     ((<$>))
-import           Data.Functor.Rep                 (Representable (..))
+import           Data.Functor.Rep                 (Representable)
+import qualified Data.Functor.Rep                 as R
 import           Data.Kind                        (Type)
+import           Data.Ord                         (Ord)
 import           Data.Traversable                 (Traversable)
 import           Data.Tuple                       (fst)
 import           Data.Type.Equality               (type (~))
@@ -23,19 +30,25 @@ import qualified GHC.Generics                     as G
 
 import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
 import           ZkFold.Base.Control.HApplicative (HApplicative, hliftA2, hpure)
+import           ZkFold.Base.Data.ByteString      (Binary1)
 import           ZkFold.Base.Data.HFunctor        (hmap)
-import           ZkFold.Base.Data.Package         (Package, pack)
+import           ZkFold.Base.Data.Orphans         ()
+import           ZkFold.Base.Data.Package         (pack)
 import           ZkFold.Base.Data.Product         (fstP, sndP)
 import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (WitnessField))
-import           ZkFold.Symbolic.Data.Bool        (Bool (Bool))
+
+type IsVariable v = (Binary v, NFData v, Ord v)
+
+type PayloadFunctor f = (Representable f, IsVariable (R.Rep f))
+
+type LayoutFunctor f = (Binary1 f, NFData1 f, PayloadFunctor f, Traversable f)
 
 -- | A class for Symbolic data types.
 class
     ( Symbolic (Context x)
-    , Traversable (Layout x)
-    , Representable (Layout x)
-    , Representable (Payload x)
+    , LayoutFunctor (Layout x)
+    , PayloadFunctor (Payload x)
     ) => SymbolicData x where
 
     type Context x :: (Type -> Type) -> Type
@@ -88,12 +101,7 @@ class
 
 type SymbolicOutput x = (SymbolicData x, Support x ~ Proxy (Context x))
 
-instance
-    ( Symbolic c
-    , Representable f
-    , Traversable f
-    ) => SymbolicData (c (f :: Type -> Type)) where
-
+instance (Symbolic c, LayoutFunctor f) => SymbolicData (c f) where
     type Context (c f) = c
     type Support (c f) = Proxy c
     type Layout (c f) = f
@@ -102,8 +110,6 @@ instance
     arithmetize x _ = x
     payload _ _ = U1
     restore f = fst (f Proxy)
-
-deriving newtype instance Symbolic c => SymbolicData (Bool c)
 
 instance Symbolic c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
     type Context (Proxy c) = c
@@ -165,12 +171,7 @@ instance
     , Support y ~ Support z
     ) => SymbolicData (v, w, x, y, z) where
 
-instance
-    ( SymbolicData x
-    , Package (Context x)
-    , KnownNat n
-    ) => SymbolicData (Vector n x) where
-
+instance (SymbolicData x, KnownNat n) => SymbolicData (Vector n x) where
     type Context (Vector n x) = Context x
     type Support (Vector n x) = Support x
     type Layout (Vector n x) = Vector n :.: Layout x
@@ -178,8 +179,8 @@ instance
 
     arithmetize xs s = pack (flip arithmetize s <$> xs)
     payload xs s = Comp1 (flip payload s <$> xs)
-    restore f = tabulate (\i -> restore (bimap (hmap (ix i)) (ix i) . f))
-      where ix i = flip index i . unComp1
+    restore f = R.tabulate (\i -> restore (bimap (hmap (ix i)) (ix i) . f))
+      where ix i = flip R.index i . unComp1
 
 instance SymbolicData f => SymbolicData (x -> f) where
     type Context (x -> f) = Context f
