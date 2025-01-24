@@ -13,6 +13,8 @@ import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..),
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (ScalarField)
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas)
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyVec)
 import           ZkFold.Base.Data.Package                    (unpacked)
 import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
@@ -23,6 +25,7 @@ import           ZkFold.Base.Protocol.IVC.AccumulatorScheme  as Acc
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (AlgebraicMap, algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit             ()
 import           ZkFold.Base.Protocol.IVC.CommitOpen         (commitOpen)
+import           ZkFold.Base.Protocol.IVC.CycleFold          (ForeignPoint)
 import           ZkFold.Base.Protocol.IVC.FiatShamir         (FiatShamir, fiatShamir)
 import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle             (MiMCHash)
@@ -36,6 +39,8 @@ import           ZkFold.Symbolic.Data.Bool                   (Bool, true)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 import           ZkFold.Symbolic.Data.Payloaded              (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
+
+import           Tests.Group                                 (specAdditiveGroup')
 
 type A = Zp BLS12_381_Scalar
 type C = Par1
@@ -160,4 +165,5 @@ specIVC = do
     print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
     specAlgebraicMap
     specAccumulatorScheme
+    specAdditiveGroup' @(ForeignPoint MiMCHash 2 1 (ScalarField Pallas) (Interpreter (ScalarField Pallas)))
     specIVC'
