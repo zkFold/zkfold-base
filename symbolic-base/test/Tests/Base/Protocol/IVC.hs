@@ -8,6 +8,7 @@ import           GHC.IsList                                  (IsList (..))
 import           Prelude                                     hiding (Bool (..), Num (..), pi, replicate, sum, (+))
 import           Test.Hspec                                  (describe, hspec, it)
 import           Test.QuickCheck                             (arbitrary, generate, property, withMaxSuccess)
+import           Tests.Base.Algebra.Group                    (specAdditiveGroup')
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), Ring, ToConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -39,8 +40,6 @@ import           ZkFold.Symbolic.Data.Bool                   (Bool, true)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 import           ZkFold.Symbolic.Data.Payloaded              (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
-
-import           Tests.Base.Algebra.Group                    (specAdditiveGroup')
 
 type A = Zp BLS12_381_Scalar
 type C = Par1

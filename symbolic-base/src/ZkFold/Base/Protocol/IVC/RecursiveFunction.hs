@@ -29,7 +29,7 @@ import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), PredicateFunction, predicate)
 import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
-import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..), LayoutFunctor)
+import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor, SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional           (Conditional (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)

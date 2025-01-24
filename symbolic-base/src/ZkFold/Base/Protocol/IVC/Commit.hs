@@ -20,7 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (CyclicGroup(..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (CyclicGroup (..))
 import           ZkFold.Base.Data.ByteString                 (LittleEndian (..))
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Symbolic.Class                       (Symbolic)

@@ -6,15 +6,15 @@
 
 module Tests.Base.Algebra.Group (specAdditiveGroup, specAdditiveGroup') where
 
-import           Data.Data                                        (Typeable, typeOf)
-import           Prelude                                          hiding (Fractional (..), Num (..), length)
+import           Data.Data                                   (Typeable, typeOf)
+import           Prelude                                     hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.BN254
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta          (Pallas_Point, Vesta_Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point)
 
 specAdditiveGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
 specAdditiveGroup' = hspec $ do
