@@ -3,6 +3,7 @@
 
 module ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext where
 
+import           Control.DeepSeq                            (NFData1)
 import           Data.Distributive                          (Distributive (..))
 import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep, mzipWithRep)
 import           Data.These                                 (These (..))
@@ -64,6 +65,10 @@ instance Semialign NativeOperation where
 instance Zip NativeOperation where
     zipWith = mzipWithRep
 
+instance Binary a => Binary (NativeOperation a)
+
+instance NFData1 NativeOperation
+
 --------------------------------------------------------------------------------
 
 data NativePayload f = NativePayload (PrimaryField f) (PrimaryGroup f) (PrimaryGroup f) (Par1 f)
@@ -74,6 +79,10 @@ instance Distributive NativePayload where
     collect = collectRep
 
 instance Representable NativePayload
+
+instance Binary a => Binary (NativePayload a)
+
+instance NFData1 NativePayload
 
 --------------------------------------------------------------------------------
 
