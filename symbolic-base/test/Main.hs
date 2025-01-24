@@ -1,7 +1,7 @@
 module Main where
 
-import           Prelude                   hiding (Bool, Fractional (..), Num (..), drop, length, replicate, take, (==))
-
+import           Prelude                                 hiding (Bool, Fractional (..), Num (..), drop, length,
+                                                          replicate, take, (==))
 import           Tests.Base.Algebra.EllipticCurve        (specEllipticCurve)
 import           Tests.Base.Algebra.Field                (specField)
 import           Tests.Base.Algebra.GroebnerBasis        (specGroebner)
@@ -10,7 +10,6 @@ import           Tests.Base.Algebra.Pairing              (specPairing)
 import           Tests.Base.Algebra.Permutations         (specPermutations)
 import           Tests.Base.Algebra.ReedSolomon          (specReedSolomon)
 import           Tests.Base.Algebra.Univariate           (specUnivariate)
-
 import           Tests.Base.Data.Binary                  (specBinary)
 import           Tests.Base.Protocol.IVC                 (specIVC)
 import           Tests.Base.Protocol.NonInteractiveProof (specNonInteractiveProof)

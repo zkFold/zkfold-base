@@ -5,21 +5,21 @@
 
 module Tests.Symbolic.Compiler.CompileWith (specCompileWith) where
 
-import           Control.Applicative                         ((<*>))
-import           Control.Monad                               (return)
-import           Data.Binary                                 (Binary)
-import           Data.Function                               (($))
-import           Data.Functor                                ((<$>))
-import           GHC.Generics                                (U1 (..), (:*:) (..))
-import           Test.Hspec                                  (describe, Spec)
-import           Test.Hspec.QuickCheck                       (prop)
-import           Test.QuickCheck                             (Arbitrary (..))
-import           Text.Show                                   (Show)
+import           Control.Applicative             ((<*>))
+import           Control.Monad                   (return)
+import           Data.Binary                     (Binary)
+import           Data.Function                   (($))
+import           Data.Functor                    ((<$>))
+import           GHC.Generics                    (U1 (..), (:*:) (..))
+import           Test.Hspec                      (Spec, describe)
+import           Test.Hspec.QuickCheck           (prop)
+import           Test.QuickCheck                 (Arbitrary (..))
+import           Text.Show                       (Show)
 
-import           ZkFold.Symbolic.Class                       (Arithmetic, Symbolic)
-import           ZkFold.Symbolic.Compiler                    (compileWith, guessOutput, isConstantInput)
-import           ZkFold.Symbolic.Data.Bool                   ((&&))
-import           ZkFold.Symbolic.Data.ByteString             (ByteString)
+import           ZkFold.Symbolic.Class           (Arithmetic, Symbolic)
+import           ZkFold.Symbolic.Compiler        (compileWith, guessOutput, isConstantInput)
+import           ZkFold.Symbolic.Data.Bool       ((&&))
+import           ZkFold.Symbolic.Data.ByteString (ByteString)
 
 testFunction :: Symbolic c => ByteString 256 c -> ByteString 256 c -> ByteString 256 c
 testFunction = (&&)

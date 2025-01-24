@@ -9,8 +9,8 @@ import           Data.Binary                                 (Binary)
 import           Data.Bool                                   (bool)
 import           Data.Functor                                ((<$>))
 import           Data.Functor.Rep                            (Representable (..))
-import           GHC.Generics                                (U1 (..), Par1)
-import           Prelude                                     (IO, Show, String, id, ($), Ord, Foldable, return)
+import           GHC.Generics                                (Par1, U1 (..))
+import           Prelude                                     (Foldable, IO, Ord, Show, String, id, return, ($))
 import qualified Prelude                                     as Haskell
 import qualified Test.Hspec
 import           Test.Hspec                                  (Spec, describe, hspec)
@@ -19,8 +19,8 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Data.Vector                     (Vector)
 import qualified ZkFold.Base.Data.Vector                     as V
+import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool
