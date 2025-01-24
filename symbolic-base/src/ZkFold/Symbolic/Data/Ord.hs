@@ -12,7 +12,6 @@ import           Data.Data                        (Proxy (..))
 import           Data.Foldable                    (Foldable, concatMap, toList)
 import           Data.Function                    ((.))
 import           Data.Functor                     (fmap, (<$>))
-import           Data.Functor.Rep                 (Representable)
 import           Data.List                        (map, reverse)
 import           Data.Traversable                 (Traversable (traverse))
 import qualified Data.Zip                         as Z
@@ -59,11 +58,7 @@ instance Haskell.Ord a => Ord Haskell.Bool a where
     min = Haskell.min
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
-instance
-    ( Symbolic c
-    , Representable f
-    , Traversable f
-    ) => Ord (Bool c) (c f) where
+instance (Symbolic c, LayoutFunctor f) => Ord (Bool c) (c f) where
 
     x <= y = y >= x
 

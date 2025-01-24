@@ -20,7 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (CyclicGroup(..))
 import           ZkFold.Base.Data.ByteString                 (LittleEndian (..))
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Symbolic.Class                       (Symbolic)
@@ -45,26 +45,35 @@ class AdditiveGroup c => HomomorphicCommit a c where
 class PedersonSetup s c where
     groupElements :: s c
 
-instance (EllipticCurve curve, Random (ScalarField curve)) => PedersonSetup [] (Point curve) where
+instance {-# OVERLAPPING #-}
+    ( CyclicGroup g
+    , Random (ScalarFieldOf g)
+    ) => PedersonSetup [] g where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
-        let x = fst $ random $ mkStdGen 0 :: ScalarField curve
-        in iterate (mul x) pointGen
+        let x = fst $ random $ mkStdGen 0 :: ScalarFieldOf g
+        in iterate (scale x) pointGen
 
 instance
-    ( EllipticCurve curve
-    , Random (ScalarField curve)
+    ( CyclicGroup g
+    , Random (ScalarFieldOf g)
     , Representable s
     , Binary (Rep s)
-    , Exponent (ScalarField curve) Natural
-    ) => PedersonSetup s (Point curve) where
+    , Exponent (ScalarFieldOf g) Natural
+    ) => PedersonSetup s g where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
-        let x = fst $ random $ mkStdGen 0 :: ScalarField curve
+        let x = fst $ random $ mkStdGen 0 :: ScalarFieldOf g
             f = unLittleEndian . decode . encode
-        in tabulate (\i -> mul (x^f i) pointGen)
+        in tabulate (\i -> scale (x^f i) pointGen)
 
-instance (PedersonSetup s c, Zip s, Foldable s, Scale f c, AdditiveGroup c) => HomomorphicCommit (s f) c where
+instance
+  ( PedersonSetup s g
+  , Zip s
+  , Foldable s
+  , Scale f g
+  , AdditiveGroup g
+  ) => HomomorphicCommit (s f) g where
     hcommit v = sum $ zipWith scale v groupElements
 
 --------------------------------------------------------------------------------
@@ -131,13 +140,17 @@ instance Exponent f Integer => Exponent (Par1 f) Integer where
 instance (FiniteField f) => Field (Par1 f) where
     (//) (Par1 x) (Par1 y) = Par1 $ x // y
 
+-- instance (FiniteField f) => CyclicGroup (Par1 f) where
+--     type ScalarFieldOf (Par1 f) = f
+--     pointGen = Par1 (one + one)
+
 instance Symbolic ctx => Conditional (Bool ctx) (Par1 (FieldElement ctx)) where
     bool x y b = Par1 $ bool (unPar1 x) (unPar1 y) b
 
 instance Symbolic ctx => Eq (Bool ctx) (Par1 (FieldElement ctx)) where
     Par1 x == Par1 y = x == y
 
-instance (FiniteField f) => PedersonSetup [] (Par1 f) where
+instance {-# OVERLAPPING #-} (FiniteField f) => PedersonSetup [] (Par1 f) where
     groupElements =
         let x = toConstant $ fst $ random @(Zp BLS12_381_Scalar) $ mkStdGen 0
         in map Par1 $ iterate (natScale x) (one + one)

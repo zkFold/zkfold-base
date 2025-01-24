@@ -14,6 +14,7 @@ import           ZkFold.Base.Data.Package          (packed, unpacked)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler          (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.Class (LayoutFunctor)
 
 type PredicateFunctionAssumptions a f =
     ( FiniteField f
@@ -29,19 +30,19 @@ data Predicate a i p = Predicate
     , predicateCircuit  :: PredicateCircuit a i p
     }
 
-type FunctorAssumptions t =
-    ( Representable t
-    , Traversable t
-    , NFData (Rep t)
-    , Binary (Rep t)
-    , Ord (Rep t)
-    )
+-- type FunctorAssumptions t =
+--     ( Representable t
+--     , Traversable t
+--     , NFData (Rep t)
+--     , Binary (Rep t)
+--     , Ord (Rep t)
+--     )
 
 predicate :: forall a i p .
     ( Arithmetic a
     , Binary a
-    , FunctorAssumptions i
-    , FunctorAssumptions p
+    , LayoutFunctor i
+    , LayoutFunctor p
     ) => PredicateFunction a i p -> Predicate a i p
 predicate predicateFunction =
     let
