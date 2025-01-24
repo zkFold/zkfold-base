@@ -6,9 +6,10 @@
 
 module ZkFold.Base.Protocol.IVC.Accumulator where
 
-import           Control.DeepSeq                       (NFData (..))
+import           Control.DeepSeq                       (NFData (..), NFData1)
 import           Control.Lens                          ((^.))
 import           Control.Lens.Combinators              (makeLenses)
+import           Data.Binary                           (Binary)
 import           Data.Distributive                     (Distributive (..))
 import           Data.Functor.Rep                      (Representable (..), collectRep, distributeRep)
 import           GHC.Generics
@@ -16,6 +17,7 @@ import           Prelude                               hiding (length, pi)
 
 import           ZkFold.Base.Algebra.Basic.Class       (Ring, Scale, zero)
 import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (+), type (-))
+import           ZkFold.Base.Data.ByteString           (Binary1)
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
@@ -32,9 +34,11 @@ data AccumulatorInstance k i c f
         , _e  :: c f             -- E ∈ C in the paper
         , _mu :: f               -- μ ∈ F in the paper
         }
-    deriving (Show, Eq, Generic, Generic1, NFData, Functor, Foldable, Traversable)
+    deriving (Show, Eq, Generic, Generic1, NFData, NFData1, Functor, Foldable, Traversable)
 
 makeLenses ''AccumulatorInstance
+
+instance (KnownNat k, KnownNat (k - 1), Binary1 i, Binary1 c, Binary f) => Binary (AccumulatorInstance k i c f)
 
 instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Distributive (AccumulatorInstance k i c) where
     distribute = distributeRep

@@ -7,32 +7,30 @@ import qualified Data.Vector                                     as V
 import           Prelude                                         hiding (Num (..), drop, length, sum, take, (!!), (/),
                                                                   (^))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class         (EllipticCurve (..), Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Class         (CyclicGroup (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate      hiding (qr)
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Base.Protocol.Plonkup.Relation           (PlonkupRelation (..))
 
-data PlonkupProverSetup p i n l c1 c2 = PlonkupProverSetup
-    { omega       :: ScalarField c1
-    , k1          :: ScalarField c1
-    , k2          :: ScalarField c1
-    , gs          :: V.Vector (Point c1)
-    , sigma1s     :: PolyVec (ScalarField c1) n
-    , sigma2s     :: PolyVec (ScalarField c1) n
-    , sigma3s     :: PolyVec (ScalarField c1) n
-    , relation    :: PlonkupRelation p i n l (ScalarField c1)
-    , polynomials :: PlonkupCircuitPolynomials n c1
+data PlonkupProverSetup p i n l g1 g2 = PlonkupProverSetup
+    { omega       :: ScalarFieldOf g1
+    , k1          :: ScalarFieldOf g1
+    , k2          :: ScalarFieldOf g1
+    , gs          :: V.Vector g1
+    , sigma1s     :: PolyVec (ScalarFieldOf g1) n
+    , sigma2s     :: PolyVec (ScalarFieldOf g1) n
+    , sigma3s     :: PolyVec (ScalarFieldOf g1) n
+    , relation    :: PlonkupRelation p i n l (ScalarFieldOf g1)
+    , polynomials :: PlonkupCircuitPolynomials n g1
     }
 
 instance
-        ( EllipticCurve c1
-        , EllipticCurve c2
-        , Show (BaseField c1)
-        , Show (BaseField c2)
-        , Show (ScalarField c1)
-        , Show (PlonkupRelation p i n l (ScalarField c1))
-        , BooleanOf c1 ~ Bool
-        ) => Show (PlonkupProverSetup p i n l c1 c2) where
+        ( CyclicGroup g1
+        , Show g1
+        , Show g2
+        , Show (ScalarFieldOf g1)
+        , Show (PlonkupRelation p i n l (ScalarFieldOf g1))
+        ) => Show (PlonkupProverSetup p i n l g1 g2) where
     show PlonkupProverSetup {..} =
         "Prover setup: "
         ++ show omega ++ " "

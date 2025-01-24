@@ -22,6 +22,7 @@ import           Text.Show                       (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class      (SymbolicData)
 import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit    (newAssigned)
 
@@ -60,6 +61,8 @@ newtype Bool c = Bool (c Par1)
 deriving instance NFData (c Par1) => NFData (Bool c)
 deriving instance Eq (c Par1) => Eq (Bool c)
 deriving instance Show (c Par1) => Show (Bool c)
+
+instance Symbolic c => SymbolicData (Bool c)
 
 instance {-# OVERLAPPING #-} (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
     show (fromBool -> x) = if x == one then "True" else "False"
