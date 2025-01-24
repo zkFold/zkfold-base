@@ -7,7 +7,6 @@ import           Prelude                                           hiding (Num (
                                                                     (^))
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class           (EllipticCurve (..), Point)
-import           ZkFold.Base.Algebra.Polynomials.Univariate        hiding (qr)
 import           ZkFold.Base.Protocol.Plonkup.Relation             (PlonkupRelation (..))
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 
@@ -16,10 +15,6 @@ data PlonkupVerifierSetup p i n l c1 c2 = PlonkupVerifierSetup
     , k1          :: ScalarField c1
     , k2          :: ScalarField c1
     , h1          :: Point c2
-    , sigma1s     :: PolyVec (ScalarField c1) n
-    , sigma2s     :: PolyVec (ScalarField c1) n
-    , sigma3s     :: PolyVec (ScalarField c1) n
-    , relation    :: PlonkupRelation p i n l (ScalarField c1)
     , commitments :: PlonkupCircuitCommitments c1
     }
 
@@ -39,8 +34,4 @@ instance
         ++ show k1 ++ " "
         ++ show k2 ++ " "
         ++ show h1 ++ " "
-        ++ show sigma1s ++ " "
-        ++ show sigma2s ++ " "
-        ++ show sigma3s ++ " "
-        ++ show relation ++ " "
         ++ show commitments

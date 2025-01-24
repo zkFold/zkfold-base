@@ -7,7 +7,7 @@ module ZkFold.Base.Protocol.Plonk (
 
 import           Data.Binary                                         (Binary)
 import           Data.Functor.Classes                                (Show1)
-import           Data.Functor.Rep                                    (Rep)
+import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Kind                                           (Type)
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
@@ -16,19 +16,21 @@ import qualified Prelude                                             as P hiding
 import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class                     (AdditiveGroup)
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Protocol.NonInteractiveProof
+import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (CompressedPoint, EllipticCurve (..), Pairing)
+import           ZkFold.Base.Protocol.NonInteractiveProof.Internal   (CoreFunction, FromTranscript,
+                                                                      NonInteractiveProof (..), ToTranscript)
 import           ZkFold.Base.Protocol.Plonk.Prover                   (plonkProve)
 import           ZkFold.Base.Protocol.Plonk.Verifier                 (plonkVerify)
-import           ZkFold.Base.Protocol.Plonkup.Input
-import           ZkFold.Base.Protocol.Plonkup.Internal
-import           ZkFold.Base.Protocol.Plonkup.Proof
-import           ZkFold.Base.Protocol.Plonkup.Prover
-import           ZkFold.Base.Protocol.Plonkup.Verifier
-import           ZkFold.Base.Protocol.Plonkup.Witness
-import           ZkFold.Symbolic.Compiler                            (desugarRanges)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Base.Protocol.Plonkup.Input                  (PlonkupInput)
+import           ZkFold.Base.Protocol.Plonkup.Internal               (Plonkup (..))
+import           ZkFold.Base.Protocol.Plonkup.Proof                  (PlonkupProof)
+import           ZkFold.Base.Protocol.Plonkup.Prover.Secret          (PlonkupProverSecret)
+import           ZkFold.Base.Protocol.Plonkup.Prover.Setup           (PlonkupProverSetup)
+import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup         (PlonkupVerifierSetup)
+import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit          (desugarRanges)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
 import qualified ZkFold.Symbolic.Data.Ord                            as Sym
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
@@ -72,6 +74,9 @@ instance forall p i n l c1 c2 (ts :: Type) core .
         , Proof (Plonkup p i n l c1 c2 ts) ~ PlonkupProof c1
         , KnownNat n
         , Foldable l
+        , Representable p
+        , Representable i
+        , Representable l
         , Sym.Ord (BooleanOf c1) (BaseField c1)
         , AdditiveGroup (BaseField c1)
         , Pairing c1 c2
@@ -81,6 +86,7 @@ instance forall p i n l c1 c2 (ts :: Type) core .
         , ToTranscript ts (CompressedPoint c1)
         , FromTranscript ts (ScalarField c1)
         , CoreFunction c1 core
+        , Binary (ScalarField c2)
         ) => NonInteractiveProof (Plonk p i n l c1 c2 ts) core where
     type Transcript (Plonk p i n l c1 c2 ts)  = ts
     type SetupProve (Plonk p i n l c1 c2 ts)  = PlonkupProverSetup p i n l c1 c2
