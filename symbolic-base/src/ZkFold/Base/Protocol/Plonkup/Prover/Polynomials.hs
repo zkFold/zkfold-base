@@ -4,22 +4,22 @@ module ZkFold.Base.Protocol.Plonkup.Prover.Polynomials where
 
 import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
-import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import           ZkFold.Base.Protocol.Plonkup.Internal   (PlonkupPolyExtended)
 
-data PlonkupCircuitPolynomials n c = PlonkupCircuitPolynomials {
-        qlX :: PlonkupPolyExtended n c,
-        qrX :: PlonkupPolyExtended n c,
-        qoX :: PlonkupPolyExtended n c,
-        qmX :: PlonkupPolyExtended n c,
-        qcX :: PlonkupPolyExtended n c,
-        qkX :: PlonkupPolyExtended n c,
-        s1X :: PlonkupPolyExtended n c,
-        s2X :: PlonkupPolyExtended n c,
-        s3X :: PlonkupPolyExtended n c,
-        tX  :: PlonkupPolyExtended n c
+data PlonkupCircuitPolynomials n g = PlonkupCircuitPolynomials {
+        qlX :: PlonkupPolyExtended n g,
+        qrX :: PlonkupPolyExtended n g,
+        qoX :: PlonkupPolyExtended n g,
+        qmX :: PlonkupPolyExtended n g,
+        qcX :: PlonkupPolyExtended n g,
+        qkX :: PlonkupPolyExtended n g,
+        s1X :: PlonkupPolyExtended n g,
+        s2X :: PlonkupPolyExtended n g,
+        s3X :: PlonkupPolyExtended n g,
+        tX  :: PlonkupPolyExtended n g
     }
-instance Show (ScalarField c) => Show (PlonkupCircuitPolynomials n c) where
+instance Show (ScalarFieldOf g) => Show (PlonkupCircuitPolynomials n g) where
     show PlonkupCircuitPolynomials {..} =
         "Circuit Polynomials: "
         ++ show qlX ++ " "

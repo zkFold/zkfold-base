@@ -26,8 +26,8 @@ import           Text.Show                                           (showsPrec)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (fromZp)
 import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1, BLS12_381_G2)
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1_Point, BLS12_381_G2_Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (CyclicGroup (..))
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.Vector                             (Vector)
@@ -74,10 +74,10 @@ propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs
 
 propPlonkPolyEquality :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
-    => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
-    -> PlonkupWitnessInput p i BLS12_381_G1
-    -> PlonkupProverSecret BLS12_381_G1
-    -> ScalarField BLS12_381_G1
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString
+    -> PlonkupWitnessInput p i BLS12_381_G1_Point
+    -> PlonkupProverSecret BLS12_381_G1_Point
+    -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propPlonkPolyEquality plonk witness secret pow =
     let setup = setupProve @_ @HaskellCore plonk
@@ -87,9 +87,9 @@ propPlonkPolyEquality plonk witness secret pow =
 
 propPlonkGrandProductIsCorrect :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
-    => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
-    -> PlonkupWitnessInput p i BLS12_381_G1
-    -> PlonkupProverSecret BLS12_381_G1
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString
+    -> PlonkupWitnessInput p i BLS12_381_G1_Point
+    -> PlonkupProverSecret BLS12_381_G1_Point
     -> Bool
 propPlonkGrandProductIsCorrect plonk witness secret =
     let setup = setupProve @_ @HaskellCore plonk
@@ -98,10 +98,10 @@ propPlonkGrandProductIsCorrect plonk witness secret =
 
 propPlonkGrandProductEquality :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
-    => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
-    -> PlonkupWitnessInput p i BLS12_381_G1
-    -> PlonkupProverSecret BLS12_381_G1
-    -> ScalarField BLS12_381_G1
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString
+    -> PlonkupWitnessInput p i BLS12_381_G1_Point
+    -> PlonkupProverSecret BLS12_381_G1_Point
+    -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propPlonkGrandProductEquality plonk witness secret pow =
     let setup = setupProve @_ @HaskellCore plonk
@@ -120,10 +120,10 @@ propPlonkGrandProductEquality plonk witness secret pow =
 
 propLookupPolyEquality :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
-    => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
-    -> PlonkupWitnessInput p i BLS12_381_G1
-    -> PlonkupProverSecret BLS12_381_G1
-    -> ScalarField BLS12_381_G1
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString
+    -> PlonkupWitnessInput p i BLS12_381_G1_Point
+    -> PlonkupProverSecret BLS12_381_G1_Point
+    -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propLookupPolyEquality plonk witness secret pow =
     let setup = setupProve @_ @HaskellCore plonk
@@ -134,9 +134,9 @@ propLookupPolyEquality plonk witness secret pow =
 
 propLookupGrandProductIsCorrect :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
-    => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
-    -> PlonkupWitnessInput p i BLS12_381_G1
-    -> PlonkupProverSecret BLS12_381_G1
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString
+    -> PlonkupWitnessInput p i BLS12_381_G1_Point
+    -> PlonkupProverSecret BLS12_381_G1_Point
     -> Bool
 propLookupGrandProductIsCorrect plonk witness secret =
     let setup = setupProve @_ @HaskellCore plonk
@@ -145,10 +145,10 @@ propLookupGrandProductIsCorrect plonk witness secret =
 
 propLookupGrandProductEquality :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
-    => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
-    -> PlonkupWitnessInput p i BLS12_381_G1
-    -> PlonkupProverSecret BLS12_381_G1
-    -> ScalarField BLS12_381_G1
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString
+    -> PlonkupWitnessInput p i BLS12_381_G1_Point
+    -> PlonkupProverSecret BLS12_381_G1_Point
+    -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propLookupGrandProductEquality plonk witness secret pow =
     let setup = setupProve @_ @HaskellCore plonk
@@ -162,9 +162,9 @@ propLookupGrandProductEquality plonk witness secret pow =
 
 propLinearizationPolyEvaluation :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i))
-    => Plonkup p i n l BLS12_381_G1 BLS12_381_G2 ByteString
-    -> PlonkupWitnessInput p i BLS12_381_G1
-    -> PlonkupProverSecret BLS12_381_G1
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString
+    -> PlonkupWitnessInput p i BLS12_381_G1_Point
+    -> PlonkupProverSecret BLS12_381_G1_Point
     -> Bool
 propLinearizationPolyEvaluation plonk witness secret =
     let setup = setupProve @_ @HaskellCore plonk
@@ -182,15 +182,15 @@ specPlonkup :: IO ()
 specPlonkup = hspec $ do
     describe "Plonkup specification" $ do
         describe "Conversion to Plonk constraints and back" $ do
-            it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @(ScalarField BLS12_381_G1)
+            it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @(ScalarFieldOf BLS12_381_G1_Point)
             it "handcrafted polynomials do not cause exceptions " $
-                forM_ problematicPolynomials $ \p -> fromPlonkConstraint (toPlonkConstraint @(ScalarField BLS12_381_G1) p) `shouldBe` p
+                forM_ problematicPolynomials $ \p -> fromPlonkConstraint (toPlonkConstraint @(ScalarFieldOf BLS12_381_G1_Point) p) `shouldBe` p
             it "'ConstVar a' does not cause exceptions " $
-                property $ \v -> fromPlonkConstraint (toPlonkConstraint @(ScalarField BLS12_381_G1) @(Vector 1) (var $ ConstVar v)) == var (ConstVar v)
+                property $ \v -> fromPlonkConstraint (toPlonkConstraint @(ScalarFieldOf BLS12_381_G1_Point) @(Vector 1) (var $ ConstVar v)) == var (ConstVar v)
         describe "Sort by list is correct" $ do
             it "should hold" $ property $ propSortByListIsCorrect @Int
         describe "Plonkup relation" $ do
-            it "should hold" $ property $ propPlonkupRelationHolds @U1 @(Vector 2) @32 @(Vector 3) @(ScalarField BLS12_381_G1)
+            it "should hold" $ property $ propPlonkupRelationHolds @U1 @(Vector 2) @32 @(Vector 3) @(ScalarFieldOf BLS12_381_G1_Point)
         describe "Plonk polynomials equality" $ do
             it "should hold" $ property $ propPlonkPolyEquality @U1 @(Vector 1) @32 @(Vector 2)
         describe "Plonk grand product correctness" $ do
