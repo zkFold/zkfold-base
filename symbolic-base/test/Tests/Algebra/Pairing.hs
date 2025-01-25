@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Tests.Base.Algebra.Pairing (specPairing) where
+module Tests.Algebra.Pairing (specPairing) where
 
 import           Data.Kind                                   (Type)
 import           Data.Typeable                               (Typeable, typeOf)
@@ -69,8 +69,8 @@ specPairing'
     => Arbitrary g2
     => Show g2
     => Show g1
-    => IO ()
-specPairing' = hspec $ do
+    => Spec
+specPairing' = do
     describe "Elliptic curve pairing specification (SLOW)" $ do
         describe ("Type: " ++ show (typeOf (pairing @g1 @g2))) $ do
             describe "Pairing axioms" $ do
@@ -85,7 +85,7 @@ specPairing' = hspec $ do
                 it "should verify KZG commitments" $ withMaxSuccess 10 $ do
                     property $ propVerificationKZG @g1 @g2 @gt @f @HaskellCore
 
-specPairing :: IO ()
+specPairing :: Spec
 specPairing = do
     specPairing' @BN254_G1_Point @BN254_G2_Point
     specPairing' @BLS12_381_G1_Point @BLS12_381_G2_Point

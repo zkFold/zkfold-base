@@ -19,8 +19,7 @@ import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1), U1)
 import           Prelude                                     (show, type (~))
 import qualified Prelude                                     as P
-import           System.IO                                   (IO)
-import           Test.Hspec                                  (describe, hspec)
+import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, Property, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (exec1, it)
 
@@ -102,8 +101,8 @@ specUInt'
     => KnownNat r2n
     => KnownNat (Ceil (GetRegisterSize (Zp p) n rs) OrdWord)
     => KnownNat (Ceil (GetRegisterSize (Zp p) (2 * n) rs) OrdWord)
-    => IO ()
-specUInt' = hspec $ do
+    => Spec
+specUInt' = do
     let n = value @n
         m = 2 ^ n -! 1
     describe ("UInt" ++ show n ++ " specification") $ do
@@ -240,7 +239,7 @@ specUInt' = hspec $ do
             return $ P.Just x' === decode (encode x)
 
 
-specUInt :: IO ()
+specUInt :: Spec
 specUInt = do
     specUInt' @BLS12_381_Scalar @32 @_ @_ @Auto
     specUInt' @BLS12_381_Scalar @500 @_ @_ @Auto

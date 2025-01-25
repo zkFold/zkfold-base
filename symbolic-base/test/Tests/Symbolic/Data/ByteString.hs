@@ -15,8 +15,7 @@ import           Data.List                                   ((++))
 import           GHC.Generics                                (U1)
 import           Prelude                                     (show, type (~), (<>))
 import qualified Prelude                                     as Haskell
-import           System.IO                                   (IO)
-import           Test.Hspec                                  (Spec, describe, hspec)
+import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, Property, chooseInteger, withMaxSuccess, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 
@@ -138,8 +137,8 @@ specByteString'
     => (Div n n) * n ~ n
     => (Div n 4) * 4 ~ n
     => (Div n 2) * 2 ~ n
-    => IO ()
-specByteString' = hspec $ do
+    => Spec
+specByteString' = do
     let n = Haskell.fromIntegral $ value @n
         m = 2 Haskell.^ n -! 1
     describe ("ByteString" ++ show n ++ " specification") $ do
@@ -214,7 +213,7 @@ specByteString' = hspec $ do
         withDict (plusNat @n @n) (testGrow @n @(n + n) @p)
         testJSON @n @p
 
-specByteString :: IO ()
+specByteString :: Spec
 specByteString = do
     specByteString' @BLS12_381_Scalar @32
     specByteString' @BLS12_381_Scalar @512

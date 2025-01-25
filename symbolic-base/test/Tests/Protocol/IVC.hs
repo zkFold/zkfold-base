@@ -1,13 +1,13 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Tests.Base.Protocol.IVC (specIVC) where
+module Tests.Protocol.IVC (specIVC) where
 
 import           Data.Functor.Constant                       (Constant)
 import           GHC.Generics                                (U1 (..), type (:*:) (..))
 import           GHC.IsList                                  (IsList (..))
 import           Prelude                                     hiding (Num (..), pi, replicate, sum, (+))
-import           Test.Hspec                                  (describe, hspec, it)
-import           Test.QuickCheck                             (arbitrary, generate, property, withMaxSuccess)
+import           Test.Hspec                                  (Spec, describe, it)
+import           Test.QuickCheck                             (property, withMaxSuccess)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -114,8 +114,8 @@ testVerifierResult phi =
     let s = testAccumulatorScheme phi
     in verifier s (testPublicInput phi) (testNarkProof phi) (initAccumulatorInstance phi) (testAccumulationProof phi)
 
-specAlgebraicMap :: IO ()
-specAlgebraicMap = hspec $ do
+specAlgebraicMap :: Spec
+specAlgebraicMap = do
     describe "Algebraic map specification" $ do
         describe "Algebraic map" $ do
             it "must output zeros on the public input and testMessages" $ do
@@ -123,8 +123,8 @@ specAlgebraicMap = hspec $ do
                     \p -> algebraicMap @D (testPredicate p) (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
                         == replicate (acSizeN $ testPredicateCircuit p) zero
 
-specAccumulatorScheme :: IO ()
-specAccumulatorScheme = hspec $ do
+specAccumulatorScheme :: Spec
+specAccumulatorScheme = do
     describe "Accumulator scheme specification" $ do
         -- describe "decider" $ do
         --     it  "must output zeros" $ do
@@ -133,9 +133,7 @@ specAccumulatorScheme = hspec $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)
 
-specIVC :: IO ()
+specIVC :: Spec
 specIVC = do
-    p <- generate arbitrary :: IO PAR
-    print $ "Recursion circuit size: " ++ show (acSizeN $ testPredicateCircuit p)
     specAlgebraicMap
     specAccumulatorScheme

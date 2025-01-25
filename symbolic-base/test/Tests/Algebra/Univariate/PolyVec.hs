@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# HLINT ignore "Use -"                  #-}
 
-module Tests.Base.Algebra.Univariate.PolyVec (specUnivariatePolyVec) where
+module Tests.Algebra.Univariate.PolyVec (specUnivariatePolyVec) where
 
 import           Data.Bool                                   (bool)
 import           Data.Data                                   (Typeable, typeOf)
@@ -85,9 +85,8 @@ propPolyVecGrandProduct p beta gamma =
 
 specUnivariatePolyVec' :: forall c s d .
     (KnownNat s, KnownNat d) =>
-    (Arbitrary c, Show c, Typeable c, Field c, Ord c) =>
-    IO ()
-specUnivariatePolyVec' = hspec $ do
+    (Arbitrary c, Show c, Typeable c, Field c, Ord c) => Spec
+specUnivariatePolyVec' = do
     describe "Univariate polynomials specification" $ do
         describe ("Type: " ++ show (typeOf @(PolyVec c s) zero)) $ do
             describe "toPolyVec" $ do
@@ -130,6 +129,6 @@ specUnivariatePolyVec' = hspec $ do
                 it "should satisfy the definition" $ do
                     property $ propPolyVecGrandProduct @c @s
 
-specUnivariatePolyVec :: IO ()
+specUnivariatePolyVec :: Spec
 specUnivariatePolyVec = do
     specUnivariatePolyVec' @Fr @32 @135

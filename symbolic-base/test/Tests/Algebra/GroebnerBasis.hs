@@ -1,4 +1,4 @@
-module Tests.Base.Algebra.GroebnerBasis (specGroebner) where
+module Tests.Algebra.GroebnerBasis (specGroebner) where
 
 import           Data.Map                                     (empty, fromList)
 import           GHC.Natural                                  (Natural)
@@ -16,8 +16,8 @@ testPoly = [
         var 1 + var 1 * var 3
     ]
 
-specGroebner :: IO ()
-specGroebner = hspec $ do
+specGroebner :: Spec
+specGroebner = do
     describe "Groebner basis specification" $ do
         describe "Monomial is 1 test" $ do
             it "should pass" $ do

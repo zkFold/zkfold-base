@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Tests.Base.Algebra.ReedSolomon where
+module Tests.Algebra.ReedSolomon where
 
 import           Data.Bool                                   (bool)
 import           Data.List                                   (sort)
@@ -97,8 +97,8 @@ propDecodeWithError ReedSolomonExample {..} =
         decoded = decode encoded pe r (k+r)
     in toPoly (V.fromList msg) == decoded
 
-specReedSolomon':: forall a . (FiniteField a, Ord a, Arbitrary a, Show a, Typeable a) => IO ()
-specReedSolomon' = hspec $ do
+specReedSolomon':: forall a . (FiniteField a, Ord a, Arbitrary a, Show a, Typeable a) => Spec
+specReedSolomon' = do
     describe "Reed-Solomon" $ do
         describe ("Type: " ++ show (typeOf @a zero)) $ do
             it "generator function is correct" $ do
@@ -114,7 +114,7 @@ specReedSolomon' = hspec $ do
             it "decode function is correct with errors" $ do
                 property $ propDecodeWithError @a
 
-specReedSolomon :: IO ()
+specReedSolomon :: Spec
 specReedSolomon = do
     specReedSolomon' @BN254.Fr
     specReedSolomon' @BN254.Fp

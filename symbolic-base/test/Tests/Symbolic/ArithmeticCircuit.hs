@@ -10,10 +10,10 @@ import           Data.Bool                                   (bool)
 import           Data.Functor                                ((<$>))
 import           Data.Functor.Rep                            (Representable (..))
 import           GHC.Generics                                (Par1, U1 (..))
-import           Prelude                                     (Foldable, IO, Ord, Show, String, id, return, ($))
+import           Prelude                                     (Foldable, Ord, Show, String, id, return, ($))
 import qualified Prelude                                     as Haskell
 import qualified Test.Hspec
-import           Test.Hspec                                  (Spec, describe, hspec)
+import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -56,8 +56,8 @@ propCircuitInvariance ac pl wi = eval ac pl wi === eval (mapVarArithmeticCircuit
 it :: Testable prop => String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
 
-specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, Binary a, Show a) => IO ()
-specArithmeticCircuit' = hspec $ do
+specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
+specArithmeticCircuit' = do
     describe "ArithmeticCircuit specification" $ do
         it "embeds constants" $ correctHom1 @a id
         it "adds correctly" $ correctHom2 @a (+)
@@ -89,6 +89,6 @@ specArithmeticCircuit' = hspec $ do
         describe "Variable mapping" $ do
             it "does not change the circuit" $ propCircuitInvariance @a @(Vector 2) @U1
 
-specArithmeticCircuit :: IO ()
+specArithmeticCircuit :: Spec
 specArithmeticCircuit = do
   specArithmeticCircuit' @(Zp BLS12_381_Scalar)

@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Symbolic.Algorithm.RSA (specRSA) where
 
@@ -10,9 +9,8 @@ import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
 import qualified Prelude                                     as P
-import           System.IO                                   (IO)
 import           System.Random                               (mkStdGen)
-import           Test.Hspec                                  (describe, hspec)
+import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, withMaxSuccess, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 
@@ -32,9 +30,9 @@ toss x = chooseNatural (0, x -! 1)
 evalBool :: forall a . Bool (Interpreter a) -> a
 evalBool (Bool (Interpreter (Par1 v))) = v
 
-specRSA :: IO ()
-specRSA = hspec $ do
-    describe ("RSA signature") $ do
+specRSA :: Spec
+specRSA = do
+    describe "RSA signature" $ do
         it "encrypts and decrypts correctly" $ withMaxSuccess 10 $ do
             x <- toss $ (2 :: Natural) ^ (32 :: Natural)
             msgBits <- toss $ (2 :: Natural) ^ (256 :: Natural)

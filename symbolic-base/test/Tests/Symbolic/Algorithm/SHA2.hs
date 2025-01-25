@@ -21,7 +21,7 @@ import           System.Directory                            (listDirectory)
 import           System.Environment                          (lookupEnv)
 import           System.FilePath.Posix
 import           System.IO                                   (IO)
-import           Test.Hspec                                  (Spec, describe, hspec, shouldBe)
+import           Test.Hspec                                  (Spec, describe, shouldBe, runIO)
 import           Test.QuickCheck                             (Gen, withMaxSuccess, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 import           Text.Regex.TDFA
@@ -104,10 +104,10 @@ testAlgorithm
     => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
     => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
     => FilePath
-    -> IO ()
+    -> Spec
 testAlgorithm file = do
-    testCases <- readRSP $ dataDir </> file
-    hspec $ describe description $
+    testCases <- runIO (readRSP $ dataDir </> file)
+    describe description $
         forM_ testCases $ \(bits, input, hash) -> do
             let bitMsg = "calculates hash on a message of " <> Haskell.show bits <> " bits"
             it bitMsg $ toConstant (sha2Natural @algorithm @(Interpreter element) bits input) `shouldBe` hash
@@ -123,12 +123,12 @@ specSHA2Natural'
     => SHA2N algorithm (Interpreter element)
     => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
     => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
-    => IO ()
+    => Spec
 specSHA2Natural' = do
-    testFiles <- getTestFiles @algorithm
+    testFiles <- runIO $ getTestFiles @algorithm
     forM_ testFiles $ testAlgorithm @algorithm @element
 
-specSHA2Natural :: IO ()
+specSHA2Natural :: Spec
 specSHA2Natural = do
     specSHA2Natural' @"SHA224" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA256" @(Zp BLS12_381_Scalar)
@@ -171,14 +171,14 @@ specSHA2'
     => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1) 63
     => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1) 64
     => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1 U1) 1900
-    => IO ()
-specSHA2' = hspec $ do
+    => Spec
+specSHA2' = do
     specSHA2bs @1    @algorithm
     specSHA2bs @63   @algorithm
     specSHA2bs @64   @algorithm
     specSHA2bs @1900 @algorithm
 
-specSHA2 :: IO ()
+specSHA2 :: Spec
 specSHA2 = do
     specSHA2' @"SHA224"
     specSHA2' @"SHA256"
