@@ -1,4 +1,4 @@
-module Tests.Base.Algebra.EllipticCurve (specEllipticCurve) where
+module Tests.Algebra.EllipticCurve (specEllipticCurve) where
 
 import           Data.Foldable
 import           Prelude
@@ -9,8 +9,8 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1
 
-specEllipticCurve :: IO ()
-specEllipticCurve = hspec $ do
+specEllipticCurve :: Spec
+specEllipticCurve = do
   describe "secp256k1" $
     for_ secp256k1testVectors $ \(TestVector k x y) ->
       it "should match test vector" $ do

@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use -"                  #-}
 
-module Tests.Base.Algebra.Group (specAdditiveGroup, specAdditiveGroup') where
+module Tests.Algebra.Group (specAdditiveGroup, specAdditiveGroup') where
 
 import           Data.Data                                   (Typeable, typeOf)
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
@@ -16,8 +16,8 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.BN254
 import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point)
 
-specAdditiveGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
-specAdditiveGroup' = hspec $ do
+specAdditiveGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
+specAdditiveGroup' = do
     describe "Group specification" $ do
         describe ("Type: " ++ show (typeOf @a zero)) $ do
             describe "Additive group axioms" $ do
@@ -30,7 +30,7 @@ specAdditiveGroup' = hspec $ do
                 it "should satisfy additive inverse" $ do
                     property $ \(a :: a) -> a + negate a == zero
 
-specAdditiveGroup :: IO ()
+specAdditiveGroup :: Spec
 specAdditiveGroup = do
     specAdditiveGroup' @BN254_G1_Point
     specAdditiveGroup' @BN254_G2_Point

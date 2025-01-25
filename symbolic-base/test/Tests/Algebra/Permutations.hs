@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 
-module Tests.Base.Algebra.Permutations (specPermutations) where
+module Tests.Algebra.Permutations (specPermutations) where
 
 import           Data.List                              (sort)
 import           Data.Map                               (elems)
@@ -12,8 +12,8 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Permutations
 import           ZkFold.Base.Data.Vector                (fromVector)
 
-specPermutations :: IO ()
-specPermutations = hspec $ do
+specPermutations :: Spec
+specPermutations = do
     describe "Permutations specification" $ do
         describe "Function: mkIndexPartition" $ do
             it "should preserve the total number of elements" $ property $

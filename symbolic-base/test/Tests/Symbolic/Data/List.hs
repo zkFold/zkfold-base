@@ -6,8 +6,7 @@ import           Data.Binary                                 (Binary)
 import qualified Data.Eq                                     as Haskell
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..), U1 (..), type (:*:) (..))
-import           System.IO                                   (IO)
-import           Test.Hspec                                  (describe, hspec)
+import           Test.Hspec                                  (Spec, describe)
 import           Test.Hspec.QuickCheck                       (prop)
 import           Test.QuickCheck                             (Arbitrary)
 import           Text.Show                                   (Show)
@@ -31,8 +30,8 @@ tailTest x y = head (tail (x .: y .: emptyList)) == y
 headFun :: Symbolic c => List c (FieldElement c) -> FieldElement c
 headFun = head
 
-specList' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => IO ()
-specList' = hspec $ describe "List spec" $ do
+specList' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
+specList' = describe "List spec" $ do
   let _headChecks = -- compile-time test
                     acOutput (compile @a headFun)
   prop "Head works fine" $ \x y ->
@@ -42,5 +41,5 @@ specList' = hspec $ describe "List spec" $ do
     eval1 (compile @a tailTest) (U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: U1)
       Haskell.== one
 
-specList :: IO ()
+specList :: Spec
 specList = specList' @(Zp BLS12_381_Scalar)

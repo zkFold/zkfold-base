@@ -1,4 +1,4 @@
-module Tests.Base.Data.Binary (specBinary) where
+module Tests.Data.Binary (specBinary) where
 
 import           Data.Binary
 import           Prelude
@@ -20,8 +20,8 @@ doesRoundtrip x = do
     let xDecoded = fromByteString xEncoded
     xDecoded === Just x
 
-specBinary :: IO ()
-specBinary = hspec $ describe "Binary instance" $ do
+specBinary :: Spec
+specBinary = describe "Binary instance" $ do
   prop "roundtrips LittleEndian"                 $ doesRoundtrip @LittleEndian
   prop "roundtrips Zp BLS12_381_Scalar"          $ doesRoundtrip @(Zp BLS12_381_Scalar)
   prop "roundtrips Point BN254_G1"               $ doesRoundtrip @BN254_G1_Point

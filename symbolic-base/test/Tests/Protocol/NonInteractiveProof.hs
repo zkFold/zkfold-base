@@ -3,14 +3,14 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Tests.Base.Protocol.NonInteractiveProof (specNonInteractiveProof) where
+module Tests.Protocol.NonInteractiveProof (specNonInteractiveProof) where
 
 import           Data.ByteString                             (ByteString)
 import           Data.Functor.Classes                        (Show1 (..))
 import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
 import           GHC.Generics                                (U1 (..))
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
-import           Test.Hspec                                  (describe, hspec, it)
+import           Test.Hspec                                  (Spec, describe, it)
 import           Test.QuickCheck                             (Arbitrary (..), Arbitrary1 (..), Testable (property),
                                                               withMaxSuccess)
 
@@ -29,8 +29,8 @@ propNonInteractiveProof (a, w) =
     in verify @a @core sv i p
 
 specNonInteractiveProof' :: forall a core . (Typeable a, NonInteractiveProof a core,
-    Show a, Show (Witness a), Arbitrary a, Arbitrary (Witness a)) => IO ()
-specNonInteractiveProof' = hspec $ do
+    Show a, Show (Witness a), Arbitrary a, Arbitrary (Witness a)) => Spec
+specNonInteractiveProof' = do
     describe "Non-interactive proof protocol specification (SLOW)" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
             describe "All correct proofs" $ do
@@ -43,7 +43,7 @@ instance Show1 U1 where
 instance Arbitrary1 U1 where
   liftArbitrary _ = return U1
 
-specNonInteractiveProof :: IO ()
+specNonInteractiveProof :: Spec
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1_Point BLS12_381_G2_Point 32) @HaskellCore
     specNonInteractiveProof' @(Plonk U1 (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString) @HaskellCore

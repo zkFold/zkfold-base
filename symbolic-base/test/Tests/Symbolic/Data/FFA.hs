@@ -7,8 +7,7 @@ module Tests.Symbolic.Data.FFA (specFFA) where
 import           Data.Function                               (($))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (U1)
-import           System.IO                                   (IO)
-import           Test.Hspec                                  (describe, hspec)
+import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Property, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 import           Text.Show                                   (show)
@@ -27,13 +26,13 @@ type Prime256_2 = 28948022309329048855892746252171976963363056481941647379679742
 instance Prime Prime256_1
 instance Prime Prime256_2
 
-specFFA :: IO ()
+specFFA :: Spec
 specFFA = do
   specFFA' @BLS12_381_Scalar @Prime256_1
   specFFA' @BLS12_381_Scalar @Prime256_2
 
-specFFA' :: forall p q. (PrimeField (Zp p), PrimeField (Zp q)) => IO ()
-specFFA' = hspec $ do
+specFFA' :: forall p q. (PrimeField (Zp p), PrimeField (Zp q)) => Spec
+specFFA' = do
   let q = value @q
   describe ("FFA " ++ show q ++ " specification") $ do
     it "FFA(Zp) embeds Zq" $ \(x :: Zp q) ->

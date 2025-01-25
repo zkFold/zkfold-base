@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use -"                  #-}
 
-module Tests.Base.Algebra.Field (specField) where
+module Tests.Algebra.Field (specField) where
 
 import           Data.Data                                   (Typeable, typeOf)
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
@@ -16,8 +16,8 @@ import qualified ZkFold.Base.Algebra.EllipticCurve.BLS12_381 as BLS12_381
 import qualified ZkFold.Base.Algebra.EllipticCurve.BN254     as BN254
 import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta     as Pasta
 
-specField' :: forall a . (Field a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
-specField' = hspec $ do
+specField' :: forall a . (Field a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
+specField' = do
     describe "Field specification" $ do
         describe ("Type: " ++ show (typeOf @a zero)) $ do
             describe "Field axioms" $ do
@@ -40,7 +40,7 @@ specField' = hspec $ do
                 it "should satisfy distributivity" $ do
                     property $ \(a :: a) b c -> a * (b + c) == a * b + a * c
 
-specField :: IO ()
+specField :: Spec
 specField = do
     specField' @BN254.Fr
     specField' @BN254.Fp

@@ -3,7 +3,7 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Tests.Base.Protocol.Plonkup (specPlonkup) where
+module Tests.Protocol.Plonkup (specPlonkup) where
 
 import           Control.Monad                                       (forM_, return)
 import           Data.Bool                                           (Bool)
@@ -18,7 +18,6 @@ import           Data.List                                           (head, sort
 import           Data.Ord                                            (Ord)
 import           GHC.Generics                                        (U1 (..))
 import           GHC.IsList                                          (IsList (fromList))
-import           System.IO                                           (IO)
 import           Test.Hspec
 import           Test.QuickCheck
 import           Text.Show                                           (showsPrec)
@@ -178,8 +177,8 @@ instance Arbitrary1 U1 where
 instance Show1 U1 where
   liftShowsPrec _ _ = showsPrec
 
-specPlonkup :: IO ()
-specPlonkup = hspec $ do
+specPlonkup :: Spec
+specPlonkup = do
     describe "Plonkup specification" $ do
         describe "Conversion to Plonk constraints and back" $ do
             it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @(ScalarFieldOf BLS12_381_G1_Point)

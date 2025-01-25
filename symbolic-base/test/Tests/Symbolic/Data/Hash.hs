@@ -8,8 +8,7 @@ import           Data.Binary                                 (Binary)
 import qualified Data.Eq                                     as Haskell
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (Par1), U1 (..), type (:*:) (..))
-import           System.IO                                   (IO)
-import           Test.Hspec                                  (describe, hspec)
+import           Test.Hspec                                  (Spec, describe)
 import           Test.Hspec.QuickCheck                       (prop)
 import           Test.QuickCheck                             (Arbitrary)
 import           Text.Show                                   (Show)
@@ -30,9 +29,9 @@ instance Symbolic c => Hashable (FieldElement c) (FieldElement c) where
 hashTest :: forall c. Symbolic c => FieldElement c -> Bool c
 hashTest e = preimage @(FieldElement c) (hash e) == e
 
-specHash' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => IO ()
-specHash' = hspec $ describe "Hash spec" $ prop "Preimage works fine" $ \x ->
+specHash' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
+specHash' = describe "Hash spec" $ prop "Preimage works fine" $ \x ->
     eval1 (compile @a hashTest) (U1 :*: U1) (Par1 x :*: U1) Haskell.== one
 
-specHash :: IO ()
+specHash :: Spec
 specHash = specHash' @(Zp BLS12_381_Scalar)

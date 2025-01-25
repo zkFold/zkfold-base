@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Tests.Base.Algebra.Univariate.Poly (specUnivariatePoly) where
+module Tests.Algebra.Univariate.Poly (specUnivariatePoly) where
 
 import           Data.Data                                   (typeOf)
 import qualified Data.Vector                                 as V
@@ -26,8 +26,8 @@ naive l r = toPoly $ V.fromList $ go (V.toList (fromPoly l)) (V.toList (fromPoly
 propMultiplication :: (Eq a, Field a) => (Poly a, Poly a) -> Bool
 propMultiplication (p1, p2) = p1 * p2 == p1 `naive` p2
 
-specUnivariatePoly :: IO ()
-specUnivariatePoly = hspec $ do
+specUnivariatePoly :: Spec
+specUnivariatePoly = do
     describe "Univariate polynomials multiplication" $ do
         describe ("Type: " ++ show (typeOf @(Poly (Zp BLS12_381_Scalar)) zero)) $
             describe "Roots of unity can be calculated" $ do

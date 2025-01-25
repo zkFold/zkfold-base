@@ -8,8 +8,8 @@ import qualified Data.ByteString.Internal                    as BI
 import           GHC.Exts                                    (IsString (fromString))
 import           GHC.Generics                                hiding (from)
 import           Numeric.Natural                             (Natural)
-import           Prelude                                     (Eq (..), IO, ($))
-import           Test.Hspec                                  (Spec, describe, hspec, it)
+import           Prelude                                     (Eq (..), ($))
+import           Test.Hspec                                  (Spec, describe, it)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -59,8 +59,8 @@ blake2bSymbolic =
         input         = runInterpreter bs
     in it "simple test with cardano-crypto " $ eval1 ac (U1 :*: U1) (input :*: U1) == 1
 
-specBlake2b :: IO ()
-specBlake2b = hspec $ describe "BLAKE2b self-test validation" $ do
+specBlake2b :: Spec
+specBlake2b = describe "BLAKE2b self-test validation" $ do
     blake2bNumeric @(Interpreter (Zp BLS12_381_Scalar))
     blake2bExampleRfc @(Interpreter (Zp BLS12_381_Scalar))
     blake2bSymbolic

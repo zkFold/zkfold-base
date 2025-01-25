@@ -1,14 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Tests.Base.Protocol.IVC (specIVC) where
+module Tests.Protocol.IVC (specIVC) where
 
 import           GHC.Generics                                (Par1, U1 (..), type (:*:) (..), type (:.:) (..))
 import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     hiding (Bool (..), Num (..), pi, replicate, sum, (+))
-import           Test.Hspec                                  (describe, hspec, it)
-import           Test.QuickCheck                             (arbitrary, generate, property, withMaxSuccess)
-import           Tests.Base.Algebra.Group                    (specAdditiveGroup')
+import           Prelude                                     hiding (Num (..), Bool (..), pi, replicate, sum, (+))
+import           Test.Hspec                                  (Spec, describe, it, runIO)
+import           Test.QuickCheck                             (generate, arbitrary, property, withMaxSuccess)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), Ring, ToConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -40,6 +39,8 @@ import           ZkFold.Symbolic.Data.Bool                   (Bool, true)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 import           ZkFold.Symbolic.Data.Payloaded              (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter)
+
+import           Tests.Algebra.Group                         (specAdditiveGroup')
 
 type A = Zp BLS12_381_Scalar
 type C = Par1
@@ -130,8 +131,8 @@ testVerifierResult phi =
 testIVC :: PAR -> Bool CTX
 testIVC p = fst $ ivc @MiMCHash @A @D (testFunction p) (Payloaded $ singleton 42) (Payloaded $ Comp1 $ singleton U1)
 
-specAlgebraicMap :: IO ()
-specAlgebraicMap = hspec $ do
+specAlgebraicMap :: Spec
+specAlgebraicMap = do
     describe "Algebraic map specification" $ do
         describe "Algebraic map" $ do
             it "must output zeros on the public input and testMessages" $ do
@@ -139,8 +140,8 @@ specAlgebraicMap = hspec $ do
                     \p -> testAlgebraicMap (testPredicate p) (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
                             == replicate (acSizeN $ testPredicateCircuit p) zero
 
-specAccumulatorScheme :: IO ()
-specAccumulatorScheme = hspec $ do
+specAccumulatorScheme :: Spec
+specAccumulatorScheme = do
     describe "Accumulator scheme specification" $ do
         describe "decider" $ do
             it  "must output zeros" $ do
@@ -149,19 +150,19 @@ specAccumulatorScheme = hspec $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == fromWitness (testAccumulatorInstance (testPredicate p))
 
-specIVC' :: IO ()
-specIVC' = hspec $ do
+specIVC' :: Spec
+specIVC' = do
     describe "IVC specification" $ do
         describe "IVC (Interpreter)" $ do
             it "must output True" $ do
                 withMaxSuccess 10 $ property $ \p -> testIVC p == true
 
-specIVC :: IO ()
+specIVC :: Spec
 specIVC = do
-    p <- generate arbitrary :: IO PAR
-    print $ testPublicInput $ testPredicate p
-    print $ "Predicate circuit size: " ++ show (acSizeN $ testPredicateCircuit p)
-    print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
+    p <- runIO $ generate arbitrary
+    runIO $ print $ testPublicInput $ testPredicate p
+    runIO $ print $ "Predicate circuit size: " ++ show (acSizeN $ testPredicateCircuit p)
+    runIO $ print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
     specAlgebraicMap
     specAccumulatorScheme
     specAdditiveGroup' @(ForeignPoint MiMCHash 2 1 (ScalarFieldOf Pallas_Point) (Interpreter (ScalarFieldOf Pallas_Point)))
