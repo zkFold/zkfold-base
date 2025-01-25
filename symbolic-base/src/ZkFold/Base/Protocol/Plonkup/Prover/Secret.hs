@@ -9,19 +9,19 @@ import           GHC.Generics                                (Generic)
 import           Prelude                                     hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 import           Test.QuickCheck                             (Arbitrary (..))
 
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (CyclicGroup (..))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1)
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
 import           ZkFold.Base.Data.Vector                     (Vector (..))
 
-newtype PlonkupProverSecret g = PlonkupProverSecret (Vector 19 (ScalarFieldOf g))
+newtype PlonkupProverSecret c = PlonkupProverSecret (Vector 19 (ScalarField c))
     deriving stock Generic
 
-deriving anyclass instance ToJSON   (PlonkupProverSecret BLS12_381_G1_Point)
-deriving anyclass instance FromJSON (PlonkupProverSecret BLS12_381_G1_Point)
+deriving anyclass instance ToJSON   (PlonkupProverSecret BLS12_381_G1)
+deriving anyclass instance FromJSON (PlonkupProverSecret BLS12_381_G1)
 
-instance Show (ScalarFieldOf g) => Show (PlonkupProverSecret g) where
+instance Show (ScalarField c) => Show (PlonkupProverSecret c) where
     show (PlonkupProverSecret v) =
         "PlonkupProverSecret: " ++ show v
 
-instance Arbitrary (ScalarFieldOf g) => Arbitrary (PlonkupProverSecret g) where
+instance Arbitrary (ScalarField c) => Arbitrary (PlonkupProverSecret c) where
     arbitrary = PlonkupProverSecret <$> arbitrary

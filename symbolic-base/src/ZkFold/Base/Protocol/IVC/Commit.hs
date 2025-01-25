@@ -34,33 +34,19 @@ class PedersonSetup s c where
 
 type PedersonSetupMaxSize = 100
 
-instance
-  ( CyclicGroup (Weierstrass curve (Point bool field))
-  , Random (ScalarFieldOf (Weierstrass curve (Point bool field)))
-  ) => PedersonSetup [] (Weierstrass curve (Point bool field)) where
+instance (EllipticCurve curve, Random (ScalarField curve)) => PedersonSetup [] (Point curve) where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
-        let x = fst $ random $ mkStdGen 0 :: ScalarFieldOf (Weierstrass curve (Point bool field))
-        in take (value @PedersonSetupMaxSize) $ iterate (scale x) pointGen
+        let x = fst $ random $ mkStdGen 0 :: ScalarField curve
+        in take (value @PedersonSetupMaxSize) $ iterate (mul x) pointGen
 
-instance
-  ( KnownNat n
-  , CyclicGroup (Weierstrass curve (Point bool field))
-  , Random (ScalarFieldOf (Weierstrass curve (Point bool field)))
-  , n <= PedersonSetupMaxSize
-  ) => PedersonSetup (Vector n) (Weierstrass curve (Point bool field)) where
+instance (KnownNat n, EllipticCurve curve, Random (ScalarField curve), n <= PedersonSetupMaxSize) => PedersonSetup (Vector n) (Point curve) where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
         unsafeToVector $ take (value @n) $ groupElements @[]
 
-instance (PedersonSetup s g, Functor s) => PedersonSetup s (Constant g a) where
+instance (PedersonSetup s (Point curve), Functor s) => PedersonSetup s (Constant (Point curve) a) where
     groupElements = Constant <$> groupElements @s
 
-instance
-  ( PedersonSetup s g
-  , Zip s
-  , Foldable s
-  , Scale f g
-  , AdditiveGroup g
-  ) => HomomorphicCommit (s f) g where
+instance (PedersonSetup s c, Zip s, Foldable s, Scale f c, AdditiveGroup c) => HomomorphicCommit (s f) c where
     hcommit v = sum $ zipWith scale v groupElements
