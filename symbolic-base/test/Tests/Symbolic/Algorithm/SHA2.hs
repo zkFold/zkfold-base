@@ -21,7 +21,7 @@ import           System.Directory                            (listDirectory)
 import           System.Environment                          (lookupEnv)
 import           System.FilePath.Posix
 import           System.IO                                   (IO)
-import           Test.Hspec                                  (Spec, describe, shouldBe, runIO)
+import           Test.Hspec                                  (Spec, describe, runIO, shouldBe)
 import           Test.QuickCheck                             (Gen, withMaxSuccess, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 import           Text.Regex.TDFA
