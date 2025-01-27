@@ -197,12 +197,14 @@ library
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.FFA
       ZkFold.Symbolic.Data.FieldElement
+      ZkFold.Symbolic.Data.FieldElementW
       ZkFold.Symbolic.Data.Hash
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
+      ZkFold.Symbolic.Data.Pasta
       ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.Secp256k1
       ZkFold.Symbolic.Data.Switch

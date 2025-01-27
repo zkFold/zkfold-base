@@ -10,13 +10,10 @@ import           Test.Hspec                                  (Spec, describe, it
 import           Test.QuickCheck                             (generate, arbitrary, property, withMaxSuccess)
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), Ring, ToConstant (..), one, zero)
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.Class     (ScalarFieldOf)
 import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas_Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyVec)
-import           ZkFold.Base.Data.Package                    (unpacked)
 import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC                    (ivc)
 import           ZkFold.Base.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..),
@@ -27,13 +24,13 @@ import           ZkFold.Base.Protocol.IVC.Commit             ()
 import           ZkFold.Base.Protocol.IVC.CommitOpen         (commitOpen)
 import           ZkFold.Base.Protocol.IVC.CycleFold          (ForeignPoint)
 import           ZkFold.Base.Protocol.IVC.FiatShamir         (FiatShamir, fiatShamir)
+import           ZkFold.Symbolic.Data.FieldElementW          (FieldElementW, constrainFieldElement)
 import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle             (MiMCHash)
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction  (RecursiveI (..), RecursiveP, recursiveFunction)
 import           ZkFold.Base.Protocol.IVC.SpecialSound       (specialSoundProtocol)
 import           ZkFold.Prelude                              (replicate)
-import           ZkFold.Symbolic.Class                       (Symbolic (..), embedW)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
 import           ZkFold.Symbolic.Data.Bool                   (Bool, true)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
@@ -42,14 +39,14 @@ import           ZkFold.Symbolic.Interpreter                 (Interpreter)
 
 import           Tests.Algebra.Group                         (specAdditiveGroup')
 
-type A = Zp BLS12_381_Scalar
+type A = ScalarFieldOf Pallas_Point
 type C = Par1
 type I = Vector 1
 type P = U1
 type K = 1
 type CTX = Interpreter A
 type AC = ArithmeticCircuit A (Vector 1 :*: U1) (Vector 1) (Vector 1)
-type W = WitnessField CTX
+type W = FieldElementW CTX
 type F = FieldElement CTX
 type PHI = Predicate A I P
 type SPS = FiatShamir 1 A I P C
@@ -116,7 +113,7 @@ testAccumulationProof phi =
     in snd $ prover s emptyAccumulator $ testInstanceProofPair phi
 
 fromWitness :: Traversable t => t W -> t F
-fromWitness = fmap FieldElement . unpacked . embedW
+fromWitness = fmap constrainFieldElement
 
 testDeciderResult :: PHI -> (Vector K (C F), C F)
 testDeciderResult phi =

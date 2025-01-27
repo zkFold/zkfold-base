@@ -33,7 +33,6 @@ import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor, Symb
 import           ZkFold.Symbolic.Data.Conditional           (Conditional (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
-import           ZkFold.Symbolic.Data.Payloaded             (Payloaded (..))
 
 -- | Public input to the recursive function
 data RecursiveI i f = RecursiveI (i f) f
@@ -95,9 +94,6 @@ type RecursiveFunctionAssumptions algo a d k i p c f =
     , FromConstant a f
     , Scale a f
     )
-
-type RecursiveFunction algo a d k i p c = forall ctx f . RecursiveFunctionAssumptions algo a d k i p c f
-    => RecursiveI i (FieldElement ctx) -> Payloaded (RecursiveP d k i p c) ctx -> RecursiveI i (FieldElement ctx)
 
 -- | Transform a step function into a recursive function
 recursiveFunction :: forall algo a d k i p c f . RecursiveFunctionAssumptions algo a d k i p c f
