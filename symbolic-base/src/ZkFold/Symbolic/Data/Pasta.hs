@@ -7,21 +7,21 @@
 
 module ZkFold.Symbolic.Data.Pasta (PallasPoint) where
 
-import           Prelude                                     (fromInteger, type (~), ($))
-import qualified Prelude                                     as P
+import           Prelude                                 (fromInteger, type (~), ($))
+import qualified Prelude                                 as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Symbolic.Class                       (Symbolic (..))
+import           ZkFold.Base.Data.Vector                 (Vector)
+import           ZkFold.Symbolic.Class                   (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Class                  (Context, SymbolicData)
-import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (..), KnownRegisterSize)
+import           ZkFold.Symbolic.Data.Class              (Context, SymbolicData)
+import           ZkFold.Symbolic.Data.Combinators        (KnownRegisterSize, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
-import           ZkFold.Symbolic.Data.UInt                   (UInt (..))
+import           ZkFold.Symbolic.Data.Eq                 (Eq (..))
+import           ZkFold.Symbolic.Data.UInt               (UInt (..))
 
 --------------------------------- UInt instances ---------------------------------
 

@@ -11,11 +11,11 @@ import           GHC.Generics                      (Par1 (..), U1 (..))
 import qualified Prelude                           as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number  (Natural, KnownNat, type (+), type (-), Log2)
+import           ZkFold.Base.Algebra.Basic.Number  (KnownNat, Log2, Natural, type (+), type (-))
 import           ZkFold.Base.Control.HApplicative  (hunit)
 import           ZkFold.Base.Data.Vector           (Vector)
 import           ZkFold.Symbolic.Class             (Symbolic (..), embedW)
-import           ZkFold.Symbolic.Data.Bool         (Bool (..), true, false, BoolType (false))
+import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (false), false, true)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional  (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
