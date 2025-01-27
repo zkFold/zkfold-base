@@ -2,7 +2,7 @@ cabal-version:      3.0
 
 name:               symbolic-base
 version:            0.1.0.0
-tested-with:        GHC == 9.6.3
+tested-with:        GHC == 9.6.6
 synopsis:           ZkFold Symbolic compiler and zero-knowledge proof protocols
 homepage:           https://zkfold.io/
 category:           Cryptography, DSL, Math, Symbolic Computation
@@ -112,7 +112,6 @@ library
       ZkFold.Base.Algorithm.ReedSolomon
       ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
-      ZkFold.Base.Data.Functor.Rep
       ZkFold.Base.Data.HFunctor
       ZkFold.Base.Data.List.Infinite
       ZkFold.Base.Data.Matrix
@@ -196,15 +195,17 @@ library
       ZkFold.Symbolic.Data.Ed25519
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.FFA
+      ZkFold.Symbolic.Data.FieldElement
       ZkFold.Symbolic.Data.Hash
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
+      ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
+      ZkFold.Symbolic.Data.Switch
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
-      ZkFold.Symbolic.Data.FieldElement
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit

@@ -7,9 +7,10 @@ import           GHC.Generics                          (U1 (..), (:*:) (..))
 import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
 
 import           ZkFold.Base.Data.Package              (packed, unpacked)
-import           ZkFold.Base.Protocol.IVC.StepFunction (FunctorAssumptions, StepFunction, StepFunctionAssumptions)
+import           ZkFold.Base.Protocol.IVC.StepFunction (StepFunction, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
+import           ZkFold.Symbolic.Data.Class            (LayoutFunctor)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter           (Interpreter (..))
 
@@ -23,8 +24,8 @@ data Predicate a i p = Predicate
 type PredicateAssumptions a i p =
     ( Arithmetic a
     , Binary a
-    , FunctorAssumptions i
-    , FunctorAssumptions p
+    , LayoutFunctor i
+    , LayoutFunctor p
     )
 
 predicate :: forall a i p . PredicateAssumptions a i p
