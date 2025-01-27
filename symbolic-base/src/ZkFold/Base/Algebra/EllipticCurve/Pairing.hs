@@ -28,91 +28,73 @@ import           ZkFold.Symbolic.Data.Eq
 -- Ate pairing implementation adapted from:
 -- https://github.com/sdiehl/pairing/blob/master/src/Data/Pairing/Ate.hs
 
-type Untwisted baseField i j = Ext2 (Ext3 baseField i) j
+type Untwisted c i j = Ext2 (Ext3 (BaseField c) i) j
 
 finalExponentiation ::
-  forall scalarField baseField g i j.
-  (Finite scalarField, Finite baseField) =>
-  (g ~ Untwisted baseField i j, Exponent g Natural) =>
+  forall c g i j.
+  (Finite (ScalarField c), Finite (BaseField c)) =>
+  (g ~ Untwisted c i j, Exponent g Natural) =>
   g -> g
 finalExponentiation x = x ^ ((p ^ (12 :: Natural) -! 1) `div` r)
   where
-    p = order @baseField
-    r = order @scalarField
+    p = order @(BaseField c)
+    r = order @(ScalarField c)
 
-millerAlgorithmBLS12 ::forall c d bool fldC fldD i j g.
-  WeierstrassCurve d fldD =>
-  Eq bool fldD =>
-  FiniteField fldC =>
-  Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
-  Untwisted fldD i j ~ g =>
+millerAlgorithmBLS12 ::
+  Field (BaseField c) =>
+  Field (BaseField d) =>
+  Scale (BaseField c) (BaseField d) =>
+  EllipticCurve d =>
+  Untwisted d i j ~ g =>
   Field g =>
-  [Int8] ->
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
-  g
+  BooleanOf c ~ BooleanOf d =>
+  [Int8] -> Point c -> Point d -> g
 millerAlgorithmBLS12 (x:xs) p q = snd $
   millerLoop p q xs (H.bool (negate q) q (x Prelude.> 0), one)
 millerAlgorithmBLS12 _ _ _ = one
 
-millerAlgorithmBN :: forall c d bool fldC fldD i j g.
-  WeierstrassCurve d fldD =>
-  Eq bool fldD =>
-  FiniteField fldC =>
-  Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
-  Untwisted fldD i j ~ g =>
+millerAlgorithmBN ::
+  PrimeField (BaseField c) =>
+  Field (BaseField d) =>
+  Scale (BaseField c) (BaseField d) =>
+  EllipticCurve d =>
+  Untwisted d i j ~ g =>
   Field g =>
-  fldD ->
-  [Int8] ->
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
-  g
+  BooleanOf c ~ BooleanOf d =>
+  BaseField d -> [Int8] -> Point c -> Point d -> g
 millerAlgorithmBN xi (x:xs) p q = finalStepBN xi p q $
   millerLoop p q xs (H.bool (negate q) q (x Prelude.> 0), one)
 millerAlgorithmBN _ _ _ _ = one
 
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-finalStepBN :: forall c d bool fldC fldD i j g.
-  WeierstrassCurve d fldD =>
-  Eq bool fldD =>
-  FiniteField fldC =>
-  Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
-  Untwisted fldD i j ~ g =>
+finalStepBN ::
+  forall c d i j g.
+  PrimeField (BaseField c) =>
+  Field (BaseField d) =>
+  Scale (BaseField c) (BaseField d) =>
+  EllipticCurve d =>
+  Untwisted d i j ~ g =>
   Field g =>
-  fldD ->
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
-  (Weierstrass d (Point bool fldD), g) ->
-  g
+  BooleanOf c ~ BooleanOf d =>
+  BaseField d -> Point c -> Point d -> (Point d, g) -> g
 finalStepBN xi p q (t, f) = f * f' * f''
   where
-    o = order @fldC
+    o = order @(BaseField c)
     q1 = frobTwisted o xi q
     (t', f') = lineFunction p t q1
     q2 = negate (frobTwisted o xi q1)
     (_, f'') = lineFunction p t' q2
 
 millerLoop ::
-  WeierstrassCurve d fldD =>
-  Eq bool fldD =>
-  Field fldC =>
-  Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
-  Untwisted fldD i j ~ g =>
+  Field (BaseField c) =>
+  Field (BaseField d) =>
+  Scale (BaseField c) (BaseField d) =>
+  EllipticCurve d =>
+  Untwisted d i j ~ g =>
   Field g =>
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
-  [Int8] ->
-  (Weierstrass d (Point bool fldD), g) ->
-  (Weierstrass d (Point bool fldD), g)
+  BooleanOf c ~ BooleanOf d =>
+  Point c -> Point d -> [Int8] -> (Point d, g) -> (Point d, g)
 millerLoop p q = impl
   where impl []     tf = tf
         impl (x:xs) tf
@@ -124,65 +106,47 @@ millerLoop p q = impl
 --------------------------------------------------------------------------------
 
 frobTwisted ::
-  forall c bool fld.
-  ( WeierstrassCurve c fld
-  , Conditional bool bool, Conditional bool fld
-  ) => Natural -> fld -> Weierstrass c (Point bool fld) -> Weierstrass c (Point bool fld)
-frobTwisted q xi (Weierstrass (Point x y isInf)) =
+  forall c. (EllipticCurve c, Field (BaseField c)) => Natural -> BaseField c -> Point c -> Point c
+frobTwisted q xi (Point x y isInf) =
   if isInf then pointInf else pointXY ((x ^ q) * (xi ^ tx)) ((y ^ q) * (xi ^ ty))
   where
     tx = (q -! 1) `div` 3
     ty = q `div` 2
 
 additionStep ::
-  WeierstrassCurve d fldD =>
-  Eq bool fldD =>
-  Field fldC =>
-  Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
-  Untwisted fldD i j ~ g =>
+  Field (BaseField c) =>
+  Field (BaseField d) =>
+  Scale (BaseField c) (BaseField d) =>
+  EllipticCurve d =>
+  Untwisted d i j ~ g =>
   Field g =>
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
-  (Weierstrass d (Point bool fldD), g) ->
-  (Weierstrass d (Point bool fldD), g)
+  BooleanOf c ~ BooleanOf d =>
+  Point c -> Point d -> (Point d, g) -> (Point d, g)
 additionStep p q (t, f) = (* f) <$> lineFunction p q t
 
 doublingStep ::
-  WeierstrassCurve d fldD =>
-  Eq bool fldD =>
-  Field fldC =>
-  Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
-  Untwisted fldD i j ~ g =>
+  Field (BaseField c) =>
+  Field (BaseField d) =>
+  Scale (BaseField c) (BaseField d) =>
+  EllipticCurve d =>
+  Untwisted d i j ~ g =>
   Field g =>
-  Weierstrass c (Point bool fldC) ->
-  (Weierstrass d (Point bool fldD), g) ->
-  (Weierstrass d (Point bool fldD), g)
+  BooleanOf c ~ BooleanOf d =>
+  Point c -> (Point d, g) -> (Point d, g)
 doublingStep p (t, f) = (* f) . (* f) <$> lineFunction p t t
 
-
-lineFunction :: forall c d bool baseFieldC baseFieldD i j g.
-  WeierstrassCurve d baseFieldD =>
-  Field baseFieldC =>
-  Scale baseFieldC baseFieldD =>
-  Conditional bool bool =>
-  Conditional bool baseFieldD =>
-  Eq bool baseFieldD =>
-  Untwisted baseFieldD i j ~ g =>
-  Weierstrass c (Point bool baseFieldC) ->
-  Weierstrass d (Point bool baseFieldD) ->
-  Weierstrass d (Point bool baseFieldD) ->
-  (Weierstrass d (Point bool baseFieldD), g)
-lineFunction
-  (Weierstrass (Point x y isInf))
-  (Weierstrass (Point x1 y1 isInf1))
-  (Weierstrass (Point x2 y2 isInf2)) =
+lineFunction ::
+  EllipticCurve d =>
+  Field (BaseField c) =>
+  Field (BaseField d) =>
+  Scale (BaseField c) (BaseField d) =>
+  BooleanOf c ~ BooleanOf d =>
+  Untwisted d i j ~ g =>
+  Point c -> Point d -> Point d -> (Point d, g)
+lineFunction (Point x y isInf) (Point x1 y1 isInf1) (Point x2 y2 isInf2) =
   if isInf || isInf1 || isInf2 then (pointInf, Ext2 (Ext3 one zero zero) zero)
-  else if x1 /= x2 :: bool then (pointXY x3 y3, untwist (negate y) (x `scale` l) (y1 - l * x1))
-  else if y1 + y2 == zero :: bool then (pointInf, untwist x (negate x1) zero)
+  else if x1 /= x2 then (pointXY x3 y3, untwist (negate y) (x `scale` l) (y1 - l * x1))
+  else if y1 + y2 == zero then (pointInf, untwist x (negate x1) zero)
   else (pointXY x3' y3', untwist (negate y) (x `scale` l') (y1 - l' * x1))
   where
     l   = (y2 - y1) // (x2 - x1)

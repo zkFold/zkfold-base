@@ -3,21 +3,23 @@
 
 module ZkFold.Base.Protocol.Plonkup.Verifier.Commitments where
 
-import           Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
-data PlonkupCircuitCommitments g = PlonkupCircuitCommitments {
-        cmQl :: g,
-        cmQr :: g,
-        cmQo :: g,
-        cmQm :: g,
-        cmQc :: g,
-        cmQk :: g,
-        cmS1 :: g,
-        cmS2 :: g,
-        cmS3 :: g,
-        cmT1 :: g
+import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..), Point)
+
+data PlonkupCircuitCommitments c = PlonkupCircuitCommitments {
+        cmQl :: Point c,
+        cmQr :: Point c,
+        cmQo :: Point c,
+        cmQm :: Point c,
+        cmQc :: Point c,
+        cmQk :: Point c,
+        cmS1 :: Point c,
+        cmS2 :: Point c,
+        cmS3 :: Point c,
+        cmT1 :: Point c
     }
-instance (Show g) => Show (PlonkupCircuitCommitments g) where
+instance (Show (BaseField c), EllipticCurve c, BooleanOf c ~ Bool) => Show (PlonkupCircuitCommitments c) where
     show PlonkupCircuitCommitments {..} =
         "Plonkup Circuit Commitments: "
         ++ show cmQl ++ " "
