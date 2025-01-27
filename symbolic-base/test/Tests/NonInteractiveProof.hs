@@ -45,6 +45,6 @@ instance Arbitrary1 U1 where
 
 specNonInteractiveProof :: IO ()
 specNonInteractiveProof = do
-    specNonInteractiveProof' @(KZG BLS12_381_G1_Point BLS12_381_G2_Point 32) @HaskellCore
-    specNonInteractiveProof' @(Plonk U1 (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString) @HaskellCore
-    specNonInteractiveProof' @(Plonkup U1 (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString) @HaskellCore
+    specNonInteractiveProof' @(KZG BLS12_381_G1 BLS12_381_G2 32) @HaskellCore
+    specNonInteractiveProof' @(Plonk U1 (Vector 1) 32 (Vector 2) BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore
+    specNonInteractiveProof' @(Plonkup U1 (Vector 1) 32 (Vector 2) BLS12_381_G1 BLS12_381_G2 ByteString) @HaskellCore

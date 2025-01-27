@@ -12,7 +12,8 @@ import           Test.QuickCheck                             (arbitrary, generat
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1, BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (Point)
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyVec)
 import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..),
@@ -31,7 +32,7 @@ import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit,
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
-type C = Constant BLS12_381_G1_Point
+type C = Constant (Point BLS12_381_G1)
 type I = Vector 1
 type P = U1
 type K = 1
@@ -104,10 +105,10 @@ testAccumulationProof phi =
     let s = testAccumulatorScheme phi
     in snd $ prover s (initAccumulator phi) $ testInstanceProofPair phi
 
--- testDeciderResult :: PHI -> (Vector K (C F), C F)
--- testDeciderResult phi =
---     let s = testAccumulatorScheme phi
---     in decider s $ testAccumulator phi
+testDeciderResult :: PHI -> (Vector K (C F), C F)
+testDeciderResult phi =
+    let s = testAccumulatorScheme phi
+    in decider s $ testAccumulator phi
 
 testVerifierResult :: PHI -> AccumulatorInstance K I C F
 testVerifierResult phi =
@@ -126,9 +127,9 @@ specAlgebraicMap = hspec $ do
 specAccumulatorScheme :: IO ()
 specAccumulatorScheme = hspec $ do
     describe "Accumulator scheme specification" $ do
-        -- describe "decider" $ do
-        --     it  "must output zeros" $ do
-        --         withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
+        describe "decider" $ do
+            it  "must output zeros" $ do
+                withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
         describe "verifier" $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)
