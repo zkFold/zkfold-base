@@ -1,28 +1,15 @@
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingVia #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Base.Algebra.EllipticCurve.Pasta
-  ( Pasta_Point
-  , Pallas_Point
-  , Vesta_Point
-  , FpModulus
-  , FqModulus
-  , Fp
-  , Fq
-  ) where
+module ZkFold.Base.Algebra.EllipticCurve.Pasta where
 
-import           Control.Monad
-import           Prelude                                 (($))
-import qualified Prelude
+import           Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Data.ByteString
-import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Eq
 
 -------------------------------- Introducing Fields ----------------------------------
 
@@ -35,54 +22,71 @@ instance Prime FqModulus
 type Fp = Zp FpModulus
 type Fq = Zp FqModulus
 
------------------------------------- Pasta -------------------------------------
-
-instance Field field => WeierstrassCurve "Pasta" field where
-  weierstrassB = fromConstant (5 :: Natural)
-
-type Pasta_Point field = Weierstrass "Pasta" (Point Prelude.Bool field)
-
 ------------------------------------ Pallas ------------------------------------
 
-type Pallas_Point = Pasta_Point Fp
+data Pallas
 
-instance CyclicGroup Pallas_Point where
-  type ScalarFieldOf Pallas_Point = Fq
-  pointGen = pointXY
-    0x40000000000000000000000000000000224698fc094cf91b992d30ed00000000
-    0x02
+instance EllipticCurve Pallas where
+    type ScalarField Pallas = Fq
 
-instance Scale Fq Pallas_Point where
-    scale n x = scale (toConstant n) x
+    type BaseField Pallas = Fp
+
+    pointGen = pointXY
+        0x40000000000000000000000000000000224698fc094cf91b992d30ed00000000
+        0x02
+
+    add = addPoints
+
+    mul = pointMul
+
+instance WeierstrassCurve Pallas where
+    weierstrassA = zero
+
+    weierstrassB = fromConstant (5 :: Natural)
 
 ------------------------------------ Vesta ------------------------------------
 
-type Vesta_Point = Pasta_Point Fq
+data Vesta
 
-instance CyclicGroup Vesta_Point where
-  type ScalarFieldOf Vesta_Point = Fp
-  pointGen = pointXY
-    0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000000
-    0x02
+instance EllipticCurve Vesta where
 
-instance Scale Fp Vesta_Point where
-    scale n x = scale (toConstant n) x
+    type ScalarField Vesta = Fp
+
+    type BaseField Vesta = Fq
+
+    pointGen = pointXY
+        0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000000
+        0x02
+
+    add = addPoints
+
+    mul = pointMul
+
+instance WeierstrassCurve Vesta where
+    weierstrassA = zero
+
+    weierstrassB = fromConstant (5 :: Natural)
 
 ------------------------------------ Encoding ------------------------------------
 
-instance
-  ( Binary field
-  , Field field
-  , Eq Prelude.Bool field
-  ) => Binary (Pasta_Point field) where
-    put (Weierstrass (Point xp yp isInf)) =
-      if isInf
-      then put @(Pasta_Point field) (pointXY zero zero)
-      else put xp >> put yp
-    get = do
-      xp <- get
-      yp <- get
-      return $
-        if xp == zero && yp == zero
-        then pointInf
-        else pointXY xp yp
+instance Binary (Point Pallas) where
+  put (Point xp yp isInf) =
+    if isInf then put @(Point Pallas) (pointXY zero zero) else put xp >> put yp
+  get = do
+    xp <- get
+    yp <- get
+    return $
+      if xp == zero && yp == zero
+      then pointInf
+      else pointXY xp yp
+
+instance Binary (Point Vesta) where
+  put (Point xp yp isInf) =
+    if isInf then put @(Point Vesta) (pointXY zero zero) else put xp >> put yp
+  get = do
+    xp <- get
+    yp <- get
+    return $
+      if xp == zero && yp == zero
+      then pointInf
+      else pointXY xp yp

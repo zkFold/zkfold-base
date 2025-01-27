@@ -11,16 +11,16 @@ import           Test.Hspec                                  (Spec, describe, it
 import           Test.QuickCheck                             (Testable (..), (==>))
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
-import           ZkFold.Base.Algebra.EllipticCurve.Class     (CyclicGroup (..))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1)
+import           ZkFold.Base.Algebra.EllipticCurve.Class     (EllipticCurve (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..), compile, eval)
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
-type C = BLS12_381_G1_Point
-type F = ScalarFieldOf C
+type C = BLS12_381_G1
+type F = ScalarField C
 
 lockedByTxId :: forall a c . (FromConstant a (FieldElement c), Symbolic c) => a -> FieldElement c -> Bool c
 lockedByTxId targetValue inputValue = inputValue == fromConstant targetValue

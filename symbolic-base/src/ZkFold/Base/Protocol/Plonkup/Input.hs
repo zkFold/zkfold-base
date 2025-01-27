@@ -10,17 +10,17 @@ import           Test.QuickCheck                         (Arbitrary (..))
 import           Text.Show                               (Show, show)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Class (CyclicGroup (..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve (..))
 import           ZkFold.Symbolic.Compiler                ()
 
-newtype PlonkupInput l g = PlonkupInput { unPlonkupInput :: l (ScalarFieldOf g) }
+newtype PlonkupInput l c = PlonkupInput { unPlonkupInput :: l (ScalarField c) }
 
-instance (Show1 l, Show (ScalarFieldOf g)) => Show (PlonkupInput l g) where
+instance (Show1 l, Show (ScalarField c)) => Show (PlonkupInput l c) where
     show (PlonkupInput v) = "Plonkup Input: " ++ show v
 
-instance (Arbitrary (l (ScalarFieldOf g))) => Arbitrary (PlonkupInput l g) where
+instance (Arbitrary (l (ScalarField c))) => Arbitrary (PlonkupInput l c) where
     arbitrary = PlonkupInput <$> arbitrary
 
 plonkupVerifierInput ::
-  (Functor l, Field (ScalarFieldOf g)) => l (ScalarFieldOf g) -> PlonkupInput l g
+  (Functor l, Field (ScalarField c)) => l (ScalarField c) -> PlonkupInput l c
 plonkupVerifierInput input = PlonkupInput $ negate <$> input
