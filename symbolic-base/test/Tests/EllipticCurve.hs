@@ -48,7 +48,7 @@ specEllipticCurveGenerator
     ) => Spec
 specEllipticCurveGenerator = do
   let curve = symbolVal (Proxy @(CurveOf point))
-  describe (curve <> " curve specification EITANTEST") $ do
+  describe (curve <> " curve specification") $ do
     describe "cyclic group generator" $ do
       let g = pointGen @point
       it "should be on the curve" $
