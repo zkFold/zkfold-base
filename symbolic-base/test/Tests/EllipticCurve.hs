@@ -1,16 +1,25 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module Tests.EllipticCurve (specEllipticCurve) where
 
 import           Data.Foldable
-import           Prelude
+import           Data.Proxy
+import           GHC.TypeLits
+import           Prelude hiding (Num(..))
 import           Test.Hspec
+import           Test.QuickCheck hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.EllipticCurve.BN254
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta
 import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1
 
 specEllipticCurve :: IO ()
 specEllipticCurve = hspec $ do
+
   describe "secp256k1" $
     for_ secp256k1testVectors $ \(TestVector k x y) ->
       it "should match test vector" $ do
@@ -18,6 +27,47 @@ specEllipticCurve = hspec $ do
             p = pointXY (fromConstant x) (fromConstant y)
             q = scale k pointGen
         p `shouldBe` q
+  
+  specEllipticCurve' @Secp256k1_Point
+  specEllipticCurve' @BLS12_381_G1_Point
+  -- specEllipticCurve' @BLS12_381_G2_Point
+  specEllipticCurve' @BN254_G1_Point
+  specEllipticCurve' @BN254_G2_Point
+  specEllipticCurve' @Ed25519_Point
+  specEllipticCurve' @Pallas_Point
+  specEllipticCurve' @Vesta_Point
+
+specEllipticCurve'
+  :: forall point .
+    ( EllipticCurve Prelude.Bool point
+    , CyclicGroup point
+    , Eq point
+    , Show point
+    , Arbitrary point
+    , Arbitrary (ScalarFieldOf point)
+    , Show (ScalarFieldOf point)
+    , KnownSymbol (CurveOf point)
+    ) => Spec
+specEllipticCurve' = do
+  let curve = symbolVal (Proxy @(CurveOf point))
+  describe (curve <> " curve specification EITANTEST") $ do
+    describe "Cyclic Group generator" $ do
+      it "should be on the curve" $ do
+        property $ isOnCurve @Prelude.Bool (pointGen @point)
+      it "should be closed under scalar multiplication" $ do
+        property $ \ (coef :: ScalarFieldOf point) -> isOnCurve @Prelude.Bool (coef `scale` pointGen @point)
+      it "should have the same order as the scalar field" $ do
+        property $ order @(ScalarFieldOf point) `scale` pointGen @point == zero
+    describe "Points on the curve" $ do
+      it "should be on the curve" $ do
+        property $ \ (point :: point) ->
+          isOnCurve @Prelude.Bool point
+      it "should be closed under scalar multiplication" $ do
+        property $ \ (coef :: ScalarFieldOf point) (point :: point) ->
+          isOnCurve @Prelude.Bool (coef `scale` point)
+      it "should be closed under addition" $ do
+        property $ \ (point0 :: point) point1 ->
+          isOnCurve @Prelude.Bool (point0 + point1)
 
 data TestVector = TestVector
   { _k :: Natural -- scalar

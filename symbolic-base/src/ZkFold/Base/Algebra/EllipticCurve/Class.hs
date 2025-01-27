@@ -262,6 +262,10 @@ instance
       let a = twistedEdwardsA @curve
           d = twistedEdwardsD @curve
       in a*x*x + y*y == one + d*x*x*y*y
+deriving newtype instance Prelude.Eq point
+  => Prelude.Eq (TwistedEdwards curve point)
+deriving newtype instance Prelude.Show point
+  => Prelude.Show (TwistedEdwards curve point)
 deriving newtype instance SymbolicOutput field
   => SymbolicData (TwistedEdwards curve (AffinePoint field))
 instance
@@ -311,6 +315,13 @@ instance
   , Field field
   ) => Scale Integer (TwistedEdwards curve (AffinePoint field)) where
   scale = intScale
+instance
+  ( Arbitrary (ScalarFieldOf (TwistedEdwards curve (AffinePoint field)))
+  , CyclicGroup (TwistedEdwards curve (AffinePoint field))
+  ) => Arbitrary (TwistedEdwards curve (AffinePoint field)) where
+    arbitrary = do
+      c <- arbitrary @(ScalarFieldOf (TwistedEdwards curve (AffinePoint field)))
+      return $ scale c pointGen
 
 {- | A type of points in the projective plane. -}
 data Point bool field = Point
@@ -364,7 +375,7 @@ instance (BoolType bool, AdditiveMonoid field)
 data AffinePoint field = AffinePoint
   { _x :: field
   , _y :: field
-  } deriving Generic
+  } deriving (Generic, Prelude.Eq)
 instance SymbolicOutput field => SymbolicData (AffinePoint field)
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 instance Conditional bool field => Conditional bool (AffinePoint field)
@@ -373,3 +384,6 @@ instance
   , Eq bool field
   , Field field
   ) => Eq bool (AffinePoint field)
+instance Prelude.Show field => Prelude.Show (AffinePoint field) where
+  show (AffinePoint x y) = Prelude.mconcat
+    ["(", Prelude.show x, ", ", Prelude.show y, ")"]
