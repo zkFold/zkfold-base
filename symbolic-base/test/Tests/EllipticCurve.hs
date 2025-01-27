@@ -5,14 +5,14 @@ module Tests.EllipticCurve (specEllipticCurve) where
 import           Data.Foldable
 import           Data.Proxy
 import           GHC.TypeLits
-import           Prelude hiding (Num(..))
+import           Prelude                                     hiding (Num (..))
 import           Test.Hspec
-import           Test.QuickCheck hiding (scale)
+import           Test.QuickCheck                             hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.BN254
+import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Base.Algebra.EllipticCurve.Pasta
 import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1
@@ -27,7 +27,7 @@ specEllipticCurve = hspec $ do
             p = pointXY (fromConstant x) (fromConstant y)
             q = scale k pointGen
         p `shouldBe` q
-  
+
   specEllipticCurve' @Secp256k1_Point
   specEllipticCurve' @BLS12_381_G1_Point
   -- specEllipticCurve' @BLS12_381_G2_Point
