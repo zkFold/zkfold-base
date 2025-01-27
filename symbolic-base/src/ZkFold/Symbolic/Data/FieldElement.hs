@@ -55,7 +55,7 @@ instance Symbolic c => Exponent (FieldElement c) Natural where
 instance Symbolic c => Exponent (FieldElement c) Integer where
   (^) = intPowF
 
-instance (Symbolic c, Scale k (BaseField c)) => Scale k (FieldElement c) where
+instance {-# INCOHERENT #-} (Symbolic c, Scale k (BaseField c)) => Scale k (FieldElement c) where
   scale k (FieldElement c) = FieldElement $ fromCircuitF c $ \(Par1 i) ->
     Par1 <$> newAssigned (\x -> fromConstant (scale k one :: BaseField c) * x i)
 
