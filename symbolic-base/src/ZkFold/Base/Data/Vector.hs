@@ -102,6 +102,9 @@ item = head
 mapWithIx :: forall n a b . KnownNat n => (Natural -> a -> b) -> Vector n a -> Vector n b
 mapWithIx f (Vector l) = Vector $ V.zipWith f (V.enumFromTo 0 (value @n -! 1)) l
 
+enumerate :: forall n a . KnownNat n => Vector n a -> Vector n (Natural, a)
+enumerate = mapWithIx (,)
+
 mapMWithIx :: forall n m a b . (KnownNat n, Monad m) => (Natural -> a -> m b) -> Vector n a -> m (Vector n b)
 mapMWithIx f (Vector l) = Vector <$> V.zipWithM f (V.enumFromTo 0 (value @n -! 1)) l
 

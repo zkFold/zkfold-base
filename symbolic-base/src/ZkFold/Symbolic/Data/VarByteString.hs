@@ -11,6 +11,7 @@
 module ZkFold.Symbolic.Data.VarByteString
     ( VarByteString (..)
     , append
+    , (@+)
     , shiftL
     ) where
 
@@ -18,8 +19,10 @@ import           Control.DeepSeq                   (NFData)
 import           Data.Aeson                        (FromJSON (..))
 import qualified Data.ByteString                   as Bytes
 import           Data.Kind                         (Type)
+import           Data.Proxy                        (Proxy (..))
 import           Data.String                       (IsString (..))
 import           GHC.Generics                      (Generic, Par1 (..))
+import           GHC.TypeLits                      (KnownSymbol (..), Symbol, symbolVal)
 import           Prelude                           (Integer, const, drop, fmap, otherwise, pure, return, take, type (~),
                                                     ($), (.), (<$>), (<), (<>), (==), (>=))
 import qualified Prelude                           as Haskell
@@ -60,6 +63,7 @@ deriving stock instance (Haskell.Show (c (Vector n)), Haskell.Show (c Par1)) => 
 deriving stock instance (Haskell.Eq (c (Vector n)), Haskell.Eq (c Par1)) => Haskell.Eq (VarByteString n c)
 deriving anyclass instance (NFData (c (Vector n)), NFData (c Par1)) => NFData (VarByteString n c)
 deriving instance (KnownNat n, Symbolic c) => SymbolicData (VarByteString n c)
+deriving instance (KnownNat n, Symbolic c) => SymbolicInput (VarByteString n c)
 deriving instance (Symbolic c, KnownNat n) => Eq (Bool c) (VarByteString n c)
 deriving instance (Symbolic c, KnownNat n) => Conditional (Bool c) (VarByteString n c)
 
@@ -80,6 +84,16 @@ instance
 instance (Symbolic ctx, KnownNat m, m * 8 ~ n) => FromJSON (VarByteString n ctx) where
     parseJSON v = fromString <$> parseJSON v
 
+-- | Construct a VarByteString from a type-level string calculating its length automatically
+--
+instance
+    ( Symbolic ctx
+    , KnownSymbol s
+    , m ~ Length s
+    , m * 8 ~ l
+    , KnownNat m
+    ) => IsTypeString s (VarByteString l ctx) where
+    fromType = fromString $ symbolVal (Proxy @s)
 
 -- | Join two variable-length ByteStrings and move all the unsaaigned space towards lower indices.
 -- Let @u@ denote the unassigned space. Then,
@@ -102,6 +116,18 @@ append (VarByteString l1 bs1) (VarByteString l2 bs2) = VarByteString (l1 + l2) n
 
         newBs = ex2 || (ex1 `shiftL` l2)
 
+infixr 6 @+
+(@+)
+    :: forall m n c
+    .  Symbolic c
+    => KnownNat m
+    => KnownNat n
+    => KnownNat (m + n)
+    => VarByteString m c
+    -> VarByteString n c
+    -> VarByteString (m + n) c
+(@+) = append
+
 shiftL
     :: forall n c
     .  Symbolic c
@@ -109,11 +135,14 @@ shiftL
     => ByteString n c
     -> FieldElement c
     -> ByteString n c
-shiftL bs el = Haskell.foldr (\s b -> bool b (b `shiftBitsL` (2^s)) (isSet elBits s)) bs [0 .. nbits -! 1]
+shiftL bs el = Haskell.foldr (\s b -> bool b (b `shiftBitsL` (2^s)) (isSet elBits s)) bs [0 .. nbits]
     where
         elBits = ByteString $ binaryExpansion el
 
-        -- TODO: We are unlikely to encounter bytestrings longer than 2^20, I suppose.
-        -- Maybe it is worthwile to sacrifice mathematical correctness for the sake of a lower number of constraints
-        -- and set the number of iterations to 20 instead of NumberOfBits (BaseField c)
-        nbits = value @(NumberOfBits (BaseField c))
+        -- No need to perform more shifts than this. 
+        -- The bytestring will be all zeros beyond this iteration.
+        nbits = ilog2 $ value @n
+
+        ilog2 :: Natural -> Natural
+        ilog2 1 = 0
+        ilog2 n = 1 + ilog2 (n `div` 2)

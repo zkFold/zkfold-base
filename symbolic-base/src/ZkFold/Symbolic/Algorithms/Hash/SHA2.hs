@@ -36,6 +36,7 @@ import           ZkFold.Symbolic.Data.Bool                      (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, toWords)
 import           ZkFold.Symbolic.Data.Combinators               (Iso (..), RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.UInt                      (UInt)
+import           ZkFold.Symbolic.Data.VarByteString             (VarByteString (..))
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.

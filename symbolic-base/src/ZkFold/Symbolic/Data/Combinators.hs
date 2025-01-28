@@ -21,6 +21,7 @@ import           Data.Type.Bool                   (If)
 import           Data.Type.Ord
 import           GHC.Base                         (const, return)
 import           GHC.List                         (reverse)
+import           GHC.TypeLits                     (Symbol, UnconsSymbol)
 import           GHC.TypeNats
 import           Prelude                          (error, head, pure, tail, ($), (.), (<$>), (<>))
 import qualified Prelude                          as Haskell
@@ -184,6 +185,23 @@ highRegisterBits = case getNatural @n `mod` maxBitsPerFieldElement @p of
 --
 minNumberOfRegisters :: forall p n. (Finite p, KnownNat n) => Natural
 minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` maxBitsPerRegister @p @n
+
+-- | Convert a type-level string into a term.
+-- Useful for ByteStrings and VarByteStrings as it will calculate their length automatically
+--
+class IsTypeString (s :: Symbol) a where
+    fromType :: a
+
+type family Length (s :: Symbol) :: Natural where
+    Length s = Length' (UnconsSymbol s)
+
+type family FromMaybe (a :: k) (mb :: Haskell.Maybe k) :: k where
+    FromMaybe def Haskell.Nothing = def
+    FromMaybe def (Haskell.Just a) = a
+
+type family Length' (s :: Haskell.Maybe (Haskell.Char, Symbol)) :: Natural where
+    Length' 'Haskell.Nothing = 0 
+    Length' ('Haskell.Just '(c, rest)) = 1 + Length' (UnconsSymbol rest)
 
 ---------------------------------------------------------------
 
