@@ -7,9 +7,9 @@
 module ZkFold.Base.Algebra.EllipticCurve.PlutoEris
  ( PlutoEris_p
  , PlutoEris_q
- , Point_Pluto
- , Point_Eris
- , Point_Triton
+ , Pluto_Point
+ , Eris_Point
+ , Triton_Point
  ) where
 
 import qualified Prelude
@@ -34,18 +34,18 @@ instance Prime PlutoEris_q
 instance Field field => WeierstrassCurve "Pluto-Eris" field where
   weierstrassB = fromConstant (57 :: Natural)
 
-type Point_Pluto = Weierstrass "Pluto-Eris" (Point Prelude.Bool (Zp PlutoEris_p))
-instance CyclicGroup Point_Pluto where
-  type ScalarFieldOf Point_Pluto = Zp PlutoEris_q
+type Pluto_Point = Weierstrass "Pluto-Eris" (Point Prelude.Bool (Zp PlutoEris_p))
+instance CyclicGroup Pluto_Point where
+  type ScalarFieldOf Pluto_Point = Zp PlutoEris_q
   pointGen = pointXY 4 11
-instance Scale (Zp PlutoEris_q) Point_Pluto where
+instance Scale (Zp PlutoEris_q) Pluto_Point where
   scale n = scale (toConstant n)
 
-type Point_Eris = Weierstrass "Pluto-Eris" (Point Prelude.Bool (Zp PlutoEris_q))
-instance CyclicGroup Point_Eris where
-  type ScalarFieldOf Point_Eris = Zp PlutoEris_p
+type Eris_Point = Weierstrass "Pluto-Eris" (Point Prelude.Bool (Zp PlutoEris_q))
+instance CyclicGroup Eris_Point where
+  type ScalarFieldOf Eris_Point = Zp PlutoEris_p
   pointGen = pointXY 4 11
-instance Scale (Zp PlutoEris_p) Point_Eris where
+instance Scale (Zp PlutoEris_p) Eris_Point where
   scale n = scale (toConstant n)
 
 -------------------------- Triton curve ----------------------------
@@ -58,5 +58,5 @@ instance IrreduciblePoly (Zp PlutoEris_p) "i*sqrt5" where
 instance WeierstrassCurve "Triton" (Ext2 (Zp PlutoEris_p) "i*sqrt5") where
   weierstrassB = Ext2 3 1
 
-type Point_Triton =
+type Triton_Point =
   Weierstrass "Triton" (Point Prelude.Bool (Ext2 (Zp PlutoEris_p) "i*sqrt5"))
