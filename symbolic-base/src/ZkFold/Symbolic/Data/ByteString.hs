@@ -49,7 +49,7 @@ import           ZkFold.Base.Data.Package          (packWith, unpackWith)
 import           ZkFold.Base.Data.Utils            (zipWithM)
 import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
-import           ZkFold.Prelude                    (replicateA, (!!))
+import           ZkFold.Prelude                    (replicateA, (!!), replicate)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
@@ -77,20 +77,26 @@ deriving newtype instance (Symbolic c, KnownNat n) => Conditional (Bool c) (Byte
 instance
     ( Symbolic c
     , m * 8 ~ n
+    , KnownNat m
     ) => IsString (ByteString n c) where
     fromString = fromConstant . fromString @Bytes.ByteString
 
 instance
     ( Symbolic c
     , m * 8 ~ n
+    , KnownNat m
     ) => FromConstant Bytes.ByteString (ByteString n c) where
     fromConstant bytes = concat @_ @8 $ fromConstant @Natural @(ByteString 8 c)
         . Haskell.fromIntegral
-        . Haskell.toInteger <$> (V.unsafeToVector @m $ Bytes.unpack bytes)
+        . Haskell.toInteger <$> (V.unsafeToVector @m paddedBytes)
+
+        where
+            desiredLen = value @m
+            actualLen = Haskell.fromIntegral $ Bytes.length bytes
+            paddedBytes = replicate (desiredLen -! actualLen) 0 <> Bytes.unpack bytes
 
 emptyByteString :: FromConstant Natural (ByteString 0 c) => ByteString 0 c
 emptyByteString = fromConstant @Natural 0
-
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --
@@ -131,9 +137,9 @@ instance Arithmetic a => ToConstant (ByteString n (Interpreter a)) where
         where base = 2
 
 
-    -- | Pack a ByteString using one field element per bit.
-    -- @fromConstant@ discards bits after @n@.
-    -- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
+-- | Pack a ByteString using one field element per bit.
+-- @fromConstant@ discards bits after @n@.
+-- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
 instance (Symbolic c, KnownNat n) => FromConstant Natural (ByteString n c) where
     fromConstant n = ByteString . embed @c $ V.unsafeToVector $ fromConstant <$> toBsBits n (value @n)
 

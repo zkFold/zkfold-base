@@ -198,6 +198,7 @@ library
       ZkFold.Symbolic.Data.FieldElement
       ZkFold.Symbolic.Data.Hash
       ZkFold.Symbolic.Data.Input
+      ZkFold.Symbolic.Data.JWT
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Morph
@@ -207,6 +208,7 @@ library
       ZkFold.Symbolic.Data.Switch
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
+      ZkFold.Symbolic.Data.VarByteString
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
@@ -214,6 +216,7 @@ library
       base                          >= 4.9 && < 5,
       adjunctions                           < 4.5,
       aeson                                 < 2.3,
+      aeson-casing                          < 0.3,
       base64-bytestring                          ,
       binary                               < 0.11,
       -- TODO: remove `blake2` after refactoring of ZK protocols
