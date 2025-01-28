@@ -3,7 +3,7 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkLogin
     ) where
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Algorithms.Hash
+import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -12,9 +12,9 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 
-import ZkFold.Symbolic.Cardano.Contracts.JWT (ClientSecret (..), TokenHeader (..), TokenPayload (..), Certificate)
+import ZkFold.Symbolic.Data.JWT (ClientSecret (..), TokenHeader (..), TokenPayload (..), Certificate, verifySignature)
 
-data PublicInput ctx = ByteString 224 ctx
+type PublicInput ctx = ByteString 224 ctx
 
 zkLogin
     :: forall ctx
