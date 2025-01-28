@@ -14,8 +14,9 @@ import           Test.QuickCheck
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.BN254
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas, Vesta)
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519   (Ed25519_Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Point)
 
 specAdditiveGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
 specAdditiveGroup' = hspec $ do
@@ -33,11 +34,15 @@ specAdditiveGroup' = hspec $ do
 
 specAdditiveGroup :: IO ()
 specAdditiveGroup = do
-    specAdditiveGroup' @(Point BN254_G1)
-    specAdditiveGroup' @(Point BN254_G2)
+    specAdditiveGroup' @BN254_G1_Point
+    specAdditiveGroup' @BN254_G2_Point
 
-    specAdditiveGroup' @(Point BLS12_381_G1)
-    specAdditiveGroup' @(Point BLS12_381_G2)
+    specAdditiveGroup' @BLS12_381_G1_Point
+    specAdditiveGroup' @BLS12_381_G2_Point
 
-    specAdditiveGroup' @(Point Pallas)
-    specAdditiveGroup' @(Point Vesta)
+    specAdditiveGroup' @Pallas_Point
+    specAdditiveGroup' @Vesta_Point
+
+    specAdditiveGroup' @Secp256k1_Point
+
+    specAdditiveGroup' @Ed25519_Point
