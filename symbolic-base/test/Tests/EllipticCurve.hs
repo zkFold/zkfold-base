@@ -42,6 +42,7 @@ specEllipticCurveGenerator
     ( EllipticCurve Prelude.Bool point
     , CyclicGroup point
     , Eq point
+    , Show point
     , Arbitrary (ScalarFieldOf point)
     , Show (ScalarFieldOf point)
     , KnownSymbol (CurveOf point)
@@ -52,9 +53,10 @@ specEllipticCurveGenerator = do
     describe "cyclic group generator" $ do
       let g = pointGen @point
       it "should be on the curve" $
-        property $ isOnCurve @Prelude.Bool g
-      it "should have the same order as the scalar field" $
-        property $ order @(ScalarFieldOf point) `scale` g == zero
+        g `shouldSatisfy` isOnCurve
+      it "should have the same order as the scalar field" $ do
+        let coef = order @(ScalarFieldOf point)
+        scale coef g `shouldBe` zero
       it "should be closed under scalar multiplication" $
         property $ \ (coef :: ScalarFieldOf point) ->
           isOnCurve @Prelude.Bool (coef `scale` g)
