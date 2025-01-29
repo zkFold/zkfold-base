@@ -240,6 +240,18 @@ deriving instance
 deriving instance Symbolic ctx => SymbolicData (ClientSecret ctx)
 deriving instance Symbolic ctx => SymbolicInput (ClientSecret ctx)
 
+
+type family BufLen (n :: Natural) :: Natural where
+    BufLen 0 = 3
+    BufLen 1 = 3
+    BufLen 2 = 3
+    BufLen 3 = 3
+    BufLen 4 = 3
+    BufLen 5 = 3
+    BufLen 6 = 3
+    BufLen 7 = 3
+    BufLen n = Log2 n + 1 
+
 -- | Returns fieldElement `mod` 6
 --
 -- fieldElement = \sum_{i=0}^N a_i * 2^i, a_i ∈ {0, 1}
@@ -249,7 +261,7 @@ deriving instance Symbolic ctx => SymbolicInput (ClientSecret ctx)
 -- = \sum_{i=0}^N a_i * (2^i `mod` 6)
 -- = a_0 + \sum_1^N a_i * (if is_odd(i) then 2 else 4)
 --
--- This approach requires much less constraints and variables than @divMod@ on @UInt@ s
+-- TODO: check if this approach requires less constraints and variables than @divMod@ on @UInt@ s
 --
 -- The upper bound of this sum for a field element of N bits is 3N.
 -- A sequence of five such sums will reduce the field element to three bits.
@@ -294,6 +306,12 @@ truncatedBinary (FieldElement c) = hmap V.unsafeToVector $ symbolicF c
 pad6 :: forall n ctx . (Symbolic ctx, KnownNat n) => VarByteString n ctx -> VarByteString (n + 5) ctx
 pad6 VarByteString{..} = VarByteString (bsLength + mod6) (withn5 @n $ VB.shiftL newBuf mod6)
     where
+        feToUInt :: FieldElement ctx -> UInt (BufLen n) ('Fixed (BufLen n)) ctx
+        feToUInt (FieldElement c) = UInt $ hmap (V.singleton . unPar1) c
+
+        uintToFe :: UInt (BufLen n) ('Fixed (BufLen n)) ctx -> FieldElement ctx
+        uintToFe (UInt v) = FieldElement $ hmap (Par1 . V.item) v
+        
         mod6 = feMod6 bsLength
         newBuf = withn5 @n $ resize bsBuffer
 
