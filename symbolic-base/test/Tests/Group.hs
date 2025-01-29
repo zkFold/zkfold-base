@@ -16,6 +16,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.BN254
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519   (Ed25519_Point)
 import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point)
+import           ZkFold.Base.Algebra.EllipticCurve.PlutoEris (Eris_Point, Pluto_Point)
 import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Point)
 
 specAdditiveGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => IO ()
@@ -46,3 +47,6 @@ specAdditiveGroup = do
     specAdditiveGroup' @Secp256k1_Point
 
     specAdditiveGroup' @Ed25519_Point
+
+    specAdditiveGroup' @Pluto_Point
+    specAdditiveGroup' @Eris_Point
