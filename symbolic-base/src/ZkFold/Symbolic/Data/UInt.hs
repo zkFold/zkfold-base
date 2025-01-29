@@ -297,8 +297,14 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
             base = fromConstant (2 ^ rs :: Natural)
             shift = (toConstant i -! 1) * rs
 
-        source = fromCircuit2F nm dn \n d ->
-          (liftA2 (:*:) `on` traverse unconstrained)
+        source = symbolic2F nm dn
+          (\n d ->
+            let r = registerSize @(BaseField c) @n @r
+                n' = vectorToNatural n r
+                d' = vectorToNatural d r
+            in naturalToVector @c @n @r (n' `div` d')
+             :*: naturalToVector @c @n @r (n' `mod` d'))
+          \n d -> (liftA2 (:*:) `on` traverse unconstrained)
             (tabulate $ register (natural n `div` natural d))
             (tabulate $ register (natural n `mod` natural d))
         dv = hmap fstP source
@@ -306,8 +312,8 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
         Bool eq = den * UInt dv + UInt md == num
         Bool lt = UInt md < den
         circuit = fromCircuit3F eq lt (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
-          constraint ($ e)
-          constraint ($ l)
+          constraint (($ e) - one)
+          constraint (($ l) - one)
           return dm
 
 asWords
