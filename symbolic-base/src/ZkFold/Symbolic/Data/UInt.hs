@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoDeriveAnyClass     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -29,7 +31,7 @@ import           Data.Map                          (fromList, (!))
 import           Data.Traversable                  (for, traverse)
 import           Data.Tuple                        (swap)
 import qualified Data.Zip                          as Z
-import           GHC.Generics                      (Generic, Par1 (..))
+import           GHC.Generics                      (Generic, Par1 (..), (:*:) (..))
 import           GHC.Natural                       (naturalFromInteger)
 import           Prelude                           (Integer, const, error, flip, otherwise, return, type (~), ($), (++),
                                                     (.), (<>), (>>=))
@@ -53,7 +55,13 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, constraint, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), constraint, newAssigned, Witness (..))
+import ZkFold.Base.Control.HApplicative (HApplicative(..))
+import ZkFold.Base.Data.Product (fstP, sndP)
+import ZkFold.Base.Data.HFunctor (HFunctor(..))
+import Data.Function (on)
+import Control.Applicative (Applicative(..))
+import Data.Functor.Rep (Representable(..))
 
 
 -- TODO (Issue #18): hide this constructor
@@ -265,33 +273,42 @@ instance
                         newI <- newAssigned (\j -> j xI + scale ((2 :: Natural) ^ xN) (j yI))
                         helper ((newN, newI) : ys) acc
 
-instance
-    ( Symbolic c
-    , KnownNat n
-    , KnownNat r
-    , KnownRegisterSize rs
-    , r ~ NumberOfRegisters (BaseField c) n rs
-    , KnownNat (Ceil (GetRegisterSize (BaseField c) n rs) OrdWord)
-    , NFData (c (Vector r))
-    ) => SemiEuclidean (UInt n rs c) where
+instance ( Symbolic c, KnownNat n, KnownRegisterSize r
+         , KnownRegisters c n r
+         , regSize ~ GetRegisterSize (BaseField c) n r
+         , KnownNat (Ceil regSize OrdWord)
+         ) => SemiEuclidean (UInt n r c) where
+    divMod num@(UInt nm) den@(UInt dn) =
+      (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
+      where
+        natural ::
+          forall m i. Witness i (WitnessField c) =>
+          Vector m i -> Const (WitnessField c)
+        natural = foldr (\i c -> toConstant (at i :: WitnessField c) + fromConstant base * c) zero
+          where
+            base :: Natural
+            base = 2 ^ registerSize @(BaseField c) @n @r
 
-    divMod numerator d = bool @(Bool c) (q, r) (zero, zero) (d == zero)
-        where
-            (q, r) = Haskell.foldl longDivisionStep (zero, zero) [value @n -! 1, value @n -! 2 .. 0]
+        register :: forall m. Const (WitnessField c) -> Zp m -> WitnessField c
+        register c i =
+          fromConstant ((c `div` fromConstant (2 ^ shift :: Natural)) `mod` base)
+          where
+            rs = registerSize @(BaseField c) @n @r
+            base = fromConstant (2 ^ rs :: Natural)
+            shift = (toConstant i -! 1) * rs
 
-            numeratorBits :: ByteString n c
-            numeratorBits = from numerator
-
-            addBit :: UInt n rs c -> Natural -> UInt n rs c
-            addBit ui bs = ui + bool @(Bool c) zero one (isSet numeratorBits bs)
-
-            longDivisionStep
-                :: (UInt n rs c, UInt n rs c)
-                -> Natural
-                -> (UInt n rs c, UInt n rs c)
-            longDivisionStep (q', r') i =
-                let rs = force $ addBit (r' + r') (value @n -! i -! 1)
-                 in bool @(Bool c) (q', rs) (q' + fromConstant ((2 :: Natural) ^ i), rs - d) (rs >= d)
+        source = fromCircuit2F nm dn \n d ->
+          (liftA2 (:*:) `on` traverse unconstrained)
+            (tabulate $ register (natural n `div` natural d))
+            (tabulate $ register (natural n `mod` natural d))
+        dv = hmap fstP source
+        md = hmap sndP source
+        Bool eq = den * UInt dv + UInt md == num
+        Bool lt = UInt md < den
+        circuit = fromCircuit3F eq lt (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
+          constraint ($ e)
+          constraint ($ l)
+          return dm
 
 asWords
     :: forall wordSize regSize ctx k
