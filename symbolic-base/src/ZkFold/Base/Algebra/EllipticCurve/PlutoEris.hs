@@ -37,14 +37,14 @@ instance Field field => WeierstrassCurve "Pluto-Eris" field where
 type Pluto_Point = Weierstrass "Pluto-Eris" (Point Prelude.Bool (Zp PlutoEris_p))
 instance CyclicGroup Pluto_Point where
   type ScalarFieldOf Pluto_Point = Zp PlutoEris_q
-  pointGen = pointXY 4 11
+  pointGen = pointXY (-2) 7
 instance Scale (Zp PlutoEris_q) Pluto_Point where
   scale n = scale (toConstant n)
 
 type Eris_Point = Weierstrass "Pluto-Eris" (Point Prelude.Bool (Zp PlutoEris_q))
 instance CyclicGroup Eris_Point where
   type ScalarFieldOf Eris_Point = Zp PlutoEris_p
-  pointGen = pointXY 4 11
+  pointGen = pointXY (-2) 7
 instance Scale (Zp PlutoEris_p) Eris_Point where
   scale n = scale (toConstant n)
 
