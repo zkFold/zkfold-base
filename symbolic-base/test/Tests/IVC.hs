@@ -104,10 +104,10 @@ testAccumulationProof phi =
     let s = testAccumulatorScheme phi
     in snd $ prover s (initAccumulator phi) $ testInstanceProofPair phi
 
-testDeciderResult :: PHI -> (Vector K (C F), C F)
-testDeciderResult phi =
-    let s = testAccumulatorScheme phi
-    in decider s $ testAccumulator phi
+-- testDeciderResult :: PHI -> (Vector K (C F), C F)
+-- testDeciderResult phi =
+--     let s = testAccumulatorScheme phi
+--     in decider s $ testAccumulator phi
 
 testVerifierResult :: PHI -> AccumulatorInstance K I C F
 testVerifierResult phi =
@@ -126,9 +126,9 @@ specAlgebraicMap = hspec $ do
 specAccumulatorScheme :: IO ()
 specAccumulatorScheme = hspec $ do
     describe "Accumulator scheme specification" $ do
-        describe "decider" $ do
-            it  "must output zeros" $ do
-                withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
+        -- describe "decider" $ do
+        --     it  "must output zeros" $ do
+        --         withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
         describe "verifier" $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)

@@ -1,12 +1,9 @@
 {-# LANGUAGE TypeOperators #-}
 
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
 import           Control.DeepSeq                             (NFData, NFData1)
 import           Data.Function                               (const, ($), (.))
-import           Data.Functor                                (Functor)
 import           Data.Functor.Rep                            (Rep, Representable)
 import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
@@ -22,7 +19,6 @@ import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
-import           GHC.Generics                                (Par1, (:*:), (:.:))
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -57,11 +53,6 @@ exampleOutput ::
   , NFData1 o
   ) => f -> ExampleOutput
 exampleOutput = ExampleOutput @p @i @o . const . compile
-
--- | TODO: Maybe there is a better place for these orphans?
-instance NFData1 Par1
-instance (NFData1 f, NFData1 g) => NFData1 (f :*: g)
-instance (Functor f, NFData1 f, NFData1 g) => NFData1 (f :.: g)
 
 examples :: [(String, ExampleOutput)]
 examples =

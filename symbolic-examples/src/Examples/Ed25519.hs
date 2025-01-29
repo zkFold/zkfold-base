@@ -3,7 +3,7 @@ module Examples.Ed25519 (
   ) where
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Class                   (Symbolic)
+import           ZkFold.Symbolic.Class             (Symbolic)
 import           ZkFold.Symbolic.Data.Ed25519
 import           ZkFold.Symbolic.Data.FieldElement
 
