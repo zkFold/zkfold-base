@@ -1,8 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoDeriveAnyClass     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -20,11 +20,14 @@ module ZkFold.Symbolic.Data.UInt (
     eea
 ) where
 
+import           Control.Applicative               (Applicative (..))
 import           Control.DeepSeq
 import           Control.Monad.State               (StateT (..))
 import           Data.Aeson                        hiding (Bool)
 import           Data.Foldable                     (foldlM, foldr, foldrM, for_)
+import           Data.Function                     (on)
 import           Data.Functor                      ((<$>))
+import           Data.Functor.Rep                  (Representable (..))
 import           Data.Kind                         (Type)
 import           Data.List                         (unfoldr, zip)
 import           Data.Map                          (fromList, (!))
@@ -41,6 +44,9 @@ import           Test.QuickCheck                   (Arbitrary (..), chooseIntege
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Control.HApplicative  (HApplicative (..))
+import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
+import           ZkFold.Base.Data.Product          (fstP, sndP)
 import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
 import           ZkFold.Prelude                    (length, replicate, replicateA)
@@ -55,13 +61,7 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), constraint, newAssigned, Witness (..))
-import ZkFold.Base.Control.HApplicative (HApplicative(..))
-import ZkFold.Base.Data.Product (fstP, sndP)
-import ZkFold.Base.Data.HFunctor (HFunctor(..))
-import Data.Function (on)
-import Control.Applicative (Applicative(..))
-import Data.Functor.Rep (Representable(..))
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), Witness (..), constraint, newAssigned)
 
 
 -- TODO (Issue #18): hide this constructor
