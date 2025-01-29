@@ -295,7 +295,7 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
           where
             rs = registerSize @(BaseField c) @n @r
             base = fromConstant (2 ^ rs :: Natural)
-            shift = (toConstant i -! 1) * rs
+            shift = toConstant i * rs
 
         source = symbolic2F nm dn
           (\n d ->
@@ -303,7 +303,7 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
                 n' = vectorToNatural n r
                 d' = vectorToNatural d r
             in naturalToVector @c @n @r (n' `div` d')
-             :*: naturalToVector @c @n @r (n' `mod` d'))
+                :*: naturalToVector @c @n @r (n' `mod` d'))
           \n d -> (liftA2 (:*:) `on` traverse unconstrained)
             (tabulate $ register (natural n `div` natural d))
             (tabulate $ register (natural n `mod` natural d))
