@@ -164,10 +164,11 @@ cast n =
 --
 eea
     :: forall n c r
-    .  SemiEuclidean (UInt n r c)
+    .  Symbolic c
+    => SemiEuclidean (UInt n r c)
     => KnownNat n
+    => KnownRegisters c n r
     => AdditiveGroup (UInt n r c)
-    => Eq (UInt n r c)
     => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c, UInt n r c)
 eea a b = eea' 1 a b one zero zero one
     where
