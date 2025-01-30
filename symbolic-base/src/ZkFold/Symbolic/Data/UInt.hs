@@ -281,6 +281,7 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     divMod num@(UInt nm) den@(UInt dn) =
       (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
       where
+        -- | "natural" value from vector of registers.
         natural ::
           forall m i. Witness i (WitnessField c) =>
           Vector m i -> Const (WitnessField c)
@@ -289,6 +290,7 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
             base :: Natural
             base = 2 ^ registerSize @(BaseField c) @n @r
 
+        -- | @register n i@ returns @i@-th register of @n@.
         register :: forall m. Const (WitnessField c) -> Zp m -> WitnessField c
         register c i =
           fromConstant ((c `div` fromConstant (2 ^ shift :: Natural)) `mod` base)
@@ -297,6 +299,7 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
             base = fromConstant (2 ^ rs :: Natural)
             shift = toConstant i * rs
 
+        -- | Computes unconstrained registers of @div@ and @mod@.
         source = symbolic2F nm dn
           (\n d ->
             let r = registerSize @(BaseField c) @n @r
@@ -307,10 +310,22 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
           \n d -> (liftA2 (:*:) `on` traverse unconstrained)
             (tabulate $ register (natural n `div` natural d))
             (tabulate $ register (natural n `mod` natural d))
+
+        -- | Unconstrained @div@ part.
         dv = hmap fstP source
+
+        -- | Unconstrained @mod@ part.
         md = hmap sndP source
+
+        -- | divMod first constraint: @numerator = denominator * div + mod@.
+        -- This should always be true.
         Bool eq = den * UInt dv + UInt md == num
+
+        -- | divMod second constraint: @0 <= mod < denominator@.
+        -- This should always be true.
         Bool lt = UInt md < den
+
+        -- | Computes properly constrained registers of @div@ and @mod@.
         circuit = fromCircuit3F eq lt (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
           constraint (($ e) - one)
           constraint (($ l) - one)

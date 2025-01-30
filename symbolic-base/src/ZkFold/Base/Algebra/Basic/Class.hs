@@ -475,8 +475,7 @@ instance AdditiveMonoid Natural where
 instance Semiring Natural
 
 instance SemiEuclidean Natural where
-    divMod m 0 = (0, m)
-    divMod m n = Haskell.divMod m n
+    divMod = Haskell.divMod
 
 instance BinaryExpansion Natural where
     type Bits Natural = [Natural]
@@ -514,8 +513,7 @@ instance FromConstant Natural Integer where
 instance Semiring Integer
 
 instance SemiEuclidean Integer where
-    divMod m 0 = (0, m)
-    divMod m n = Haskell.divMod m n
+    divMod = Haskell.divMod
 
 instance Ring Integer
 

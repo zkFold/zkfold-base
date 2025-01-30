@@ -133,9 +133,9 @@ specUInt' = hspec $ do
                 bx = fromConstant x :: ByteString n (AC (Zp p))
             return $ evalBS (from ux :: ByteString n (AC (Zp p))) === evalBS bx
 
-        when (n <= 128) $ it "performs divMod correctly" $ withMaxSuccess 10 $ do
+        it "performs divMod correctly" $ do
             num <- toss m
-            d <- toss m
+            d <- chooseNatural (1, m)
             let (acQ, acR) = (fromConstant num :: UInt n rs (AC (Zp p))) `divMod` fromConstant d
                 (zpQ, zpR) = (fromConstant num :: UInt n rs (Interpreter (Zp p))) `divMod` fromConstant d
                 (trueQ, trueR) = num `divMod` d
