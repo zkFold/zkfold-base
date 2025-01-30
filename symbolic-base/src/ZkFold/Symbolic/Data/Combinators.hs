@@ -111,9 +111,10 @@ type family GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) ::
 type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
 
 type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize ) :: Natural where
-  NumberOfRegisters _ 0    _          = 0
-  NumberOfRegisters a bits (Fixed rs) = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
-  NumberOfRegisters a bits Auto       = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
+  NumberOfRegisters _ 0    _            = 0
+  NumberOfRegisters a bits (Fixed bits) = 1 
+  NumberOfRegisters a bits (Fixed rs)   = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
+  NumberOfRegisters a bits Auto         = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
                                                                           -- But it is weird anyway if someone is trying to store a value
                                                                           -- which requires more than 50 registers.
 
