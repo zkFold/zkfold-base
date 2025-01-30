@@ -164,8 +164,7 @@ cast n =
 --
 eea
     :: forall n c r
-    .  Symbolic c
-    => SemiEuclidean (UInt n r c)
+    .  SemiEuclidean (UInt n r c)
     => KnownNat n
     => AdditiveGroup (UInt n r c)
     => Eq (UInt n r c)
