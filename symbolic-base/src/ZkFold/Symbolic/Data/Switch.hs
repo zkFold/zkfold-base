@@ -8,7 +8,6 @@ import           ZkFold.Symbolic.Class            (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool        (Bool)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
-import           ZkFold.Symbolic.Data.Eq          (Eq (..))
 import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (..))
 
 -- | A 'Switch' of a 'SymbolicData' @x@ to context @c@
@@ -35,9 +34,3 @@ instance (Symbolic c, SymbolicData x) => Conditional (Bool c) (Switch c x) where
   bool (Switch fl fp) (Switch tl tp) b =
     Switch (bool fl tl b) $ runPayloaded $
       bool (Payloaded fp :: Payloaded (Payload x) c) (Payloaded tp) b
-
-instance (Symbolic c, SymbolicData x)
-  => Eq (Switch c x) where
-    type BooleanOf (Switch c x) = Bool c
-    Switch x _ == Switch y _ = x == y
-    Switch x _ /= Switch y _ = x /= y
