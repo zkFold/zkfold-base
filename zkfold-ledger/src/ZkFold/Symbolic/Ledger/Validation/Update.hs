@@ -9,7 +9,7 @@ import           Prelude                                       hiding (Bool, Eq 
 import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Conditional              (Conditional, bool)
-import           ZkFold.Symbolic.Data.Eq                       (SymbolicEq, Eq (..))
+import           ZkFold.Symbolic.Data.Eq                       (Eq (..), SymbolicEq)
 import           ZkFold.Symbolic.Data.List                     (List, concat, singleton, (++))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
