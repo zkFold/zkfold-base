@@ -13,7 +13,7 @@ module ZkFold.Base.Algebra.EllipticCurve.Pasta
   ) where
 
 import           Control.Monad
-import           Prelude                                 (($), type (~))
+import           Prelude                                 (type (~), ($))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
