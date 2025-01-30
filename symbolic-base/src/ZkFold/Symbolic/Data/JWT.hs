@@ -13,56 +13,41 @@ module ZkFold.Symbolic.Data.JWT
     , IsSymbolicJSON (..)
     , secretBits
     , verifySignature
-----------------------------------
-    , I
-    , BufLen
-    , padTo6
-    , toAsciiBits
-    , word6ToAscii
     ) where
 
-import           Control.DeepSeq                             (NFData)
-import           Data.Aeson                                  (FromJSON (..), genericParseJSON)
-import qualified Data.Aeson                                  as JSON
-import           Data.Aeson.Casing                           (aesonPrefix, snakeCase)
-import           Data.Constraint                             (Dict, withDict, (:-) (..))
-import           Data.Constraint.Nat                         (divNat, minusNat, plusNat, timesNat)
-import           Data.Constraint.Unsafe                      (unsafeAxiom)
-import           Data.Maybe                                  (fromMaybe)
-import           Data.Scientific                             (toBoundedInteger)
-import qualified Data.Text                                   as T
-import           GHC.Generics                                (Generic, Par1 (..))
-import           Prelude                                     (fmap, pure, type (~), ($), (.), (<$>))
-import qualified Prelude                                     as P
+import           Control.DeepSeq                    (NFData)
+import           Data.Aeson                         (FromJSON (..), genericParseJSON)
+import qualified Data.Aeson                         as JSON
+import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
+import           Data.Constraint                    (Dict, withDict, (:-) (..))
+import           Data.Constraint.Nat                (Max, divNat, minusNat, plusNat, timesNat)
+import           Data.Constraint.Unsafe             (unsafeAxiom)
+import           Data.Maybe                         (fromMaybe)
+import           Data.Scientific                    (toBoundedInteger)
+import qualified Data.Text                          as T
+import           GHC.Generics                       (Generic, Par1 (..))
+import           Prelude                            (fmap, pure, type (~), ($), (.), (<$>))
+import qualified Prelude                            as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Data.HFunctor                   (hmap)
-import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Data.Vector                     ((!!))
+import           ZkFold.Base.Data.HFunctor          (hmap)
+import qualified ZkFold.Base.Data.Vector            as V
+import           ZkFold.Base.Data.Vector            ((!!))
 import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString             (ByteString (..), concat, toWords)
+import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), concat, toWords)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
-import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
+import           ZkFold.Symbolic.Data.Input         (SymbolicInput)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
-import qualified ZkFold.Symbolic.Data.VarByteString          as VB
-import           ZkFold.Symbolic.Data.VarByteString          (VarByteString (..), wipeUnassigned, (@+))
-import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                (newAssigned)
-
-type I = Interpreter (Zp BLS12_381_Scalar)
-
-
----------------------------------------------------
----------------------------------------------------
+import qualified ZkFold.Symbolic.Data.VarByteString as VB
+import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), wipeUnassigned, (@+))
+import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
 
 
 class IsSymbolicJSON a where
@@ -259,16 +244,7 @@ deriving instance Symbolic ctx => SymbolicInput (ClientSecret ctx)
 
 -- | The lowest number of bits to store the padded length of a bytestring of @n@ bits
 --
-type family BufLen (n :: Natural) :: Natural where
-    BufLen 0 = 3
-    BufLen 1 = 3
-    BufLen 2 = 3
-    BufLen 3 = 3
-    BufLen 4 = 3
-    BufLen 5 = 3
-    BufLen 6 = 3
-    BufLen 7 = 3
-    BufLen n = Log2 n + 1
+type BufLen n = Max (Log2 n + 1) 3
 
 -- | The smallest multiple of 6 not less than @n@
 --
@@ -282,9 +258,6 @@ type ASCII (n :: Natural) = (Div n 6) * 8
 ---------------------------------------------------------------------------------------------------
     -- Helper axioms
 ---------------------------------------------------------------------------------------------------
-
-bufLen :: forall n . KnownNat n :- KnownNat (BufLen n)
-bufLen = Sub unsafeAxiom
 
 monoAdd :: forall (a :: Natural) (b :: Natural) (c :: Natural) . (a <= b) :- (a <= (c + b))
 monoAdd = Sub unsafeAxiom
@@ -329,13 +302,14 @@ uintToFe (UInt v) = FieldElement $ hmap (Par1 . V.item) v
 padTo6
     :: forall n ctx
     .  Symbolic ctx
-    => KnownNat n
+    => KnownNat (BufLen n)
     => NFData (ctx (V.Vector 1))
     => UInt (BufLen n) ('Fixed (BufLen n)) ctx
     -> FieldElement ctx
 padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
     do
         val <- horner $ V.fromVector bits
+
         toPad <- newAssigned $ \p -> fromConstant @Natural 6 - p val
         valBits <- V.unsafeToVector @3 <$> expansion 3 toPad
 
@@ -346,13 +320,19 @@ padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
 
         pure $ Par1 res
     where
-        UInt v = withDict (bufLen @n) $ withDiv @(BufLen n) $ ui `mod` (fromConstant @Natural 6)
+        UInt v = withDiv @(BufLen n) $ ui `mod` (fromConstant @Natural 6)
 
 
 -- | Increase capacity of a VarByteString and increase its length to the nearest multiple of 6
 -- Required for base64 encoding.
 --
-padBytestring6 :: forall n ctx . (Symbolic ctx, KnownNat n, NFData (ctx (V.Vector 1))) => VarByteString n ctx -> VarByteString (Next6 n) ctx
+padBytestring6
+    :: forall n ctx
+    .  Symbolic ctx
+    => KnownNat n
+    => KnownNat (BufLen n)
+    => NFData (ctx (V.Vector 1))
+    => VarByteString n ctx -> VarByteString (Next6 n) ctx
 padBytestring6 VarByteString{..} = VarByteString (bsLength + mod6) (withNext6 @n $ VB.shiftL newBuf mod6)
     where
         mod6 = padTo6 @n $ feToUInt @n bsLength
@@ -368,6 +348,7 @@ base64ToAscii
     .  Symbolic ctx
     => KnownNat n
     => Mod n 6 ~ 0
+    => KnownNat (BufLen n)
     => NFData (ctx (V.Vector 1))
     => VarByteString n ctx -> VarByteString (ASCII n) ctx
 base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString newLen result
@@ -376,7 +357,7 @@ base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString 
         ascii  = word6ToAscii <$> words6
         result = concat ascii
 
-        newLen = withDict (bufLen @n) $ withDiv @(BufLen n) $ scale (4 :: Natural) . (uintToFe @n) . (`div` (fromConstant @Natural 3)) . (feToUInt @n) $ bsLength
+        newLen = withDiv @(BufLen n) $ scale (4 :: Natural) . (uintToFe @n) . (`div` (fromConstant @Natural 3)) . (feToUInt @n) $ bsLength
 
 
 {-
@@ -423,7 +404,7 @@ word6ToAscii (ByteString bs) = ByteString $ fromCircuitF bs $ \bits ->
         s3 <- newAssigned $ \p -> p asciidash + p s2
         s4 <- newAssigned $ \p -> p asciius   + p s3
 
-        V.unsafeToVector <$> expansion 8 s4
+        V.unsafeToVector . P.reverse <$> expansion 8 s4
 
 
 toAsciiBits
@@ -431,6 +412,8 @@ toAsciiBits
     .  IsSymbolicJSON a
     => Context a ~ ctx
     => KnownNat (MaxLength a)
+    => KnownNat (BufLen (MaxLength a))
+    => KnownNat (BufLen (Next6 (MaxLength a)))
     => Symbolic ctx
     => NFData (ctx (V.Vector 1))
     => a -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
