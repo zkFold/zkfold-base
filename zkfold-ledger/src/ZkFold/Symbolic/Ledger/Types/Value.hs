@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Ledger.Types.Value where
 
