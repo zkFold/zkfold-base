@@ -9,7 +9,7 @@ import           Prelude                                       hiding (Bool, Eq 
 import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Conditional              (Conditional, bool)
-import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
+import           ZkFold.Symbolic.Data.Eq                       (SymbolicEq, Eq (..))
 import           ZkFold.Symbolic.Data.List                     (List, concat, singleton, (++))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
@@ -69,10 +69,9 @@ updateIsValid ::
      Signature context
   => Hashable context (AddressIndex context, Transaction context)
   => SymbolicOutput (ContractData context)
-  => SymbolicOutput (Value context)
   => Context (ContractData context) ~ context
-  => Context (Value context) ~ context
-  => Eq (MultiAssetValue context)
+  => Context (MultiAssetValue context) ~ context
+  => SymbolicEq (MultiAssetValue context)
   => Conditional (Bool context) (MultiAssetValue context)
   => Hash context
   -> Update context
