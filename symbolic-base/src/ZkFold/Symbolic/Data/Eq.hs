@@ -15,7 +15,7 @@ import           Data.Functor.Rep                 (mzipRep, mzipWithRep)
 import           Data.Traversable                 (for)
 import qualified Data.Vector                      as V
 import qualified GHC.Generics                     as G
-import           Prelude                          (return, ($), type (~))
+import           Prelude                          (return, type (~), ($))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -24,8 +24,8 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool (Bool), BoolType (..), all, any)
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (runInvert)
 import           ZkFold.Symbolic.Data.Conditional (Conditional, GConditional)
 import           ZkFold.Symbolic.MonadCircuit

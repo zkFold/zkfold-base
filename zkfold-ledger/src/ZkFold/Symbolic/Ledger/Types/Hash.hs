@@ -1,6 +1,6 @@
 module ZkFold.Symbolic.Ledger.Types.Hash where
 
-import           Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
