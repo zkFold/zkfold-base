@@ -186,7 +186,6 @@ deriving newtype instance
 instance
   ( WeierstrassCurve curve field
   , SymbolicEq field
-  , SymbolicInput field
   ) => SymbolicInput (Weierstrass curve (Point field)) where
     isValid = isOnCurve
 deriving newtype instance Conditional bool point
@@ -268,8 +267,7 @@ deriving newtype instance Prelude.Show point
 deriving newtype instance SymbolicOutput field
   => SymbolicData (TwistedEdwards curve (AffinePoint field))
 instance
-  ( SymbolicInput field
-  , Context field ~ ctx
+  ( Context field ~ ctx
   , Symbolic ctx
   , TwistedEdwardsCurve curve field
   , SymbolicEq field
