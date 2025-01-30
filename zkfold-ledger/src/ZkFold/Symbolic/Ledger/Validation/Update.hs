@@ -70,6 +70,7 @@ updateIsValid ::
   => Hashable context (AddressIndex context, Transaction context)
   => SymbolicOutput (ContractData context)
   => Context (ContractData context) ~ context
+  => Context (Value context) ~ context
   => Context (MultiAssetValue context) ~ context
   => SymbolicEq (MultiAssetValue context)
   => Conditional (Bool context) (MultiAssetValue context)

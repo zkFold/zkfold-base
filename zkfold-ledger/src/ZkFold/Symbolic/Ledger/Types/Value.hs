@@ -1,25 +1,22 @@
 {-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Value where
 
-import           GHC.Generics                          (Generic)
 import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
 import           ZkFold.Symbolic.Data.Bool             (Bool)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Combinators      (KnownRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional      (Conditional, bool)
 import           ZkFold.Symbolic.Data.Eq               (Eq ((==)), SymbolicEq)
-import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
 import           ZkFold.Symbolic.Data.List             (List, emptyList, null, singleton, uncons, (.:))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
 
 -- | Input to the minting contract. Usually a token name.
-type Token = FieldElement
+data Token context
 
 -- | A minting contract is a contract that guards the minting and burning of tokens.
 -- In order to mint or burn tokens, the transaction must satisfy the minting contract.
@@ -35,11 +32,7 @@ data Value context = Value
   { mintingPolicy :: CurrencySymbol context
   , tokenInstance :: Token context
   , tokenQuantity :: UInt 64 Auto context
-  } deriving Generic
-
-instance (Symbolic context, KnownRegisters context 64 Auto) => SymbolicData (Value context)
-instance (Symbolic context, KnownRegisters context 64 Auto) => Conditional (Bool context) (Value context)
-instance (Symbolic context, KnownRegisters context 64 Auto) => Eq (Value context)
+  }
 
 newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (Value context))
 

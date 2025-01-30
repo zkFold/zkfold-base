@@ -2,11 +2,10 @@ module ZkFold.Symbolic.Ledger.Types.Address where
 
 import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
 
 -- | Input to the spending contract. Usually some sort of commitment information to be used when spending the output.
-type Datum = FieldElement
+data Datum context
 
 -- | A contract that locks a transaction output.
 -- In order to spend the output, the spending transaction must satisfy the contract.
