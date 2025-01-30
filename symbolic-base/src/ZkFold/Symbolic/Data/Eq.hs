@@ -69,7 +69,7 @@ instance KnownNat n => Eq (Zp n) where
     (==) = (Haskell.==)
     (/=) = (Haskell./=)
 
-instance (Symbolic c, Haskell.Eq (BaseField c), Representable f, Traversable f)
+instance (Symbolic c, LayoutFunctor f)
   => Eq (c f) where
     type BooleanOf (c f) = Bool c
     x == y =
