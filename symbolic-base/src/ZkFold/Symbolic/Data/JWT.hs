@@ -17,6 +17,7 @@ module ZkFold.Symbolic.Data.JWT
     , I
     , BufLen
     , padTo6
+    , toAsciiBits
     , word6ToAscii
     ) where
 
@@ -391,7 +392,7 @@ word6ToAscii (ByteString bs) = ByteString $ fromCircuitF bs $ \bits ->
     do
         let bitsSym = V.fromVector bits
 
-        fe <- horner bitsSym
+        fe <- horner (P.reverse bitsSym)
 
         z <- newAssigned (P.const zero)
         o <- newAssigned (P.const one)
@@ -407,23 +408,22 @@ word6ToAscii (ByteString bs) = ByteString $ fromCircuitF bs $ \bits ->
         ledash <- blueprintGE @6 bits62 bitsSym
 
         isaz   <- newAssigned $ \p -> p leaz * (one - p isAZ)
-        is09   <- newAssigned $ \p -> p le09 * (one - p isaz)
-        isdash <- newAssigned $ \p -> p ledash * (one - p is09)
+        is09   <- newAssigned $ \p -> p le09 * (one - p leaz)
+        isdash <- newAssigned $ \p -> p ledash * (one - p le09)
         isus   <- newAssigned $ \p -> one - p ledash
 
-        asciiAZ   <- newAssigned $ \p -> p isAZ *   (fromConstant @P.Integer 65    + p fe)
-        asciiaz   <- newAssigned $ \p -> p isaz *   (fromConstant @P.Integer 71    + p fe)
-        ascii09   <- newAssigned $ \p -> p is09 *   (fromConstant @P.Integer (-4)  + p fe)
-        asciidash <- newAssigned $ \p -> p isdash * (fromConstant @P.Integer (-17) + p fe)
-        asciius   <- newAssigned $ \p -> p isus *   (fromConstant @P.Integer 32    + p fe)
+        asciiAZ   <- newAssigned $ \p -> p isAZ   * (p fe + (fromConstant @Natural 65))
+        asciiaz   <- newAssigned $ \p -> p isaz   * (p fe + (fromConstant @Natural 71))
+        ascii09   <- newAssigned $ \p -> p is09   * (p fe - (fromConstant @Natural 4 ))
+        asciidash <- newAssigned $ \p -> p isdash * (p fe - (fromConstant @Natural 17))
+        asciius   <- newAssigned $ \p -> p isus   * (p fe + (fromConstant @Natural 32))
 
         s1 <- newAssigned $ \p -> p asciiAZ   + p asciiaz
-        s2 <- newAssigned $ \p -> p asciiaz   + p s1
-        s3 <- newAssigned $ \p -> p ascii09   + p s2
-        s4 <- newAssigned $ \p -> p asciidash + p s3
-        s5 <- newAssigned $ \p -> p asciius   + p s4
+        s2 <- newAssigned $ \p -> p ascii09   + p s1
+        s3 <- newAssigned $ \p -> p asciidash + p s2
+        s4 <- newAssigned $ \p -> p asciius   + p s3
 
-        V.unsafeToVector <$> expansion 8 s5
+        V.unsafeToVector <$> expansion 8 s4
 
 
 toAsciiBits
