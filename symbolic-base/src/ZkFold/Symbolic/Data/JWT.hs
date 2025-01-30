@@ -13,40 +13,56 @@ module ZkFold.Symbolic.Data.JWT
     , IsSymbolicJSON (..)
     , secretBits
     , verifySignature
-    , feMod6
+----------------------------------
+    , I
+    , BufLen
+    , padTo6
+    , word6ToAscii
     ) where
 
-import           Control.DeepSeq                    (NFData)
-import           Data.Aeson                         (FromJSON (..), genericParseJSON)
-import qualified Data.Aeson                         as JSON
-import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
-import           Data.Constraint                    (withDict)
-import           Data.Constraint.Nat                (plusNat)
-import           Data.Foldable                      (foldrM)
-import           Data.Maybe                         (fromMaybe)
-import           Data.Scientific                    (toBoundedInteger)
-import qualified Data.Text                          as T
-import           GHC.Generics                       (Generic, Par1 (..))
-import           Prelude                            (fmap, otherwise, pure, type (~), ($), (.))
-import qualified Prelude                            as P
+import           Control.DeepSeq                             (NFData)
+import           Data.Aeson                                  (FromJSON (..), genericParseJSON)
+import qualified Data.Aeson                                  as JSON
+import           Data.Aeson.Casing                           (aesonPrefix, snakeCase)
+import           Data.Constraint                             (Dict, withDict, (:-) (..))
+import           Data.Constraint.Nat                         (divNat, minusNat, plusNat, timesNat)
+import           Data.Constraint.Unsafe                      (unsafeAxiom)
+import           Data.Maybe                                  (fromMaybe)
+import           Data.Scientific                             (toBoundedInteger)
+import qualified Data.Text                                   as T
+import           GHC.Generics                                (Generic, Par1 (..))
+import           Prelude                                     (fmap, pure, type (~), ($), (.), (<$>))
+import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor          (hmap)
-import qualified ZkFold.Base.Data.Vector            as V
-import           ZkFold.Base.Data.Vector            ((!!))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Data.HFunctor                   (hmap)
+import qualified ZkFold.Base.Data.Vector                     as V
+import           ZkFold.Base.Data.Vector                     ((!!))
 import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.ByteString             (ByteString (..), concat, toWords)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
-import           ZkFold.Symbolic.Data.Input         (SymbolicInput)
+import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
+import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
-import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
-import           ZkFold.Symbolic.MonadCircuit       (MonadCircuit, newAssigned)
+import qualified ZkFold.Symbolic.Data.VarByteString          as VB
+import           ZkFold.Symbolic.Data.VarByteString          (VarByteString (..), wipeUnassigned, (@+))
+import           ZkFold.Symbolic.Interpreter
+import           ZkFold.Symbolic.MonadCircuit                (newAssigned)
+
+type I = Interpreter (Zp BLS12_381_Scalar)
+
+
+---------------------------------------------------
+---------------------------------------------------
+
 
 class IsSymbolicJSON a where
     type MaxLength a :: Natural
@@ -240,7 +256,8 @@ deriving instance
 deriving instance Symbolic ctx => SymbolicData (ClientSecret ctx)
 deriving instance Symbolic ctx => SymbolicInput (ClientSecret ctx)
 
-
+-- | The lowest number of bits to store the padded length of a bytestring of @n@ bits
+--
 type family BufLen (n :: Natural) :: Natural where
     BufLen 0 = 3
     BufLen 1 = 3
@@ -250,78 +267,183 @@ type family BufLen (n :: Natural) :: Natural where
     BufLen 5 = 3
     BufLen 6 = 3
     BufLen 7 = 3
-    BufLen n = Log2 n + 1 
+    BufLen n = Log2 n + 1
 
--- | Returns fieldElement `mod` 6
+-- | The smallest multiple of 6 not less than @n@
 --
--- fieldElement = \sum_{i=0}^N a_i * 2^i, a_i ∈ {0, 1}
---   fieldElement `mod` 6
--- = (\sum_{i=0}^N a_i * 2^i) `mod` 6
--- = \sum_{i=0}^N a_i * 2^i `mod` 6
--- = \sum_{i=0}^N a_i * (2^i `mod` 6)
--- = a_0 + \sum_1^N a_i * (if is_odd(i) then 2 else 4)
+type Next6 (n :: Natural) = (Div (n + 5) 6) * 6
+
+-- | The number of bits required to store a base64 representation as an ASCII string
+-- Each symbol in base64 requires 6 bits, but in ASCII it takes 8 bits, hence the ratio of 8/6
 --
--- TODO: check if this approach requires less constraints and variables than @divMod@ on @UInt@ s
+type ASCII (n :: Natural) = (Div n 6) * 8
+
+---------------------------------------------------------------------------------------------------
+    -- Helper axioms
+---------------------------------------------------------------------------------------------------
+
+bufLen :: forall n . KnownNat n :- KnownNat (BufLen n)
+bufLen = Sub unsafeAxiom
+
+monoAdd :: forall (a :: Natural) (b :: Natural) (c :: Natural) . (a <= b) :- (a <= (c + b))
+monoAdd = Sub unsafeAxiom
+
+withDiv :: forall n {r}. KnownNat n => (KnownNat (Div ((n + OrdWord) - 1) OrdWord) => r) -> r
+withDiv =
+    withDict (plusNat @n @OrdWord) $
+        withDict (monoAdd @1 @OrdWord @n) $
+            withDict (minusNat @(n + OrdWord) @1) $
+                withDict (divNat @(n + OrdWord - 1) @OrdWord)
+
+withNext6 :: forall n {r}. KnownNat n => (KnownNat (Next6 n) => r) -> r
+withNext6 =
+    withDict (plusNat @n @5) $
+        withDict (divNat @(n + 5) @6) $
+            withDict (timesNat @(Div (n + 5) 6) @6)
+
+withAscii :: forall n {r}. KnownNat n => (KnownNat (ASCII n) => r) -> r
+withAscii =
+    withDict (divNat @n @6) $
+        withDict (timesNat @(Div n 6) @8)
+
+divMul :: forall a b . (Mod a b ~ 0) :- ((Div a b) * b ~ a)
+divMul = Sub unsafeAxiom
+
+mulMod :: forall n . Dict (Mod (Next6 n) 6 ~ 0)
+mulMod = unsafeAxiom
+
+withDivMul :: forall a b {r}. (Mod a b ~ 0) => ((Div a b) * b ~ a => r) -> r
+withDivMul = withDict (divMul @a @b)
+
+---------------------------------------------------------------------------------------------------
+
+feToUInt :: forall n ctx . Symbolic ctx => FieldElement ctx -> UInt (BufLen n) ('Fixed (BufLen n)) ctx
+feToUInt (FieldElement c) = UInt $ hmap (V.singleton . unPar1) c
+
+uintToFe :: forall n ctx . Symbolic ctx => UInt (BufLen n) ('Fixed (BufLen n)) ctx -> FieldElement ctx
+uintToFe (UInt v) = FieldElement $ hmap (Par1 . V.item) v
+
+-- | The smallest multiple of 6 not less than the given UInt
 --
--- The upper bound of this sum for a field element of N bits is 3N.
--- A sequence of five such sums will reduce the field element to three bits.
--- However, at this point it might be equal to 6 or 7. We'll need to check the two higher bits
--- after the last reduction and unset them if they are both set.
---
-feMod6 :: forall ctx . Symbolic ctx => FieldElement ctx -> FieldElement ctx
-feMod6 = unset . truncatedBinary @3 . reduce @4 . reduce @5 . reduce @6 . reduce @20 . reduce @(NumberOfBits (BaseField ctx))
+padTo6
+    :: forall n ctx
+    .  Symbolic ctx
+    => KnownNat n
+    => NFData (ctx (V.Vector 1))
+    => UInt (BufLen n) ('Fixed (BufLen n)) ctx
+    -> FieldElement ctx
+padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
+    do
+        val <- horner $ V.fromVector bits
+        toPad <- newAssigned $ \p -> fromConstant @Natural 6 - p val
+        valBits <- V.unsafeToVector @3 <$> expansion 3 toPad
+
+        f <- newAssigned $ \p -> one - p (valBits !! 1) * p (valBits !! 2)
+        hi1 <- newAssigned $ \p -> p f * p (valBits !! 1)
+        hi2 <- newAssigned $ \p -> p f * p (valBits !! 2)
+        res <- horner [valBits !! 0, hi1, hi2]
+
+        pure $ Par1 res
     where
-        reduce :: forall n . KnownNat n => FieldElement ctx -> FieldElement ctx
-        reduce fe =
-            let bits = truncatedBinary @n fe
-             in FieldElement $ fromCircuitF bits $ \v -> do
-                 z <- newAssigned (P.const zero)
-                 weightedSum <- foldrM foldBits z $ V.enumerate v
-                 pure $ Par1 weightedSum
+        UInt v = withDict (bufLen @n) $ withDiv @(BufLen n) $ ui `mod` (fromConstant @Natural 6)
 
-        foldBits :: MonadCircuit i (BaseField ctx) w m => (Natural, i) -> i -> m i
-        foldBits (ix, a) acc
-          | ix == 0   = newAssigned $ \p -> p acc + p a
-          | P.odd ix  = newAssigned $ \p -> p acc + scale (2 :: Natural) (p a)
-          | otherwise = newAssigned $ \p -> p acc + scale (4 :: Natural) (p a)
-
-        unset :: ctx (V.Vector 3) -> FieldElement ctx
-        unset vec = FieldElement $ fromCircuitF vec $ \v -> do
-            f <- newAssigned $ \p -> one - p (v !! 1) * p (v !! 2)
-            hi1 <- newAssigned $ \p -> p f * p (v !! 2)
-            hi2 <- newAssigned $ \p -> p f * p (v !! 1)
-            hi  <- newAssigned $ \p -> scale (4 :: Natural) (p hi1) + scale (2 :: Natural) (p hi2)
-            res <- newAssigned $ \p -> p hi + p (v !! 0)
-            pure $ Par1 res
-
-truncatedBinary :: forall n ctx . (KnownNat n, Symbolic ctx) => FieldElement ctx -> ctx (V.Vector n)
-truncatedBinary (FieldElement c) = hmap V.unsafeToVector $ symbolicF c
-    (padBits n . fmap fromConstant . binaryExpansion . toConstant . unPar1)
-    (expansion n . unPar1)
-    where n = value @n
 
 -- | Increase capacity of a VarByteString and increase its length to the nearest multiple of 6
 -- Required for base64 encoding.
 --
-pad6 :: forall n ctx . (Symbolic ctx, KnownNat n) => VarByteString n ctx -> VarByteString (n + 5) ctx
-pad6 VarByteString{..} = VarByteString (bsLength + mod6) (withn5 @n $ VB.shiftL newBuf mod6)
+padBytestring6 :: forall n ctx . (Symbolic ctx, KnownNat n, NFData (ctx (V.Vector 1))) => VarByteString n ctx -> VarByteString (Next6 n) ctx
+padBytestring6 VarByteString{..} = VarByteString (bsLength + mod6) (withNext6 @n $ VB.shiftL newBuf mod6)
     where
-        feToUInt :: FieldElement ctx -> UInt (BufLen n) ('Fixed (BufLen n)) ctx
-        feToUInt (FieldElement c) = UInt $ hmap (V.singleton . unPar1) c
+        mod6 = padTo6 @n $ feToUInt @n bsLength
+        newBuf = withNext6 @n $ resize bsBuffer
 
-        uintToFe :: UInt (BufLen n) ('Fixed (BufLen n)) ctx -> FieldElement ctx
-        uintToFe (UInt v) = FieldElement $ hmap (Par1 . V.item) v
-        
-        mod6 = feMod6 bsLength
-        newBuf = withn5 @n $ resize bsBuffer
 
-withn5  :: forall n {r}. KnownNat n => (KnownNat (n + 5) => r) -> r
-withn5 = withDict (plusNat @n @5)
-
--- | Client secret as a ByteString: @base64UrlEncode(header) + "." + base64UrlEncode(payload)@
+-- | Convert a base64-encoded string into an ASCII-encoded string
+-- It is expected that both capacity and length of the input bytestring are divisible by 6
+-- If either of them is not, apply @padBytestring6@ first.
 --
-secretBits :: forall ctx .  Symbolic ctx => ClientSecret ctx -> VarByteString 7754 ctx
-secretBits ClientSecret {..} = pad6 (toJsonBits csHeader) @+ (fromType @".") @+ pad6 (toJsonBits csPayload)
+base64ToAscii
+    :: forall n ctx
+    .  Symbolic ctx
+    => KnownNat n
+    => Mod n 6 ~ 0
+    => NFData (ctx (V.Vector 1))
+    => VarByteString n ctx -> VarByteString (ASCII n) ctx
+base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString newLen result
+    where
+        words6 = withDivMul @n @6 $ toWords @(Div n 6) @6 bsBuffer
+        ascii  = word6ToAscii <$> words6
+        result = concat ascii
+
+        newLen = withDict (bufLen @n) $ withDiv @(BufLen n) $ scale (4 :: Natural) . (uintToFe @n) . (`div` (fromConstant @Natural 3)) . (feToUInt @n) $ bsLength
+
+
+{-
+    Symbols  |  Base64url  |  ASCII
+    A..Z         0..25       65..90
+    a..z         26..51      97..122
+    0..9         52..61      48..57
+    -            62          45
+    _            63          95
+-}
+word6ToAscii :: forall ctx . Symbolic ctx => ByteString 6 ctx -> ByteString 8 ctx
+word6ToAscii (ByteString bs) = ByteString $ fromCircuitF bs $ \bits ->
+    do
+        let bitsSym = V.fromVector bits
+
+        fe <- horner bitsSym
+
+        z <- newAssigned (P.const zero)
+        o <- newAssigned (P.const one)
+
+        let bits25 = [z,o,o,z,z,o]
+            bits51 = [o,o,z,z,o,o]
+            bits61 = [o,o,o,o,z,o]
+            bits62 = [o,o,o,o,o,z]
+
+        isAZ   <- blueprintGE @6 bits25 bitsSym
+        leaz   <- blueprintGE @6 bits51 bitsSym
+        le09   <- blueprintGE @6 bits61 bitsSym
+        ledash <- blueprintGE @6 bits62 bitsSym
+
+        isaz   <- newAssigned $ \p -> p leaz * (one - p isAZ)
+        is09   <- newAssigned $ \p -> p le09 * (one - p isaz)
+        isdash <- newAssigned $ \p -> p ledash * (one - p is09)
+        isus   <- newAssigned $ \p -> one - p ledash
+
+        asciiAZ   <- newAssigned $ \p -> p isAZ *   (fromConstant @P.Integer 65    + p fe)
+        asciiaz   <- newAssigned $ \p -> p isaz *   (fromConstant @P.Integer 71    + p fe)
+        ascii09   <- newAssigned $ \p -> p is09 *   (fromConstant @P.Integer (-4)  + p fe)
+        asciidash <- newAssigned $ \p -> p isdash * (fromConstant @P.Integer (-17) + p fe)
+        asciius   <- newAssigned $ \p -> p isus *   (fromConstant @P.Integer 32    + p fe)
+
+        s1 <- newAssigned $ \p -> p asciiAZ   + p asciiaz
+        s2 <- newAssigned $ \p -> p asciiaz   + p s1
+        s3 <- newAssigned $ \p -> p ascii09   + p s2
+        s4 <- newAssigned $ \p -> p asciidash + p s3
+        s5 <- newAssigned $ \p -> p asciius   + p s4
+
+        V.unsafeToVector <$> expansion 8 s5
+
+
+toAsciiBits
+    :: forall a ctx
+    .  IsSymbolicJSON a
+    => Context a ~ ctx
+    => KnownNat (MaxLength a)
+    => Symbolic ctx
+    => NFData (ctx (V.Vector 1))
+    => a -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
+toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base64ToAscii . padBytestring6 . toJsonBits
+
+
+-- | Client secret as a ByteString: @ASCII(base64UrlEncode(header) + "." + base64UrlEncode(payload))@
+--
+secretBits :: forall ctx .  (Symbolic ctx, NFData (ctx (V.Vector 1))) => ClientSecret ctx -> VarByteString 10328 ctx
+secretBits ClientSecret {..} =
+       toAsciiBits csHeader
+    @+ (fromType @".")
+    @+ toAsciiBits csPayload
 
 -- | Verify that the given JWT was correctly signed with a matching key (i.e. Key IDs match and the signature is correct).
 --
