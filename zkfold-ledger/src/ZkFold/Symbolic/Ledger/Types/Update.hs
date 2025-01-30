@@ -64,6 +64,7 @@ emptyUpdate ::
   => Context (AddressIndex context) ~ context
   => Context (ContractData context) ~ context
   => Context (Input context) ~ context
+  => Context (Output context) ~ context
   => Hash context
   -> Update context
 emptyUpdate prev = Update
