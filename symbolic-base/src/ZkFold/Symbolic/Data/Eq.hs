@@ -11,11 +11,11 @@ module ZkFold.Symbolic.Data.Eq (
 
 import           Data.Bool                        (bool)
 import           Data.Foldable                    (Foldable)
-import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
-import           Data.Traversable                 (Traversable, for)
+import           Data.Functor.Rep                 (mzipRep, mzipWithRep)
+import           Data.Traversable                 (for)
 import qualified Data.Vector                      as V
 import qualified GHC.Generics                     as G
-import           Prelude                          (return, ($))
+import           Prelude                          (return, ($), type (~))
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class

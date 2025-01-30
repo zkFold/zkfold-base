@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Tests.EllipticCurve (specEllipticCurve) where
 
@@ -17,6 +18,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
 import           ZkFold.Base.Algebra.EllipticCurve.Pasta
 import           ZkFold.Base.Algebra.EllipticCurve.PlutoEris
 import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1
+import           ZkFold.Symbolic.Data.Eq                     (BooleanOf)
 
 specEllipticCurve :: IO ()
 specEllipticCurve = hspec $ do
@@ -42,13 +44,14 @@ specEllipticCurve = hspec $ do
 
 specEllipticCurveGenerator
   :: forall point .
-    ( EllipticCurve Prelude.Bool point
+    ( EllipticCurve point
     , CyclicGroup point
     , Eq point
     , Show point
     , Arbitrary (ScalarFieldOf point)
     , Show (ScalarFieldOf point)
     , KnownSymbol (CurveOf point)
+    , BooleanOf (BaseFieldOf point) ~ Bool
     ) => Spec
 specEllipticCurveGenerator = do
   let curve = symbolVal (Proxy @(CurveOf point))
@@ -62,7 +65,7 @@ specEllipticCurveGenerator = do
         scale coef g `shouldBe` zero
       it "should be closed under scalar multiplication" $
         property $ \ (coef :: ScalarFieldOf point) ->
-          isOnCurve @Prelude.Bool (coef `scale` g)
+          isOnCurve (coef `scale` g)
 
 data TestVector = TestVector
   { _k :: Natural -- scalar
