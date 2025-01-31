@@ -27,7 +27,7 @@ import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, ifThenElse)
-import           ZkFold.Symbolic.Data.Eq           (Eq (..))
+import           ZkFold.Symbolic.Data.Eq           (Eq (..), SymbolicEq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput (..))
 import           ZkFold.Symbolic.Data.Morph        (MorphFrom, MorphTo (..), (@))
@@ -61,8 +61,8 @@ data List c x = List
 instance (SymbolicData x, c ~ Context x) => SymbolicData (List c x)
 -- | TODO: Maybe some 'isValid' check for Lists?..
 instance (SymbolicInput x, c ~ Context x) => SymbolicInput (List c x)
-
-instance (SymbolicData x, Symbolic c) => Conditional (Bool c) (List c x)
+instance (SymbolicData x, c ~ Context x) => Conditional (Bool c) (List c x)
+instance (SymbolicData x, SymbolicEq x, c ~ Context x) => Eq (List c x)
 
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.

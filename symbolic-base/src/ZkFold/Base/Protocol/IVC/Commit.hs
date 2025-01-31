@@ -35,20 +35,20 @@ class PedersonSetup s c where
 type PedersonSetupMaxSize = 100
 
 instance
-  ( CyclicGroup (Weierstrass curve (Point bool field))
-  , Random (ScalarFieldOf (Weierstrass curve (Point bool field)))
-  ) => PedersonSetup [] (Weierstrass curve (Point bool field)) where
+  ( CyclicGroup (Weierstrass curve (Point field))
+  , Random (ScalarFieldOf (Weierstrass curve (Point field)))
+  ) => PedersonSetup [] (Weierstrass curve (Point field)) where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
-        let x = fst $ random $ mkStdGen 0 :: ScalarFieldOf (Weierstrass curve (Point bool field))
+        let x = fst $ random $ mkStdGen 0 :: ScalarFieldOf (Weierstrass curve (Point field))
         in take (value @PedersonSetupMaxSize) $ iterate (scale x) pointGen
 
 instance
   ( KnownNat n
-  , CyclicGroup (Weierstrass curve (Point bool field))
-  , Random (ScalarFieldOf (Weierstrass curve (Point bool field)))
+  , CyclicGroup (Weierstrass curve (Point field))
+  , Random (ScalarFieldOf (Weierstrass curve (Point field)))
   , n <= PedersonSetupMaxSize
-  ) => PedersonSetup (Vector n) (Weierstrass curve (Point bool field)) where
+  ) => PedersonSetup (Vector n) (Weierstrass curve (Point field)) where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
         unsafeToVector $ take (value @n) $ groupElements @[]

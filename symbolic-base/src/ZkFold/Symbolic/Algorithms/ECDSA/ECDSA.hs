@@ -25,7 +25,7 @@ ecdsaVerify
      , KnownNat n
      , baseField ~ UInt 256 'Auto c
      , ScalarFieldOf point ~ FieldElement c
-     , point ~ Weierstrass curve (Point (Bool c) baseField)
+     , point ~ Weierstrass curve (Point baseField)
      , CyclicGroup point
      , SemiEuclidean (UInt 256 'Auto c)
      , KnownNat (NumberOfRegisters (S.BaseField c) 256 'Auto)

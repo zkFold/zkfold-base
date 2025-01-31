@@ -61,7 +61,7 @@ kycExample :: forall n r rsc context . (
   Symbolic context
   , KnownNat n
   , KnownNat rsc
-  , Eq (Bool context) (KYCHash context)
+  , Eq (KYCHash context)
   , KnownRegisterSize r
   , KnownRegisters context 64 r
   , KnownNat (Ceil (GetRegisterSize (BaseField context) 64 r) OrdWord)

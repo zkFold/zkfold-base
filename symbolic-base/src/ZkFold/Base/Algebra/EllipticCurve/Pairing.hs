@@ -40,36 +40,36 @@ finalExponentiation x = x ^ ((p ^ (12 :: Natural) -! 1) `div` r)
     p = order @baseField
     r = order @scalarField
 
-millerAlgorithmBLS12 ::forall c d bool fldC fldD i j g.
+millerAlgorithmBLS12 ::forall c d fldC fldD i j g.
   WeierstrassCurve d fldD =>
-  Eq bool fldD =>
+  Eq fldD =>
   FiniteField fldC =>
   Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
+  Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
   [Int8] ->
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
+  Weierstrass c (Point fldC) ->
+  Weierstrass d (Point fldD) ->
   g
 millerAlgorithmBLS12 (x:xs) p q = snd $
   millerLoop p q xs (H.bool (negate q) q (x Prelude.> 0), one)
 millerAlgorithmBLS12 _ _ _ = one
 
-millerAlgorithmBN :: forall c d bool fldC fldD i j g.
+millerAlgorithmBN :: forall c d fldC fldD i j g.
   WeierstrassCurve d fldD =>
-  Eq bool fldD =>
+  Eq fldD =>
   FiniteField fldC =>
   Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
+  Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
   fldD ->
   [Int8] ->
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
+  Weierstrass c (Point fldC) ->
+  Weierstrass d (Point fldD) ->
   g
 millerAlgorithmBN xi (x:xs) p q = finalStepBN xi p q $
   millerLoop p q xs (H.bool (negate q) q (x Prelude.> 0), one)
@@ -77,19 +77,19 @@ millerAlgorithmBN _ _ _ _ = one
 
 -- --------------------------------------------------------------------------------
 
-finalStepBN :: forall c d bool fldC fldD i j g.
+finalStepBN :: forall c d fldC fldD i j g.
   WeierstrassCurve d fldD =>
-  Eq bool fldD =>
+  Eq fldD =>
   FiniteField fldC =>
   Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
+  Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
   fldD ->
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
-  (Weierstrass d (Point bool fldD), g) ->
+  Weierstrass c (Point fldC) ->
+  Weierstrass d (Point fldD) ->
+  (Weierstrass d (Point fldD), g) ->
   g
 finalStepBN xi p q (t, f) = f * f' * f''
   where
@@ -101,18 +101,18 @@ finalStepBN xi p q (t, f) = f * f' * f''
 
 millerLoop ::
   WeierstrassCurve d fldD =>
-  Eq bool fldD =>
+  Eq fldD =>
   Field fldC =>
   Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
+  Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
+  Weierstrass c (Point fldC) ->
+  Weierstrass d (Point fldD) ->
   [Int8] ->
-  (Weierstrass d (Point bool fldD), g) ->
-  (Weierstrass d (Point bool fldD), g)
+  (Weierstrass d (Point fldD), g) ->
+  (Weierstrass d (Point fldD), g)
 millerLoop p q = impl
   where impl []     tf = tf
         impl (x:xs) tf
@@ -124,10 +124,11 @@ millerLoop p q = impl
 --------------------------------------------------------------------------------
 
 frobTwisted ::
-  forall c bool fld.
+  forall c fld.
   ( WeierstrassCurve c fld
-  , Conditional bool bool, Conditional bool fld
-  ) => Natural -> fld -> Weierstrass c (Point bool fld) -> Weierstrass c (Point bool fld)
+  , Conditional (BooleanOf fld) (BooleanOf fld)
+  , Eq fld
+  ) => Natural -> fld -> Weierstrass c (Point fld) -> Weierstrass c (Point fld)
 frobTwisted q xi (Weierstrass (Point x y isInf)) =
   if isInf then pointInf else pointXY ((x ^ q) * (xi ^ tx)) ((y ^ q) * (xi ^ ty))
   where
@@ -136,53 +137,55 @@ frobTwisted q xi (Weierstrass (Point x y isInf)) =
 
 additionStep ::
   WeierstrassCurve d fldD =>
-  Eq bool fldD =>
+  Eq fldD =>
   Field fldC =>
   Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
+  BooleanOf fldC ~ BooleanOf fldD =>
+  -- Conditional bool fldD =>
+  Conditional (BooleanOf fldD) (BooleanOf fldD) =>
   Untwisted fldD i j ~ g =>
   Field g =>
-  Weierstrass c (Point bool fldC) ->
-  Weierstrass d (Point bool fldD) ->
-  (Weierstrass d (Point bool fldD), g) ->
-  (Weierstrass d (Point bool fldD), g)
+  Weierstrass c (Point fldC) ->
+  Weierstrass d (Point fldD) ->
+  (Weierstrass d (Point fldD), g) ->
+  (Weierstrass d (Point fldD), g)
 additionStep p q (t, f) = (* f) <$> lineFunction p q t
 
 doublingStep ::
   WeierstrassCurve d fldD =>
-  Eq bool fldD =>
+  Eq fldD =>
   Field fldC =>
   Scale fldC fldD =>
-  Conditional bool bool =>
-  Conditional bool fldD =>
+  Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
-  Weierstrass c (Point bool fldC) ->
-  (Weierstrass d (Point bool fldD), g) ->
-  (Weierstrass d (Point bool fldD), g)
+  Weierstrass c (Point fldC) ->
+  (Weierstrass d (Point fldD), g) ->
+  (Weierstrass d (Point fldD), g)
 doublingStep p (t, f) = (* f) . (* f) <$> lineFunction p t t
 
 
-lineFunction :: forall c d bool baseFieldC baseFieldD i j g.
+lineFunction :: forall c d baseFieldC baseFieldD i j g.
   WeierstrassCurve d baseFieldD =>
   Field baseFieldC =>
   Scale baseFieldC baseFieldD =>
-  Conditional bool bool =>
-  Conditional bool baseFieldD =>
-  Eq bool baseFieldD =>
+  Conditional (BooleanOf baseFieldD) (BooleanOf baseFieldD) =>
+  -- Conditional bool baseFieldD =>
+  Eq baseFieldD =>
+  BooleanOf baseFieldC ~ BooleanOf baseFieldD =>
   Untwisted baseFieldD i j ~ g =>
-  Weierstrass c (Point bool baseFieldC) ->
-  Weierstrass d (Point bool baseFieldD) ->
-  Weierstrass d (Point bool baseFieldD) ->
-  (Weierstrass d (Point bool baseFieldD), g)
+  Weierstrass c (Point baseFieldC) ->
+  Weierstrass d (Point baseFieldD) ->
+  Weierstrass d (Point baseFieldD) ->
+  (Weierstrass d (Point baseFieldD), g)
 lineFunction
   (Weierstrass (Point x y isInf))
   (Weierstrass (Point x1 y1 isInf1))
   (Weierstrass (Point x2 y2 isInf2)) =
   if isInf || isInf1 || isInf2 then (pointInf, Ext2 (Ext3 one zero zero) zero)
-  else if x1 /= x2 :: bool then (pointXY x3 y3, untwist (negate y) (x `scale` l) (y1 - l * x1))
-  else if y1 + y2 == zero :: bool then (pointInf, untwist x (negate x1) zero)
+  else if x1 /= x2 then (pointXY x3 y3, untwist (negate y) (x `scale` l) (y1 - l * x1))
+  else if y1 + y2 == zero then (pointInf, untwist x (negate x1) zero)
   else (pointXY x3' y3', untwist (negate y) (x `scale` l') (y1 - l' * x1))
   where
     l   = (y2 - y1) // (x2 - x1)

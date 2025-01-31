@@ -36,7 +36,7 @@ plonkupProve :: forall p i n l g1 g2 ts core .
     , KnownNat (PlonkupPolyExtendedLength n)
     , Foldable l
     , Ord (ScalarFieldOf g1)
-    , Compressible Bool g1
+    , Compressible g1
     , ToTranscript ts Word8
     , ToTranscript ts (ScalarFieldOf g1)
     , ToTranscript ts (Compressed g1)
@@ -82,9 +82,9 @@ plonkupProve PlonkupProverSetup {..}
         -- Round 2
 
         ts1   = mempty
-            `transcript` compress @Bool cmA
-            `transcript` compress @Bool cmB
-            `transcript` compress @Bool cmC :: ts
+            `transcript` compress cmA
+            `transcript` compress cmB
+            `transcript` compress cmC :: ts
         -- zeta = challenge ts1 :: ScalarFieldOf g1
 
         t_zeta = t relation
@@ -106,9 +106,9 @@ plonkupProve PlonkupProverSetup {..}
         -- Round 3
 
         ts2 = ts1
-            `transcript` compress @Bool cmF
-            `transcript` compress @Bool cmH1
-            `transcript` compress @Bool cmH2
+            `transcript` compress cmF
+            `transcript` compress cmH1
+            `transcript` compress cmH2
         beta    = challenge (ts2 `transcript` (1 :: Word8))
         gamma   = challenge (ts2 `transcript` (2 :: Word8))
         delta   = challenge (ts2 `transcript` (3 :: Word8))
@@ -149,8 +149,8 @@ plonkupProve PlonkupProverSetup {..}
         -- Round 4
 
         ts3 = ts2
-            `transcript` compress @Bool cmZ1
-            `transcript` compress @Bool cmZ2
+            `transcript` compress cmZ1
+            `transcript` compress cmZ2
         alpha  = challenge ts3
         alpha2 = alpha * alpha
         alpha3 = alpha2 * alpha
@@ -181,9 +181,9 @@ plonkupProve PlonkupProverSetup {..}
         -- Round 5
 
         ts4 = ts3
-            `transcript` compress @Bool cmQlow
-            `transcript` compress @Bool cmQmid
-            `transcript` compress @Bool cmQhigh
+            `transcript` compress cmQlow
+            `transcript` compress cmQmid
+            `transcript` compress cmQhigh
         xi = challenge ts4
 
         a_xi    = aX `evalPolyVec` xi

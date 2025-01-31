@@ -32,7 +32,7 @@ deriving stock instance (Haskell.Eq (context Par1), Haskell.Eq x) => Haskell.Eq 
 
 instance (SymbolicOutput x, Context x ~ c) => SymbolicData (Maybe c x) where
 instance (SymbolicOutput x, Context x ~ c, Conditional (Bool c) x) => Conditional (Bool c) (Maybe c x)
-instance (SymbolicOutput x, Context x ~ c, Eq (Bool c) x) => Eq (Bool c) (Maybe c x)
+instance (Context x ~ c, SymbolicEq x) => Eq (Maybe c x)
 
 just :: Symbolic c => x -> Maybe c x
 just = Maybe true

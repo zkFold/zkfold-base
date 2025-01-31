@@ -20,7 +20,7 @@ import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
 
-type Secp256k1_Point ctx = Secp256k1_PointOf (Bool ctx) (FFA Secp256k1_Base ctx)
+type Secp256k1_Point ctx = Secp256k1_PointOf (FFA Secp256k1_Base ctx)
 
 instance Symbolic ctx => CyclicGroup (Secp256k1_Point ctx) where
   type ScalarFieldOf (Secp256k1_Point ctx) = FieldElement ctx

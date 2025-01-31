@@ -40,4 +40,4 @@ instance (Symbolic context, KnownRegisters context 32 Auto)
     => Conditional (Bool context) (OutputRef context) where
 
 instance (Symbolic context, KnownRegisters context 32 Auto)
-    => Eq (Bool context) (OutputRef context) where
+    => Eq (OutputRef context) where

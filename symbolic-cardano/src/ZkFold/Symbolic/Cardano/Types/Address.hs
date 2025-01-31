@@ -28,7 +28,7 @@ data Address context = Address {
 deriving instance (Haskell.Eq (ByteString 4 context), Haskell.Eq (ByteString 224 context))
     => Haskell.Eq (Address context)
 
-instance Symbolic context => Eq (Bool context) (Address context)
+instance Symbolic context => Eq (Address context)
 instance Symbolic context => Conditional (Bool context) (Address context)
 instance Symbolic context => SymbolicData (Address context)
 instance Symbolic context => SymbolicInput (Address context) where
