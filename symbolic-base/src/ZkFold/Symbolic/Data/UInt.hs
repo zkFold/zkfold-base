@@ -204,14 +204,18 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Semiring (UInt n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (UInt n r c) where
-    arbitrary = do
+    arbitrary
+      | value @n == 0 = return zero
+      | otherwise     = do
         lo <- replicateA (numberOfRegisters @(BaseField c) @n @r -! 1) (toss $ registerSize @(BaseField c) @n @r)
         hi <- toss (highRegisterSize @(BaseField c) @n @r)
         return $ UInt $ embed $ V.unsafeToVector (lo <> [hi])
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (UInt n r c) where
-    from (ByteString b) = UInt $ symbolicF b
+    from (ByteString b)
+      | value @n == 0 = zero
+      | otherwise     = UInt $ symbolicF b
         (naturalToVector @c @n @r . Haskell.foldl (\y p -> toConstant p + 2 * y) 0)
         (\bits -> do
             let bsBits = V.fromVector bits
@@ -219,7 +223,9 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (ByteString n c) (
         )
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (ByteString n c) where
-    from (UInt u) = ByteString $ symbolicF u
+    from (UInt u)
+      | value @n == 0 = ByteString $ embed $ V.unsafeToVector []
+      | otherwise     = ByteString $ symbolicF u
         (\v -> V.unsafeToVector $ fromConstant <$> toBsBits (vectorToNatural v (registerSize @(BaseField c) @n @r)) (value @n))
         (\ui -> do
             let regs = V.fromVector ui
@@ -240,7 +246,10 @@ instance
     , KnownNat k
     , KnownRegisterSize r
     ) => Resize (UInt n r c) (UInt k r c) where
-    resize (UInt bits) = UInt $ symbolicF bits
+    resize (UInt bits)
+      | value @n == 0 = zero
+      | value @k == 0 = zero
+      | otherwise     = UInt $ symbolicF bits
         (\l -> naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r)))
         (\v -> do
             let regs = V.fromVector v
@@ -371,7 +380,9 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     min x y = bool @(Bool c) x y $ x > y
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
-    UInt xc + UInt yc = UInt $ symbolic2F xc yc
+    UInt xc + UInt yc
+      | value @n == 0 = zero
+      | otherwise     = UInt $ symbolic2F xc yc
         (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) + vectorToNatural v (registerSize @(BaseField c) @n @r))
         (\xv yv -> do
             j <- newAssigned (Haskell.const zero)
@@ -506,7 +517,9 @@ class StrictConv b a where
     strictConv :: b -> a
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize rs) => StrictConv Natural (UInt n rs c) where
-    strictConv n = case cast @(BaseField c) @n @rs n of
+    strictConv n
+      | value @n == 0 = zero
+      | otherwise     = case cast @(BaseField c) @n @rs n of
         (lo, hi, []) -> UInt $ embed $ V.unsafeToVector $ fromConstant <$> (lo <> [hi])
         _            -> error "strictConv: overflow"
 
@@ -527,7 +540,9 @@ class StrictNum a where
     strictMul :: a -> a -> a
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c) where
-    strictAdd (UInt x) (UInt y) = UInt $ symbolic2F x y
+    strictAdd (UInt x) (UInt y)
+      | value @n == 0 = zero
+      | otherwise     = UInt $ symbolic2F x y
         (\u v -> naturalToVector @c @n @r $ vectorToNatural u (registerSize @(BaseField c) @n @r) + vectorToNatural v (registerSize @(BaseField c) @n @r))
         (\xv yv -> do
             j <- newAssigned (Haskell.const zero)
@@ -627,7 +642,9 @@ instance
   , KnownRegisters c n r
   ) => SymbolicInput (UInt n r c) where
 
-    isValid (UInt bits) = Bool $ fromCircuitF bits $ \v -> do
+    isValid (UInt bits)
+      | value @n == 0 = true
+      | otherwise     = Bool $ fromCircuitF bits $ \v -> do
         let vs = V.fromVector v
         bs <- toBits (Haskell.reverse vs) (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r)
         ys <- Haskell.reverse <$> fromBits (highRegisterSize @(BaseField c) @n @r) (registerSize @(BaseField c) @n @r) bs
@@ -654,8 +671,10 @@ fullSub r xk yk b = do
     splitExpansion r 1 s
 
 naturalToVector :: forall c n r . (Symbolic c, KnownNat n, KnownRegisterSize r) => Natural -> Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)
-naturalToVector c = let (lo, hi, _) = cast @(BaseField c) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
-    in V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
+naturalToVector c
+  | value @n == 0 = V.unsafeToVector []
+  | otherwise     = let (lo, hi, _) = cast @(BaseField c) @n @r . (`Haskell.mod` (2 ^ getNatural @n)) $ c
+                     in V.unsafeToVector $ (fromConstant <$> lo) <> [fromConstant hi]
 
 vectorToNatural :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural -> Natural
 vectorToNatural v n = foldr (\l r -> fromConstant l  + b * r) 0 vs where
