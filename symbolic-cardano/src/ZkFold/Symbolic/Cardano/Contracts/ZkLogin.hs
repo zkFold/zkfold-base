@@ -1,9 +1,5 @@
 module ZkFold.Symbolic.Cardano.Contracts.ZkLogin
     ( zkLogin
-    , Certificate (..)
-    , Date
-    , ClientId
-    , UserToken (..)
     ) where
 
 import           ZkFold.Base.Algebra.Basic.Number
@@ -13,42 +9,24 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.JWT         (Certificate, ClientSecret (..), TokenHeader (..), TokenPayload (..),
+                                                   verifySignature)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 
-data Certificate ctx
-    = Certificate
-        { kid :: ByteString 320 ctx
-        , e   :: UInt 32 'Auto ctx
-        , n   :: UInt KeyLength 'Auto ctx
-        }
-
-type Date ctx = UInt 64 'Auto ctx
-
-type ClientId ctx = ByteString 256 ctx
-
-data UserToken ctx
-    = UserToken
-        { validUntil :: Date ctx
-        , aud        :: ByteString 256 ctx
-        , signature  :: Signature ctx
-        }
-
-tokenBits :: Symbolic ctx => UserToken ctx -> ByteString 320 ctx
-tokenBits UserToken{..} = from validUntil `append` aud
+type PublicInput ctx = ByteString 224 ctx
 
 zkLogin
     :: forall ctx
-    .  RSA ctx 320
-    => KnownRegisters ctx 64 'Auto
-    => KnownNat (Ceil (GetRegisterSize (BaseField ctx) 64 'Auto) OrdWord)
-    => Certificate ctx
-    -> UserToken ctx
-    -> Date ctx
-    -> ClientId ctx
+    .  Symbolic ctx
+    => ClientSecret ctx
+    -> ByteString 64 ctx
+    -> ByteString 32 ctx
+    -> Certificate ctx
+    -> PublicInput ctx
     -> Bool ctx
-zkLogin Certificate{..} token@UserToken{..} date clientId = sigValid && dateValid && audValid
+zkLogin clientSecret@ClientSecret{..} amount recipient certificate pi = tokenValid
     where
-        dateValid = validUntil < date
-        audValid  = aud == clientId
-        sigValid  = verify (tokenBits token) signature (PublicKey e n)
+        tokenValid = verifySignature certificate clientSecret
+
+

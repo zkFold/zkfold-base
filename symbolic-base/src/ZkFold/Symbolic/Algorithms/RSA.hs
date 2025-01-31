@@ -5,6 +5,8 @@
 module ZkFold.Symbolic.Algorithms.RSA
     ( sign
     , verify
+    , signVar
+    , verifyVar
     , RSA
     , PublicKey (..)
     , PrivateKey (..)
@@ -19,7 +21,7 @@ import qualified Prelude                              as P
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector              (Vector)
-import           ZkFold.Symbolic.Algorithms.Hash.SHA2 (SHA2, sha2)
+import           ZkFold.Symbolic.Algorithms.Hash.SHA2 (SHA2, sha2, sha2Var)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
@@ -29,6 +31,7 @@ import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Is
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
+import           ZkFold.Symbolic.Data.VarByteString   (VarByteString)
 
 type KeyLength = 512
 
@@ -125,6 +128,38 @@ verify msg sig PublicKey{..} = target == input
     where
         h :: ByteString 256 ctx
         h = sha2 @"SHA256" msg
+
+        target :: UInt KeyLength 'Auto ctx
+        target = force $ expMod (from sig :: UInt KeyLength 'Auto ctx) pubE pubN
+
+        input :: UInt KeyLength 'Auto ctx
+        input = force $ resize (from h :: UInt 256 'Auto ctx)
+
+signVar
+    :: forall ctx msgLen
+    .  RSA ctx msgLen
+    => VarByteString msgLen ctx
+    -> PrivateKey ctx
+    -> Signature ctx
+signVar msg PrivateKey{..} = force $ from $ expMod msgI prvD prvN
+    where
+        h :: ByteString 256 ctx
+        h = sha2Var @"SHA256" msg
+
+        msgI :: UInt 256 'Auto ctx
+        msgI = from h
+
+verifyVar
+    :: forall ctx msgLen
+    .  RSA ctx msgLen
+    => VarByteString msgLen ctx
+    -> Signature ctx
+    -> PublicKey ctx
+    -> Bool ctx
+verifyVar msg sig PublicKey{..} = target == input
+    where
+        h :: ByteString 256 ctx
+        h = sha2Var @"SHA256" msg
 
         target :: UInt KeyLength 'Auto ctx
         target = force $ expMod (from sig :: UInt KeyLength 'Auto ctx) pubE pubN
