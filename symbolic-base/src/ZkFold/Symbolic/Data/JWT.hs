@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Data.JWT
     , Signature
     , ClientSecret (..)
     , IsSymbolicJSON (..)
+    , SecretBits
     , secretBits
     , toAsciiBits
     , verifySignature
@@ -309,7 +310,6 @@ padTo6
     :: forall n ctx
     .  Symbolic ctx
     => KnownNat (BufLen n)
-    => NFData (ctx (V.Vector 1))
     => UInt (BufLen n) ('Fixed (BufLen n)) ctx
     -> FieldElement ctx
 padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
@@ -337,7 +337,6 @@ padBytestring6
     .  Symbolic ctx
     => KnownNat n
     => KnownNat (BufLen n)
-    => NFData (ctx (V.Vector 1))
     => VarByteString n ctx -> VarByteString (Next6 n) ctx
 padBytestring6 VarByteString{..} = VarByteString (bsLength + mod6) (withNext6 @n $ VB.shiftL newBuf mod6)
     where
@@ -355,7 +354,6 @@ base64ToAscii
     => KnownNat n
     => Mod n 6 ~ 0
     => KnownNat (BufLen n)
-    => NFData (ctx (V.Vector 1))
     => NFData (ctx (V.Vector 8))
     => NFData (ctx (V.Vector (ASCII n)))
     => VarByteString n ctx -> VarByteString (ASCII n) ctx
@@ -423,25 +421,27 @@ toAsciiBits
     => KnownNat (BufLen (MaxLength a))
     => KnownNat (BufLen (Next6 (MaxLength a)))
     => Symbolic ctx
-    => NFData (ctx (V.Vector 1))
     => NFData (ctx (V.Vector 8))
     => NFData (ctx (V.Vector (ASCII (Next6 (MaxLength a)))))
     => a -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
 toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base64ToAscii . padBytestring6 . toJsonBits
 
 
+type SecretBits ctx =
+    ( NFData (ctx (V.Vector 8))
+    , NFData (ctx (V.Vector 648))
+    , NFData (ctx (V.Vector 864))
+    , NFData (ctx (V.Vector 9456))
+    , NFData (ctx (V.Vector 10328))
+    , NFData (ctx Par1)
+    )
+
 -- | Client secret as a ByteString: @ASCII(base64UrlEncode(header) + "." + base64UrlEncode(payload))@
 --
 secretBits
     :: forall ctx
     .  Symbolic ctx
-    => NFData (ctx (V.Vector 1))
-    => NFData (ctx (V.Vector 8))
-    => NFData (ctx (V.Vector 648))
-    => NFData (ctx (V.Vector 864))
-    => NFData (ctx (V.Vector 9456))
-    => NFData (ctx (V.Vector 10328))
-    => NFData (ctx Par1)
+    => SecretBits ctx
     => ClientSecret ctx -> VarByteString 10328 ctx
 secretBits ClientSecret {..} = force $
        toAsciiBits csHeader
@@ -450,6 +450,6 @@ secretBits ClientSecret {..} = force $
 
 -- | Verify that the given JWT was correctly signed with a matching key (i.e. Key IDs match and the signature is correct).
 --
-verifySignature :: Symbolic ctx => Certificate ctx -> ClientSecret ctx -> Bool ctx
-verifySignature Certificate{..} ClientSecret{..} = kid == hdKid csHeader -- && verify (secretBits secret) (signature secret) (PublicKey e n)
+verifySignature :: (SecretBits ctx, RSA ctx 10328) => Certificate ctx -> ClientSecret ctx -> Bool ctx
+verifySignature Certificate{..} cs@ClientSecret{..} = kid == hdKid csHeader && verifyVar (secretBits cs) csSignature (PublicKey e n)
 

@@ -11,7 +11,7 @@ import           Prelude                                     (pure)
 import qualified Prelude                                     as P
 import           System.Random                               (mkStdGen)
 import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (Gen, withMaxSuccess, (===))
+import           Test.QuickCheck                             (Gen, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -20,6 +20,8 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Combinators            (ilog2)
+import           ZkFold.Symbolic.Data.VarByteString          (fromNatural)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 
 type I = Interpreter Fr
@@ -42,8 +44,13 @@ specRSA = do
                 pubkey = PublicKey (fromConstant public_e) (fromConstant public_n)
                 msg = fromConstant msgBits
 
+                msgVar = fromNatural msgBits (ilog2 msgBits)
+
                 sig = sign @I @256 msg prvkey
                 check = verify @I @256 msg sig pubkey
 
-            pure $ evalBool check === one
+                sigV = signVar @I @256 msgVar prvkey
+                checkV = verifyVar @I @256 msgVar sigV pubkey
+
+            pure $ evalBool check === one .&. evalBool checkV === one
 
