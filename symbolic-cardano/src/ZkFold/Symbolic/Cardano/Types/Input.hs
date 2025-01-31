@@ -39,7 +39,7 @@ instance
     , KnownNat tokens
     , KnownRegisters context 32 Auto
     , KnownRegisters context 64 Auto
-    ) => Eq (Bool context) (Input tokens datum context)
+    ) => Eq (Input tokens datum context)
 
 deriving instance
     ( Haskell.Eq (OutputRef context)

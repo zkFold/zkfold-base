@@ -10,7 +10,7 @@ import           ZkFold.Symbolic.Data.Bool             (Bool)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional      (Conditional, bool)
-import           ZkFold.Symbolic.Data.Eq               (Eq ((==)))
+import           ZkFold.Symbolic.Data.Eq               (Eq ((==)), SymbolicEq)
 import           ZkFold.Symbolic.Data.List             (List, emptyList, null, singleton, uncons, (.:))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
@@ -48,7 +48,8 @@ addValue ::
   => Symbolic context
   => SymbolicOutput (Value context)
   => Context (Value context) ~ context
-  => Eq (Bool context) (CurrencySymbol context)
+  => SymbolicEq (CurrencySymbol context)
+  => Context (CurrencySymbol context) ~ context
   => Value context
   -> MultiAssetValue context
   -> MultiAssetValue context
@@ -69,7 +70,8 @@ multiValueAsset ::
   => SymbolicOutput (Value context)
   => Context (Value context) ~ context
   => Conditional (Bool context) (MultiAssetValue context)
-  => Eq (Bool context) (CurrencySymbol context)
+  => SymbolicEq (CurrencySymbol context)
+  => Context (CurrencySymbol context) ~ context
   => Foldable (List context)
   => List context (Value context)
   -> MultiAssetValue context

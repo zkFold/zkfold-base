@@ -14,7 +14,7 @@ import           ZkFold.Base.Control.HApplicative (hunit)
 import           ZkFold.Symbolic.Class            (Symbolic (fromCircuitF, witnessF), fromCircuit2F)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Eq          (Eq, (==))
+import           ZkFold.Symbolic.Data.Eq          (SymbolicEq, (==))
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (Payloaded))
 import           ZkFold.Symbolic.MonadCircuit     (constraint, unconstrained)
@@ -48,7 +48,7 @@ hash a = Hash (hasher a) $
 preimage ::
   forall h a c .
   ( Hashable h a, SymbolicOutput a, Context h ~ c, Context a ~ c
-  , Eq (Bool c) h) => Hash h a -> a
+  , SymbolicEq h) => Hash h a -> a
 preimage Hash {..} =
   let Payloaded (l :*: p) = hValue
       raw :: a = restore $ const

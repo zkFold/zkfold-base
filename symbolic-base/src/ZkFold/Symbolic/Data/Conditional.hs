@@ -58,9 +58,8 @@ instance Symbolic c => Conditional (Bool c) (Proxy c) where
   bool _ _ _ = Proxy
 
 instance Conditional Prelude.Bool Prelude.Bool where bool = H.bool
-
 instance Conditional Prelude.Bool Prelude.String where bool = H.bool
-
+instance Conditional Prelude.Bool Natural where bool = H.bool
 instance Conditional Prelude.Bool (Zp n) where bool = H.bool
 
 instance (KnownNat n, Conditional bool x) => Conditional bool (Vector n x) where
