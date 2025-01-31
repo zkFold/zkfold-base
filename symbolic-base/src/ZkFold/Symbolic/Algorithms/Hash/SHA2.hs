@@ -16,6 +16,7 @@ module ZkFold.Symbolic.Algorithms.Hash.SHA2
     -------------------------------
     
     , I
+    , sha2Pad
     , sha2PadVar 
     , sha2PadVar' 
     , withPaddedLength
@@ -328,7 +329,7 @@ sha2PadVar'
     => KnownNat (PaddedLength k padTo lenBits)
     => VarByteString k context
     -> VarByteString (PaddedLength k padTo lenBits) context
-sha2PadVar' VarByteString{..} = trace (P.show diff) $ VarByteString (bsLength + diff) $ grown || lenBits
+sha2PadVar' VarByteString{..} = trace (P.show diff) $ VarByteString paddedLengthFe $ grown || lenBits
     where
         chunkBits :: Natural
         chunkBits = ilog2 $ value @padTo
@@ -336,14 +337,21 @@ sha2PadVar' VarByteString{..} = trace (P.show diff) $ VarByteString (bsLength + 
         numWords :: Natural
         numWords = (value @(NumberOfBits (BaseField context)) + chunkBits -! 1) `div` chunkBits
 
-        getDiff :: FieldElement context -> FieldElement context
-        getDiff (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
+        getNextChunk :: FieldElement context -> FieldElement context
+        getNextChunk (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
             feWords <- expansionW @(Log2 padTo) numWords e
             d <- newAssigned $ \p -> (fromConstant @Natural $ value @padTo) - p (P.head feWords)
-            pure $ Par1 d
+            res <- newAssigned $ \p -> p e + p d
+            pure $ Par1 res
+
+        nextChunk :: FieldElement context
+        nextChunk = getNextChunk bsLength
+
+        paddedLengthFe :: FieldElement context
+        paddedLengthFe = bool @(Bool context) nextChunk (nextChunk + fromConstant (value @padTo)) (nextChunk <= bsLength + fromConstant (value @lenBits))
 
         diff :: FieldElement context
-        diff = getDiff bsLength
+        diff = paddedLengthFe - bsLength 
 
         lenBits :: ByteString (PaddedLength k padTo lenBits) context
         lenBits = resize . ByteString . hmap reverse $ binaryExpansion bsLength
@@ -366,7 +374,7 @@ sha2PadVar
     => KnownNat lenBits
     => VarByteString k context
     -> VarByteString (PaddedLength k padTo lenBits) context
-sha2PadVar VarByteString{..} = VarByteString (bsLength + diff) $ withPaddedLength @k @padTo @lenBits $ grown || lenBits
+sha2PadVar VarByteString{..} = VarByteString paddedLengthFe $ withPaddedLength @k @padTo @lenBits $ grown || lenBits
     where
         chunkBits :: Natural
         chunkBits = ilog2 $ value @padTo
@@ -374,14 +382,21 @@ sha2PadVar VarByteString{..} = VarByteString (bsLength + diff) $ withPaddedLengt
         numWords :: Natural
         numWords = (value @(NumberOfBits (BaseField context)) + chunkBits -! 1) `div` chunkBits
 
-        getDiff :: FieldElement context -> FieldElement context
-        getDiff (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
+        getNextChunk :: FieldElement context -> FieldElement context
+        getNextChunk (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
             feWords <- expansionW @(Log2 padTo) numWords e
             d <- newAssigned $ \p -> (fromConstant @Natural $ value @padTo) - p (P.head feWords)
-            pure $ Par1 d
+            res <- newAssigned $ \p -> p e + p d
+            pure $ Par1 res
+
+        nextChunk :: FieldElement context
+        nextChunk = getNextChunk bsLength
+
+        paddedLengthFe :: FieldElement context
+        paddedLengthFe = bool @(Bool context) nextChunk (nextChunk + fromConstant (value @padTo)) (nextChunk <= bsLength + fromConstant (value @lenBits))
 
         diff :: FieldElement context
-        diff = getDiff bsLength
+        diff = paddedLengthFe - bsLength 
 
         lenBits :: ByteString (PaddedLength k padTo lenBits) context
         lenBits = withPaddedLength @k @padTo @lenBits $ resize . ByteString . hmap reverse $ binaryExpansion bsLength
