@@ -44,6 +44,9 @@ import           ZkFold.Symbolic.Interpreter                 (Interpreter (Inter
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
+toss1 :: Natural -> Gen Natural
+toss1 x = chooseNatural (1, x)
+
 type AC a = ArithmeticCircuit a U1 U1
 
 evalBool :: forall a . (Arithmetic a, Binary a) => Bool (AC a) -> a
@@ -133,9 +136,9 @@ specUInt' = hspec $ do
                 bx = fromConstant x :: ByteString n (AC (Zp p))
             return $ evalBS (from ux :: ByteString n (AC (Zp p))) === evalBS bx
 
-        when (n <= 128) $ it "performs divMod correctly" $ withMaxSuccess 10 $ do
+        it "performs divMod correctly" $ do
             num <- toss m
-            d <- toss m
+            d <- toss1 m
             let (acQ, acR) = (fromConstant num :: UInt n rs (AC (Zp p))) `divMod` fromConstant d
                 (zpQ, zpR) = (fromConstant num :: UInt n rs (Interpreter (Zp p))) `divMod` fromConstant d
                 (trueQ, trueR) = num `divMod` d
@@ -225,7 +228,7 @@ specUInt' = hspec $ do
             return $ ge' === ge'' .&. ge1' === (one :: Zp p) .&. ge2' === (one :: Zp p) .&. ge' === trueGe
         it "Raises to power correctly" $ withMaxSuccess 10 $ do
             num <- toss m
-            modulus <- toss m
+            modulus <- toss1 m
             p <- toss 255
             let nI = fromConstant num :: UInt n rs (Interpreter (Zp p))
                 mI = fromConstant modulus :: UInt n rs (Interpreter (Zp p))
