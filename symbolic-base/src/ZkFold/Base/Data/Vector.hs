@@ -8,6 +8,7 @@ module ZkFold.Base.Data.Vector where
 import           Control.DeepSeq                  (NFData, NFData1)
 import           Control.Monad.State.Strict       (runState, state)
 import           Data.Aeson                       (FromJSON (..), ToJSON (..))
+import           Data.Constraint.Nat              (Max)
 import           Data.Distributive                (Distributive (..))
 import           Data.Foldable                    (fold)
 import           Data.Functor.Classes             (Show1)
@@ -21,6 +22,7 @@ import           GHC.Generics                     (Generic)
 import           GHC.IsList                       (IsList (..))
 import           Prelude                          hiding (concat, drop, head, length, mod, negate, replicate, sum, tail,
                                                    take, unzip, zip, zipWith, (*), (+), (-))
+import qualified Prelude                          as P
 import           System.Random                    (Random (..))
 import           Test.QuickCheck                  (Arbitrary (..), Arbitrary1 (..), arbitrary1)
 
@@ -169,6 +171,20 @@ instance KnownNat size => Applicative (Vector size) where
 
 instance Semialign (Vector size) where
     align (Vector as) (Vector bs) = Vector $ V.zipWith These as bs
+
+-- alignRight [1] [2, 3] == [That 2, These 1 3]
+-- [   1]
+-- [2, 3]
+--
+alignRight :: forall m n a b . Vector m a -> Vector n b -> Vector (Max m n) (These a b)
+alignRight v1 v2 = unsafeToVector $ P.reverse $ align (P.reverse $ fromVector v1) (P.reverse $ fromVector v2)
+
+-- alignLeft [1] [2, 3] == [These 1 2, That 3]
+-- [1   ]
+-- [2, 3]
+--
+alignLeft :: forall m n a b . Vector m a -> Vector n b -> Vector (Max m n) (These a b)
+alignLeft v1 v2 = unsafeToVector $ align (fromVector v1) (fromVector v2)
 
 instance Zip (Vector size) where
     zip (Vector as) (Vector bs) = Vector $ V.zip as bs
