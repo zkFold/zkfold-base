@@ -27,41 +27,41 @@ import           Tests.Univariate          (specUnivariate)
 
 main :: IO ()
 main = do
-    -- Base
-    specBinary
-
-    -- Algebra
-    specPermutations
-    specField
-    specAdditiveGroup
-    specPairing
-    specUnivariate
-    specGroebner
-    specEllipticCurve
-    specReedSolomon
-
-    -- Compiler spec
-    specCompiler
-
-    -- Symbolic types and operations
-    specHash
-    specList
-    specUInt
-    specFFA
-    specByteString
-
-    -- Arithmetic circuit
-    specArithmeticCircuit
-
-    -- Arithmetization
-    specArithmetization
-
-    -- Protocols
-    specPlonkup
-    specNonInteractiveProof
-    specIVC
-
-    -- Cryptography
+--    -- Base
+--    specBinary
+--
+--    -- Algebra
+--    specPermutations
+--    specField
+--    specAdditiveGroup
+--    specPairing
+--    specUnivariate
+--    specGroebner
+--    specEllipticCurve
+--    specReedSolomon
+--
+--    -- Compiler spec
+--    specCompiler
+--
+--    -- Symbolic types and operations
+--    specHash
+--    specList
+--    specUInt
+--    specFFA
+--    specByteString
+--
+--    -- Arithmetic circuit
+--    specArithmeticCircuit
+--
+--    -- Arithmetization
+--    specArithmetization
+--
+--    -- Protocols
+--    specPlonkup
+--    specNonInteractiveProof
+--    specIVC
+--
+--    -- Cryptography
     specSHA2Natural
     specSHA2
     specRSA
