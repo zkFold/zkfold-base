@@ -201,7 +201,7 @@ type family FromMaybe (a :: k) (mb :: Haskell.Maybe k) :: k where
     FromMaybe def (Haskell.Just a) = a
 
 type family Length' (s :: Haskell.Maybe (Haskell.Char, Symbol)) :: Natural where
-    Length' 'Haskell.Nothing = 0 
+    Length' 'Haskell.Nothing = 0
     Length' ('Haskell.Just '(c, rest)) = 1 + Length' (UnconsSymbol rest)
 
 ---------------------------------------------------------------

@@ -9,10 +9,10 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.JWT         (Certificate, ClientSecret (..), TokenHeader (..), TokenPayload (..),
+                                                   verifySignature)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
-
-import ZkFold.Symbolic.Data.JWT (ClientSecret (..), TokenHeader (..), TokenPayload (..), Certificate, verifySignature)
 
 type PublicInput ctx = ByteString 224 ctx
 

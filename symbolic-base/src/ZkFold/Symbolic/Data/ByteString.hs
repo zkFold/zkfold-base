@@ -210,13 +210,13 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                         xj = x j
                      in xi + xj - (xi * xj + xi * xj)
 
-orRight 
+orRight
     :: forall m n c
     .  Symbolic c
     => ByteString m c
     -> ByteString n c
     -> ByteString (Max m n) c
-orRight l r = bitwiseOperation l r cons 
+orRight l r = bitwiseOperation l r cons
         where
             cons i j x =
                         let xi = x i
