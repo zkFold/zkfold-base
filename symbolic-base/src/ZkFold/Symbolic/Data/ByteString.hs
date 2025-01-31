@@ -13,6 +13,8 @@ module ZkFold.Symbolic.Data.ByteString
     , ShiftBits (..)
     , Resize (..)
     , reverseEndianness
+    , set
+    , unset
     , isSet
     , isUnset
     , toWords
@@ -293,6 +295,12 @@ instance
         case us of
             []       -> Par1 <$> newAssigned (const one)
             (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
+
+set :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c 
+set (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const one) else pure v)
+
+unset :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c 
+unset (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const zero) else pure v)
 
 isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
 isSet (ByteString bits) ix = Bool $ fromCircuitF bits $ \v -> do

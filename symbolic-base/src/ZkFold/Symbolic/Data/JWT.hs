@@ -132,7 +132,7 @@ deriving instance Symbolic ctx => SymbolicInput (TokenHeader ctx)
 instance Symbolic ctx => FromJSON (TokenHeader ctx) where
     parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-instance 
+instance
     ( Symbolic ctx
     , Context (TokenHeader ctx) ~ ctx
     , NFData (VarByteString (MaxLength (TokenHeader ctx)) ctx)
@@ -432,8 +432,8 @@ toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base
 
 -- | Client secret as a ByteString: @ASCII(base64UrlEncode(header) + "." + base64UrlEncode(payload))@
 --
-secretBits 
-    :: forall ctx 
+secretBits
+    :: forall ctx
     .  Symbolic ctx
     => NFData (ctx (V.Vector 1))
     => NFData (ctx (V.Vector 8))

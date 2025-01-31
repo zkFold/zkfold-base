@@ -135,10 +135,6 @@ shift sh bs el = Haskell.foldr (\s b -> bool b (b `sh` (2^s)) (isSet elBits s)) 
         -- The bytestring will be all zeros beyond this iteration.
         nbits = ilog2 $ value @n
 
-        ilog2 :: Natural -> Natural
-        ilog2 1 = 0
-        ilog2 n = 1 + ilog2 (n `div` 2)
-
 shiftL
     :: forall n ctx
     .  Symbolic ctx

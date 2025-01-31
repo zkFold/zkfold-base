@@ -282,3 +282,8 @@ runInvert is = do
 
 isZero :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i)
 isZero is = Haskell.fst <$> runInvert is
+
+ilog2 :: Natural -> Natural
+ilog2 1 = 0
+ilog2 n = 1 + ilog2 (n `div` 2)
+
