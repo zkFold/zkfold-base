@@ -15,6 +15,7 @@ import           Examples.Constant                           (exampleConst5, exa
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
+import           Examples.JWT                                (exampleJWTSerialisation)
 import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
@@ -57,6 +58,12 @@ exampleOutput = ExampleOutput @p @i @o . const . compile
 examples :: [(String, ExampleOutput)]
 examples =
   [ ("Eq", exampleOutput exampleEq)
+  , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
+  ]
+
+    {--
+
+
   , ("Conditional", exampleOutput exampleConditional)
   , ("Constant.5", exampleOutput exampleConst5)
   , ("Eq.Constant.5", exampleOutput exampleEq5)
@@ -91,3 +98,5 @@ examples =
   -- , ("PedersonCommitment", exampleOutput exampleCommitment)
   -- , ("BatchTransfer", exampleOutput exampleBatchTransfer)
   ]
+
+--}

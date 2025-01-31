@@ -12,10 +12,11 @@ module ZkFold.Symbolic.Data.JWT
     , ClientSecret (..)
     , IsSymbolicJSON (..)
     , secretBits
+    , toAsciiBits
     , verifySignature
     ) where
 
-import           Control.DeepSeq                    (NFData)
+import           Control.DeepSeq                    (NFData, force)
 import           Data.Aeson                         (FromJSON (..), genericParseJSON)
 import qualified Data.Aeson                         as JSON
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
@@ -131,9 +132,14 @@ deriving instance Symbolic ctx => SymbolicInput (TokenHeader ctx)
 instance Symbolic ctx => FromJSON (TokenHeader ctx) where
     parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-instance (Symbolic ctx, Context (TokenHeader ctx) ~ ctx) => IsSymbolicJSON (TokenHeader ctx) where
+instance 
+    ( Symbolic ctx
+    , Context (TokenHeader ctx) ~ ctx
+    , NFData (VarByteString (MaxLength (TokenHeader ctx)) ctx)
+    ) => IsSymbolicJSON (TokenHeader ctx) where
+
     type MaxLength (TokenHeader ctx) = 648
-    toJsonBits TokenHeader{..} =
+    toJsonBits TokenHeader{..} = force $
                     (fromType @"{\"alg\":\"")   @+ hdAlg
         `VB.append` (fromType @"\",\"kid\":\"") @+ hdKid
         `VB.append` (fromType @"\",\"typ\":\"") @+ hdTyp
@@ -350,12 +356,14 @@ base64ToAscii
     => Mod n 6 ~ 0
     => KnownNat (BufLen n)
     => NFData (ctx (V.Vector 1))
+    => NFData (ctx (V.Vector 8))
+    => NFData (ctx (V.Vector (ASCII n)))
     => VarByteString n ctx -> VarByteString (ASCII n) ctx
 base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString newLen result
     where
         words6 = withDivMul @n @6 $ toWords @(Div n 6) @6 bsBuffer
         ascii  = word6ToAscii <$> words6
-        result = concat ascii
+        result = force $ concat ascii
 
         newLen = withDiv @(BufLen n) $ scale (4 :: Natural) . (uintToFe @n) . (`div` (fromConstant @Natural 3)) . (feToUInt @n) $ bsLength
 
@@ -368,8 +376,8 @@ base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString 
     -            62          45
     _            63          95
 -}
-word6ToAscii :: forall ctx . Symbolic ctx => ByteString 6 ctx -> ByteString 8 ctx
-word6ToAscii (ByteString bs) = ByteString $ fromCircuitF bs $ \bits ->
+word6ToAscii :: forall ctx . (Symbolic ctx, NFData (ctx (V.Vector 8))) => ByteString 6 ctx -> ByteString 8 ctx
+word6ToAscii (ByteString bs) = force $ ByteString $ fromCircuitF bs $ \bits ->
     do
         let bitsSym = V.fromVector bits
 
@@ -416,14 +424,26 @@ toAsciiBits
     => KnownNat (BufLen (Next6 (MaxLength a)))
     => Symbolic ctx
     => NFData (ctx (V.Vector 1))
+    => NFData (ctx (V.Vector 8))
+    => NFData (ctx (V.Vector (ASCII (Next6 (MaxLength a)))))
     => a -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
 toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base64ToAscii . padBytestring6 . toJsonBits
 
 
 -- | Client secret as a ByteString: @ASCII(base64UrlEncode(header) + "." + base64UrlEncode(payload))@
 --
-secretBits :: forall ctx .  (Symbolic ctx, NFData (ctx (V.Vector 1))) => ClientSecret ctx -> VarByteString 10328 ctx
-secretBits ClientSecret {..} =
+secretBits 
+    :: forall ctx 
+    .  Symbolic ctx
+    => NFData (ctx (V.Vector 1))
+    => NFData (ctx (V.Vector 8))
+    => NFData (ctx (V.Vector 648))
+    => NFData (ctx (V.Vector 864))
+    => NFData (ctx (V.Vector 9456))
+    => NFData (ctx (V.Vector 10328))
+    => NFData (ctx Par1)
+    => ClientSecret ctx -> VarByteString 10328 ctx
+secretBits ClientSecret {..} = force $
        toAsciiBits csHeader
     @+ (fromType @".")
     @+ toAsciiBits csPayload
