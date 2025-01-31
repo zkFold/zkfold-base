@@ -43,6 +43,7 @@ import           Control.DeepSeq                                         (NFData
 import           Control.Monad                                           (foldM)
 import           Control.Monad.State                                     (execState)
 import           Data.Binary                                             (Binary)
+import           Data.Bool                                               (bool)
 import           Data.Foldable                                           (for_)
 import           Data.Functor.Rep                                        (Representable (..), mzipRep)
 import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
@@ -66,6 +67,7 @@ import           ZkFold.Prelude                                          (length
 import           ZkFold.Symbolic.Class                                   (fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
@@ -96,8 +98,11 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $ [(toVar v, k) | (k, s) <- M.toList (acRange c), v <- S.toList s]
-   in r' { acRange = mempty, acOutput = acOutput c }
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $
+          [(toVar v, k) | (k, s) <- M.toList rm, v <- S.toList s]
+      rm = M.mapKeys (\k -> bool (error "There should only be a range-lookups here") (fromRange k) (isRange k)) rm'
+      (rm', tm) = M.partitionWithKey (\k _ -> isRange k) (acRange c)
+  in r' { acRange = tm, acOutput = acOutput c }
 
 -- | Payload of an input to arithmetic circuit.
 -- To be used as an argument to 'compileWith'.

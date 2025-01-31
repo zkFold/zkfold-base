@@ -74,6 +74,7 @@ import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Product
 import           ZkFold.Prelude                                               (take)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
@@ -122,7 +123,7 @@ data ArithmeticCircuit a p i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acRange   :: MonoidalMap a (S.Set (SysVar i)),
+        acRange   :: MonoidalMap (Lookup a) (S.Set (SysVar i)),
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (CircuitWitness a p i),
         -- ^ The witness generation functions
@@ -316,7 +317,7 @@ instance
 
     rangeConstraint (LinVar k x b) upperBound = do
       v <- preparedVar
-      zoom #acRange . modify $ MM.insertWith S.union upperBound (S.singleton v)
+      zoom #acRange . modify $ MM.insertWith S.union (Range upperBound) (S.singleton v)
       where
         preparedVar = if k == one && b == zero || k == negate one && b == upperBound
           then return x
