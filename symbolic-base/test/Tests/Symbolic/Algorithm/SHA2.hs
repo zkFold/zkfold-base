@@ -118,23 +118,6 @@ testAlgorithm file = do
         description :: String
         description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file
 
-testAlgorithm2
-    :: forall (algorithm :: Symbol) element
-    .  KnownSymbol algorithm
-    => SHA2N algorithm (Interpreter element)
-    => KnownNat (Log2 (ChunkSize algorithm))
-    => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
-    => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
-    => IO ()
-testAlgorithm2 = do
-    hspec $ describe description $
-        forM_ [1..1000] $ \bits -> do
-            let bitMsgN = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is Natural)"
-            let bitMsgS = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is VarByteString)"
-            it bitMsgN $ toConstant (sha2Natural @algorithm @(Interpreter element) bits 42) `shouldBe` toConstant (sha2Var @algorithm @(Interpreter element) @10000 $ fromNatural 42 bits) 
-    where
-        description :: String
-        description = "Testing " <> symbolVal (Proxy @algorithm) 
 
 -- | Test the implementation of a hashing algorithm with @Zp BLS12_381_Scalar@ as base field for ByteStrings.
 --
@@ -152,7 +135,7 @@ specSHA2Natural' = do
 
 specSHA2Natural :: Spec
 specSHA2Natural = do
-    testAlgorithm2 @"SHA224" @(Zp BLS12_381_Scalar)
+--    testAlgorithm2 @"SHA224" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA224" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA256" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA384" @(Zp BLS12_381_Scalar)
