@@ -18,6 +18,9 @@ module ZkFold.Symbolic.Data.VarByteString
 import           Control.DeepSeq                   (NFData)
 import           Data.Aeson                        (FromJSON (..))
 import qualified Data.ByteString                   as Bytes
+import           Data.Constraint                   (Dict, withDict)
+import           Data.Constraint.Nat               (Max)
+import           Data.Constraint.Unsafe            (unsafeAxiom)
 import           Data.Kind                         (Type)
 import           Data.Proxy                        (Proxy (..))
 import           Data.String                       (IsString (..))
@@ -31,7 +34,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector           (Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), ShiftBits (..), isSet)
+import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), ShiftBits (..), isSet, orRight)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
@@ -56,7 +59,7 @@ deriving stock instance (Haskell.Eq (ctx (Vector n)), Haskell.Eq (ctx Par1)) => 
 deriving anyclass instance (NFData (ctx (Vector n)), NFData (ctx Par1)) => NFData (VarByteString n ctx)
 deriving instance (KnownNat n, Symbolic ctx) => SymbolicData (VarByteString n ctx)
 deriving instance (KnownNat n, Symbolic ctx) => SymbolicInput (VarByteString n ctx)
-deriving instance (Symbolic ctx, KnownNat n) => Eq (Bool ctx) (VarByteString n ctx)
+deriving instance (Symbolic ctx, KnownNat n) => Eq (VarByteString n ctx)
 deriving instance (Symbolic ctx, KnownNat n) => Conditional (Bool ctx) (VarByteString n ctx)
 
 instance
@@ -94,6 +97,12 @@ instance
     ) => IsTypeString s (VarByteString l ctx) where
     fromType = fromString $ symbolVal (Proxy @s)
 
+monoMax :: forall (m :: Natural) (n :: Natural) . Dict (Max (m + n) n ~ (m + n))
+monoMax = unsafeAxiom
+
+withMax :: forall (m :: Natural) (n :: Natural) {r}. ((Max (m + n) n ~ (m + n)) => r) -> r
+withMax = withDict (monoMax @m @n)
+
 -- | Join two variable-length ByteStrings and move all the unsaaigned space towards lower indices.
 -- Let @u@ denote the unassigned space. Then,
 -- uu1010 `append` u10010 == uuu101010010
@@ -107,15 +116,14 @@ append
     => VarByteString m ctx
     -> VarByteString n ctx
     -> VarByteString (m + n) ctx
-append (VarByteString l1 bs1) (VarByteString l2 bs2) = VarByteString (l1 + l2) newBs
+append (VarByteString l1 bs1) (VarByteString l2 bs2) = VarByteString (l1 + l2) $ withMax @m @n newBs
     where
-        ex1, ex2 :: ByteString (m + n) ctx
+        ex1 :: ByteString (m + n) ctx
         ex1 = resize bs1
-        ex2 = resize bs2
 
-        newBs = ex2 || (ex1 `shiftL` l2)
+        newBs = (ex1 `shiftL` l2) `orRight` bs2
 
-infixr 6 @+
+infixl 6 @+
 (@+)
     :: forall m n ctx
     .  Symbolic ctx
