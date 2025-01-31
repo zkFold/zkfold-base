@@ -341,7 +341,8 @@ sha2PadVar' VarByteString{..} = trace (P.show diff) $ VarByteString paddedLength
         getNextChunk (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
             feWords <- expansionW @(Log2 padTo) numWords e
             d <- newAssigned $ \p -> (fromConstant @Natural $ value @padTo) - p (P.head feWords)
-            res <- newAssigned $ \p -> p e + p d
+            dWords <- expansionW @(Log2 padTo) numWords d -- unset the most significant bit if feWords was divisible by @padTo@ 
+            res <- newAssigned $ \p -> p e + p (P.head dWords)
             pure $ Par1 res
 
         nextChunk :: FieldElement context
@@ -385,8 +386,9 @@ sha2PadVar VarByteString{..} = VarByteString paddedLengthFe $ withPaddedLength @
         getNextChunk :: FieldElement context -> FieldElement context
         getNextChunk (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
             feWords <- expansionW @(Log2 padTo) numWords e
-            d <- newAssigned $ \p -> (fromConstant @Natural $ value @padTo) - p (P.head feWords)
-            res <- newAssigned $ \p -> p e + p d
+            d <- newAssigned $ \p -> (fromConstant $ value @padTo) - p (P.head feWords)
+            dWords <- expansionW @(Log2 padTo) 2 d -- unset the most significant bit if feWords was divisible by @padTo@ 
+            res <- newAssigned $ \p -> p e + p (P.head dWords)
             pure $ Par1 res
 
         nextChunk :: FieldElement context
