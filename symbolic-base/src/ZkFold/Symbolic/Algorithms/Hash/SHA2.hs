@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module ZkFold.Symbolic.Algorithms.Hash.SHA2 
+module ZkFold.Symbolic.Algorithms.Hash.SHA2
     ( AlgorithmSetup (..)
     , SHA2
     , sha2
@@ -12,16 +12,8 @@ module ZkFold.Symbolic.Algorithms.Hash.SHA2
     , SHA2N
     , sha2Natural
     , PaddedLength
-
-    -------------------------------
-    
-    , I
-    , sha2Pad
-    , sha2PadVar 
-    , sha2PadVar' 
-    , withPaddedLength
     ) where
-    
+
 import           Control.DeepSeq                                (NFData, force)
 import           Control.Monad                                  (forM_)
 import           Control.Monad.ST                               (ST, runST)
@@ -51,7 +43,8 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Class                          (BaseField, Symbolic, fromCircuitF)
 import           ZkFold.Symbolic.Data.Bool                      (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, set, toWords, truncate)
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, set, toWords,
+                                                                 truncate)
 import           ZkFold.Symbolic.Data.Combinators               (Iso (..), RegisterSize (..), Resize (..), expansionW,
                                                                  ilog2)
 import           ZkFold.Symbolic.Data.Conditional
@@ -61,18 +54,6 @@ import           ZkFold.Symbolic.Data.UInt                      (UInt)
 import qualified ZkFold.Symbolic.Data.VarByteString             as VB
 import           ZkFold.Symbolic.Data.VarByteString             (VarByteString (..))
 import           ZkFold.Symbolic.MonadCircuit                   (newAssigned)
-
-{--
-REMOVE THIS
---}
-
-import Debug.Trace (trace)
-
-import ZkFold.Symbolic.Interpreter 
-import ZkFold.Base.Algebra.Basic.Field 
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 
-type I = Interpreter (Zp BLS12_381_Scalar )
-
 
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
@@ -135,7 +116,7 @@ instance
     type ResultSize "SHA224" = 224
     initialHashes = sha224InitialHashes
     roundConstants = word32RoundConstants
-    truncateResult = truncate 
+    truncateResult = truncate
     sigmaShifts = (7, 18, 3, 17, 19, 10)
     sumShifts = (2, 13, 22, 6, 11, 25)
 
@@ -161,7 +142,7 @@ instance
     type ResultSize "SHA384" = 384
     initialHashes = sha384InitialHashes
     roundConstants = word64RoundConstants
-    truncateResult = truncate 
+    truncateResult = truncate
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
@@ -174,7 +155,7 @@ instance
     type ResultSize "SHA512/224" = 224
     initialHashes = sha512_224InitialHashes
     roundConstants = word64RoundConstants
-    truncateResult = truncate 
+    truncateResult = truncate
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
@@ -187,7 +168,7 @@ instance
     type ResultSize "SHA512/256" = 256
     initialHashes = sha512_256InitialHashes
     roundConstants = word64RoundConstants
-    truncateResult = truncate 
+    truncateResult = truncate
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
@@ -316,53 +297,6 @@ sha2Pad bs = withPaddedLength @k @padTo @lenBits $ grown || fromConstant padValu
         grown :: ByteString (PaddedLength k padTo lenBits) context
         grown = withPaddedLength @k @padTo @lenBits $ resize bs `shiftBitsL` diff
 
--- | Same as @sha2Pad@ but for variable-length ByteStrings
---
-sha2PadVar'
-    :: forall (padTo :: Natural) (lenBits :: Natural) context (k :: Natural)
-    .  Symbolic context
-    => KnownNat k
-    => P.Show (context Par1)
-    => KnownNat padTo
-    => KnownNat (Log2 padTo)
-    => KnownNat lenBits
-    => KnownNat (PaddedLength k padTo lenBits)
-    => VarByteString k context
-    -> VarByteString (PaddedLength k padTo lenBits) context
-sha2PadVar' VarByteString{..} = trace (P.show diff) $ VarByteString paddedLengthFe $ grown || lenBits
-    where
-        chunkBits :: Natural
-        chunkBits = ilog2 $ value @padTo
-
-        numWords :: Natural
-        numWords = (value @(NumberOfBits (BaseField context)) + chunkBits -! 1) `div` chunkBits
-
-        getNextChunk :: FieldElement context -> FieldElement context
-        getNextChunk (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
-            feWords <- expansionW @(Log2 padTo) numWords e
-            d <- newAssigned $ \p -> (fromConstant @Natural $ value @padTo) - p (P.head feWords)
-            dWords <- expansionW @(Log2 padTo) numWords d -- unset the most significant bit if feWords was divisible by @padTo@ 
-            res <- newAssigned $ \p -> p e + p (P.head dWords)
-            pure $ Par1 res
-
-        nextChunk :: FieldElement context
-        nextChunk = getNextChunk bsLength
-
-        paddedLengthFe :: FieldElement context
-        paddedLengthFe = bool @(Bool context) nextChunk (nextChunk + fromConstant (value @padTo)) (nextChunk <= bsLength + fromConstant (value @lenBits))
-
-        diff :: FieldElement context
-        diff = paddedLengthFe - bsLength 
-
-        lenBits :: ByteString (PaddedLength k padTo lenBits) context
-        lenBits = resize . ByteString . hmap reverse $ binaryExpansion bsLength
-
-        paddedL :: Natural
-        paddedL = value @(PaddedLength k padTo lenBits)
-
-        grown :: ByteString (PaddedLength k padTo lenBits) context
-        grown = let resized = resize bsBuffer
-                 in (`VB.shiftL` (diff - one)) . P.flip set (paddedL -! 1) . (`shiftBitsL` 1) $ resized
 
 -- | Same as @sha2Pad@ but for variable-length ByteStrings
 --
@@ -387,7 +321,7 @@ sha2PadVar VarByteString{..} = VarByteString paddedLengthFe $ withPaddedLength @
         getNextChunk (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
             feWords <- expansionW @(Log2 padTo) numWords e
             d <- newAssigned $ \p -> (fromConstant $ value @padTo) - p (P.head feWords)
-            dWords <- expansionW @(Log2 padTo) 2 d -- unset the most significant bit if feWords was divisible by @padTo@ 
+            dWords <- expansionW @(Log2 padTo) 2 d -- unset the most significant bit if feWords was divisible by @padTo@
             res <- newAssigned $ \p -> p e + p (P.head dWords)
             pure $ Par1 res
 
@@ -398,7 +332,7 @@ sha2PadVar VarByteString{..} = VarByteString paddedLengthFe $ withPaddedLength @
         paddedLengthFe = bool @(Bool context) nextChunk (nextChunk + fromConstant (value @padTo)) (nextChunk <= bsLength + fromConstant (value @lenBits))
 
         diff :: FieldElement context
-        diff = paddedLengthFe - bsLength 
+        diff = paddedLengthFe - bsLength
 
         lenBits :: ByteString (PaddedLength k padTo lenBits) context
         lenBits = withPaddedLength @k @padTo @lenBits $ resize . ByteString . hmap reverse $ binaryExpansion bsLength
@@ -498,13 +432,13 @@ sha2BlocksVar len chunks = truncateResult @algorithm @context $ concat @8 @(Word
         initHn = initialHashes @algorithm @context
 
         hashParts :: V.Vector (ByteString (WordSize algorithm) context)
-        hashParts = P.foldr varStep initHn (P.reverse $ P.zip [0..] $ P.reverse chunks)
+        hashParts = P.foldl varStep initHn (P.reverse $ P.zip [0..] $ P.reverse chunks)
 
         varStep
-            :: (Natural, ByteString (ChunkSize algorithm) context)
+            :: V.Vector (ByteString (WordSize algorithm) context)
+            -> (Natural, ByteString (ChunkSize algorithm) context)
             -> V.Vector (ByteString (WordSize algorithm) context)
-            -> V.Vector (ByteString (WordSize algorithm) context)
-        varStep (ix, chunk) hn =
+        varStep hn (ix, chunk) =
             toV $ bool @(Bool context)
                     (Vector @8 hn)
                     (Vector @8 $ processChunkPure @algorithm @context hn chunk)

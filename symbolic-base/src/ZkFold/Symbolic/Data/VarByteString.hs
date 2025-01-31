@@ -33,7 +33,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector           (Vector)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Bool         (Bool (..))
 import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), ShiftBits (..), isSet, orRight)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
@@ -111,7 +111,6 @@ append
     :: forall m n ctx
     .  Symbolic ctx
     => KnownNat m
-    => KnownNat n
     => KnownNat (m + n)
     => VarByteString m ctx
     -> VarByteString n ctx
@@ -128,7 +127,6 @@ infixl 6 @+
     :: forall m n ctx
     .  Symbolic ctx
     => KnownNat m
-    => KnownNat n
     => KnownNat (m + n)
     => VarByteString m ctx
     -> VarByteString n ctx
