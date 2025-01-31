@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -40,8 +41,9 @@ ifThenElse b x y = bool y x b
 
 instance (Symbolic c, LayoutFunctor f) => Conditional (Bool c) (c f) where
     bool x y (Bool b) = restore $ \s ->
-      ( fromCircuit3F b (arithmetize x s) (arithmetize y s) $ \(Par1 c) ->
-          mzipWithMRep $ \i j -> do
+      ( symbolic3F b (arithmetize x s) (arithmetize y s)
+          (\(Par1 c) f t -> if c Prelude.== zero then f else t)
+          \(Par1 c) -> mzipWithMRep $ \i j -> do
             i' <- newAssigned (\w -> (one - w c) * w i)
             j' <- newAssigned (\w -> w c * w j)
             newAssigned (\w -> w i' + w j')
