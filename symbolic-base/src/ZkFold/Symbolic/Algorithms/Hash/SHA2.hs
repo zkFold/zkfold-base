@@ -15,9 +15,12 @@ module ZkFold.Symbolic.Algorithms.Hash.SHA2
 
     -------------------------------
     
+    , I
     , sha2PadVar 
+    , sha2PadVar' 
+    , withPaddedLength
     ) where
-
+    
 import           Control.DeepSeq                                (NFData, force)
 import           Control.Monad                                  (forM_)
 import           Control.Monad.ST                               (ST, runST)
@@ -47,7 +50,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Class                          (BaseField, Symbolic, fromCircuitF)
 import           ZkFold.Symbolic.Data.Bool                      (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, set, toWords)
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, set, toWords, truncate)
 import           ZkFold.Symbolic.Data.Combinators               (Iso (..), RegisterSize (..), Resize (..), expansionW,
                                                                  ilog2)
 import           ZkFold.Symbolic.Data.Conditional
@@ -57,6 +60,19 @@ import           ZkFold.Symbolic.Data.UInt                      (UInt)
 import qualified ZkFold.Symbolic.Data.VarByteString             as VB
 import           ZkFold.Symbolic.Data.VarByteString             (VarByteString (..))
 import           ZkFold.Symbolic.MonadCircuit                   (newAssigned)
+
+{--
+REMOVE THIS
+--}
+
+import Debug.Trace (trace)
+
+import ZkFold.Symbolic.Interpreter 
+import ZkFold.Base.Algebra.Basic.Field 
+import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 
+type I = Interpreter (Zp BLS12_381_Scalar )
+
+
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
@@ -118,7 +134,7 @@ instance
     type ResultSize "SHA224" = 224
     initialHashes = sha224InitialHashes
     roundConstants = word32RoundConstants
-    truncateResult = resize
+    truncateResult = truncate 
     sigmaShifts = (7, 18, 3, 17, 19, 10)
     sumShifts = (2, 13, 22, 6, 11, 25)
 
@@ -144,7 +160,7 @@ instance
     type ResultSize "SHA384" = 384
     initialHashes = sha384InitialHashes
     roundConstants = word64RoundConstants
-    truncateResult = resize
+    truncateResult = truncate 
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
@@ -157,7 +173,7 @@ instance
     type ResultSize "SHA512/224" = 224
     initialHashes = sha512_224InitialHashes
     roundConstants = word64RoundConstants
-    truncateResult = resize
+    truncateResult = truncate 
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
@@ -170,7 +186,7 @@ instance
     type ResultSize "SHA512/256" = 256
     initialHashes = sha512_256InitialHashes
     roundConstants = word64RoundConstants
-    truncateResult = resize
+    truncateResult = truncate 
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
@@ -298,6 +314,46 @@ sha2Pad bs = withPaddedLength @k @padTo @lenBits $ grown || fromConstant padValu
 
         grown :: ByteString (PaddedLength k padTo lenBits) context
         grown = withPaddedLength @k @padTo @lenBits $ resize bs `shiftBitsL` diff
+
+-- | Same as @sha2Pad@ but for variable-length ByteStrings
+--
+sha2PadVar'
+    :: forall (padTo :: Natural) (lenBits :: Natural) context (k :: Natural)
+    .  Symbolic context
+    => KnownNat k
+    => P.Show (context Par1)
+    => KnownNat padTo
+    => KnownNat (Log2 padTo)
+    => KnownNat lenBits
+    => KnownNat (PaddedLength k padTo lenBits)
+    => VarByteString k context
+    -> VarByteString (PaddedLength k padTo lenBits) context
+sha2PadVar' VarByteString{..} = trace (P.show diff) $ VarByteString (bsLength + diff) $ grown || lenBits
+    where
+        chunkBits :: Natural
+        chunkBits = ilog2 $ value @padTo
+
+        numWords :: Natural
+        numWords = (value @(NumberOfBits (BaseField context)) + chunkBits -! 1) `div` chunkBits
+
+        getDiff :: FieldElement context -> FieldElement context
+        getDiff (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
+            feWords <- expansionW @(Log2 padTo) numWords e
+            d <- newAssigned $ \p -> (fromConstant @Natural $ value @padTo) - p (P.head feWords)
+            pure $ Par1 d
+
+        diff :: FieldElement context
+        diff = getDiff bsLength
+
+        lenBits :: ByteString (PaddedLength k padTo lenBits) context
+        lenBits = resize . ByteString . hmap reverse $ binaryExpansion bsLength
+
+        paddedL :: Natural
+        paddedL = value @(PaddedLength k padTo lenBits)
+
+        grown :: ByteString (PaddedLength k padTo lenBits) context
+        grown = let resized = resize bsBuffer
+                 in (`VB.shiftL` (diff - one)) . P.flip set (paddedL -! 1) . (`shiftBitsL` 1) $ resized
 
 -- | Same as @sha2Pad@ but for variable-length ByteStrings
 --

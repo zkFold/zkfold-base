@@ -40,7 +40,7 @@ import           GHC.Generics                      (Generic, Par1 (..))
 import           GHC.Natural                       (naturalFromInteger)
 import           Numeric                           (readHex, showHex)
 import           Prelude                           (Integer, const, drop, fmap, otherwise, pure, return, take, type (~),
-                                                    ($), (.), (<$>), (<), (<>), (==), (>=))
+                                                    ($), (.), (<$>), (<), (<>), (==), (>=), (>))
 import qualified Prelude                           as Haskell
 import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
@@ -267,19 +267,18 @@ instance
   , KnownNat k
   , KnownNat n
   ) => Resize (ByteString k c) (ByteString n c) where
-    resize (ByteString oldBits) = ByteString $ symbolicF oldBits
-        (\v ->  V.unsafeToVector $ zeroA <> takeMin (V.fromVector v))
-        (\bitsV -> do
-            let bits = V.fromVector bitsV
-            zeros <- replicateM diff $ newAssigned (Haskell.const zero)
-            return $ V.unsafeToVector $ zeros <> takeMin bits
-        )
+    resize (ByteString oldBits) 
+      | diff > 0 = ByteString $ symbolicF oldBits
+          (\v -> V.unsafeToVector $ zeroA <> V.fromVector v)
+          (\bitsV -> do
+              let bits = V.fromVector bitsV
+              zeros <- replicateM diff $ newAssigned (Haskell.const zero)
+              return $ V.unsafeToVector $ zeros <> bits
+          )
+      | otherwise = ByteString $ hmap (V.unsafeToVector . Haskell.drop (Haskell.abs diff) . V.fromVector) oldBits
         where
             diff :: Haskell.Int
             diff = Haskell.fromIntegral (getNatural @n) Haskell.- Haskell.fromIntegral (getNatural @k)
-
-            takeMin :: [a] -> [a]
-            takeMin = Haskell.take (Haskell.min (Haskell.fromIntegral $ getNatural @n) (Haskell.fromIntegral $ getNatural @k))
 
             zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
 
