@@ -10,6 +10,7 @@ module ZkFold.Base.Algebra.EllipticCurve.Class
   ( -- * curve classes
     EllipticCurve (..)
   , CyclicGroup (..)
+  , CycleOfCurves
   , WeierstrassCurve (..)
   , TwistedEdwardsCurve (..)
   , Compressible (..)
@@ -90,6 +91,20 @@ class
     --
     -- prop> scale (order @(ScalarFieldOf g)) pointGen = zero
     pointGen :: g
+
+{- |
+A cycle of two curves elliptic curves over finite fields
+such that the number of points on one curve is equal to
+the size of the field of definition of the next, in a cyclic way.
+-}
+type CycleOfCurves g1 g2 =
+  ( EllipticCurve g1
+  , EllipticCurve g2
+  , CyclicGroup g1
+  , CyclicGroup g2
+  , ScalarFieldOf g1 ~ BaseFieldOf g2
+  , BaseFieldOf g1 ~ ScalarFieldOf g2
+  )
 
 {- | The standard form of an elliptic curve is the Weierstrass equation:
 
