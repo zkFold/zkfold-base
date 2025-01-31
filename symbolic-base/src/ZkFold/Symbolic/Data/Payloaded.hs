@@ -11,9 +11,10 @@ import           GHC.Generics                     (Par1 (..), U1 (..))
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative (hunit)
 import           ZkFold.Symbolic.Class            (Symbolic (..))
-import           ZkFold.Symbolic.Data.Bool        (Bool (..), true)
+import           ZkFold.Symbolic.Data.Bool        (Bool (..), BoolType (..), true)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
+import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput (..))
 
 newtype Payloaded f c = Payloaded { runPayloaded :: f (WitnessField c) }
@@ -34,3 +35,8 @@ instance (Symbolic c, PayloadFunctor f) => SymbolicInput (Payloaded f c) where
 instance (Symbolic c, PayloadFunctor f) => Conditional (Bool c) (Payloaded f c) where
   bool (Payloaded onFalse) (Payloaded onTrue) (Bool (witnessF -> Par1 b)) =
     Payloaded $ mzipWithRep (\f t -> t * b + (one - b) * f) onFalse onTrue
+
+instance (Symbolic c, PayloadFunctor f) => Eq (Payloaded f c) where
+  type BooleanOf (Payloaded f c) = Bool c
+  _ == _ = true
+  _ /= _ = false

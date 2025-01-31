@@ -42,7 +42,7 @@ deriving newtype instance Symbolic c => SymbolicData (FieldElement c)
 
 deriving newtype instance Symbolic c => Conditional (Bool c) (FieldElement c)
 
-deriving newtype instance Symbolic c => Eq (Bool c) (FieldElement c)
+deriving newtype instance Symbolic c => Eq (FieldElement c)
 
 deriving newtype instance Symbolic c => Ord (Bool c) (FieldElement c)
 
