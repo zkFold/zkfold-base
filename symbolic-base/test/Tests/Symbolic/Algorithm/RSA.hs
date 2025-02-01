@@ -50,7 +50,7 @@ specRSA = do
                 check = verify @I @256 msg sig pubkey
 
                 sigV = signVar @I @256 msgVar prvkey
-                checkV = verifyVar @I @256 msgVar sigV pubkey
+                (checkV, _) = verifyVar @I @256 msgVar sigV pubkey
 
             pure $ evalBool check === one .&. evalBool checkV === one
 
