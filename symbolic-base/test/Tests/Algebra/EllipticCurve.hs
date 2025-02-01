@@ -1,13 +1,24 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
+
 module Tests.Algebra.EllipticCurve (specEllipticCurve) where
 
 import           Data.Foldable
-import           Prelude
+import           Data.Proxy
+import           GHC.TypeLits
+import           Prelude                                     hiding (Num (..))
 import           Test.Hspec
+import           Test.QuickCheck                             hiding (scale)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.EllipticCurve.BN254
 import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta
+import           ZkFold.Base.Algebra.EllipticCurve.PlutoEris
 import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1
+import           ZkFold.Symbolic.Data.Eq                     (BooleanOf)
 
 specEllipticCurve :: Spec
 specEllipticCurve = do
@@ -18,6 +29,42 @@ specEllipticCurve = do
             p = pointXY (fromConstant x) (fromConstant y)
             q = scale k pointGen
         p `shouldBe` q
+
+  specEllipticCurveGenerator @Secp256k1_Point
+  specEllipticCurveGenerator @BLS12_381_G1_Point
+  specEllipticCurveGenerator @BLS12_381_G2_Point
+  specEllipticCurveGenerator @BN254_G1_Point
+  specEllipticCurveGenerator @BN254_G2_Point
+  specEllipticCurveGenerator @Ed25519_Point
+  specEllipticCurveGenerator @Pallas_Point
+  specEllipticCurveGenerator @Vesta_Point
+  specEllipticCurveGenerator @Pluto_Point
+  specEllipticCurveGenerator @Eris_Point
+
+specEllipticCurveGenerator
+  :: forall point .
+    ( EllipticCurve point
+    , CyclicGroup point
+    , Eq point
+    , Show point
+    , Arbitrary (ScalarFieldOf point)
+    , Show (ScalarFieldOf point)
+    , KnownSymbol (CurveOf point)
+    , BooleanOf (BaseFieldOf point) ~ Bool
+    ) => Spec
+specEllipticCurveGenerator = do
+  let curve = symbolVal (Proxy @(CurveOf point))
+  describe (curve <> " curve specification") $ do
+    describe "cyclic group generator" $ do
+      let g = pointGen @point
+      it "should be on the curve" $
+        g `shouldSatisfy` isOnCurve
+      it "should have the same order as the scalar field" $ do
+        let coef = order @(ScalarFieldOf point)
+        scale coef g `shouldBe` zero
+      it "should be closed under scalar multiplication" $
+        property $ \ (coef :: ScalarFieldOf point) ->
+          isOnCurve (coef `scale` g)
 
 data TestVector = TestVector
   { _k :: Natural -- scalar

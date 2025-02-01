@@ -51,7 +51,7 @@ verifyAllocatorSignature :: forall point n context curve baseField.
      , KnownNat n
      , baseField ~ UInt 256 'Auto context
      , ScalarFieldOf point ~ FieldElement context
-     , point ~ Weierstrass curve (Point (Bool context) baseField)
+     , point ~ Weierstrass curve (Point baseField)
      , CyclicGroup point
      , SemiEuclidean (UInt 256 'Auto context)
      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
@@ -84,7 +84,7 @@ verifyValidatorSignature :: forall point n context curve baseField.
      , KnownNat n
      , baseField ~ UInt 256 'Auto context
      , ScalarFieldOf point ~ FieldElement context
-     , point ~ Weierstrass curve (Point (Bool context) baseField)
+     , point ~ Weierstrass curve (Point baseField)
      , CyclicGroup point
      , SemiEuclidean (UInt 256 'Auto context)
      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
@@ -131,7 +131,7 @@ zkPassSymbolicVerifier :: forall point n context curve baseField.
      , KnownNat n
      , baseField ~ UInt 256 'Auto context
      , ScalarFieldOf point ~ FieldElement context
-     , point ~ Weierstrass curve (Point (Bool context) baseField)
+     , point ~ Weierstrass curve (Point baseField)
      , CyclicGroup point
      , SemiEuclidean (UInt 256 'Auto context)
      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)

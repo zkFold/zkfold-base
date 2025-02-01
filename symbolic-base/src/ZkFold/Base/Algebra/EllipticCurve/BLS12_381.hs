@@ -57,42 +57,31 @@ instance IrreduciblePoly Fq6 IP3 where
         in toPoly [e, zero, one]
 type Fq12 = Ext2 Fq6 IP3
 
-------------------------------------- BLS12-381 --------------------------------------
+------------------------------------- BLS12-381-G1 --------------------------------------
 
-instance Field field => WeierstrassCurve "BLS12-381" field where
-  weierstrassB = fromConstant (4 :: Natural)
+instance WeierstrassCurve "BLS12-381-G1" Fq where
+  weierstrassB = 4
 
-type BLS12_381_Point baseField = Weierstrass "BLS12-381" (Point Bool baseField)
+type BLS12_381_G1_Point = Weierstrass "BLS12-381-G1" (Point Fq)
 
-type BLS12_381_CompressedPoint baseField =
-  Weierstrass "BLS12-381" (CompressedPoint Bool baseField)
+type BLS12_381_G1_CompressedPoint =
+  Weierstrass "BLS12-381-G1" (CompressedPoint Fq)
 
-instance
-  ( Symbolic.Conditional Bool field
-  , Symbolic.Eq Bool field
-  , FiniteField field
-  , Ord field
-  ) => Compressible Bool (BLS12_381_Point field) where
-    type Compressed (BLS12_381_Point field) = BLS12_381_CompressedPoint field
+instance Compressible BLS12_381_G1_Point where
+    type Compressed BLS12_381_G1_Point = BLS12_381_G1_CompressedPoint
     pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
     compress (Weierstrass (Point x y isInf)) =
       if isInf then pointInf
-      else pointCompressed @Bool @(BLS12_381_Point field) x (y > negate y)
+      else pointCompressed @BLS12_381_G1_Point x (y > negate y)
     decompress (Weierstrass (CompressedPoint x bigY isInf)) =
       if isInf then pointInf else
-        let b = weierstrassB @"BLS12-381"
-            q = order @field
+        let b = weierstrassB @"BLS12-381-G1"
+            q = order @Fq
             sqrt_ z = z ^ ((q + 1) `Prelude.div` 2)
             y' = sqrt_ (x * x * x + b)
             y'' = negate y'
             y = if bigY then max y' y'' else min y' y''
         in  pointXY x y
-
------------------------------------- BLS12-381 G1 ------------------------------------
-
-type BLS12_381_G1_Point = BLS12_381_Point Fq
-
-type BLS12_381_G1_CompressedPoint = BLS12_381_CompressedPoint Fq
 
 instance CyclicGroup BLS12_381_G1_Point where
   type ScalarFieldOf BLS12_381_G1_Point = Fr
@@ -105,9 +94,13 @@ instance Scale Fr BLS12_381_G1_Point where
 
 ------------------------------------ BLS12-381 G2 ------------------------------------
 
-type BLS12_381_G2_Point = BLS12_381_Point Fq2
+instance WeierstrassCurve "BLS12-381-G2" Fq2 where
+  weierstrassB = Ext2 4 4
 
-type BLS12_381_G2_CompressedPoint = BLS12_381_CompressedPoint Fq2
+type BLS12_381_G2_Point = Weierstrass "BLS12-381-G2" (Point Fq2)
+
+type BLS12_381_G2_CompressedPoint =
+  Weierstrass "BLS12-381-G2" (CompressedPoint Fq2)
 
 instance CyclicGroup BLS12_381_G2_Point where
   type ScalarFieldOf BLS12_381_G2_Point = Fr
@@ -121,6 +114,22 @@ instance CyclicGroup BLS12_381_G2_Point where
 
 instance Scale Fr BLS12_381_G2_Point where
   scale n x = scale (toConstant n) x
+
+instance Compressible BLS12_381_G2_Point where
+    type Compressed BLS12_381_G2_Point = BLS12_381_G2_CompressedPoint
+    pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
+    compress (Weierstrass (Point x y isInf)) =
+      if isInf then pointInf
+      else pointCompressed @BLS12_381_G2_Point x (y > negate y)
+    decompress (Weierstrass (CompressedPoint x bigY isInf)) =
+      if isInf then pointInf else
+        let b = weierstrassB @"BLS12-381-G2"
+            q = order @Fq2
+            sqrt_ z = z ^ ((q + 1) `Prelude.div` 2)
+            y' = sqrt_ (x * x * x + b)
+            y'' = negate y'
+            y = if bigY then max y' y'' else min y' y''
+        in  pointXY x y
 
 ------------------------------------ Encoding ------------------------------------
 
@@ -164,8 +173,8 @@ instance Binary BLS12_381_G1_Point where
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
             if compressed then return $
-              decompress @Bool @BLS12_381_G1_Point
-                (pointCompressed @Bool @BLS12_381_G1_Point x bigY)
+              decompress @BLS12_381_G1_Point
+                (pointCompressed @BLS12_381_G1_Point x bigY)
             else do
                 bytesY <- replicateM 48 getWord8
                 let y = ofBytes bytesY
@@ -190,7 +199,7 @@ instance Binary BLS12_381_G1_CompressedPoint where
             bytesXtail <- replicateM 47 getWord8
             let x = ofBytes (byteXhead:bytesXtail)
                 bigY = testBit byte 2
-            pointCompressed @Bool @BLS12_381_G1_Point x <$>
+            pointCompressed @BLS12_381_G1_Point x <$>
               if compressed then return bigY else do
                 bytesY <- replicateM 48 getWord8
                 let y :: Fq = ofBytes bytesY
@@ -222,8 +231,8 @@ instance Binary BLS12_381_G2_Point where
                 x0 = ofBytes bytesX0
                 bigY = testBit byte 2
             if compressed then return $
-              decompress @Bool @BLS12_381_G2_Point
-                (pointCompressed @Bool @BLS12_381_G2_Point (Ext2 x0 x1) bigY)
+              decompress @BLS12_381_G2_Point
+                (pointCompressed @BLS12_381_G2_Point (Ext2 x0 x1) bigY)
             else do
                 bytesY1 <- replicateM 48 getWord8
                 bytesY0 <- replicateM 48 getWord8
@@ -254,7 +263,7 @@ instance Binary BLS12_381_G2_CompressedPoint where
                 x0 = ofBytes bytesX0
                 x = Ext2 x0 x1
                 bigY = testBit byte 2
-            pointCompressed @Bool @BLS12_381_G2_Point x <$>
+            pointCompressed @BLS12_381_G2_Point x <$>
               if compressed then return bigY else do
                 bytesY1 <- replicateM 48 getWord8
                 bytesY0 <- replicateM 48 getWord8
@@ -269,7 +278,14 @@ instance Binary BLS12_381_G2_CompressedPoint where
 -- | An image of a pairing is a cyclic multiplicative subgroup of @'Fq12'@
 -- of order @'BLS12_381_Scalar'@.
 newtype BLS12_381_GT = BLS12_381_GT Fq12
-    deriving newtype (Eq, Show, MultiplicativeSemigroup, MultiplicativeMonoid, Symbolic.Eq Bool)
+    deriving newtype
+        ( Eq
+        , Show
+        , MultiplicativeSemigroup
+        , MultiplicativeMonoid
+        , Symbolic.Conditional Prelude.Bool
+        , Symbolic.Eq
+        )
 
 instance Exponent BLS12_381_GT Natural where
     BLS12_381_GT a ^ p = BLS12_381_GT (a ^ p)
