@@ -14,6 +14,6 @@ exampleJWTSerialisation
     :: Symbolic c
     => SecretBits c
     => NFData (c Par1)
-    => ClientSecret c 
+    => ClientSecret c
     -> VarByteString 10328 c
 exampleJWTSerialisation = secretBits
