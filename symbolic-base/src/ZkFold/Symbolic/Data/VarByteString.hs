@@ -27,12 +27,12 @@ import           Data.Proxy                        (Proxy (..))
 import           Data.String                       (IsString (..))
 import           GHC.Generics                      (Generic, Par1 (..))
 import           GHC.TypeLits                      (KnownSymbol (..), symbolVal)
-import           Prelude                           (type (~), ($), (.), (<$>))
+import           Prelude                           (type (~), ($), (.), (<$>), fmap)
 import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector           (Vector)
+import           ZkFold.Base.Data.Vector           (Vector, unsafeToVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
 import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), ShiftBits (..), isSet, orRight)
@@ -40,7 +40,7 @@ import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
 import           ZkFold.Symbolic.Data.Eq           (Eq)
-import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
@@ -145,9 +145,10 @@ shift
     -> ByteString n ctx
     -> FieldElement ctx
     -> ByteString n ctx
-shift sh bs el = Haskell.foldr (\s b -> bool b (b `sh` (2^s)) (isSet elBits s)) bs [0 .. nbits]
+shift sh bs (FieldElement el) = Haskell.foldr (\s b -> bool b (b `sh` (2^s)) (isSet elBits s)) bs [0 .. nbits]
     where
-        elBits = ByteString $ binaryExpansion el
+        elBits :: ByteString (Log2 n + 1) ctx
+        elBits = ByteString $ fromCircuitF el $ fmap unsafeToVector . expansion (nbits + 1) . unPar1
 
         -- No need to perform more shifts than this.
         -- The bytestring will be all zeros beyond this iteration.

@@ -267,7 +267,8 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
           (\v ->  V.shift v s (fromConstant (0 :: Integer)))
           (\bitsV -> do
               let bits = V.fromVector bitsV
-              zeros <- replicateM (Haskell.fromIntegral $ Haskell.abs s) $ newAssigned (Haskell.const zero)
+              z <- newAssigned (Haskell.const zero)
+              let zeros = Haskell.replicate (Haskell.fromIntegral $ Haskell.abs s) z 
 
               let newBits = case s < 0 of
                           Haskell.True  -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
