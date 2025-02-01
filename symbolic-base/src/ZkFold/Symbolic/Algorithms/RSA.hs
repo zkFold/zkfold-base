@@ -155,8 +155,8 @@ verifyVar
     => VarByteString msgLen ctx
     -> Signature ctx
     -> PublicKey ctx
-    -> Bool ctx
-verifyVar msg sig PublicKey{..} = target == input
+    -> (Bool ctx, ByteString 256 ctx)
+verifyVar msg sig PublicKey{..} = (target == input, h)
     where
         h :: ByteString 256 ctx
         h = sha2Var @"SHA256" msg
