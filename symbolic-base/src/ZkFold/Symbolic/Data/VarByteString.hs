@@ -8,6 +8,7 @@
 module ZkFold.Symbolic.Data.VarByteString
     ( VarByteString (..)
     , fromNatural
+    , fromByteString
     , append
     , (@+)
     , shiftL
@@ -82,6 +83,9 @@ instance (Symbolic ctx, KnownNat n) => FromConstant Natural (VarByteString n ctx
 
 fromNatural :: forall n ctx . (Symbolic ctx, KnownNat n) => Natural -> Natural -> VarByteString n ctx
 fromNatural n numBits = VarByteString (fromConstant numBits) (fromConstant n)
+
+fromByteString :: forall n ctx . (Symbolic ctx, KnownNat n) => ByteString n ctx -> VarByteString n ctx
+fromByteString bs = VarByteString (fromConstant $ value @n) bs
 
 instance (Symbolic ctx, KnownNat m, m * 8 ~ n) => FromJSON (VarByteString n ctx) where
     parseJSON v = fromString <$> parseJSON v

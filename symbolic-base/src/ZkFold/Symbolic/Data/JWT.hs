@@ -450,6 +450,8 @@ secretBits ClientSecret {..} = force $
 
 -- | Verify that the given JWT was correctly signed with a matching key (i.e. Key IDs match and the signature is correct).
 --
-verifySignature :: (SecretBits ctx, RSA ctx 10328) => Certificate ctx -> ClientSecret ctx -> Bool ctx
-verifySignature Certificate{..} cs@ClientSecret{..} = kid == hdKid csHeader && verifyVar (secretBits cs) csSignature (PublicKey e n)
+verifySignature :: (SecretBits ctx, RSA ctx 10328) => Certificate ctx -> ClientSecret ctx -> (Bool ctx, ByteString 256 ctx)
+verifySignature Certificate{..} cs@ClientSecret{..} =
+    let (sigVerified, secretHash) = verifyVar (secretBits cs) csSignature (PublicKey e n)
+     in (kid == hdKid csHeader && sigVerified, secretHash)
 
