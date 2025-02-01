@@ -27,7 +27,7 @@ import           Data.Proxy                        (Proxy (..))
 import           Data.String                       (IsString (..))
 import           GHC.Generics                      (Generic, Par1 (..))
 import           GHC.TypeLits                      (KnownSymbol (..), symbolVal)
-import           Prelude                           (type (~), ($), (.), (<$>), fmap)
+import           Prelude                           (fmap, type (~), ($), (.), (<$>))
 import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
