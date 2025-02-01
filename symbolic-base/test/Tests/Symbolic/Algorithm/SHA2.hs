@@ -37,6 +37,7 @@ import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.VarByteString          (fromNatural)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 
 -- | These test files are provided by the Computer Security Resource Center.
@@ -101,6 +102,7 @@ testAlgorithm
     :: forall (algorithm :: Symbol) element
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter element)
+    => KnownNat (Log2 (ChunkSize algorithm))
     => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
     => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
     => FilePath
@@ -109,11 +111,14 @@ testAlgorithm file = do
     testCases <- runIO (readRSP $ dataDir </> file)
     describe description $
         forM_ testCases $ \(bits, input, hash) -> do
-            let bitMsg = "calculates hash on a message of " <> Haskell.show bits <> " bits"
-            it bitMsg $ toConstant (sha2Natural @algorithm @(Interpreter element) bits input) `shouldBe` hash
+            let bitMsgN = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is Natural)"
+            let bitMsgS = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is VarByteString)"
+            it bitMsgN $ toConstant (sha2Natural @algorithm @(Interpreter element) bits input) `shouldBe` hash
+            it bitMsgS $ toConstant (sha2Var @algorithm @(Interpreter element) @10000 $ fromNatural input bits) `shouldBe` hash
     where
         description :: String
         description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file
+
 
 -- | Test the implementation of a hashing algorithm with @Zp BLS12_381_Scalar@ as base field for ByteStrings.
 --
@@ -121,6 +126,7 @@ specSHA2Natural'
     :: forall (algorithm :: Symbol) element
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter element)
+    => KnownNat (Log2 (ChunkSize algorithm))
     => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
     => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
     => Spec
@@ -130,6 +136,7 @@ specSHA2Natural' = do
 
 specSHA2Natural :: Spec
 specSHA2Natural = do
+--    testAlgorithm2 @"SHA224" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA224" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA256" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA384" @(Zp BLS12_381_Scalar)

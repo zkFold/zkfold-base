@@ -88,4 +88,5 @@ examples =
   -- , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
   -- , ("PedersonCommitment", exampleOutput exampleCommitment)
   -- , ("BatchTransfer", exampleOutput exampleBatchTransfer)
+  -- , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
   ]
