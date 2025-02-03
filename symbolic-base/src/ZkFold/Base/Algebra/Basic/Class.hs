@@ -638,7 +638,7 @@ instance MultiplicativeGroup a => MultiplicativeGroup [a] where
 instance AdditiveSemigroup a => AdditiveSemigroup [a] where
     (+) = zipWith (+)
 
-instance Scale b a => Scale b [a] where
+instance {-# INCOHERENT #-} Scale b a => Scale b [a] where
     scale = map . scale
 
 instance AdditiveMonoid a => AdditiveMonoid [a] where

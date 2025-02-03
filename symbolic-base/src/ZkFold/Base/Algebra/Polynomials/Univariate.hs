@@ -305,7 +305,7 @@ instance (KnownNat size, Ring c) => IsList (PolyVec c size) where
     fromList = toPolyVec . V.fromList
     toList = V.toList . fromPolyVec
 
-instance Scale c' c => Scale c' (PolyVec c size) where
+instance {-# INCOHERENT #-} Scale c' c => Scale c' (PolyVec c size) where
     scale c (PV p) = PV (scale c <$> p)
 
 instance (FromConstant Natural c, AdditiveMonoid c, KnownNat size) => FromConstant Natural (PolyVec c size) where
