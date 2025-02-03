@@ -12,8 +12,7 @@ import           Tests.Algebra.Group                        (specAdditiveGroup')
 
 import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..), Ring, ToConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Number           (Natural, type (-))
-import           ZkFold.Base.Algebra.EllipticCurve.Class    (ScalarFieldOf)
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta    (Pallas_Point)
+import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta    as Pasta
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, evalPolyVec)
 import           ZkFold.Base.Data.Vector                    (Vector (..), item, singleton, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC                   (ivc)
@@ -38,7 +37,7 @@ import           ZkFold.Symbolic.Data.FieldElementW         (FieldElementW, cons
 import           ZkFold.Symbolic.Data.Payloaded             (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
-type A = ScalarFieldOf Pallas_Point
+type A = Pasta.Fp
 type C = Par1
 type I = Vector 1
 type P = U1
@@ -161,5 +160,5 @@ specIVC = do
     runIO $ print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
     specAlgebraicMap
     specAccumulatorScheme
-    specAdditiveGroup' @(ForeignPoint MiMCHash 2 1 (ScalarFieldOf Pallas_Point) (Interpreter (ScalarFieldOf Pallas_Point)))
+    specAdditiveGroup' @(ForeignPoint MiMCHash 2 1 Pasta.Fp (Interpreter Pasta.Fp))
     specIVC'
