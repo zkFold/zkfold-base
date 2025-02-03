@@ -36,7 +36,7 @@ instance forall p i n l g1 g2 gt ts core.
         , Foldable l
         , Ord (Rep i)
         , Pairing g1 g2 gt
-        , Compressible Bool g1
+        , Compressible g1
         , Eq gt
         , Arithmetic (ScalarFieldOf g1)
         , Binary (ScalarFieldOf g2)

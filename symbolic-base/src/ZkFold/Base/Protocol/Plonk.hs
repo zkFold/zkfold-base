@@ -70,7 +70,7 @@ instance forall p i n l g1 g2 gt (ts :: Type) core .
         , Proof (Plonkup p i n l g1 g2 ts) ~ PlonkupProof g1
         , KnownNat n
         , Foldable l
-        , Compressible Bool g1
+        , Compressible g1
         , Pairing g1 g2 gt
         , Eq gt
         , Arithmetic (ScalarFieldOf g1)

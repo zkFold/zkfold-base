@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -40,8 +41,9 @@ ifThenElse b x y = bool y x b
 
 instance (Symbolic c, LayoutFunctor f) => Conditional (Bool c) (c f) where
     bool x y (Bool b) = restore $ \s ->
-      ( fromCircuit3F b (arithmetize x s) (arithmetize y s) $ \(Par1 c) ->
-          mzipWithMRep $ \i j -> do
+      ( symbolic3F b (arithmetize x s) (arithmetize y s)
+          (\(Par1 c) f t -> if c Prelude.== zero then f else t)
+          \(Par1 c) -> mzipWithMRep $ \i j -> do
             i' <- newAssigned (\w -> (one - w c) * w i)
             j' <- newAssigned (\w -> w c * w j)
             newAssigned (\w -> w i' + w j')
@@ -58,9 +60,8 @@ instance Symbolic c => Conditional (Bool c) (Proxy c) where
   bool _ _ _ = Proxy
 
 instance Conditional Prelude.Bool Prelude.Bool where bool = H.bool
-
 instance Conditional Prelude.Bool Prelude.String where bool = H.bool
-
+instance Conditional Prelude.Bool Natural where bool = H.bool
 instance Conditional Prelude.Bool (Zp n) where bool = H.bool
 
 instance (KnownNat n, Conditional bool x) => Conditional bool (Vector n x) where

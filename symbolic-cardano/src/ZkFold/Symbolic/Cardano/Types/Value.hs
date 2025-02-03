@@ -38,7 +38,8 @@ deriving instance (Symbolic context, KnownNat n, KnownRegisters context 64 Auto)
 deriving newtype instance
   ( Symbolic context
   , KnownRegisters context 64 Auto
-  ) => Eq (Bool context) (Value n context)
+  , KnownNat n
+  ) => Eq (Value n context)
 
 deriving newtype instance
   ( Symbolic context

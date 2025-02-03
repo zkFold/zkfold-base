@@ -31,6 +31,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Pairing
 import           ZkFold.Base.Algebra.Polynomials.Univariate (toPoly)
+import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 
 -------------------------- Scalar field & field towers -------------------------
@@ -70,7 +71,7 @@ type Fp12 = Ext2 Fp6 "IP3"
 
 type BN254_G1_Point = BN254_G1_PointOf Fp
 
-type BN254_G1_PointOf field = Weierstrass "BN254_G1" (Point Bool field)
+type BN254_G1_PointOf field = Weierstrass "BN254_G1" (Point field)
 
 instance Field field => WeierstrassCurve "BN254_G1" field where
   weierstrassB = fromConstant (3 :: Natural)
@@ -86,7 +87,7 @@ instance Scale Fr BN254_G1_Point where
 
 type BN254_G2_Point = BN254_G2_PointOf Fp2
 
-type BN254_G2_PointOf field = Weierstrass "BN254_G2" (Point Bool field)
+type BN254_G2_PointOf field = Weierstrass "BN254_G2" (Point field)
 
 instance WeierstrassCurve "BN254_G2" Fp2 where
   weierstrassB =
@@ -107,7 +108,14 @@ instance Scale Fr BN254_G2_Point where
 ------------------------------- Pairing ----------------------------------------
 
 newtype BN254_GT = BN254_GT Fp12
-  deriving (Prelude.Eq, Show, MultiplicativeSemigroup, MultiplicativeMonoid, Eq Prelude.Bool)
+  deriving
+    ( Prelude.Eq
+    , Show
+    , MultiplicativeSemigroup
+    , MultiplicativeMonoid
+    , Conditional Prelude.Bool
+    , Eq
+    )
 
 instance Exponent BN254_GT Natural where
   BN254_GT e ^ p = BN254_GT (e ^ p)

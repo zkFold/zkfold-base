@@ -147,7 +147,7 @@ instance (FiniteField f) => Field (Par1 f) where
 instance Symbolic ctx => Conditional (Bool ctx) (Par1 (FieldElement ctx)) where
     bool x y b = Par1 $ bool (unPar1 x) (unPar1 y) b
 
-instance Symbolic ctx => Eq (Bool ctx) (Par1 (FieldElement ctx)) where
+instance Symbolic ctx => Eq (Par1 (FieldElement ctx)) where
     Par1 x == Par1 y = x == y
 
 instance {-# OVERLAPPING #-} (FiniteField f) => PedersonSetup [] (Par1 f) where

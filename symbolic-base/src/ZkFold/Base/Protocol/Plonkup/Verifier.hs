@@ -28,7 +28,7 @@ plonkupVerify :: forall p i n l g1 g2 gt ts .
     , KnownNat (PlonkupPolyExtendedLength n)
     , Foldable l
     , Pairing g1 g2 gt
-    , Compressible Bool g1
+    , Compressible g1
     , Eq (ScalarFieldOf g1)
     , Eq gt
     , ToTranscript ts Word8
@@ -48,22 +48,22 @@ plonkupVerify
         -- Step 4: Compute challenges
 
         ts1   = mempty
-            `transcript` compress @Bool cmA
-            `transcript` compress @Bool cmB
-            `transcript` compress @Bool cmC :: ts
+            `transcript` compress cmA
+            `transcript` compress cmB
+            `transcript` compress cmC :: ts
 
         ts2 = ts1
-            `transcript` compress @Bool cmF
-            `transcript` compress @Bool cmH1
-            `transcript` compress @Bool cmH2
+            `transcript` compress cmF
+            `transcript` compress cmH1
+            `transcript` compress cmH2
         beta    = challenge (ts2 `transcript` (1 :: Word8))
         gamma   = challenge (ts2 `transcript` (2 :: Word8))
         delta   = challenge (ts2 `transcript` (3 :: Word8))
         epsilon = challenge (ts2 `transcript` (4 :: Word8))
 
         ts3 = ts2
-            `transcript` compress @Bool cmZ1
-            `transcript` compress @Bool cmZ2
+            `transcript` compress cmZ1
+            `transcript` compress cmZ2
         alpha  = challenge ts3
         alpha2 = alpha * alpha
         alpha3 = alpha2 * alpha
@@ -71,9 +71,9 @@ plonkupVerify
         alpha5 = alpha4 * alpha
 
         ts4 = ts3
-            `transcript` compress @Bool cmQlow
-            `transcript` compress @Bool cmQmid
-            `transcript` compress @Bool cmQhigh
+            `transcript` compress cmQlow
+            `transcript` compress cmQmid
+            `transcript` compress cmQhigh
         xi = challenge ts4
 
         ts5 = ts4
@@ -93,8 +93,8 @@ plonkupVerify
         vn i = v ^ (i :: Natural)
 
         ts6 = ts5
-            `transcript` compress @Bool proof1
-            `transcript` compress @Bool proof2
+            `transcript` compress proof1
+            `transcript` compress proof2
         eta = challenge ts6
 
         -- Step 5: Compute zero polynomial evaluation
