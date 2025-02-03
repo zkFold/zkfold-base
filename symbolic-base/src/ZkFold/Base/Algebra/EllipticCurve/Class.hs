@@ -212,8 +212,7 @@ deriving newtype instance HasPointInf point
 deriving newtype instance Planar field point
   => Planar field (Weierstrass curve point)
 instance
-  ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
+  ( Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) field
   , Eq field
   , Field field
