@@ -1,12 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingVia           #-}
 {-# LANGUAGE NoStarIsType          #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
@@ -58,6 +58,7 @@ import           Data.Semialign                                               (u
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
 import           Data.Traversable                                             (for)
+import           Data.Typeable                                                (Typeable)
 import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics                                                       hiding (at)
 import           Prelude                                                      hiding (Num (..), drop, length, product,
@@ -82,7 +83,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
-import Data.Typeable (Typeable)
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural

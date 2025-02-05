@@ -1,19 +1,19 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies        #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE TypeOperators             #-}
 
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup where
 
-import           GHC.Generics    (Par1, (:*:), Generic)
-import Data.Set
-import GHC.Base
-import Control.DeepSeq
-import Data.Typeable
-import Data.Maybe (fromJust)
-import Prelude (Show)
-import Data.ByteString (ByteString)
+import           Control.DeepSeq
+import           Data.ByteString (ByteString)
+import           Data.Maybe      (fromJust)
+import           Data.Set
+import           Data.Typeable
+import           GHC.Base
+import           GHC.Generics    (Generic, Par1, (:*:))
+import           Prelude         (Show)
 
 
 data LookupType a = forall f. (Functor f, Typeable f) => LookupType { lTable :: LookupTable a f }
@@ -63,8 +63,8 @@ instance NFData (LookupType a) where
 isRange :: LookupType a -> Bool
 isRange (LookupType l) = case l of
   Ranges _ -> True
-  _       -> False
+  _        -> False
 
 fromRange :: LookupType a -> Set (a, a)
 fromRange (LookupType (Ranges a)) = a
-fromRange _         = error "it's not Range lookup"
+fromRange _                       = error "it's not Range lookup"

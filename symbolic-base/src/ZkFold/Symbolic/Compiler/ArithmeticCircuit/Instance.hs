@@ -13,6 +13,7 @@ import           Data.Bool                                           (bool)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
+import           Data.Typeable                                       (Typeable)
 import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (Show, head, mempty, pure, return, show, ($), (++),
                                                                       (.), (<$>), (<))
@@ -25,11 +26,10 @@ import           ZkFold.Base.Data.Vector                             (Vector, un
 import           ZkFold.Prelude                                      (genSubset, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupType)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (LookupType)
-import Data.Typeable (Typeable)
 
 ------------------------------------- Instances -------------------------------------
 
