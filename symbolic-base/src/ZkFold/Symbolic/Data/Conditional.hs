@@ -49,7 +49,7 @@ instance (Symbolic c, LayoutFunctor f) => Conditional (Bool c) (c f) where
             newAssigned (\w -> w i' + w j')
       , let Par1 wb = witnessF b
          in mzipWithRep
-              (\wx wy -> (one - wb) * wx + wb * wy)
+              (\wx wy -> wb * (wy - wx) + wx)
               (payload x s)
               (payload y s)
       )
