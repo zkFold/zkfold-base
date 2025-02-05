@@ -74,5 +74,5 @@ instance
     ( Symbolic context
     , KnownNat tokens
     , KnownRegisters context 64 Auto
-    ) => Eq (Bool context) (Output tokens datum context)
+    ) => Eq (Output tokens datum context)
 
