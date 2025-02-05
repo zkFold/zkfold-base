@@ -17,6 +17,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonk.Prover                   (plonkProve)
 import           ZkFold.Base.Protocol.Plonk.Verifier                 (plonkVerify)
@@ -28,7 +29,6 @@ import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import ZkFold.Base.Data.Vector (Vector)
 
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
