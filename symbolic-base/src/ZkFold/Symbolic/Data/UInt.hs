@@ -194,9 +194,9 @@ eea a b = eea' 1 a b one zero zero one
 
 --------------------------------------------------------------------------------
 
-instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) where
-    type Const (UInt n r (Interpreter (Zp p))) = Natural
-    toConstant (UInt (Interpreter xs)) = vectorToNatural xs (registerSize @(Zp p) @n @r)
+instance (Symbolic (Interpreter a), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter a)) where
+    type Const (UInt n r (Interpreter a)) = Natural
+    toConstant (UInt (Interpreter xs)) = vectorToNatural xs (registerSize @a @n @r)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (UInt n r c) where
     one = fromConstant (1 :: Natural)
