@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
@@ -52,7 +53,7 @@ import           Data.Map.Monoidal                                            (M
 import qualified Data.Map.Monoidal                                            as MM
 import           Data.Map.Strict                                              (Map)
 import qualified Data.Map.Strict                                              as M
-import           Data.Maybe                                                   (catMaybes, fromJust, fromMaybe)
+import           Data.Maybe                                                   (catMaybes, fromJust, fromMaybe, mapMaybe)
 import           Data.Semialign                                               (unzipDefault)
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
@@ -81,6 +82,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
+import Data.Typeable (Typeable)
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
@@ -123,7 +125,7 @@ data ArithmeticCircuit a p i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acRange   :: MonoidalMap (Lookup a) (S.Set (SysVar i)),
+        acLookup  :: MonoidalMap (LookupType a) (S.Set [SysVar i]),
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (CircuitWitness a p i),
         -- ^ The witness generation functions
@@ -131,13 +133,13 @@ data ArithmeticCircuit a p i o = ArithmeticCircuit
         -- ^ The set of folding operations
         acOutput  :: o (Var a i)
         -- ^ The output variables
-    } deriving (Generic)
+    } deriving Generic
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a p i o))
-  instance (Ord a, Ord (Rep i), o ~ U1) => Semigroup (ArithmeticCircuit a p i o)
+  instance (Ord a, Ord (Rep i), o ~ U1, Typeable a) => Semigroup (ArithmeticCircuit a p i o)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a p i o))
-  instance (Ord a, Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a p i o)
+  instance (Ord a, Ord (Rep i), o ~ U1, Typeable a) => Monoid (ArithmeticCircuit a p i o)
 
 instance (NFData a, NFData1 o, NFData (Rep i))
     => NFData (ArithmeticCircuit a p i o) where
@@ -176,7 +178,7 @@ emptyCircuit = ArithmeticCircuit M.empty MM.empty M.empty M.empty U1
 -- where outputs computing the payload are unconstrained.
 naturalCircuit ::
   ( Arithmetic a, Representable p, Representable i, Traversable o
-  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
+  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), Typeable a) =>
   (forall x. p x -> i x -> o x) -> ArithmeticCircuit a p i o
 naturalCircuit f = uncurry (set #acOutput) $ flip runState emptyCircuit $
   for (f (tabulate Left) (tabulate Right)) $
@@ -223,9 +225,9 @@ indexG witGen inputs = \case
 hlmap ::
   (Representable i, Representable j, Ord (Rep j), Functor o) =>
   (forall x . j x -> i x) -> ArithmeticCircuit a p i o -> ArithmeticCircuit a p j o
-hlmap f (ArithmeticCircuit s r w d o) = ArithmeticCircuit
+hlmap f (ArithmeticCircuit s l w d o) = ArithmeticCircuit
   { acSystem = mapVars (imapSysVar f) <$> s
-  , acRange = S.map (imapSysVar f) <$> r
+  , acLookup = S.map (map $ imapSysVar f) <$> l
   , acWitness = fmap (imapWitVar f) <$> w
   , acFold = bimap (imapVar f) (imapWitVar f <$>) <$> d
   , acOutput = imapVar f <$> o
@@ -250,16 +252,16 @@ behead = liftA2 (,) (set #acOutput U1) acOutput
 instance HFunctor (ArithmeticCircuit a p i) where
     hmap = over #acOutput
 
-instance (Ord (Rep i), Ord a) => HApplicative (ArithmeticCircuit a p i) where
+instance (Ord (Rep i), Ord a, Typeable a) => HApplicative (ArithmeticCircuit a p i) where
     hpure = crown mempty
     hliftA2 f (behead -> (c, o)) (behead -> (d, p)) = crown (c <> d) (f o p)
 
-instance (Ord (Rep i), Ord a) => Package (ArithmeticCircuit a p i) where
+instance (Ord (Rep i), Ord a, Typeable a) => Package (ArithmeticCircuit a p i) where
     unpackWith f (behead -> (c, o)) = crown c <$> f o
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
 instance
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i), Typeable a) =>
   Symbolic (ArithmeticCircuit a p i) where
     type BaseField (ArithmeticCircuit a p i) = a
     type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
@@ -267,7 +269,7 @@ instance
     fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
 
 instance
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i), Typeable a) =>
   SymbolicFold (ArithmeticCircuit a p i) where
     sfoldl fun (behead -> (sc, foldSeed)) foldSeedP streamHash
            foldStream (behead -> (cc, Par1 foldCount)) =
@@ -288,7 +290,7 @@ instance Finite a => Witness (Var a i) (CircuitWitness a p i) where
   at (LinVar k sV b) = fromConstant k * pure (WSysVar sV) + fromConstant b
 
 instance
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1)
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1, Typeable a)
   => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = case runWitnessF wf $ \case
@@ -317,7 +319,7 @@ instance
 
     rangeConstraint (LinVar k x b) upperBound = do
       v <- preparedVar
-      zoom #acRange . modify $ MM.insertWith S.union (Range upperBound) (S.singleton v)
+      zoom #acLookup . modify $ MM.insertWith S.union (LookupType $ Ranges (S.singleton (zero, upperBound))) (S.singleton [v])
       where
         preparedVar = if k == one && b == zero || k == negate one && b == upperBound
           then return x
@@ -438,7 +440,7 @@ apply ::
   i a -> ArithmeticCircuit a p (i :*: j) o -> ArithmeticCircuit a p j o
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
-  , acRange = S.fromList . catMaybes . toList . filterSet <$> acRange ac
+  , acLookup = S.fromList . catMaybes . toList . filterSet <$> acLookup ac
   , acWitness = (>>= witF) <$> acWitness ac
   , acFold = bimap outF (>>= witF) <$> acFold ac
   , acOutput = outF <$> acOutput ac
@@ -459,11 +461,11 @@ apply xs ac = ac
     witF (WFoldVar i v)              = pure (WFoldVar i v)
     witF (WExVar v)                  = pure (WExVar v)
 
-    filterSet :: Ord (Rep j) => S.Set (SysVar (i :*: j)) ->  S.Set (Maybe (SysVar j))
-    filterSet = S.map (\case
+    filterSet :: Ord (Rep j) => S.Set [SysVar (i :*: j)] ->  S.Set (Maybe [SysVar j])
+    filterSet = S.map (Just . mapMaybe (\case
                     NewVar v        -> Just (NewVar v)
                     InVar (Right v) -> Just (InVar v)
-                    _               -> Nothing)
+                    _               -> Nothing))
 
 -- TODO: Add proper symbolic application functions
 

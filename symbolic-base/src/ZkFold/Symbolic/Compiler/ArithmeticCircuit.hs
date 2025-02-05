@@ -77,8 +77,8 @@ import           ZkFold.Symbolic.MonadCircuit                            (MonadC
 
 --------------------------------- High-level functions --------------------------------
 
-desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> a -> m ()
-desugarRange i b
+desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> (a, a) -> m ()
+desugarRange i (bl, b)
   | b == negate one = return ()
   | otherwise = do
     let bs = binaryExpansion (toConstant b)
@@ -98,11 +98,11 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $
-          [(toVar v, k) | (k, s) <- M.toList rm, v <- S.toList s]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry ( S.map .desugarRange )) $
+          [(head $ map toVar v, k) | (k, s) <- M.toList rm, v <- S.toList s]
       rm = M.mapKeys (\k -> bool (error "There should only be a range-lookups here") (fromRange k) (isRange k)) rm'
-      (rm', tm) = M.partitionWithKey (\k _ -> isRange k) (acRange c)
-  in r' { acRange = tm, acOutput = acOutput c }
+      (rm', tm) = M.partitionWithKey (\k _ -> isRange k) (acLookup c)
+  in r' { acLookup = tm, acOutput = acOutput c }
 
 -- | Payload of an input to arithmetic circuit.
 -- To be used as an argument to 'compileWith'.

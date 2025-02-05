@@ -28,6 +28,8 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (LookupType)
+import Data.Typeable (Typeable)
 
 ------------------------------------- Instances -------------------------------------
 
@@ -42,6 +44,7 @@ instance
   , NFData (Rep i)
   , Representable i
   , Haskell.Foldable i
+  , Typeable a
   ) => Arbitrary (ArithmeticCircuit a p i Par1) where
     arbitrary = do
         outVar <- toVar . InVar <$> arbitrary
@@ -60,6 +63,7 @@ instance
   , Representable i
   , Haskell.Foldable i
   , KnownNat l
+  , Typeable a
   ) => Arbitrary (ArithmeticCircuit a p i (Vector l)) where
     arbitrary = do
         ac <- arbitrary @(ArithmeticCircuit a p i Par1)
@@ -68,7 +72,8 @@ instance
 
 arbitrary' ::
   forall a p i .
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)
+  , Typeable a ) =>
   (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a p i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a p i))
@@ -107,25 +112,26 @@ createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par
 -- TODO: make it more readable
 instance (Show a, Show (o (Var a i)), Show (Var a i), Show (Rep i), Haskell.Ord (Rep i)) => Show (ArithmeticCircuit a p i o) where
     show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r)
-                          ++ "\n, acRange = " ++ show (acRange r)
+                          ++ "\n, acRange = " ++ show (acLookup r)
                           ++ "\n, acOutput = " ++ show (acOutput r)
                           ++ " }"
 
 -- TODO: add witness generation info to the JSON object
-instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), ToJSON (Rep i)) => ToJSON (ArithmeticCircuit a p i o) where
+instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), ToJSON (Rep i), ToJSON (LookupType a), ToJSONKey (LookupType a)) => ToJSON (ArithmeticCircuit a p i o) where
     toJSON r = object
         [
             "system" .= acSystem r,
-            "range"  .= acRange r,
+            "range"  .= acLookup r,
             "output" .= acOutput r
         ]
 
 -- TODO: properly restore the witness generation function
-instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a, Haskell.Ord a, Haskell.Ord (Rep i), FromJSON (Rep i)) => FromJSON (ArithmeticCircuit a p i o) where
+instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a, Haskell.Ord a, Haskell.Ord (Rep i), FromJSON (Rep i)
+  , FromJSONKey (LookupType a), Typeable a) => FromJSON (ArithmeticCircuit a p i o) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"
-            acRange    <- v .: "range"
+            acLookup    <- v .: "range"
             acOutput   <- v .: "output"
             let acWitness = empty
                 acFold    = empty
