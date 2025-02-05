@@ -202,6 +202,7 @@ library
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
+      ZkFold.Symbolic.Data.Ord2
       ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.Secp256k1
       ZkFold.Symbolic.Data.Switch
