@@ -5,6 +5,7 @@ module Tests.Symbolic.Data.List (specList) where
 import           Data.Binary                                 (Binary)
 import qualified Data.Eq                                     as Haskell
 import           Data.Function                               (($))
+import           Data.Typeable                               (Typeable)
 import           GHC.Generics                                (Par1 (..), U1 (..), type (:*:) (..))
 import           Test.Hspec                                  (Spec, describe)
 import           Test.Hspec.QuickCheck                       (prop)
@@ -20,7 +21,6 @@ import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Eq                     ((==))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 import           ZkFold.Symbolic.Data.List                   (List, emptyList, head, tail, (.:))
-import Data.Typeable (Typeable)
 
 headTest :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 headTest x y = head (x .: y .: emptyList) == x

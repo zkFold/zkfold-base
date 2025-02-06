@@ -5,6 +5,7 @@
 module Tests.Symbolic.Compiler.Optimization (specOptimization) where
 
 import           Data.Binary                                (Binary)
+import           Data.Typeable                              (Typeable)
 import           GHC.Generics                               (Par1 (..), U1 (..), type (:*:))
 import           Prelude                                    (Show, return, ($))
 import           Test.Hspec
@@ -17,7 +18,6 @@ import           ZkFold.Symbolic.Compiler                   (compile)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.MonadCircuit
-import Data.Typeable (Typeable)
 
 
 testFunc :: forall a . (Arithmetic a, Binary a, Typeable a) => ArithmeticCircuit a U1 Par1 Par1

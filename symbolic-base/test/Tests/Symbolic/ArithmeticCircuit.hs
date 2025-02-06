@@ -9,6 +9,7 @@ import           Data.Binary                                 (Binary)
 import           Data.Bool                                   (bool)
 import           Data.Functor                                ((<$>))
 import           Data.Functor.Rep                            (Representable (..))
+import           Data.Typeable                               (Typeable)
 import           GHC.Generics                                (Par1, U1 (..))
 import           Prelude                                     (Foldable, Ord, Show, String, id, return, ($))
 import qualified Prelude                                     as Haskell
@@ -27,7 +28,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Ord                    ((<=))
-import Data.Typeable (Typeable)
 
 correctHom0 ::
   forall a. (Arithmetic a, Binary a, Show a, Typeable a) =>
