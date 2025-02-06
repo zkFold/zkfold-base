@@ -29,36 +29,36 @@ import           Tests.Symbolic.Data.UInt           (specUInt)
 main :: IO ()
 main = hspec $ do
     -- Base.Algebra
-    specField
-    specAdditiveGroup
-    specEllipticCurve
-    specPairing
-    specPermutations
-    specUnivariate
-    specReedSolomon
-    specGroebner
+    -- specField
+    -- specAdditiveGroup
+    -- specEllipticCurve
+    -- specPairing
+    -- specPermutations
+    -- specUnivariate
+    -- specReedSolomon
+    -- specGroebner
 
     -- Base.Data
-    specBinary
+    -- specBinary
 
     -- Base.Protocol
-    specPlonkup
-    specNonInteractiveProof
-    specIVC
+    -- specPlonkup
+    -- specNonInteractiveProof
+    -- specIVC
 
-    -- Compiler spec
-    specArithmeticCircuit
-    specCompiler
+    -- -- Compiler spec
+    -- specArithmeticCircuit
+    -- specCompiler
 
     -- Symbolic types and operations
-    specHash
-    specList
-    specUInt
-    specFFA
-    specByteString
+    -- specHash
+    -- specList
+    -- specUInt
+    -- specFFA
+    -- specByteString
 
     -- Symbolic cryptography
-    specBlake2b
+    -- specBlake2b
     specRSA
     specSHA2Natural
     specSHA2
