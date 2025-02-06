@@ -4,6 +4,7 @@
 module Tests.Symbolic.Compiler.Test2 (specArithmetization2) where
 
 import           Data.Binary                                 (Binary)
+import           Data.Typeable                               (Typeable)
 import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), not, replicate, (/), (^),
                                                               (||))
@@ -18,7 +19,6 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-import Data.Typeable (Typeable)
 
 -- A true statement.
 tautology :: Symbolic c => FieldElement c -> FieldElement c -> Bool c

@@ -50,6 +50,7 @@ import           Data.Map                                                hiding 
                                                                           take)
 import qualified Data.Map.Monoidal                                       as M
 import qualified Data.Set                                                as S
+import           Data.Typeable                                           (Typeable)
 import           Data.Void                                               (absurd)
 import           GHC.Generics                                            (U1 (..), (:*:))
 import           Numeric.Natural                                         (Natural)
@@ -74,7 +75,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                        (expansion)
 import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))
-import Data.Typeable (Typeable)
 
 --------------------------------- High-level functions --------------------------------
 

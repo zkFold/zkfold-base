@@ -2,21 +2,21 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE TypeOperators             #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances      #-}
 
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup where
 
 import           Control.DeepSeq
-import           Data.ByteString (ByteString)
-import           Data.Maybe      (fromJust)
+import           Data.Aeson.Types
+import           Data.ByteString  (ByteString)
+import           Data.Maybe       (fromJust)
 import           Data.Set
+import qualified Data.Text        as T
 import           Data.Typeable
 import           GHC.Base
-import           GHC.Generics    (Generic, Par1, (:*:))
-import           Prelude         (Show)
-import Data.Aeson.Types
-import qualified Data.Text as T
+import           GHC.Generics     (Generic, Par1, (:*:))
+import           Prelude          (Show)
 
 
 data LookupType a = forall f. (Functor f, Typeable f) => LookupType { lTable :: LookupTable a f }
@@ -63,9 +63,9 @@ deriving instance (Ord a) => Ord (LookupTable a f)
 deriving instance (Show a) => Show (LookupTable a f)
 
 instance (ToJSON a) => ToJSON (LookupTable a f) where
-  toJSON (Ranges p) = toJSON p
+  toJSON (Ranges p)    = toJSON p
   toJSON (Product _ _) = String . T.pack $ "Product"
-  toJSON (Plot _ _) = String . T.pack $ "Plot"
+  toJSON (Plot _ _)    = String . T.pack $ "Plot"
 
 instance (ToJSON a) => ToJSONKey (LookupTable a f)
 instance (FromJSON a) => FromJSON (LookupTable a f) where

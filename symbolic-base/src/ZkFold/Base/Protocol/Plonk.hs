@@ -6,6 +6,7 @@ module ZkFold.Base.Protocol.Plonk (
 ) where
 
 import           Data.Binary                                         (Binary)
+import           Data.Data                                           (Typeable)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
 import           Data.Kind                                           (Type)
@@ -28,7 +29,6 @@ import           ZkFold.Base.Protocol.Plonkup.Verifier
 import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import Data.Data (Typeable)
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
 

@@ -3,6 +3,7 @@
 module ZkFold.Base.Protocol.IVC.Predicate where
 
 import           Data.Binary                           (Binary)
+import           Data.Data                             (Typeable)
 import           GHC.Generics                          (U1 (..), (:*:) (..))
 import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
 
@@ -13,7 +14,6 @@ import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compi
 import           ZkFold.Symbolic.Data.Class            (LayoutFunctor)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter           (Interpreter (..))
-import Data.Data (Typeable)
 
 type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p) i U1
 
