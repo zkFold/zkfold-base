@@ -11,11 +11,12 @@ import           Prelude                                             hiding (Num
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
 
+import           ZkFold.Base.Algebra.Basic.Class                     (Scale)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (CyclicGroup (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec)
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Base.Protocol.Plonkup.Utils                  (getParams)
+import           ZkFold.Base.Protocol.Plonkup.Utils                  (getParams, getSecrectParams)
 import           ZkFold.Symbolic.Compiler                            ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
 
@@ -48,11 +49,20 @@ instance (Show (ScalarFieldOf g1), Show (Rep i), Show1 l, Ord (Rep i), Show g1, 
         "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac)  ++ " " ++ show ac ++ " " ++ show h1 ++ " " ++ show gs'
 
 instance
-  ( KnownNat n, KnownNat (n + 5), Arbitrary g1, Arbitrary g2, Arithmetic (ScalarFieldOf g1), Arbitrary (ScalarFieldOf g1)
+  ( KnownNat n
+  , KnownNat (n + 5)
+  , Arbitrary g1
+  , Arbitrary g2
+  , Arithmetic (ScalarFieldOf g1)
+  , Arbitrary (ScalarFieldOf g1)
+  , CyclicGroup g1
+  , CyclicGroup g2
+  , Scale (ScalarFieldOf g1) g2
   , Arbitrary (ArithmeticCircuit (ScalarFieldOf g1) p i l)
   ) => Arbitrary (Plonkup p i n l g1 g2 t) where
     arbitrary = do
         ac <- arbitrary
-        h1 <- arbitrary
+        x <- arbitrary
         let (omega, k1, k2) = getParams (value @n)
-        Plonkup omega k1 k2 ac h1 <$> arbitrary
+        let (gs, h1) = getSecrectParams x
+        return $ Plonkup omega k1 k2 ac h1 gs
