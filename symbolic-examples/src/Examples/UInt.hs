@@ -8,12 +8,10 @@ module Examples.UInt (
     exampleUIntResize
   ) where
 
-import           Control.DeepSeq                  (NFData)
 import           Data.Type.Equality               (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
-import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, NumberOfRegisters, resize)
 import           ZkFold.Symbolic.Data.UInt        (OrdWord, StrictNum (..), UInt)
@@ -25,9 +23,8 @@ exampleUIntMul = (*)
 
 exampleUIntDivMod ::
   (KnownNat n, KnownRegisterSize r, Symbolic c,
-   NumberOfRegisters (BaseField c) n r ~ k,
-   KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord),
-   KnownNat k, NFData (c (Vector k))) =>
+   NumberOfRegisters (BaseField c) n r ~ k, KnownNat k,
+   KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)) =>
   UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
 exampleUIntDivMod = divMod
 
