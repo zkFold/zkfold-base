@@ -21,6 +21,7 @@ import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Eq                     ((==))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 import           ZkFold.Symbolic.Data.List                   (List, emptyList, head, tail, (.:))
+import Data.Typeable (Typeable)
 
 headTest :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 headTest x y = head (x .: y .: emptyList) == x
@@ -31,7 +32,7 @@ tailTest x y = head (tail (x .: y .: emptyList)) == y
 headFun :: Symbolic c => List c (FieldElement c) -> FieldElement c
 headFun = head
 
-specList' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => IO ()
+specList' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a, Typeable a) => IO ()
 specList' = hspec $ describe "List spec" $ do
   let _headChecks = -- compile-time test
                     acOutput (compile @a headFun)

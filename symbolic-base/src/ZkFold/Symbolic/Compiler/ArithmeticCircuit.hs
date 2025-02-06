@@ -74,32 +74,45 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                        (expansion)
 import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))
+import Data.Typeable (Typeable)
 
 --------------------------------- High-level functions --------------------------------
 
 desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> (a, a) -> m ()
-desugarRange i (bl, b)
+desugarRange i (a, b)
   | b == negate one = return ()
   | otherwise = do
     let bs = binaryExpansion (toConstant b)
-    is <- expansion (length bs) i
-    case dropWhile ((== one) . fst) (zip bs is) of
+        as = binaryExpansion (toConstant a)
+    isb <- expansion (length bs) i
+    case dropWhile ((== one) . fst) (zip bs isb) of
       [] -> return ()
       ((_, k0):ds) -> do
         z <- newAssigned (one - ($ k0))
         ge <- foldM (\j (c, k) -> newAssigned $ forceGE j c k) z ds
         constraint (($ ge) - one)
+    isa <- expansion (length as) i
+    case dropWhile ((== zero) . fst) (zip bs isa) of
+      [] -> return ()
+      ((_, k0):ds) -> do
+        z <- newAssigned (one - ($ k0))
+        ge <- foldM (\j (c, k) -> newAssigned $ forceLE j c k) z ds
+        constraint (($ ge) - one)
   where forceGE j c k
           | c == zero = ($ j) * (one - ($ k))
           | otherwise = one + ($ k) * (($ j) - one)
 
+        forceLE j c k
+          | c == one = ($ j) * (one - ($ k))
+          | otherwise = one + ($ k) * (($ j) - one)
+
 -- | Desugars range constraints into polynomial constraints
 desugarRanges ::
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), Typeable a) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry ( S.map .desugarRange )) $
-          [(head $ map toVar v, k) | (k, s) <- M.toList rm, v <- S.toList s]
+  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $
+          [(head $ map toVar v, k) | (k', s) <- M.toList rm, v <- S.toList s, k <- S.toList k']
       rm = M.mapKeys (\k -> bool (error "There should only be a range-lookups here") (fromRange k) (isRange k)) rm'
       (rm', tm) = M.partitionWithKey (\k _ -> isRange k) (acLookup c)
   in r' { acLookup = tm, acOutput = acOutput c }
@@ -113,7 +126,7 @@ inputPayload f =
   f (tabulate $ pure . WExVar) (tabulate $ pure . WSysVar . InVar)
 
 guessOutput ::
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>
+  (Arithmetic a, Binary a, Typeable a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>
   (Ord (Rep i), Ord (Rep o), NFData (Rep i), NFData (Rep o)) =>
   (Representable i, Representable o, Foldable o) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p (i :*: o) U1
@@ -133,7 +146,7 @@ acSizeM = length . acWitness
 
 -- | Calculates the number of range lookups in the system.
 acSizeR :: ArithmeticCircuit a p i o -> Natural
-acSizeR = sum . map length . M.elems . acRange
+acSizeR = sum . map length . M.elems . acLookup
 
 acValue ::
   (Arithmetic a, Binary a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a

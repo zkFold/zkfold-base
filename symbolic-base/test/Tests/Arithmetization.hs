@@ -23,6 +23,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler
+import Data.Typeable (Typeable)
 
 propCircuitInvariance ::
   ( Arithmetic a, Binary a, Show a, Ord (Rep i)
@@ -33,7 +34,7 @@ propCircuitInvariance ac pl wi = eval ac pl wi === eval (mapVarArithmeticCircuit
 specArithmetization' ::
   forall a p i .
   (Arithmetic a, Arbitrary a, Binary a, Binary (Rep p)) =>
-  (Arbitrary (p a), Arbitrary (i a)) =>
+  (Arbitrary (p a), Arbitrary (i a), Typeable a) =>
   (Show a, Show (p a), Show (i a), Show (ArithmeticCircuit a p i Par1)) =>
   (Arbitrary (Rep i), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
   (Representable p, Representable i, Traversable i) => IO ()

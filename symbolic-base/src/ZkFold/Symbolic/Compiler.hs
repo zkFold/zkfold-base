@@ -26,6 +26,7 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
+import Data.Typeable (Typeable)
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -71,7 +72,7 @@ compileWith ::
   , Representable p, Representable i
   , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j
   , Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep j)
-  , Ord (Rep i), Ord (Rep j), Binary (Rep q)) =>
+  , Ord (Rep i), Ord (Rep j), Binary (Rep q), Typeable a) =>
   -- | Circuit transformation to apply before optimization.
   (c0 (Layout f) -> c1 (Layout y)) ->
   -- | An algorithm to prepare support argument from the circuit input.

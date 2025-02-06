@@ -13,6 +13,7 @@ import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compi
 import           ZkFold.Symbolic.Data.Class            (LayoutFunctor)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter           (Interpreter (..))
+import Data.Data (Typeable)
 
 type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p) i U1
 
@@ -26,6 +27,7 @@ type PredicateAssumptions a i p =
     , Binary a
     , LayoutFunctor i
     , LayoutFunctor p
+    , Typeable a
     )
 
 predicate :: forall a i p . PredicateAssumptions a i p

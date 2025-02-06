@@ -18,12 +18,13 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import Data.Typeable (Typeable)
 
 -- A true statement.
 tautology :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 tautology x y = (x /= y) || (x == y)
 
-testTautology :: forall a . (Arithmetic a, Binary a) => a -> a -> Haskell.Bool
+testTautology :: forall a . (Arithmetic a, Binary a, Typeable a) => a -> a -> Haskell.Bool
 testTautology x y =
     let Bool ac = compile @a tautology
         b       = unPar1 (eval ac (U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: U1))

@@ -30,6 +30,7 @@ import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import qualified ZkFold.Symbolic.Data.Ord                            as Sym
+import Data.Data (Typeable)
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
 
@@ -47,6 +48,7 @@ fromPlonkup ::
     , Binary (Rep p)
     , Binary (Rep i)
     , Ord (Rep i)
+    , Typeable (ScalarField c1)
     ) => Plonkup p i n l c1 c2 ts -> Plonk p i n l c1 c2 ts
 fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 
@@ -59,7 +61,8 @@ instance (Show1 l, Show (Rep i), Show (ScalarField c1), Ord (Rep i)) => Show (Pl
 
 instance ( Arithmetic (ScalarField c1), Binary (ScalarField c1)
          , Binary (Rep p), Binary (Rep i), Ord (Rep i)
-         , Arbitrary (Plonkup p i n l c1 c2 t))
+         , Arbitrary (Plonkup p i n l c1 c2 t)
+         , Typeable (ScalarField c1))
         => Arbitrary (Plonk p i n l c1 c2 t) where
     arbitrary = fromPlonkup <$> arbitrary
 

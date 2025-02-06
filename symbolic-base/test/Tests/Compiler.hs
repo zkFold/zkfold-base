@@ -23,6 +23,7 @@ import           ZkFold.Symbolic.Class                       (Arithmetic, Symbol
 import           ZkFold.Symbolic.Compiler                    (compileWith, guessOutput, isConstantInput)
 import           ZkFold.Symbolic.Data.Bool                   ((&&))
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
+import Data.Typeable (Typeable)
 
 testFunction :: Symbolic c => ByteString 256 c -> ByteString 256 c -> ByteString 256 c
 testFunction = (&&)
@@ -33,7 +34,7 @@ instance (Arbitrary (f a), Arbitrary (g a)) => Arbitrary ((f :*: g) a) where
 instance Arbitrary (U1 a) where
   arbitrary = return U1
 
-specCompilerG :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => IO ()
+specCompilerG :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a, Typeable a) => IO ()
 specCompilerG = hspec $ describe "Compiler specification" $ do
   prop "Guessing with payload is constant in input" $ isConstantInput $
     compileWith @a guessOutput
