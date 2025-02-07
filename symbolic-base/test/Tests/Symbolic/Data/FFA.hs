@@ -7,6 +7,7 @@ module Tests.Symbolic.Data.FFA (specFFA) where
 import           Data.Function                               (($))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (U1)
+import           Prelude                                     (Integer)
 import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Property, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
@@ -50,6 +51,8 @@ specFFA' = do
     it "multiplies correctly" $ isHom @p @q @r (*) (*)
     it "inverts correctly" $ \(x :: Zp q) ->
       execAcFFA @p @q @r (finv $ fromConstant x) === execZpFFA @p @q @r (finv $ fromConstant x)
+    it "powers correctly" $ \(x :: Zp q) (e :: Integer) ->
+      execAcFFA @p @q @r (fromConstant x ^ e) === x ^ e
 
 execAcFFA ::
   forall p q r.
