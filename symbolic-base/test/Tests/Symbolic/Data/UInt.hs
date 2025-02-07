@@ -22,7 +22,7 @@ import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, Property, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (exec1, it)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class             hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381

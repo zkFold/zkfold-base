@@ -43,7 +43,7 @@ import           Prelude                           (Integer, const, error, flip,
 import qualified Prelude                           as Haskell
 import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class   hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Control.HApplicative  (HApplicative (..))

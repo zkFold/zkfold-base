@@ -18,7 +18,8 @@ import           ZkFold.Symbolic.MonadCircuit    (ResidueField (..))
 
 newtype MerkleHash (n :: Maybe Natural) = M { runHash :: ByteString }
 
-data Prec = Add | Mul | Div | Mod | Exp | Const deriving (Generic, Binary)
+data Prec = Add | Mul | Div | Mod | Gcd | BezoutL | BezoutR | Exp | Const
+  deriving (Generic, Binary)
 
 merkleHash :: Binary a => a -> MerkleHash n
 merkleHash = M . hash . toByteString
@@ -75,3 +76,8 @@ instance Finite (Zp n) => ResidueField (MerkleHash (Just n)) where
 instance SemiEuclidean (MerkleHash Nothing) where
   div (M x) (M y) = merkleHash (Div, x, y)
   mod (M x) (M y) = merkleHash (Mod, x, y)
+
+instance Euclidean (MerkleHash Nothing) where
+  gcd (M x) (M y) = merkleHash (Gcd, x, y)
+  bezoutL (M x) (M y) = merkleHash (BezoutL, x, y)
+  bezoutR (M x) (M y) = merkleHash (BezoutR, x, y)

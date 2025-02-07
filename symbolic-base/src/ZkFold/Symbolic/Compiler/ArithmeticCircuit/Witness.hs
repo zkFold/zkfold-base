@@ -76,3 +76,7 @@ instance Ring (EuclideanF a v)
 instance SemiEuclidean (EuclideanF a v) where
   EuclideanF f `div` EuclideanF g = EuclideanF (\x -> f x `div` g x)
   EuclideanF f `mod` EuclideanF g = EuclideanF (\x -> f x `mod` g x)
+instance Euclidean (EuclideanF a v) where
+  EuclideanF f `gcd` EuclideanF g = EuclideanF (\x -> f x `gcd` g x)
+  EuclideanF f `bezoutL` EuclideanF g = EuclideanF (\x -> f x `bezoutL` g x)
+  EuclideanF f `bezoutR` EuclideanF g = EuclideanF (\x -> f x `bezoutR` g x)

@@ -34,7 +34,7 @@ specFFA = do
   specFFA' @BLS12_381_Scalar @Prime256_1 @Auto
   specFFA' @BLS12_381_Scalar @Prime256_2 @Auto
 
-specFFA' :: forall p q r. (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p))) => Spec
+specFFA' :: forall p q r. (PrimeField (Zp p), Prime q, KnownFFA q r (Interpreter (Zp p))) => Spec
 specFFA' = do
   let q = value @q
   describe ("FFA " ++ show q ++ " specification") $ do
@@ -48,6 +48,8 @@ specFFA' = do
     it "negates correctly" $ \(x :: Zp q) ->
       execAcFFA @p @q @r (negate $ fromConstant x) === execZpFFA @p @q @r (negate $ fromConstant x)
     it "multiplies correctly" $ isHom @p @q @r (*) (*)
+    it "inverts correctly" $ \(x :: Zp q) ->
+      execAcFFA @p @q @r (finv $ fromConstant x) === execZpFFA @p @q @r (finv $ fromConstant x)
 
 execAcFFA ::
   forall p q r.

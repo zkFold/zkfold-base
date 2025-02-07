@@ -9,10 +9,11 @@ module ZkFold.Symbolic.Data.FFA (FFA (..), KnownFFA) where
 
 import           Control.DeepSeq                   (NFData)
 import           Control.Monad                     (Monad (..))
+import           Data.Bits                         (Bits (..))
 import           Data.Bool                         (otherwise)
 import           Data.Function                     (const, ($))
 import           Data.Functor.Rep                  (Representable (..))
-import           Data.Ord                          ((<))
+import           Data.Ord                          (Ord (..), (<))
 import           Data.Proxy                        (Proxy (..))
 import           Data.Traversable                  (Traversable (..))
 import           Data.Type.Equality                (type (~))
@@ -26,19 +27,17 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number  (KnownNat, Prime, type (*), value)
 import           ZkFold.Base.Data.Vector           (Vector)
-import           ZkFold.Symbolic.Class             (Arithmetic, Symbolic (..))
+import           ZkFold.Symbolic.Class             (Arithmetic, Symbolic (..), symbolicF)
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class        (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators  (Ceil, KnownRegisterSize, KnownRegisters, NumberOfRegisters)
 import           ZkFold.Symbolic.Data.Conditional  (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
-import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput (..))
-import           ZkFold.Symbolic.Data.UInt         (UInt, natural, register)
+import           ZkFold.Symbolic.Data.UInt         (UInt (..), natural, register)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), Witness (..), ResidueField (..))
-import Data.Tuple (snd)
-import Data.Bits (Bits(..))
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..))
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
@@ -70,12 +69,8 @@ deriving stock instance (Show (FieldElement c), Show (UIntFFA p r c)) =>
 bezoutFFA ::
   forall p a. (KnownNat p, KnownNat (FFAUIntSize p (Order a))) => Integer
 bezoutFFA =
-  snd $ eea ( 1 `shiftL` Prelude.fromIntegral (value @(FFAUIntSize p (Order a)))
-            , fromConstant $ value @p) (1, 0)
-  where
-    eea :: (Integer, Integer) -> (Integer, Integer) -> (Integer, Integer)
-    eea (g, 0) (s, _) = (g, s)
-    eea (q, r) (s, t) = eea (r, q `mod` r) (t, s - (q `div` r) * t)
+  bezoutR (1 `shiftL` Prelude.fromIntegral (value @(FFAUIntSize p (Order a))))
+          (fromConstant $ value @p)
 
 instance (Arithmetic a, KnownFFA p r (Interpreter a)) =>
     ToConstant (FFA p r (Interpreter a)) where
@@ -102,9 +97,9 @@ instance {-# OVERLAPPING #-}
 valueFFA ::
   forall p r c i a.
   (Symbolic c, KnownFFA p r c, Witness i (WitnessField c), a ~ BaseField c) =>
-  i -> Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r) i ->
+  (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) i ->
   IntegralOf (WitnessField c)
-valueFFA ni ui =
+valueFFA (Par1 ni :*: ui) =
   let n = toIntegral (at ni :: WitnessField c)
       u = natural @c @(FFAUIntSize p (Order a)) @r ui
       k = (u - n) * fromConstant (bezoutFFA @p @a)
@@ -119,6 +114,25 @@ layoutFFA c =
   Par1 (fromIntegral c)
   :*: tabulate (register @c @(FFAUIntSize p (Order a)) @r c)
 
+fromFFA ::
+  forall p r a.
+  (Arithmetic a, KnownFFA p r (Interpreter a)) =>
+  (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) a ->
+  Integer
+fromFFA (Par1 x :*: v) =
+  fromConstant $ toConstant $ toConstant
+    $ FFA @p @r (fromConstant x) (UInt (Interpreter v))
+
+toFFA ::
+  forall p r a.
+  (Arithmetic a, KnownFFA p r (Interpreter a)) =>
+  Integer ->
+  (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) a
+toFFA n =
+  let FFA (FieldElement (Interpreter x)) (UInt (Interpreter v)) =
+        fromConstant n :: FFA p r (Interpreter a)
+   in x :*: v
+
 instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) where
   FFA nx ux * FFA ny uy = FFA nr ur
     where
@@ -128,12 +142,14 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) whe
       nd, nm :: FieldElement c
       ud, um :: UIntFFA p r c
       (nd, ud, nm, um) = restore $ const
-        ( fromCircuitF (arithmetize (nx, ux, ny, uy) Proxy)
-            \((Par1 ni :*: ui) :*: (Par1 nj :*: uj)) -> do
-              let prd = valueFFA @p @r @c ni ui * valueFFA @p @r @c nj uj
+        ( symbolicF (arithmetize (nx, ux, ny, uy) Proxy)
+            (\((fromFFA @p @r -> a) :*: (fromFFA @p @r -> b)) ->
+              toFFA @p @r ((a * b) `div` p) :*: toFFA @p @r ((a * b) `mod` p)
+            )
+            \((valueFFA @p @r @c -> a) :*: (valueFFA @p @r @c -> b)) -> do
               traverse unconstrained
-                  $ layoutFFA @p @r @c (prd `div` p)
-                  :*: layoutFFA @p @r @c (prd `mod` p)
+                  $ layoutFFA @p @r @c ((a * b) `div` p)
+                  :*: layoutFFA @p @r @c ((a * b) `mod` p)
         , (U1 :*: U1) :*: (U1 :*: U1))
       -- | Constraints:
       -- * UInt registers are indeed registers;
@@ -168,12 +184,15 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
       nm :: FieldElement c
       um :: UIntFFA p r c
       (d, nm, um) = restore $ const
-        ( fromCircuitF (arithmetize (nx, ux, ny, uy) Proxy)
-            \((Par1 ni :*: ui) :*: (Par1 nj :*: uj)) -> do
-              let add = valueFFA @p @r @c ni ui + valueFFA @p @r @c nj uj
+        ( symbolicF (arithmetize (nx, ux, ny, uy) Proxy)
+            (\((fromFFA @p @r -> a) :*: (fromFFA @p @r -> b)) ->
+              Par1 (if a + b >= p then one else zero)
+                :*: toFFA @p @r ((a + b) `mod` p)
+            )
+            \((valueFFA @p @r @c -> a) :*: (valueFFA @p @r @c -> b)) -> do
               traverse unconstrained
-                  $ Par1 (fromIntegral (add `div` p))
-                  :*: layoutFFA @p @r @c (add `mod` p)
+                  $ Par1 (fromIntegral ((a + b) `div` p))
+                  :*: layoutFFA @p @r @c ((a + b) `mod` p)
         , U1 :*: (U1 :*: U1))
       -- | Constraints:
       -- * boolean is indeed boolean;
@@ -218,7 +237,46 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Exponent (FFA p r c) Integer w
       neg = value @p -! (pos + 1)
 
 instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
-  finv = Prelude.error "TODO"
+  finv (FFA nx ux) = FFA ny uy
+    where
+      p :: FromConstant Natural a => a
+      p = fromConstant (value @p)
+      -- | Computes unconstrained Bezout coefficients.
+      nl, nr :: FieldElement c
+      ul, ur :: UIntFFA p r c
+      (nl, ul, nr, ur) = restore $ const
+        ( symbolicF (arithmetize (nx, ux) Proxy)
+            (\(fromFFA @p @r -> x) ->
+              let l0 = negate (bezoutL p x)
+                  r0 = bezoutR p x
+                  (l, r) = if r0 < 0 then (l0 + x, r0 + p) else (l0, r0)
+               in toFFA @p @r l :*: toFFA @p @r r
+            )
+            \(valueFFA @p @r @c -> x) -> do
+              let l0 = negate (bezoutL p x)
+                  r0 = bezoutR p x
+                  s  = r0 `div` p -- -1 when negative, 0 when positive
+                  l  = l0 - s * x
+                  r  = r0 - s * p
+              traverse unconstrained $
+                layoutFFA @p @r @c l :*: layoutFFA @p @r @c r
+        , (U1 :*: U1) :*: (U1 :*: U1))
+      -- | Constraints:
+      -- * UInt registers are indeed registers;
+      -- * r < p;
+      -- * equation holds modulo basefield;
+      -- * equation holds modulo 2^k.
+      Bool ck = isValid (ur, FFA @p nl ul)
+                && (nr * nx == nl * p + one)
+                && (ur * ux == ul * p + one)
+      -- | Sew constraints into result.
+      (ny, uy) = restore $ const
+        ( fromCircuitF (arithmetize (nr, ur, ck) Proxy)
+            \(ni :*: ui :*: Par1 b) -> do
+              constraint (($ b) - one)
+              return (ni :*: ui)
+        , U1 :*: U1)
+
 
 instance Finite (Zp p) => Finite (FFA p r b) where
   type Order (FFA p r b) = p
