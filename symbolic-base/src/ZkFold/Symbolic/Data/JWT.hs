@@ -15,11 +15,6 @@ module ZkFold.Symbolic.Data.JWT
     , secretBits
     , toAsciiBits
     , verifySignature
-
-
--------------------------------------------------
-    , base64ToAscii
-    , padBytestring6
     ) where
 
 import           Control.DeepSeq                    (NFData, force)
