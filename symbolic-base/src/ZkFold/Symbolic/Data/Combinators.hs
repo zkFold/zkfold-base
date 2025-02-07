@@ -212,12 +212,12 @@ wordsOf n k = for [0 .. n -! 1] $ \j ->
         wordSize :: Natural
         wordSize = 2 ^ value @r
 
-        repr :: ResidueField n x => Natural -> x -> x
+        repr :: ResidueField x => Natural -> x -> x
         repr j =
-              fromConstant
+              fromIntegral
               . (`mod` fromConstant wordSize)
               . (`div` fromConstant (wordSize ^ j))
-              . toConstant
+              . toIntegral
 
 hornerW :: forall r i a w m . (KnownNat r, MonadCircuit i a w m) => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + (2^r) b1 + ... + 2^rn bn@ using
@@ -244,16 +244,16 @@ splitExpansion n1 n2 k = do
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where
-        lower :: ResidueField n a => a -> a
+        lower :: ResidueField a => a -> a
         lower =
-            fromConstant . (`mod` fromConstant @Natural (2 ^ n1)) . toConstant
+            fromIntegral . (`mod` fromConstant @Natural (2 ^ n1)) . toIntegral
 
-        upper :: ResidueField n a => a -> a
+        upper :: ResidueField a => a -> a
         upper =
-            fromConstant
+            fromIntegral
             . (`mod` fromConstant @Natural (2 ^ n2))
             . (`div` fromConstant @Natural (2 ^ n1))
-            . toConstant
+            . toIntegral
 
 runInvert :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i, f i)
 runInvert is = do

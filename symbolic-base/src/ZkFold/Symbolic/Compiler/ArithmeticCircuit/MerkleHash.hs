@@ -14,6 +14,7 @@ import           Prelude                         (Integer, error)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
 import           ZkFold.Base.Data.ByteString     (toByteString)
+import           ZkFold.Symbolic.MonadCircuit    (ResidueField (..))
 
 newtype MerkleHash (n :: Maybe Natural) = M { runHash :: ByteString }
 
@@ -55,10 +56,10 @@ instance AdditiveMonoid (MerkleHash n) where
 
 instance Semiring (MerkleHash n)
 
-instance AdditiveGroup (MerkleHash (Just n)) where
+instance AdditiveGroup (MerkleHash n) where
   negate (M x) = merkleHash (Add, x)
 
-instance Ring (MerkleHash (Just n))
+instance Ring (MerkleHash n)
 
 instance Exponent (MerkleHash n) Integer where
   M h ^ p = merkleHash (Exp, h, hash (toByteString p))
@@ -66,9 +67,10 @@ instance Exponent (MerkleHash n) Integer where
 instance Field (MerkleHash (Just n)) where
   finv (M x) = merkleHash (Mul, x)
 
-instance ToConstant (MerkleHash (Just n)) where
-  type Const (MerkleHash (Just n)) = MerkleHash Nothing
-  toConstant = merkleHash
+instance Finite (Zp n) => ResidueField (MerkleHash (Just n)) where
+  type IntegralOf (MerkleHash (Just n)) = MerkleHash Nothing
+  fromIntegral = fromConstant
+  toIntegral = merkleHash
 
 instance SemiEuclidean (MerkleHash Nothing) where
   div (M x) (M y) = merkleHash (Div, x, y)

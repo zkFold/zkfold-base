@@ -17,7 +17,9 @@ module ZkFold.Symbolic.Data.UInt (
     toConstant,
     asWords,
     expMod,
-    eea
+    eea,
+    natural,
+    register
 ) where
 
 import           Control.Applicative               (Applicative (..))
@@ -61,7 +63,7 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), Witness (..), constraint, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), Witness (..), constraint, newAssigned, ResidueField (..))
 
 
 -- TODO (Issue #18): hide this constructor
@@ -281,6 +283,31 @@ instance
                         newI <- newAssigned (\j -> j xI + scale ((2 :: Natural) ^ xN) (j yI))
                         helper ((newN, newI) : ys) acc
 
+-- | "natural" value from vector of registers.
+natural ::
+  forall c n r i.
+  (Symbolic c, KnownNat n, KnownRegisterSize r, Witness i (WitnessField c)) =>
+  Vector (NumberOfRegisters (BaseField c) n r) i -> IntegralOf (WitnessField c)
+natural =
+  foldr
+    (\i c -> toIntegral (at i :: WitnessField c) + fromConstant base * c)
+    zero
+  where
+    base :: Natural
+    base = 2 ^ registerSize @(BaseField c) @n @r
+
+-- | @register n i@ returns @i@-th register of @n@.
+register ::
+  forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) =>
+  IntegralOf (WitnessField c) ->
+  Zp (NumberOfRegisters (BaseField c) n r) -> WitnessField c
+register c i =
+  fromIntegral ((c `div` fromConstant (2 ^ shift :: Natural)) `mod` base)
+  where
+    rs = registerSize @(BaseField c) @n @r
+    base = fromConstant (2 ^ rs :: Natural)
+    shift = Haskell.fromIntegral (toConstant i) * rs
+
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownRegisters c n r
          , regSize ~ GetRegisterSize (BaseField c) n r
@@ -289,23 +316,6 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     divMod num@(UInt nm) den@(UInt dn) =
       (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
       where
-        -- | "natural" value from vector of registers.
-        natural ::
-          forall m i. Witness i (WitnessField c) =>
-          Vector m i -> Const (WitnessField c)
-        natural = foldr (\i c -> toConstant (at i :: WitnessField c) + fromConstant base * c) zero
-          where
-            base :: Natural
-            base = 2 ^ registerSize @(BaseField c) @n @r
-
-        -- | @register n i@ returns @i@-th register of @n@.
-        register :: forall m. Const (WitnessField c) -> Zp m -> WitnessField c
-        register c i =
-          fromConstant ((c `div` fromConstant (2 ^ shift :: Natural)) `mod` base)
-          where
-            rs = registerSize @(BaseField c) @n @r
-            base = fromConstant (2 ^ rs :: Natural)
-            shift = toConstant i * rs
 
         -- | Computes unconstrained registers of @div@ and @mod@.
         source = symbolic2F nm dn
@@ -316,8 +326,8 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
             in naturalToVector @c @n @r (n' `div` d')
                 :*: naturalToVector @c @n @r (n' `mod` d'))
           \n d -> (liftA2 (:*:) `on` traverse unconstrained)
-            (tabulate $ register (natural n `div` natural d))
-            (tabulate $ register (natural n `mod` natural d))
+            (tabulate $ register @c @n @r (natural @c @n @r n `div` natural @c @n @r d))
+            (tabulate $ register @c @n @r (natural @c @n @r n `mod` natural @c @n @r d))
 
         -- | Unconstrained @div@ part.
         dv = hmap fstP source

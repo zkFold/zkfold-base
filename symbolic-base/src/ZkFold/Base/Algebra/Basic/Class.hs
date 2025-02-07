@@ -293,6 +293,8 @@ class Semiring a => SemiEuclidean a where
 -}
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
 
+type Euclidean a = (Ring a, SemiEuclidean a)
+
 {- | Type of modules/algebras over the base type of constants @b@. As all the
 required laws are implied by the constraints, this is simply an alias rather
 than a typeclass in its own right.
@@ -809,6 +811,6 @@ instance FromConstant a (Maybe a) where
 instance FromConstant Natural a => FromConstant (Maybe Natural) (Maybe a) where
     fromConstant = fmap fromConstant
 
-instance SemiEuclidean Natural => SemiEuclidean (Maybe Natural) where
+instance SemiEuclidean a => SemiEuclidean (Maybe a) where
     divMod (Just a) (Just b) = let (d, m) = divMod a b in (Just d, Just m)
     divMod _ _               = (Nothing, Nothing)

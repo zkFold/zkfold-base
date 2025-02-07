@@ -127,12 +127,12 @@ circuitDelta l r = do
                 -- Because of our laws for @finv@, @q // q@ is 1 if @q@ is not zero, and zero otherwise.
                 -- This is exactly the opposite of what @f1@ should be.
                 f1 <- newRanged one $
-                    let q = fromConstant (toConstant (at y + one @w) `div` toConstant (at x + one @w))
+                    let q = fromIntegral (toIntegral (at y + one @w) `div` toIntegral (at x + one @w))
                      in one - q // q
 
                 -- f2 is one if and only if y > x and zero otherwise
                 f2 <- newRanged one $
-                    let q = fromConstant (toConstant (at x + one @w) `div` toConstant (at y + one @w))
+                    let q = fromIntegral (toIntegral (at x + one @w) `div` toIntegral (at y + one @w))
                      in one - q // q
 
                 dxy <- newAssigned (\p -> p x - p y)
