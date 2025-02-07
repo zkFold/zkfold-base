@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Ord2
@@ -7,8 +7,9 @@ module ZkFold.Symbolic.Data.Ord2
   ) where
 
 import           GHC.Generics
-import           Prelude                         (Monoid, Semigroup, type (~), ($), (<$>), fmap)
+import           Prelude                         (Monoid, Semigroup, fmap, type (~), ($), (<$>))
 import qualified Prelude
+
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
