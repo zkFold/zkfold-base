@@ -15,7 +15,6 @@ import           Examples.Constant                           (exampleConst5, exa
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
-import           Examples.JWT
 import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
@@ -87,7 +86,7 @@ examples =
   , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
   , ("MiMCHash", exampleOutput exampleMiMC)
   , ("SHA256.32", exampleOutput $ exampleSHA @32)
-  , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
+  -- , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
   -- , ("RSA.sign.verify.256", exampleOutput exampleRSA)
   -- , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
   -- , ("PedersonCommitment", exampleOutput exampleCommitment)
