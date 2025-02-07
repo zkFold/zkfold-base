@@ -16,10 +16,10 @@ import           ZkFold.Base.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed2551
 import           ZkFold.Symbolic.Class                     (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Combinators          (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Symbolic.Data.Combinators (RegisterSize(Auto))
 
 type Ed25519_Point ctx = Ed25519_PointOf (FFA Ed25519_Base 'Auto ctx)
 

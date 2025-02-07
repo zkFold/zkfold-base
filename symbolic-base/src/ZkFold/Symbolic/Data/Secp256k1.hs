@@ -16,10 +16,10 @@ import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Base, Se
 import           ZkFold.Symbolic.Class                       (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Symbolic.Data.Combinators (RegisterSize(Auto))
 
 type Secp256k1_Point ctx = Secp256k1_PointOf (FFA Secp256k1_Base 'Auto ctx)
 

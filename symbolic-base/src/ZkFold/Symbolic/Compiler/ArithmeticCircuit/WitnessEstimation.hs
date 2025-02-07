@@ -14,9 +14,9 @@ import           Prelude                                        (Eq, Maybe (..),
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString                    ()
+import           ZkFold.Symbolic.Class                          (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
-import ZkFold.Symbolic.Class (Arithmetic)
+import           ZkFold.Symbolic.MonadCircuit                   (ResidueField (..))
 
 
 
