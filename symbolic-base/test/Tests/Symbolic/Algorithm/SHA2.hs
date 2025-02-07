@@ -113,7 +113,7 @@ testAlgorithm file = do
             let bitMsgN = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is Natural)"
             let bitMsgS = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is VarByteString)"
             it bitMsgN $ toConstant (sha2Natural @algorithm @(Interpreter element) bits input) `shouldBe` hash
-            it bitMsgS $ toConstant (sha2Var @algorithm @(Interpreter element) @10000 $ fromNatural input bits) `shouldBe` hash
+            it bitMsgS $ toConstant (sha2Var @algorithm @(Interpreter element) @10000 $ fromNatural bits input) `shouldBe` hash
     where
         description :: String
         description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file

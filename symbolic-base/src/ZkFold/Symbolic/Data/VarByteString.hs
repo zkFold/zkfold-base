@@ -9,6 +9,7 @@ module ZkFold.Symbolic.Data.VarByteString
     ( VarByteString (..)
     , fromNatural
     , fromByteString
+    , toAsciiString
     , append
     , (@+)
     , shiftL
@@ -17,31 +18,40 @@ module ZkFold.Symbolic.Data.VarByteString
     ) where
 
 import           Control.DeepSeq                   (NFData)
+import           Control.Monad                     (mapM)
 import           Data.Aeson                        (FromJSON (..))
 import qualified Data.ByteString                   as Bytes
-import           Data.Constraint                   (Dict, withDict)
-import           Data.Constraint.Nat               (Max)
-import           Data.Constraint.Unsafe            (unsafeAxiom)
+import           Data.Char                         (chr)
+import           Data.Constraint
+import           Data.Constraint.Nat
+import           Data.Constraint.Unsafe
+import           Data.Foldable                     (foldlM, foldrM)
+import           Data.Functor.Rep                  (Representable (..))
 import           Data.Kind                         (Type)
+import           Data.List.Split                   (chunksOf)
 import           Data.Proxy                        (Proxy (..))
 import           Data.String                       (IsString (..))
 import           GHC.Generics                      (Generic, Par1 (..))
-import           GHC.TypeLits                      (KnownSymbol (..), symbolVal)
-import           Prelude                           (fmap, type (~), ($), (.), (<$>))
+import           GHC.TypeLits                      (KnownSymbol (..), symbolVal, withKnownNat)
+import           Prelude                           (const, fmap, otherwise, pure, type (~), ($), (.), (<$>), (<>))
 import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector           (Vector, unsafeToVector)
+import           ZkFold.Base.Data.Vector           (Vector, chunks, fromVector, unsafeToVector)
+import           ZkFold.Prelude                    (drop, length, replicate, take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
-import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), ShiftBits (..), isSet, orRight)
+import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), isSet, orRight)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
-import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.Combinators  hiding (regSize)
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
 import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
+import           ZkFold.Symbolic.Interpreter
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, newAssigned)
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
 -- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
@@ -63,6 +73,15 @@ deriving instance (KnownNat n, Symbolic ctx) => SymbolicInput (VarByteString n c
 deriving instance (Symbolic ctx, KnownNat n) => Eq (VarByteString n ctx)
 deriving instance (Symbolic ctx, KnownNat n) => Conditional (Bool ctx) (VarByteString n ctx)
 
+toAsciiString :: forall n p . (KnownNat (Div n 8), (Div n 8) * 8 ~ n, KnownNat p) => VarByteString n (Interpreter (Zp p)) -> Haskell.String
+toAsciiString VarByteString{..} = drop numZeros $ fromVector chars
+    where
+        ByteString (Interpreter v) = bsBuffer
+        FieldElement (Interpreter (Par1 len)) = bsLength
+        strLen = fromZp len `div` 8
+        chars = chr . Haskell.fromIntegral . fromZp . Haskell.foldl (\b a -> b + b + a) zero <$> chunks @(Div n 8) @8 v
+        numZeros = value @(Div n 8) -! strLen
+
 instance
     ( Symbolic ctx
     , m * 8 ~ n
@@ -82,7 +101,7 @@ instance (Symbolic ctx, KnownNat n) => FromConstant Natural (VarByteString n ctx
     fromConstant n = VarByteString (fromConstant $ Haskell.min (value @n) (ilog2 n + 1)) (fromConstant n)
 
 fromNatural :: forall n ctx . (Symbolic ctx, KnownNat n) => Natural -> Natural -> VarByteString n ctx
-fromNatural n numBits = VarByteString (fromConstant numBits) (fromConstant n)
+fromNatural numBits n = VarByteString (fromConstant numBits) (fromConstant n)
 
 fromByteString :: forall n ctx . (Symbolic ctx, KnownNat n) => ByteString n ctx -> VarByteString n ctx
 fromByteString bs = VarByteString (fromConstant $ value @n) bs
@@ -141,14 +160,17 @@ shift
     :: forall n ctx
     .  Symbolic ctx
     => KnownNat n
-    => (ByteString n ctx -> Natural -> ByteString n ctx)
+    => (Words n ctx -> Natural -> Words n ctx)
     -> ByteString n ctx
     -> FieldElement ctx
     -> ByteString n ctx
-shift sh bs (FieldElement el) = Haskell.foldr (\s b -> bool b (b `sh` (2^s)) (isSet elBits s)) bs [0 .. nbits]
+shift sh bs (FieldElement el) = from $ Haskell.foldr (\s b -> withWordCount @n @ctx $ bool b (b `sh` (2^s)) (isSet elBits s)) w [0 .. nbits]
     where
         elBits :: ByteString (Log2 n + 1) ctx
         elBits = ByteString $ fromCircuitF el $ fmap unsafeToVector . expansion (nbits + 1) . unPar1
+
+        w :: Words n ctx
+        w = from bs
 
         -- No need to perform more shifts than this.
         -- The bytestring will be all zeros beyond this iteration.
@@ -161,7 +183,7 @@ shiftL
     => ByteString n ctx
     -> FieldElement ctx
     -> ByteString n ctx
-shiftL = shift shiftBitsL
+shiftL = shift shiftWordsL
 
 shiftR
     :: forall n ctx
@@ -170,12 +192,165 @@ shiftR
     => ByteString n ctx
     -> FieldElement ctx
     -> ByteString n ctx
-shiftR = shift shiftBitsR
+shiftR = shift shiftWordsR
 
 -- | Set all the unassigned bits to zero
 --
-wipeUnassigned :: forall n ctx . (Symbolic ctx, KnownNat n) => VarByteString n ctx -> VarByteString n ctx
+wipeUnassigned
+    :: forall n ctx
+    .  Symbolic ctx
+    => KnownNat n
+    => VarByteString n ctx -> VarByteString n ctx
 wipeUnassigned VarByteString{..} = VarByteString bsLength ((`shiftR` unassigned) . (`shiftL` unassigned) $ bsBuffer)
     where
         unassigned :: FieldElement ctx
         unassigned = fromConstant (value @n) - bsLength
+
+
+-----------------------------------------------------------------------------------------------------------------------
+-- Helper types and functions for internal usage.
+-- They optimise shifting by working with words rather than bits
+-----------------------------------------------------------------------------------------------------------------------
+
+
+type WordSize ctx = Div (NumberOfBits (BaseField ctx)) 2
+
+natWordSize :: Natural -> Natural
+natWordSize n = (ilog2 (n -! 1) + 1) `div` 2
+
+withWordSize' :: forall a . (KnownNat (Order (BaseField a))) :- KnownNat (WordSize a)
+withWordSize' = Sub $ withKnownNat @(WordSize a) (unsafeSNat (natWordSize (value @(Order (BaseField a))))) Dict
+
+withWordSize :: forall a {r}. (KnownNat (Order (BaseField a))) => (KnownNat (WordSize a) => r) -> r
+withWordSize = withDict (withWordSize' @a)
+
+type WordCount n ctx = Div (n + WordSize ctx - 1) (WordSize ctx)
+
+withWordCount
+    :: forall n ctx {r}
+    .  KnownNat n
+    => KnownNat (Order (BaseField ctx))
+    => (KnownNat (WordCount n ctx) => r) -> r
+withWordCount =
+    withWordSize @ctx $
+        withDict (unsafeAxiom @(1 <= WordSize ctx)) $
+            withDict (unsafeAxiom @(1 <= n + WordSize ctx)) $
+                withDict (plusNat @n @(WordSize ctx)) $
+                    withDict (minusNat @(n + WordSize ctx) @1) $
+                        withDict (divNat @(n + WordSize ctx - 1) @(WordSize ctx))
+
+newtype Words n ctx = Words (ctx (Vector (WordCount n ctx)))
+    deriving Generic
+
+deriving newtype instance NFData (ctx (Vector (WordCount n ctx))) => NFData (Words n ctx)
+deriving newtype instance Haskell.Show (ctx (Vector (WordCount n ctx))) => Haskell.Show (Words n ctx)
+deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => SymbolicData (Words n ctx)
+deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => Conditional (Bool ctx) (Words n ctx)
+
+instance
+  ( Symbolic ctx
+  , KnownNat n
+  ) => Iso (Words n ctx) (ByteString n ctx) where
+    from (Words regs) = ByteString $ fromCircuitF regs $ \r -> do
+        let v = fromVector r
+            (w, ws) = (Haskell.head v, Haskell.tail v)
+            regSize = withWordSize @ctx $ value @(WordSize ctx)
+            hiRegSize = value @n -! regSize * (withWordCount @n @ctx $ value @(WordCount n ctx) -! 1)
+        lows <- Haskell.concatMap Haskell.reverse <$> mapM (expansion regSize) ws
+        hi <- Haskell.reverse <$> expansion hiRegSize w
+        pure $ unsafeToVector (hi <> lows)
+
+instance
+  ( Symbolic ctx
+  , KnownNat n
+  ) => Iso (ByteString n ctx) (Words n ctx) where
+    from (ByteString bits) = Words $ fromCircuitF bits $ \b -> do
+        let bs = fromVector b
+            regSize = withWordSize @ctx $ value @(WordSize ctx)
+            hiRegSize = value @n -! regSize * (withWordCount @n @ctx $ value @(WordCount n ctx) -! 1)
+            his = take hiRegSize bs
+            lows = chunksOf (Haskell.fromIntegral regSize) $ drop hiRegSize bs
+        hi <- horner $ Haskell.reverse his
+        lo <- mapM (horner . Haskell.reverse) lows
+        pure $ unsafeToVector (hi:lo)
+
+
+-- | shift a vector of words left by a power of two
+--
+shiftWordsL
+    :: forall n ctx
+    .  Symbolic ctx
+    => KnownNat n
+    => Words n ctx -> Natural -> Words n ctx
+shiftWordsL (Words regs) p2
+  | p2 Haskell.>= (value @n) = Words $ withWordCount @n @ctx $ embed (tabulate zero)
+  | p2 Haskell.== 0 = Words regs
+  | otherwise = Words shifted
+    where
+        regSize :: Natural
+        regSize = withWordSize @ctx $ value @(WordSize ctx)
+
+        hiRegSize :: Natural
+        hiRegSize = value @n `mod` regSize
+
+        -- How many registers will be empty after the shift
+        (zeroRegs, remShift) = p2 `divMod` regSize
+
+        shifted = fromCircuitF regs $ \r -> do
+            let lst = fromVector r
+                v = drop zeroRegs lst
+                (hi, lows) = (Haskell.head v, Haskell.tail v)
+
+            z <- newAssigned (const zero)
+            (newRegs, carry) <- foldrM shiftCarry ([], z) lows
+
+            s <- newAssigned $ \p -> scale ((2 :: Natural) ^ remShift) (p hi) + p carry
+            (newHi, _) <- splitExpansion hiRegSize regSize s
+            pure $ unsafeToVector ((newHi : newRegs) <> replicate zeroRegs z)
+
+        shiftCarry :: MonadCircuit i (BaseField ctx) w m => i -> ([i], i) -> m ([i], i)
+        shiftCarry r (acc, carry) = do
+            s <- newAssigned $ \p -> scale ((2 :: Natural) ^ remShift) (p r) + p carry
+            (l, h) <- splitExpansion regSize regSize s
+            pure (l : acc, h)
+
+shiftWordsR
+    :: forall n ctx
+    .  Symbolic ctx
+    => KnownNat n
+    => Words n ctx -> Natural -> Words n ctx
+shiftWordsR (Words regs) p2
+  | p2 Haskell.>= (value @n) = Words $ withWordCount @n @ctx $ embed (tabulate zero)
+  | p2 Haskell.== 0 = Words regs
+  | otherwise = Words shifted
+    where
+        regSize :: Natural
+        regSize = withWordSize @ctx $ value @(WordSize ctx)
+
+        hiRegSize :: Natural
+        hiRegSize = value @n `mod` regSize
+
+        -- How many registers will be empty after the shift
+        (zeroRegs, remShift) = p2 `divMod` regSize
+
+        shifted = fromCircuitF regs $ \r -> do
+            let lst = fromVector r
+                v = take (length lst -! zeroRegs) lst
+                (hi, lows) = (Haskell.head v, Haskell.tail v)
+
+            z <- newAssigned (const zero)
+
+            (carry, newHi) <- case (hiRegSize Haskell.> remShift) of
+                                Haskell.True -> splitExpansion remShift (hiRegSize -! remShift) hi
+                                _            -> pure (hi, z)
+
+            (newRegs, _) <- foldlM shiftCarry ([], carry) lows
+
+            pure $ unsafeToVector (replicate zeroRegs z <> (newHi : Haskell.reverse newRegs))
+
+        shiftCarry :: MonadCircuit i (BaseField ctx) w m => ([i], i) -> i -> m ([i], i)
+        shiftCarry (acc, carry) r = do
+            (l, h) <- splitExpansion remShift (regSize -! remShift) r
+            s <- newAssigned $ \p ->  p h + scale ((2 :: Natural) ^ (regSize -! remShift)) (p carry)
+            pure (s : acc, l)
+

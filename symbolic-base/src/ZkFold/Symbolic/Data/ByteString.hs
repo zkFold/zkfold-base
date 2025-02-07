@@ -100,6 +100,7 @@ instance
             actualLen = Haskell.fromIntegral $ Bytes.length bytes
             paddedBytes = replicate (desiredLen -! actualLen) 0 <> Bytes.unpack bytes
 
+
 emptyByteString :: FromConstant Natural (ByteString 0 c) => ByteString 0 c
 emptyByteString = fromConstant @Natural 0
 

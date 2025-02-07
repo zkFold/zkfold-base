@@ -44,7 +44,7 @@ specRSA = do
                 pubkey = PublicKey (fromConstant public_e) (fromConstant public_n)
                 msg = fromConstant msgBits
 
-                msgVar = fromNatural msgBits (ilog2 msgBits)
+                msgVar = fromNatural (ilog2 msgBits) msgBits
 
                 sig = sign @I @256 msg prvkey
                 check = verify @I @256 msg sig pubkey

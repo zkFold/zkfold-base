@@ -19,6 +19,7 @@ import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
+import           Examples.JWT
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -86,9 +87,9 @@ examples =
   , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
   , ("MiMCHash", exampleOutput exampleMiMC)
   , ("SHA256.32", exampleOutput $ exampleSHA @32)
+  , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
   -- , ("RSA.sign.verify.256", exampleOutput exampleRSA)
   -- , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
   -- , ("PedersonCommitment", exampleOutput exampleCommitment)
   -- , ("BatchTransfer", exampleOutput exampleBatchTransfer)
-  -- , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
   ]
