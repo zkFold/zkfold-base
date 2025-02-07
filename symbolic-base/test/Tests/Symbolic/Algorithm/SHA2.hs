@@ -135,7 +135,6 @@ specSHA2Natural' = do
 
 specSHA2Natural :: Spec
 specSHA2Natural = do
---    testAlgorithm2 @"SHA224" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA224" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA256" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA384" @(Zp BLS12_381_Scalar)
