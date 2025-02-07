@@ -15,11 +15,11 @@ import           Examples.Constant                           (exampleConst5, exa
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
+import           Examples.JWT
 import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
-import           Examples.JWT
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
