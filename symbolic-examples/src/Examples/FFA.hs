@@ -11,7 +11,7 @@ module Examples.FFA
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (Prime)
 import           ZkFold.Symbolic.Class            (Symbolic)
-import           ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators (RegisterSize (Fixed))
 import           ZkFold.Symbolic.Data.FFA         (FFA, KnownFFA)
 
 type Prime256_1 = 28948022309329048855892746252171976963363056481941560715954676764349967630337
@@ -20,11 +20,13 @@ type Prime256_2 = 28948022309329048855892746252171976963363056481941647379679742
 instance Prime Prime256_1
 instance Prime Prime256_2
 
-type FFA1 = FFA Prime256_1 Auto
-type FFA2 = FFA Prime256_2 Auto
+type RegSize = Fixed 16
 
-type KnownFFA1 c = KnownFFA Prime256_1 Auto c
-type KnownFFA2 c = KnownFFA Prime256_2 Auto c
+type FFA1 = FFA Prime256_1 RegSize
+type FFA2 = FFA Prime256_2 RegSize
+
+type KnownFFA1 c = KnownFFA Prime256_1 RegSize c
+type KnownFFA2 c = KnownFFA Prime256_2 RegSize c
 
 exampleFFAadd337 :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c -> FFA1 c
 exampleFFAadd337 = (+)
