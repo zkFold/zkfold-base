@@ -29,9 +29,10 @@ import           ZkFold.Base.Algebra.Basic.Number  (KnownNat, Prime, type (*), t
 import           ZkFold.Base.Data.Vector           (Vector)
 import           ZkFold.Symbolic.Class             (Arithmetic, Symbolic (..), fromCircuit2F, symbolicF)
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString   (ByteString)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Combinators  (Ceil, GetRegisterSize, KnownRegisterSize, KnownRegisters,
-                                                    NumberOfRegisters, Resize (..), Iso (..))
+import           ZkFold.Symbolic.Data.Combinators  (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize, KnownRegisters,
+                                                    NumberOfRegisters, Resize (..))
 import           ZkFold.Symbolic.Data.Conditional  (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
@@ -40,7 +41,6 @@ import           ZkFold.Symbolic.Data.Ord          (Ord (..))
 import           ZkFold.Symbolic.Data.UInt         (OrdWord, UInt (..), natural, register, toNative)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..))
-import ZkFold.Symbolic.Data.ByteString (ByteString)
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
