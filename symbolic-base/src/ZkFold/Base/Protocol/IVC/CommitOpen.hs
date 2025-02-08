@@ -5,7 +5,7 @@ module ZkFold.Base.Protocol.IVC.CommitOpen where
 import           Data.Zip                              (zipWith)
 import           Prelude                               hiding (Num (..), length, pi, tail, zipWith, (&&))
 
-import           ZkFold.Base.Algebra.Basic.Class       (AdditiveGroup (..), Const)
+import           ZkFold.Base.Algebra.Basic.Class       (AdditiveGroup (..))
 import           ZkFold.Base.Algebra.Basic.Number      (Natural, type (-))
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (hcommit))
@@ -20,7 +20,7 @@ data CommitOpen k a i p c = CommitOpen
             -> p f
             -> i f
 
-      , prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+      , prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField f, HomomorphicCommit [f] (c f))
             => i f
             -> p f
             -> f
@@ -37,7 +37,7 @@ data CommitOpen k a i p c = CommitOpen
 commitOpen :: forall k a i p c . SpecialSoundProtocol k a i p -> CommitOpen k a i p c
 commitOpen SpecialSoundProtocol {..} =
     let
-        prover' :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+        prover' :: forall f . (PredicateFunctionAssumptions a f, ResidueField f, HomomorphicCommit [f] (c f))
             => i f
             -> p f
             -> f

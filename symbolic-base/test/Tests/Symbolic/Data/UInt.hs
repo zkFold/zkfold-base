@@ -12,7 +12,6 @@ import           Data.Aeson                                  (decode, encode)
 import           Data.Binary                                 (Binary)
 import           Data.Constraint
 import           Data.Constraint.Nat                         (timesNat)
-import           Data.Constraint.Unsafe
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
@@ -23,7 +22,7 @@ import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, Property, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (exec1, it)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class             hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
@@ -135,7 +134,7 @@ specUInt' = do
                 bx = fromConstant x :: ByteString n (AC (Zp p))
             return $ evalBS (from ux :: ByteString n (AC (Zp p))) === evalBS bx
 
-        it "performs divMod correctly" $ do
+        when (m > 0) $ it "performs divMod correctly" $ do
             num <- toss m
             d <- toss1 m
             let (acQ, acR) = (fromConstant num :: UInt n rs (AC (Zp p))) `divMod` fromConstant d
@@ -184,7 +183,7 @@ specUInt' = do
             x <- toss (m * m)
             let acUint = with2n @n (fromConstant x) :: UInt (2 * n) rs (AC (Zp p))
                 zpUint = fromConstant x :: UInt n rs (Interpreter (Zp p))
-            return $ execAcUint @(Zp p) (with2n @n (withLess2n @n $ resize acUint :: UInt n rs (AC (Zp p)))) === execZpUint zpUint
+            return $ execAcUint @(Zp p) (with2n @n (resize acUint :: UInt n rs (AC (Zp p)))) === execZpUint zpUint
 
         it "checks equality" $ do
             x <- toss m
@@ -194,12 +193,12 @@ specUInt' = do
         it "checks inequality" $ do
             x <- toss m
             y' <- toss m
-            let y = if y' P.== x then x + 1 else y'
+            let y = if y' P.== x then (x + 1) `mod` (2 ^ n) else y'
 
             let acUint1 = fromConstant x :: UInt n rs (AC (Zp p))
                 acUint2 = fromConstant y :: UInt n rs (AC (Zp p))
 
-            return $ evalBool @(Zp p) (acUint1 == acUint2) === zero
+            return $ evalBool @(Zp p) (acUint1 == acUint2) === (if x == y then 1 else 0)
 
         it "checks greater than" $ do
             x <- toss m
@@ -225,7 +224,7 @@ specUInt' = do
                 ge'' = evalBool @(Zp p) (x'' >= y'')
                 trueGe = if x >= y then one else zero
             return $ ge' === ge'' .&. ge1' === (one :: Zp p) .&. ge2' === (one :: Zp p) .&. ge' === trueGe
-        it "Raises to power correctly" $ withMaxSuccess 10 $ do
+        when (m > 0) $ it "Raises to power correctly" $ withMaxSuccess 10 $ do
             num <- toss m
             modulus <- toss1 m
             p <- toss 255
@@ -241,18 +240,12 @@ specUInt' = do
             let x' = fromConstant x :: UInt n rs (Interpreter (Zp p))
             return $ P.Just x' === decode (encode x)
 
-
 specUInt :: Spec
 specUInt = do
+    specUInt' @BLS12_381_Scalar @0 @_ @_ @Auto
     specUInt' @BLS12_381_Scalar @32 @_ @_ @Auto
     specUInt' @BLS12_381_Scalar @500 @_ @_ @Auto
 
+    specUInt' @BLS12_381_Scalar @0 @_ @_ @(Fixed 10)
     specUInt' @BLS12_381_Scalar @32 @_ @_ @(Fixed 10)
     specUInt' @BLS12_381_Scalar @500 @_ @_ @(Fixed 10)
-
-
-less2n :: forall n. Dict (n <= 2 * n)
-less2n = unsafeAxiom
-
-withLess2n :: forall n {r}. ((n <= 2 * n) => r) -> r
-withLess2n = withDict (less2n @n)

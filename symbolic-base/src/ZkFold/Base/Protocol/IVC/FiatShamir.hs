@@ -7,7 +7,7 @@ import           Data.Constraint                     (withDict)
 import           Data.Constraint.Nat                 (plusMinusInverse1)
 import           Prelude                             hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
-import           ZkFold.Base.Algebra.Basic.Class     (Const, Ring)
+import           ZkFold.Base.Algebra.Basic.Class     (Ring)
 import           ZkFold.Base.Algebra.Basic.Number    (KnownNat, type (-))
 import           ZkFold.Base.Data.Vector             (Vector, init, scanl, unfold)
 import           ZkFold.Base.Protocol.IVC.Commit     (HomomorphicCommit)
@@ -23,7 +23,7 @@ data FiatShamir k a i p c = FiatShamir
             -> p f
             -> i f
 
-      , prover  :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+      , prover  :: forall f . (PredicateFunctionAssumptions a f, ResidueField f, HomomorphicCommit [f] (c f))
             => i f
             -> p f
             -> Vector k ([f], c f)
@@ -50,7 +50,7 @@ fiatShamir :: forall algo k a i p c .
     ) => CommitOpen k a i p c -> FiatShamir k a i p c
 fiatShamir CommitOpen {..} =
     let
-        prover' :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+        prover' :: forall f . (PredicateFunctionAssumptions a f, ResidueField f, HomomorphicCommit [f] (c f))
             => i f
             -> p f
             -> Vector k ([f], c f)

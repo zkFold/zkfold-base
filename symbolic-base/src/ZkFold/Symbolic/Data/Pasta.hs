@@ -19,7 +19,7 @@ import           ZkFold.Symbolic.Class                   (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Class              (Context)
-import           ZkFold.Symbolic.Data.Combinators        (KnownRegisterSize, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators        (KnownRegisterSize, RegisterSize (..), NumberOfRegisters)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq                 (SymbolicEq, Eq (BooleanOf), (==))
 import           ZkFold.Symbolic.Data.UInt               (UInt (..))
@@ -39,7 +39,7 @@ instance (KnownNat n, KnownRegisterSize r, Symbolic ctx) => MultiplicativeGroup 
 instance (KnownNat n, KnownRegisterSize r, Symbolic ctx) => Field (UInt n r ctx) where
   finv = invert
 
-instance (KnownNat n, Symbolic ctx) => BinaryExpansion (UInt n (Fixed 1) ctx) where
+instance (KnownNat n, Symbolic ctx, NumberOfRegisters (BaseField ctx) n (Fixed 1) ~ n) => BinaryExpansion (UInt n (Fixed 1) ctx) where
   type Bits (UInt n (Fixed 1) ctx) = ctx (Vector n)
   binaryExpansion (UInt x) = x
   fromBinary = UInt

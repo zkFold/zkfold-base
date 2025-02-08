@@ -4,7 +4,6 @@ import           Data.Zip                            (unzip)
 import           GHC.Generics
 import           Prelude                             hiding (head, length, pi, unzip)
 
-import           ZkFold.Base.Algebra.Basic.Class     (Const)
 import           ZkFold.Base.Data.Vector             (Vector)
 import           ZkFold.Base.Protocol.IVC.Commit     (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.FiatShamir (FiatShamir (..))
@@ -20,7 +19,7 @@ data NARKProof k c f
         }
     deriving (Generic)
 
-narkProof :: forall k a i p c f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+narkProof :: forall k a i p c f . (PredicateFunctionAssumptions a f, ResidueField f, HomomorphicCommit [f] (c f))
     => FiatShamir k a i p c
     -> i f
     -> p f
@@ -32,7 +31,7 @@ narkProof FiatShamir {..} pi0 w =
 data NARKInstanceProof k i c f = NARKInstanceProof (i f) (NARKProof k c f)
     deriving (Generic)
 
-narkInstanceProof :: forall k a i p c f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f, HomomorphicCommit [f] (c f))
+narkInstanceProof :: forall k a i p c f . (PredicateFunctionAssumptions a f, ResidueField f, HomomorphicCommit [f] (c f))
     => FiatShamir k a i p c
     -> i f
     -> p f

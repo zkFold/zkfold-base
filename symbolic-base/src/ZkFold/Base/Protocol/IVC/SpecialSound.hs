@@ -36,7 +36,7 @@ data SpecialSoundProtocol k a i p = SpecialSoundProtocol
       -> p f                            -- ^ witness
       -> i f                            -- ^ public input
 
-  , prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f)
+  , prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField f)
       => i f                            -- ^ previous public input
       -> p f                            -- ^ witness
       -> f                              -- ^ current random challenge
@@ -58,7 +58,7 @@ specialSoundProtocol :: forall d a i p .
     ) => Predicate a i p -> SpecialSoundProtocol 1 a i p
 specialSoundProtocol phi@Predicate {..} =
   let
-      prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField (Const f) f) => i f -> p f -> f -> Natural -> [f]
+      prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField f) => i f -> p f -> f -> Natural -> [f]
       prover pi0 w _ _ = elems $ witnessGenerator' @f predicateCircuit (pi0 :*: w) (predicateFunction pi0 w)
 
       verifier :: forall f . PredicateFunctionAssumptions a f => i f -> Vector 1 [f] -> Vector 0 f -> [f]

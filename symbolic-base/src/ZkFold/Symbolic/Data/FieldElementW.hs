@@ -21,6 +21,7 @@ import           ZkFold.Symbolic.Data.Conditional  (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput (..))
+import           ZkFold.Symbolic.MonadCircuit      (ResidueField (..))
 
 newtype FieldElementW c = FieldElementW { fromFieldElementW :: WitnessField c }
 
@@ -32,6 +33,9 @@ unconstrainFieldElement = FieldElementW . unPar1 . witnessF . fromFieldElement
 
 deriving newtype instance P.Show (WitnessField c) => P.Show (FieldElementW c)
 deriving newtype instance P.Eq (WitnessField c) => P.Eq (FieldElementW c)
+
+deriving newtype instance (Symbolic c, Euclidean (IntegralOf (WitnessField c)))
+  => ResidueField (FieldElementW c)
 
 instance Symbolic c => SymbolicData (FieldElementW c) where
   type Context (FieldElementW c) = c
@@ -58,7 +62,7 @@ instance Symbolic c => Conditional (Bool c) (FieldElementW c) where
 
 instance {-# OVERLAPPING #-} FromConstant (FieldElementW c) (FieldElementW c)
 deriving newtype instance (Symbolic c, FromConstant k (WitnessField c)) => FromConstant k (FieldElementW c)
-deriving newtype instance Symbolic c => ToConstant (FieldElementW c)
+deriving newtype instance (Symbolic c, ToConstant (WitnessField c)) => ToConstant (FieldElementW c)
 instance {-# OVERLAPPING #-} Symbolic c => Scale (FieldElementW c) (FieldElementW c)
 deriving newtype instance (Symbolic c, Scale k (WitnessField c)) => Scale k (FieldElementW c)
 deriving newtype instance Symbolic c => AdditiveSemigroup (FieldElementW c)

@@ -415,7 +415,7 @@ witnessGenerator circ p i = fst (allWitnesses circ p i)
 -- | Generates witness for the arithmetic circuit without FOLD constraints.
 -- Viable options for `f` are `a` and `CircuitWitness a p i`.
 witnessGenerator' :: forall f a p i o.
-  (Representable p, Representable i, ResidueField (Const f) f, FromConstant a f, Scale a f) =>
+  (Representable p, Representable i, ResidueField f, FromConstant a f, Scale a f) =>
   ArithmeticCircuit a p i o -> p f -> i f -> Map ByteString f
 witnessGenerator' circuit payload inputs =
   let result = acWitness circuit <&> \k -> runWitnessF k $ \case

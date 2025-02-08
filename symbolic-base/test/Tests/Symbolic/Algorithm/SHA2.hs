@@ -12,7 +12,6 @@ import           Data.Functor                                ((<$>))
 import           Data.List                                   (isPrefixOf, isSuffixOf, take, (++))
 import           Data.List.Split                             (splitOn)
 import           Data.Proxy                                  (Proxy (..))
-import           Data.Type.Equality                          (type (~))
 import           GHC.Generics                                (U1)
 import           GHC.TypeLits                                (KnownSymbol, Symbol, symbolVal)
 import           Prelude                                     (String, otherwise, pure, read, (<>), (==))
@@ -101,8 +100,6 @@ testAlgorithm
     :: forall (algorithm :: Symbol) element
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter element)
-    => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
-    => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
     => FilePath
     -> Spec
 testAlgorithm file = do
@@ -121,8 +118,6 @@ specSHA2Natural'
     :: forall (algorithm :: Symbol) element
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter element)
-    => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
-    => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
     => Spec
 specSHA2Natural' = do
     testFiles <- runIO $ getTestFiles @algorithm
