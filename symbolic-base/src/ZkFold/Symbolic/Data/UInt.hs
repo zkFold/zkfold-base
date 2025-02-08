@@ -15,6 +15,7 @@ module ZkFold.Symbolic.Data.UInt (
     UInt(..),
     OrdWord,
     toConstant,
+    toNative,
     asWords,
     expMod,
     eea,
@@ -26,9 +27,9 @@ import           Control.Applicative               (Applicative (..))
 import           Control.DeepSeq
 import           Control.Monad.State               (StateT (..))
 import           Data.Aeson                        hiding (Bool)
-import           Data.Foldable                     (foldlM, foldr, foldrM, for_)
+import           Data.Foldable                     (foldlM, foldr, foldrM, for_, Foldable (toList))
 import           Data.Function                     (on)
-import           Data.Functor                      ((<$>))
+import           Data.Functor                      ((<$>), Functor (..))
 import           Data.Functor.Rep                  (Representable (..))
 import           Data.Kind                         (Type)
 import           Data.List                         (unfoldr, zip)
@@ -59,7 +60,7 @@ import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
@@ -77,6 +78,15 @@ deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vect
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (UInt n r c)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (UInt n r c)
+
+toNative ::
+  forall n r c a.
+  (Symbolic c, KnownNat n, KnownRegisterSize r, BaseField c ~ a) =>
+  (KnownNat (GetRegisterSize a n r)) =>
+  UInt n r c -> FieldElement c
+toNative (UInt rs) = FieldElement $ symbolicF rs
+  (Par1 . fromConstant . (`vectorToNatural` registerSize @(BaseField c) @n @r))
+  (fmap Par1 . hornerW @(GetRegisterSize a n r) . toList)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (UInt n r c) where
     fromConstant c = UInt . embed @c $ naturalToVector @c @n @r c
