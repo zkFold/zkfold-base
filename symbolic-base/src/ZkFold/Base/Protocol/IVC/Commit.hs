@@ -47,23 +47,21 @@ class PedersonSetup s c where
 
 instance {-# OVERLAPPING #-}
     ( CyclicGroup g
-    , Random (ScalarFieldOf g)
     ) => PedersonSetup [] g where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
-        let x = fst $ random $ mkStdGen 0 :: ScalarFieldOf g
+        let x = fromConstant $ toConstant $ fst $ random @(Zp BLS12_381_Scalar) $ mkStdGen 0 :: ScalarFieldOf g
         in iterate (scale x) pointGen
 
 instance
     ( CyclicGroup g
-    , Random (ScalarFieldOf g)
     , Representable s
     , Binary (Rep s)
     , Exponent (ScalarFieldOf g) Natural
     ) => PedersonSetup s g where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
-        let x = fst $ random $ mkStdGen 0 :: ScalarFieldOf g
+        let x = fromConstant $ toConstant $ fst $ random @(Zp BLS12_381_Scalar) $ mkStdGen 0 :: ScalarFieldOf g
             f = unLittleEndian . decode . encode
         in tabulate (\i -> scale (x^f i) pointGen)
 

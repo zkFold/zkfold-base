@@ -8,7 +8,6 @@ import           Data.Function                     (const, ($), (.))
 import           Data.Proxy                        (Proxy (..))
 import           Data.Tuple                        (snd)
 import           GHC.Generics                      (Par1 (..), U1 (..))
-import           Prelude                           (type (~))
 import qualified Prelude                           as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -47,8 +46,9 @@ instance Symbolic c => SymbolicData (FieldElementW c) where
 instance Symbolic c => SymbolicInput (FieldElementW c) where
   isValid = const true
 
-instance (Symbolic c, P.Eq (WitnessField c), BooleanOf (FieldElementW c) ~ Bool c)
+instance (Symbolic c, P.Eq (WitnessField c))
     => Eq (FieldElementW c) where
+  type BooleanOf (FieldElementW c) = Bool c
   FieldElementW x == FieldElementW y = if x P.== y then true else false
   FieldElementW x /= FieldElementW y = if x P./= y then true else false
 

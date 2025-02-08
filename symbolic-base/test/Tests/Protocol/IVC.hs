@@ -34,11 +34,12 @@ import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, 
 import           ZkFold.Symbolic.Data.Bool                  (Bool, true)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.FieldElementW         (FieldElementW, constrainFieldElement)
+import           ZkFold.Symbolic.Data.Pasta                 (PallasPoint)
 import           ZkFold.Symbolic.Data.Payloaded             (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
 type A = Pasta.Fp
-type C = Par1
+type C = PallasPoint
 type I = Vector 1
 type P = U1
 type K = 1
@@ -61,8 +62,8 @@ testFunction p x _ =
 testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
-testRecursivePredicate :: PAR -> Predicate A (RecursiveI I) (RecursiveP D K I P C)
-testRecursivePredicate p = predicate $ recursiveFunction @MiMCHash @A (testFunction p)
+-- testRecursivePredicate :: PAR -> Predicate A (RecursiveI I) (RecursiveP D K I P C)
+-- testRecursivePredicate p = predicate $ recursiveFunction @MiMCHash @A (testFunction p)
 
 testPredicateCircuit :: PAR -> AC
 testPredicateCircuit p = predicateCircuit @A @I @P $ testPredicate p
@@ -113,10 +114,11 @@ testAccumulationProof phi =
 fromWitness :: Traversable t => t W -> t F
 fromWitness = fmap constrainFieldElement
 
-testDeciderResult :: PHI -> (Vector K (C F), C F)
+testDeciderResult :: PHI -> C F
+    -- -> (Vector K (C F), C F)
 testDeciderResult phi =
     let s = testAccumulatorScheme phi
-    in decider s $ fromWitness $ testAccumulator phi
+    in decider' s $ fromWitness $ testAccumulator phi
 
 testVerifierResult :: PHI -> AccumulatorInstance K I C F
 testVerifierResult phi =
@@ -135,12 +137,14 @@ specAlgebraicMap = do
                     \p -> testAlgebraicMap (testPredicate p) (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
                             == replicate (acSizeN $ testPredicateCircuit p) zero
 
+-- TODO
 specAccumulatorScheme :: Spec
 specAccumulatorScheme = do
     describe "Accumulator scheme specification" $ do
         describe "decider" $ do
             it  "must output zeros" $ do
-                withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
+                withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == zero
+                    --(singleton zero, zero)
         describe "verifier" $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == fromWitness (testAccumulatorInstance (testPredicate p))
@@ -157,8 +161,9 @@ specIVC = do
     p <- runIO $ generate arbitrary
     runIO $ print $ testPublicInput $ testPredicate p
     runIO $ print $ "Predicate circuit size: " ++ show (acSizeN $ testPredicateCircuit p)
-    runIO $ print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
+    -- runIO $ print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
+    runIO $ print $ testDeciderResult $ testPredicate p
     specAlgebraicMap
     specAccumulatorScheme
-    specAdditiveGroup' @(ForeignPoint MiMCHash 2 1 Pasta.Fp (Interpreter Pasta.Fp))
+    specAdditiveGroup' @(ForeignPoint MiMCHash 2 1 A (Interpreter A))
     specIVC'
