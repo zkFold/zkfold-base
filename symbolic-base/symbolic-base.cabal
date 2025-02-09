@@ -269,6 +269,9 @@ test-suite symbolic-base-test
       Tests.Algebra.Univariate.PolyVec
       Tests.Data.Binary
       Tests.Protocol.IVC
+      Tests.Protocol.IVC.CycleFold
+      Tests.Protocol.IVC.Internal
+      Tests.Protocol.IVC.Types
       Tests.Protocol.NonInteractiveProof
       Tests.Protocol.Plonkup
       Tests.Symbolic.Algorithm.Blake2b

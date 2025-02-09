@@ -3,16 +3,17 @@
 
 module Tests.Protocol.IVC (specIVC) where
 
-import           GHC.Generics                               (Par1, U1 (..), type (:*:) (..), type (:.:) (..))
+import           GHC.Generics                               (Par1, U1 (..), type (:.:) (..))
 import           GHC.IsList                                 (IsList (..))
 import           Prelude                                    hiding (Bool (..), Num (..), pi, replicate, sum, (+))
 import           Test.Hspec                                 (Spec, describe, it, runIO)
 import           Test.QuickCheck                            (arbitrary, generate, property, withMaxSuccess)
 import           Tests.Algebra.Group                        (specAdditiveGroup')
+import           Tests.Protocol.IVC.CycleFold               (specCycleFold)
+import           Tests.Protocol.IVC.Types
 
 import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..), Ring, ToConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Number           (Natural, type (-))
-import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta    as Pasta
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, evalPolyVec)
 import           ZkFold.Base.Data.Vector                    (Vector (..), item, singleton, unsafeToVector)
 import           ZkFold.Base.Protocol.IVC                   (ivc)
@@ -23,35 +24,17 @@ import           ZkFold.Base.Protocol.IVC.AlgebraicMap      (AlgebraicMap, algeb
 import           ZkFold.Base.Protocol.IVC.Commit            ()
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
 import           ZkFold.Base.Protocol.IVC.CycleFold         (ForeignPoint)
-import           ZkFold.Base.Protocol.IVC.FiatShamir        (FiatShamir, fiatShamir)
+import           ZkFold.Base.Protocol.IVC.FiatShamir        (fiatShamir)
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle            (MiMCHash)
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.RecursiveFunction (RecursiveI (..), RecursiveP, recursiveFunction)
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtocol)
 import           ZkFold.Prelude                             (replicate)
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, acSizeN)
+import           ZkFold.Symbolic.Compiler                   (acSizeN)
 import           ZkFold.Symbolic.Data.Bool                  (Bool, true)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
-import           ZkFold.Symbolic.Data.FieldElementW         (FieldElementW, constrainFieldElement)
-import           ZkFold.Symbolic.Data.Pasta                 (PallasPoint)
 import           ZkFold.Symbolic.Data.Payloaded             (Payloaded (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
-
-type A = Pasta.Fp
-type C = PallasPoint
-type I = Vector 1
-type P = U1
-type K = 1
-type CTX = Interpreter A
-type AC = ArithmeticCircuit A (Vector 1 :*: U1) (Vector 1) (Vector 1)
-type W = FieldElementW CTX
-type F = FieldElement CTX
-type PHI = Predicate A I P
-type SPS = FiatShamir 1 A I P C
-type D = 2
-type PARDEG = 5
-type PAR = PolyVec A PARDEG
 
 testFunction :: forall f . (Ring f)
     => PAR -> Vector 1 f -> U1 f -> Vector 1 f
@@ -62,8 +45,8 @@ testFunction p x _ =
 testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
--- testRecursivePredicate :: PAR -> Predicate A (RecursiveI I) (RecursiveP D K I P C)
--- testRecursivePredicate p = predicate $ recursiveFunction @MiMCHash @A (testFunction p)
+testRecursivePredicate :: PAR -> Predicate A (RecursiveI I) (RecursiveP D K I P Par1)
+testRecursivePredicate p = predicate $ recursiveFunction @MiMCHash @A (testFunction p)
 
 testPredicateCircuit :: PAR -> AC
 testPredicateCircuit p = predicateCircuit @A @I @P $ testPredicate p
@@ -110,9 +93,6 @@ testAccumulationProof :: PHI -> Vector (D - 1) (C W)
 testAccumulationProof phi =
     let s = testAccumulatorScheme phi
     in snd $ prover s emptyAccumulator $ testInstanceProofPair phi
-
-fromWitness :: Traversable t => t W -> t F
-fromWitness = fmap constrainFieldElement
 
 testDeciderResult :: PHI -> C F
     -- -> (Vector K (C F), C F)
@@ -161,8 +141,9 @@ specIVC = do
     p <- runIO $ generate arbitrary
     runIO $ print $ testPublicInput $ testPredicate p
     runIO $ print $ "Predicate circuit size: " ++ show (acSizeN $ testPredicateCircuit p)
-    -- runIO $ print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
+    runIO $ print $ "Recursive circuit size: " ++ show (acSizeN $ predicateCircuit $ testRecursivePredicate p)
     runIO $ print $ testDeciderResult $ testPredicate p
+    specCycleFold
     specAlgebraicMap
     specAccumulatorScheme
     specAdditiveGroup' @(ForeignPoint MiMCHash 2 1 A (Interpreter A))

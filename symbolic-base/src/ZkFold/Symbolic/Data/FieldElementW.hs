@@ -4,24 +4,28 @@
 
 module ZkFold.Symbolic.Data.FieldElementW where
 
-import           Data.Function                     (const, ($), (.))
-import           Data.Proxy                        (Proxy (..))
-import           Data.Tuple                        (snd)
-import           GHC.Generics                      (Par1 (..), U1 (..))
-import qualified Prelude                           as P
+import           Data.Function                               (const, ($), (.))
+import           Data.Functor                                ((<$>))
+import           Data.Proxy                                  (Proxy (..))
+import           Data.Tuple                                  (snd)
+import           GHC.Generics                                (Par1 (..), U1 (..))
+import qualified Prelude                                     as P
+import           Test.QuickCheck                             (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number  (KnownNat, Log2, Natural, type (+), type (-))
-import           ZkFold.Base.Control.HApplicative  (hunit)
-import           ZkFold.Base.Data.Vector           (Vector)
-import           ZkFold.Symbolic.Class             (Symbolic (..), embedW)
-import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (false), false, true)
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Log2, Natural, type (+), type (-))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Control.HApplicative            (hunit)
+import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Symbolic.Class                       (Symbolic (..), embedW)
+import           ZkFold.Symbolic.Data.Bool                   (Bool (..), BoolType (false), false, true)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Conditional  (Conditional (..))
-import           ZkFold.Symbolic.Data.Eq           (Eq (..))
-import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import           ZkFold.Symbolic.Data.Input        (SymbolicInput (..))
-import           ZkFold.Symbolic.MonadCircuit      (ResidueField (..))
+import           ZkFold.Symbolic.Data.Conditional            (Conditional (..))
+import           ZkFold.Symbolic.Data.Eq                     (Eq (..))
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
+import           ZkFold.Symbolic.Data.Input                  (SymbolicInput (..))
+import           ZkFold.Symbolic.MonadCircuit                (ResidueField (..))
 
 newtype FieldElementW c = FieldElementW { fromFieldElementW :: WitnessField c }
 
@@ -33,6 +37,8 @@ unconstrainFieldElement = FieldElementW . unPar1 . witnessF . fromFieldElement
 
 deriving newtype instance P.Show (WitnessField c) => P.Show (FieldElementW c)
 deriving newtype instance P.Eq (WitnessField c) => P.Eq (FieldElementW c)
+instance FromConstant Natural (WitnessField c) => Arbitrary (FieldElementW c) where
+  arbitrary = FieldElementW . fromConstant . toConstant <$> arbitrary @(Zp BLS12_381_Scalar)
 
 deriving newtype instance (Symbolic c, Euclidean (IntegralOf (WitnessField c)))
   => ResidueField (FieldElementW c)

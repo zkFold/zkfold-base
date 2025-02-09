@@ -1,5 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext where
 
@@ -9,10 +10,12 @@ import           Data.Functor.Rep                           (Representable (..),
 import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
 import           GHC.Generics                               (Generic, Generic1, Par1 (..))
-import           Prelude                                    (Foldable, Functor, Traversable, type (~), ($))
+import           Prelude                                    (Foldable, Functor, Traversable, type (~), ($), return)
+import qualified Prelude                                    as Haskell
+import           Test.QuickCheck                            (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class            (AdditiveSemigroup (..), FiniteField, Scale (..), zero, (*),
-                                                             (+), (-))
+                                                             (+), (-), one)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
@@ -44,6 +47,9 @@ data NativeOperation f = NativeOperation
     }
     deriving (Generic, Generic1, Functor, Foldable, Traversable)
 
+instance Haskell.Eq (PrimaryGroup f) => Haskell.Eq (NativeOperation f) where
+    op1 == op2 = opRes op1 Haskell.== opRes op2
+
 opInit :: FiniteField f => f -> NativeOperation f
 opInit s = NativeOperation
     { opS   = zero
@@ -69,6 +75,19 @@ instance Binary a => Binary (NativeOperation a)
 
 instance NFData1 NativeOperation
 
+instance
+    ( FiniteField f
+    , Arbitrary (PrimaryField f)
+    ) => Arbitrary (NativeOperation f) where
+    arbitrary = do
+        s <- arbitrary
+        g <- arbitrary
+        h <- arbitrary
+        op <- arbitrary
+        return $ if op
+            then NativeOperation s g h (g + h) zero
+            else NativeOperation s g h (scale s g) one
+
 --------------------------------------------------------------------------------
 
 data NativePayload f = NativePayload (PrimaryField f) (PrimaryGroup f) (PrimaryGroup f) (Par1 f)
@@ -83,6 +102,17 @@ instance Representable NativePayload
 instance Binary a => Binary (NativePayload a)
 
 instance NFData1 NativePayload
+
+instance
+    ( FiniteField f
+    , Arbitrary (PrimaryField f)
+    ) => Arbitrary (NativePayload f) where
+    arbitrary = do
+        s <- arbitrary
+        g <- arbitrary
+        h <- arbitrary
+        op <- arbitrary
+        return $ NativePayload s g h (if op then zero else one)
 
 --------------------------------------------------------------------------------
 
