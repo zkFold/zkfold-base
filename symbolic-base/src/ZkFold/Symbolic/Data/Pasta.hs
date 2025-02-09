@@ -14,62 +14,43 @@ import qualified Prelude                                 as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta (FqModulus)
 import           ZkFold.Base.Data.Vector                 (Vector)
-import           ZkFold.Symbolic.Class                   (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Class              (Context)
-import           ZkFold.Symbolic.Data.Combinators        (KnownRegisterSize, RegisterSize (..), NumberOfRegisters)
+import           ZkFold.Symbolic.Data.Combinators        (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq                 (SymbolicEq, Eq (BooleanOf), (==))
-import           ZkFold.Symbolic.Data.UInt               (UInt (..))
-
---------------------------------- UInt instances ---------------------------------
-
-instance (KnownNat (2^n), KnownNat (Log2 (2^n-1)+1)) => Finite (UInt n r ctx) where
-  type Order (UInt n r ctx) = 2^n
-
-instance (KnownNat n, KnownRegisterSize r, Symbolic ctx) => Exponent (UInt n r ctx) P.Integer where
-    (^) = intPow
-
--- TODO: optimize this
-instance (KnownNat n, KnownRegisterSize r, Symbolic ctx) => MultiplicativeGroup (UInt n r ctx) where
-  invert x = natPow x (2 P.^ (value @n) -! 2)
-
-instance (KnownNat n, KnownRegisterSize r, Symbolic ctx) => Field (UInt n r ctx) where
-  finv = invert
-
-instance (KnownNat n, Symbolic ctx, NumberOfRegisters (BaseField ctx) n (Fixed 1) ~ n) => BinaryExpansion (UInt n (Fixed 1) ctx) where
-  type Bits (UInt n (Fixed 1) ctx) = ctx (Vector n)
-  binaryExpansion (UInt x) = x
-  fromBinary = UInt
+import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA)
 
 ------------------------------ Weierstrass instances ------------------------------
 
 instance Field field => WeierstrassCurve "Pasta-Sym" field where
   weierstrassB = fromConstant (5 :: Natural)
 
--- TODO: use the actual scalar field
 instance
   ( Finite field
   , WeierstrassCurve "Pasta-Sym" field
+  , KnownFFA FqModulus (Fixed 1) (Context field)
   , SymbolicEq field
   ) => CyclicGroup (Weierstrass "Pasta-Sym" (Point field)) where
-    type ScalarFieldOf (Weierstrass "Pasta-Sym" (Point field)) = UInt 255 (Fixed 1) (Context field)
+    type ScalarFieldOf (Weierstrass "Pasta-Sym" (Point field)) = FFA FqModulus (Fixed 1) (Context field)
     pointGen = pointXY
       (fromConstant (value @(Order field) -! 1))
       (fromConstant (0x02 :: Natural))
 
 instance
   ( WeierstrassCurve "Pasta-Sym" field
+  , KnownFFA FqModulus (Fixed 1) (Context field)
   , SymbolicEq field
   , Context field ~ ctx
-  ) => Scale (UInt 255 (Fixed 1) ctx) (Weierstrass "Pasta-Sym" (Point field)) where
+  ) => Scale (FFA FqModulus (Fixed 1) ctx) (Weierstrass "Pasta-Sym" (Point field)) where
 
     scale sc x = sum $ P.zipWith (\b p -> bool @(Bool ctx) zero p (isSet bits b)) [upper, upper -! 1 .. 0] (P.iterate (\e -> e + e) x)
         where
             bits :: ByteString 255 ctx
-            bits = ByteString $ binaryExpansion sc
+            bits = binaryExpansion sc
 
             upper :: Natural
             upper = 255 -! 1
@@ -111,23 +92,26 @@ instance (WeierstrassCurve "Pasta-Sym" field, SymbolicEq field)
 instance
   ( Finite field
   , WeierstrassCurve "Pasta-Sym" field
+  , KnownFFA FqModulus (Fixed 1) (Context field)
   , SymbolicEq field
   ) => CyclicGroup (PallasPoint field) where
-    type ScalarFieldOf (PallasPoint field) = UInt 255 (Fixed 1) (Context field)
+    type ScalarFieldOf (PallasPoint field) = FFA FqModulus (Fixed 1) (Context field)
     pointGen = fromWeierstrass pointGen
 instance
   ( WeierstrassCurve "Pasta-Sym" field
+  , KnownFFA FqModulus (Fixed 1) (Context field)
   , SymbolicEq field
   , ctx ~ Context field
-  ) => Scale (UInt 255 (Fixed 1) ctx) (PallasPoint field) where
+  ) => Scale (FFA FqModulus (Fixed 1) ctx) (PallasPoint field) where
     scale sc p = fromWeierstrass $ scale sc $ toWeierstrass p
 
 instance {-# INCOHERENT #-}
   ( WeierstrassCurve "Pasta-Sym" field
+  , KnownFFA FqModulus (Fixed 1) (Context field)
   , SymbolicEq field
   , BinaryExpansion field
   , Bits field ~ ctx (Vector (NumberOfBits field))
   , Log2 (Order field - 1) ~ 254
   , ctx ~ Context field
   ) => Scale field (PallasPoint field) where
-    scale x = scale (fromBinary @(UInt 255 (Fixed 1) ctx) $ binaryExpansion x)
+    scale x = scale (fromBinary @(FFA FqModulus (Fixed 1) ctx) $ ByteString $ binaryExpansion x)
