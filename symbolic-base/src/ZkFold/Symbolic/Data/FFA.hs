@@ -9,11 +9,11 @@ module ZkFold.Symbolic.Data.FFA (FFA (..), KnownFFA) where
 
 import           Control.DeepSeq                   (NFData)
 import           Control.Monad                     (Monad (..))
-import           Data.Bits                         (Bits (..))
+import           Data.Bits                         (shiftL)
 import           Data.Bool                         (otherwise)
-import           Data.Function                     (const, ($))
+import           Data.Function                     (const, ($), (.))
+import           Data.Functor                      (($>))
 import           Data.Functor.Rep                  (Representable (..))
-import           Data.Ord                          (Ord (..), (<))
 import           Data.Proxy                        (Proxy (..))
 import           Data.Traversable                  (Traversable (..))
 import           Data.Type.Equality                (type (~))
@@ -25,17 +25,20 @@ import           Text.Show                         (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field   (Zp)
-import           ZkFold.Base.Algebra.Basic.Number  (KnownNat, Prime, type (*), value)
+import           ZkFold.Base.Algebra.Basic.Number  (KnownNat, Prime, type (*), type (^), value)
 import           ZkFold.Base.Data.Vector           (Vector)
-import           ZkFold.Symbolic.Class             (Arithmetic, Symbolic (..), symbolicF)
+import           ZkFold.Symbolic.Class             (Arithmetic, Symbolic (..), fromCircuit2F, symbolicF)
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString   (ByteString)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Combinators  (Ceil, KnownRegisterSize, KnownRegisters, NumberOfRegisters)
+import           ZkFold.Symbolic.Data.Combinators  (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize, KnownRegisters,
+                                                    NumberOfRegisters, Resize (..))
 import           ZkFold.Symbolic.Data.Conditional  (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput (..))
-import           ZkFold.Symbolic.Data.UInt         (UInt (..), natural, register)
+import           ZkFold.Symbolic.Data.Ord          (Ord (..))
+import           ZkFold.Symbolic.Data.UInt         (OrdWord, UInt (..), natural, register, toNative)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..))
 
@@ -51,15 +54,27 @@ data FFA p r c = FFA
   }
   deriving (Generic)
 
+type FFAMaxValue p q = q * (2 ^ FFAUIntSize p q)
+
+type FFAMaxBits p c = NumberOfBits (Zp (FFAMaxValue p (Order (BaseField c))))
+
 type KnownFFA p r c =
   ( KnownNat (FFAUIntSize p (Order (BaseField c)))
   , KnownNat p
   , KnownRegisterSize r
-  , KnownRegisters c (FFAUIntSize p (Order (BaseField c))) r)
+  , KnownRegisters c (FFAUIntSize p (Order (BaseField c))) r
+  , KnownNat (FFAMaxBits p c)
+  , KnownNat (GetRegisterSize (BaseField c) (FFAMaxBits p c) r)
+  , KnownRegisters c (FFAMaxBits p c) r
+  , KnownNat (Ceil (GetRegisterSize (BaseField c) (FFAMaxBits p c) r) OrdWord)
+  , KnownRegisters c (NumberOfBits (Zp p)) r
+  , KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (Zp p)) r)
+  , KnownNat (NumberOfBits (Zp p)))
 
 instance (Symbolic c, KnownFFA p r c) => SymbolicData (FFA p r c)
 instance (Symbolic c, KnownFFA p r c) => SymbolicInput (FFA p r c) where
-  isValid (FFA nx ux) = isValid (nx, ux) -- TODO: add range check
+  isValid ffa@(FFA _ ux) =
+    isValid ux && toUInt @(FFAMaxBits p c) ffa < fromConstant (value @p)
 instance (NFData (FieldElement c), NFData (UIntFFA p r c)) => NFData (FFA p r c)
 instance (Symbolic c, KnownFFA p r c, b ~ Bool c) => Conditional b (FFA p r c)
 instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
@@ -186,7 +201,7 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
       (d, nm, um) = restore $ const
         ( symbolicF (arithmetize (nx, ux, ny, uy) Proxy)
             (\((fromFFA @p @r -> a) :*: (fromFFA @p @r -> b)) ->
-              Par1 (if a + b >= p then one else zero)
+              Par1 (if a + b Prelude.>= p then one else zero)
                 :*: toFFA @p @r ((a + b) `mod` p)
             )
             \((valueFFA @p @r @c -> a) :*: (valueFFA @p @r @c -> b)) -> do
@@ -230,7 +245,7 @@ instance (Symbolic c, KnownFFA p r c) => Ring (FFA p r c)
 
 instance (Symbolic c, KnownFFA p r c, Prime p) => Exponent (FFA p r c) Integer where
   x ^ a
-    | neg < pos = finv x ^ neg
+    | neg Prelude.< pos = finv x ^ neg
     | otherwise = x ^ pos
     where
       pos = Prelude.fromIntegral (a `mod` Prelude.fromIntegral (value @p -! 1))
@@ -249,7 +264,7 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
             (\(fromFFA @p @r -> x) ->
               let l0 = negate (bezoutL p x)
                   r0 = bezoutR p x
-                  (l, r) = if r0 < 0 then (l0 + x, r0 + p) else (l0, r0)
+                  (l, r) = if r0 Prelude.< 0 then (l0 + x, r0 + p) else (l0, r0)
                in toFFA @p @r l :*: toFFA @p @r r
             )
             \(valueFFA @p @r @c -> x) -> do
@@ -277,6 +292,47 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
               return (ni :*: ui)
         , U1 :*: U1)
 
+instance Finite (Zp p) => Finite (FFA p r c) where
+  type Order (FFA p r c) = p
 
-instance Finite (Zp p) => Finite (FFA p r b) where
-  type Order (FFA p r b) = p
+instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
+  type Bits (FFA p r c) = ByteString (NumberOfBits (Zp p)) c
+  binaryExpansion = from . toUInt @(NumberOfBits (Zp p))
+  fromBinary = fromUInt @(NumberOfBits (Zp p)) . from
+
+fromUInt ::
+  forall n p r c.
+  (Symbolic c, KnownFFA p r c) =>
+  (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r)) =>
+  UInt n r c -> FFA p r c
+fromUInt ux = FFA (toNative ux) (resize ux)
+
+toUInt ::
+  forall n p r c.
+  (Symbolic c, KnownFFA p r c) =>
+  (KnownNat n, KnownNat (NumberOfRegisters (BaseField c) n r)) =>
+  (KnownNat (GetRegisterSize (BaseField c) n r)) =>
+  FFA p r c -> UInt n r c
+toUInt x = uy
+  where
+    -- | Computes unconstrained UInt value
+    us :: UInt n r c
+    us = restore $ const
+      ( symbolicF (arithmetize x Proxy)
+          (\(fromFFA @p @r -> v) ->
+            let UInt (Interpreter f) = fromConstant v
+                  :: UInt n r (Interpreter (BaseField c))
+             in f
+          )
+          \(valueFFA @p @r @c -> v) ->
+            traverse unconstrained $ tabulate (register @c @n @r v)
+      , U1)
+    -- | Constraints:
+    -- * UInt registers are indeed registers;
+    -- * casting back yields source residues.
+    Bool ck = isValid us && fromUInt us == x
+    -- | Sew constraints into result.
+    uy = restore $ const
+      ( fromCircuit2F (arithmetize us Proxy) ck
+          \xi (Par1 b) -> constraint (($ b) - one) $> xi
+      , U1)

@@ -18,7 +18,7 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Prime, value)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
-import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators            (KnownRegisterSize (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.FFA                    (FFA (FFA), KnownFFA)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (FieldElement))
 import           ZkFold.Symbolic.Data.UInt                   (UInt (..))
@@ -34,11 +34,14 @@ specFFA :: Spec
 specFFA = do
   specFFA' @BLS12_381_Scalar @Prime256_1 @Auto
   specFFA' @BLS12_381_Scalar @Prime256_2 @Auto
+  specFFA' @BLS12_381_Scalar @Prime256_1 @(Fixed 16)
+  specFFA' @BLS12_381_Scalar @Prime256_2 @(Fixed 16)
 
 specFFA' :: forall p q r. (PrimeField (Zp p), Prime q, KnownFFA q r (Interpreter (Zp p))) => Spec
 specFFA' = do
   let q = value @q
-  describe ("FFA " ++ show q ++ " specification") $ do
+  let r = regSize @r
+  describe ("FFA " ++ show q ++ " " ++ show r ++ " specification") $ do
     it "FFA(Zp) embeds Zq" $ \(x :: Zp q) ->
       toConstant (fromConstant x :: FFA q r (Interpreter (Zp p))) === x
     it "FFA(AC) embeds Zq" $ \(x :: Zp q) ->
