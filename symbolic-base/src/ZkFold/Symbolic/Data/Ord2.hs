@@ -9,11 +9,14 @@ module ZkFold.Symbolic.Data.Ord2
   ) where
 
 import           Control.DeepSeq                  (NFData)
+import           Data.Foldable                    (foldr)
+import           Data.Functor.Rep                 (mzipWithRep)
 import           GHC.Generics
-import           Prelude                          (Monoid, Semigroup, Show, fmap, type (~), ($), (<$>), (<>))
+import           Prelude                          (Monoid, Semigroup, Show, fmap, type (~), ($), (<$>), (<>), (.))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
@@ -102,6 +105,33 @@ instance Symbolic c => IsOrdering (Ordering c) where
   lt = Ordering $ embed (Par1 (negate one))
   eq = Ordering $ embed (Par1 zero)
   gt = Ordering $ embed (Par1 one)
+
+instance (Symbolic c, LayoutFunctor f)
+  => Ord (c f) where
+    type OrderingOf (c f) = Ordering c
+    ordering x y z (Ordering o) = restore $ \s ->
+      ( symbolic4F o (arithmetize x s) (arithmetize y s) (arithmetize z s)
+          ( \(Par1 c) l e g ->
+              if c Prelude.== negate one then l
+              else if c Prelude.== zero then e else g
+          )
+          Prelude.undefined
+      , Prelude.undefined
+      )
+    compare x y =
+        let
+            result = symbolic2F x y
+                ( mzipWithRep $ \i j -> case Prelude.compare i j of
+                    Prelude.LT -> negate one
+                    Prelude.EQ -> zero
+                    Prelude.GT -> one
+                )
+                (\x' y' -> do
+                    Prelude.undefined
+                )
+        in
+          foldr ((<>) . Ordering) eq (unpacked result)
+
 instance Symbolic c => Ord (Bool c) where
   type OrderingOf (Bool c) = Ordering c
   ordering (Bool blt) (Bool beq) (Bool bgt) (Ordering o) =

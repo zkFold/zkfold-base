@@ -93,6 +93,12 @@ fromCircuit3F ::
 -- | Runs the ternary @'CircuitFun'@ in a generic context.
 fromCircuit3F x y z m = fromCircuit2F (hpair x y) z (uncurryP m)
 
+symbolic4F ::
+  (Symbolic c, BaseField c ~ a) => c f -> c g -> c h -> c k ->
+  (f a -> g a -> h a -> k a -> j a) -> CircuitFun '[f, g, h, k] j c -> c j
+-- | Runs the ternary function from @f@, @g@ and @h@ into @k@ in a context @c@.
+symbolic4F x y z w f m = symbolic3F (hpair x y) z w (uncurryP f) (uncurryP m)
+
 fromCircuit4F ::
   Symbolic c => c f -> c g -> c h -> c i -> CircuitFun '[f, g, h, i] k c -> c k
 -- | Runs the ternary @'CircuitFun'@ in a generic context.
