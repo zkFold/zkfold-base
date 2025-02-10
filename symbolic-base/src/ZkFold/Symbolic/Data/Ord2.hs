@@ -1,4 +1,4 @@
-{-# LANGUAGE DerivingStrategies        #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -8,9 +8,9 @@ module ZkFold.Symbolic.Data.Ord2
   , GOrd (..)
   ) where
 
-import           Control.DeepSeq                 (NFData)
+import           Control.DeepSeq                  (NFData)
 import           GHC.Generics
-import           Prelude                         (Monoid, Semigroup, fmap, type (~), ($), (<$>), Show, (<>))
+import           Prelude                          (Monoid, Semigroup, Show, fmap, type (~), ($), (<$>), (<>))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -19,7 +19,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.MonadCircuit    (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
 class Monoid ordering => IsOrdering ordering where
   lt, eq, gt :: ordering
