@@ -2,22 +2,24 @@ module Tests.Protocol.IVC.CycleFold where
 
 import           Prelude                                           hiding (Bool (..), Num (..), pi, replicate, sum, (+))
 import qualified Prelude                                           as Haskell
-import           Test.Hspec                                        (Spec, runIO, describe, it)
+import           Test.Hspec                                        (Spec, describe, it, runIO)
 import           Test.QuickCheck                                   (Arbitrary (..), property, withMaxSuccess)
-
 import           Tests.Protocol.IVC.Types
 
 import           ZkFold.Base.Algebra.Basic.Class                   (zero)
 import           ZkFold.Base.Data.Vector                           (singleton)
+import           ZkFold.Base.Protocol.IVC.Accumulator              (Accumulator (..), emptyAccumulator,
+                                                                    emptyAccumulatorInstance)
+import           ZkFold.Base.Protocol.IVC.AccumulatorScheme        (decider, prover, verifier)
 import           ZkFold.Base.Protocol.IVC.Commit                   ()
+import           ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext (NativeOperation, opAccumulatorScheme, opPredicate,
+                                                                    opProtocol)
+import           ZkFold.Base.Protocol.IVC.CycleFold.Utils          (SecondaryGroup)
+import           ZkFold.Base.Protocol.IVC.NARK                     (NARKInstanceProof (..), NARKProof (..),
+                                                                    narkInstanceProof)
+import           ZkFold.Base.Protocol.IVC.Oracle                   (MiMCHash)
 import           ZkFold.Base.Protocol.IVC.Predicate                (Predicate (..))
 import           ZkFold.Symbolic.Compiler                          (acSizeN)
-import           ZkFold.Base.Protocol.IVC.Accumulator              (Accumulator(..), emptyAccumulator, emptyAccumulatorInstance)
-import           ZkFold.Base.Protocol.IVC.AccumulatorScheme        (prover, verifier, decider)
-import           ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext (NativeOperation, opPredicate, opAccumulatorScheme, opProtocol)
-import           ZkFold.Base.Protocol.IVC.CycleFold.Utils          (SecondaryGroup)
-import           ZkFold.Base.Protocol.IVC.NARK                     (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
-import           ZkFold.Base.Protocol.IVC.Oracle                   (MiMCHash)
 
 data AccumulationTestData = AccumulationTestData Haskell.Bool Haskell.Bool
     deriving Show

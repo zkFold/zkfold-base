@@ -21,7 +21,7 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Class              (Context)
 import           ZkFold.Symbolic.Data.Combinators        (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.Eq                 (SymbolicEq, Eq (BooleanOf), (==))
+import           ZkFold.Symbolic.Data.Eq                 (Eq (BooleanOf), SymbolicEq, (==))
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA)
 
 ------------------------------ Weierstrass instances ------------------------------

@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Tests.Protocol.IVC.Types where
 

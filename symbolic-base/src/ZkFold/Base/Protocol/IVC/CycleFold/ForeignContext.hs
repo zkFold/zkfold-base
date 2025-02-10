@@ -10,12 +10,12 @@ import           Data.Functor.Rep                           (Representable (..),
 import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
 import           GHC.Generics                               (Generic, Generic1, Par1 (..))
-import           Prelude                                    (Foldable, Functor, Traversable, type (~), ($), return)
+import           Prelude                                    (Foldable, Functor, Traversable, return, type (~), ($))
 import qualified Prelude                                    as Haskell
 import           Test.QuickCheck                            (Arbitrary (..))
 
-import           ZkFold.Base.Algebra.Basic.Class            (AdditiveSemigroup (..), FiniteField, Scale (..), zero, (*),
-                                                             (+), (-), one)
+import           ZkFold.Base.Algebra.Basic.Class            (AdditiveSemigroup (..), FiniteField, Scale (..), one, zero,
+                                                             (*), (+), (-))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
