@@ -192,6 +192,7 @@ eea a b = eea' 1 a b one zero zero one
 
                 rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
 
+
 --------------------------------------------------------------------------------
 
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter (Zp p))) where
