@@ -15,7 +15,7 @@ import           Data.List                        (concatMap, reverse, zipWith)
 import           Data.Proxy                       (Proxy (..))
 import           Data.Traversable                 (traverse)
 import           GHC.Generics
-import           Prelude                          (Monoid, Semigroup, Show, fmap, type (~), ($), (.), (<$>), (<>), map)
+import           Prelude                          (Monoid, Semigroup, Show, fmap, map, type (~), ($), (.), (<$>), (<>))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
