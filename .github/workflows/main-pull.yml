@@ -41,7 +41,7 @@ jobs:
         cabal build all --dry-run
 
     - name: Restore cached dependencies
-      uses: actions/cache/restore@v4.0.1
+      uses: actions/cache/restore@v4
       id: cache
       env:
         key: ${{ matrix.os }}-ghc-${{ matrix.ghc }}-cabal-${{ matrix.cabal }}
