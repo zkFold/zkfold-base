@@ -143,20 +143,15 @@ instance Symbolic c => IsOrdering (Ordering c) where
   eq = Ordering $ embed (Par1 zero)
   gt = Ordering $ embed (Par1 one)
 
-instance (Symbolic c, LayoutFunctor f)
-  => Ord (c f) where
-    type OrderingOf (c f) = Ordering c
-    ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
-    compare x y = bitwiseCompare (getBitsBE x) (getBitsBE y)
+instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
+  type OrderingOf (c f) = Ordering c
+  ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
+  compare = bitwiseCompare `on` getBitsBE
 
 bitwiseCompare :: forall c . Symbolic c => c [] -> c [] -> Ordering c
-bitwiseCompare x y =
-  fold (zipWith (compare `on` Bool) (unpacked x) (unpacked y))
+bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
 
-getBitsBE ::
-  forall c x .
-  (SymbolicOutput x, Context x ~ c) =>
-  x -> c []
+getBitsBE :: forall c f . (Symbolic c, LayoutFunctor f) => c f -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
 getBitsBE x = symbolicF (arithmetize x Proxy)
@@ -170,6 +165,8 @@ instance Symbolic c => Ord (Bool c) where
   compare (Bool b1) (Bool b2) = Ordering $ fromCircuit2F b1 b2 $
     \(Par1 v1) (Par1 v2) -> fmap Par1 $
       newAssigned $ \x -> let x1 = x v1; x2 = x v2 in x1 - x2
+
+deriving newtype instance Symbolic c => Ord (Ordering c)
 
 class
   ( GEq u
