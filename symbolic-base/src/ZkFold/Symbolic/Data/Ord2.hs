@@ -9,10 +9,13 @@ module ZkFold.Symbolic.Data.Ord2
   ) where
 
 import           Control.DeepSeq                  (NFData)
-import           Data.Foldable                    (foldr)
-import           Data.Functor.Rep                 (mzipWithRep)
+import           Data.Foldable                    (fold, toList)
+import           Data.Function                    (on)
+import           Data.List                        (concatMap, reverse, zipWith)
+import           Data.Proxy                       (Proxy (..))
+import           Data.Traversable                 (traverse)
 import           GHC.Generics
-import           Prelude                          (Monoid, Semigroup, Show, fmap, type (~), ($), (.), (<$>), (<>))
+import           Prelude                          (Monoid, Semigroup, Show, fmap, type (~), ($), (.), (<$>), (<>), map)
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -20,6 +23,7 @@ import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Combinators (expansion)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
@@ -109,45 +113,27 @@ instance Symbolic c => IsOrdering (Ordering c) where
 instance (Symbolic c, LayoutFunctor f)
   => Ord (c f) where
     type OrderingOf (c f) = Ordering c
-    ordering x y z (Ordering o) = restore $ \s ->
-      ( symbolic4F o (arithmetize x s) (arithmetize y s) (arithmetize z s)
-          ( \(Par1 c) l e g ->
-              if c Prelude.== negate one then l
-              else if c Prelude.== zero then e else g
-          )
-          Prelude.undefined
-      , Prelude.undefined
-      )
-    compare x y =
-        let
-            result = symbolic2F x y
-                ( mzipWithRep $ \i j -> case Prelude.compare i j of
-                    Prelude.LT -> negate one
-                    Prelude.EQ -> zero
-                    Prelude.GT -> one
-                )
-                (\x' y' -> do
-                    Prelude.undefined
-                )
-        in
-          foldr ((<>) . Ordering) eq (unpacked result)
+    ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
+    compare x y = bitwiseCompare (getBitsBE x) (getBitsBE y)
+
+bitwiseCompare :: forall c . Symbolic c => c [] -> c [] -> Ordering c
+bitwiseCompare x y =
+  fold (zipWith (compare `on` Bool) (unpacked x) (unpacked y))
+
+getBitsBE ::
+  forall c x .
+  (SymbolicOutput x, Context x ~ c) =>
+  x -> c []
+-- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
+-- youngest.
+getBitsBE x = symbolicF (arithmetize x Proxy)
+    (concatMap (reverse . padBits n . map fromConstant . binaryExpansion . toConstant))
+    (fmap (concatMap reverse) . traverse (expansion n) . toList)
+  where n = numberOfBits @(BaseField c)
 
 instance Symbolic c => Ord (Bool c) where
   type OrderingOf (Bool c) = Ordering c
-  ordering (Bool blt) (Bool beq) (Bool bgt) (Ordering o) =
-    Bool $ fromCircuit4F blt beq bgt o $
-      \(Par1 vlt) (Par1 veq) (Par1 vgt) (Par1 vord) -> fmap Par1 $
-        newAssigned $ \x ->
-          let
-            xlt = x vlt
-            xeq = x veq
-            xgt = x vgt
-            xord = x vord
-            half = fromConstant (one // (one + one) :: BaseField c)
-            xIsLT = half * xord * (xord - one)
-            xIsGT = half * xord * (xord + one)
-            xIsEq = one - xord*xord
-          in half * (xIsLT * xlt + xIsEq * xeq + xIsGT * xgt)
+  ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
   compare (Bool b1) (Bool b2) = Ordering $ fromCircuit2F b1 b2 $
     \(Par1 v1) (Par1 v2) -> fmap Par1 $
       newAssigned $ \x -> let x1 = x v1; x2 = x v2 in x1 - x2
