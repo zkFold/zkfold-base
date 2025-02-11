@@ -25,7 +25,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (Witnes
 
 --------------------------------- High-level functions --------------------------------
 
--- | Replaces linear polynoms of the form
+-- | Replaces linear polynomials of the form
 -- @(fromConstant k) * (NewVar nV) + (fromConstant c)@
 -- with a constant variable @fromConstant $ negate c // k@ in an arithmetic circuit
 -- and replaces variable with a constant in witness

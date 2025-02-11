@@ -30,6 +30,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         hpmap,
         -- evaluation functions
         witnessGenerator,
+        witnessGenerator',
         eval,
         eval1,
         exec,
@@ -366,6 +367,7 @@ witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
 
 ----------------------------- Evaluation functions -----------------------------
 
+-- | Generates witness for the arithmetic circuit.
 witnessGenerator ::
   (Arithmetic a, Binary a, Representable p, Representable i) =>
   ArithmeticCircuit a p i o -> p a -> i a -> Map NewVar a
@@ -409,6 +411,20 @@ witnessGenerator circ p i = fst (allWitnesses circ p i)
         in (M.mapKeysMonotonic EqVar eqVars
             <> M.unions (M.mapWithKey ((. fst) . M.mapKeysMonotonic . FoldVar) foldVars),
             snd <$> foldVars)
+
+-- | Generates witness for the arithmetic circuit without FOLD constraints.
+-- Viable options for `f` are `a` and `CircuitWitness a p i`.
+witnessGenerator' :: forall f a p i o.
+  (Representable p, Representable i, ResidueField f, FromConstant a f, Scale a f) =>
+  ArithmeticCircuit a p i o -> p f -> i f -> Map ByteString f
+witnessGenerator' circuit payload inputs =
+  let result = acWitness circuit <&> \k -> runWitnessF k $ \case
+        WExVar eV -> index payload eV
+        WSysVar (InVar iV) -> index inputs iV
+        WSysVar (NewVar (EqVar nV)) -> result M.! nV
+        WSysVar (NewVar (FoldVar _ _)) -> error "Unexpected FOLD constraint"
+        WFoldVar _ _  -> error "Unexpected FOLD constraint"
+  in result
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input map.
 eval1 ::

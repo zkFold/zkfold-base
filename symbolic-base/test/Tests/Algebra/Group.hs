@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use -"                  #-}
 
-module Tests.Algebra.Group (specAdditiveGroup) where
+module Tests.Algebra.Group (specAdditiveGroup, specAdditiveGroup') where
 
 import           Data.Data                                   (Typeable, typeOf)
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
