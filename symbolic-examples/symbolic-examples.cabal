@@ -100,6 +100,7 @@ library
       Examples.Fibonacci
       Examples.LEQ
       Examples.MiMCHash
+      Examples.MerkleTree
       Examples.ReverseList
       Examples.RSA
       Examples.UInt

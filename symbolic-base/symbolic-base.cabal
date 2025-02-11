@@ -283,6 +283,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Data.FFA
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.List
+      Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.UInt
     build-depends:
       base                          >= 4.9 && < 5,
