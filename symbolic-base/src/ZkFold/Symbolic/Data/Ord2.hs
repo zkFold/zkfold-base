@@ -19,6 +19,8 @@ import           Prelude                          (Monoid, Semigroup, Show, fmap
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
+import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
@@ -78,19 +80,50 @@ class
   max x y = ordering y x x (compare x y)
   min x y = ordering x x y (compare x y)
 
--- instance (Prelude.Ord a, Eq a, BooleanOf a ~ Prelude.Bool) => Ord a where
---   type OrderingOf a = Prelude.Ordering
---   ordering ltCase eqCase gtCase = \case
---     Prelude.LT -> ltCase
---     Prelude.EQ -> eqCase
---     Prelude.GT -> gtCase
---   compare = Prelude.compare
---   (<) = (Prelude.<)
---   (<=) = (Prelude.<=)
---   (>) = (Prelude.>)
---   (>=) = (Prelude.>=)
---   min = Prelude.min
---   max = Prelude.max
+instance Ord Natural where
+  type OrderingOf Natural = Prelude.Ordering
+  ordering x y z = \case
+    Prelude.LT -> x; Prelude.EQ -> y; Prelude.GT -> z
+  compare = Prelude.compare
+  (>) = (Prelude.>)
+  (>=) = (Prelude.>=)
+  (<) = (Prelude.<)
+  (<=) = (Prelude.<=)
+  min = Prelude.min
+  max = Prelude.max
+instance Ord Prelude.Bool where
+  type OrderingOf Prelude.Bool = Prelude.Ordering
+  ordering x y z = \case
+    Prelude.LT -> x; Prelude.EQ -> y; Prelude.GT -> z
+  compare = Prelude.compare
+  (>) = (Prelude.>)
+  (>=) = (Prelude.>=)
+  (<) = (Prelude.<)
+  (<=) = (Prelude.<=)
+  min = Prelude.min
+  max = Prelude.max
+instance Ord Prelude.String where
+  type OrderingOf Prelude.String = Prelude.Ordering
+  ordering x y z = \case
+    Prelude.LT -> x; Prelude.EQ -> y; Prelude.GT -> z
+  compare = Prelude.compare
+  (>) = (Prelude.>)
+  (>=) = (Prelude.>=)
+  (<) = (Prelude.<)
+  (<=) = (Prelude.<=)
+  min = Prelude.min
+  max = Prelude.max
+instance KnownNat n => Ord (Zp n) where
+  type OrderingOf (Zp n) = Prelude.Ordering
+  ordering x y z = \case
+    Prelude.LT -> x; Prelude.EQ -> y; Prelude.GT -> z
+  compare = Prelude.compare
+  (>) = (Prelude.>)
+  (>=) = (Prelude.>=)
+  (<) = (Prelude.<)
+  (<=) = (Prelude.<=)
+  min = Prelude.min
+  max = Prelude.max
 
 newtype Ordering c = Ordering (c Par1)
   deriving (Generic)
