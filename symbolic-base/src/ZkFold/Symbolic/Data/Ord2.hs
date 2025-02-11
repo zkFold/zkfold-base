@@ -12,7 +12,7 @@ import           Control.DeepSeq                  (NFData)
 import           Data.Foldable                    (foldr)
 import           Data.Functor.Rep                 (mzipWithRep)
 import           GHC.Generics
-import           Prelude                          (Monoid, Semigroup, Show, fmap, type (~), ($), (<$>), (<>), (.))
+import           Prelude                          (Monoid, Semigroup, Show, fmap, type (~), ($), (.), (<$>), (<>))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
