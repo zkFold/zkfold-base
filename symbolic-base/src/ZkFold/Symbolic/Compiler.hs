@@ -101,7 +101,7 @@ compileIO ::
   , SymbolicData f
   , Context f ~ c
   , Support f ~ s
-  , ToJSON (Layout f (Var a l))
+  , ToJSON (Layout f (ACVar a l))
   , SymbolicInput s
   , Context s ~ c
   , Layout s ~ l

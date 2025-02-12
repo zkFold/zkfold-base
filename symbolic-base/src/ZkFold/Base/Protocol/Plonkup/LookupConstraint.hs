@@ -11,8 +11,9 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Data.ByteString                         (toByteString)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (NewVar (..), SysVar (..))
 
-newtype LookupConstraint i a = LookupConstraint { lkVar :: SysVar i }
+newtype LookupConstraint i a = LookupConstraint { lkVar :: ACSysVar i }
 
 deriving instance Show (Rep i) => Show (LookupConstraint i a)
 deriving instance Eq (Rep i) => Eq (LookupConstraint i a)

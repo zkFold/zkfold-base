@@ -105,14 +105,14 @@ createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par
       return v
 
 -- TODO: make it more readable
-instance (Show a, Show (o (Var a i)), Show (Var a i), Show (Rep i), Haskell.Ord (Rep i)) => Show (ArithmeticCircuit a p i o) where
+instance (Show a, Show (o (ACVar a i)), Show (ACVar a i), Show (Rep i), Haskell.Ord (Rep i)) => Show (ArithmeticCircuit a p i o) where
     show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r)
                           ++ "\n, acRange = " ++ show (acRange r)
                           ++ "\n, acOutput = " ++ show (acOutput r)
                           ++ " }"
 
 -- TODO: add witness generation info to the JSON object
-instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), ToJSON (Rep i)) => ToJSON (ArithmeticCircuit a p i o) where
+instance (ToJSON a, ToJSON (o (ACVar a i)), ToJSONKey a, FromJSONKey (ACVar a i), ToJSON (Rep i)) => ToJSON (ArithmeticCircuit a p i o) where
     toJSON r = object
         [
             "system" .= acSystem r,
@@ -121,7 +121,7 @@ instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), To
         ]
 
 -- TODO: properly restore the witness generation function
-instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a, Haskell.Ord a, Haskell.Ord (Rep i), FromJSON (Rep i)) => FromJSON (ArithmeticCircuit a p i o) where
+instance (FromJSON a, FromJSON (o (ACVar a i)), ToJSONKey (ACVar a i), FromJSONKey a, Haskell.Ord a, Haskell.Ord (Rep i), FromJSON (Rep i)) => FromJSON (ArithmeticCircuit a p i o) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"

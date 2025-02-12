@@ -2,8 +2,8 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         ArithmeticCircuit,
+        ACVar,
         Constraint,
-        Var,
         witnessGenerator,
         -- high-level functions
         optimize,
@@ -68,7 +68,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (SysVar (..), toVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                        (expansion)
 import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))
@@ -140,7 +140,7 @@ acValue = exec
 -- TODO: Check that all arguments have been applied.
 acPrint ::
   (Arithmetic a, Binary a, Show a) =>
-  (Show (o (Var a U1)), Show (o a), Functor o) =>
+  (Show (o (ACVar a U1)), Show (o a), Functor o) =>
   ArithmeticCircuit a U1 U1 o -> IO ()
 acPrint ac = do
     let m = elems (acSystem ac)
