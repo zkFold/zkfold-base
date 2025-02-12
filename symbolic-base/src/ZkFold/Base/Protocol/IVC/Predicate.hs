@@ -3,6 +3,7 @@
 module ZkFold.Base.Protocol.IVC.Predicate where
 
 import           Data.Binary                           (Binary)
+import           Data.Data                             (Typeable)
 import           GHC.Generics                          (U1 (..), (:*:) (..))
 import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
 
@@ -26,6 +27,7 @@ type PredicateAssumptions a i p =
     , Binary a
     , LayoutFunctor i
     , LayoutFunctor p
+    , Typeable a
     )
 
 predicate :: forall a i p . PredicateAssumptions a i p

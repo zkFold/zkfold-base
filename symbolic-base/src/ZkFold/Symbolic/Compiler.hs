@@ -14,6 +14,7 @@ import           Data.Function                              (const, id, (.))
 import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
 import           Data.Tuple                                 (fst, snd)
+import           Data.Typeable                              (Typeable)
 import           GHC.Generics                               (Par1 (Par1), U1 (..))
 import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
                                                              (++))
@@ -71,7 +72,7 @@ compileWith ::
   , Representable p, Representable i
   , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j
   , Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep j)
-  , Ord (Rep i), Ord (Rep j), Binary (Rep q)) =>
+  , Ord (Rep i), Ord (Rep j), Binary (Rep q), Typeable a) =>
   -- | Circuit transformation to apply before optimization.
   (c0 (Layout f) -> c1 (Layout y)) ->
   -- | An algorithm to prepare support argument from the circuit input.
