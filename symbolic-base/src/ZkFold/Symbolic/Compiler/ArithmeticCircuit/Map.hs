@@ -20,6 +20,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Polynomials.Multivariate
 import           ZkFold.Base.Data.ByteString                         (toByteString)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 -- This module contains functions for mapping variables in arithmetic circuits.
 

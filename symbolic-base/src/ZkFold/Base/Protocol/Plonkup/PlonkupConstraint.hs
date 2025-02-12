@@ -20,17 +20,17 @@ isLookupConstraint :: FiniteField a => PlonkupConstraint i a -> a
 isLookupConstraint (ConsLookup _) = one
 isLookupConstraint _              = zero
 
-getA :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> Var a i
+getA :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> ACVar a i
 getA (ConsPlonk c)  = x1 c
 getA (ConsLookup c) = toVar $ lkVar c
 getA ConsExtra      = x1 (toPlonkConstraint zero)
 
-getB :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> Var a i
+getB :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> ACVar a i
 getB (ConsPlonk c)  = x2 c
 getB (ConsLookup c) = toVar $ lkVar c
 getB ConsExtra      = x2 (toPlonkConstraint zero)
 
-getC :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> Var a i
+getC :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> ACVar a i
 getC (ConsPlonk c)  = x3 c
 getC (ConsLookup c) = toVar $ lkVar c
 getC ConsExtra      = x3 (toPlonkConstraint zero)

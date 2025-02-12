@@ -15,13 +15,13 @@ import           Prelude                                                 hiding 
                                                                           splitAt, sum, take, (!!), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Multivariate            (evalMonomial)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial   (Mono (..), oneM)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (..), evalPolynomial, var)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 --------------------------------- High-level functions --------------------------------
 
@@ -47,16 +47,16 @@ optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
     isInVar (InVar _) = True
     isInVar _         = False
 
-    addInVarConstraints :: Map ByteString (Poly a (SysVar i) Natural) -> Map ByteString (Poly a (SysVar i) Natural)
+    addInVarConstraints :: Map ByteString (ACConstraint a i) -> Map ByteString (ACConstraint a i)
     addInVarConstraints p = p <> fromList [(polyId, poly) | (inVar, v) <- assocs $ filterWithKey (const . isInVar) vs,
                                                             let poly = var inVar - fromConstant v,
                                                             let polyId = witToVar @a @p @i (pure (WSysVar inVar) - fromConstant v)]
 
-    optRanges :: Map (SysVar i) a -> MM.MonoidalMap a (S.Set (SysVar i)) -> MM.MonoidalMap a (S.Set (SysVar i))
+    optRanges :: Map (ACSysVar i) a -> MM.MonoidalMap a (S.Set (ACSysVar i)) -> MM.MonoidalMap a (S.Set (ACSysVar i))
     optRanges m = MM.mapMaybeWithKey (\k v -> bool (error "range constraint less then value")
       (let t = S.difference v $ keysSet m in if null t then Nothing else Just t) (all (<= k) $ restrictKeys m v))
 
-    optWitVar :: Map (SysVar i) a -> WitVar p i -> WitnessF a (WitVar p i)
+    optWitVar :: Map (ACSysVar i) a -> WitVar p i -> WitnessF a (WitVar p i)
     optWitVar m = \case
       (WSysVar sv) ->
         case M.lookup sv m of
@@ -71,12 +71,12 @@ optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
     varF (ConstVar c)       = ConstVar c
 
 
-varsToReplace :: (Arithmetic a, Ord (Rep i)) => (Map ByteString (Constraint a i) , Map (SysVar i) a) -> (Map ByteString (Constraint a i) , Map (SysVar i) a)
+varsToReplace :: (Arithmetic a, Ord (Rep i)) => (Map ByteString (ACConstraint a i) , Map (ACSysVar i) a) -> (Map ByteString (ACConstraint a i) , Map (ACSysVar i) a)
 varsToReplace (s, l) = if newVars == M.empty then (s, l) else varsToReplace (M.filter (/= zero) $ optimizeSystems newVars s, M.union newVars l)
   where
     newVars = M.fromList . M.elems $ mapMaybe toConstVar s
 
-    optimizeSystems :: (Arithmetic a, Ord (Rep i)) => Map (SysVar i) a -> Map ByteString (Constraint a i) -> Map ByteString (Constraint a i)
+    optimizeSystems :: (Arithmetic a, Ord (Rep i)) => Map (ACSysVar i) a -> Map ByteString (ACConstraint a i) -> Map ByteString (ACConstraint a i)
     optimizeSystems m as = bool (error "unsatisfiable constraint") ns (all checkZero ns)
       where
         ns = evalPolynomial evalMonomial varF <$> as
@@ -84,7 +84,7 @@ varsToReplace (s, l) = if newVars == M.empty then (s, l) else varsToReplace (M.f
         checkZero (P [(c, mx)]) = (c == zero) && oneM mx || not (oneM mx)
         checkZero _             = True
 
-    toConstVar :: Arithmetic a => Constraint a i -> Maybe (SysVar i, a)
+    toConstVar :: Arithmetic a => ACConstraint a i -> Maybe (ACSysVar i, a)
     toConstVar = \case
       P [(_, M m1)] -> case toList m1 of
         [(m1var, 1)] -> Just (m1var, zero)

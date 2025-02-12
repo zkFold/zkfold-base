@@ -20,6 +20,7 @@ import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.IVC.Predicate                  (Predicate (..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (NewVar (..), SysVar (..))
 import           ZkFold.Symbolic.Data.Eq
 
 -- | Algebraic map of @a@.
@@ -41,18 +42,18 @@ algebraicMap :: forall d k a i p f .
     -> [f]
 algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
     where
-        sys :: [PM.Poly a (SysVar i) Natural]
+        sys :: [ACConstraint a i]
         sys = M.elems (acSystem predicateCircuit)
 
         witness :: Map ByteString f
         witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
 
-        varMap :: SysVar i -> f
+        varMap :: ACSysVar i -> f
         varMap (InVar inV)            = index pi inV
         varMap (NewVar (EqVar newV))  = M.findWithDefault zero newV witness
         varMap (NewVar (FoldVar _ _)) = P.error "unexpected FOLD constraint"
 
-        f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
+        f_sps :: Vector (d+1) [ACConstraint a i]
         f_sps = degreeDecomposition @d $ sys
 
         f_sps_uni :: Vector (d+1) [f]

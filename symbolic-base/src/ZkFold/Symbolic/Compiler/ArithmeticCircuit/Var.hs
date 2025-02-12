@@ -24,48 +24,57 @@ data NewVar
     ( Generic, Binary, FromJSON, FromJSONKey, ToJSON, ToJSONKey
     , Show, Eq, Ord, NFData)
 
-data SysVar i
+data SysVar i n
   = InVar (Rep i)
-  | NewVar NewVar
+  | NewVar n
   deriving (Generic)
 
 imapSysVar ::
   (Representable i, Representable j) =>
-  (forall x. j x -> i x) -> SysVar i -> SysVar j
+  (forall x. j x -> i x) -> SysVar i n -> SysVar j n
 imapSysVar f (InVar r)  = index (f (tabulate InVar)) r
 imapSysVar _ (NewVar v) = NewVar v
 
-instance Binary (Rep i) => Binary (SysVar i)
-instance NFData (Rep i) => NFData (SysVar i)
-instance FromJSON (Rep i) => FromJSON (SysVar i)
-instance FromJSON (Rep i) => FromJSONKey (SysVar i)
-instance ToJSON (Rep i) => ToJSON (SysVar i)
-instance ToJSON (Rep i) => ToJSONKey (SysVar i)
-deriving stock instance Show (Rep i) => Show (SysVar i)
-deriving stock instance Eq (Rep i) => Eq (SysVar i)
-deriving stock instance Ord (Rep i) => Ord (SysVar i)
+deriving anyclass instance (Binary (Rep i), Binary n) => Binary (SysVar i n)
+deriving anyclass instance (NFData (Rep i), NFData n) => NFData (SysVar i n)
+deriving anyclass instance
+  (FromJSON (Rep i), FromJSON n) => FromJSON (SysVar i n)
+deriving anyclass instance
+  (FromJSON (Rep i), FromJSON n, FromJSONKey n) => FromJSONKey (SysVar i n)
+deriving anyclass instance (ToJSON (Rep i), ToJSON n) => ToJSON (SysVar i n)
+deriving anyclass instance
+  (ToJSON (Rep i), ToJSON n, ToJSONKey n) => ToJSONKey (SysVar i n)
+deriving stock instance (Show (Rep i), Show n) => Show (SysVar i n)
+deriving stock instance (Eq (Rep i), Eq n) => Eq (SysVar i n)
+deriving stock instance (Ord (Rep i), Ord n) => Ord (SysVar i n)
 
-data Var a i
-  = LinVar a (SysVar i) a
+data Var a i n
+  = LinVar a (SysVar i n) a
   | ConstVar a
   deriving Generic
 
-toVar :: Semiring a => SysVar i -> Var a i
+toVar :: Semiring a => SysVar i n -> Var a i n
 toVar x = LinVar one x zero
 
 imapVar ::
   (Representable i, Representable j) =>
-  (forall x. j x -> i x) -> Var a i -> Var a j
+  (forall x. j x -> i x) -> Var a i n -> Var a j n
 imapVar f (LinVar k x b) = LinVar k (imapSysVar f x) b
 imapVar _ (ConstVar c)   = ConstVar c
 
-deriving anyclass instance (Binary (Rep i), Binary a) => Binary (Var a i)
-deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSON (Var a i)
-deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSONKey (Var a i)
-deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSONKey (Var a i)
-deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSON (Var a i)
-deriving stock instance (Show (Rep i), Show a) => Show (Var a i)
-deriving stock instance (Eq (Rep i), Eq a) => Eq (Var a i)
-deriving stock instance (Ord (Rep i), Ord a) => Ord (Var a i)
-deriving instance (NFData (Rep i), NFData a) => NFData (Var a i)
-instance FromConstant a (Var a i) where fromConstant = ConstVar
+deriving anyclass instance
+  (Binary (Rep i), Binary a, Binary n) => Binary (Var a i n)
+deriving anyclass instance
+  (FromJSON (Rep i), FromJSON a, FromJSON n) => FromJSON (Var a i n)
+deriving anyclass instance
+  (FromJSON (Rep i), FromJSON a, FromJSON n, FromJSONKey n) =>
+  FromJSONKey (Var a i n)
+deriving anyclass instance
+  (ToJSON (Rep i), ToJSON a, ToJSON n, ToJSONKey n) => ToJSONKey (Var a i n)
+deriving anyclass instance
+  (ToJSON (Rep i), ToJSON a, ToJSON n) => ToJSON (Var a i n)
+deriving stock instance (Show (Rep i), Show a, Show n) => Show (Var a i n)
+deriving stock instance (Eq (Rep i), Eq a, Eq n) => Eq (Var a i n)
+deriving stock instance (Ord (Rep i), Ord a, Ord n) => Ord (Var a i n)
+deriving instance (NFData (Rep i), NFData a, NFData n) => NFData (Var a i n)
+instance FromConstant a (Var a i n) where fromConstant = ConstVar

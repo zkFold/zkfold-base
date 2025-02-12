@@ -10,10 +10,11 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
         CircuitFold (..),
-        Var (..),
-        SysVar (..),
-        NewVar (..),
+        ACConstraint,
+        ACSysVar,
+        ACVar,
         WitVar (..),
+        CircuitWitness,
         VarField,
         Arithmetic,
         Constraint,
@@ -81,8 +82,15 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
 
+-- | A polynomial constraint is a polynomial
+-- over both input and additional variables which should equal zero.
+type Constraint c i n = Poly c (SysVar i n) Natural
+
+-- | Type of variables used in the constraint system of an arithmetic circuit.
+type ACSysVar i = SysVar i NewVar
+
 -- | The type that represents a constraint in the arithmetic circuit.
-type Constraint c i = Poly c (SysVar i) Natural
+type ACConstraint c i = Constraint c i NewVar
 
 type CircuitWitness a p i = WitnessF a (WitVar p i)
 
@@ -117,18 +125,20 @@ instance Bifunctor (CircuitFold a) where
 instance (NFData a, NFData v) => NFData (CircuitFold a v w) where
   rnf CircuitFold {..} = rnf (foldStep, foldCount) `seq` liftRnf rnf foldSeed
 
+type ACVar a i = Var a i NewVar
+
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a p i o = ArithmeticCircuit
     {
-        acSystem  :: Map ByteString (Constraint a i),
+        acSystem  :: Map ByteString (ACConstraint a i),
         -- ^ The system of polynomial constraints
-        acRange   :: MonoidalMap a (S.Set (SysVar i)),
+        acRange   :: MonoidalMap a (S.Set (ACSysVar i)),
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (CircuitWitness a p i),
         -- ^ The witness generation functions
-        acFold    :: Map ByteString (CircuitFold a (Var a i) (CircuitWitness a p i)),
+        acFold    :: Map ByteString (CircuitFold a (ACVar a i) (CircuitWitness a p i)),
         -- ^ The set of folding operations
-        acOutput  :: o (Var a i)
+        acOutput  :: o (ACVar a i)
         -- ^ The output variables
     } deriving (Generic)
 
@@ -148,7 +158,7 @@ type VarField = Zp (2 ^ (32 * 8))
 data WitVar p i
   = WExVar (Rep p)
   | WFoldVar ByteString ByteString
-  | WSysVar (SysVar i)
+  | WSysVar (ACSysVar i)
 
 imapWitVar ::
   (Representable i, Representable j) =>
@@ -187,29 +197,29 @@ idCircuit = emptyCircuit { acOutput = acInput }
 
 ---------------------------------- Variables -----------------------------------
 
-acInput :: (Representable i, Semiring a) => i (Var a i)
+acInput :: (Representable i, Semiring a) => i (ACVar a i)
 acInput = fmapRep (toVar . InVar) (tabulate id)
 
 getAllVars ::
   forall a p i o. (Representable i, Foldable i) =>
-  ArithmeticCircuit a p i o -> [SysVar i]
+  ArithmeticCircuit a p i o -> [ACSysVar i]
 getAllVars ac =
   toList acInput0
   ++ map (NewVar . EqVar) (M.keys $ acWitness ac)
   ++ map NewVar (M.foldMapWithKey (\fi -> map (FoldVar fi) . keys) $ acFold ac)
   where
-    acInput0 :: i (SysVar i)
+    acInput0 :: i (ACSysVar i)
     acInput0 = tabulate InVar
     keys :: CircuitFold a v w -> [ByteString]
     keys CircuitFold {..} = toList $ imapRep (\r _ -> toByteString r) foldSeed
 
 indexW ::
   (Arithmetic a, Binary a, Representable p, Representable i) =>
-  ArithmeticCircuit a p i o -> p a -> i a -> Var a i -> a
+  ArithmeticCircuit a p i o -> p a -> i a -> ACVar a i -> a
 indexW circuit payload inputs =
   indexG (witnessGenerator circuit payload inputs) inputs
 
-indexG :: (Representable i, Arithmetic a) => Map NewVar a -> i a -> Var a i -> a
+indexG :: (Representable i, Arithmetic a) => Map NewVar a -> i a -> ACVar a i -> a
 indexG witGen inputs = \case
   LinVar k (InVar inV) b -> (\t -> k * t + b) $ index inputs inV
   LinVar k (NewVar newV) b -> (\t -> k * t + b) $ fromMaybe
@@ -240,10 +250,10 @@ hpmap f ac = ac
 
 --------------------------- Symbolic compiler context --------------------------
 
-crown :: ArithmeticCircuit a p i g -> f (Var a i) -> ArithmeticCircuit a p i f
+crown :: ArithmeticCircuit a p i g -> f (ACVar a i) -> ArithmeticCircuit a p i f
 crown = flip (set #acOutput)
 
-behead :: ArithmeticCircuit a p i f -> (ArithmeticCircuit a p i U1, f (Var a i))
+behead :: ArithmeticCircuit a p i f -> (ArithmeticCircuit a p i U1, f (ACVar a i))
 behead = liftA2 (,) (set #acOutput U1) acOutput
 
 instance HFunctor (ArithmeticCircuit a p i) where
@@ -282,13 +292,13 @@ instance
 
 ----------------------------- MonadCircuit instance ----------------------------
 
-instance Finite a => Witness (Var a i) (CircuitWitness a p i) where
+instance Finite a => Witness (ACVar a i) (CircuitWitness a p i) where
   at (ConstVar cV)   = fromConstant cV
   at (LinVar k sV b) = fromConstant k * pure (WSysVar sV) + fromConstant b
 
 instance
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1)
-  => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
+  => MonadCircuit (ACVar a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = case runWitnessF wf $ \case
       WSysVar sV -> LinUVar one sV zero
@@ -458,7 +468,7 @@ apply xs ac = ac
     witF (WFoldVar i v)              = pure (WFoldVar i v)
     witF (WExVar v)                  = pure (WExVar v)
 
-    filterSet :: Ord (Rep j) => S.Set (SysVar (i :*: j)) ->  S.Set (Maybe (SysVar j))
+    filterSet :: Ord (Rep j) => S.Set (ACSysVar (i :*: j)) ->  S.Set (Maybe (ACSysVar j))
     filterSet = S.map (\case
                     NewVar v        -> Just (NewVar v)
                     InVar (Right v) -> Just (InVar v)
