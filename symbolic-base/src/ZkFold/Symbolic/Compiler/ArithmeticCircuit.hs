@@ -68,7 +68,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar, SysVar (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (SysVar (..), toVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                        (expansion)
 import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))

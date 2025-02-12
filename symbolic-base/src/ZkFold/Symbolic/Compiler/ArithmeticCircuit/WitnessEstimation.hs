@@ -5,16 +5,16 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation where
 
 
 
-import           Control.Applicative                            ()
-import           GHC.Generics                                   (Generic)
-import           GHC.Integer                                    (Integer)
-import           GHC.Natural                                    (Natural)
-import           Prelude                                        (Eq, Maybe (..), ($), (.), (==))
+import           Control.Applicative             ()
+import           GHC.Generics                    (Generic)
+import           GHC.Integer                     (Integer)
+import           GHC.Natural                     (Natural)
+import           Prelude                         (Eq, Maybe (..), ($), (.), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString                    ()
-import           ZkFold.Symbolic.Class                          (Arithmetic)
-import           ZkFold.Symbolic.MonadCircuit                   (ResidueField (..))
+import           ZkFold.Base.Data.ByteString     ()
+import           ZkFold.Symbolic.Class           (Arithmetic)
+import           ZkFold.Symbolic.MonadCircuit    (ResidueField (..))
 
 
 
