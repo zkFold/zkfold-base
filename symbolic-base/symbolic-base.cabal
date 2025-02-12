@@ -200,6 +200,7 @@ library
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
+      ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
@@ -282,6 +283,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Data.FFA
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.List
+      Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.UInt
     build-depends:
       base                          >= 4.9 && < 5,
