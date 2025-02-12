@@ -63,6 +63,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.Ord1         (bitwiseGE, bitwiseGT)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..), constraint,
                                                     newAssigned)
@@ -348,14 +349,14 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
 
         -- | divMod first constraint: @numerator = denominator * div + mod@.
         -- This should always be true.
-        Bool eq = den * UInt dv + UInt md == num
+        Bool eqCase = den * UInt dv + UInt md == num
 
         -- | divMod second constraint: @0 <= mod < denominator@.
         -- This should always be true.
-        Bool lt = UInt md < den
+        Bool ltCase = UInt md < den
 
         -- | Computes properly constrained registers of @div@ and @mod@.
-        circuit = fromCircuit3F eq lt (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
+        circuit = fromCircuit3F eqCase ltCase (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
           constraint (($ e) - one)
           constraint (($ l) - one)
           return dm
@@ -381,7 +382,14 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownRegisters c n r
          , regSize ~ GetRegisterSize (BaseField c) n r
          , KnownNat (Ceil regSize OrdWord)
-         ) => Ord (Bool c) (UInt n r c) where
+         ) => Ord (UInt n r c) where
+
+    type OrderingOf (UInt n r c) = Ordering c
+
+    ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
+
+    compare x y = bool (bool lt eq (x == y)) gt (x > y)
+
     x <= y = y >= x
 
     x <  y = y > x
