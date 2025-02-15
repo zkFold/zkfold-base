@@ -1,8 +1,11 @@
-# zkFold Symbolic framework
-This repository contains the zkFold Symbolic framework base library as well as additional packages written using the framework.
+# Symbolic framework
+This repository contains the zkFold Symbolic framework. Contents:
+- `symbolic-base`: The core package of the framework, providing the Symbolic compiler and the base symbolic data types;
+- `symbolic-apps`: Applications and smart contracts built with the framework by the zkFold team;
+- `symbolic-examples`: A collection of symbolic code examples for benchmarking and testing;
 
 # Documentation
-The zkFold Symbolic framework can be utilized to create zero-knowledge smart contracts and privacy-preserving applications.
+The Symbolic framework simplifies development of zero-knowledge applications and smart contracts. Developers can implement their app's business logic in high-level Haskell, and the framework will automatically generate the corresponding zero-knowledge circuits. The framework utilizes a very general intermediate representation of the circuits, supporting a wide range of proving systems.
 
 User documentation can be found at [docs.zkfold.io](https://docs.zkfold.io/symbolic/introduction/ "zkFold Symbolic User Documentation").
 
