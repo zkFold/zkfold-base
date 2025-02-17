@@ -9,6 +9,7 @@ module ZkFold.Symbolic.Data.Class (
         SymbolicData (..),
         SymbolicOutput,
         GSymbolicData (..),
+        restore0,
     ) where
 
 import           Control.Applicative              ((<*>))
@@ -31,6 +32,7 @@ import qualified GHC.Generics                     as G
 import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
 import           ZkFold.Base.Control.HApplicative (HApplicative, hliftA2, hpure)
 import           ZkFold.Base.Data.ByteString      (Binary1)
+import           ZkFold.Base.Data.Empty           (Empty (..))
 import           ZkFold.Base.Data.HFunctor        (hmap)
 import           ZkFold.Base.Data.Orphans         ()
 import           ZkFold.Base.Data.Package         (pack)
@@ -100,6 +102,11 @@ class
     restore f = G.to (grestore f)
 
 type SymbolicOutput x = (SymbolicData x, Support x ~ Proxy (Context x))
+
+restore0 ::
+  (SymbolicData x, Empty (Payload x)) =>
+  (Support x -> Context x (Layout x)) -> x
+restore0 f = restore (\x -> (f x, empty))
 
 instance (Symbolic c, LayoutFunctor f) => SymbolicData (c f) where
     type Context (c f) = c

@@ -9,7 +9,7 @@ module ZkFold.Base.Protocol.IVC.AccumulatorScheme where
 import           Control.Lens                               ((^.))
 import           Data.Constraint                            (withDict)
 import           Data.Constraint.Nat                        (plusMinusInverse1)
-import           Data.Functor.Rep                           (Representable (..))
+import           Data.Functor.Rep                           (Representable (..), mzipWithRep)
 import           Data.Zip                                   (Zip (..))
 import           GHC.IsList                                 (IsList (..))
 import           Prelude                                    (Foldable, Ord, fmap, ($), (.), (<$>))
@@ -68,7 +68,6 @@ accumulatorScheme :: forall algo d k a i p c .
     , KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
-    , Zip i
     , Ord (Rep i)
     , Foldable i
     , Foldable c
@@ -98,7 +97,7 @@ accumulatorScheme phi =
 
             -- X * pi + pi' as a list of univariate polynomials
             polyPi :: i (PU.PolyVec f (d+1))
-            polyPi = zipWith PU.polyVecLinear pubi (acc^.x^.pi)
+            polyPi = mzipWithRep PU.polyVecLinear pubi (acc^.x^.pi)
 
             -- X * mi + mi'
             polyW :: Vector k [PU.PolyVec f (d+1)]
@@ -131,7 +130,7 @@ accumulatorScheme phi =
 
             -- Fig. 3, steps 5, 6
             mu'   = alpha + acc^.x^.mu
-            pi''  = zipWith (+) (fmap (* alpha) pubi) (acc^.x^.pi)
+            pi''  = mzipWithRep (+) (fmap (* alpha) pubi) (acc^.x^.pi)
             ri''  = scale alpha r_i  + acc^.x^.r
             ci''  = scale alpha pi_x + acc^.x^.c
             m_i'' = zipWith (+) (scale alpha pi_w) (acc^.w)
@@ -166,7 +165,7 @@ accumulatorScheme phi =
 
             -- Fig. 4, steps 3-4
             mu'  = alpha + acc^.mu
-            pi'' = zipWith (+) (fmap (* alpha) pubi) (acc^.pi)
+            pi'' = mzipWithRep (+) (fmap (* alpha) pubi) (acc^.pi)
             ri'' = zipWith (+) (scale alpha r_i)     (acc^.r)
             ci'' = zipWith (+) (scale alpha pi_x)    (acc^.c)
 
