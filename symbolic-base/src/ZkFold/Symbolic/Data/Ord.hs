@@ -12,7 +12,6 @@ import           Data.Data                        (Proxy (..))
 import           Data.Foldable                    (Foldable, concatMap, toList)
 import           Data.Function                    ((.))
 import           Data.Functor                     (fmap, (<$>))
-import           Data.Functor.Rep                 (Representable)
 import           Data.List                        (map, reverse)
 import           Data.Traversable                 (Traversable (traverse))
 import qualified Data.Zip                         as Z
@@ -59,11 +58,7 @@ instance Haskell.Ord a => Ord Haskell.Bool a where
     min = Haskell.min
 
 -- | Every @SymbolicData@ type can be compared lexicographically.
-instance
-    ( Symbolic c
-    , Representable f
-    , Traversable f
-    ) => Ord (Bool c) (c f) where
+instance (Symbolic c, LayoutFunctor f) => Ord (Bool c) (c f) where
 
     x <= y = y >= x
 
@@ -132,12 +127,12 @@ circuitDelta l r = do
                 -- Because of our laws for @finv@, @q // q@ is 1 if @q@ is not zero, and zero otherwise.
                 -- This is exactly the opposite of what @f1@ should be.
                 f1 <- newRanged one $
-                    let q = fromConstant (toConstant (at y + one @w) `div` toConstant (at x + one @w))
+                    let q = fromIntegral (toIntegral (at y + one @w) `div` toIntegral (at x + one @w))
                      in one - q // q
 
                 -- f2 is one if and only if y > x and zero otherwise
                 f2 <- newRanged one $
-                    let q = fromConstant (toConstant (at x + one @w) `div` toConstant (at y + one @w))
+                    let q = fromIntegral (toIntegral (at x + one @w) `div` toIntegral (at y + one @w))
                      in one - q // q
 
                 dxy <- newAssigned (\p -> p x - p y)

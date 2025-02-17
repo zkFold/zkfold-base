@@ -1,8 +1,8 @@
 cabal-version:      3.0
 
 name:               symbolic-base
-version:            0.1.0.1
--- tested-with:        GHC == 9.6.3
+version:            0.1.0.0
+tested-with:        GHC == 9.6.6
 synopsis:           ZkFold Symbolic compiler and zero-knowledge proof protocols
 homepage:           https://zkfold.io/
 category:           Cryptography, DSL, Math, Symbolic Computation
@@ -102,6 +102,7 @@ library
       ZkFold.Base.Algebra.EllipticCurve.Class
       ZkFold.Base.Algebra.EllipticCurve.Ed25519
       ZkFold.Base.Algebra.EllipticCurve.Pairing
+      ZkFold.Base.Algebra.EllipticCurve.PlutoEris
       ZkFold.Base.Algebra.EllipticCurve.Secp256k1
       ZkFold.Base.Algebra.Polynomials.Multivariate
       ZkFold.Base.Algebra.Polynomials.Multivariate.Groebner
@@ -109,9 +110,9 @@ library
       ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial
       ZkFold.Base.Algebra.Polynomials.Multivariate.Substitution
       ZkFold.Base.Algebra.Polynomials.Univariate
+      ZkFold.Base.Algorithm.ReedSolomon
       ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
-      ZkFold.Base.Data.Functor.Rep
       ZkFold.Base.Data.HFunctor
       ZkFold.Base.Data.List.Infinite
       ZkFold.Base.Data.Matrix
@@ -194,15 +195,19 @@ library
       ZkFold.Symbolic.Data.Ed25519
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.FFA
+      ZkFold.Symbolic.Data.FieldElement
       ZkFold.Symbolic.Data.Hash
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
+      ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
+      ZkFold.Symbolic.Data.Secp256k1
+      ZkFold.Symbolic.Data.Switch
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
-      ZkFold.Symbolic.Data.FieldElement
+      ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
     if arch(javascript)
@@ -287,35 +292,36 @@ test-suite symbolic-base-test
         "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N"
     main-is: Main.hs
     other-modules:
-      Tests.ArithmeticCircuit
-      Tests.Arithmetization
-      Tests.Arithmetization.Test1
-      Tests.Arithmetization.Test2
-      Tests.Arithmetization.Test3
-      Tests.Arithmetization.Test4
-      Tests.Arithmetization.Optimization
-      Tests.Binary
-      Tests.Blake2b
-      Tests.ByteString
-      Tests.Compiler
-      Tests.EllipticCurve
-      Tests.FFA
-      Tests.Field
-      Tests.GroebnerBasis
-      Tests.Group
-      Tests.Hash
-      Tests.IVC
-      Tests.List
-      Tests.NonInteractiveProof
-      Tests.Pairing
-      Tests.Permutations
-      Tests.Plonkup
-      Tests.RSA
-      Tests.SHA2
-      Tests.UInt
-      Tests.Univariate
-      Tests.Univariate.Poly
-      Tests.Univariate.PolyVec
+      Tests.Algebra.EllipticCurve
+      Tests.Algebra.Field
+      Tests.Algebra.GroebnerBasis
+      Tests.Algebra.Group
+      Tests.Algebra.Pairing
+      Tests.Algebra.Permutations
+      Tests.Algebra.ReedSolomon
+      Tests.Algebra.Univariate
+      Tests.Algebra.Univariate.Poly
+      Tests.Algebra.Univariate.PolyVec
+      Tests.Data.Binary
+      Tests.Protocol.IVC
+      Tests.Protocol.NonInteractiveProof
+      Tests.Protocol.Plonkup
+      Tests.Symbolic.Algorithm.Blake2b
+      Tests.Symbolic.Algorithm.RSA
+      Tests.Symbolic.Algorithm.SHA2
+      Tests.Symbolic.ArithmeticCircuit
+      Tests.Symbolic.Compiler
+      Tests.Symbolic.Compiler.CompileWith
+      Tests.Symbolic.Compiler.Optimization
+      Tests.Symbolic.Compiler.Test1
+      Tests.Symbolic.Compiler.Test2
+      Tests.Symbolic.Compiler.Test3
+      Tests.Symbolic.Compiler.Test4
+      Tests.Symbolic.Data.ByteString
+      Tests.Symbolic.Data.FFA
+      Tests.Symbolic.Data.Hash
+      Tests.Symbolic.Data.List
+      Tests.Symbolic.Data.UInt
     build-depends:
       base                          >= 4.18.0.0 && < 5,
       adjunctions                           < 4.5,
@@ -326,7 +332,6 @@ test-suite symbolic-base-test
       containers                                 ,
       containers                                 ,
       crypto-api                                 ,
-      deepseq                                    ,
       directory                        <= 1.3.8.4,
       filepath                         <= 1.5.2.0,
       hspec                                < 2.12,
@@ -356,7 +361,7 @@ benchmark bench-poly-mul
       tasty-bench,
       vector,
 
-benchmark in-circuit-ec-benchmark 
+benchmark bench-in-circuit-ec 
     import:           options-exe
     main-is:          BenchEC.hs
     hs-source-dirs:   bench

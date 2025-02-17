@@ -1,11 +1,11 @@
 
 packages:
-    symbolic-apps
     symbolic-base
-    symbolic-cardano
     symbolic-examples
-    zkfold-ledger
-    zkfold-uplc
+    symbolic-apps
+    symbolic-ledger
+    symbolic-cardano
+    symbolic-uplc
 
 optimization: 2
 

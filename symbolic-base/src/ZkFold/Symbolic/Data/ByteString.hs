@@ -43,7 +43,6 @@ import qualified Prelude                           as Haskell
 import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
 import           ZkFold.Base.Data.Package          (packWith, unpackWith)
@@ -72,7 +71,7 @@ deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString 
 deriving stock instance Haskell.Eq (c (Vector n)) => Haskell.Eq (ByteString n c)
 deriving anyclass instance NFData (c (Vector n)) => NFData (ByteString n c)
 deriving newtype instance (KnownNat n, Symbolic c) => SymbolicData (ByteString n c)
-deriving newtype instance (Symbolic c, KnownNat n) => Eq (Bool c) (ByteString n c)
+deriving newtype instance (Symbolic c, KnownNat n) => Eq (ByteString n c)
 deriving newtype instance (Symbolic c, KnownNat n) => Conditional (Bool c) (ByteString n c)
 
 instance
@@ -126,8 +125,8 @@ class ShiftBits a where
 
 
 
-instance ToConstant (ByteString n (Interpreter (Zp p))) where
-    type Const (ByteString n (Interpreter (Zp p))) = Natural
+instance Arithmetic a => ToConstant (ByteString n (Interpreter a)) where
+    type Const (ByteString n (Interpreter a)) = Natural
     toConstant (ByteString (Interpreter bits)) = Haskell.foldl (\y p -> toConstant p + base * y) 0 bits
         where base = 2
 
@@ -349,11 +348,11 @@ instance (Symbolic c, KnownNat n)
             Nothing -> Haskell.fail "bad bytestring!"
             Just a  -> return a
 
-instance ToJSON (ByteString n (Interpreter (Zp p))) where
+instance Arithmetic a => ToJSON (ByteString n (Interpreter a)) where
     toJSON = toJSON . byteStringToHex
 
-byteStringToHex :: ByteString n (Interpreter (Zp p)) -> Haskell.String
-byteStringToHex bytes = showHex (toConstant bytes :: Natural) ""
+byteStringToHex :: Arithmetic a => ByteString n (Interpreter a) -> Haskell.String
+byteStringToHex bytes = showHex (toConstant bytes) ""
 
 hexToByteString :: (Symbolic c, KnownNat n) => Haskell.String -> Maybe (ByteString n c)
 hexToByteString str = case readHex str of

@@ -1,23 +1,33 @@
-{-# LANGUAGE DerivingVia   #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.MonadCircuit where
 
 import           Control.Monad                   (Monad (return))
-import           Data.Type.Equality              (type (~))
+import           Data.Function                   ((.))
+import           Data.Kind                       (Type)
+import           Prelude                         (Integer)
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field (Zp)
 
 -- | A 'ResidueField' is a 'FiniteField'
--- backed by a 'SemiEuclidean' constant type.
-type ResidueField n a = ( FiniteField a, ToConstant a, Const a ~ n
-                        , FromConstant n a, SemiEuclidean n)
+-- backed by a 'Euclidean' integral type.
+class (FiniteField a, Euclidean (IntegralOf a)) => ResidueField a where
+  type IntegralOf a :: Type
+  fromIntegral :: IntegralOf a -> a
+  toIntegral :: a -> IntegralOf a
+
+instance PrimeField (Zp p) => ResidueField (Zp p) where
+  type IntegralOf (Zp p) = Integer
+  fromIntegral = fromConstant
+  toIntegral = fromConstant . toConstant
 
 -- | A type of witness builders. @i@ is a type of variables.
 --
 -- Witness builders should support all the operations of witnesses,
 -- and in addition there should be a corresponding builder for each variable.
-class ResidueField (Const w) w => Witness i w | w -> i where
+class ResidueField w => Witness i w | w -> i where
   -- | @at x@ is a witness builder whose value is equal to the value of @x@.
   at :: i -> w
 

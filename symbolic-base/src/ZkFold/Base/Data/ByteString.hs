@@ -1,9 +1,13 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Data.ByteString
   ( Binary (..)
+  , Binary1
   , toByteString
   , fromByteString
   , putWord8
@@ -22,6 +26,7 @@ import qualified Data.ByteString        as Strict
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy   as Lazy
 import qualified Data.Text.Encoding     as Text
+import           GHC.Generics           (Par1, U1, (:*:), (:.:))
 import           Numeric.Natural        (Natural)
 import           Prelude
 import           Test.QuickCheck        (Arbitrary (..))
@@ -38,6 +43,13 @@ instance Aeson.ToJSON Strict.ByteString where
 
 instance Aeson.FromJSONKey Strict.ByteString
 instance Aeson.ToJSONKey Strict.ByteString
+
+class (forall a. Binary a => Binary (f a)) => Binary1 f
+instance (forall a. Binary a => Binary (f a)) => Binary1 f
+instance Binary (U1 a)
+instance Binary a => Binary (Par1 a)
+instance (Binary (f a), Binary (g a)) => Binary ((f :*: g) a)
+instance Binary (f (g a)) => Binary ((f :.: g) a)
 
 toByteString :: Binary a => a -> Strict.ByteString
 toByteString = Lazy.toStrict . runPut . put

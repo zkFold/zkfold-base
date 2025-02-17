@@ -11,24 +11,27 @@ import           Prelude                                             hiding (Num
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
 
+import           ZkFold.Base.Algebra.Basic.Class                     (Scale)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class             (EllipticCurve (..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (CyclicGroup (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (PolyVec)
-import           ZkFold.Base.Protocol.Plonkup.Utils
+import           ZkFold.Base.Data.Vector                             (Vector)
+import           ZkFold.Base.Protocol.Plonkup.Utils                  (getParams, getSecrectParams)
 import           ZkFold.Symbolic.Compiler                            ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
 
-data Plonkup p i (n :: Natural) l curve1 curve2 transcript = Plonkup {
-        omega :: ScalarField curve1,
-        k1    :: ScalarField curve1,
-        k2    :: ScalarField curve1,
-        ac    :: ArithmeticCircuit (ScalarField curve1) p i l,
-        x     :: ScalarField curve1
+data Plonkup p i (n :: Natural) l g1 g2 transcript = Plonkup {
+        omega :: ScalarFieldOf g1,
+        k1    :: ScalarFieldOf g1,
+        k2    :: ScalarFieldOf g1,
+        ac    :: ArithmeticCircuit (ScalarFieldOf g1) p i l,
+        h1    :: g2,
+        gs'   :: Vector (n + 5) g1
     }
 
 type PlonkupPermutationSize n = 3 * n
@@ -39,17 +42,27 @@ type PlonkupPolyExtendedLength n = 4 * n + 6
 with4n6 :: forall n {r}. KnownNat n => (KnownNat (4 * n + 6) => r) -> r
 with4n6 f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)
 
-type PlonkupPolyExtended n c = PolyVec (ScalarField c) (PlonkupPolyExtendedLength n)
+type PlonkupPolyExtended n g = PolyVec (ScalarFieldOf g) (PlonkupPolyExtendedLength n)
 
-instance (Show (ScalarField c1), Show (Rep i), Show1 l, Ord (Rep i)) => Show (Plonkup p i n l c1 c2 t) where
+instance (Show (ScalarFieldOf g1), Show (Rep i), Show1 l, Ord (Rep i), Show g1, Show g2) => Show (Plonkup p i n l g1 g2 t) where
     show Plonkup {..} =
-        "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac)  ++ " " ++ show ac ++ " " ++ show x
+        "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac)  ++ " " ++ show ac ++ " " ++ show h1 ++ " " ++ show gs'
 
 instance
-  ( KnownNat n, Arithmetic (ScalarField c1), Arbitrary (ScalarField c1)
-  , Arbitrary (ArithmeticCircuit (ScalarField c1) p i l)
-  ) => Arbitrary (Plonkup p i n l c1 c2 t) where
+  ( KnownNat n
+  , KnownNat (n + 5)
+  , Arbitrary g1
+  , Arbitrary g2
+  , Arithmetic (ScalarFieldOf g1)
+  , Arbitrary (ScalarFieldOf g1)
+  , CyclicGroup g1
+  , CyclicGroup g2
+  , Scale (ScalarFieldOf g1) g2
+  , Arbitrary (ArithmeticCircuit (ScalarFieldOf g1) p i l)
+  ) => Arbitrary (Plonkup p i n l g1 g2 t) where
     arbitrary = do
         ac <- arbitrary
+        x <- arbitrary
         let (omega, k1, k2) = getParams (value @n)
-        Plonkup omega k1 k2 ac <$> arbitrary
+        let (gs, h1) = getSecrectParams x
+        return $ Plonkup omega k1 k2 ac h1 gs

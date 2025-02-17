@@ -8,7 +8,8 @@
 
 module ZkFold.Base.Protocol.IVC.RecursiveFunction where
 
-import           Control.DeepSeq                            (NFData)
+import           Control.DeepSeq                            (NFData, NFData1)
+import           Data.Binary                                (Binary)
 import           Data.Distributive                          (Distributive (..))
 import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep)
 import           Data.These                                 (These (..))
@@ -20,6 +21,7 @@ import           Prelude                                    (Foldable, Functor, 
 import           ZkFold.Base.Algebra.Basic.Class            (Scale, zero)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec)
+import           ZkFold.Base.Data.ByteString                (Binary1)
 import           ZkFold.Base.Data.Orphans                   ()
 import           ZkFold.Base.Data.Package                   (packed, unpacked)
 import           ZkFold.Base.Data.Vector                    (Vector)
@@ -29,10 +31,10 @@ import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), PredicateAssumptions, PredicateCircuit,
                                                              predicate)
-import           ZkFold.Base.Protocol.IVC.StepFunction      (FunctorAssumptions, StepFunction, StepFunctionAssumptions)
+import           ZkFold.Base.Protocol.IVC.StepFunction      (StepFunction, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
-import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor, SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional           (bool)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement), fromFieldElement)
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
@@ -40,7 +42,7 @@ import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
 
 -- | Public input to the recursive function
 data RecursiveI i f = RecursiveI (i f) f
-    deriving (Generic, Generic1, Show, NFData, Functor, Foldable, Traversable)
+    deriving (Generic, Generic1, Show, Binary, NFData, NFData1, Functor, Foldable, Traversable)
 
 instance Semialign i => Semialign (RecursiveI i) where
     alignWith f (RecursiveI x h) (RecursiveI y h') = RecursiveI (alignWith f x y) (f (These h h'))
@@ -62,7 +64,9 @@ instance (SymbolicInput f, SymbolicInput (i f), Context f ~ Context (i f)) => Sy
 
 -- | Payload to the recursive function
 data RecursiveP d k i p c f = RecursiveP (p f) (Vector k (c f)) (AccumulatorInstance k (RecursiveI i) c f) f (Vector (d-1) (c f))
-    deriving (Generic, Generic1, Functor, Foldable, Traversable)
+    deriving (Generic, Generic1, NFData, NFData1, Functor, Foldable, Traversable)
+
+instance (KnownNat (d - 1), KnownNat k, KnownNat (k - 1), Binary1 i, Binary1 p, Binary1 c, Binary f) => Binary (RecursiveP d k i p c f)
 
 instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Representable p, Representable c) => Distributive (RecursiveP d k i p c) where
     distribute = distributeRep
@@ -88,7 +92,7 @@ type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssump
 -- | Transform a step function into a recursive function
 recursiveFunction :: forall algo d k a i p c .
     ( PredicateAssumptions a i p
-    , FunctorAssumptions c
+    , LayoutFunctor c
     , KnownNat (d-1)
     , KnownNat (d+1)
     , KnownNat (k-1)
@@ -134,7 +138,7 @@ type RecursivePredicateAssumptions algo d k a i p c =
     , KnownNat (k-1)
     , KnownNat k
     , PredicateAssumptions a i p
-    , FunctorAssumptions c
+    , LayoutFunctor c
     )
 
 recursivePredicate :: forall algo d k a i p c ctx0 ctx1 .

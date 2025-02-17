@@ -1,17 +1,14 @@
 {-# LANGUAGE TypeOperators #-}
 
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
 import           Control.DeepSeq                             (NFData, NFData1)
 import           Data.Function                               (const, ($), (.))
-import           Data.Functor                                (Functor)
 import           Data.Functor.Rep                            (Rep, Representable)
 import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
-import           Examples.BatchTransfer                      (exampleBatchTransfer)
+import           Examples.Blake2b                            (exampleBlake2b_224, exampleBlake2b_256)
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
 import           Examples.Constant                           (exampleConst5, exampleEq5)
@@ -21,15 +18,13 @@ import           Examples.Fibonacci                          (exampleFibonacci)
 import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
-import           Examples.RSA                                (exampleRSA)
 import           Examples.UInt
-import           GHC.Generics                                (Par1, (:*:), (:.:))
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
-import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Class                  (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
 
@@ -59,11 +54,6 @@ exampleOutput ::
   ) => f -> ExampleOutput
 exampleOutput = ExampleOutput @p @i @o . const . compile
 
--- | TODO: Maybe there is a better place for these orphans?
-instance NFData1 Par1
-instance (NFData1 f, NFData1 g) => NFData1 (f :*: g)
-instance (Functor f, NFData1 f, NFData1 g) => NFData1 (f :.: g)
-
 examples :: [(String, ExampleOutput)]
 examples =
   [ ("Eq", exampleOutput exampleEq)
@@ -84,16 +74,20 @@ examples =
   , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
   , ("UInt.StrictMul.512.Auto", exampleOutput $ exampleUIntStrictMul @512 @Auto)
   , ("UInt.DivMod.32.Auto", exampleOutput $ exampleUIntDivMod @32 @Auto)
-  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
-  , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
-  , ("MiMCHash", exampleOutput exampleMiMC)
-  , ("SHA256.32", exampleOutput $ exampleSHA @32)
   , ("FFA.Add.337", exampleOutput exampleFFAadd337)
   , ("FFA.Add.097", exampleOutput exampleFFAadd097)
   , ("FFA.Mul.337", exampleOutput exampleFFAmul337)
   , ("FFA.Mul.097", exampleOutput exampleFFAmul097)
-  , ("RSA.sign.verify.256", exampleOutput exampleRSA)
---  , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
---  , ("PedersonCommitment", exampleOutput exampleCommitment)
-  , ("BatchTransfer", exampleOutput exampleBatchTransfer)
+  , ("FFA.Inv.337", exampleOutput exampleFFAinv337)
+  , ("FFA.Inv.097", exampleOutput exampleFFAinv097)
+  , ("Blake2b_224", exampleOutput $ exampleBlake2b_224 @32)
+  , ("Blake2b_256", exampleOutput $ exampleBlake2b_256 @64)
+  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
+  , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
+  , ("MiMCHash", exampleOutput exampleMiMC)
+  , ("SHA256.32", exampleOutput $ exampleSHA @32)
+  -- , ("RSA.sign.verify.256", exampleOutput exampleRSA)
+  -- , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
+  -- , ("PedersonCommitment", exampleOutput exampleCommitment)
+  -- , ("BatchTransfer", exampleOutput exampleBatchTransfer)
   ]
