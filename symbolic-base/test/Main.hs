@@ -28,7 +28,7 @@ import           Tests.Symbolic.Data.UInt           (specUInt)
 
 main :: IO ()
 main = hspec $ do
-    -- Base.Algebra
+    -- Algebra
     specField
     specAdditiveGroup
     specEllipticCurve
@@ -38,10 +38,10 @@ main = hspec $ do
     specReedSolomon
     specGroebner
 
-    -- Base.Data
+    -- Data
     specBinary
 
-    -- Base.Protocol
+    -- Protocol
     specPlonkup
     specNonInteractiveProof
     specIVC

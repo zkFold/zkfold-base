@@ -5,6 +5,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         Constraint,
         Var,
         witnessGenerator,
+        witnessGenerator',
         -- high-level functions
         optimize,
         desugarRanges,
@@ -111,10 +112,10 @@ guessOutput ::
   (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>
   (Ord (Rep i), Ord (Rep o), NFData (Rep i), NFData (Rep o)) =>
   (Representable i, Representable o, Foldable o) =>
-  ArithmeticCircuit a p i o -> ArithmeticCircuit a p (i :*: o) U1
+  ArithmeticCircuit a p i o -> ArithmeticCircuit a p (i :*: o) o
 guessOutput c = fromCircuit2F (hlmap fstP c) (hmap sndP idCircuit) $ \o o' -> do
   for_ (mzipRep o o') $ \(i, j) -> constraint (\x -> x i - x j)
-  return U1
+  return o
 
 ----------------------------------- Information -----------------------------------
 
@@ -138,9 +139,8 @@ acValue = exec
 --
 -- TODO: Move this elsewhere (?)
 -- TODO: Check that all arguments have been applied.
-acPrint ::
-  (Arithmetic a, Binary a, Show a) =>
-  (Show (o (Var a U1)), Show (o a), Functor o) =>
+acPrint :: forall a o.
+  (Arithmetic a, Binary a, Show a, Show (o (Var a U1)), Show (o a), Functor o) =>
   ArithmeticCircuit a U1 U1 o -> IO ()
 acPrint ac = do
     let m = elems (acSystem ac)
@@ -162,11 +162,11 @@ acPrint ac = do
 
 ---------------------------------- Testing -------------------------------------
 
-isConstantInput ::
+isConstantInput :: forall a p i o.
   ( Arithmetic a, Binary a, Show a, Representable p, Representable i
   , Show (p a), Show (i a), Arbitrary (p a), Arbitrary (i a)
   ) => ArithmeticCircuit a p i o -> Property
-isConstantInput c = property $ \x y p -> witnessGenerator c p x === witnessGenerator c p y
+isConstantInput c = property $ \x y p -> witnessGenerator @a c p x === witnessGenerator c p y
 
 checkClosedCircuit
     :: forall a o
@@ -177,13 +177,14 @@ checkClosedCircuit
     -> Property
 checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem c) ]
     where
-        w = witnessGenerator c U1 U1
+        w = witnessGenerator @a c U1 U1
         testPoly p = evalPolynomial evalMonomial varF p === zero
         varF (InVar v)  = absurd v
         varF (NewVar v) = w ! v
 
 checkCircuit
-    :: Arbitrary (p a)
+    :: forall a p i o
+     . Arbitrary (p a)
     => Arbitrary (i a)
     => Arithmetic a
     => Binary a

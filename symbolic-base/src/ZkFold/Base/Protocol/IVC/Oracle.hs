@@ -1,73 +1,43 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Base.Protocol.IVC.Oracle where
 
-import qualified Data.Vector                                    as V
-import           GHC.Generics
-import           Prelude                                        (map, (.))
-import qualified Prelude                                        as P
+import           Data.Foldable                                  (Foldable (..))
+import           Prelude                                        (concatMap, (++), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.Vector                        (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHashN)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 
--- TODO: add more specific instances for efficiency
-
-class HashAlgorithm algo a where
-    hash :: [a] -> a
+class HashAlgorithm algo where
+    hash :: forall x . Ring x => [x] -> x
 
 data MiMCHash
-instance Ring a => HashAlgorithm MiMCHash a where
+instance HashAlgorithm MiMCHash where
+    hash :: forall a . Ring a => [a] -> a
     hash = mimcHashN @a mimcConstants zero
 
-class RandomOracle algo x a where
-    oracle :: x -> a
-    default oracle :: (Generic x, RandomOracle' algo (Rep x) a) => x -> a
-    oracle = oracle' @algo . from
+oracle :: forall algo x a . (HashAlgorithm algo, RingRepresentation x a) => x -> a
+oracle = hash @algo . toList . rrep
 
-instance (FromConstant P.Integer a, HashAlgorithm algo a) => RandomOracle algo P.Integer a where
-    oracle = oracle @algo @a . fromConstant
+class Ring a => RingRepresentation x a where
+    rrep :: x -> [a]
 
-instance HashAlgorithm algo a => RandomOracle algo a a where
-    oracle x = hash @algo [x]
+instance {-# INCOHERENT #-} Ring a => RingRepresentation a a where
+    rrep a = [a]
 
-instance HashAlgorithm algo a => RandomOracle algo (a, a) a where
-    oracle (x, y) = hash @algo [x, y]
+instance {-# INCOHERENT #-} (RingRepresentation b a, RingRepresentation c a) => RingRepresentation (b, c) a where
+    rrep (b, c) = rrep b ++ rrep c
 
-instance HashAlgorithm algo a => RandomOracle algo [a] a where
-    oracle = hash @algo
+instance {-# INCOHERENT #-} (RingRepresentation b a, RingRepresentation c a, RingRepresentation d a) => RingRepresentation (b, c, d) a where
+    rrep (b, c, d) = rrep b ++ rrep c ++ rrep d
 
-instance (HashAlgorithm algo b, RandomOracle algo a b) => RandomOracle algo [a] b where
-    oracle = hash @algo . map (oracle @algo)
+instance {-# INCOHERENT #-} (RingRepresentation b a, RingRepresentation c a, RingRepresentation d a, RingRepresentation e a) => RingRepresentation (b, c, d, e) a where
+    rrep (b, c, d, e) = rrep b ++ rrep c ++ rrep d ++ rrep e
 
-instance (HashAlgorithm algo b, RandomOracle algo a b) => RandomOracle algo (V.Vector a) b where
-    oracle = (oracle @algo) . V.toList
+instance {-# INCOHERENT #-} (RingRepresentation b a) => RingRepresentation (Vector n b) a where
+    rrep = concatMap rrep . toList
 
-instance {-# OVERLAPPABLE #-} (Generic x, RandomOracle' algo (Rep x) a) => RandomOracle algo x a
-
-class RandomOracle' algo f a where
-    oracle' :: f x -> a
-
--- TODO: fix this instance
-instance (RandomOracle' algo f b, RandomOracle' algo g b, HashAlgorithm algo b, Ring b) => RandomOracle' algo (f :+: g) b where
-    oracle' (L1 x) = hash @algo [zero, oracle' @algo x]
-    oracle' (R1 x) = oracle' @algo x
-
-instance (RandomOracle' algo f a, RandomOracle' algo g a, HashAlgorithm algo a) => RandomOracle' algo (f :*: g) a where
-    oracle' (x :*: y) =
-        let z1 = oracle' @algo x :: a
-            z2 = oracle' @algo y :: a
-        in hash @algo [z1, z2]
-
-instance RandomOracle algo c a => RandomOracle' algo (Rec0 c) a where
-    oracle' (K1 x) = oracle @algo x
-
--- | Handling constructors with no fields.
-instance {-# OVERLAPPING #-}
-    Ring a => RandomOracle' algo (M1 C ('MetaCons conName fixity selectors) U1) a where
-    oracle' _ = zero
-
-instance RandomOracle' algo f a => RandomOracle' algo (M1 c m f) a where
-    oracle' (M1 x) = oracle' @algo x
+instance (Ring a, Foldable f) => RingRepresentation (f a) a where
+    rrep = toList

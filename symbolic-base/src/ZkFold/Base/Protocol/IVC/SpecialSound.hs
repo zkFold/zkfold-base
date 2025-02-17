@@ -3,20 +3,19 @@
 
 module ZkFold.Base.Protocol.IVC.SpecialSound where
 
-import           Data.Binary                           (Binary)
 import           Data.Function                         (($))
 import           Data.Functor.Rep                      (Representable (..))
 import           Data.Map.Strict                       (elems)
 import           GHC.Generics                          ((:*:) (..))
-import           Prelude                               (undefined)
+import           Prelude                               (Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector               (Vector)
-import qualified ZkFold.Base.Protocol.IVC.AlgebraicMap as AM
-import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate (..))
-import           ZkFold.Symbolic.Class
+import           ZkFold.Base.Protocol.IVC.AlgebraicMap
+import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate (..), PredicateFunctionAssumptions)
 import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.MonadCircuit          (ResidueField)
 
 {-- | Section 3.1
 
@@ -30,50 +29,39 @@ and checks that the output is a zero vector of length l.
 
 --}
 
-data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
+data SpecialSoundProtocol k a i p = SpecialSoundProtocol
   {
-    input ::
-         i f                            -- ^ previous public input
+    input :: forall f . PredicateFunctionAssumptions a f
+      => i f                            -- ^ previous public input
       -> p f                            -- ^ witness
       -> i f                            -- ^ public input
 
-  , prover ::
-         i f                            -- ^ previous public input
+  , prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField f)
+      => i f                            -- ^ previous public input
       -> p f                            -- ^ witness
       -> f                              -- ^ current random challenge
       -> Natural                        -- ^ round number (starting from 1)
-      -> m                              -- ^ prover message
+      -> [f]                            -- ^ prover message
 
-  , verifier ::
-         i f                            -- ^ public input
-      -> Vector k m                     -- ^ prover messages
+  , verifier :: forall f . PredicateFunctionAssumptions a f
+      => i f                            -- ^ public input
+      -> Vector k [f]                   -- ^ prover messages
       -> Vector (k-1) f                 -- ^ random challenges
-      -> o                              -- ^ verifier output
+      -> [f]                            -- ^ verifier output
   }
 
 specialSoundProtocol :: forall d a i p .
     ( KnownNat (d+1)
-    , Arithmetic a
-    , Binary a
     , Representable i
+    , Ord (Rep i)
     , Representable p
-    ) => Predicate a i p -> SpecialSoundProtocol 1 i p [a] [a] a
+    ) => Predicate a i p -> SpecialSoundProtocol 1 a i p
 specialSoundProtocol phi@Predicate {..} =
   let
-      prover pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)
-      verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
-  in
-      SpecialSoundProtocol predicateEval prover verifier
+      prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField f) => i f -> p f -> f -> Natural -> [f]
+      prover pi0 w _ _ = elems $ witnessGenerator' @f predicateCircuit (pi0 :*: w) (predicateFunction pi0 w)
 
-specialSoundProtocol' :: forall d a i p f .
-    ( KnownNat (d+1)
-    , Representable i
-    , Ring f
-    , Scale a f
-    ) => Predicate a i p -> SpecialSoundProtocol 1 i p [f] [f] f
-specialSoundProtocol' phi =
-  let
-      verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
+      verifier :: forall f . PredicateFunctionAssumptions a f => i f -> Vector 1 [f] -> Vector 0 f -> [f]
+      verifier pi pm ts = algebraicMap @d phi pi pm ts one
   in
-      SpecialSoundProtocol undefined undefined verifier
-
+      SpecialSoundProtocol predicateFunction prover verifier

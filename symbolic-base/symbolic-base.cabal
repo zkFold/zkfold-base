@@ -130,6 +130,9 @@ library
       ZkFold.Base.Protocol.IVC.AlgebraicMap
       ZkFold.Base.Protocol.IVC.CommitOpen
       ZkFold.Base.Protocol.IVC.Commit
+      ZkFold.Base.Protocol.IVC.CycleFold
+      ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext
+      ZkFold.Base.Protocol.IVC.CycleFold.NativeContext
       ZkFold.Base.Protocol.IVC.FiatShamir
       ZkFold.Base.Protocol.IVC.Internal
       ZkFold.Base.Protocol.IVC.NARK
@@ -137,8 +140,6 @@ library
       ZkFold.Base.Protocol.IVC.Predicate
       ZkFold.Base.Protocol.IVC.RecursiveFunction
       ZkFold.Base.Protocol.IVC.SpecialSound
-      ZkFold.Base.Protocol.IVC.StepFunction
-      ZkFold.Base.Protocol.IVC.VerifierCircuit
       ZkFold.Base.Protocol.KZG
       ZkFold.Base.Protocol.Plonk
       ZkFold.Base.Protocol.Plonk.Prover
@@ -196,12 +197,14 @@ library
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.FFA
       ZkFold.Symbolic.Data.FieldElement
+      ZkFold.Symbolic.Data.FieldElementW
       ZkFold.Symbolic.Data.Hash
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
+      ZkFold.Symbolic.Data.Pasta
       ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.Secp256k1
       ZkFold.Symbolic.Data.Switch
@@ -265,6 +268,9 @@ test-suite symbolic-base-test
       Tests.Algebra.Univariate.PolyVec
       Tests.Data.Binary
       Tests.Protocol.IVC
+      Tests.Protocol.IVC.CycleFold
+      Tests.Protocol.IVC.Internal
+      Tests.Protocol.IVC.Types
       Tests.Protocol.NonInteractiveProof
       Tests.Protocol.Plonkup
       Tests.Symbolic.Algorithm.Blake2b
@@ -301,7 +307,6 @@ test-suite symbolic-base-test
       RSA                                   < 1.1,
       split                               < 0.2.6,
       symbolic-base                              ,
-      transformers                               ,
       vector                                     ,
       vector-algorithms                          ,
       aeson

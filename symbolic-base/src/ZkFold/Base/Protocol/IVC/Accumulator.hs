@@ -6,24 +6,19 @@
 
 module ZkFold.Base.Protocol.IVC.Accumulator where
 
-import           Control.DeepSeq                       (NFData (..), NFData1)
-import           Control.Lens                          ((^.))
-import           Control.Lens.Combinators              (makeLenses)
-import           Data.Binary                           (Binary)
-import           Data.Distributive                     (Distributive (..))
-import           Data.Functor.Rep                      (Representable (..), collectRep, distributeRep)
-import           GHC.Generics
-import           Prelude                               hiding (length, pi)
+import           Control.DeepSeq                  (NFData (..), NFData1)
+import           Control.Lens                     ((^.))
+import           Control.Lens.Combinators         (makeLenses)
+import           Data.Distributive                (Distributive (..))
+import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep)
+import           GHC.Generics                     (Generic, Generic1)
+import           Prelude                          hiding (length, pi)
 
-import           ZkFold.Base.Algebra.Basic.Class       (Ring, Scale, zero)
-import           ZkFold.Base.Algebra.Basic.Number      (KnownNat, type (+), type (-))
-import           ZkFold.Base.Data.ByteString           (Binary1)
-import           ZkFold.Base.Data.Vector               (Vector)
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap)
-import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (..))
-import           ZkFold.Base.Protocol.IVC.Oracle       (HashAlgorithm, RandomOracle)
-import           ZkFold.Base.Protocol.IVC.Predicate    (Predicate)
-import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
+import           ZkFold.Base.Algebra.Basic.Class  (AdditiveMonoid, Ring, zero)
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat, type (-))
+import           ZkFold.Base.Data.ByteString      (Binary, Binary1)
+import           ZkFold.Base.Data.Vector          (Vector)
+import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f
@@ -46,9 +41,6 @@ instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Distr
 
 instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Representable (AccumulatorInstance k i c)
 
-instance (HashAlgorithm algo f, RandomOracle algo f f, RandomOracle algo (i f) f, RandomOracle algo (c f) f)
-    => RandomOracle algo (AccumulatorInstance k i c f) f
-
 instance
     ( KnownNat (k-1)
     , KnownNat k
@@ -69,36 +61,34 @@ data Accumulator k i c f
         { _x :: AccumulatorInstance k i c f
         , _w :: Vector k [f]
         }
-    deriving (Show, Generic, NFData)
+    deriving (Show, Generic, Functor, Foldable, Traversable, NFData)
 
 makeLenses ''Accumulator
 
-emptyAccumulator :: forall d k a i p c f .
-    ( KnownNat (d+1)
-    , KnownNat (k-1)
+emptyAccumulator :: forall k i c f .
+    ( KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , HomomorphicCommit [f] (c f)
+    , AdditiveMonoid (c f)
     , Ring f
-    , Scale a f
-    ) => Predicate a i p -> Accumulator k i c f
-emptyAccumulator phi =
-    let accW  = tabulate (const zero)
-        aiC   = fmap hcommit accW
+    ) => Accumulator k i c f
+emptyAccumulator =
+    let
+        accW  = tabulate (const zero)
+        aiC   = tabulate (const zero)
         aiR   = tabulate (const zero)
         aiMu  = zero
         aiPI  = tabulate (const zero)
-        aiE   = hcommit $ algebraicMap @d phi aiPI accW aiR aiMu
+        aiE   = zero
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
-    in Accumulator accX accW
+    in
+        Accumulator accX accW
 
-emptyAccumulatorInstance :: forall d k a i p c f .
-    ( KnownNat (d+1)
-    , KnownNat (k-1)
+emptyAccumulatorInstance ::  forall k i c f .
+    ( KnownNat (k-1)
     , KnownNat k
     , Representable i
-    , HomomorphicCommit [f] (c f)
+    , AdditiveMonoid (c f)
     , Ring f
-    , Scale a f
-    ) => Predicate a i p -> AccumulatorInstance k i c f
-emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x
+    ) => AccumulatorInstance k i c f
+emptyAccumulatorInstance = emptyAccumulator ^. x
