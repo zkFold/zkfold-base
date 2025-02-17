@@ -95,8 +95,8 @@ class ( Monad m, FromConstant a var
 
   -- | Adds new lookup function to the system.
   -- For example, @'registerFunction' f @ stores the function @f@.
-  registerFunction :: (Representable f, Binary (Rep f), Foldable g
-    ) => (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
+  registerFunction :: (Representable f, Binary (Rep f), Foldable g)
+    => (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
 
   -- | Creates new variable given a polynomial witness
   -- AND adds a corresponding polynomial constraint.

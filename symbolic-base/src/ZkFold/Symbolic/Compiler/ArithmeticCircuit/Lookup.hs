@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup where
@@ -10,7 +11,6 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup where
 import           Control.DeepSeq
 import           Data.Aeson.Types
 import           Data.ByteString  (ByteString)
-import           Data.Maybe       (fromJust)
 import           Data.Set
 import qualified Data.Text        as T
 import           Data.Typeable
@@ -22,20 +22,18 @@ import           Prelude          (Show)
 data LookupType a = forall f. (Functor f, Typeable f) => LookupType { lTable :: LookupTable a f }
 
 deriving instance (Show a) => Show (LookupType a)
--- deriving instance (ToJSON a) => ToJSON (LookupType a)
--- deriving instance (ToJSONKey a) => ToJSONKey (LookupType a)
 
-tryEq :: (Typeable f, Typeable g, Typeable a, Eq a) => LookupTable a f -> LookupTable a g -> Bool
-tryEq a b = (typeOf a == typeOf b) && (a == fromJust (cast b))
+tryEq :: (Typeable f, Typeable g) => LookupTable a f -> LookupTable a g -> Bool
+tryEq a b = typeRep a == typeRep b
 
-instance (Eq a, Typeable a) => Eq (LookupType a) where
+instance Eq a => Eq (LookupType a) where
   (==) :: LookupType a -> LookupType a -> Bool
   (==) (LookupType lt1) (LookupType lt2) = tryEq lt1 lt2
 
-tryCompare :: (Ord a, Typeable a, Typeable b) => a -> b -> Ordering
-tryCompare a b = if typeOf a == typeOf b then compare a (fromJust (cast b)) else EQ
+tryCompare :: (Typeable f, Typeable g) => LookupTable a f -> LookupTable a g -> Ordering
+tryCompare a b = compare (typeRep a) (typeRep b)-- then compare a (fromJust (cast b)) else EQ
 
-instance (Typeable a, Ord a) => Ord (LookupType a) where
+instance Ord a => Ord (LookupType a) where
   compare :: LookupType a -> LookupType a -> Ordering
   compare (LookupType lt1) (LookupType lt2) = tryCompare lt1 lt2
 
@@ -43,6 +41,12 @@ instance (ToJSON a) => ToJSON (LookupType a) where
   toJSON (LookupType lt) = toJSON lt
 instance (ToJSON a) => ToJSONKey (LookupType a)
 
+instance (FromJSON a) => FromJSON (LookupType a) where
+  parseJSON (Object v) = v .: "lookupType"
+  parseJSON invalid    =
+    prependFailure "parsing LookupType failed, "
+        (typeMismatch "Object" invalid)
+instance (FromJSONKey a, FromJSON a) => FromJSONKey (LookupType a)
 
 
 -- | @LookupTable a f@ is a type of compact lookup table descriptions using ideas from relational algebra.
@@ -75,8 +79,7 @@ instance (FromJSON a) => FromJSON (LookupTable a f) where
 instance (FromJSON a) => FromJSONKey (LookupTable a f)
 
 instance NFData (LookupType a) where
-  rnf (LookupType _) = undefined
-
+  rnf = rwhnf
 
 isRange :: LookupType a -> Bool
 isRange (LookupType l) = case l of

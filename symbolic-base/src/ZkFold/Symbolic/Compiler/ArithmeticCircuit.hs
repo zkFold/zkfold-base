@@ -50,7 +50,6 @@ import           Data.Map                                                hiding 
                                                                           take)
 import qualified Data.Map.Monoidal                                       as M
 import qualified Data.Set                                                as S
-import           Data.Typeable                                           (Typeable)
 import           Data.Void                                               (absurd)
 import           GHC.Generics                                            (U1 (..), (:*:))
 import           Numeric.Natural                                         (Natural)
@@ -108,7 +107,7 @@ desugarRange i (a, b)
 
 -- | Desugars range constraints into polynomial constraints
 desugarRanges ::
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), Typeable a) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
   let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $
@@ -126,7 +125,7 @@ inputPayload f =
   f (tabulate $ pure . WExVar) (tabulate $ pure . WSysVar . InVar)
 
 guessOutput ::
-  (Arithmetic a, Binary a, Typeable a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep o)) =>
   (Ord (Rep i), Ord (Rep o), NFData (Rep i), NFData (Rep o)) =>
   (Representable i, Representable o, Foldable o) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p (i :*: o) U1

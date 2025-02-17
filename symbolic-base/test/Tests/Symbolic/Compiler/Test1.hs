@@ -5,7 +5,6 @@
 module Tests.Symbolic.Compiler.Test1 (specArithmetization1) where
 
 import           Data.Binary                       (Binary)
-import           Data.Typeable                     (Typeable)
 import           GHC.Generics                      (Par1 (..), U1 (..), (:*:) (..))
 import           Numeric.Natural                   (Natural)
 import           Prelude                           hiding (Bool, Eq (..), Num (..), not, replicate, (/), (>), (^), (||))
@@ -38,7 +37,7 @@ testResult ::
 testResult r x y = fromConstant (unPar1 $ eval r (U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: U1)) Haskell.==
     testFunc @(Interpreter a) (fromConstant x) (fromConstant y)
 
-specArithmetization1 :: forall a . (Arithmetic a, Arbitrary a, Binary a, Show a, Typeable a) => Spec
+specArithmetization1 :: forall a . (Arithmetic a, Arbitrary a, Binary a, Show a) => Spec
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do

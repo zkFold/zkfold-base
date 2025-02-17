@@ -6,7 +6,6 @@ module ZkFold.Base.Protocol.Plonk (
 ) where
 
 import           Data.Binary                                         (Binary)
-import           Data.Data                                           (Typeable)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
 import           Data.Kind                                           (Type)
@@ -49,7 +48,6 @@ fromPlonkup ::
     , Binary (Rep p)
     , Binary (Rep i)
     , Ord (Rep i)
-    , Typeable (ScalarFieldOf g1)
     ) => Plonkup p i n l g1 g2 ts -> Plonk p i n l g1 g2 ts
 fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 
@@ -62,8 +60,7 @@ instance (Show1 l, Show (Rep i), Show (ScalarFieldOf g1), Ord (Rep i), Show g1, 
 
 instance ( Arithmetic (ScalarFieldOf g1), Binary (ScalarFieldOf g1)
          , Binary (Rep p), Binary (Rep i), Ord (Rep i)
-         , Arbitrary (Plonkup p i n l g1 g2 t)
-         , Typeable (ScalarFieldOf g1))
+         , Arbitrary (Plonkup p i n l g1 g2 t))
         => Arbitrary (Plonk p i n l g1 g2 t) where
     arbitrary = fromPlonkup <$> arbitrary
 

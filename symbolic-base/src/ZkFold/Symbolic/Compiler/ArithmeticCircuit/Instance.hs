@@ -13,7 +13,6 @@ import           Data.Bool                                           (bool)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
-import           Data.Typeable                                       (Typeable)
 import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (Show, head, mempty, pure, return, show, ($), (++),
                                                                       (.), (<$>), (<))
@@ -44,7 +43,6 @@ instance
   , NFData (Rep i)
   , Representable i
   , Haskell.Foldable i
-  , Typeable a
   ) => Arbitrary (ArithmeticCircuit a p i Par1) where
     arbitrary = do
         outVar <- toVar . InVar <$> arbitrary
@@ -63,7 +61,6 @@ instance
   , Representable i
   , Haskell.Foldable i
   , KnownNat l
-  , Typeable a
   ) => Arbitrary (ArithmeticCircuit a p i (Vector l)) where
     arbitrary = do
         ac <- arbitrary @(ArithmeticCircuit a p i Par1)
@@ -72,8 +69,7 @@ instance
 
 arbitrary' ::
   forall a p i .
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)
-  , Typeable a ) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)) =>
   (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a p i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a p i))
@@ -121,19 +117,18 @@ instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), To
     toJSON r = object
         [
             "system" .= acSystem r,
-            "lookup"  .= acLookup r,
+            "lookup" .= acLookup r,
             "output" .= acOutput r
         ]
 
 -- TODO: properly restore the witness generation function
-instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a, Haskell.Ord a, Haskell.Ord (Rep i), FromJSON (Rep i)
-  , FromJSONKey (LookupType a), Typeable a) => FromJSON (ArithmeticCircuit a p i o) where
+instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a, Haskell.Ord a, Haskell.Ord (Rep i), FromJSON (Rep i)) => FromJSON (ArithmeticCircuit a p i o) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"
-            acLookup    <- v .: "range"
+            acLookup   <- v .: "lookup"
             acOutput   <- v .: "output"
-            let acWitness = empty
-                acFold    = empty
+            let acWitness        = empty
+                acFold           = empty
                 acLookupFunction = empty
             pure ArithmeticCircuit{..}

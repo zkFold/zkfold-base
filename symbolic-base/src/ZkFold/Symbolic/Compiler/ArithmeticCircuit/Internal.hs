@@ -58,7 +58,6 @@ import           Data.Semialign                                               (u
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
 import           Data.Traversable                                             (for)
-import           Data.Typeable                                                (Typeable)
 import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics                                                       hiding (at)
 import           Prelude                                                      hiding (Num (..), drop, length, product,
@@ -144,10 +143,10 @@ data ArithmeticCircuit a p i o = ArithmeticCircuit
     } deriving Generic
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a p i o))
-  instance (Ord a, Ord (Rep i), o ~ U1, Typeable a) => Semigroup (ArithmeticCircuit a p i o)
+  instance (Ord a, Ord (Rep i), o ~ U1) => Semigroup (ArithmeticCircuit a p i o)
 
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a p i o))
-  instance (Ord a, Ord (Rep i), o ~ U1, Typeable a) => Monoid (ArithmeticCircuit a p i o)
+  instance (Ord a, Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a p i o)
 
 instance (NFData a, NFData1 o, NFData (Rep i))
     => NFData (ArithmeticCircuit a p i o) where
@@ -186,7 +185,7 @@ emptyCircuit = ArithmeticCircuit M.empty M.empty MM.empty M.empty M.empty U1
 -- where outputs computing the payload are unconstrained.
 naturalCircuit ::
   ( Arithmetic a, Representable p, Representable i, Traversable o
-  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), Typeable a) =>
+  , Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i)) =>
   (forall x. p x -> i x -> o x) -> ArithmeticCircuit a p i o
 naturalCircuit f = uncurry (set #acOutput) $ flip runState emptyCircuit $
   for (f (tabulate Left) (tabulate Right)) $
@@ -261,16 +260,16 @@ behead = liftA2 (,) (set #acOutput U1) acOutput
 instance HFunctor (ArithmeticCircuit a p i) where
     hmap = over #acOutput
 
-instance (Ord (Rep i), Ord a, Typeable a) => HApplicative (ArithmeticCircuit a p i) where
+instance (Ord (Rep i), Ord a) => HApplicative (ArithmeticCircuit a p i) where
     hpure = crown mempty
     hliftA2 f (behead -> (c, o)) (behead -> (d, p)) = crown (c <> d) (f o p)
 
-instance (Ord (Rep i), Ord a, Typeable a) => Package (ArithmeticCircuit a p i) where
+instance (Ord (Rep i), Ord a) => Package (ArithmeticCircuit a p i) where
     unpackWith f (behead -> (c, o)) = crown c <$> f o
     packWith f (unzipDefault . fmap behead -> (cs, os)) = crown (fold cs) (f os)
 
 instance
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i), Typeable a) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
   Symbolic (ArithmeticCircuit a p i) where
     type BaseField (ArithmeticCircuit a p i) = a
     type WitnessField (ArithmeticCircuit a p i) = WitnessF a (WitVar p i)
@@ -278,7 +277,7 @@ instance
     fromCircuitF (behead -> (c, o)) f = uncurry (set #acOutput) (runState (f o) c)
 
 instance
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i), Typeable a) =>
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), NFData (Rep i)) =>
   SymbolicFold (ArithmeticCircuit a p i) where
     sfoldl fun (behead -> (sc, foldSeed)) foldSeedP streamHash
            foldStream (behead -> (cc, Par1 foldCount)) =
@@ -299,8 +298,8 @@ instance Finite a => Witness (Var a i) (CircuitWitness a p i) where
   at (LinVar k sV b) = fromConstant k * pure (WSysVar sV) + fromConstant b
 
 instance
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1, Typeable a)
-   => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1)
+  => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = case runWitnessF wf $ \case
       WSysVar sV -> LinUVar one sV zero
@@ -356,7 +355,7 @@ instance
 --
 -- 1. Due to parametricity, the only operations inside witness are
 --    operations from 'WitnessField' interface;
--- [zero]--
+--
 -- 2. Thus witness can be viewed as an AST of a 'WitnessField' "language" where:
 --
 --     * leafs are 'fromConstant' calls and variables;
