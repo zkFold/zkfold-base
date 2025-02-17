@@ -73,3 +73,4 @@ instance ToConstant (MerkleHash (Just n)) where
 instance SemiEuclidean (MerkleHash Nothing) where
   div (M x) (M y) = merkleHash (Div, x, y)
   mod (M x) (M y) = merkleHash (Mod, x, y)
+

@@ -40,7 +40,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         witToVar
     ) where
 
-import           Control.DeepSeq                                              (NFData (..), NFData1 (..))
+import           Control.DeepSeq                                              (NFData (..), NFData1 (..), rwhnf)
 import           Control.Monad.State                                          (State, modify, runState)
 import           Data.Bifunctor                                               (Bifunctor (..))
 import           Data.Binary                                                  (Binary)
@@ -120,11 +120,19 @@ instance Bifunctor (CircuitFold a) where
 instance (NFData a, NFData v) => NFData (CircuitFold a v w) where
   rnf CircuitFold {..} = rnf (foldStep, foldCount) `seq` liftRnf rnf foldSeed
 
+data LookupFunction a =
+  forall f g. LookupFunction (forall x. (ResidueField a x, Representable f, Traversable g) => f x -> g x)
+
+instance NFData (LookupFunction a) where
+  rnf = rwhnf
+
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a p i o = ArithmeticCircuit
     {
         acSystem  :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
+        acLookupFunction :: Map ByteString (LookupFunction a),
+        -- ^ The system of lookup functions
         acLookup  :: MonoidalMap (LookupType a) (S.Set [SysVar i]),
         -- ^ The range constraints [0, a] for the selected variables
         acWitness :: Map ByteString (CircuitWitness a p i),
@@ -143,7 +151,7 @@ deriving via (GenericSemigroupMonoid (ArithmeticCircuit a p i o))
 
 instance (NFData a, NFData1 o, NFData (Rep i))
     => NFData (ArithmeticCircuit a p i o) where
-  rnf (ArithmeticCircuit s r w f o) = rnf (s, r, w, f) `seq` liftRnf rnf o
+  rnf (ArithmeticCircuit s lf l w f o) = rnf (s, lf, l, w, f) `seq` liftRnf rnf o
 
 -- | Variables are SHA256 digests (32 bytes)
 type VarField = Zp (2 ^ (32 * 8))
@@ -170,7 +178,7 @@ pmapWitVar _ (WSysVar v)    = WSysVar v
 ----------------------------- Circuit constructors -----------------------------
 
 emptyCircuit :: ArithmeticCircuit a p i U1
-emptyCircuit = ArithmeticCircuit M.empty MM.empty M.empty M.empty U1
+emptyCircuit = ArithmeticCircuit M.empty M.empty MM.empty M.empty M.empty U1
 
 -- | Given a natural transformation
 -- from payload @p@ and input @i@ to output @o@,
@@ -225,8 +233,9 @@ indexG witGen inputs = \case
 hlmap ::
   (Representable i, Representable j, Ord (Rep j), Functor o) =>
   (forall x . j x -> i x) -> ArithmeticCircuit a p i o -> ArithmeticCircuit a p j o
-hlmap f (ArithmeticCircuit s l w d o) = ArithmeticCircuit
+hlmap f (ArithmeticCircuit s lf l w d o) = ArithmeticCircuit
   { acSystem = mapVars (imapSysVar f) <$> s
+  , acLookupFunction = lf
   , acLookup = S.map (map $ imapSysVar f) <$> l
   , acWitness = fmap (imapWitVar f) <$> w
   , acFold = bimap (imapVar f) (imapWitVar f <$>) <$> d
@@ -290,8 +299,9 @@ instance Finite a => Witness (Var a i) (CircuitWitness a p i) where
   at (LinVar k sV b) = fromConstant k * pure (WSysVar sV) + fromConstant b
 
 instance
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1, Typeable a)
-  => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1, Typeable a
+  , Representable f, Binary (Rep f), Foldable g
+  ) => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = case runWitnessF wf $ \case
       WSysVar sV -> LinUVar one sV zero
@@ -336,13 +346,19 @@ instance
         then return ()
         else error "The constant does not belong to the interval"
 
+    registerFunction ::
+      (forall x. (ResidueField a x) => f x -> g x) -> State (ArithmeticCircuit a p i o) (FunctionId (f a -> g a))
+    registerFunction f =
+      return . FunctionId . runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
+
+
 -- | Generates new variable index given a witness for it.
 --
 -- It is a root hash (sha256) of a Merkle tree which is obtained from witness:
 --
 -- 1. Due to parametricity, the only operations inside witness are
 --    operations from 'WitnessField' interface;
---
+-- [zero]--
 -- 2. Thus witness can be viewed as an AST of a 'WitnessField' "language" where:
 --
 --     * leafs are 'fromConstant' calls and variables;

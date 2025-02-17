@@ -27,6 +27,7 @@ import           ZkFold.Prelude                   (take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (FunctionId (..))
 
 newtype Interpreter a f = Interpreter { runInterpreter :: f a }
     deriving (Eq, Show, Generic, NFData)
@@ -67,3 +68,4 @@ instance Arithmetic a => MonadCircuit a a a (Witnesses a) where
   unconstrained = return
   constraint _ = return ()
   rangeConstraint _ _ = return ()
+  registerFunction _ = return (FunctionId "")

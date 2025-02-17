@@ -44,6 +44,7 @@ instance (ToJSON a) => ToJSON (LookupType a) where
 instance (ToJSON a) => ToJSONKey (LookupType a)
 
 
+
 -- | @LookupTable a f@ is a type of compact lookup table descriptions using ideas from relational algebra.
 -- @a@ is a base field type, @f@ is a functor such that @f a@ is a type whose subset this lookup table describes.
 data LookupTable a f where

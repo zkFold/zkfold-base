@@ -7,6 +7,7 @@ import           Control.Monad                   (Monad (return))
 import           Data.Type.Equality              (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'SemiEuclidean' constant type.
@@ -79,6 +80,8 @@ class ( Monad m, FromConstant a var
   -- | Adds new range constraint to the system.
   -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
   rangeConstraint :: var -> a -> m ()
+
+  registerFunction :: (forall x. (ResidueField a x) => f x -> g x) -> m (FunctionId (f a -> g a))
 
   -- | Creates new variable given a polynomial witness
   -- AND adds a corresponding polynomial constraint.
