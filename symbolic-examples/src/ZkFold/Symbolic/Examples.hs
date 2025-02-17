@@ -78,6 +78,8 @@ examples =
   , ("FFA.Add.097", exampleOutput exampleFFAadd097)
   , ("FFA.Mul.337", exampleOutput exampleFFAmul337)
   , ("FFA.Mul.097", exampleOutput exampleFFAmul097)
+  , ("FFA.Inv.337", exampleOutput exampleFFAinv337)
+  , ("FFA.Inv.097", exampleOutput exampleFFAinv097)
   , ("Blake2b_224", exampleOutput $ exampleBlake2b_224 @32)
   , ("Blake2b_256", exampleOutput $ exampleBlake2b_256 @64)
   , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C _ _)))

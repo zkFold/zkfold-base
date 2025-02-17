@@ -18,6 +18,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Data.Vector                             (Vector)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 import           ZkFold.Base.Protocol.Plonk.Prover                   (plonkProve)
 import           ZkFold.Base.Protocol.Plonk.Verifier                 (plonkVerify)
@@ -30,6 +31,7 @@ import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
+
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
 
 data Plonk p i (n :: Natural) l g1 g2 transcript = Plonk {
@@ -37,7 +39,8 @@ data Plonk p i (n :: Natural) l g1 g2 transcript = Plonk {
         k1    :: ScalarFieldOf g1,
         k2    :: ScalarFieldOf g1,
         ac    :: ArithmeticCircuit (ScalarFieldOf g1) p i l,
-        x     :: ScalarFieldOf g1
+        h1    :: g2,
+        gs'   :: Vector (n + 5) g1
     }
 
 fromPlonkup ::
@@ -53,9 +56,9 @@ fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 toPlonkup :: Plonk p i n l g1 g2 ts -> Plonkup p i n l g1 g2 ts
 toPlonkup Plonk {..} = Plonkup {..}
 
-instance (Show1 l, Show (Rep i), Show (ScalarFieldOf g1), Ord (Rep i)) => Show (Plonk p i n l g1 g2 t) where
+instance (Show1 l, Show (Rep i), Show (ScalarFieldOf g1), Ord (Rep i), Show g1, Show g2) => Show (Plonk p i n l g1 g2 t) where
     show Plonk {..} =
-        "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac) ++ " " ++ show ac ++ " " ++ show x
+        "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac) ++ " " ++ show ac ++ " " ++ show h1 ++ " " ++ show gs'
 
 instance ( Arithmetic (ScalarFieldOf g1), Binary (ScalarFieldOf g1)
          , Binary (Rep p), Binary (Rep i), Ord (Rep i)

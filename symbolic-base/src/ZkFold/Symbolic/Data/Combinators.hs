@@ -78,7 +78,7 @@ fromBits hiBits loBits bits = do
     highNew <- horner . Haskell.reverse $  bitsHighNew
     pure $ highNew : lowsNew
 
-data RegisterSize = Auto | Fixed Natural deriving (Haskell.Eq)
+data RegisterSize = Auto | Fixed Natural deriving (Haskell.Eq, Haskell.Show)
 
 class KnownRegisterSize (r :: RegisterSize) where
   regSize :: RegisterSize
@@ -103,12 +103,14 @@ registerSize = case regSize @r of
 type Ceil a b = Div (a + b - 1) b
 
 type family GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) :: Natural where
+    GetRegisterSize _ 0    _          = 0
     GetRegisterSize a bits (Fixed rs) = rs
     GetRegisterSize a bits Auto       = Ceil bits (NumberOfRegisters a bits Auto)
 
 type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
 
 type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize ) :: Natural where
+  NumberOfRegisters _ 0    _          = 0
   NumberOfRegisters a bits (Fixed rs) = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
   NumberOfRegisters a bits Auto       = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
                                                                           -- But it is weird anyway if someone is trying to store a value
@@ -142,10 +144,11 @@ type family ListRange (from :: Natural) (to :: Natural) :: [Natural] where
 numberOfRegisters :: forall a n r . ( Finite a, KnownNat n, KnownRegisterSize r) => Natural
 numberOfRegisters =  case regSize @r of
     Auto -> fromMaybe (error "too many bits, field is not big enough")
-        $ find (\c -> c * maxRegisterSize c Haskell.>= getNatural @n) [1 .. maxRegisterCount]
+        $ find (\c -> c * maxRegisterSize c Haskell.>= getNatural @n) [0 .. maxRegisterCount]
         where
             maxRegisterCount = 2 ^ bitLimit
             bitLimit = Haskell.floor $ log2 (order @a)
+            maxRegisterSize 0 = 0
             maxRegisterSize regCount =
                 let maxAdded = Haskell.ceiling $ log2 regCount
                 in Haskell.floor $ (bitLimit -! maxAdded) % 2
@@ -209,12 +212,12 @@ wordsOf n k = for [0 .. n -! 1] $ \j ->
         wordSize :: Natural
         wordSize = 2 ^ value @r
 
-        repr :: ResidueField n x => Natural -> x -> x
+        repr :: ResidueField x => Natural -> x -> x
         repr j =
-              fromConstant
+              fromIntegral
               . (`mod` fromConstant wordSize)
               . (`div` fromConstant (wordSize ^ j))
-              . toConstant
+              . toIntegral
 
 hornerW :: forall r i a w m . (KnownNat r, MonadCircuit i a w m) => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + (2^r) b1 + ... + 2^rn bn@ using
@@ -241,16 +244,16 @@ splitExpansion n1 n2 k = do
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where
-        lower :: ResidueField n a => a -> a
+        lower :: ResidueField a => a -> a
         lower =
-            fromConstant . (`mod` fromConstant @Natural (2 ^ n1)) . toConstant
+            fromIntegral . (`mod` fromConstant @Natural (2 ^ n1)) . toIntegral
 
-        upper :: ResidueField n a => a -> a
+        upper :: ResidueField a => a -> a
         upper =
-            fromConstant
+            fromIntegral
             . (`mod` fromConstant @Natural (2 ^ n2))
             . (`div` fromConstant @Natural (2 ^ n1))
-            . toConstant
+            . toIntegral
 
 runInvert :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i, f i)
 runInvert is = do
