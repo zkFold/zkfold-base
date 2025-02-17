@@ -5,29 +5,29 @@
 
 module ZkFold.Symbolic.Interpreter (Interpreter (..)) where
 
-import           Control.Applicative              (Applicative)
-import           Control.DeepSeq                  (NFData)
-import           Control.Monad                    (Monad, return)
-import           Data.Aeson                       (FromJSON, ToJSON)
-import           Data.Eq                          (Eq)
-import           Data.Function                    (id, ($), (.))
-import           Data.Functor                     (Functor, (<$>))
-import           Data.Functor.Identity            (Identity (..))
-import           Data.List                        (foldl')
-import           Data.List.Infinite               (toList)
-import           Data.Tuple                       (uncurry)
-import           GHC.Generics                     (Generic, Par1 (..))
-import           Text.Show                        (Show)
+import           Control.Applicative                               (Applicative)
+import           Control.DeepSeq                                   (NFData)
+import           Control.Monad                                     (Monad, return)
+import           Data.Aeson                                        (FromJSON, ToJSON)
+import           Data.Eq                                           (Eq)
+import           Data.Function                                     (id, ($), (.))
+import           Data.Functor                                      (Functor, (<$>))
+import           Data.Functor.Identity                             (Identity (..))
+import           Data.List                                         (foldl')
+import           Data.List.Infinite                                (toList)
+import           Data.Tuple                                        (uncurry)
+import           GHC.Generics                                      (Generic, Par1 (..))
+import           Text.Show                                         (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
 import           ZkFold.Base.Data.Package
-import           ZkFold.Prelude                   (take)
+import           ZkFold.Prelude                                    (take)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (FunctionId (..))
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (FunctionId (..))
 
 newtype Interpreter a f = Interpreter { runInterpreter :: f a }
     deriving (Eq, Show, Generic, NFData)

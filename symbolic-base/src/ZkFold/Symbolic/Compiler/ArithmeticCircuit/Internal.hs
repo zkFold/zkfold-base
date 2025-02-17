@@ -129,17 +129,17 @@ instance NFData (LookupFunction a) where
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 data ArithmeticCircuit a p i o = ArithmeticCircuit
     {
-        acSystem  :: Map ByteString (Constraint a i),
+        acSystem         :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
         acLookupFunction :: Map ByteString (LookupFunction a),
         -- ^ The system of lookup functions
-        acLookup  :: MonoidalMap (LookupType a) (S.Set [SysVar i]),
+        acLookup         :: MonoidalMap (LookupType a) (S.Set [SysVar i]),
         -- ^ The range constraints [0, a] for the selected variables
-        acWitness :: Map ByteString (CircuitWitness a p i),
+        acWitness        :: Map ByteString (CircuitWitness a p i),
         -- ^ The witness generation functions
-        acFold    :: Map ByteString (CircuitFold a (Var a i) (CircuitWitness a p i)),
+        acFold           :: Map ByteString (CircuitFold a (Var a i) (CircuitWitness a p i)),
         -- ^ The set of folding operations
-        acOutput  :: o (Var a i)
+        acOutput         :: o (Var a i)
         -- ^ The output variables
     } deriving Generic
 

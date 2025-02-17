@@ -3,16 +3,16 @@
 
 module ZkFold.Symbolic.MonadCircuit where
 
-import           Control.Monad                   (Monad (return))
-import           Data.Function                   ((.))
-import           Data.Kind                       (Type)
-import           Prelude                         (Integer, Foldable)
+import           Control.Monad                                     (Monad (return))
+import           Data.Binary                                       (Binary)
+import           Data.Function                                     ((.))
+import           Data.Functor.Rep                                  (Rep, Representable)
+import           Data.Kind                                         (Type)
+import           Prelude                                           (Foldable, Integer)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
-import Data.Functor.Rep (Representable, Rep)
-import Data.Binary (Binary)
+import           ZkFold.Base.Algebra.Basic.Field                   (Zp)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
