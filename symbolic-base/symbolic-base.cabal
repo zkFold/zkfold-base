@@ -2,7 +2,7 @@ cabal-version:      3.0
 
 name:               symbolic-base
 version:            0.1.0.0
-tested-with:        GHC == 9.6.6
+tested-with:        GHC == 9.12.1
 synopsis:           ZkFold Symbolic compiler and zero-knowledge proof protocols
 homepage:           https://zkfold.io/
 category:           Cryptography, DSL, Math, Symbolic Computation
@@ -216,7 +216,7 @@ library
 
     if arch(javascript)
       build-depends:
-        base                          >= 4.18.0.0  && < 4.22,
+        base                 >= 4.18.0.0  && < 4.22,
         adjunctions                           < 4.5,
         aeson                                 < 2.3,
         base64-bytestring                          ,
@@ -249,7 +249,7 @@ library
         vector-split                          < 1.1,
     else
       build-depends:
-        base                          >= 4.18.0.0  && < 4.22,
+        base                 >= 4.18.0.0  && < 4.22,
         adjunctions                           < 4.5,
         aeson                                 < 2.3,
         base64-bytestring                          ,
