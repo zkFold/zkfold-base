@@ -22,9 +22,9 @@ import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), pre
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtocol)
 import           ZkFold.Symbolic.Class                      (Arithmetic)
 import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import ZkFold.Symbolic.Data.Class
 
 data NativeOperationInput point
   = Addition point
