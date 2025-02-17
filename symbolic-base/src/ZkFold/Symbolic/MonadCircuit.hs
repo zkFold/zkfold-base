@@ -6,11 +6,13 @@ module ZkFold.Symbolic.MonadCircuit where
 import           Control.Monad                   (Monad (return))
 import           Data.Function                   ((.))
 import           Data.Kind                       (Type)
-import           Prelude                         (Integer)
+import           Prelude                         (Integer, Foldable)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field (Zp)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import Data.Functor.Rep (Representable, Rep)
+import Data.Binary (Binary)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
@@ -91,7 +93,10 @@ class ( Monad m, FromConstant a var
   -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
   rangeConstraint :: var -> a -> m ()
 
-  registerFunction :: (forall x. (ResidueField a x) => f x -> g x) -> m (FunctionId (f a -> g a))
+  -- | Adds new lookup function to the system.
+  -- For example, @'registerFunction' f @ stores the function @f@.
+  registerFunction :: (Representable f, Binary (Rep f), Foldable g
+    ) => (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
 
   -- | Creates new variable given a polynomial witness
   -- AND adds a corresponding polynomial constraint.

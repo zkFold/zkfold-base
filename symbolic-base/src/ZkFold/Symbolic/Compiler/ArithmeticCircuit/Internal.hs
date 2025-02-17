@@ -121,7 +121,7 @@ instance (NFData a, NFData v) => NFData (CircuitFold a v w) where
   rnf CircuitFold {..} = rnf (foldStep, foldCount) `seq` liftRnf rnf foldSeed
 
 data LookupFunction a =
-  forall f g. LookupFunction (forall x. (ResidueField a x, Representable f, Traversable g) => f x -> g x)
+  forall f g. LookupFunction (forall x. (ResidueField x, Representable f, Traversable g) => f x -> g x)
 
 instance NFData (LookupFunction a) where
   rnf = rwhnf
@@ -299,9 +299,8 @@ instance Finite a => Witness (Var a i) (CircuitWitness a p i) where
   at (LinVar k sV b) = fromConstant k * pure (WSysVar sV) + fromConstant b
 
 instance
-  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1, Typeable a
-  , Representable f, Binary (Rep f), Foldable g
-  ) => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
+  (Arithmetic a, Binary a, Binary (Rep p), Binary (Rep i), Ord (Rep i), o ~ U1, Typeable a)
+   => MonadCircuit (Var a i) a (CircuitWitness a p i) (State (ArithmeticCircuit a p i o)) where
 
     unconstrained wf = case runWitnessF wf $ \case
       WSysVar sV -> LinUVar one sV zero
@@ -346,11 +345,10 @@ instance
         then return ()
         else error "The constant does not belong to the interval"
 
-    registerFunction ::
-      (forall x. (ResidueField a x) => f x -> g x) -> State (ArithmeticCircuit a p i o) (FunctionId (f a -> g a))
-    registerFunction f =
-      return . FunctionId . runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
-
+    registerFunction f = do
+      let b = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
+      zoom #acLookupFunction $ modify (M.insert b $ LookupFunction f)
+      return $ FunctionId b
 
 -- | Generates new variable index given a witness for it.
 --

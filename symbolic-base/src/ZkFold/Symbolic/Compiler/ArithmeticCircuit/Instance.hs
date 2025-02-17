@@ -121,7 +121,7 @@ instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), To
     toJSON r = object
         [
             "system" .= acSystem r,
-            "range"  .= acLookup r,
+            "lookup"  .= acLookup r,
             "output" .= acOutput r
         ]
 
@@ -135,4 +135,5 @@ instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a
             acOutput   <- v .: "output"
             let acWitness = empty
                 acFold    = empty
+                acLookupFunction = empty
             pure ArithmeticCircuit{..}

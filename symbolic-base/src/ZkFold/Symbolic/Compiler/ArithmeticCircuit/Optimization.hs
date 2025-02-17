@@ -34,8 +34,9 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (Witnes
 optimize :: forall a p i o.
   (Arithmetic a, Ord (Rep i), Functor o, Binary (Rep i), Binary a, Binary (Rep p)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
-optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
+optimize (ArithmeticCircuit s lf r w f o) = ArithmeticCircuit {
     acSystem = addInVarConstraints newS,
+    acLookupFunction = lf,
     acLookup = optRanges vs r,
     acWitness = (>>= optWitVar vs) <$>
       M.filterWithKey (\k _ -> notMember (NewVar (EqVar k)) vs) w,
