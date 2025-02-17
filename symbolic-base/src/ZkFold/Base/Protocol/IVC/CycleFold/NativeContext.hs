@@ -21,39 +21,45 @@ import           ZkFold.Base.Data.Vector                           (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme        (AccumulatorScheme (..))
 import           ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext
-import           ZkFold.Base.Protocol.IVC.CycleFold.Utils          (ForeignField, PrimaryField, PrimaryGroup,
-                                                                    SecondaryGroup)
 import           ZkFold.Base.Protocol.IVC.NARK                     (NARKInstanceProof (..), NARKProof (..),
                                                                     narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Symbolic.Class                             (Arithmetic, Symbolic (..), embedW)
 import           ZkFold.Symbolic.Data.Bool                         (Bool)
 import           ZkFold.Symbolic.Data.FieldElement                 (FieldElement (..))
+import ZkFold.Symbolic.Data.Ed25519 (Ed25519_Point)
+import ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve(..))
+import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Symbolic.Data.Class (SymbolicData(..))
+import Data.Function (flip)
 
-type ForeignOperationInput = NativeOperationInput :.: ForeignField
+type ForeignGroup c = Ed25519_Point c
+-- ^ The same point as 'PrimaryGroup', but viewed from native context:
+-- base field is FFA(q), scalar field is FE(=Zp)
+type ForeignField c = BaseFieldOf (ForeignGroup c)
+-- ^ The intended behavior is actually to _not_ record any constraints,
+-- as far as I can tell. For optimal implementation we need to
+-- either introduce a "FFAW" which work in the same vein as 'FieldElementW'
+-- or wait for Symbolic refactor
+type ForeignOperationInput c = NativeOperationInput (ForeignGroup c)
+type ForeignOperation c = NativeOperation (ForeignGroup c)
+type ForeignPayload c = NativePayload (ForeignGroup c)
 
-type ForeignOperation = NativeOperation :.: ForeignField
-
-type ForeignPayload = NativePayload :.: ForeignField
+type SecGroup c = Ed25519_Point c
+-- ^ The secondary group, but viewed from a foreign context:
+-- base field is FFA(p), scalar field is FE(=Zq)
+type SecGroupLayout a = Layout (SecGroup (Interpreter a))
 
 --------------------------------------------------------------------------------
 
 data ForeignPoint algo (d :: Natural) k a' ctx = ForeignPoint
-    { fpValue               :: ForeignOperation (FieldElement ctx)
-    , fpAccumulatorInstance :: (AccumulatorInstance k NativeOperation SecondaryGroup :.: ForeignField) (FieldElement ctx)
-    , fpAccumulatorProof    :: ((Vector k :.: []) :.: ForeignField) (WitnessField ctx)
+    { fpValue               :: ForeignOperation ctx
+    , fpAccumulatorInstance :: AccumulatorInstance k (PredicateLayout a') (SecGroupLayout a') (ForeignField ctx)
+    , fpAccumulatorProof    :: Vector k [ForeignField ctx]
     }
 
 fpIsValid :: ForeignPoint algo d k a' ctx -> Bool ctx
 fpIsValid = undefined
-
---------------------------------------------------------------------------------
-
-toNative :: forall t ctx . Functor t => (t :.: ForeignField) (WitnessField ctx) -> t (WitnessField (ForeignContext ctx))
-toNative (Comp1 a) = fmap unPar1 a
-
-fromNative :: forall t ctx . Functor t => t (WitnessField (ForeignContext ctx)) -> (t :.: ForeignField) (WitnessField ctx)
-fromNative a = Comp1 $ fmap Par1 a
 
 --------------------------------------------------------------------------------
 
@@ -73,62 +79,62 @@ fopCircuit :: forall algo d k a' ctx .
     , Arithmetic a'
     , Binary a'
     , Symbolic ctx
-    , FromConstant a' (WitnessField (ForeignContext ctx))
-    , Scale a' (WitnessField (ForeignContext ctx))
+    , FromConstant a' (ForeignField ctx)
+    , Scale a' (ForeignField ctx)
     )
     => ForeignPoint algo d k a' ctx
-    -> ForeignOperationInput (WitnessField ctx)
+    -> ForeignOperationInput ctx
     -> ForeignPoint algo d k a' ctx
 fopCircuit ForeignPoint {..} op =
     let
         -- witness computation
 
-        g :: PrimaryGroup (WitnessField (ForeignContext ctx))
-        g = toNative @_ @ctx $ toWitness $ Comp1 $ opRes $ unComp1 fpValue
+        g :: Layout (PrimaryGroup (Interpreter a')) a'
+        g = _ -- toWitness $ opRes fpValue
 
-        input0 :: NativeOperation (WitnessField (ForeignContext ctx))
+        input0 :: PredicateLayout a' a'
         input0 = NativeOperation zero zero zero zero zero
 
-        payload :: NativePayload (WitnessField (ForeignContext ctx))
-        payload = case toNative @_ @ctx op of
-            Addition h       -> NativePayload zero g h    zero
-            Multiplication s -> NativePayload s    g zero one
+        payload :: PredicatePayload a' a'
+        payload = flip arithmetize Proxy $ case op of
+            Addition h       -> NativePayload zero _ {- g -} h    zero
+            Multiplication s -> NativePayload s    _ {- g -} zero one
 
-        narkIP :: NARKInstanceProof k NativeOperation SecondaryGroup (WitnessField (ForeignContext ctx))
-        narkIP@(NARKInstanceProof input (NARKProof piX _)) = narkInstanceProof (opProtocol @algo @d @_ @a') input0 payload
+        narkIP :: NARKInstanceProof k (PredicateLayout a') (SecGroupLayout a') (ForeignField ctx)
+        narkIP@(NARKInstanceProof input (NARKProof piX _)) = _ -- narkInstanceProof (opProtocol @algo @d @_ @a') input0 payload
 
-        accX :: AccumulatorInstance k NativeOperation SecondaryGroup (WitnessField (ForeignContext ctx))
-        accX = toNative @_ @ctx $ toWitness fpAccumulatorInstance
+        accX :: AccumulatorInstance k (PredicateLayout a') (SecGroupLayout a') (ForeignField ctx)
+        accX = _ -- toWitness fpAccumulatorInstance
 
-        accW :: Vector k [WitnessField (ForeignContext ctx)]
-        accW = unComp1 $ toNative @_ @ctx fpAccumulatorProof
+        accW :: Vector k [ForeignField ctx]
+        accW = fpAccumulatorProof
 
-        acc :: Accumulator k NativeOperation SecondaryGroup (WitnessField (ForeignContext ctx))
+        acc :: Accumulator k (PredicateLayout a') (SecGroupLayout a') (ForeignField ctx)
         acc = Accumulator accX accW
 
         (acc', pf) = prover (opAccumulatorScheme @algo @_ @_ @a') acc narkIP
 
         -- in-circuit computation
 
-        inputC :: NativeOperation (ForeignField (FieldElement ctx))
-        inputC = unComp1 $ fromWitness $ fromNative @_ @ctx input
+        inputC :: NativeOperation (ForeignGroup ctx)
+        inputC = _ -- fromWitness input
 
-        piXC :: Vector k (SecondaryGroup (ForeignField (FieldElement ctx)))
-        piXC = unComp1 $ unComp1 $ fromWitness $ fromNative @_ @ctx $ Comp1 piX
+        piXC :: Vector k (SecGroup ctx)
+        piXC = _ -- fromWitness piX
 
-        accXC :: AccumulatorInstance k NativeOperation SecondaryGroup (ForeignField (FieldElement ctx))
-        accXC = unComp1 fpAccumulatorInstance
+        accXC :: AccumulatorInstance k (PredicateLayout a') (SecGroupLayout a') (ForeignField ctx)
+        accXC = fpAccumulatorInstance
 
-        pfC :: Vector (d-1) (SecondaryGroup (ForeignField (FieldElement ctx)))
-        pfC = unComp1 $ unComp1 $ fromWitness $ fromNative @_ @ctx $ Comp1 pf
+        pfC :: Vector (d-1) (SecGroup ctx)
+        pfC = _ -- fromWitness pf
 
-        accX' :: (AccumulatorInstance k NativeOperation SecondaryGroup :.: ForeignField) (FieldElement ctx)
-        accX' = Comp1 $ verifier (opAccumulatorScheme @algo @_ @_ @a') @(ForeignField (FieldElement ctx)) inputC piXC accXC pfC
+        accX' :: AccumulatorInstance k (PredicateLayout a') (SecGroupLayout a') (ForeignField ctx)
+        accX' = _ -- verifier (opAccumulatorScheme @algo @_ @_ @a') @(ForeignField ctx) inputC piXC accXC pfC
 
-        accW' :: ((Vector k :.: []) :.: ForeignField) (WitnessField ctx)
-        accW' = fromNative @_ @ctx $ Comp1 $ acc'^.w
+        accW' :: Vector k [ForeignField ctx]
+        accW' = acc'^.w
 
-    in ForeignPoint (Comp1 inputC) accX' accW'
+    in ForeignPoint inputC accX' accW'
 
 --------------------------------------------------------------------------------
 
@@ -136,7 +142,7 @@ instance Haskell.Show (ForeignPoint algo d k a' ctx) where
     show = const "ForeignPoint"
 
 instance (Haskell.Eq (ctx Par1), Haskell.Eq (WitnessField ctx)) => Haskell.Eq (ForeignPoint algo d k a' ctx) where
-    p == p' = opRes (unComp1 $ fpValue p) Haskell.== opRes (unComp1 $ fpValue p')
+    p == p' = opRes (fpValue p) Haskell.== opRes (fpValue p')
 
 instance
     ( HashAlgorithm algo
@@ -146,16 +152,16 @@ instance
     , Arithmetic a'
     , Binary a'
     , Symbolic ctx
-    , FromConstant a' (WitnessField (ForeignContext ctx))
-    , Scale a' (WitnessField (ForeignContext ctx))
+    , FromConstant a' (ForeignField ctx)
+    , Scale a' (ForeignField ctx)
     ) => AdditiveSemigroup (ForeignPoint algo d k a' ctx) where
     p + p' =
         let
-            g :: PrimaryGroup (ForeignField (FieldElement ctx))
-            g = opRes $ unComp1 $ fpValue p'
+            g :: ForeignGroup ctx
+            g = _
 
-            opi :: ForeignOperationInput (WitnessField ctx)
-            opi = toWitness $ Comp1 $ Addition g
+            opi :: ForeignOperationInput ctx
+            opi = _
         in
             fopCircuit p opi
 
@@ -167,16 +173,16 @@ instance
     , Arithmetic a'
     , Binary a'
     , Symbolic ctx
-    , FromConstant a' (WitnessField (ForeignContext ctx))
-    , Scale a' (WitnessField (ForeignContext ctx))
+    , FromConstant a' (ForeignField ctx)
+    , Scale a' (ForeignField ctx)
     ) => Scale Natural (ForeignPoint algo d k a' ctx) where
     scale a p =
         let
-            s :: PrimaryField (ForeignField (WitnessField ctx))
+            s :: ForeignField ctx
             s = fromConstant a
 
-            opi :: ForeignOperationInput (WitnessField ctx)
-            opi = Comp1 $ Multiplication s
+            opi :: ForeignOperationInput ctx
+            opi = Multiplication _
         in
             fopCircuit p opi
 
@@ -188,14 +194,15 @@ instance
     , Arithmetic a'
     , Binary a'
     , Symbolic ctx
-    , FromConstant a' (WitnessField (ForeignContext ctx))
-    , Scale a' (WitnessField (ForeignContext ctx))
+    , FromConstant a' (ForeignField ctx)
+    , Scale a' (ForeignField ctx)
     ) => AdditiveMonoid (ForeignPoint algo d k a' ctx) where
     zero =
         let
             acc = emptyAccumulator
         in
-            ForeignPoint (Comp1 $ opInit zero) (Comp1 $ acc^.x) (toWitness @_ @ctx $ Comp1 $ Comp1 $ acc^.w)
+            _
+            -- ForeignPoint (Comp1 $ opInit zero) (Comp1 $ acc^.x) (toWitness @_ @ctx $ Comp1 $ Comp1 $ acc^.w)
 
 instance
     ( HashAlgorithm algo
@@ -205,16 +212,16 @@ instance
     , Arithmetic a'
     , Binary a'
     , Symbolic ctx
-    , FromConstant a' (WitnessField (ForeignContext ctx))
-    , Scale a' (WitnessField (ForeignContext ctx))
+    , FromConstant a' (ForeignField ctx)
+    , Scale a' (ForeignField ctx)
     ) => Scale Integer (ForeignPoint algo d k a' ctx) where
     scale a p =
         let
-            s :: PrimaryField (ForeignField (WitnessField ctx))
+            s :: ForeignField ctx
             s = fromConstant a
 
-            opi :: ForeignOperationInput (WitnessField ctx)
-            opi = Comp1 $ Multiplication s
+            opi :: ForeignOperationInput ctx
+            opi = Multiplication _
         in
             fopCircuit p opi
 
@@ -226,8 +233,8 @@ instance
     , Arithmetic a'
     , Binary a'
     , Symbolic ctx
-    , FromConstant a' (WitnessField (ForeignContext ctx))
-    , Scale a' (WitnessField (ForeignContext ctx))
+    , FromConstant a' (ForeignField ctx)
+    , Scale a' (ForeignField ctx)
     ) => AdditiveGroup (ForeignPoint algo d k a' ctx) where
     negate = scale (-1 :: Integer)
 
@@ -239,10 +246,11 @@ instance
     , Arithmetic a'
     , Binary a'
     , Symbolic ctx
-    , FromConstant a' (WitnessField (ForeignContext ctx))
-    , Scale a' (WitnessField (ForeignContext ctx))
+    , FromConstant a' (ForeignField ctx)
+    , Scale a' (ForeignField ctx)
     ) => Arbitrary (ForeignPoint algo d k a' ctx) where
     arbitrary = do
         let acc = emptyAccumulator
         s <- fromConstant . toConstant @(Zp BLS12_381_Scalar) <$> arbitrary
-        return $ ForeignPoint (Comp1 $ opInit s) (Comp1 $ acc^.x) (toWitness @_ @ctx $ Comp1 $ Comp1 $ acc^.w)
+        _
+        -- return $ ForeignPoint (Comp1 $ opInit s) (Comp1 $ acc^.x) (toWitness @_ @ctx $ Comp1 $ Comp1 $ acc^.w)
