@@ -21,7 +21,6 @@ import           Data.Binary.Put
 import qualified Data.ByteString        as Strict
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy   as Lazy
-import           Data.Foldable          (foldl')
 import qualified Data.Text.Encoding     as Text
 import           Numeric.Natural        (Natural)
 import           Prelude

@@ -1,17 +1,16 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module Tests.RSA (specRSA) where
 
 import           Codec.Crypto.RSA                            (generateKeyPair)
 import qualified Codec.Crypto.RSA                            as R
+import           Crypto.Random                               (newGenIO, SystemRandom)
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
 import qualified Prelude                                     as P
 import           System.IO                                   (IO)
-import           System.Random                               (mkStdGen)
 import           Test.Hspec                                  (describe, hspec)
 import           Test.QuickCheck                             (Gen, withMaxSuccess, (===))
 import           Tests.ArithmeticCircuit                     (it)
@@ -33,19 +32,19 @@ evalBool :: forall a . Bool (Interpreter a) -> a
 evalBool (Bool (Interpreter (Par1 v))) = v
 
 specRSA :: IO ()
-specRSA = hspec $ do
-    describe ("RSA signature") $ do
-        it "encrypts and decrypts correctly" $ withMaxSuccess 10 $ do
-            x <- toss $ (2 :: Natural) ^ (32 :: Natural)
-            msgBits <- toss $ (2 :: Natural) ^ (256 :: Natural)
-            let gen = mkStdGen (P.fromIntegral x)
-                (R.PublicKey{..}, R.PrivateKey{..}, _) = generateKeyPair gen (P.fromIntegral $ value @KeyLength)
-                prvkey = PrivateKey (fromConstant private_d) (fromConstant private_n)
-                pubkey = PublicKey (fromConstant public_e) (fromConstant public_n)
-                msg = fromConstant msgBits
+specRSA = do
+    gen <- newGenIO @SystemRandom
+    hspec $ do
+        describe "RSA signature" $ do
+            it "encrypts and decrypts correctly" $ withMaxSuccess 10 $ do
+                msgBits <- toss $ (2 :: Natural) ^ (256 :: Natural)
+                let (R.PublicKey{..}, R.PrivateKey{..}, _) = generateKeyPair gen (P.fromIntegral $ value @KeyLength)
+                    prvkey = PrivateKey (fromConstant private_d) (fromConstant public_n)
+                    pubkey = PublicKey (fromConstant public_e) (fromConstant public_n)
+                    msg = fromConstant msgBits
 
-                sig = sign @I @256 msg prvkey
-                check = verify @I @256 msg sig pubkey
+                    sig = sign @I @256 msg prvkey
+                    check = verify @I @256 msg sig pubkey
 
-            pure $ evalBool check === one
+                pure $ evalBool check === one
 

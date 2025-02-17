@@ -8,7 +8,6 @@ import           Data.Bool                                         (bool)
 import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Constraint.Unsafe
-import           Data.List                                         (foldl')
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
 import qualified Data.Vector                                       as V

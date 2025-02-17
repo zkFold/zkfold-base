@@ -7,7 +7,6 @@
 module ZkFold.Base.Algebra.Basic.Class where
 
 import           Data.Bool                        (bool)
-import           Data.Foldable                    (foldl')
 import           Data.Functor.Constant            (Constant (..))
 import           Data.Kind                        (Type)
 import           GHC.Natural                      (naturalFromInteger)
