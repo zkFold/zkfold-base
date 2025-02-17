@@ -16,7 +16,7 @@ import           Test.QuickCheck                            (Arbitrary (..))
 import           ZkFold.Base.Algebra.Basic.Class            (AdditiveSemigroup (..), Scale (..), zero, (+))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519  (Ed25519_Base)
+import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta    as Pasta
 import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
@@ -27,11 +27,11 @@ import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtoco
 import           ZkFold.Symbolic.Class                      (Arithmetic)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators           (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators           (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.Ed25519               (Ed25519_Point)
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FFA                   (KnownFFA)
+import           ZkFold.Symbolic.Data.Pasta                 (PallasPoint)
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
 data NativeOperationInput point
@@ -136,18 +136,14 @@ opCircuit _ (NativePayload s g h op) =
         opRes = ifThenElse opId (scale opS opG) (opG + opH)
     in NativeOperation {..}
 
-type PrimaryGroup c = Ed25519_Point c
--- ^ Actually Ed25519 here is wrong
--- we need a type which has FFA as scalar and FE as base
--- (but the best treatment would be to have both fields be FFA
--- and let the FFA magic compile one of them down to FE when fields match)
+type PrimaryGroup c = PallasPoint c
 type PredicateLayout a = Layout (NativeOperation (PrimaryGroup (Interpreter a)))
 type PredicatePayload a = Layout (NativePayload (PrimaryGroup (Interpreter a)))
 
 opPredicate :: forall a.
     ( Arithmetic a
     , Binary a
-    , KnownFFA Ed25519_Base Auto (Interpreter a)
+    , KnownFFA Pasta.FqModulus (Fixed 1) (Interpreter a)
     )
     => Predicate a (PredicateLayout a) (PredicatePayload a)
 opPredicate = predicate \(i :: c (PredicateLayout a)) p -> arithmetize (opCircuit
@@ -160,7 +156,7 @@ opProtocol :: forall algo d k a.
     , k ~ 1
     , Arithmetic a
     , Binary a
-    , KnownFFA Ed25519_Base Auto (Interpreter a)
+    , KnownFFA Pasta.FqModulus (Fixed 1) (Interpreter a)
     )
     => FiatShamir k a (PredicateLayout a) (PredicatePayload a) (PredicateLayout a)
 opProtocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d $ opPredicate
@@ -171,7 +167,7 @@ opAccumulatorScheme :: forall algo d k a f.
     , KnownNat (d + 1)
     , Arithmetic a
     , Binary a
-    , KnownFFA Ed25519_Base Auto (Interpreter a)
+    , KnownFFA Pasta.FqModulus (Fixed 1) (Interpreter a)
     , Foldable f
     )
     => AccumulatorScheme d k a (PredicateLayout a) f
