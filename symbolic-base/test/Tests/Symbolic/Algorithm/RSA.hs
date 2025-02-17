@@ -10,7 +10,7 @@ import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
 import qualified Prelude                                     as P
-import           Test.Hspec                                  (describe, Spec)
+import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, withMaxSuccess, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 
