@@ -175,6 +175,7 @@ library
       ZkFold.Symbolic.Algorithms.Hash.SHA2
       ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants
       ZkFold.Symbolic.Algorithms.RSA
+      ZkFold.Symbolic.Algorithms.FFT
       ZkFold.Symbolic.Class
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Compiler.ArithmeticCircuit

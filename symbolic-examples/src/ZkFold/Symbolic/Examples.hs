@@ -14,11 +14,13 @@ import           Examples.Conditional                        (exampleConditional
 import           Examples.Constant                           (exampleConst5, exampleEq5)
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
+import           Examples.RSA
 import           Examples.Fibonacci                          (exampleFibonacci)
 import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
+import           Examples.Ed25519
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -63,6 +65,8 @@ examples =
   , ("ByteString.And.32", exampleOutput $ exampleByteStringAnd @32)
   , ("ByteString.Or.64", exampleOutput $ exampleByteStringOr @64)
   , ("UInt.Mul.64.Auto", exampleOutput $ exampleUIntMul @64 @Auto)
+  , ("UInt.Mul.4096.Auto", exampleOutput $ exampleUIntMul @4096 @Auto)
+  , ("UInt.ProductMod.1024.Auto", exampleOutput $ exampleUIntProductMod @1024 @Auto)
   , ("LEQ", exampleOutput exampleLEQ)
   , ("ByteString.Extend.1.512", exampleOutput $ exampleByteStringResize @1 @512)
   , ("UInt.Extend.1.512", exampleOutput $ exampleUIntResize @1 @512 @Auto)
@@ -74,6 +78,8 @@ examples =
   , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
   , ("UInt.StrictMul.512.Auto", exampleOutput $ exampleUIntStrictMul @512 @Auto)
   , ("UInt.DivMod.32.Auto", exampleOutput $ exampleUIntDivMod @32 @Auto)
+  , ("UInt.ExpMod.32.16.64.Auto", exampleOutput $ exampleUIntExpMod @32 @16 @64 @Auto)
+  , ("UInt.ExpMod.256.64.1024.Auto", exampleOutput $ exampleUIntExpMod @256 @64 @1024 @Auto)
   , ("FFA.Add.337", exampleOutput exampleFFAadd337)
   , ("FFA.Add.097", exampleOutput exampleFFAadd097)
   , ("FFA.Mul.337", exampleOutput exampleFFAmul337)
@@ -86,9 +92,9 @@ examples =
   , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
   , ("MiMCHash", exampleOutput exampleMiMC)
   , ("SHA256.32", exampleOutput $ exampleSHA @32)
+  , ("RSA.sign.verify.256", exampleOutput exampleRSA)
+  , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
   -- , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
-  -- , ("RSA.sign.verify.256", exampleOutput exampleRSA)
-  -- , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
   -- , ("PedersonCommitment", exampleOutput exampleCommitment)
   -- , ("BatchTransfer", exampleOutput exampleBatchTransfer)
   ]
