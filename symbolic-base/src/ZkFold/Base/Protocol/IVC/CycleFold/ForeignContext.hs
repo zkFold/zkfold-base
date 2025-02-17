@@ -1,166 +1,141 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.IVC.CycleFold.ForeignContext where
 
-import           Control.DeepSeq                            (NFData1)
-import           Data.Distributive                          (Distributive (..))
-import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep, mzipWithRep)
-import           Data.These                                 (These (..))
-import           Data.Zip                                   (Semialign (..), Zip (..))
-import           GHC.Generics                               (Generic, Generic1, Par1 (..))
-import           Prelude                                    (Foldable, Functor, Traversable, return, type (~), ($))
+import           GHC.Generics                               (Generic)
+import           Prelude                                    (return, type (~), ($))
 import qualified Prelude                                    as Haskell
 import           Test.QuickCheck                            (Arbitrary (..))
 
-import           ZkFold.Base.Algebra.Basic.Class            (AdditiveSemigroup (..), FiniteField, Scale (..), one, zero,
-                                                             (*), (+), (-))
+import           ZkFold.Base.Algebra.Basic.Class            (AdditiveSemigroup (..), Scale (..), zero, (+))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
+import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
-import           ZkFold.Base.Protocol.IVC.CycleFold.Utils   (PrimaryField, PrimaryGroup, SecondaryGroup)
 import           ZkFold.Base.Protocol.IVC.FiatShamir        (FiatShamir, fiatShamir)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtocol)
 import           ZkFold.Symbolic.Class                      (Arithmetic)
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.Eq
+import ZkFold.Symbolic.Data.Class
 
-type ForeignContext ctx = ctx
+data NativeOperationInput point
+  = Addition point
+  | Multiplication (ScalarFieldOf point)
 
 --------------------------------------------------------------------------------
 
-data NativeOperationInput f =
-      Addition (PrimaryGroup f)
-    | Multiplication (PrimaryField f)
-    deriving (Generic, Generic1, Functor, Foldable, Traversable)
-
---------------------------------------------------------------------------------
-
-data NativeOperation f = NativeOperation
-    { opS   :: PrimaryField f
-    , opG   :: PrimaryGroup f
-    , opH   :: PrimaryGroup f
-    , opRes :: PrimaryGroup f
-    , opId  :: f
+data NativeOperation point = NativeOperation
+    { opS   :: ScalarFieldOf point
+    , opG   :: point
+    , opH   :: point
+    , opRes :: point
+    , opId  :: BooleanOf point
     }
-    deriving (Generic, Generic1, Functor, Foldable, Traversable)
+    deriving (Generic)
 
-instance Haskell.Eq (PrimaryGroup f) => Haskell.Eq (NativeOperation f) where
+instance Haskell.Eq point => Haskell.Eq (NativeOperation point) where
     op1 == op2 = opRes op1 Haskell.== opRes op2
 
-opInit :: FiniteField f => f -> NativeOperation f
-opInit s = NativeOperation
+opInit :: (CyclicGroup point, Eq point) => point -> NativeOperation point
+opInit init = NativeOperation
     { opS   = zero
     , opG   = zero
     , opH   = zero
-    , opRes = Par1 s
-    , opId  = zero
+    , opRes = init
+    , opId  = false
     }
 
-instance Distributive NativeOperation where
-    distribute = distributeRep
-    collect = collectRep
-
-instance Representable NativeOperation
-
-instance Semialign NativeOperation where
-    alignWith f = mzipWithRep (\a b -> f (These a b))
-
-instance Zip NativeOperation where
-    zipWith = mzipWithRep
-
-instance Binary a => Binary (NativeOperation a)
-
-instance NFData1 NativeOperation
-
 instance
-    ( FiniteField f
-    , Arbitrary (PrimaryField f)
-    ) => Arbitrary (NativeOperation f) where
+    ( Arbitrary (ScalarFieldOf point)
+    , Arbitrary point
+    , CyclicGroup point
+    , Eq point
+    ) => Arbitrary (NativeOperation point) where
     arbitrary = do
         s <- arbitrary
         g <- arbitrary
         h <- arbitrary
         op <- arbitrary
         return $ if op
-            then NativeOperation s g h (g + h) zero
-            else NativeOperation s g h (scale s g) one
+            then NativeOperation s g h (g + h) false
+            else NativeOperation s g h (scale s g) true
 
 --------------------------------------------------------------------------------
 
-data NativePayload f = NativePayload (PrimaryField f) (PrimaryGroup f) (PrimaryGroup f) (Par1 f)
-    deriving (Generic, Generic1, Functor, Foldable, Traversable)
-
-instance Distributive NativePayload where
-    distribute = distributeRep
-    collect = collectRep
-
-instance Representable NativePayload
-
-instance Binary a => Binary (NativePayload a)
-
-instance NFData1 NativePayload
+data NativePayload point =
+  NativePayload (ScalarFieldOf point) point point (BooleanOf point)
+    deriving (Generic)
 
 instance
-    ( FiniteField f
-    , Arbitrary (PrimaryField f)
-    ) => Arbitrary (NativePayload f) where
+    ( Arbitrary (ScalarFieldOf point)
+    , Arbitrary point
+    , Eq point
+    ) => Arbitrary (NativePayload point) where
     arbitrary = do
         s <- arbitrary
         g <- arbitrary
         h <- arbitrary
         op <- arbitrary
-        return $ NativePayload s g h (if op then zero else one)
+        return $ NativePayload s g h (if op then false else true)
 
 --------------------------------------------------------------------------------
 
-opCircuit :: forall f . FiniteField f
-    => NativeOperation f
-    -> NativePayload f
-    -> NativeOperation f
-opCircuit _ ((NativePayload s g h op)) =
+opCircuit :: forall point. (CyclicGroup point, Eq point)
+    => NativeOperation point
+    -> NativePayload point
+    -> NativeOperation point
+opCircuit _ (NativePayload s g h op) =
     let
-        opS :: PrimaryField f
+        opS :: ScalarFieldOf point
         opS = s
 
-        opG :: PrimaryGroup f
+        opG :: point
         opG = g
 
-        opH :: PrimaryGroup f
+        opH :: point
         opH = h
 
-        opId :: f
-        opId = unPar1 op
+        opId :: BooleanOf point
+        opId = op
 
-        opRes :: PrimaryGroup f
-        opRes = mzipWithRep (\v1 v2 -> v1 + (v2-v1)*opId) (opG + opH) (scale opS opG)
+        opRes :: point
+        opRes = ifThenElse opId (scale opS opG) (opG + opH)
     in NativeOperation {..}
 
-opPredicate :: forall a .
+type State a = Layout (NativeOperation point)
+type Item a = Layout (NativePayload point)
+
+opPredicate :: forall a.
     ( Arithmetic a
     , Binary a
     )
-    => Predicate a NativeOperation NativePayload
-opPredicate = predicate opCircuit
+    => Predicate a (State a) (Item a)
+opPredicate = predicate \i p -> arithmetize (opCircuit _ _) Proxy
 
-opProtocol :: forall algo d k a .
+opProtocol :: forall algo d k a point point2.
     ( HashAlgorithm algo
     , KnownNat (d + 1)
     , k ~ 1
     , Arithmetic a
     , Binary a
     )
-    => FiatShamir k a NativeOperation NativePayload SecondaryGroup
-opProtocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d $ opPredicate
+    => FiatShamir k a (State point) (Item point) (Layout point2)
+opProtocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d $ opPredicate @point
 
-opAccumulatorScheme :: forall algo d k a .
+opAccumulatorScheme :: forall algo d k a point point2.
     ( HashAlgorithm algo
     , KnownNat (d - 1)
     , KnownNat (d + 1)
     , Arithmetic a
     , Binary a
     )
-    => AccumulatorScheme d k a NativeOperation SecondaryGroup
-opAccumulatorScheme = accumulatorScheme @algo $ opPredicate
+    => AccumulatorScheme d k a (State point) (Layout point2)
+opAccumulatorScheme = accumulatorScheme @algo $ opPredicate @point
