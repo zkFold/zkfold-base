@@ -5,7 +5,7 @@ module Tests.Symbolic.Algorithm.RSA (specRSA) where
 
 import           Codec.Crypto.RSA                            (generateKeyPair)
 import qualified Codec.Crypto.RSA                            as R
-import           Crypto.Random                               (CryptoRandomGen)
+import           System.Random                               (RandomGen)
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
@@ -30,7 +30,7 @@ toss x = chooseNatural (0, x -! 1)
 evalBool :: forall a . Bool (Interpreter a) -> a
 evalBool (Bool (Interpreter (Par1 v))) = v
 
-specRSA :: CryptoRandomGen g => g -> Spec
+specRSA :: RandomGen g => g -> Spec
 specRSA gen = do
     describe "RSA signature" $ do
         it "encrypts and decrypts correctly" $ withMaxSuccess 10 $ do
