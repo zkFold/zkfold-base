@@ -29,9 +29,6 @@ import           Control.DeepSeq
 import           Control.Monad                     (zipWithM)
 import           Control.Monad.State               (StateT (..))
 import           Data.Aeson                        hiding (Bool)
-import           Data.Constraint
-import           Data.Constraint.Nat
-import           Data.Constraint.Unsafe
 import           Data.Foldable                     (Foldable (toList), foldlM, foldr, foldrM, for_)
 import           Data.Function                     (on)
 import           Data.Functor                      (Functor (..), (<$>))
@@ -44,7 +41,6 @@ import           Data.Tuple                        (swap)
 import qualified Data.Zip                          as Z
 import           GHC.Generics                      (Generic, Par1 (..), (:*:) (..))
 import           GHC.Natural                       (naturalFromInteger)
-import           GHC.TypeNats                      (withKnownNat)
 import           Prelude                           (Integer, const, error, flip, otherwise, return, type (~), ($), (++),
                                                     (.), (<>), (>>=))
 import qualified Prelude                           as Haskell
@@ -56,7 +52,6 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Control.HApplicative  (HApplicative (..))
 import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
 import           ZkFold.Base.Data.Product          (fstP, sndP)
-import qualified ZkFold.Base.Data.Utils            as U
 import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
 import           ZkFold.Prelude                    (length, replicate, replicateA, take)
@@ -198,7 +193,7 @@ productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) =
         -- | Unconstrained @mod@ part.
         md = hmap sndP source
 
-        Bool eq = (UInt aRegs :: UInt n r c) * UInt bRegs == UInt dv * UInt mRegs + UInt md
+        Bool eq = (UInt aRegs :: UInt n r c) `unsafeMulNoPad` UInt bRegs == UInt dv `unsafeMulNoPad` UInt mRegs + UInt md
 
         Bool lt = (UInt md :: UInt n r c) < UInt mRegs
 
@@ -539,58 +534,6 @@ instance
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 r
 
 
-type NextPow2 n = 2 ^ (Log2 (2 * n - 1))
-
-nextPow2 :: Natural -> Natural
-nextPow2 n = 2 ^ nextNBits n
-
-nextNBits :: Natural -> Natural
-nextNBits n = ilog2 (2 * n -! 1)
-
-withNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1))
-withNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1)) (unsafeSNat (nextNBits (value @n))) Dict
-
-withNextNBits :: forall n {r}. (KnownNat n) => (KnownNat (Log2 (2 * n - 1)) => r) -> r
-withNextNBits = withDict (withNextNBits' @n)
-
-withNextPow2' :: forall n. (KnownNat n) :- KnownNat (NextPow2 n)
-withNextPow2' = Sub $ withKnownNat @(NextPow2 n) (unsafeSNat (nextPow2 (value @n))) Dict
-
-withNextPow2 :: forall n {r}. (KnownNat n) => (KnownNat (NextPow2 n) => r) -> r
-withNextPow2 = withDict (withNextPow2' @n)
-
-type SecondNextPow2 n = 2 ^ (Log2 (2 * n - 1) + 1)
-
-secondNextPow2 :: Natural -> Natural
-secondNextPow2 n = 2 ^ secondNextNBits n
-
-secondNextNBits :: Natural -> Natural
-secondNextNBits n = ilog2 (2 * n -! 1) + 1
-
-withSecondNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1) + 1)
-withSecondNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1) + 1) (unsafeSNat (secondNextNBits (value @n))) Dict
-
-withSecondNextNBits :: forall n {r}. (KnownNat n) => (KnownNat (Log2 (2 * n - 1) + 1) => r) -> r
-withSecondNextNBits = withDict (withSecondNextNBits' @n)
-
-withNumberOfRegisters' :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (NumberOfRegisters a n r)
-withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters a n r) (unsafeSNat (numberOfRegisters @a @n @r)) Dict
-
-withNumberOfRegisters :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => ((KnownNat (NumberOfRegisters a n r)) => k) -> k
-withNumberOfRegisters = withDict (withNumberOfRegisters' @n @r @a)
-
-padNextPow2 :: forall i a w m n . (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (NextPow2 n) i)
-padNextPow2 v = do
-    z <- newAssigned (const zero)
-    let padded = take (nextPow2 $ value @n) $ V.fromVector v <> Haskell.repeat z
-    pure $ V.unsafeToVector padded
-
-padSecondNextPow2 :: forall i a w m n . (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (SecondNextPow2 n) i)
-padSecondNextPow2 v = do
-    z <- newAssigned (const zero)
-    let padded = take (secondNextPow2 $ value @n) $ V.fromVector v <> Haskell.repeat z
-    pure $ V.unsafeToVector padded
-
 instance
     ( Symbolic c
     , KnownNat n
@@ -601,11 +544,32 @@ instance
           0 -> x
           _ -> withNumberOfRegisters @n @rs @(BaseField c) $
                    withSecondNextNBits @(NumberOfRegisters (BaseField c) n rs) $
-                       trimRegisters @c @n @rs $ mulDFT @c xPadded yPadded
+                       trimRegisters @c @n @rs $ mulFFT @c xPadded yPadded
         where
             xPadded, yPadded :: c (Vector (SecondNextPow2 (NumberOfRegisters (BaseField c) n rs)))
             xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padSecondNextPow2
             yPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF y padSecondNextPow2
+
+-- | Multiply two UInts assuming neither of them holds a value of more than @n / 2@ bits.
+-- Requires less constraints than regular multiplication but its behaviour is undefined if the assumption does not hold.
+-- Intended for internal usage
+--
+unsafeMulNoPad
+    :: forall n c rs
+    .  Symbolic c
+    => KnownNat n
+    => KnownRegisterSize rs
+    => UInt n rs c -> UInt n rs c -> UInt n rs c
+unsafeMulNoPad (UInt x) (UInt y) = UInt $
+    case (value @n) of
+      0 -> x
+      _ -> withNumberOfRegisters @n @rs @(BaseField c) $
+               withNextNBits @(NumberOfRegisters (BaseField c) n rs) $
+                   trimRegisters @c @n @rs $ mulFFT @c xPadded yPadded
+    where
+        xPadded, yPadded :: c (Vector (NextPow2 (NumberOfRegisters (BaseField c) n rs)))
+        xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padNextPow2
+        yPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF y padNextPow2
 
 
 trimRegisters
@@ -629,17 +593,17 @@ trimRegisters c = fromCircuitF c $ \regs -> do
 
     where
         step :: forall i w m. MonadCircuit i (BaseField c) w m => ([i], i) -> i -> m ([i], i)
-        step (acc, c) r = do
-            s <- newAssigned (\p -> p c + p r)
+        step (acc, cr) r = do
+            s <- newAssigned (\p -> p cr + p r)
             (l, h) <- splitExpansion (registerSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs) s
             pure (l : acc, h)
 
-mulDFT
+mulFFT
     :: forall c k
     .  Symbolic c
     => KnownNat k
     => c (Vector (2^k)) -> c (Vector (2^k)) -> c (Vector (2^k))
-mulDFT x y = c
+mulFFT x y = c
     where
         xHat, yHat :: c (Vector (2^k))
         xHat = fft x

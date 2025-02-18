@@ -8,6 +8,9 @@ module ZkFold.Symbolic.Data.Combinators where
 
 import           Control.Applicative              (Applicative)
 import           Control.Monad                    (mapM)
+import           Data.Constraint
+import           Data.Constraint.Nat
+import           Data.Constraint.Unsafe
 import           Data.Foldable                    (foldlM)
 import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
 import           Data.Kind                        (Type)
@@ -29,6 +32,9 @@ import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
+import qualified ZkFold.Base.Data.Vector          as V
+import           ZkFold.Base.Data.Vector          (Vector)
+import           ZkFold.Prelude                   (take)
 import           ZkFold.Symbolic.Class            (Arithmetic, BaseField)
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -203,6 +209,57 @@ type family FromMaybe (a :: k) (mb :: Haskell.Maybe k) :: k where
 type family Length' (s :: Haskell.Maybe (Haskell.Char, Symbol)) :: Natural where
     Length' 'Haskell.Nothing = 0
     Length' ('Haskell.Just '(c, rest)) = 1 + Length' (UnconsSymbol rest)
+
+
+---------------------------------------------------------------
+-- | Types and helper axioms for padding vectors
+---------------------------------------------------------------
+
+type NextPow2 n = 2 ^ (Log2 (2 * n - 1))
+
+nextPow2 :: Natural -> Natural
+nextPow2 n = 2 ^ nextNBits n
+
+nextNBits :: Natural -> Natural
+nextNBits n = ilog2 (2 * n -! 1)
+
+withNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1))
+withNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1)) (unsafeSNat (nextNBits (value @n))) Dict
+
+withNextNBits :: forall n {r}. (KnownNat n) => (KnownNat (Log2 (2 * n - 1)) => r) -> r
+withNextNBits = withDict (withNextNBits' @n)
+
+type SecondNextPow2 n = 2 ^ (Log2 (2 * n - 1) + 1)
+
+secondNextPow2 :: Natural -> Natural
+secondNextPow2 n = 2 ^ secondNextNBits n
+
+secondNextNBits :: Natural -> Natural
+secondNextNBits n = ilog2 (2 * n -! 1) + 1
+
+withSecondNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1) + 1)
+withSecondNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1) + 1) (unsafeSNat (secondNextNBits (value @n))) Dict
+
+withSecondNextNBits :: forall n {r}. (KnownNat n) => (KnownNat (Log2 (2 * n - 1) + 1) => r) -> r
+withSecondNextNBits = withDict (withSecondNextNBits' @n)
+
+withNumberOfRegisters' :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (NumberOfRegisters a n r)
+withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters a n r) (unsafeSNat (numberOfRegisters @a @n @r)) Dict
+
+withNumberOfRegisters :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => ((KnownNat (NumberOfRegisters a n r)) => k) -> k
+withNumberOfRegisters = withDict (withNumberOfRegisters' @n @r @a)
+
+padNextPow2 :: forall i a w m n . (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (NextPow2 n) i)
+padNextPow2 v = do
+    z <- newAssigned (const zero)
+    let padded = take (nextPow2 $ value @n) $ V.fromVector v <> Haskell.repeat z
+    pure $ V.unsafeToVector padded
+
+padSecondNextPow2 :: forall i a w m n . (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (SecondNextPow2 n) i)
+padSecondNextPow2 v = do
+    z <- newAssigned (const zero)
+    let padded = take (secondNextPow2 $ value @n) $ V.fromVector v <> Haskell.repeat z
+    pure $ V.unsafeToVector padded
 
 ---------------------------------------------------------------
 

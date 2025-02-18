@@ -103,7 +103,6 @@ testAlgorithm
     => SHA2N algorithm (Interpreter element)
     => KnownNat (Log2 (ChunkSize algorithm))
     => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
-    => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
     => FilePath
     -> Spec
 testAlgorithm file = do
@@ -127,7 +126,6 @@ specSHA2Natural'
     => SHA2N algorithm (Interpreter element)
     => KnownNat (Log2 (ChunkSize algorithm))
     => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
-    => Const (ByteString (ResultSize algorithm) (Interpreter element)) ~ Natural
     => Spec
 specSHA2Natural' = do
     testFiles <- runIO $ getTestFiles @algorithm

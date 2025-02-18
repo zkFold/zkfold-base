@@ -7,12 +7,9 @@ module ZkFold.Symbolic.Algorithms.FFT
     , ifft
     ) where
 
-import           Control.DeepSeq                  (NFData, force)
-import           Control.Monad                    (mapM)
 import           Data.Maybe                       (fromJust)
 import qualified Data.Vector                      as V
-import           GHC.Generics                     (Generic)
-import           Prelude                          (fmap, pure, ($), (.), (<$>))
+import           Prelude                          (pure, ($), (.))
 import qualified Prelude                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -20,13 +17,6 @@ import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor        (hmap)
 import           ZkFold.Base.Data.Vector          (Vector (..), toV)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool        (Bool, (&&))
-import           ZkFold.Symbolic.Data.ByteString  (ByteString)
-import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, Iso (..), KnownRegisters, NumberOfRegisters,
-                                                   RegisterSize (..), Resize (..))
-import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Input       (SymbolicInput, isValid)
 import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit (..), newAssigned)
 
 fft :: forall ctx n . (Symbolic ctx, KnownNat n) => ctx (Vector (2^n)) -> ctx (Vector (2^n))

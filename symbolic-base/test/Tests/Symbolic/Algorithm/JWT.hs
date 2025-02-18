@@ -11,7 +11,7 @@ import           Prelude                                     (pure)
 import qualified Prelude                                     as P
 import           System.Random                               (mkStdGen)
 import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (Gen, arbitrary, withMaxSuccess, (.&.), (===))
+import           Test.QuickCheck                             (Gen, arbitrary, withMaxSuccess, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -20,7 +20,6 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (ilog2)
 import           ZkFold.Symbolic.Data.JWT
 import           ZkFold.Symbolic.Data.VarByteString          (VarByteString, fromNatural)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
@@ -38,7 +37,6 @@ specJWT = do
     describe "JWT sign and verify" $ do
         it "signs and verifies correctly" $ withMaxSuccess 10 $ do
             x <- toss $ (2 :: Natural) ^ (32 :: Natural)
-            msgBits <- toss $ (2 :: Natural) ^ (256 :: Natural)
             kidBits <- toss $ (2 :: Natural) ^ (320 :: Natural)
 
             let gen = mkStdGen (P.fromIntegral x)
