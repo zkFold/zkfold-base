@@ -12,6 +12,7 @@ import qualified Prelude                                        as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHashN)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 
 -- TODO: add more specific instances for efficiency
 
@@ -19,7 +20,7 @@ class HashAlgorithm algo a where
     hash :: [a] -> a
 
 data MiMCHash
-instance Ring a => HashAlgorithm MiMCHash a where
+instance (Ring a, SymbolicData a) => HashAlgorithm MiMCHash a where
     hash = mimcHashN @a mimcConstants zero
 
 class RandomOracle algo x a where
