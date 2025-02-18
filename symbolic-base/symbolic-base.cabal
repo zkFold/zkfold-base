@@ -228,6 +228,7 @@ library
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.5.0.0,
       distributive                               ,
+      generic-random                        < 1.6,
       infinite-list                              ,
       lens                                       ,
       monoidal-containers                        ,
@@ -273,6 +274,7 @@ test-suite symbolic-base-test
       Tests.Protocol.NonInteractiveProof
       Tests.Protocol.Plonkup
       Tests.Symbolic.Algorithm.Blake2b
+      Tests.Symbolic.Algorithm.JWT
       Tests.Symbolic.Algorithm.RSA
       Tests.Symbolic.Algorithm.SHA2
       Tests.Symbolic.ArithmeticCircuit

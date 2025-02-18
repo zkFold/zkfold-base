@@ -6,6 +6,7 @@
 
 module ZkFold.Symbolic.Data.JWT
     ( Certificate (..)
+    , SigningKey (..)
     , TokenHeader (..)
     , TokenPayload (..)
     , Signature
@@ -14,6 +15,7 @@ module ZkFold.Symbolic.Data.JWT
     , SecretBits
     , secretBits
     , toAsciiBits
+    , signPayload
     , verifySignature
     ) where
 
@@ -21,15 +23,18 @@ import           Control.DeepSeq                    (NFData, force)
 import           Data.Aeson                         (FromJSON (..), genericParseJSON)
 import qualified Data.Aeson                         as JSON
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
-import           Data.Constraint                    (Dict, withDict, (:-) (..))
+import           Data.Constraint                    (Dict (..), withDict, (:-) (..))
 import           Data.Constraint.Nat                (Max, divNat, minusNat, plusNat, timesNat)
-import           Data.Constraint.Unsafe             (unsafeAxiom)
+import           Data.Constraint.Unsafe             (unsafeAxiom, unsafeSNat)
 import           Data.Maybe                         (fromMaybe)
 import           Data.Scientific                    (toBoundedInteger)
 import qualified Data.Text                          as T
+import           Generic.Random                     (genericArbitrary, uniform)
 import           GHC.Generics                       (Generic, Par1 (..))
+import           GHC.TypeLits                       (withKnownNat)
 import           Prelude                            (fmap, pure, type (~), ($), (.), (<$>))
 import qualified Prelude                            as P
+import           Test.QuickCheck                    (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -58,42 +63,66 @@ class IsSymbolicJSON a where
     toJsonBits :: a -> VarByteString (MaxLength a) (Context a)
 
 
--- | RSA Public key
+-- | RSA Public key with Key ID
 --
 data Certificate ctx
     = Certificate
-        { kid :: VarByteString 320 ctx
-        , e   :: UInt 32 'Auto ctx
-        , n   :: UInt KeyLength 'Auto ctx
+        { pubKid :: VarByteString 320 ctx
+        , pubKey :: PublicKey 2048 ctx
         }
     deriving Generic
 
 deriving instance
-    ( P.Eq (UInt 32 'Auto ctx)
-    , P.Eq (UInt KeyLength 'Auto ctx)
+    ( P.Eq (PublicKey 2048 ctx)
     , P.Eq (VarByteString 320 ctx)
     ) => P.Eq (Certificate ctx)
 deriving instance
-    ( P.Show (UInt 32 'Auto ctx)
-    , P.Show (UInt KeyLength 'Auto ctx)
+    ( P.Show (PublicKey 2048 ctx)
     , P.Show (VarByteString 320 ctx)
     ) => P.Show (Certificate ctx)
 deriving instance
-    ( NFData (UInt 32 'Auto ctx)
-    , NFData (UInt KeyLength 'Auto ctx)
+    ( NFData (PublicKey 2048 ctx)
     , NFData (VarByteString 320 ctx)
     ) => NFData (Certificate ctx)
 instance
-    ( KnownNat (NumberOfRegisters (BaseField ctx) 32 'Auto)
-    , KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
+    ( SymbolicData (PublicKey 2048 ctx)
     , Symbolic ctx
     ) => SymbolicData (Certificate ctx)
 instance
-    ( KnownNat (NumberOfRegisters (BaseField ctx) 32 'Auto)
-    , KnownNat (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)
+    ( SymbolicInput (PublicKey 2048 ctx)
     , Symbolic ctx
     ) => SymbolicInput (Certificate ctx)
 
+
+-- | RSA Private key with Key ID
+--
+data SigningKey ctx
+    = SigningKey
+        { prvKid :: VarByteString 320 ctx
+        , prvKey :: PrivateKey 2048 ctx
+        }
+    deriving Generic
+
+deriving instance
+    ( P.Eq (PrivateKey 2048 ctx)
+    , P.Eq (VarByteString 320 ctx)
+    ) => P.Eq (SigningKey ctx)
+deriving instance
+    ( P.Show (PrivateKey 2048 ctx)
+    , P.Show (VarByteString 320 ctx)
+    ) => P.Show (SigningKey ctx)
+deriving instance
+    ( NFData (PrivateKey 2048 ctx)
+    , NFData (VarByteString 320 ctx)
+    ) => NFData (SigningKey ctx)
+instance
+    ( SymbolicData (PrivateKey 2048 ctx)
+    , Symbolic ctx
+    ) => SymbolicData (SigningKey ctx)
+instance
+    ( SymbolicInput (PrivateKey 2048 ctx)
+    , Symbolic ctx
+    ) => SymbolicInput (SigningKey ctx)
 
 -- | Json Web Token header with information about encryption algorithm and signature
 --
@@ -200,6 +229,8 @@ deriving instance
     ) => P.Show (TokenPayload ctx)
 deriving instance Symbolic ctx => SymbolicData (TokenPayload ctx)
 deriving instance Symbolic ctx => SymbolicInput (TokenPayload ctx)
+instance Symbolic ctx => Arbitrary (TokenPayload ctx) where
+    arbitrary = genericArbitrary uniform
 
 instance Symbolic ctx => FromJSON (TokenPayload ctx) where
     parseJSON = genericParseJSON (aesonPrefix snakeCase) . stringify
@@ -237,14 +268,14 @@ data ClientSecret ctx
     = ClientSecret
         { csHeader    :: TokenHeader ctx
         , csPayload   :: TokenPayload ctx
-        , csSignature :: Signature ctx
+        , csSignature :: Signature 2048 ctx
         }
     deriving Generic
 
 deriving instance
     ( NFData (TokenHeader ctx)
     , NFData (TokenPayload ctx)
-    , NFData (Signature ctx)
+    , NFData (Signature 2048 ctx)
     ) => NFData (ClientSecret ctx)
 deriving instance Symbolic ctx => SymbolicData (ClientSecret ctx)
 deriving instance Symbolic ctx => SymbolicInput (ClientSecret ctx)
@@ -266,8 +297,35 @@ type ASCII (n :: Natural) = (Div n 6) * 8
     -- Helper axioms
 ---------------------------------------------------------------------------------------------------
 
+knownBufLen' :: forall n . KnownNat n :- KnownNat (BufLen n)
+knownBufLen' = Sub $ withKnownNat @(BufLen n) (unsafeSNat $ P.max (ilog2 (value @n) + 1) 3) Dict
+
+knownBufLen :: forall n {r} . KnownNat n => (KnownNat (BufLen n) => r) -> r
+knownBufLen = withDict (knownBufLen' @n)
+
 monoAdd :: forall (a :: Natural) (b :: Natural) (c :: Natural) . (a <= b) :- (a <= (c + b))
 monoAdd = Sub unsafeAxiom
+
+oneReg :: forall n c . Dict (NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n)) ~ 1)
+oneReg = unsafeAxiom -- @BufLen n@ is always greater than 2
+
+knownOneReg' :: forall n c . Dict (KnownNat (NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n))))
+knownOneReg' = withKnownNat @(NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n))) (unsafeSNat 1) Dict
+
+knownOneReg :: forall n c {r} . (KnownNat (NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n))) => r) -> r
+knownOneReg = withDict (knownOneReg' @n @c)
+
+knownNumWords' :: forall n c . KnownNat n :- KnownNat (Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
+knownNumWords' = Sub $
+    withKnownNat @(Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
+        (unsafeSNat $ knownBufLen @n $ wordSize (value @(BufLen n)))
+        Dict
+    where
+        wordSize :: Natural -> Natural
+        wordSize n = (n + (value @OrdWord) -! 1) `div` (value @OrdWord)
+
+knownNumWords :: forall n c {r} . KnownNat n => (KnownNat (Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord) => r) -> r
+knownNumWords = withDict (knownNumWords' @n @c)
 
 withDiv :: forall n {r}. KnownNat n => (KnownNat (Div ((n + OrdWord) - 1) OrdWord) => r) -> r
 withDiv =
@@ -299,17 +357,17 @@ withDivMul = withDict (divMul @a @b)
 ---------------------------------------------------------------------------------------------------
 
 feToUInt :: forall n ctx . Symbolic ctx => FieldElement ctx -> UInt (BufLen n) ('Fixed (BufLen n)) ctx
-feToUInt (FieldElement c) = UInt $ hmap (V.singleton . unPar1) c
+feToUInt (FieldElement c) = UInt $ withDict (oneReg @n @ctx) $ hmap (V.singleton . unPar1) c
 
 uintToFe :: forall n ctx . Symbolic ctx => UInt (BufLen n) ('Fixed (BufLen n)) ctx -> FieldElement ctx
-uintToFe (UInt v) = FieldElement $ hmap (Par1 . V.item) v
+uintToFe (UInt v) = FieldElement $ withDict (oneReg @n @ctx) $ hmap (Par1 . V.item) v
 
 -- | The smallest multiple of 6 not less than the given UInt
 --
 padTo6
     :: forall n ctx
     .  Symbolic ctx
-    => KnownNat (BufLen n)
+    => KnownNat n
     => UInt (BufLen n) ('Fixed (BufLen n)) ctx
     -> FieldElement ctx
 padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
@@ -326,7 +384,12 @@ padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
 
         pure $ Par1 res
     where
-        UInt v = withDiv @(BufLen n) $ ui `mod` (fromConstant @Natural 6)
+        UInt v =
+            knownBufLen @n $
+                knownNumWords @n @ctx $
+                    knownOneReg @n @ctx $
+                        withDiv @(BufLen n) $
+                            ui `mod` (fromConstant @Natural 6)
 
 
 -- | Increase capacity of a VarByteString and increase its length to the nearest multiple of 6
@@ -336,7 +399,6 @@ padBytestring6
     :: forall n ctx
     .  Symbolic ctx
     => KnownNat n
-    => KnownNat (BufLen n)
     => VarByteString n ctx -> VarByteString (Next6 n) ctx
 padBytestring6 VarByteString{..} = VarByteString (bsLength + mod6) (withNext6 @n $ VB.shiftL newBuf mod6)
     where
@@ -353,7 +415,6 @@ base64ToAscii
     .  Symbolic ctx
     => KnownNat n
     => Mod n 6 ~ 0
-    => KnownNat (BufLen n)
     => NFData (ctx (V.Vector 8))
     => NFData (ctx (V.Vector (ASCII n)))
     => VarByteString n ctx -> VarByteString (ASCII n) ctx
@@ -363,7 +424,12 @@ base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString 
         ascii  = word6ToAscii <$> words6
         result = force $ concat ascii
 
-        newLen = withDiv @(BufLen n) $ scale (4 :: Natural) . (uintToFe @n) . (`div` (fromConstant @Natural 3)) . (feToUInt @n) $ bsLength
+        newLen =
+            knownBufLen @n $
+                withDiv @(BufLen n) $
+                    knownOneReg @n @ctx $
+                        knownNumWords @n @ctx $
+                            scale (4 :: Natural) . (uintToFe @n) . (`div` (fromConstant @Natural 3)) . (feToUInt @n) $ bsLength
 
 
 {-
@@ -418,8 +484,6 @@ toAsciiBits
     .  IsSymbolicJSON a
     => Context a ~ ctx
     => KnownNat (MaxLength a)
-    => KnownNat (BufLen (MaxLength a))
-    => KnownNat (BufLen (Next6 (MaxLength a)))
     => Symbolic ctx
     => NFData (ctx (V.Vector 8))
     => NFData (ctx (V.Vector (ASCII (Next6 (MaxLength a)))))
@@ -436,6 +500,20 @@ type SecretBits ctx =
     , NFData (ctx Par1)
     )
 
+
+secretBits'
+    :: forall ctx
+    .  Symbolic ctx
+    => SecretBits ctx
+    => TokenHeader ctx
+    -> TokenPayload ctx
+    -> VarByteString 10328 ctx
+secretBits' h p =  force $
+       toAsciiBits h
+    @+ (fromType @".")
+    @+ toAsciiBits p
+
+
 -- | Client secret as a ByteString: @ASCII(base64UrlEncode(header) + "." + base64UrlEncode(payload))@
 --
 secretBits
@@ -443,15 +521,20 @@ secretBits
     .  Symbolic ctx
     => SecretBits ctx
     => ClientSecret ctx -> VarByteString 10328 ctx
-secretBits ClientSecret {..} = force $
-       toAsciiBits csHeader
-    @+ (fromType @".")
-    @+ toAsciiBits csPayload
+secretBits ClientSecret {..} = secretBits' csHeader csPayload
+
+-- | Sign token payload and form a ClientSecret
+--
+signPayload :: (SecretBits ctx, RSA 2048 10328 ctx) => SigningKey ctx -> TokenPayload ctx -> ClientSecret ctx
+signPayload SigningKey{..} csPayload = ClientSecret{..}
+    where
+        csHeader = TokenHeader "RS256" prvKid "JWT"
+        csSignature = signVar (secretBits' csHeader csPayload) prvKey
 
 -- | Verify that the given JWT was correctly signed with a matching key (i.e. Key IDs match and the signature is correct).
 --
-verifySignature :: (SecretBits ctx, RSA ctx 10328) => Certificate ctx -> ClientSecret ctx -> (Bool ctx, ByteString 256 ctx)
+verifySignature :: (SecretBits ctx, RSA 2048 10328 ctx) => Certificate ctx -> ClientSecret ctx -> (Bool ctx, ByteString 256 ctx)
 verifySignature Certificate{..} cs@ClientSecret{..} =
-    let (sigVerified, secretHash) = verifyVar (secretBits cs) csSignature (PublicKey e n)
-     in (kid == hdKid csHeader && sigVerified, secretHash)
+    let (sigVerified, secretHash) = verifyVar (secretBits cs) csSignature pubKey
+     in (pubKid == hdKid csHeader && sigVerified, secretHash)
 

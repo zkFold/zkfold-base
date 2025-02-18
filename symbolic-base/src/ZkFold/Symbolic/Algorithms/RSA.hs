@@ -11,7 +11,6 @@ module ZkFold.Symbolic.Algorithms.RSA
     , PublicKey (..)
     , PrivateKey (..)
     , Signature
-    , KeyLength
     ) where
 
 import           Control.DeepSeq                      (NFData, force)
@@ -33,82 +32,84 @@ import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
 import           ZkFold.Symbolic.Data.VarByteString   (VarByteString)
 
-type KeyLength = 512
+type Signature keyLen ctx = ByteString keyLen ctx
 
-type Signature ctx = ByteString KeyLength ctx
-
-data PrivateKey ctx
+data PrivateKey keyLen ctx
     = PrivateKey
-        { prvD :: UInt KeyLength 'Auto ctx
-        , prvN :: UInt KeyLength 'Auto ctx
+        { prvD :: UInt keyLen 'Auto ctx
+        , prvN :: UInt keyLen 'Auto ctx
         }
 
-deriving instance Generic (PrivateKey context)
-deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))) => NFData (PrivateKey context)
-deriving instance (P.Eq (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto))))   => P.Eq   (PrivateKey context)
+deriving instance Generic (PrivateKey keyLen context)
+deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))) => NFData (PrivateKey keyLen context)
+deriving instance (P.Eq (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto))))   => P.Eq   (PrivateKey keyLen context)
 deriving instance
     ( P.Show (BaseField context)
-    , P.Show (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
-    ) => P.Show (PrivateKey context)
+    , P.Show (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
+    ) => P.Show (PrivateKey keyLen context)
 
-deriving instance (Symbolic ctx, KnownRegisters ctx KeyLength 'Auto) => SymbolicData (PrivateKey ctx)
+deriving instance (Symbolic ctx, KnownRegisters ctx keyLen 'Auto) => SymbolicData (PrivateKey keyLen ctx)
 
 instance
   ( Symbolic ctx
-  , KnownRegisters ctx KeyLength 'Auto
-  ) => SymbolicInput (PrivateKey ctx) where
+  , KnownNat keyLen
+  , KnownRegisters ctx keyLen 'Auto
+  ) => SymbolicInput (PrivateKey keyLen ctx) where
     isValid PrivateKey{..} = isValid prvD && isValid prvN
 
-data PublicKey ctx
+data PublicKey keyLen ctx
     = PublicKey
         { pubE :: UInt 32 'Auto ctx
-        , pubN :: UInt KeyLength 'Auto ctx
+        , pubN :: UInt keyLen 'Auto ctx
         }
 
-deriving instance Generic (PublicKey context)
+deriving instance Generic (PublicKey keyLen context)
 deriving instance
-    ( NFData (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
+    ( NFData (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
     , NFData (context (Vector (NumberOfRegisters (BaseField context) 32 'Auto)))
-    ) =>  NFData  (PublicKey context)
+    ) =>  NFData  (PublicKey keyLen context)
 deriving instance
-    ( P.Eq (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
+    ( P.Eq (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
     , P.Eq (context (Vector (NumberOfRegisters (BaseField context) 32 'Auto)))
-    ) =>  P.Eq    (PublicKey context)
+    ) =>  P.Eq    (PublicKey keyLen context)
 deriving instance
-    ( P.Show (context (Vector (NumberOfRegisters (BaseField context) KeyLength 'Auto)))
+    ( P.Show (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
     , P.Show (context (Vector (NumberOfRegisters (BaseField context) 32 'Auto)))
     , P.Show (BaseField context)
-    ) =>  P.Show  (PublicKey context)
+    ) =>  P.Show  (PublicKey keyLen context)
 
 deriving instance
     ( Symbolic ctx
     , KnownRegisters ctx 32 'Auto
-    , KnownRegisters ctx KeyLength 'Auto
-    ) => SymbolicData (PublicKey ctx)
+    , KnownRegisters ctx keyLen 'Auto
+    ) => SymbolicData (PublicKey keyLen ctx)
 
 instance
   ( Symbolic ctx
+  , KnownNat keyLen
   , KnownRegisters ctx 32 'Auto
-  , KnownRegisters ctx KeyLength 'Auto
-  ) => SymbolicInput (PublicKey ctx) where
+  , KnownRegisters ctx keyLen 'Auto
+  ) => SymbolicInput (PublicKey keyLen ctx) where
     isValid PublicKey{..} = isValid pubE && isValid pubN
 
-type RSA ctx msgLen =
+type RSA keyLen msgLen ctx =
    ( SHA2 "SHA256" ctx msgLen
-   , KnownRegisters ctx KeyLength 'Auto
-   , KnownRegisters ctx (2 * KeyLength) 'Auto
-   , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * KeyLength) 'Auto) OrdWord)
-   , NFData (ctx (Vector KeyLength))
-   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) KeyLength 'Auto)))
-   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * KeyLength) 'Auto)))
+   , KnownNat keyLen
+   , KnownNat (2 * keyLen)
+   , KnownRegisters ctx keyLen 'Auto
+   , KnownRegisters ctx (2 * keyLen) 'Auto
+   , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * keyLen) 'Auto) OrdWord)
+   , NFData (ctx (Vector keyLen))
+   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) keyLen 'Auto)))
+   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * keyLen) 'Auto)))
    )
 
 sign
-    :: forall ctx msgLen
-    .  RSA ctx msgLen
+    :: forall keyLen msgLen ctx
+    .  RSA keyLen msgLen ctx
     => ByteString msgLen ctx
-    -> PrivateKey ctx
-    -> Signature ctx
+    -> PrivateKey keyLen ctx
+    -> Signature keyLen ctx
 sign msg PrivateKey{..} = force $ from $ expMod msgI prvD prvN
     where
         h :: ByteString 256 ctx
@@ -118,29 +119,29 @@ sign msg PrivateKey{..} = force $ from $ expMod msgI prvD prvN
         msgI = from h
 
 verify
-    :: forall ctx msgLen
-    .  RSA ctx msgLen
+    :: forall keyLen msgLen ctx
+    .  RSA keyLen msgLen ctx
     => ByteString msgLen ctx
-    -> Signature ctx
-    -> PublicKey ctx
+    -> Signature keyLen ctx
+    -> PublicKey keyLen ctx
     -> Bool ctx
 verify msg sig PublicKey{..} = target == input
     where
         h :: ByteString 256 ctx
         h = sha2 @"SHA256" msg
 
-        target :: UInt KeyLength 'Auto ctx
-        target = force $ expMod (from sig :: UInt KeyLength 'Auto ctx) pubE pubN
+        target :: UInt keyLen 'Auto ctx
+        target = force $ expMod (from sig :: UInt keyLen 'Auto ctx) pubE pubN
 
-        input :: UInt KeyLength 'Auto ctx
+        input :: UInt keyLen 'Auto ctx
         input = force $ resize (from h :: UInt 256 'Auto ctx)
 
 signVar
-    :: forall ctx msgLen
-    .  RSA ctx msgLen
+    :: forall keyLen msgLen ctx
+    .  RSA keyLen msgLen ctx
     => VarByteString msgLen ctx
-    -> PrivateKey ctx
-    -> Signature ctx
+    -> PrivateKey keyLen ctx
+    -> Signature keyLen ctx
 signVar msg PrivateKey{..} = force $ from $ expMod msgI prvD prvN
     where
         h :: ByteString 256 ctx
@@ -150,19 +151,19 @@ signVar msg PrivateKey{..} = force $ from $ expMod msgI prvD prvN
         msgI = from h
 
 verifyVar
-    :: forall ctx msgLen
-    .  RSA ctx msgLen
+    :: forall keyLen msgLen ctx
+    .  RSA keyLen msgLen ctx
     => VarByteString msgLen ctx
-    -> Signature ctx
-    -> PublicKey ctx
+    -> Signature keyLen ctx
+    -> PublicKey keyLen ctx
     -> (Bool ctx, ByteString 256 ctx)
 verifyVar msg sig PublicKey{..} = (target == input, h)
     where
         h :: ByteString 256 ctx
         h = sha2Var @"SHA256" msg
 
-        target :: UInt KeyLength 'Auto ctx
-        target = force $ expMod (from sig :: UInt KeyLength 'Auto ctx) pubE pubN
+        target :: UInt keyLen 'Auto ctx
+        target = force $ expMod (from sig :: UInt keyLen 'Auto ctx) pubE pubN
 
-        input :: UInt KeyLength 'Auto ctx
+        input :: UInt keyLen 'Auto ctx
         input = force $ resize (from h :: UInt 256 'Auto ctx)

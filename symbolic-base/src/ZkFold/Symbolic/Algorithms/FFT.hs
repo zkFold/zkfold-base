@@ -30,15 +30,13 @@ import           ZkFold.Symbolic.Data.Input       (SymbolicInput, isValid)
 import           ZkFold.Symbolic.MonadCircuit     (MonadCircuit (..), newAssigned)
 
 fft :: forall ctx n . (Symbolic ctx, KnownNat n) => ctx (Vector (2^n)) -> ctx (Vector (2^n))
-fft v = hmap Vector $ fromCircuitF v (fft' (value @n) u . toV)
+fft v = hmap Vector $ fromCircuitF v (fft' (value @n) u one . toV)
     where
         u :: BaseField ctx
         u = (fromJust $ rootOfUnity (value @n))
 
 ifft :: forall ctx n . (Symbolic ctx, KnownNat n) => ctx (Vector (2^n)) -> ctx (Vector (2^n))
-ifft v = hmap Vector $ fromCircuitF v $ \vec -> do
-    unscaled <- fft' (value @n) u . toV $ vec
-    mapM (\i -> newAssigned (\p -> scale nInv $ p i)) unscaled
+ifft v = hmap Vector $ fromCircuitF v (fft' (value @n) u nInv . toV)
     where
         u :: BaseField ctx
         u = (one // fromJust (rootOfUnity (value @n)))
@@ -52,12 +50,13 @@ fft'
     => MonadCircuit i a w m
     => Natural
     -> a
+    -> a
     -> V.Vector i
     -> m (V.Vector i)
-fft' 0 _ v = pure v
-fft' n wn v = do
-    a0Hat <- fft' (n -! 1) wn2 a0
-    a1Hat <- fft' (n -! 1) wn2 a1
+fft' 0 _ _ v  = pure v
+fft' n wn s v = do
+    a0Hat <- fft' (n -! 1) wn2 one a0
+    a1Hat <- fft' (n -! 1) wn2 one a1
     V.generateM (P.fromIntegral $ (2 :: Natural) ^ n) $ \ix -> do
         let arrIx = ix `P.mod` halfLen
 
@@ -67,7 +66,7 @@ fft' n wn v = do
             a0k = a0Hat `V.unsafeIndex` arrIx
             a1k = a1Hat `V.unsafeIndex` arrIx
             wnp = wn ^ (P.fromIntegral arrIx :: Natural)
-        newAssigned $ \p -> p a0k `op` scale wnp (p a1k)
+        newAssigned $ \p -> scale s (p a0k) `op` scale (s * wnp) (p a1k)
     where
         a0 = V.ifilter (\i _ -> i `P.mod` 2 P.== 0) v
         a1 = V.ifilter (\i _ -> i `P.mod` 2 P.== 1) v

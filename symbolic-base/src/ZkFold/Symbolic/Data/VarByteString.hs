@@ -35,6 +35,7 @@ import           GHC.Generics                      (Generic, Par1 (..))
 import           GHC.TypeLits                      (KnownSymbol (..), symbolVal, withKnownNat)
 import           Prelude                           (const, fmap, otherwise, pure, type (~), ($), (.), (<$>), (<>))
 import qualified Prelude                           as Haskell
+import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
@@ -72,6 +73,12 @@ deriving instance (KnownNat n, Symbolic ctx) => SymbolicData (VarByteString n ct
 deriving instance (KnownNat n, Symbolic ctx) => SymbolicInput (VarByteString n ctx)
 deriving instance (Symbolic ctx, KnownNat n) => Eq (VarByteString n ctx)
 deriving instance (Symbolic ctx, KnownNat n) => Conditional (Bool ctx) (VarByteString n ctx)
+
+instance (KnownNat maxLen, Symbolic ctx) => Arbitrary (VarByteString maxLen ctx) where
+    arbitrary = do
+        nbits <- Haskell.fromIntegral <$> chooseInteger (0, Haskell.fromIntegral $ value @maxLen)
+        bits  <- Haskell.fromIntegral <$> chooseInteger (0, Haskell.fromIntegral $ 2^nbits -! 1)
+        pure $ fromNatural nbits bits
 
 toAsciiString :: forall n p . (KnownNat (Div n 8), (Div n 8) * 8 ~ n, KnownNat p) => VarByteString n (Interpreter (Zp p)) -> Haskell.String
 toAsciiString VarByteString{..} = drop numZeros $ fromVector chars

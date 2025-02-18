@@ -20,7 +20,7 @@ module ZkFold.Symbolic.Data.UInt (
     expMod,
     eea,
     natural,
-    register
+    register,
     productMod,
 ) where
 
@@ -29,10 +29,10 @@ import           Control.DeepSeq
 import           Control.Monad                     (zipWithM)
 import           Control.Monad.State               (StateT (..))
 import           Data.Aeson                        hiding (Bool)
-import           Data.Foldable                     (Foldable (toList), foldlM, foldr, foldrM, for_)
 import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Constraint.Unsafe
+import           Data.Foldable                     (Foldable (toList), foldlM, foldr, foldrM, for_)
 import           Data.Function                     (on)
 import           Data.Functor                      (Functor (..), (<$>))
 import           Data.Functor.Rep                  (Representable (..))
@@ -158,15 +158,11 @@ bitsPow
 bitsPow 0 _ res _ _ = res
 bitsPow b bits res n m = bitsPow (b -! 1) bits newRes sq m
     where
-        sq = Haskell.snd $ productMod n n m 
+        sq = Haskell.snd $ productMod n n m
         newRes = force $ ifThenElse (isSet bits (b -! 1)) (Haskell.snd $ productMod res n m) res
 
 
 -- | Calculate @a * b `divMod` m@ using less constraints than would've been required by these operations used consequently
---
--- a * b `divMod` m == (q, r)
--- q * m + r == a * b
--- fft q .*. fft m .+. fft r == fft a .*. fft b
 --
 productMod
     :: forall c n r
@@ -179,9 +175,11 @@ productMod
     -> UInt n r c
     -> UInt n r c
     -> (UInt n r c, UInt n r c)
-productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) = (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
+productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) = 
+    case (value @n) of
+      0 -> (zero, zero)
+      _ -> (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
       where
-        -- | Computes unconstrained registers of @div@ and @mod@.
         source = symbolic3F aRegs bRegs mRegs
           (\ar br mr ->
             let r = registerSize @(BaseField c) @n @r
@@ -191,8 +189,8 @@ productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) = (UInt $ hmap fstP circuit, U
             in naturalToVector @c @n @r ((a' * b') `div` m')
                 :*: naturalToVector @c @n @r ((a' * b') `mod` m'))
           \ar br mr -> (liftA2 (:*:) `on` traverse unconstrained)
-            (tabulate $ register ((natural ar * natural br) `div` natural mr))
-            (tabulate $ register ((natural ar * natural br) `mod` natural mr))
+            (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r br) `div` natural @c @n @r mr))
+            (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r br) `mod` natural @c @n @r mr))
 
         -- | Unconstrained @div@ part.
         dv = hmap fstP source
@@ -200,31 +198,10 @@ productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) = (UInt $ hmap fstP circuit, U
         -- | Unconstrained @mod@ part.
         md = hmap sndP source
 
-        aPad, bPad, mPad :: c (Vector (NextPow2 (NumberOfRegisters (BaseField c) n r)))
-        aPad = withNextNBits @(NumberOfRegisters (BaseField c) n r) $ fft $ fromCircuitF aRegs padNextPow2 
-        bPad = withNextNBits @(NumberOfRegisters (BaseField c) n r) $ fft $ fromCircuitF bRegs padNextPow2 
-        mPad = withNextNBits @(NumberOfRegisters (BaseField c) n r) $ fft $ fromCircuitF mRegs padNextPow2 
+        Bool eq = (UInt aRegs :: UInt n r c) * UInt bRegs == UInt dv * UInt mRegs + UInt md
 
-        dvPad, mdPad :: c (Vector (NextPow2 (NumberOfRegisters (BaseField c) n r)))
-        dvPad = withNextNBits @(NumberOfRegisters (BaseField c) n r) $ fft $ fromCircuitF dv padNextPow2
-        mdPad = withNextNBits @(NumberOfRegisters (BaseField c) n r) $ fft $ fromCircuitF md padNextPow2
-
-        lhs = fromCircuit3F mPad dvPad mdPad $ \m' dv' md' -> do
-            mul <- U.zipWithM (\i j -> newAssigned $ \p -> p i * p j) m' dv'
-            U.zipWithM (\i j -> newAssigned $ \p -> p i + p j) mul md'
-
-        rhs = fromCircuit2F aPad bPad $ U.zipWithM (\i j -> newAssigned $ \p -> p i * p j)
-
-        -- | divMod first constraint: @numerator = denominator * div + mod@.
-        -- This should always be true.
-        Bool eq = withNextPow2 @(NumberOfRegisters (BaseField c) n r) $ lhs == rhs
-        --Bool eq = (UInt aRegs :: UInt n r c) * UInt bRegs == UInt dv * UInt mRegs + UInt md 
-
-        -- | divMod second constraint: @0 <= mod < denominator@.
-        -- This should always be true.
         Bool lt = (UInt md :: UInt n r c) < UInt mRegs
 
-        -- | Computes properly constrained registers of @div@ and @mod@.
         circuit = fromCircuit3F eq lt (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
           constraint (($ e) - one)
           constraint (($ l) - one)
@@ -619,10 +596,12 @@ instance
     , KnownNat n
     , KnownRegisterSize rs
     ) => MultiplicativeSemigroup (UInt n rs c) where
-    UInt x * UInt y = UInt $
-        withNumberOfRegisters @n @rs @(BaseField c) $
-            withSecondNextNBits @(NumberOfRegisters (BaseField c) n rs) $
-                trimRegisters @c @n @rs $ mulDFT @c xPadded yPadded
+    UInt x * UInt y = UInt $ 
+        case (value @n) of
+          0 -> x
+          _ -> withNumberOfRegisters @n @rs @(BaseField c) $
+                   withSecondNextNBits @(NumberOfRegisters (BaseField c) n rs) $
+                       trimRegisters @c @n @rs $ mulDFT @c xPadded yPadded
         where
             xPadded, yPadded :: c (Vector (SecondNextPow2 (NumberOfRegisters (BaseField c) n rs)))
             xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padSecondNextPow2
