@@ -175,7 +175,7 @@ productMod
     -> UInt n r c
     -> UInt n r c
     -> (UInt n r c, UInt n r c)
-productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) = 
+productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) =
     case (value @n) of
       0 -> (zero, zero)
       _ -> (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
@@ -596,7 +596,7 @@ instance
     , KnownNat n
     , KnownRegisterSize rs
     ) => MultiplicativeSemigroup (UInt n rs c) where
-    UInt x * UInt y = UInt $ 
+    UInt x * UInt y = UInt $
         case (value @n) of
           0 -> x
           _ -> withNumberOfRegisters @n @rs @(BaseField c) $
