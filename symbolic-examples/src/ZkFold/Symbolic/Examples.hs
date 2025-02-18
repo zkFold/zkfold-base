@@ -12,14 +12,12 @@ import           Examples.Blake2b                            (exampleBlake2b_224
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
 import           Examples.Constant                           (exampleConst5, exampleEq5)
-import           Examples.Ed25519
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
 import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
-import           Examples.RSA
 import           Examples.UInt
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
