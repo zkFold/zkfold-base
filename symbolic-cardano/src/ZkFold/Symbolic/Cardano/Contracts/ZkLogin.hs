@@ -18,7 +18,7 @@ type PublicInput ctx = ByteString 256 ctx
 
 zkLogin
     :: forall ctx
-    .  RSA ctx 10328
+    .  RSA 2048 10328 ctx
     => SecretBits ctx
     => ClientSecret ctx
     -> ByteString 64 ctx
