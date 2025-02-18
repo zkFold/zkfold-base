@@ -4,24 +4,24 @@
 module ZkFold.Symbolic.Algorithms.Hash.MiMC where
 
 import           Data.Foldable                                  (toList)
+import           Data.Functor.Rep                               (pureRep)
 import           Data.List.NonEmpty                             (NonEmpty ((:|)), nonEmpty)
 import           Data.Proxy                                     (Proxy (..))
+import           GHC.Generics                                   ((:*:) (..))
 import           Numeric.Natural                                (Natural)
 import           Prelude                                        hiding (Eq (..), Num (..), any, length, not, (!!), (/),
                                                                  (^), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Control.HApplicative               (hpair)
 import           ZkFold.Base.Data.HFunctor                      (hmap)
 import           ZkFold.Base.Data.Package                       (unpacked)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit(newAssigned))
-import ZkFold.Symbolic.Data.Combinators
-import Data.Functor.Rep (pureRep)
-import GHC.Generics ((:*:)(..))
-import ZkFold.Base.Control.HApplicative (hpair)
+import           ZkFold.Symbolic.MonadCircuit                   (MonadCircuit (newAssigned))
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5

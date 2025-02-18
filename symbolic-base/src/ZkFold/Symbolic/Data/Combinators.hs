@@ -9,7 +9,7 @@ module ZkFold.Symbolic.Data.Combinators where
 import           Control.Applicative              (Applicative)
 import           Control.Monad                    (mapM)
 import           Data.Foldable                    (foldlM)
-import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep, liftR3, fmapRep)
+import           Data.Functor.Rep                 (Representable, fmapRep, liftR3, mzipRep, mzipWithRep)
 import           Data.Kind                        (Type)
 import           Data.List                        (find, splitAt)
 import           Data.List.Split                  (chunksOf)

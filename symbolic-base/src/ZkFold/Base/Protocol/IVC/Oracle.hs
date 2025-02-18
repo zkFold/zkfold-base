@@ -12,7 +12,7 @@ import qualified Prelude                                        as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHashN)
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
+import           ZkFold.Symbolic.Data.Class                     (SymbolicData)
 
 -- TODO: add more specific instances for efficiency
 
