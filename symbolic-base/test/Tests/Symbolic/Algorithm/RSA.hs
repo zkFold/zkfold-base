@@ -5,11 +5,11 @@ module Tests.Symbolic.Algorithm.RSA (specRSA) where
 
 import           Codec.Crypto.RSA                            (generateKeyPair)
 import qualified Codec.Crypto.RSA                            as R
+import           System.Random                               (RandomGen)
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
 import qualified Prelude                                     as P
-import           System.Random                               (mkStdGen)
 import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, withMaxSuccess, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
@@ -30,15 +30,13 @@ toss x = chooseNatural (0, x -! 1)
 evalBool :: forall a . Bool (Interpreter a) -> a
 evalBool (Bool (Interpreter (Par1 v))) = v
 
-specRSA :: Spec
-specRSA = do
+specRSA :: RandomGen g => g -> Spec
+specRSA gen = do
     describe "RSA signature" $ do
         it "encrypts and decrypts correctly" $ withMaxSuccess 10 $ do
-            x <- toss $ (2 :: Natural) ^ (32 :: Natural)
             msgBits <- toss $ (2 :: Natural) ^ (256 :: Natural)
-            let gen = mkStdGen (P.fromIntegral x)
-                (R.PublicKey{..}, R.PrivateKey{..}, _) = generateKeyPair gen (P.fromIntegral $ value @KeyLength)
-                prvkey = PrivateKey (fromConstant private_d) (fromConstant private_n)
+            let (R.PublicKey{..}, R.PrivateKey{..}, _) = generateKeyPair gen (P.fromIntegral $ value @KeyLength)
+                prvkey = PrivateKey (fromConstant private_d) (fromConstant public_n)
                 pubkey = PublicKey (fromConstant public_e) (fromConstant public_n)
                 msg = fromConstant msgBits
 

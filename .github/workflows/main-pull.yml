@@ -13,8 +13,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cabal: [3.10.3.0]
-        ghc: [9.6.6]
+        cabal: [3.14.1.1]
+        ghc: [9.12.1]
 
     runs-on: ${{ matrix.os }}
 
@@ -26,7 +26,7 @@ jobs:
       uses: haskell-actions/setup@v2.6.2
       id: setup
       with:
-        ghc-version: ${{ matrix.ghc }}
+        ghc-version: [9.12.1, 9.6.6]
         cabal-version: ${{ matrix.cabal }}
         cabal-update: true
 
@@ -52,7 +52,7 @@ jobs:
 
     - name: Install stylish-haskell
       run: |
-        cabal install stylish-haskell
+        cabal install stylish-haskell --allow-older --with-compiler ghc-9.6.6
 
     - name: Lint Haskell
       run: |
